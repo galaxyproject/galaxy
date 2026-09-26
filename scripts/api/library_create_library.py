@@ -9,7 +9,7 @@ try:
     data = {}
     data["name"] = sys.argv[3]
 except IndexError:
-    print("usage: %s key url name [description] [synopsys]" % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url name [description] [synopsys]")
     sys.exit(1)
 try:
     data["description"] = sys.argv[4]

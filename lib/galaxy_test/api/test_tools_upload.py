@@ -1,16 +1,22 @@
 import json
 import os
+import tempfile
 import urllib.parse
+from base64 import b64encode
+from typing import cast
 
 import pytest
 from tusclient import client
 
+from galaxy.tool_util.verify.interactor import (
+    InputStagingError,
+    JobDataT,
+    verify_tool,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
-from galaxy.util.unittest_utils import (
-    skip_if_github_down,
-    skip_if_site_down,
-)
+from galaxy.util.compression_utils import decompress_bytes_to_directory
+from galaxy.util.hash_util import md5_hash_file
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
@@ -18,12 +24,24 @@ from galaxy_test.base.constants import (
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
+from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_datatype,
     stage_inputs,
 )
 from ._framework import ApiTestCase
+
+B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
+URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
+
+EXPECTED_TAR_CONTENTS = {
+    "testdir": "Directory",
+    "testdir/c": "Directory",
+    "testdir/a": "File",
+    "testdir/b": "File",
+    "testdir/c/d": "File",
+}
 
 
 class TestToolsUpload(ApiTestCase):
@@ -135,7 +153,7 @@ class TestToolsUpload(ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "fastqsanger.gz", details
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_fetch_compressed_auto_decompress_target(self, history_id):
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -177,7 +195,7 @@ class TestToolsUpload(ApiTestCase):
             details = self._upload_and_get_details(fh, file_type="auto", assert_ok=False, auto_decompress=False)
         assert details["file_ext"] == "binary", details
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_fetch_compressed_with_auto(self, history_id):
         # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         # TODO: this should definitely be fixed to allow auto decompression via that API.
@@ -204,9 +222,16 @@ class TestToolsUpload(ApiTestCase):
             csv_metadata = self._upload_and_get_details(fh, file_type="csv")
         assert csv_metadata["file_ext"] == "csv"
 
+    @skip_without_datatype("geocsv")
+    def test_geocsv_upload_auto(self):
+        csv_path = TestDataResolver().get_filename("1.csv")
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, file_type="auto")
+        assert csv_metadata["file_ext"] == "geocsv"
+
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
-        csv_path = TestDataResolver().get_filename("1.csv")
+        csv_path = TestDataResolver().get_filename("2.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
         assert csv_metadata["file_ext"] == "csv"
@@ -220,7 +245,7 @@ class TestToolsUpload(ApiTestCase):
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
-        csv_path = TestDataResolver().get_filename("1.csv")
+        csv_path = TestDataResolver().get_filename("2.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
         assert csv_metadata["file_ext"] == "csv"
@@ -238,6 +263,7 @@ class TestToolsUpload(ApiTestCase):
                 "class": "File",
                 "format": "txt",
                 "path": "test-data/simple_line_no_newline.txt",
+                "hashes": [{"hash_function": "SHA-1", "hash_value": "f030155d3459c233efd37e13bc1061c1dc744ebf"}],
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
@@ -245,6 +271,8 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
         assert content == "This is a line of text.\n"
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, content_id=dataset["id"])
+        assert dataset["hashes"][0]["hash_value"] == "f030155d3459c233efd37e13bc1061c1dc744ebf"
 
     def test_stage_object(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
@@ -281,13 +309,13 @@ class TestToolsUpload(ApiTestCase):
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
         assert details["genome_build"] == "hg19"
 
-    @skip_if_github_down
     def test_stage_fetch_decompress_true(self, history_id: str) -> None:
+        base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
         job = {
             "input1": {
                 "class": "File",
                 "format": "fasta",
-                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "location": base64_url,
                 "decompress": True,
             }
         }
@@ -298,13 +326,13 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert content.startswith(">hg17")
 
-    @skip_if_github_down
     def test_stage_fetch_decompress_false(self, history_id: str) -> None:
+        base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
         job = {
             "input1": {
                 "class": "File",
                 "format": "fasta",
-                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "location": base64_url,
                 "decompress": False,
             }
         }
@@ -315,18 +343,23 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert not content.startswith(">hg17")
 
-    @skip_if_github_down
-    def test_upload_multiple_mixed_success(self, history_id):
+    def test_upload_multiple_mixed_success(self, history_id, test_http_server):
+        url_ok = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            file_path="test-data/1.bed",
+        )
+        url_error = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+            status=404,
+            body="Not Found",
+        )
         destination = {"type": "hdas"}
         targets = [
             {
                 "destination": destination,
                 "items": [
-                    {"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"},
-                    {
-                        "src": "url",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
-                    },
+                    {"src": "url", "url": url_ok},
+                    {"src": "url", "url": url_error},
                 ],
             }
         ]
@@ -345,18 +378,24 @@ class TestToolsUpload(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
-    @skip_if_github_down
-    def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            file_path="test-data/1.bam",
+        )
         item = {
             "src": "url",
-            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "url": url,
             "ext": "bam",
         }
         output = self.dataset_populator.fetch_hda(history_id, item)
         self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
-    @skip_if_github_down
-    def test_fetch_html_from_url(self, history_id):
+    def test_fetch_html_from_url(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+            file_path="test-data/html_file.txt",
+        )
         destination = {"type": "hdas"}
         targets = [
             {
@@ -364,7 +403,7 @@ class TestToolsUpload(ApiTestCase):
                 "items": [
                     {
                         "src": "url",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+                        "url": url,
                     },
                 ],
             }
@@ -383,12 +422,18 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
-    def test_abort_fetch_job(self, history_id):
+    def test_abort_fetch_job(self, history_id, test_http_server):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.
+        url = test_http_server.get_url(
+            remote_url="https://httpstat.us/200?sleep=10000",
+            status=200,
+            body="OK",
+            sleep_ms=10000,
+        )
         item = {
             "src": "url",
-            "url": "https://httpstat.us/200?sleep=10000",
+            "url": url,
             "ext": "txt",
         }
         destination = {"type": "hdas"}
@@ -600,18 +645,11 @@ class TestToolsUpload(ApiTestCase):
         assert content.strip() == "Test123"
         extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
         assert len(extra_files) == 5, extra_files
-        expected_contents = {
-            "testdir": "Directory",
-            "testdir/c": "Directory",
-            "testdir/a": "File",
-            "testdir/b": "File",
-            "testdir/c/d": "File",
-        }
         found_files = set()
         for extra_file in extra_files:
             path = extra_file["path"]
-            assert path in expected_contents
-            assert extra_file["class"] == expected_contents[path]
+            assert path in EXPECTED_TAR_CONTENTS
+            assert extra_file["class"] == EXPECTED_TAR_CONTENTS[path]
             found_files.add(path)
 
         assert len(found_files) == 5, found_files
@@ -634,6 +672,75 @@ class TestToolsUpload(ApiTestCase):
             dataset = run_response.json()["outputs"][0]
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
             assert details["state"] == "error"
+
+    def test_upload_tar_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir.tar")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "tar"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir")
+        for path, entry_class in EXPECTED_TAR_CONTENTS.items():
+            path = os.path.join(dir_path, os.path.pardir, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
+
+    def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
+        with tempfile.NamedTemporaryFile("wb") as temp:
+            temp.write(content)
+            temp.flush()
+            actual_hash = md5_hash_file(temp.name)
+            assert actual_hash == expected_hash
+
+    def test_upload_zip_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir1.zip")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "zip"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir1")
+        EXPECTED_ZIP_CONTENTS = {
+            "file1": "File",
+            "file2": "File",
+            "dir1/": "Directory",
+            "dir1/file3": "File",
+        }
+        for path, entry_class in EXPECTED_ZIP_CONTENTS.items():
+            path = os.path.join(dir_path, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
@@ -881,13 +988,36 @@ class TestToolsUpload(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
+    @pytest.mark.parametrize("name", ["../escaped.txt", "/escaped.txt"])
+    def test_upload_force_composite_rejects_escaping_name(self, history_id, name):
+        payload = self.dataset_populator.upload_payload(
+            history_id,
+            "primary\n",
+            extra_inputs={
+                "files_1|url_paste": "extra file\n",
+                "files_1|NAME": name,
+                "file_count": "2",
+                "force_composite": "True",
+            },
+        )
+        response = self.dataset_populator.tools_post(payload)
+        self.dataset_populator.wait_for_tool_run(history_id, response, assert_ok=False)
+        job_id = response.json()["jobs"][0]["id"]
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job["state"] == "error"
+        assert f"Invalid composite file name '{name}'" in job["stderr"]
+
     def test_upload_from_invalid_url(self):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_404_url(self):
-        history_id, new_dataset = self._upload("https://usegalaxy.org/bla123", assert_ok=False)
+    def test_upload_from_404_url(self, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://usegalaxy.org/bla123",
+            status=404,
+            body="Not Found",
+        )
+        history_id, new_dataset = self._upload(url, assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(
             history_id, dataset_id=new_dataset["id"], assert_ok=False
         )
@@ -895,15 +1025,71 @@ class TestToolsUpload(ApiTestCase):
             dataset_details["state"] == "error"
         ), f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_valid_url(self):
-        history_id, new_dataset = self._upload("https://usegalaxy.org/api/version")
+    @pytest.mark.requires_tool_id("cat1")
+    @pytest.mark.parametrize("use_legacy_api", ["always", "never"])
+    @pytest.mark.parametrize("expect_failure", [False, True])
+    def test_tool_test_reports_failed_upload(self, history_id, test_http_server, use_legacy_api, expect_failure):
+        interactor = self.galaxy_interactor
+        test = interactor.get_tool_tests("cat1")[0]
+        filename, attributes = test["required_files"][0]
+        attributes["location"] = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/missing-staging-input.bed",
+            status=404,
+            body="Not Found",
+        )
+        test["expect_failure"] = expect_failure
+        reports: list[JobDataT] = []
+
+        with pytest.raises(InputStagingError) as exc:
+            verify_tool(
+                "cat1",
+                interactor,
+                test_history=history_id,
+                register_job_data=reports.append,
+                _tool_test_dicts=[test],
+                use_legacy_api=use_legacy_api,
+            )
+
+        dataset_id = interactor.uploads[filename]["id"]
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
+        job = self.dataset_populator.get_job_details(dataset["creating_job"]).json()
+        assert job["state"] == "ok"
+        assert dataset["state"] == "error"
+        assert "404" in dataset["misc_info"]
+        assert dataset["misc_info"] in str(exc.value)
+        assert filename in str(exc.value)
+        assert dataset_id in str(exc.value)
+        assert exc.value.__cause__ is not None
+        assert reports[0]["status"] == "error"
+        assert "Input staging problem:" in reports[0]["execution_problem"]
+        assert dataset["misc_info"] in reports[0]["execution_problem"]
+        assert str(exc.value.__cause__) in reports[0]["execution_problem"]
+
+    def test_upload_from_valid_url(self, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://usegalaxy.org/api/version",
+            status=200,
+            body='{"version_major": "mock"}',
+            content_type="application/json",
+        )
+        history_id, new_dataset = self._upload(url)
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_valid_url_spaces(self):
-        history_id, new_dataset = self._upload("  https://usegalaxy.org/api/version  ")
+    def test_upload_from_valid_url_spaces(self, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://usegalaxy.org/api/version",
+            status=200,
+            body='{"version_major": "mock"}',
+            content_type="application/json",
+        )
+        history_id, new_dataset = self._upload(f"  {url}  ")
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
+    def test_fetch_data_type_mismatch_warning(self):
+        details = self._upload_and_get_details("ATGC", api="fetch", ext="fasta")
+        assert details["state"] == "ok"
+        assert details["file_ext"] == "fasta"
+        assert "does not appear to be of that type" in details.get("misc_info", ""), details
 
     def test_upload_and_validate_invalid(self):
         path = TestDataResolver().get_filename("1.fastqsanger")
@@ -926,6 +1112,61 @@ class TestToolsUpload(ApiTestCase):
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
         assert terminal_validated_state == "ok", terminal_validated_state
+
+    def test_upload_and_validate_hash_valid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {"hash_function": "SHA-1", "hash_value": "65e9d53484d28eef5447bc06fe2d754d1090975a"}
+                            ],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            # history ok implies the dataset upload work
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+    def test_upload_and_validate_hash_invalid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [{"hash_function": "SHA-1", "hash_value": "invalidhash"}],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            fetch_response = self.dataset_populator.fetch(payload, assert_ok=True, wait=False)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            new_dataset = outputs[0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset=new_dataset, assert_ok=False
+            )
+            assert dataset_details["state"] == "error"
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(
@@ -990,7 +1231,8 @@ class TestToolsUpload(ApiTestCase):
             # Upload a file to a tus server.
             uploader = my_client.uploader(path, metadata=metadata)
             uploader.upload()
-            return uploader.url.rsplit("/", 1)[1]
+            assert uploader.url
+            return uploader.url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
         with self.dataset_populator.test_history() as history_id:
             session_id = upload_file(
@@ -1015,3 +1257,22 @@ class TestToolsUpload(ApiTestCase):
         )
         assert details["state"] == "deferred"
         assert details["file_ext"] == "bam"
+
+    def test_fetch_hdca_without_collection_type_fails_the_job(self):
+        # The fetch succeeds and only the collection creation fails, so the failure has
+        # to be reported by the job rather than by the request.
+        with self.dataset_populator.test_history() as history_id:
+            targets = [
+                {
+                    "destination": {"type": "hdca"},
+                    "name": "no collection type",
+                    "elements": [{"src": "pasted", "paste_content": "hello\n", "name": "f.txt"}],
+                }
+            ]
+            payload = {"history_id": history_id, "targets": targets}
+            response = self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+            job = response.json()["jobs"][0]
+            details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert details["state"] == "error", details["state"]
+            messages = " ".join(m.get("desc") or "" for m in details.get("job_messages") or [])
+            assert "collection_type" in messages, messages

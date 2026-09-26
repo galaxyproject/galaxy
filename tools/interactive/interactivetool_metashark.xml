@@ -1,4 +1,5 @@
 <tool id="interactive_tool_metashark" tool_type="interactive" name="metashark" version="1.7" profile="22.01">
+    <icon src="metashark.png" />
     <description>Metadata Shiny Automated Resource and Knowledge</description>
     <requirements>
         <container type="docker">eliearnaud/metashark:1.7.0</container>

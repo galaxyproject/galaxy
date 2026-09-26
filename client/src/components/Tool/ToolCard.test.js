@@ -1,35 +1,52 @@
+import { expectConfigurationRequest, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import ToolCard from "./ToolCard";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useUserStore } from "@/stores/userStore";
+
+import ToolCard from "./ToolCard.vue";
+
+const { server, http } = useServerMock();
+
+vi.mock("@/api/schema");
+
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
+    };
+});
+
+const config = { enable_tool_source_display: false };
+setupMockConfig(config);
 
 const localVue = getLocalVue();
-
-const createStore = () => {
-    return new Vuex.Store({
-        modules: {
-            config: mockModule(configStore, { config: {} }),
-        },
-    });
-};
+const router = injectTestRouter(localVue);
 
 describe("ToolCard", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
 
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+    beforeEach(async () => {
+        if (router.currentRoute.fullPath !== "/") {
+            await router.push("/");
+        }
+
+        // some child component must be bypassing useConfig - so we need to explicitly
+        // stup the API endpoint also. If you can drop this without request problems in log,
+        // this hack can be removed.
+        server.use(
+            expectConfigurationRequest(http, {}),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+        );
 
         const pinia = createPinia();
-        const store = createStore();
 
         wrapper = mount(ToolCard, {
             propsData: {
@@ -40,22 +57,21 @@ describe("ToolCard", () => {
                 sustainVersion: false,
                 options: {
                     id: "options.id",
+                    name: "options.name",
+                    version: "options.version",
                     versions: [],
                     sharable_url: "options.sharable_url",
                     help: "options.help",
+                    help_format: "restructuredtext",
                     citations: false,
                 },
                 messageText: "messageText",
                 messageVariant: "warning",
                 disabled: false,
             },
-            stubs: {
-                ToolSourceMenuItem: { template: "<div></div>" },
-            },
             localVue,
-            store,
+            router,
             pinia,
-            provide: { store },
         });
         userStore = useUserStore();
         userStore.currentUser = {
@@ -64,6 +80,7 @@ describe("ToolCard", () => {
             is_admin: true,
             preferences: {},
         };
+        await flushPromises();
     });
 
     it("shows props", async () => {
@@ -85,5 +102,50 @@ describe("ToolCard", () => {
         await wrapper.setProps({ disabled: true });
         const backdropActive = wrapper.findAll(".portlet-backdrop");
         expect(backdropActive.length).toBe(1);
+        await flushPromises();
+    });
+
+    it("shows newer version badge when latest version is not active and navigates to the latest alias", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        const badge = wrapper.find("[data-description='newer tool version']");
+        expect(badge.text()).toBe("Newer version available");
+
+        await badge.trigger("click");
+
+        expect(router.currentRoute.fullPath).toBe("/?tool_id=identifier&version=latest");
+    });
+
+    it("does not show newer version badge for the latest lineage version", async () => {
+        await wrapper.setProps({
+            version: "2.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "2.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
+    });
+
+    it("does not show newer version badge for single-version tools", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
     });
 });

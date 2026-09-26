@@ -1,7 +1,7 @@
 export default {
     config: {
         allow_user_deletion: false,
-        allow_user_creation: true,
+        allow_local_account_creation: true,
         wiki_url: "https://galaxyproject.org/",
         ftp_upload_site: null,
         support_url: "https://galaxyproject.org/support/",
@@ -19,7 +19,6 @@ export default {
         total_disk_usage: 61815527,
         nice_total_disk_usage: "59.0 MB",
         email: "test@test.test",
-        tags_used: ["test"],
         model_class: "User",
         id: "f2db41e1fa331b3e",
     },

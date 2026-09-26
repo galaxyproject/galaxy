@@ -1,4 +1,4 @@
-<tool id="bibtex" name="bibtex" version="0.1.0" license="AFL-3.0">
+<tool id="bibtex" name="bibtex" version="0.1.0" license="MIT">
     <creator>
         <person
             givenName="Björn"

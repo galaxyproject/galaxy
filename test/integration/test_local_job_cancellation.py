@@ -1,11 +1,15 @@
 """Integration test for the local job runner and cancelling jobs via API."""
 
+import os
+import signal
 import time
 
 import psutil
 from sqlalchemy import select
 
-from galaxy.model.base import transaction
+from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.model import Job
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -27,7 +31,7 @@ class CancelsJob:
 
     def _wait_for_job_running(self, job_id):
         self.galaxy_interactor.wait_for(
-            lambda: self._get(f"jobs/{job_id}").json()["state"] != "running",
+            lambda: self._get(f"jobs/{job_id}").json()["state"] == "running" or None,
             what="Wait for job to start running",
             maxseconds=60,
         )
@@ -45,14 +49,12 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             job_id = self._setup_cat_data_and_sleep(history_id)
             self._wait_for_job_running(job_id)
             sa_session = self._app.model.session
-            Job = self._app.model.Job
             job = self._get_job_by_tool("cat_data_and_sleep")
             # This is how the admin controller code cancels a job
             job.job_stderr = "admin cancelled job"
             job.set_state(Job.states.DELETING)
             sa_session.add(job)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
             self.galaxy_interactor.wait_for(
                 lambda: self._get(f"jobs/{job_id}").json()["state"] != "error",
                 what="Wait for job to end in error",
@@ -67,7 +69,6 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             sa_session = self._app.model.session
             external_id = None
             state = False
-            Job = self._app.model.Job
 
             job = self._get_job_by_tool("cat_data_and_sleep")
             # Not checking the state here allows the change from queued to running to overwrite
@@ -108,7 +109,51 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             assert state == Job.states.DELETED, final_state
             assert not pid_exists, final_state
 
+    def test_intentional_stop_preserves_outputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_id = self._setup_cat_data_and_sleep(history_id)
+            self._wait_for_job_running(job_id)
+            job = self._get_job_by_tool("cat_data_and_sleep")
+            working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
+            self.galaxy_interactor.wait_for(
+                lambda: os.path.exists(os.path.join(working_directory, "outputs", "tool_stdout")) or None,
+                what="Wait for the tool to start sleeping",
+                maxseconds=60,
+            )
+            assert not os.path.exists(default_exit_code_file(working_directory, job.get_id_tag()))
+
+            # InteractiveToolManager.stop uses this path to end a session and
+            # collect its outputs without cancelling or failing the job.
+            self._app.job_manager.stop_without_failing(job)
+
+            self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert details["state"] == Job.states.OK
+            assert details["exit_code"] == 0
+            assert "job process was killed" not in details["job_stderr"]
+            output_id = details["outputs"]["out_file1"]["id"]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=output_id)
+            assert content.strip() == "1 2 3"
+
+    def test_signal_failure_is_reported_in_api_and_database(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_id = self._setup_cat_data_and_sleep(history_id)
+            self._wait_for_job_running(job_id)
+            job = self._get_job_by_tool("cat_data_and_sleep")
+            os.killpg(int(job.job_runner_external_id), signal.SIGTERM)
+
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+            details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            message = f"job process was killed by signal {signal.SIGTERM}"
+            assert details["state"] == Job.states.ERROR
+            assert details["exit_code"] == -signal.SIGTERM
+            assert message in details["job_stderr"]
+
+            self._app.model.session.refresh(job)
+            assert job.exit_code == -signal.SIGTERM
+            assert job.info == message
+            assert message in job.job_stderr
+
     def _get_job_by_tool(self, tool_id):
-        model = self._app.model
-        stmt = select(model.Job).filter_by(tool_id=tool_id).order_by(model.Job.create_time.desc()).limit(1)
-        return model.session.scalars(stmt).first()
+        stmt = select(Job).filter_by(tool_id=tool_id).order_by(Job.create_time.desc()).limit(1)
+        return self._app.model.session.scalars(stmt).first()

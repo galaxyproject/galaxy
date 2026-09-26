@@ -2,8 +2,11 @@ import errno
 import os
 import tempfile
 from enum import Enum
-from io import StringIO
-from typing import Dict
+from io import (
+    BytesIO,
+    StringIO,
+)
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +27,23 @@ SECTION_XML = """<?xml version="1.0" ?>
 def test_strip_control_characters():
     s = "\x00bla"
     assert util.strip_control_characters(s) == "bla"
+
+
+def test_stream_to_path(tmp_path):
+    destination = tmp_path / "streamed"
+
+    assert util.stream_to_path(BytesIO(b"streamed content"), destination) == destination
+    assert destination.read_bytes() == b"streamed content"
+
+
+def test_stream_to_open_named_file_compatibility(tmp_path):
+    destination = tmp_path / "streamed"
+    fd = os.open(destination, os.O_WRONLY | os.O_CREAT)
+
+    assert util.stream_to_open_named_file(BytesIO(b"streamed content"), fd, destination) == destination
+    assert destination.read_bytes() == b"streamed content"
+    with pytest.raises(OSError):
+        os.fstat(fd)
 
 
 def test_parse_xml_string():
@@ -78,13 +98,11 @@ def test_parse_xml_enoent():
 
 
 def test_clean_multiline_string():
-    x = util.clean_multiline_string(
-        """
+    x = util.clean_multiline_string("""
         a
         b
         c
-"""
-    )
+""")
     assert x == "a\nb\nc\n"
 
 
@@ -93,7 +111,7 @@ def test_iter_start_of_lines():
 
 
 def test_safe_loads():
-    d: Dict[str, str] = {}
+    d: dict[str, str] = {}
     rval = safe_loads(d)
     assert rval == d
     assert rval is not d
@@ -104,25 +122,14 @@ def test_safe_loads():
 
 
 def test_in_packages(monkeypatch):
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b")
-    assert not util.in_packages()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages")
-    assert util.in_packages()
+    util_path = Path(util.__file__).parent
+    assert util.in_packages() == (not str(util_path).endswith("lib/galaxy/util"))
 
 
 def test_galaxy_directory(monkeypatch):
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b")  # a/b
-    path1 = util.galaxy_directory()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/c/..")  # a/b
-    path2 = util.galaxy_directory()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages/c/..")  # a/b/packages
-    path3 = util.galaxy_directory()
-
-    assert path1 == path2 == path3
-    assert os.path.isabs(path1)
+    galaxy_dir = util.galaxy_directory()
+    assert os.path.isabs(galaxy_dir)
+    assert os.path.isfile(os.path.join(galaxy_dir, "run.sh"))
 
 
 def test_listify() -> None:
@@ -132,7 +139,8 @@ def test_listify() -> None:
     assert util.listify("foo") == ["foo"]
     assert util.listify("foo, bar") == ["foo", " bar"]
     assert util.listify("foo, bar", do_strip=True) == ["foo", "bar"]
-    assert util.listify([1, 2, 3]) == [1, 2, 3]
+    list_ = [1, 2, 3]
+    assert util.listify(list_) is list_
     assert util.listify((1, 2, 3)) == [1, 2, 3]
     s = {1, 2, 3}
     assert util.listify(s) == [s]
@@ -149,3 +157,90 @@ def test_enum_values():
         B = "b"
 
     assert util.enum_values(Stuff) == ["a", "c", "b"]
+
+
+DOI_VALID_VALUES = [
+    "https://doi.org/10.1234/42",
+    "doi.org/10.1234/42",
+    "doi:10.1234/42",
+    "doi:10.1234567890/42",  # longer prefix
+    "doi:10.1234/42ab:%&*$//crazy-suffix/%/&/",
+    "doi:10.1234/aa",
+    "http://doi.org/10.1234/42",
+    "stillvalid:10.1234/42",
+    "dx.doi.org:10.1234/42",
+    "https://dx.doi.org:10.1234/42",
+    "httpss://dx.doi.org:10.1234/42",
+]
+
+
+@pytest.mark.parametrize("input", DOI_VALID_VALUES)
+def test_validate_doi_pass(input):
+    assert util.validate_doi(input)
+
+
+DOI_INVALID_VALUES = [
+    "doi:11.1234/42",
+    "doi:101234/42",
+    "doi:10. 1234/42",
+    "doi:10.abc/42",
+    "10.1234 /42/a b",
+    "doi:10.1234/ 42",
+    "doi:10.1234/42/a b",
+]
+
+
+@pytest.mark.parametrize("input", DOI_INVALID_VALUES)
+def test_validate_doi_fail(input):
+    assert not util.validate_doi(input)
+
+
+def test_validate_doi_fail_too_long():
+    long_suffix = "a" * (util.DOI_MAX_LENGTH - 12)
+    doi = f"doi:10.1000/{long_suffix}"
+    assert util.validate_doi(doi)
+    assert not util.validate_doi(doi + "a")  # Increase length by 1 past max limit
+
+
+@pytest.mark.parametrize(
+    "input_name,expected_output",
+    [
+        # Existing documented behavior
+        ("My Cool Object", "My-Cool-Object"),
+        ("!My Cool Object!", "My-Cool-Object"),
+        ("Hello\u20a9\u25ce\u0491\u029f\u217e", "Hello"),
+        # Additional edge cases
+        ("simple", "simple"),
+        ("UPPERCASE", "UPPERCASE"),  # Note: lowercase applied separately
+        ("with-dash", "with-dash"),
+        ("with spaces", "with-spaces"),
+        ("  multiple   spaces  ", "-multiple-spaces"),
+        ("trailing!", "trailing"),
+        ("!leading", "leading"),
+        ("special@#$chars", "specialchars"),
+        ("parentheses(test)", "parenthesestest"),
+        ("Rincewind (Ankh-Morpork)", "Rincewind-Ankh-Morpork"),
+    ],
+)
+def test_ready_name_for_url(input_name, expected_output):
+    """Test that ready_name_for_url correctly sanitizes names for URL use."""
+    assert util.ready_name_for_url(input_name) == expected_output
+
+
+@pytest.mark.parametrize(
+    "target,expected_substring",
+    [
+        ("normal.txt", 'filename="normal.txt"'),
+        ("file.gz ", 'filename="file.gz"'),
+        (" file.gz", 'filename="file.gz"'),
+        (" file.gz ", 'filename="file.gz"'),
+        ("Galaxy102-[name].fastqsanger.gz ", 'filename="Galaxy102-[name].fastqsanger.gz"'),
+    ],
+)
+@pytest.mark.parametrize("disposition", ["attachment", "inline"])
+def test_to_content_disposition(target, expected_substring, disposition):
+    result = util.to_content_disposition(target, disposition=disposition)
+    assert result.startswith(f"{disposition}; ")
+    assert expected_substring in result
+    # Ensure no trailing whitespace in the header value
+    assert result == result.strip()

@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import Path
 
 from galaxy.managers.licenses import (
@@ -17,7 +15,7 @@ LicenseIdPath: str = Path(
     ...,  # Mark this Path parameter as required
     title="SPDX license short ID",
     description="The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)",
-    example="Apache-2.0",
+    examples=["Apache-2.0"],
 )
 
 
@@ -26,14 +24,18 @@ class FastAPILicenses:
     licenses_manager: LicensesManager = depends(LicensesManager)
 
     @router.get(
-        "/api/licenses", summary="Lists all available SPDX licenses", response_description="List of SPDX licenses"
+        "/api/licenses",
+        public=True,
+        summary="Lists all available SPDX licenses",
+        response_description="List of SPDX licenses",
     )
-    async def index(self) -> List[LicenseMetadataModel]:
+    async def index(self) -> list[LicenseMetadataModel]:
         """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
         return self.licenses_manager.get_licenses()
 
     @router.get(
         "/api/licenses/{id}",
+        public=True,
         summary="Gets the SPDX license metadata associated with the short identifier",
         response_description="SPDX license metadata",
     )

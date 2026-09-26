@@ -1,0 +1,21 @@
+- id: lab_minio_storage
+  version: 0
+  name: Lab Storage
+  description: Connect to our lab's local MinIO storage service.
+  variables:
+    bucket:
+      type: string
+      help: The bucket to connect to.
+  configuration:
+    type: boto3
+    auth:
+      access_key: 'XXXXXXXXfillinaccess'
+      secret_key: 'YYYYYYYYfillinsecret'
+    bucket:
+      name: '{{ variables.bucket }}'
+    connection:
+      endpoint_url: 'https://storage.ourawesomelab.org:9000'
+    badges:
+    - type: slower
+    - type: less_secure
+    - type: less_stable

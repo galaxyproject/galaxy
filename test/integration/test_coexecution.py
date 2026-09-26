@@ -11,6 +11,7 @@ rabbitmq installed via Homebrew, and if a fixed port is set for the test.
    GALAXY_TEST_PORT=9234 pytest test/integration/test_coexecution.py
 
 """
+
 import os
 import platform
 import random
@@ -19,7 +20,6 @@ import tempfile
 import time
 from typing import (
     Any,
-    Dict,
 )
 
 import yaml
@@ -65,7 +65,7 @@ execution:
       k8s_namespace: ${k8s_namespace}
       runner: pulsar_k8s
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:
@@ -144,7 +144,7 @@ execution:
       runner: pulsar_tes
       tes_url: ${tes_url}
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:
@@ -203,7 +203,7 @@ execution:
       runner: pulsar_tes
       tes_url: ${tes_url}
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:
@@ -246,12 +246,6 @@ class TestCoexecution(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases)
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        # realpath for docker deployed in a VM on Mac, also done in driver_util.
-        cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super().setUpClass()
-
 
 @integration_util.skip_unless_kubernetes()
 class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
@@ -260,6 +254,7 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         cls.job_config_file = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
@@ -377,7 +372,7 @@ class TestTesDependencyResolutionIntegration(TestCoexecution):
         assert "0.7.15-r1140" in output
 
 
-def set_infrastucture_url(config: Dict[str, Any]) -> None:
+def set_infrastucture_url(config: dict[str, Any]) -> None:
     hostname = to_infrastructure_uri("0.0.0.0")
     infrastructure_url = f"http://{hostname}:$GALAXY_WEB_PORT"
     config["galaxy_infrastructure_url"] = infrastructure_url

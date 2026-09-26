@@ -1,30 +1,35 @@
 <template>
     <div>
         <LoadingSpan v-if="loading" message="Loading categories" />
-        <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
-            <template v-slot:cell(name)="data">
-                <b-link
-                    href="javascript:void(0)"
-                    role="button"
-                    class="font-weight-bold"
-                    @click="onCategory(data.value)">
-                    {{ data.value }}
-                </b-link>
-            </template>
-        </b-table>
+        <div v-else>
+            <GTable :items="categories" :fields="fields">
+                <template v-slot:cell(name)="data">
+                    <GLink
+                        href="#"
+                        tooltip
+                        title="View repositories in this category"
+                        @click.prevent="onCategory(data.item.name)">
+                        {{ data.item.name }}
+                    </GLink>
+                </template>
+            </GTable>
+        </div>
     </div>
 </template>
+
 <script>
-import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import Vue from "vue";
+import { Services } from "@/components/Toolshed/services";
 
-import { Services } from "../services";
-
-Vue.use(BootstrapVue);
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
-    components: { LoadingSpan },
+    components: {
+        GLink,
+        GTable,
+        LoadingSpan,
+    },
     props: {
         toolshedUrl: {
             type: String,
@@ -40,8 +45,8 @@ export default {
             categories: [],
             fields: [
                 { key: "name", label: "Category", sortable: true },
-                { key: "description", sortable: false },
-                { key: "repositories", sortable: true },
+                { key: "description", label: "Description", sortable: false },
+                { key: "repositories", label: "Repositories", sortable: true },
             ],
         };
     },

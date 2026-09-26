@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -12,7 +10,7 @@ emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools 
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools for test 0020"
 
 
-class TestBasicRepositoryDependencies(ShedTwillTestCase):
+class TestBasicRepositoryDependencies(ShedTestCase):
     """Testing emboss 5 with repository dependencies."""
 
     def test_0000_initiate_users(self):
@@ -38,17 +36,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            column_maker_repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded column_maker tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(column_maker_repository, "column_maker/column_maker.tar")
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
         """Create and populate the emboss_5_0020 repository."""
@@ -61,17 +49,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded emboss.tar",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(repository, "emboss/emboss.tar")
 
     def test_0025_generate_and_upload_repository_dependencies_xml(self):
         """Generate and upload the repository_dependencies.xml file"""
@@ -89,24 +67,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         self.create_repository_dependency(
             repository=repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path
         )
-
-    def test_0030_verify_emboss_5_dependencies(self):
-        """Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision."""
-        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        column_maker_repository = self._get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        changeset_revision = self.get_repository_tip(column_maker_repository)
-        strings_displayed = [
-            "Tool dependencies",
-            "emboss",
-            "5.0.0",
-            "package",
-            "user1",
-            changeset_revision,
-            "Repository dependencies",
-        ]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0040_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""

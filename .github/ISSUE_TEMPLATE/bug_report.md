@@ -14,6 +14,10 @@ A clear and concise description of what the bug is.
 Galaxy Version: (check <galaxy_url>/api/version if you don't know)
 Commit: (run `git rev-parse HEAD` if you run this Galaxy server)
 
+**Browser and Operating System**
+Operating System: Windows, Linux, macOS
+Browser: Firefox, Chrome, Chrome-based, Safari
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'

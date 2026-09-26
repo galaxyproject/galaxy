@@ -1,0 +1,37 @@
+# bowtie2_indices.loc.sample
+# This is a *.loc.sample file distributed with Galaxy that enables tools
+# to use a directory of indexed data files. This one is for Bowtie2 and Tophat2.
+# See the wiki: http://wiki.galaxyproject.org/Admin/NGS%20Local%20Setup
+# First create these data files and save them in your own data directory structure.
+# Then, create a bowtie_indices.loc file to use those indexes with tools.
+# Copy this file, save it with the same name (minus the .sample),
+# follow the format examples, and store the result in this directory.
+# The file should include an one line entry for each index set.
+# The path points to the "basename" for the set, not a specific file.
+# It has four text columns seperated by TABS.
+#
+# <unique_build_id>	<dbkey>	<display_name>	<file_base_path>
+#
+# So, for example, if you had hg18 indexes stored in:
+#
+#    /depot/data2/galaxy/hg19/bowtie2/
+#
+# containing hg19 genome and hg19.*.bt2 files, such as:
+#    -rw-rw-r-- 1 james   james   914M Feb 10 18:56 hg19canon.fa
+#    -rw-rw-r-- 1 james   james   914M Feb 10 18:56 hg19canon.1.bt2
+#    -rw-rw-r-- 1 james   james   683M Feb 10 18:56 hg19canon.2.bt2
+#    -rw-rw-r-- 1 james   james   3.3K Feb 10 16:54 hg19canon.3.bt2
+#    -rw-rw-r-- 1 james   james   683M Feb 10 16:54 hg19canon.4.bt2
+#    -rw-rw-r-- 1 james   james   914M Feb 10 20:45 hg19canon.rev.1.bt2
+#    -rw-rw-r-- 1 james   james   683M Feb 10 20:45 hg19canon.rev.2.bt2
+#
+# then the bowtie2_indices.loc entry could look like this:
+#
+#hg19	hg19	Human (hg19)	/depot/data2/galaxy/hg19/bowtie2/hg19canon
+#
+#More examples:
+#
+#mm10	mm10	Mouse (mm10)	/depot/data2/galaxy/mm10/bowtie2/mm10
+#dm3	dm3		D. melanogaster (dm3)	/depot/data2/galaxy/mm10/bowtie2/dm3
+#
+#

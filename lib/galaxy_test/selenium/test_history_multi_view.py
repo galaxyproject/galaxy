@@ -1,5 +1,7 @@
+from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     managed_history,
+    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -7,6 +9,40 @@ from .framework import (
 
 class TestHistoryMultiView(SeleniumTestCase):
     ensure_registered = True
+
+    @selenium_test
+    def test_history_selector_order_is_stable_until_explicit_reset(self):
+        oldest_id = self.dataset_populator.new_history("multiview order oldest")
+        newer_id = self.dataset_populator.new_history("multiview order newer")
+        newest_id = self.dataset_populator.new_history("multiview order newest")
+        recent_order = [newest_id, newer_id, oldest_id]
+
+        self.home()
+        self.open_history_multi_view()
+        multiview = self.components.histories.multiview
+        multiview.activity.wait_for_and_click()
+        oldest_card = multiview.history_card.selector(history_id=oldest_id)
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_visible()
+
+        # Remount the selector with the oldest history already pinned, which
+        # places it first even though the other histories are more recent.
+        self.refresh()
+        oldest_card.wait_for_visible()
+        pinned_order = [oldest_id, newest_id, newer_id]
+        self._assert_multiview_history_order(pinned_order)
+
+        # An individual unpin must not move the row out from under the cursor.
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_absent()
+        self._assert_multiview_history_order(pinned_order)
+
+        # Re-pin the row, then use the explicit reset action. Unlike an
+        # individual unpin, reset intentionally restores most-recent order.
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_visible()
+        multiview.reset_button.wait_for_and_click()
+        self._assert_multiview_history_order(recent_order)
 
     @selenium_test
     def test_display(self):
@@ -28,10 +64,38 @@ class TestHistoryMultiView(SeleniumTestCase):
         method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json
         self.prepare_multi_history_view(method)
         dataset_selector = self.history_panel_wait_for_hid_state(1, None, multi_history_panel=True)
-        self.click(dataset_selector)
+        dataset_selector.wait_for_and_click()
         dataset_selector = self.history_panel_wait_for_hid_state(3, None, multi_history_panel=True)
-        self.click(dataset_selector)
+        dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
+
+    @transient_failure(issue=21380, potentially_fixed=True)
+    @selenium_test
+    @managed_history
+    def test_list_list_copy(self):
+        source_history_id = self.current_history_id()
+        # The way create_list_of_list_in_history it creates the datasets and the sublist
+        # in this history before creating the nested list - so the nested list
+        # will have an HID of 5 in the source history and an HID of 4 in the target
+        # history.
+        list_of_list_source_hid = 5
+        list_of_list_target_hid = 4
+        method = self.dataset_collection_populator.create_list_of_list_in_history(source_history_id, wait=True).json
+        self.prepare_multi_history_view(method)
+        # The multi-history view is incredibly hard to navigate around (in UI and testing)
+        # We just create a new history with the dropped element here.
+        drop_target = self.find_element_by_selector("div.history-picker-box.select-picker")
+        dataset_element = self.history_panel_wait_for_hid_state(list_of_list_source_hid, None).wait_for_visible()
+        self.drag_and_drop(dataset_element, drop_target)
+        self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
+        target_history_id = self.current_history_id()
+        self.wait_for_history_to_have_hid(target_history_id, list_of_list_target_hid)
+        assert source_history_id != target_history_id
+        source_contents = self.dataset_populator.get_history_contents(history_id=source_history_id)
+        source_dataset_ids = [item["id"] for item in source_contents if item["history_content_type"] == "dataset"]
+        target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
+        target_dataset_ids = [item["id"] for item in target_contents if item["history_content_type"] == "dataset"]
+        assert len(target_dataset_ids) == len(source_dataset_ids), "expected datasets to be copied to new history"
 
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
@@ -42,5 +106,12 @@ class TestHistoryMultiView(SeleniumTestCase):
         self.home()
         self.open_history_multi_view()
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
-        self.click(selector)
+        selector.wait_for_and_click()
         return selector
+
+    @retry_assertion_during_transitions
+    def _assert_multiview_history_order(self, expected_ids):
+        expected_id_set = set(expected_ids)
+        cards = self.components.histories.multiview.history_cards.all()
+        actual_ids = [card.get_attribute("id").removeprefix("g-card-history-") for card in cards]
+        assert [history_id for history_id in actual_ids if history_id in expected_id_set] == expected_ids

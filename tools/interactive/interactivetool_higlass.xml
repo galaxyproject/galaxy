@@ -1,4 +1,5 @@
 <tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
+    <icon src="higlass.png" />
     <description>an interactive Hi-C data visualizer.</description>
     <requirements>
         <container type="docker">galaxy/higlass-it:1.0</container>
@@ -33,7 +34,7 @@
 
         #set $existing_genomes = ['GCA_000001215.4_Release_6_plus_ISO1_MT_genomic', 'GCF_000005845.2_ASM584v2_genomic', 'canFam3', 'danRer10', 'dm6', 'galGal6', 'grch37', 'h37rv', 'hg19', 'hs37d5', 'mm9', 'panTro5', 'rn6', 'GCA_000001405.15_GRCh38_genomic', 'b37', 'ce11', 'dm3', 'galGal5', 'gorGor5', 'grch37-lite', 'hg18', 'hg38', 'mm10', 'mm9b', 'rheMac8', 'sacCer3', 'test3chroms']
         #set $uploaded_genomes = ""
-        
+
 
         ##Allows users to upload their own chromsize files and overrwrite the negspy ones
 
@@ -71,7 +72,7 @@
         cat types.txt | while read datatypes; do genome="negspy/negspy/data/"\$datatypes"/chromInfo.txt"; python higlass-server/manage.py ingest_tileset --filename \$genome --filetype chromsizes-tsv --datatype chromsizes --coordSystem \$datatypes; done;
 
         ## Full dataset uploads
-        
+
         #for $count, $input in enumerate($inputs):
             #if $input.fileselect.typeselect == "bed":
                 #for $file in $input.fileselect.inputfiles:
@@ -194,7 +195,7 @@
                 <when value="Yes">
                     <expand macro="chromimport"/>
                 </when>
-            </conditional> 
+            </conditional>
         </repeat>
     </inputs>
     <outputs>
@@ -214,11 +215,11 @@
 
 ==================================================================================================================
 
-        Available genonmes/assemblies: 
+        Available genonmes/assemblies:
 
-        GCA_000001215.4_Release_6_plus_ISO1_MT_genomic,	GCF_000005845.2_ASM584v2_genomic, canFam3, danRer10, 
+        GCA_000001215.4_Release_6_plus_ISO1_MT_genomic,	GCF_000005845.2_ASM584v2_genomic, canFam3, danRer10,
 
-        dm6, galGal6, grch37, h37rv, hg19, hs37d5, mm9, panTro5, rn6, GCA_000001405.15_GRCh38_genomic, 
+        dm6, galGal6, grch37, h37rv, hg19, hs37d5, mm9, panTro5, rn6, GCA_000001405.15_GRCh38_genomic,
 
         b37, ce11, dm3, galGal5, gorGor5, grch37-lite, hg18, hg38, mm10, mm9b, rheMac8, sacCer3, test3chroms
 
@@ -236,7 +237,7 @@
         ...
 
 ==============================
-                
+
     </help>
     <xml name="citations">
         <citations>

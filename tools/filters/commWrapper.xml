@@ -1,5 +1,8 @@
 <tool id="Comm1" name="Find Similarities and Differences" version="1.0.0">
   <description>between two datasets</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>

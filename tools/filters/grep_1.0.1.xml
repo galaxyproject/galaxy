@@ -1,9 +1,25 @@
-<tool id="Grep1" name="Select" version="1.0.1">
+<tool id="Grep1" name="Select" version="1.0.1" profile="24.2">
   <description>lines that match an expression</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
-  <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert</command>
+  <requirements>
+    <requirement type="package" version="3.4">grep</requirement>
+  </requirements>
+  <stdio>
+    <exit_code range="2:" level="warning" description="Select failed" />
+  </stdio>
+  <command><![CDATA[
+    grep -P
+    #if $invert == "true":
+      -v
+    #end if
+    -f '$pattern_file'
+    '$input' > '$out_file1'
+  ]]></command>
+  <configfiles>
+    <configfile name="pattern_file">$pattern</configfile>
+  </configfiles>
   <inputs>
     <param format="txt" name="input" type="data" label="Select lines from"/>
     <param name="invert" type="select" label="that">
@@ -22,7 +38,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format_source="input" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -30,6 +46,27 @@
       <param name="invert" value="false"/>
       <param name="pattern" value="^chr[0-9]*"/>
       <output name="out_file1" file="fs-grep.dat"/>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value="false"/>
+      <param name="pattern" value="147962192|147984545"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="2"></has_n_lines>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value="true"/>
+      <param name="pattern" value="^chr1"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="chrX"/>
+          <not_has_text text="chr1"/>
+        </assert_contents>
+      </output>
     </test>
   </tests>
   <help>

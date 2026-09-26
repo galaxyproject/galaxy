@@ -1,8 +1,8 @@
 """
 Graph content classes.
 """
+
 import logging
-from typing import List
 
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -33,7 +33,7 @@ class Xgmml(xml.GenericXml):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "XGMML data"
         else:
             dataset.peek = "file does not exist"
@@ -46,7 +46,7 @@ class Xgmml(xml.GenericXml):
         return False
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
@@ -81,7 +81,7 @@ class Sif(tabular.Tabular):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "SIF data"
         else:
             dataset.peek = "file does not exist"
@@ -94,7 +94,7 @@ class Sif(tabular.Tabular):
         return False
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)

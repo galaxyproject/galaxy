@@ -5,7 +5,7 @@ Connects to sites and determines which builds are available at each.
 
 import xml.etree.ElementTree as ElementTree
 
-import requests
+from galaxy.util import requests
 
 sites = [
     "http://genome.ucsc.edu/cgi-bin/",

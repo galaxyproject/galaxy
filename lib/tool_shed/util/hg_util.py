@@ -5,6 +5,9 @@ import subprocess
 import tempfile
 from datetime import datetime
 from time import gmtime
+from typing import TYPE_CHECKING
+
+from mercurial import scmutil
 
 from galaxy.tool_shed.util import basic_util
 from galaxy.tool_shed.util.hg_util import (
@@ -21,12 +24,15 @@ from galaxy.tool_shed.util.hg_util import (
 )
 from galaxy.util import unicodify
 
+if TYPE_CHECKING:
+    from galaxy.util.path import StrPath
+
 log = logging.getLogger(__name__)
 
 INITIAL_CHANGELOG_HASH = "000000000000"
 
 
-def add_changeset(repo_path, path_to_filename_in_archive):
+def add_changeset(repo_path: "StrPath", path_to_filename_in_archive: "StrPath"):
     try:
         subprocess.check_output(["hg", "add", path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
@@ -51,7 +57,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
         raise Exception(error_message)
 
 
-def commit_changeset(repo_path: str, full_path_to_changeset: str, username: str, message: str) -> None:
+def commit_changeset(repo_path: "StrPath", full_path_to_changeset: "StrPath", username: str, message: str) -> None:
     try:
         subprocess.check_output(
             ["hg", "commit", "-u", username, "-m", message, full_path_to_changeset],
@@ -71,21 +77,24 @@ def get_hgrc_path(repo_path):
     return os.path.join(repo_path, ".hg", "hgrc")
 
 
-def create_hgrc_file(app, repository):
+def create_hgrc_file(app, repository, repo_path):
     # Since we support both http and https, we set `push_ssl` to False to
     # override the default (which is True) in the Mercurial API.
     # The hg purge extension purges all files and directories not being tracked
     # by Mercurial in the current repository. It will remove unknown files and
     # empty directories. This is not currently used because it is not supported
     # in the Mercurial API.
-    repo_path = repository.repo_path(app)
     hgrc_path = get_hgrc_path(repo_path)
     with open(hgrc_path, "w") as fp:
         fp.write("[paths]\n")
         fp.write("default = .\n")
         fp.write("default-push = .\n")
         fp.write("[web]\n")
-        fp.write(f"allow_push = {repository.user.username}\n")
+        if app.config.config_hg_for_dev:
+            allow_push = "*"
+        else:
+            allow_push = repository.user.username
+        fp.write(f"allow_push = {allow_push}\n")
         fp.write(f"name = {repository.name}\n")
         fp.write("push_ssl = false\n")
         fp.write("[extensions]\n")
@@ -147,8 +156,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     which includes the revision date if the receive include_date is True.
     """
     repo = repository.hg_repo
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
     else:
         if include_hash:
@@ -164,9 +172,8 @@ def get_rev_label_changeset_revision_from_repository_metadata(
         repository = repository_metadata.repository
     repo = repository.hg_repo
     changeset_revision = repository_metadata.changeset_revision
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
-        rev = "%04d" % ctx.rev()
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
+        rev = f"{ctx.rev():04d}"
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
@@ -205,9 +212,8 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
     which includes the revision date if the receive include_date is True.
     """
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
-        rev = "%04d" % ctx.rev()
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
+        rev = f"{ctx.rev():04d}"
         label = get_revision_label_from_ctx(ctx, include_date=include_date)
     else:
         rev = "-1"
@@ -215,7 +221,7 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     return rev, label
 
 
-def remove_path(repo_path, selected_file):
+def remove_path(repo_path: "StrPath", selected_file: "StrPath"):
     cmd = ["hg", "remove", "--force", selected_file]
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
@@ -236,7 +242,7 @@ def remove_path(repo_path, selected_file):
         raise Exception(error_message)
 
 
-def init_repository(repo_path):
+def init_repository(repo_path: "StrPath"):
     """
     Create a new Mercurial repository in the given directory.
     """
@@ -249,20 +255,20 @@ def init_repository(repo_path):
         raise Exception(error_message)
 
 
-def changeset2rev(repo_path, changeset_revision):
+def changeset2rev(hg_repo, changeset_revision: str) -> int:
     """
     Return the revision number (as an int) corresponding to a specified changeset revision.
+
+    Resolves the hex node prefix directly rather than going through revsymbol, which would
+    also consult tags and bookmarks and build their caches. Changeset revisions here are
+    always node prefixes, and the repository object is often freshly opened, so that extra
+    machinery is both unnecessary and the source of an occasional long request.
     """
     try:
-        rev = subprocess.check_output(
-            ["hg", "id", "-r", changeset_revision, "-n"], stderr=subprocess.STDOUT, cwd=repo_path
-        )
+        node = scmutil.resolvehexnodeidprefix(hg_repo, changeset_revision.encode())
+        return hg_repo.changelog.rev(node)
     except Exception as e:
-        error_message = f"Error looking for changeset '{changeset_revision}': {unicodify(e)}"
-        if isinstance(e, subprocess.CalledProcessError):
-            error_message += f"\nOutput was:\n{unicodify(e.output)}"
-        raise Exception(error_message)
-    return int(rev.strip())
+        raise Exception(f"Error looking for changeset '{changeset_revision}': {unicodify(e)}")
 
 
 __all__ = (

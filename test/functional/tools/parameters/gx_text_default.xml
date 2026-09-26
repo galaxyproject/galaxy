@@ -1,0 +1,33 @@
+<tool id="gx_text_default" name="gx_text_default" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output';
+cat '$inputs' >> $inputs_json;
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    </configfiles>
+    <inputs>
+        <param name="parameter" type="text" value="foo" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="inputs_json" format="json" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value="12456" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="12456" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="foo" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

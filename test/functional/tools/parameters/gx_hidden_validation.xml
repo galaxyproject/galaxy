@@ -1,0 +1,17 @@
+<tool id="gx_hidden_validation" name="gx_hidden_validation" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="hidden" value="http://mycoolsource/api/index.json">
+            <validator type="length" min="10" max="45" />
+            <validator type="expression">'api' in value</validator>
+            <validator type="regex">^.*json$</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

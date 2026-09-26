@@ -1,16 +1,20 @@
-<tool id="Interval_Maf_Merged_Fasta2" name="Stitch MAF blocks" version="1.0.1">
+<tool id="Interval_Maf_Merged_Fasta2" name="Stitch MAF blocks" version="1.0.1" profile="20.05">
   <description>given a set of genomic intervals</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="interval_maf_to_merged_fasta.py"/>
+  </required_files>
   <command>
-python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --species=$maf_source_type.species
+python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey='$dbkey' --species='$maf_source_type.species'
 #if $maf_source_type.maf_source == "user"
     --mafSource='$maf_source_type.maf_file' --mafIndex='$maf_source_type.maf_file.metadata.maf_index'
 #else
     --mafSource='$maf_source_type.maf_identifier'
 #end if
---interval_file='$input1' --output_file='$out_file1' --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps=$overwrite_with_gaps
+--interval_file='$input1' --output_file='$out_file1' --chromCol='${input1.metadata.chromCol}' --startCol='${input1.metadata.startCol}' --endCol='${input1.metadata.endCol}' --strandCol='${input1.metadata.strandCol}' --mafSourceType='$maf_source_type.maf_source' --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps='$overwrite_with_gaps'
   </command>
   <inputs>
         <param format="interval" name="input1" type="data" label="Choose intervals">

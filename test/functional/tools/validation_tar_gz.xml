@@ -9,18 +9,18 @@ cat '$input' > '$output'
         <param name="input" type="data" />
     </inputs>
     <outputs>
-        <data name="output" />
+        <data name="output" format_source="input"/>
     </outputs>
     <tests>
         <test>
-            <param name="input" value="1.fastqsanger.gz" />
-            <output name="output">
+            <param name="input" value="1.fastqsanger.gz" ftype="fastqsanger.gz" />
+            <output name="output" ftype="fastqsanger.gz">
                 <assert_contents>
                     <has_size value="161"/>
                     <has_line line="@1831_573_1004/1" negate="true"/>
                 </assert_contents>
             </output>
-            <output name="output" decompress="true">
+            <output name="output" decompress="true" ftype="fastqsanger.gz">
                 <assert_contents>
                     <has_size value="177"/>
                     <has_line line="@1831_573_1004/1"/>

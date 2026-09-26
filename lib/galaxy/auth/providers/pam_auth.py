@@ -3,6 +3,7 @@ Created on 13/07/2015
 
 Author Peter van Heusden (pvh@sanbi.ac.za)
 """
+
 import logging
 import shlex
 
@@ -70,7 +71,7 @@ class PAM(AuthProvider):
         # we will be given the "public name" as username
         if string_as_bool(options.get("login-use-email", False)) and email is not None:
             if "@" in email:
-                (email_user, email_domain) = email.split("@")
+                email_user, email_domain = email.split("@")
                 pam_username = email_user
                 if email_domain == options.get("maildomain", None):
                     auto_register_email = email

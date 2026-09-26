@@ -1,4 +1,5 @@
 """Interface layer for pykube library shared between Galaxy and Pulsar."""
+
 import logging
 import os
 import re
@@ -6,7 +7,10 @@ from pathlib import PurePath
 
 try:
     from pykube.config import KubeConfig
-    from pykube.exceptions import HTTPError
+    from pykube.exceptions import (
+        HTTPError,
+        ObjectDoesNotExist,
+    )
     from pykube.http import HTTPClient
     from pykube.objects import (
         Ingress,
@@ -24,14 +28,14 @@ except ImportError as exc:
     K8S_IMPORT_MESSAGE = (
         "The Python pykube package is required to use "
         "this feature, please install it or correct the "
-        "following error:\nImportError %s" % str(exc)
+        f"following error:\nImportError {exc}"
     )
 
 log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_SERVICE_API_VERSION = "v1"
-DEFAULT_INGRESS_API_VERSION = "extensions/v1beta1"
+DEFAULT_INGRESS_API_VERSION = "networking.k8s.io/v1"
 DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = (
     "Galaxy instance [%s] is either too long "
@@ -93,6 +97,13 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
     return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
 
 
+def is_pod_running(pykube_api, pod, namespace=None):
+    if pod.obj["status"].get("phase") == "Running":
+        return True
+
+    return False
+
+
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
     is_unschedulable = any(c.get("reason") == "Unschedulable" for c in pod.obj["status"].get("conditions", []))
     if pod.obj["status"].get("phase") == "Pending" and is_unschedulable:
@@ -104,7 +115,12 @@ def is_pod_unschedulable(pykube_api, pod, namespace=None):
 def delete_job(job, cleanup="always"):
     job_failed = job.obj["status"]["failed"] > 0 if "failed" in job.obj["status"] else False
     # Scale down the job just in case even if cleanup is never
-    job.scale(replicas=0)
+    try:
+        job.scale(replicas=0)
+    except ObjectDoesNotExist as e:
+        # Okay, job does no longer exist
+        log.info(e)
+
     api_delete = cleanup == "always"
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
@@ -281,14 +297,12 @@ def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
 
-    This will be added to Jobs and Pods names, so it needs to be DNS friendly,
-    this means: `The Internet standards (Requests for Comments) for protocols mandate that component hostname labels
-    may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9',
-    and the minus sign ('-').`
-
-    It looks for the value set on params['k8s_galaxy_instance_id'], which might or not be set. The
-    idea behind this is to allow the Galaxy instance to trust (or not) existing k8s Jobs and Pods that match the
-    setup of a Job that is being recovered or restarted after a downtime/reboot.
+    The optional value from ``params['k8s_galaxy_instance_id']`` is included in
+    the ``generateName`` prefix for Jobs and their Pods. Kubernetes appends a
+    unique suffix to every submitted Job, so the instance id distinguishes
+    resources belonging to different Galaxy instances rather than providing
+    uniqueness itself. It must be DNS friendly because it becomes part of the
+    generated resource names.
     """
     if "k8s_galaxy_instance_id" in params:
         raw_value = params["k8s_galaxy_instance_id"]
@@ -310,6 +324,7 @@ __all__ = (
     "find_pod_object_by_name",
     "galaxy_instance_id",
     "HTTPError",
+    "is_pod_running",
     "is_pod_unschedulable",
     "Job",
     "Service",
@@ -327,3 +342,13 @@ __all__ = (
     "get_volume_mounts_for_job",
     "parse_pvc_param_line",
 )
+
+
+def reload_job(job):
+    try:
+        job.reload()
+    except HTTPError as e:
+        if e.code == 404:
+            pass
+        else:
+            raise e

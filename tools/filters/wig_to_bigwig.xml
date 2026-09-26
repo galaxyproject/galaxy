@@ -1,4 +1,4 @@
-<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.1">
+<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.1" hidden="true">
   <description>converter</description>
   <requirements>
     <requirement type="package" version="357">ucsc-wigtobigwig</requirement>

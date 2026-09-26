@@ -1,0 +1,22 @@
+<tool id="collection_list_or_nested_list_input" name="collection_list_or_nested_list_input" version="0.1.0">
+  <command><![CDATA[
+    #for $key in $f1.keys()#
+      echo "identifier is $key" >> "$out1";
+      #set $element = $f1[$key]
+
+    #if $element.is_collection:
+        echo "Nested List" >> "$out1";
+    #else
+        echo "Simple Dataset" >> "$out1";
+    #end if
+    #end for#
+  ]]></command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="list,list:list" label="Input list" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+  </tests>
+</tool>

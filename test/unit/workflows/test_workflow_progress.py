@@ -1,9 +1,17 @@
+from typing import cast
+
+import pytest
+
 from galaxy import model
-from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
-from galaxy.workflow.run import WorkflowProgress
+from galaxy.workflow import modules
+from galaxy.workflow.run import (
+    ModuleInjector,
+    WorkflowProgress,
+)
 from .workflow_support import (
     MockApp,
+    MockTrans,
     yaml_to_model,
 )
 
@@ -76,7 +84,8 @@ class TestWorkflowProgress(TestCase):
         self.invocation.workflow = workflow
 
     def _new_workflow_progress(self):
-        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})
+        mock_injector: ModuleInjector = cast(ModuleInjector, MockModuleInjector(self.progress))
+        return WorkflowProgress(self.invocation, self.inputs_by_step_id, mock_injector, {})
 
     def _set_previous_progress(self, outputs):
         for i, (step_id, step_value) in enumerate(outputs):
@@ -88,12 +97,11 @@ class TestWorkflowProgress(TestCase):
                 workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
                 assert step_id == self._step(i).id
-                # workflow_invocation_step.workflow_invocation = self.invocation
-                self.invocation.steps.append(workflow_invocation_step)
+                workflow_invocation_step.workflow_invocation = self.invocation
 
             workflow_invocation_step_state = model.WorkflowRequestStepState()
             workflow_invocation_step_state.workflow_step_id = step_id
-            workflow_invocation_step_state.value = True
+            workflow_invocation_step_state.value = {"my_param": True}
             self.invocation.step_states.append(workflow_invocation_step_state)
 
     def _step(self, index):
@@ -105,6 +113,7 @@ class TestWorkflowProgress(TestCase):
         else:
             workflow_invocation_step = model.WorkflowInvocationStep()
             workflow_invocation_step.workflow_step = self._step(index)
+            workflow_invocation_step.workflow_invocation = self.invocation
             return workflow_invocation_step
 
     def test_connect_data_input(self):
@@ -132,7 +141,7 @@ class TestWorkflowProgress(TestCase):
             "input_type": "dataset",
             "multiple": False,
         }
-        replacement = progress.replacement_for_input(self._step(2), step_dict)
+        replacement = progress.replacement_for_input(None, self._step(2), step_dict)
         assert replacement is hda
 
     def test_connect_tool_output(self):
@@ -169,13 +178,73 @@ class TestWorkflowProgress(TestCase):
             "input_type": "dataset",
             "multiple": False,
         }
-        replacement = progress.replacement_for_input(self._step(4), step_dict)
+        replacement = progress.replacement_for_input(None, self._step(4), step_dict)
         assert replacement is hda3
 
     # TODO: Replace multiple true HDA with HDCA
-    # TODO: Test explicit delay
     # TODO: Test cancel on collection invalid
     # TODO: Test delay on collection waiting for population
+
+    def _connection_to_step_2_output(self):
+        conn = model.WorkflowStepConnection()
+        conn.output_name = "out1"
+        conn.output_step = self._step(2)
+        return conn
+
+    def test_pending_dataset_delays_with_tracked_dependency(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        dataset = model.Dataset()
+        dataset.state = model.Dataset.states.QUEUED
+        hda = model.HistoryDatasetAssociation(dataset=dataset)
+        hda.id = 7
+        progress = self._new_workflow_progress()
+        progress.set_step_outputs(self._invocation_step(2), {"out1": hda})
+
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
+            progress.replacement_for_connection(self._connection_to_step_2_output(), is_data=False)
+        progress.record_delay(delayed.value)
+
+        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+            tracked=frozenset({modules.SchedulingDependency(modules.DependencyType.HDA, 7)}),
+            untracked=(),
+            more_work=False,
+        )
+
+    def test_nested_collection_depends_on_unpopulated_subcollections(self):
+        collection = model.DatasetCollection(collection_type="list:list")
+        populated_child = model.DatasetCollection(collection_type="list")
+        unpopulated_child = model.DatasetCollection(collection_type="list", populated=False)
+        for identifier, child in (("a", populated_child), ("b", unpopulated_child)):
+            model.DatasetCollectionElement(collection=collection, element=child, element_identifier=identifier)
+        session = self.app.model.session
+        session.add(collection)
+        session.commit()
+
+        assert modules.unpopulated_collection_dependencies(collection) == [
+            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, unpopulated_child.id)
+        ]
+
+    def test_delay_inherited_from_delayed_step_is_not_untracked(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        progress.mark_step_outputs_delayed(self._step(2), why="waiting on something tracked elsewhere")
+
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
+            progress.replacement_for_connection(self._connection_to_step_2_output())
+        assert delayed.value.inherited
+        progress.record_delay(delayed.value)
+
+        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+            tracked=frozenset(), untracked=(), more_work=False
+        )
+
+    def test_delay_without_dependency_is_untracked(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        progress.record_delay(modules.DelayedWorkflowEvaluation(why="tool inputs are not ready"))
+        progress.record_delay(modules.DelayedWorkflowEvaluation())
+
+        assert progress.scheduling_dependencies().untracked == ("tool inputs are not ready", "no reason given")
 
     def test_subworkflow_progress(self):
         self._setup_workflow(TEST_SUBWORKFLOW_YAML)
@@ -189,13 +258,13 @@ class TestWorkflowProgress(TestCase):
         subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
-        self.app.model.session.add(subworkflow_invocation)
         session = self.app.model.session
-        with transaction(session):
-            session.commit()
+        session.add(self.invocation)
+        session.add(subworkflow_invocation)
+        session.commit()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
-        (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
+        subworkflow_step, subworkflow_invocation_step = remaining_steps[0]
         subworkflow_progress = progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
         subworkflow = subworkflow_step.subworkflow
         assert subworkflow_progress.workflow_invocation == subworkflow_invocation
@@ -206,6 +275,7 @@ class TestWorkflowProgress(TestCase):
         subworkflow_invocation_step.workflow_step_id = subworkflow_input_step.id
         subworkflow_invocation_step.state = "new"
         subworkflow_invocation_step.workflow_step = subworkflow_input_step
+        subworkflow_invocation_step.workflow_invocation = subworkflow_invocation
 
         subworkflow_progress.set_outputs_for_input(subworkflow_invocation_step)
 
@@ -216,6 +286,7 @@ class TestWorkflowProgress(TestCase):
             "multiple": False,
         }
         assert hda is subworkflow_progress.replacement_for_input(
+            None,
             subworkflow_cat_step,
             step_dict,
         )
@@ -241,8 +312,9 @@ class MockModuleInjector:
 class MockModule:
     def __init__(self, progress):
         self.progress = progress
+        self.trans = MockTrans()
 
-    def decode_runtime_state(self, runtime_state):
+    def decode_runtime_state(self, step, runtime_state):
         return True
 
     def recover_mapping(self, invocation_step, progress):

@@ -1,10 +1,9 @@
-import type { MaybeComputedRef } from "@vueuse/core";
-import { resolveUnref } from "@vueuse/core";
+import { type MaybeRefOrGetter, resolveUnref } from "@vueuse/core";
 import { reactive, ref } from "vue";
 
 import { useAnimationFrame } from "./animationFrame";
 
-export function useAnimationFrameScroll(element: MaybeComputedRef<HTMLElement | null>) {
+export function useAnimationFrameScroll(element: MaybeRefOrGetter<HTMLElement | null>) {
     const scrollLeft = ref(0);
     const scrollTop = ref(0);
 

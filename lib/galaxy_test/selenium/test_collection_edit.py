@@ -1,13 +1,18 @@
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestCollectionEdit(SeleniumTestCase):
+class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_dbkey_simple_list(self):
@@ -20,11 +25,14 @@ class TestCollectionEdit(SeleniumTestCase):
         self.check_current_data_value(dataValue)
         dataNew = "hg17"
         self.change_dbkey_value_and_click_submit(dataValue, dataNew)
-        self.history_panel_wait_for_hid_ok(4)
+        self.history_panel_wait_for_hid_ok(5)
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_datatype_simple_list(self):
@@ -42,21 +50,21 @@ class TestCollectionEdit(SeleniumTestCase):
         self.change_datatype_value_and_click_submit(dataValue, dataNew)
         self.check_current_data_value(dataNew)
         self.wait_for_history()
-        self.history_panel_expand_collection(2)
+        self.history_panel_expand_collection(3)
         self.history_panel_ensure_showing_item_details(1)
         item = self.history_panel_item_component(hid=1)
         item.datatype.wait_for_visible()
-        assert item.datatype.wait_for_text() == dataNew
+        self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
 
     def _create_simple_list_collection(self, filename, ext):
-        self.perform_upload(self.get_filename(filename), ext=ext)
+        self.upload_context("local-file").stage_local_file(self.get_filename(filename), {"extension": ext}).start()
         self._wait_for_and_select([1])
 
-        self._collection_dropdown("build list")
+        self.history_panel_build_list_auto()
 
         self.collection_builder_set_name("my cool list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
 
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
@@ -73,13 +81,13 @@ class TestCollectionEdit(SeleniumTestCase):
     def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.genome_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.genome_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_dbkey_btn.wait_for_and_click()
 
     def change_datatype_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.datatype_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_datatype_btn.wait_for_and_click()
 
     @property

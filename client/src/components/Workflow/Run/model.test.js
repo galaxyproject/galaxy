@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { getReplacements, WorkflowRunModel } from "./model";
 import sampleRunData1 from "./testdata/run1.json";
 

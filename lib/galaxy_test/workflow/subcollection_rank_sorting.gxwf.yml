@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: list:list
+outputs:
+  out:
+    outputSource: list_handling/out1
+steps:
+  list_handling:
+    tool_id: collection_list_or_nested_list_input
+    in:
+      f1: input

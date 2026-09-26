@@ -2,6 +2,7 @@ from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
+    local_file_url,
 )
 from ._framework import ApiTestCase
 
@@ -25,8 +26,8 @@ class TestFoldersApi(ApiTestCase):
         response.raise_for_status()
 
     @requires_new_library
-    def test_list_library(self):
-        library, _ = self.library_populator.fetch_single_url_to_folder()
+    def test_list_library(self, test_http_server):
+        library, _ = self.library_populator.fetch_single_url_to_folder(url=local_file_url(test_http_server))
         library = self._list_library(library["id"])
         assert len(library) == 2
         folders = [folder for folder in library if folder["type"] == "folder"]
@@ -40,7 +41,7 @@ class TestFoldersApi(ApiTestCase):
         data = {
             "description": "Description only",
         }
-        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True)
+        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 400)
 
     @requires_new_library
@@ -106,8 +107,8 @@ class TestFoldersApi(ApiTestCase):
         assert undeleted_folder["deleted"] is False
 
     @requires_new_library
-    def test_import_folder_to_history(self):
-        library, response = self.library_populator.fetch_single_url_to_folder()
+    def test_import_folder_to_history(self, test_http_server):
+        library, response = self.library_populator.fetch_single_url_to_folder(url=local_file_url(test_http_server))
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         with self.dataset_populator.test_history() as history_id:
             create_data = {"source": "library_folder", "content": dataset["folder_id"]}

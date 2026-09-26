@@ -7,7 +7,7 @@
     TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
     everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
 -->
-<tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1">
+<tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1" profile="20.09">
     <description> Central server</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>

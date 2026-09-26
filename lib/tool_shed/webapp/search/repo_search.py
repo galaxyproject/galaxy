@@ -1,5 +1,7 @@
 """Module for searching the toolshed repositories"""
+
 import logging
+from typing import Any
 
 import whoosh.index
 from whoosh import scoring
@@ -20,6 +22,7 @@ from whoosh.query import (
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util.search import parse_filters
+from tool_shed.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +43,7 @@ schema = Schema(
 )
 
 
-class RepoWeighting(scoring.BM25F):
+class RepoWeighting(scoring.BM25F):  # type: ignore[misc]  # whoosh is untyped
     """
     Affect the BM25G scoring model through the final method.
     source: https://groups.google.com/forum/#!msg/whoosh/1AKNbW8R_l8/XySW0OecH6gJ
@@ -71,7 +74,7 @@ class RepoWeighting(scoring.BM25F):
 
 
 class RepoSearch:
-    def search(self, trans, search_term, page, page_size, boosts):
+    def search(self, trans: ProvidesAppContext, search_term, page, page_size, boosts):
         """
         Perform the search on the given search_term
 
@@ -136,11 +139,14 @@ class RepoSearch:
                     log.debug(f"scored hits: {str(hits.scored_length())}")
                 except ValueError:
                     raise ObjectNotFound("The requested page does not exist.")
-                results = {}
+                results: dict[str, Any] = {}
                 results["total_results"] = str(len(hits))
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)
                 results["hits"] = []
+                # Whoosh clamps out-of-range requests to the last available page.
+                if page > hits.pagecount:
+                    return results
                 for hit in hits:
                     log.debug(f"matched terms: {str(hit.matched_terms())}")
                     hit_dict = {}

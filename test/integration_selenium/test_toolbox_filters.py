@@ -1,6 +1,3 @@
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.by import By
-
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -26,21 +23,26 @@ class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
         the specified section is no longer displayed in the browser.
         """
         self.register()
+        self.components.tool_panel.tool_box.wait_for_visible()
         # The tool panel section should be visible and clickable at this stage
-        section = self.driver.find_element(By.LINK_TEXT, "Test Section")
-        self.action_chains().move_to_element(section).click().perform()
+        section = self.find_element_by_link_text("Test Section")
+        self.move_to_and_click(section)
         self.navigate_to_user_preferences()
         self.components.preferences.toolbox_filters.wait_for_and_click()
         self.screenshot("toolbox_filters_landing")
         sibling_text = "This tool filter will disable the Test Section section."
         component = self.components.toolbox_filters.input(description=sibling_text)
         filter_upload = component.wait_for_visible()
-        self.action_chains().move_to_element(filter_upload).click().perform()
+        self.move_to_and_click(filter_upload)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("toolbox_filters_swapped")
         self.components.toolbox_filters.submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
-        # But now it should raise NoSuchElementException
-        with self.assertRaises(NoSuchElementException):
-            self.driver.find_element(By.LINK_TEXT, "Test Section")
+        self.components.tool_panel.tool_box.wait_for_visible()
+        # But now the section should be gone from the panel entirely
+        assert "Test Section" not in self._tool_section_titles()
+
+    def _tool_section_titles(self):
+        links = self.find_elements_by_selector(".tool-panel-section .title-link")
+        return [link.text for link in links]

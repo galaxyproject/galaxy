@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from typing import Optional
 
 from galaxy.model.migrations.base import (
     BaseCommand,
@@ -26,8 +25,14 @@ CONFIG_FILE_ARG = "--toolshed-config"
 # then using 231 as a partial revision identifier like `sh manage_toolshed_db.sh upgrade 231`
 # will map to release 23.1 instead of revision 231xxxxxxxxx.
 REVISION_TAGS = {
-    "release_23.1": "base",
-    "23.1": "base",
+    "release_23.1": "1b5bf427db25",
+    "23.1": "1b5bf427db25",
+    "release_23.2": "1b5bf427db25",
+    "23.2": "1b5bf427db25",
+    "release_24.0": "1b5bf427db25",
+    "24.0": "1b5bf427db25",
+    "release_24.1": "1b5bf427db25",
+    "24.1": "1b5bf427db25",
 }
 
 
@@ -46,7 +51,7 @@ class Command(BaseCommand):
 
 
 class DbScript(BaseDbScript):
-    def _set_dburl(self, config_file: Optional[str] = None) -> None:
+    def _set_dburl(self, config_file: str | None = None) -> None:
         self.url = get_dburl_from_file(os.getcwd(), config_file)
         self.alembic_config.set_main_option("sqlalchemy.url", self.url)
 

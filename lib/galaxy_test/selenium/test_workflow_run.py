@@ -1,7 +1,17 @@
-from selenium.webdriver.common.by import By
+import json
+from functools import partial
+from typing import Literal
+from uuid import uuid4
 
+import yaml
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
+from galaxy.tools.parameters.pagination import DEFAULT_OPTIONS_PAGE_SIZE
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
+    WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -11,26 +21,93 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DATA_TAG_FILTER,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_IMAGES_IN_REPORT,
+    WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
+    WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
 )
 from .framework import (
     managed_history,
+    retry_assertion_during_transitions,
     RunsWorkflows,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .test_workflow_editor import CHIPSEQ_COLUMNS
+from .upload_activity_helpers import UsesUploadActivity
+
+# Single cat1 step with no workflow-level ``inputs`` — the step's ``input1``
+# stays unconnected so the run form renders it as a dropdown via
+# ``WorkflowRunDefaultStep``, exercising our paginated tool-step handlers.
+WORKFLOW_CAT1_NO_INPUTS = """
+class: GalaxyWorkflow
+steps:
+  cat_step:
+    tool_id: cat1
+"""
 
 
-class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
+class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
     @managed_history
+    def test_workflow_export_file_rocrate(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab_disabled.wait_for_absent()
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="rocrate.zip").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_rocrate_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_rocrate_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_crate_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_crate_download_ready")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_export_file_native(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        self.workflow_run_wait_for_ok(hid=2)
+        invocations.export_tab_disabled.wait_for_absent()
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="tgz").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_native_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_native_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_native_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_native_download_ready")
+
+    @selenium_test
+    @managed_history
     def test_simple_execution(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.screenshot("workflow_run_simple_ready")
@@ -42,9 +119,159 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_run_simple_complete")
 
     @selenium_test
+    def test_workflow_run_pagination_legacy_form(self):
+        """Backend search updates a legacy workflow tool-step dropdown."""
+        history_id = self.current_history_id()
+        legacy_sentinel = "unique-pagination-sentinel"
+        # Create the sentinel first so the 60 newer datasets push it beyond
+        # the initial page. Finding it requires the backend search response to
+        # reach FormDisplay's cloned input tree.
+        self.dataset_populator.fetch_hdas(
+            history_id,
+            [{"src": "pasted", "paste_content": "y", "name": legacy_sentinel}],
+        )
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
+        self.home()
+        # A single cat1 step with no workflow-level inputs — the step's
+        # ``input1`` is unconnected, so it renders as a dropdown the user
+        # picks from. This lands us in ``WorkflowRunDefaultStep``.
+        self.workflow_run_open_workflow(WORKFLOW_CAT1_NO_INPUTS)
+        self.workflow_run_ensure_expanded()
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        # Open the dropdown so its options render in the DOM, then type into
+        # the multiselect's search input. The debounced ``search-change``
+        # bubbles through ``FormDisplay → WorkflowRunDefaultStep`` and refetches
+        # via ``getTool`` with the sentinel as the server-side search query.
+        select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        baseline_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+        assert (
+            len(baseline_options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the default page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(baseline_options)}"
+        baseline_labels = [opt.text for opt in baseline_options]
+        assert all(legacy_sentinel not in label for label in baseline_labels), baseline_labels
+        search_input = select_field.find_element(By.CSS_SELECTOR, "input.multiselect__input")
+        search_input.send_keys(legacy_sentinel)
+        # Wait past the FormSelect search debounce (300 ms) plus the network
+        # round-trip — UX_TRANSITION is a generous ~1s.
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        @retry_assertion_during_transitions
+        def assert_search_narrowed():
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            labels = [opt.text for opt in options]
+            assert any(legacy_sentinel in label for label in labels), labels
+
+        assert_search_narrowed()
+
+    @selenium_test
+    def test_workflow_run_input_step_load_more_appends(self):
+        """Scrolling a workflow input-step dropdown appends its second page.
+
+        Regression test for the workflow-run equivalent of issue #23135:
+        the request and pagination metadata updated, but FormDisplay's cloned
+        input tree kept rendering the first 50 options.
+        """
+        history_id = self.current_history_id()
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
+        self.home()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_ensure_expanded()
+        select_field = self.components.workflow_run.input_data_div(label="input1").wait_for_visible()
+        select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == DEFAULT_OPTIONS_PAGE_SIZE
+
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
+        def assert_more_options_loaded():
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the dropdown to append a second page, got {len(options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
+
+        assert_more_options_loaded()
+
+    @selenium_test
+    def test_workflow_run_pagination_simplified_form(self):
+        """Scrolling a simplified workflow-run dropdown appends its second page."""
+        history_id = self.current_history_id()
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
+        # Sentinel for positive lower-bound (see legacy-form test).
+        simplified_sentinel = "unique-simplified-sentinel"
+        self.dataset_populator.fetch_hdas(
+            history_id,
+            [{"src": "pasted", "paste_content": "y", "name": simplified_sentinel}],
+        )
+        self.home()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        # Ensure the legacy/expanded form is fully rendered before reaching for
+        # its toggle button — otherwise the form may still be loading when the
+        # XPath wait fires (the default 10s window isn't always enough on CI).
+        # ``workflow_run_ensure_expanded`` is a no-op when already in legacy
+        # mode but waits on ``run_workflow`` and ``expanded_form`` first.
+        self.workflow_run_ensure_expanded()
+        # Click the "Simple Form" toggle to switch to ``WorkflowRunFormSimple``.
+        # Use a text-based XPath because ``v-g-tooltip`` rewrites the title
+        # attribute and the button isn't yet in ``navigation.yml`` — and
+        # ``wait_for_xpath`` works on both Selenium and Playwright backends,
+        # unlike ``self.driver.find_element`` which is Selenium-only.
+        self.wait_for_xpath('//button[contains(., "Simple Form")]').click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # The simplified form renders workflow inputs via ``FormDisplay``; the
+        # ``input1`` data dropdown lands in a multiselect we can locate by
+        # the parameter's data-label.
+        select_field = self.components.workflow_run.input_select_field(label="input1").wait_for_visible()
+        select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+        assert (
+            len(options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the first page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(options)}"
+        # Positive lower-bound: the sentinel HDA is newest (hid=61) so it must
+        # appear in the first page of options. Without this the ``<= 50`` upper
+        # bound passes vacuously on an empty dropdown.
+        labels = [opt.text for opt in options]
+        assert any(simplified_sentinel in label for label in labels), labels
+
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
+        def assert_more_options_loaded():
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            loaded_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(loaded_options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the simplified dropdown to append a second page, got {len(loaded_options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
+
+        assert_more_options_loaded()
+
+    @selenium_test
     @managed_history
     def test_expanded_execution_of_simple_workflow(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_run_ensure_expanded()
@@ -56,10 +283,267 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
 
+    def _setup_chipseq_input_workflow(self):
+        editor = self.components.workflow_editor
+
+        name = self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("chipseq example input")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+        self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
+
+        self.tool_open("__SAMPLE_SHEET_TO_TABULAR__")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("as_table")
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_editor_connect("input1#output", "as_table#input")
+
+        self.workflow_editor_click_save()
+        return name
+
+    def _chipseq_data_entry(self, element_identifier_mutable: bool = False) -> None:
+        workflow_run = self.components.workflow_run
+        sample_sheet = workflow_run.input.sample_sheet
+
+        sample_sheet.grid_cell_input(row_index=0, column_name="Condition").assert_absent()
+        condition_cell = sample_sheet.grid_cell(row_index=0, column_name="Condition")
+        condition_cell.wait_for_and_double_click()
+        sample_sheet.grid_cell_input(row_index=0, column_name="Condition").wait_for_visible()
+        keys: list[str] = []
+
+        def tab_if_element_identifier_mutable():
+            if element_identifier_mutable:
+                keys.append(Keys.TAB)
+
+        # 0: row for SRR5680995
+        keys.append("input")
+        keys.append(Keys.TAB)
+        # no replicate here...
+        keys.append(Keys.TAB)
+        # no control here...
+        keys.append(Keys.TAB)
+
+        # 1: row for SRR5680996
+        tab_if_element_identifier_mutable()
+        keys.append("H3K4me3")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
+
+        # 2: row for SRR5680997
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("H3K27me3")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
+
+        # 3: row for SRR5681007
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("H3K27me3")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
+
+        # 4: row for SRR5681006
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("H3K4me3")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
+
+        # 5: row for SRR5680998
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("CTCF")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
+
+        # 6: row for SRR5681008
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("CTCF")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
+
+        # 7: row for SRR5681005
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        keys.append("input")
+        keys.append(Keys.TAB)
+
+        self.send_keys_to_page("".join(keys))
+        self.move_to_and_click(condition_cell.wait_for_visible())
+
+        controls = {
+            1: "SRR5680995",
+            2: "SRR5680995",
+            3: "SRR5681005",
+            4: "SRR5681005",
+            5: "SRR5680995",
+            6: "SRR5681005",
+        }
+
+        for row_index, control in controls.items():
+            sample_sheet.grid_cell(row_index=row_index, column_name="Control").wait_for_and_double_click()
+            sample_sheet.select_picker.wait_for_and_click()
+            sample_sheet.select_item(item=control).wait_for_and_click()
+
+    @selenium_test
+    @managed_history
+    def test_collection_input_sample_sheet_chipseq_example_from_uris(self):
+        history_id = self.current_history_id()
+
+        name = self._setup_chipseq_input_workflow()
+        self.workflow_run_with_name(name)
+
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+
+        sample_sheet = workflow_run.input.sample_sheet
+        sample_sheet._.wait_for_present()
+        self.screenshot("workflow_run_sample_sheet_chipseq_source")
+        sample_sheet.data_import_source_from(source="pasted_table").wait_for_and_click()
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
+        urls = [
+            f"{base_url}/SRR5680995_R1.fastq.gz",
+            f"{base_url}/SRR5680995_R2.fastq.gz",
+            f"{base_url}/SRR5680996_R1.fastq.gz",
+            f"{base_url}/SRR5680996_R2.fastq.gz",
+            f"{base_url}/SRR5680997_R1.fastq.gz",
+            f"{base_url}/SRR5680997_R2.fastq.gz",
+            f"{base_url}/SRR5681007_R1.fastq.gz",
+            f"{base_url}/SRR5681007_R2.fastq.gz",
+            f"{base_url}/SRR5681006_R1.fastq.gz",
+            f"{base_url}/SRR5681006_R2.fastq.gz",
+            f"{base_url}/SRR5680998_R1.fastq.gz",
+            f"{base_url}/SRR5680998_R2.fastq.gz",
+            f"{base_url}/SRR5681008_R1.fastq.gz",
+            f"{base_url}/SRR5681008_R2.fastq.gz",
+            f"{base_url}/SRR5681005_R1.fastq.gz",
+            f"{base_url}/SRR5681005_R2.fastq.gz",
+        ]
+        pasted_data = "\n".join(urls)
+        sample_sheet.paste_table_textarea.wait_for_and_send_keys(pasted_data)
+        self.screenshot("workflow_run_sample_sheet_chipseq_pasted_data")
+        sample_sheet.wizard_next_button.wait_for_and_click()
+
+        self.screenshot("workflow_run_sample_sheet_chipseq_table_empty")
+        self._chipseq_data_entry(element_identifier_mutable=True)
+        self.screenshot("workflow_run_sample_sheet_chipseq_table_full")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        sample_sheet.wizard_next_button.wait_for_and_click()
+
+        self.history_panel_wait_for_hid_ok(1)
+        self.screenshot("workflow_run_sample_sheet_chipseq_sheet_created")
+        sample_sheet.collection_created_message.wait_for_present()
+        self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 18)
+
+    def _expect_chipseq_table(self, history_id: str, hid: int):
+        self.history_panel_wait_for_hid_ok(hid)
+        contents = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
+        expected_contents = """SRR5680995\tinput\t\t
+SRR5680996\tH3K4me3\t1\tSRR5680995
+SRR5680997\tH3K27me3\t1\tSRR5680995
+SRR5681007\tH3K27me3\t2\tSRR5681005
+SRR5681006\tH3K4me3\t2\tSRR5681005
+SRR5680998\tCTCF\t1\tSRR5680995
+SRR5681008\tCTCF\t2\tSRR5681005
+SRR5681005\tinput\t\t
+"""
+        assert (
+            contents == expected_contents
+        ), f"Expected chipseq sample sheet table:\n{expected_contents}\nGot:\n{contents}"
+
+    @selenium_test
+    @managed_history
+    def test_collection_input_sample_sheet_chipseq_example_from_list_pairs(self):
+        history_id = self.current_history_id()
+
+        base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
+        self.upload_context("paste-links").stage_paste_links(
+            [
+                (f"{base_url}/SRR5680995_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680995_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680996_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680996_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680997_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680997_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681007_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681007_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681006_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681006_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680998_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680998_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681008_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681008_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681005_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681005_R2.fastq.gz", None),
+            ]
+        ).start()
+        self.history_panel_wait_for_and_select([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+        self.history_panel_build_list_of_pairs()
+        self.collection_builder_set_name("inputaslist")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_visible(33)
+        name = self._setup_chipseq_input_workflow()
+        self.workflow_run_with_name(name)
+
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+
+        sample_sheet = workflow_run.input.sample_sheet
+        sample_sheet._.wait_for_present()
+        sample_sheet.data_import_source_from(source="collection").wait_for_and_click()
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        self.screenshot("workflow_run_sample_sheet_from_collection")
+        # no longer needed since the collection dialog just pops up when navigates to form
+        # sample_sheet.select_collection.wait_for_and_click()
+        collection_id = self.hid_to_history_item(33)["id"]
+        sample_sheet.collection_selection(id=collection_id).wait_for_present()
+        self.screenshot("workflow_run_sample_sheet_from_collection_select_collection")
+        sample_sheet.collection_selection(id=collection_id).wait_for_and_click()
+        # sample_sheet.wizard_next_button.wait_for_and_click()
+        self.screenshot("workflow_run_sample_sheet_from_collection_grid")
+        self._chipseq_data_entry(element_identifier_mutable=False)
+        self.screenshot("workflow_run_sample_sheet_from_collection_grid_full")
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        self.history_panel_wait_for_hid_ok(50)
+        sample_sheet.collection_created_message.wait_for_present()
+        self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 51)
+
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
         self.tool_parameter_div("num_lines")
@@ -72,8 +556,29 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
+    def test_runtime_parameters_simple_optional(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  int_step:
+    tool_id: expression_null_handling_integer
+    runtime_inputs:
+      - int_input
+""")
+        self.tool_parameter_div("int_input")
+        self._set_num_lines_to_3("int_input")
+        self.screenshot("workflow_run_optional_runtime_parameters_modified")
+        self.workflow_run_submit()
+        self.workflow_run_wait_for_ok(hid=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert json.loads(content) == 3
+
+    @selenium_test
+    @managed_history
     def test_subworkflows_expanded(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_SIMPLE)
         self.workflow_run_ensure_expanded()
@@ -85,7 +590,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     @selenium_test
     @managed_history
     def test_subworkflow_runtime_parameters(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
         self.workflow_run_ensure_expanded()
@@ -101,7 +606,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     @selenium_test
     @managed_history
     def test_replacement_parameters(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
         self.workflow_run_ensure_expanded()
@@ -118,10 +623,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     @selenium_test
     @managed_history
     def test_step_parameter_inputs(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -133,8 +637,7 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-"""
-        )
+""")
         self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
@@ -154,7 +657,7 @@ steps:
     @selenium_test
     @managed_history
     def test_replacement_parameters_on_subworkflows(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
         self.workflow_run_ensure_expanded()
@@ -174,8 +677,27 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
+
+    @selenium_test
+    def test_run_form_safe_upgrade_handling(self):
+        workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
+        # 0.9.0 is a version that does not exist in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "0.9.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
+        # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # Check that this tool form does not contain a warning about different versions.
+        assert self.components.workflow_run.warning.is_absent
 
     @selenium_test
     @managed_history
@@ -193,8 +715,7 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   text_param:
@@ -208,8 +729,7 @@ steps:
     in:
       select_ex:
         source: text_param
-"""
-        )
+""")
         element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
         assert element.text == "Ex2"
         self.workflow_run_submit()
@@ -244,8 +764,27 @@ steps:
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
         self.get(f"workflows/invocations/report?id={invocation_0['id']}")
-        self.wait_for_selector_visible(".embedded-dataset")
+        self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_images_in_report(self):
+        """Test that images render correctly in workflow reports, including inline images in tables."""
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_IMAGES_IN_REPORT,
+            WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
+            ensure_expanded=True,
+        )
+        self.screenshot("workflow_run_images_in_report_invocation")
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
+        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        self.wait_for_selector_visible(".markdown-component")
+        self.screenshot("workflow_report_images_rendered")
+        # Wait for the table to be present - this verifies the inline ${galaxy ...} syntax works
+        self.wait_for_selector_visible("table")
+        self.screenshot("workflow_report_with_table")
 
     @selenium_test
     @managed_history
@@ -254,6 +793,236 @@ steps:
             WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
         )
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_button_disabled_when_required_input_missing(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    optional: false
+  data_param:
+    type: data
+  collection_param:
+    type: data_collection
+steps: {}
+""")
+        workflow_run = self.components.workflow_run
+        # None of the required parameters are present
+        workflow_run.run_workflow_disabled.wait_for_present()
+        # upload datasets and collections
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_collection_populator.create_list_in_history(history_id, wait=True)
+        input_element = workflow_run.simplified_input(label="text_param").wait_for_and_click()
+        input_element.send_keys("3")
+        # Everything is set, workflow is runnable, disabled class should be removed
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        input_element.clear()
+        workflow_run.run_workflow_disabled.wait_for_present()
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_tag_filter(self):
+        history_id = self.current_history_id()
+        dataset = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.tag_dataset(history_id, dataset["id"], tags=["genomescope_model"])
+        # Push the tagged dataset beyond the first 50 datatype matches. The
+        # tag predicate must be applied before pagination; filtering the first
+        # generic page in FormData would otherwise leave this required input
+        # empty even though a matching dataset exists in the history.
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
+        workflow_id, workflow_name = self._create_workflow_with_unique_name(WORKFLOW_WITH_DATA_TAG_FILTER, "ga")
+        self.workflow_run_with_name(workflow_name)
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.HISTORY_POLL)
+        invocations = self.workflow_populator.workflow_invocations(workflow_id=workflow_id)
+        invocation = self.workflow_populator.get_invocation(invocations[-1]["id"])
+        assert invocation["inputs"]["0"]["id"] == dataset["id"]
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
+        history_id = self.current_history_id()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.to_paired_list("my awesome paired list").start()
+        self.history_panel_wait_for_hid_ok(1)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(4)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
+        assert content.strip() == "forward content\nreverse content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
+        history_id = self.current_history_id()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.to_list("my awesome flat list").start()
+        self.history_panel_wait_for_hid_ok(1)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(4)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
+        # The elements are reversed to match the history panel display order (newest HID first)
+        assert content.strip() == "reverse content\nforward content"
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
+        history_id = self.current_history_id()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
+        upload.start()
+        self.history_panel_wait_for_and_select([1, 2, 3])
+        self.history_panel_build_list_of_paired_or_unpaireds()
+        self.collection_builder_set_name("my awesome flat list")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_ok(7)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(8)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
+        assert content.strip() == "forward content\nreverse content\nunpaired content"
+
+    @selenium_test
+    @managed_history
+    def test_upload_dataset_from_workflow_simple(self):
+        history_id = self.current_history_id()
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+        self._upload_hello_world_for_input(label="input1")
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(2)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
+        assert content.strip() == "hello world\nhello world"
+
+    @selenium_test
+    @managed_history
+    def test_inline_upload_updates_form(self):
+        history_id = self.current_history_id()
+        self.upload_context("paste-content").stage_paste_content("goodbye land").start()
+
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
+
+        self.upload_inline("paste-content", label="input1").stage_paste_content("hello world").start()
+
+        self.history_panel_wait_for_hid_ok(2)
+
+        builder = workflow_run.input.collection_builder._(label="input1")
+        # The inline upload auto-selects the dataset into the collection
+        # builder, so we only need to verify it appears — clicking on it
+        # would toggle it off (unselect it).
+        builder.element_by_hid(hid=2).wait_for_present()
+
+        input.collection_tab_build_link.wait_for_and_click()
+        builder.create.wait_for_and_click()
+
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(5)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        assert content.strip() == "hello world"
+
+    @selenium_test
+    @managed_history
+    def test_upload_list_from_workflow_simple(self):
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input1")
+        self._upload_hello_world_for_input(label="input1", count=2)
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+
+    @selenium_test
+    @managed_history
+    def test_upload_list_paired_from_workflow(self):
+        history_id = self.current_history_id()
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input_list")
+        input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input_list")
+        self._upload_hello_world_for_input(label="input_list", count=2)
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+        assert content.strip() == "hello world\nhello world"
+
+    @selenium_test
+    @managed_history
+    def test_upload_list_paired_or_unpaired_from_workflow(self):
+        history_id = self.current_history_id()
+
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
+        upload.start()
+
+        self.history_panel_wait_for_hid_ok(3)
+        self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input_list")
+        input.upload.wait_for_and_click()
+        builder = workflow_run.input.collection_builder._(label="input_list")
+        builder.element_by_hid(hid=3).wait_for_present()
+        builder.select_all.wait_for_and_click()
+        input.collection_tab_build_link.wait_for_and_click()
+        builder.create.wait_for_and_click()
+        self.workflow_run_submit()
+
+        self.history_panel_wait_for_hid_ok(8)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
+        assert content.strip() == "unpaired content\nreverse content\nforward content"
+
+    def _upload_hello_world_for_input(self, label: str, count=1):
+        upload_inline = self.upload_inline("paste-content", label=label)
+        for i in range(count):
+            upload_inline.stage_paste_content("hello world\n", {"name": f"hello world.{i + 1}.fastq"})
+        upload_inline.start()
+
+    def _create_and_run_workflow_with_unique_name(
+        self, workflow_contents: str, format: Literal["ga", "gxformat2"] = "gxformat2"
+    ):
+        workflow_id, workflow_name = self._create_workflow_with_unique_name(workflow_contents, format)
+        self.workflow_run_with_name(workflow_name)
+        return workflow_id, workflow_name
+
+    def _create_workflow_with_unique_name(
+        self, workflow_contents: str, format: Literal["ga", "gxformat2"] = "gxformat2"
+    ):
+        workflow_name = str(uuid4())
+        if format == "gxformat2":
+            wf = yaml.safe_load(workflow_contents)
+            wf["name"] = workflow_name
+            workflow_id = self.workflow_populator.upload_yaml_workflow(wf)
+        else:
+            wf = json.loads(workflow_contents)
+            wf["name"] = workflow_name
+            workflow_id = self.workflow_populator.create_workflow(wf)
+        return (workflow_id, workflow_name)
 
     def _assert_has_3_lines_after_run(self, hid):
         self.workflow_run_wait_for_ok(hid=hid)
@@ -280,3 +1049,13 @@ steps:
         assert initial_value == "", initial_value
         input_element.clear()
         input_element.send_keys(value)
+
+    def _setup_simple_invocation_for_export_testing(self):
+        # precondition: refresh history
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        return self.workflow_populator.history_invocations(history_id)[0]

@@ -43,9 +43,7 @@ class GalaxyExtension(BaseModel):
 
 
 class GalaxyExtensionDomain(BaseModel):
-    extension_schema: Literal[
-        "https://raw.githubusercontent.com/biocompute-objects/extension_domain/1.2.0/galaxy/galaxy_extension.json"
-    ] = "https://raw.githubusercontent.com/biocompute-objects/extension_domain/1.2.0/galaxy/galaxy_extension.json"
+    extension_schema: Literal["galaxy_extension.json"] = "galaxy_extension.json"
     galaxy_extension: GalaxyExtension
 
 

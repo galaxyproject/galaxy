@@ -1,6 +1,6 @@
-<tool id="CONVERTER_fasta_to_fai" name="Convert FASTA to fai file" version="1.0.0">
+<tool id="CONVERTER_fasta_to_fai" name="Convert FASTA to fai file" version="1.0.1" profile="16.04">
     <requirements>
-        <requirement type="package" version="0.1.19">samtools</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
     </requirements>
     <command><![CDATA[
 ln -s '$input' temp.fasta &&

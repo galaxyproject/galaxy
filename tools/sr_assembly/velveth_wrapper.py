@@ -3,6 +3,7 @@
 Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
+
 import os
 import subprocess
 import sys

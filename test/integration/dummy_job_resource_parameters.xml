@@ -1,0 +1,7 @@
+<parameters>
+    <param label="Compute Resource" name="multi_compute_resource" type="select"
+        help="Need help selecting a compute resource? Options and limits are explained in detail &lt;a href='https://galaxyproject.org/main/' target='_blank'&gt;in the Galaxy Hub&lt;/a&gt;">
+        <option value="does not matter">Galaxy cluster</option>
+        <option value="or this">Jetstream 2</option>
+    </param>
+</parameters>

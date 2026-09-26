@@ -23,9 +23,7 @@ export type FormParameterTypes =
     | "data_collection"
     | "drill_down"
     | "group_tag"
-    | "library_data"
     | "ftpfile"
     | "upload"
     | "rules"
-    | "data_dialog"
     | "tags";

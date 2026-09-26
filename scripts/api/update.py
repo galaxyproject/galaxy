@@ -4,6 +4,7 @@ Generic PUT/update script
 
 usage: create.py key url [key=value ...]
 """
+
 import sys
 
 from common import update

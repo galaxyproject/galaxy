@@ -1,0 +1,265 @@
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBan,
+    faCheck,
+    faClock,
+    faCloud,
+    faExclamationTriangle,
+    faLayerGroup,
+    faSpinner,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
+
+import { STATES } from "@/components/History/Content/model/states";
+import type { UploadItem } from "@/composables/upload/uploadItemTypes";
+
+import type { UploadMethod } from "./types";
+import { getUploadMethod } from "./uploadMethodRegistry";
+import type { BatchStatus, BatchWithProgress } from "./uploadState";
+
+/**
+ * Shared UI contract for progress indicators (files & batches)
+ */
+interface ProgressUiBase {
+    icon: IconDefinition;
+    textClass: string;
+    barClass?: string;
+    spin: boolean;
+}
+
+/**
+ * UI representation of a single upload file
+ */
+export interface FileProgressUi extends ProgressUiBase {}
+
+/**
+ * UI representation of a batch / collection upload
+ */
+export interface BatchProgressUi extends ProgressUiBase {
+    label: string;
+}
+
+const FILE_PROGRESS_UI: Record<UploadItem["status"], FileProgressUi> = {
+    queued: {
+        icon: faClock,
+        textClass: "text-muted",
+        spin: false,
+    },
+    uploading: {
+        icon: faSpinner,
+        textClass: "text-primary",
+        spin: true,
+    },
+    processing: {
+        icon: faSpinner,
+        textClass: "text-primary",
+        spin: true,
+    },
+    completed: {
+        icon: faCheck,
+        textClass: "text-success",
+        barClass: "bg-success",
+        spin: false,
+    },
+    error: {
+        icon: faTimes,
+        textClass: "text-danger",
+        barClass: "bg-danger",
+        spin: false,
+    },
+    cancelled: {
+        icon: faBan,
+        textClass: "text-muted",
+        barClass: "bg-secondary",
+        spin: false,
+    },
+} as const;
+
+export function getFileProgressUi(file: UploadItem): FileProgressUi {
+    return FILE_PROGRESS_UI[file.status];
+}
+
+const FILE_STATUS_MESSAGES: Record<UploadItem["status"], (file: UploadItem) => string | undefined> = {
+    queued: () => "Queued",
+    uploading: () => "Uploading file",
+    processing: (file) => STATES[file.datasetState ?? "new"]?.text ?? "Upload complete. Processing dataset…",
+    completed: () => "Upload complete",
+    error: () => undefined,
+    cancelled: () => "Cancelled",
+};
+
+export function getFileStatusMessage(file: UploadItem): string | undefined {
+    return FILE_STATUS_MESSAGES[file.status](file);
+}
+
+const BATCH_PROGRESS_UI: Record<BatchStatus, (batch: BatchWithProgress) => BatchProgressUi> = {
+    uploading: (batch) => ({
+        icon: faLayerGroup,
+        textClass: "text-primary",
+        spin: false,
+        label: `${batch.progress}% uploaded`,
+    }),
+    "creating-collection": () => ({
+        icon: faSpinner,
+        textClass: "text-primary",
+        barClass: "bg-primary",
+        spin: true,
+        label: "Creating collection...",
+    }),
+    processing: () => ({
+        icon: faSpinner,
+        textClass: "text-primary",
+        barClass: "bg-primary",
+        spin: true,
+        label: "Processing collection...",
+    }),
+    completed: () => ({
+        icon: faCheck,
+        textClass: "text-success",
+        barClass: "bg-success",
+        spin: false,
+        label: "Collection created",
+    }),
+    error: () => ({
+        icon: faExclamationTriangle,
+        textClass: "text-danger",
+        barClass: "bg-danger",
+        spin: false,
+        label: "Error",
+    }),
+    cancelled: () => ({
+        icon: faBan,
+        textClass: "text-muted",
+        barClass: "bg-secondary",
+        spin: false,
+        label: "Cancelled",
+    }),
+} as const;
+
+export function getBatchProgressUi(batch: BatchWithProgress): BatchProgressUi {
+    return BATCH_PROGRESS_UI[batch.status](batch);
+}
+
+export interface UploadItemDisplayBadge {
+    id: string;
+    label: string;
+    title: string;
+    icon?: IconDefinition;
+    variant: "info" | "secondary" | "primary" | "warning" | "danger";
+}
+
+export interface UploadItemDisplayInfo {
+    icon?: IconDefinition;
+    iconTitle?: string;
+    badges: UploadItemDisplayBadge[];
+    sourceUrl?: string;
+}
+
+/**
+ * Get display information for an upload item (method icon, deferred badge, source URL, etc.).
+ */
+export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInfo {
+    const badges: UploadItemDisplayBadge[] = [];
+
+    // Add deferred badge if applicable
+    if (item.deferred) {
+        badges.push({
+            id: "deferred",
+            label: "Deferred",
+            title: "This file will be downloaded when needed by a job",
+            icon: faCloud,
+            variant: "info",
+        });
+    }
+
+    // Get upload method icon and name
+    const uploadMethod = getUploadMethod(item.uploadMode);
+
+    return {
+        icon: uploadMethod?.icon,
+        iconTitle: uploadMethod?.name,
+        badges,
+        sourceUrl: getUploadItemSourceUrl(item),
+    };
+}
+
+function getUploadItemSourceUrl(item: UploadItem): string | undefined {
+    if (item.uploadMode !== "paste-links" && item.uploadMode !== "remote-files") {
+        return undefined;
+    }
+    return item.url || undefined;
+}
+
+export interface BatchDisplayInfo {
+    uploadModeSummary: string;
+    hasMultipleModes: boolean;
+    allDeferred: boolean;
+}
+
+/**
+ * Batch with both progress tracking and uploads (used in progress view).
+ * Re-exports the canonical type from uploadState for convenience.
+ */
+export type BatchWithProgressAndUploads = BatchWithProgress;
+
+/**
+ * Get aggregated display information for a batch (upload mode summary, deferred status).
+ */
+export function getBatchDisplayInfo(batch: BatchWithProgress): BatchDisplayInfo {
+    const uploads = batch.uploads;
+    const uploadModes = new Set(uploads.map((u: UploadItem) => u.uploadMode));
+    const deferredCount = uploads.filter((u: UploadItem) => u.deferred).length;
+
+    // Create summary of upload modes
+    let uploadModeSummary = "";
+    if (uploadModes.size === 1) {
+        const mode = Array.from(uploadModes)[0] as UploadMethod;
+        const methodConfig = getUploadMethod(mode);
+        uploadModeSummary = methodConfig?.name || mode;
+    } else {
+        // Multiple modes - show counts by type
+        const modeCounts = new Map<string, number>();
+        uploads.forEach((u: UploadItem) => {
+            const count = modeCounts.get(u.uploadMode) || 0;
+            modeCounts.set(u.uploadMode, count + 1);
+        });
+
+        const summaryParts: string[] = [];
+        modeCounts.forEach((count, mode) => {
+            const methodConfig = getUploadMethod(mode as UploadMethod);
+            const name = methodConfig?.name || mode;
+            summaryParts.push(`${count} ${name}`);
+        });
+        uploadModeSummary = summaryParts.join(", ");
+    }
+
+    return {
+        uploadModeSummary,
+        hasMultipleModes: uploadModes.size > 1,
+        allDeferred: deferredCount === uploads.length && uploads.length > 0,
+    };
+}
+
+/**
+ * Get progress breakdown summary for a batch (e.g., "3/5 completed, 1 error").
+ */
+export function getBatchProgressSummary(batch: BatchWithProgress): string {
+    const total = batch.uploads.length;
+    const completed = batch.uploads.filter((u: UploadItem) => u.status === "completed").length;
+    const errors = batch.uploads.filter((u: UploadItem) => u.status === "error").length;
+    const cancelled = batch.uploads.filter((u: UploadItem) => u.status === "cancelled").length;
+
+    const parts: string[] = [];
+
+    parts.push(`${completed}/${total} completed`);
+
+    if (errors > 0) {
+        parts.push(`${errors} error${errors > 1 ? "s" : ""}`);
+    }
+
+    if (cancelled > 0) {
+        parts.push(`${cancelled} cancelled`);
+    }
+
+    return parts.join(", ");
+}

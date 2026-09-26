@@ -1,72 +1,109 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, onMounted, watch } from "vue";
+import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { refDebounced } from "@vueuse/core";
+import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { useFilterObjectArray } from "@/composables/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
+import { uid } from "@/utils/utils";
 
-type SelectValue = string | number | null;
+import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
+
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+type SelectValue = Record<string, unknown> | string | number | null;
+type ValueWithTags = SelectValue & { tags: string[] };
 
 interface SelectOption {
     label: string;
     value: SelectValue;
+    key?: string;
 }
 
-const props = withDefaults(
-    defineProps<{
-        multiple?: boolean;
-        optional?: boolean;
-        options: Array<[string, SelectValue]>;
-        value?: Array<SelectValue> | string | number;
-    }>(),
-    {
-        multiple: false,
-        optional: false,
-        value: null,
-    }
-);
+const props = defineProps({
+    id: { type: String, default: `form-select-${uid()}` },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
+    multiple: {
+        type: Boolean,
+        default: false,
+    },
+    optional: {
+        type: Boolean,
+        default: false,
+    },
+    options: {
+        type: Array as PropType<Array<SelectOption>>,
+        required: true,
+    },
+    placeholder: {
+        type: String,
+        default: "Select Value",
+    },
+    value: {
+        type: [String, Array] as PropType<SelectValue | SelectValue[]>,
+        default: null,
+    },
+});
 
 const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
+    (e: "search-change", query: string): void;
 }>();
 
-/**
- * Determine dom wrapper class
- */
-const cls: ComputedRef<string> = computed(() => {
-    return props.multiple ? "form-select-multiple" : "form-select-single";
+const filter = ref("");
+const { filtered: filteredOptions, pending: filterPending } = useFilterObjectArray(() => props.options, filter, [
+    "label",
+    ["value", "tags"],
+]);
+
+// Debounced upward emit so consumers (e.g. ``FormData`` paginating against the
+// backend) can refetch on typing without firing on every keystroke. The local
+// ``filter`` ref still updates immediately so ``filteredOptions`` provides
+// instant client-side narrowing within already-loaded options while the
+// backend round-trip is in flight.
+const debouncedFilter = refDebounced(filter, 300);
+watch(debouncedFilter, (value) => {
+    emit("search-change", value);
 });
 
 /**
- * Configure deselect label
+ * When there are more options than this, push selected options to the end
  */
-const deselectLabel: ComputedRef<string> = computed(() => {
-    return props.multiple ? "Click to remove" : "";
-});
+const optionReorderThreshold = 8;
 
-/**
- * Translates input options for consumption by the
- * select component into an array of objects
- */
-const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
-    const result: Array<SelectOption> = props.options.map((option) => ({
-        label: option[0],
-        value: option[1],
-    }));
-    if (props.optional && !props.multiple) {
-        result.unshift({
-            label: "Nothing selected",
-            value: null,
+const reorderedOptions = computed(() => {
+    let result;
+    if (!props.multiple || filteredOptions.value.length <= optionReorderThreshold) {
+        result = filteredOptions.value;
+    } else {
+        const selectedOptions: SelectOption[] = [];
+        const unselectedOptions: SelectOption[] = [];
+
+        filteredOptions.value.forEach((option) => {
+            if (isSelected(option.value)) {
+                selectedOptions.push(option);
+            } else {
+                unselectedOptions.push(option);
+            }
         });
+
+        result = [...unselectedOptions, ...selectedOptions];
     }
-    return result;
+    return result.map(getSelectOption);
 });
 
 /**
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return formattedOptions.value.length > 0;
+    return props.options.length > 0;
 });
 
 /**
@@ -74,7 +111,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = formattedOptions.value[0];
+        const v = props.options[0];
         if (v) {
             return v.value;
         }
@@ -92,15 +129,45 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 /**
  * Tracks selected values
  */
-const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
-    return Array.isArray(props.value) ? props.value : [props.value];
+const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
+
+/**
+ * Tracks selected keys in case of form data options
+ */
+const selectedKeys = computed(() => {
+    return selectedValues.value
+        .map((v) => (isDataOptionObject(v) ? itemUniqueKey(v) : undefined))
+        .filter((v) => v !== undefined);
+});
+
+/**
+ * Whether current value(s) will be tracked by key or value
+ */
+const trackBy = computed(() => {
+    return selectedKeys.value.length > 0 ? "key" : "value";
 });
 
 /**
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => {
+        // Preserve the order of props.value
+        const values = Array.isArray(props.value) ? props.value : [props.value];
+        return values
+            .map((val) => {
+                // Find the matching option in props.options
+                const option = props.options.find(
+                    (opt) =>
+                        isSelected(opt.value) &&
+                        (isDataOptionObject(val)
+                            ? isDataOptionObject(opt.value) && itemUniqueKey(opt.value) === itemUniqueKey(val)
+                            : opt.value === val),
+                );
+                return option ? getSelectOption(option) : undefined;
+            })
+            .filter((v) => v !== undefined);
+    },
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -116,6 +183,32 @@ const currentValue = computed({
 });
 
 /**
+ * Stable identifier for an option, so an option can be addressed by what it selects
+ * rather than by its position in the list or its rendered label.
+ */
+function optionIdentifier(option: SelectOption): string {
+    if (option.key !== undefined) {
+        return option.key;
+    }
+    if (typeof option.value === "string" || typeof option.value === "number") {
+        return String(option.value);
+    }
+    return option.label;
+}
+
+/**
+ * Identifier of the selected option, exposed on the root element. Only meaningful
+ * for single selects, where exactly one option can be selected.
+ */
+const selectedValueIdentifier = computed(() => {
+    if (props.multiple) {
+        return undefined;
+    }
+    const selected = currentValue.value[0];
+    return selected ? optionIdentifier(selected) : undefined;
+});
+
+/**
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
@@ -124,12 +217,24 @@ function setInitialValue(): void {
     }
 }
 
+function getSelectOption(option: SelectOption): SelectOption {
+    if (isDataOptionObject(option.value)) {
+        return {
+            ...option,
+            key: itemUniqueKey(option.value),
+        };
+    }
+    return option;
+}
+
 /**
  * Watches changes in select options and adjusts initial value if necessary
  */
 watch(
     () => props.options,
-    () => setInitialValue()
+    () => {
+        setInitialValue();
+    },
 );
 
 /**
@@ -138,25 +243,74 @@ watch(
 onMounted(() => {
     setInitialValue();
 });
+
+function isValueWithTags(item: SelectValue): item is ValueWithTags {
+    return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
+}
+
+function isDataOptionObject(item: SelectValue): item is DataOption {
+    return !!item && typeof item === "object" && isDataOption(item);
+}
+
+function onSearchChange(search: string): void {
+    filter.value = search;
+}
+
+function isSelected(item: SelectValue): boolean {
+    if (isDataOptionObject(item)) {
+        return selectedKeys.value.includes(itemUniqueKey(item));
+    }
+    return selectedValues.value.includes(item);
+}
 </script>
 
 <template>
-    <Multiselect
-        v-if="hasOptions"
-        v-model="currentValue"
-        :allow-empty="true"
-        :class="['form-select', cls]"
-        :close-on-select="!multiple"
-        :deselect-label="deselectLabel"
-        :options="formattedOptions"
-        :multiple="multiple"
-        :selected-label="selectedLabel"
-        :aria-expanded="ariaExpanded"
-        placeholder="Select value"
-        select-label="Click to select"
-        track-by="value"
-        label="label"
-        @open="onOpen"
-        @close="onClose" />
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <div :data-selected-value="selectedValueIdentifier">
+        <Multiselect
+            v-if="hasOptions"
+            :id="id"
+            v-model="currentValue"
+            :data-filter-pending="filterPending ? 'true' : undefined"
+            :allow-empty="optional || multiple"
+            :aria-expanded="ariaExpanded"
+            :close-on-select="!multiple"
+            :disabled="disabled"
+            :deselect-label="null"
+            label="label"
+            :multiple="multiple"
+            :options="reorderedOptions"
+            :placeholder="placeholder"
+            :selected-label="selectedLabel"
+            :select-label="null"
+            :track-by="trackBy"
+            :internal-search="false"
+            @search-change="onSearchChange"
+            @open="onOpen"
+            @close="onClose">
+            <template v-slot:option="{ option }">
+                <!-- Replace recycled option content when its identity changes. -->
+                <div
+                    :key="`${option.label}:${String(option.value)}`"
+                    class="d-flex align-items-center justify-content-between"
+                    :data-option-value="optionIdentifier(option)">
+                    <div>
+                        <span>{{ option.label }}</span>
+                        <StatelessTags
+                            v-if="isValueWithTags(option.value)"
+                            class="tags mt-2"
+                            :value="option.value.tags"
+                            disabled />
+                    </div>
+                    <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-else :icon="faSquare" />
+                </div>
+            </template>
+            <template v-slot:afterList>
+                <slot name="after-list" />
+            </template>
+        </Multiselect>
+        <slot v-else name="no-options">
+            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+        </slot>
+    </div>
 </template>

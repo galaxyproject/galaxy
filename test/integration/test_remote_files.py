@@ -1,7 +1,6 @@
 import operator
 import os
 import shutil
-from tempfile import mkdtemp
 from typing import ClassVar
 from unittest import SkipTest
 from urllib.parse import urlparse
@@ -37,8 +36,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        root = os.path.realpath(mkdtemp())
-        cls._test_driver.temp_directories.append(root)
+        root = os.path.realpath(cls._test_driver.mkdtemp())
         cls.root = root
         cls.library_dir = os.path.join(root, "library")
         cls.user_library_dir = os.path.join(root, "user_library")
@@ -203,6 +201,86 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
             response = dataset_populator.run_tool("export_remote", inputs, history_id)
             dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
             with open(os.path.join(ftp_dir, "my_cool", "utf8_name_😻.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_with_space(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        dir_with_space = os.path.join(ftp_dir, "space dir")
+        os.makedirs(dir_with_space)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {"src": "hda", "id": dataset["id"]}
+            inputs = {
+                "d_uri": "gxftp://space dir/",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, "space dir", "my_cool", "utf8_name_😻.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_with_space_encoded(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        dir_with_space = os.path.join(ftp_dir, "space%20dir")
+        os.makedirs(dir_with_space)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {"src": "hda", "id": dataset["id"]}
+            inputs = {
+                "d_uri": "gxftp://space%20dir/",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, "space%20dir", "my_cool", "utf8_name_😻.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def _run_named_export(self, history_id, name, invalid_chars=None):
+        dataset_populator = self.dataset_populator
+        dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+        inputs = {
+            "d_uri": "gxftp://",
+            "export_type|export_type_selector": "datasets_named",
+            "export_type|datasets_0|infile": {"src": "hda", "id": dataset["id"]},
+            "export_type|datasets_0|name": name,
+        }
+        if invalid_chars is not None:
+            inputs["invalid_chars"] = invalid_chars
+        response = dataset_populator.run_tool("export_remote", inputs, history_id)
+        dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+
+    def test_export_remote_tool_named_sanitize_spaces(self):
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars=" ")
+            with open(os.path.join(ftp_dir, "my_cool", "utf8_name.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_named_slash_never_sanitized(self):
+        # "/" is the documented subdirectory syntax for user-supplied names, so it
+        # survives even when the sanitize option asks for it to be stripped.
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars="/ ")
+            with open(os.path.join(ftp_dir, "my_cool", "utf8_name.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_named_no_sanitizing(self):
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars="")
+            with open(os.path.join(ftp_dir, "my cool", "utf8 name.txt")) as f:
                 assert "example content\n" == f.read()
 
     def test_export_remote_tool_default_duplicate_name_fails(self):

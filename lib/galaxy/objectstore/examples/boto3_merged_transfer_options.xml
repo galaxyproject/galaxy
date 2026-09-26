@@ -1,0 +1,16 @@
+<object_store type="boto3">
+     <auth access_key="access_moo" secret_key="secret_cow" />
+     <bucket name="unique_bucket_name_all_lowercase" />
+     <cache path="database/object_store_cache" size="1000" />
+     <transfer
+        multipart_threshold="13"
+        max_concurrency="13"
+        multipart_chunksize="13"
+        num_download_attempts="13"
+        max_io_queue="13"
+        io_chunksize="13"
+        use_threads="false"
+        max_bandwidth="13" />
+     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+     <extra_dir type="temp" path="database/tmp_s3"/>
+</object_store>

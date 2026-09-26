@@ -6,6 +6,7 @@ Used by jobs that split large files into pieces to be processed concurrently
 on a gid in a scatter-gather mode. This does part of the scatter.
 
 """
+
 import json
 import logging
 import os

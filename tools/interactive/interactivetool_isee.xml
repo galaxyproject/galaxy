@@ -31,16 +31,6 @@ cp '$isee_script' '$outfile' &&
   <configfiles>
     <configfile name="isee_script"><![CDATA[
 
-## Import render function to template R Shiny app code
-## -----------------------------------------------------------------------------
-#import os
-#import importlib.util
-#set modpath = $os.path.join($__tool_directory__, "isee/render.py")
-#set spec = $importlib.util.spec_from_file_location("render", $modpath)
-#set render = $importlib.util.module_from_spec(spec)
-#$spec.loader.exec_module(render)
-
-
 ## Stop warning messages being emitted from R while still allowing genuine job failure
 ## -----------------------------------------------------------------------------
 devNull <- file("/dev/null", open = "wt")
@@ -54,8 +44,74 @@ library(HDF5Array)
 
 sce_path <- 'sce'
 sce <- loadHDF5SummarizedExperiment(sce_path)
+sce <- registerAppOptions(sce, color.maxlevels=40)
 
-$render.app()
+categorical_color_fun <- function(n){
+  if (n <= 37) {
+    # Less than 37 colours, use something from colour brewer
+    # (joining a bunch of palettes, best colours up front)
+    multiset <-  c(
+        RColorBrewer::brewer.pal(9, "Set1"),
+        RColorBrewer::brewer.pal(8, "Set2"),
+        RColorBrewer::brewer.pal(12, "Set3"),
+        RColorBrewer::brewer.pal(8, "Dark2"))
+    return(multiset[1:n])
+  }
+  else {
+    # More that 37, well at least it looks pretty
+    return(rainbow(n))
+  }
+}
+
+
+ecm <- ExperimentColorMap(
+
+  # The default is viridis::viridis
+  # https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html#the-color-scales
+  # Setting continous is entirely a matter of taste
+  # Some find magma easier to read than viridis
+
+  all_continuous = list(
+    assays  = viridis::magma,
+    colData = viridis::magma,
+    rowData = viridis::magma
+  ),
+  all_discrete = list(
+    colData = categorical_color_fun,
+    rowData = categorical_color_fun
+  )
+)
+
+
+# These options are all sce-contents agnostic.
+initial_plots <- c(
+
+  # Show umap with clusters by default
+  ReducedDimensionPlot(
+                   DataBoxOpen=TRUE,
+                   ColorBy="Column data",
+                   VisualBoxOpen=TRUE,
+                   PanelWidth=6L),
+
+  # Show gene expression plot separated (and coloured) by cluster, by default.
+  FeatureAssayPlot(XAxis = "Column data",
+                   DataBoxOpen=TRUE,
+                   VisualBoxOpen=TRUE,
+                   ColorBy="Column data",
+                   PanelWidth=6L
+                   ),
+  # Gene list is better wide
+  RowDataTable(PanelWidth=12L),
+
+  # For cell level observations (QC.)
+  ColumnDataPlot(PanelWidth=6L,
+                 DataBoxOpen=TRUE,
+                 VisualBoxOpen=TRUE )
+)
+
+app <- iSEE(sce,
+            colormap=ecm,
+            initial=initial_plots)
 
 shiny::runApp(app, host="0.0.0.0", port=8888, quiet=TRUE, launch.browser=FALSE)
 

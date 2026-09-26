@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Test Page</title>
+</head>
+<body>
+    <h1>Accessibility Test Page</h1>
+
+    <!-- Section with good accessibility -->
+    <section id="good-section" aria-label="Accessible form">
+        <h2>Accessible Form</h2>
+        <form>
+            <label for="good-input">Name:</label>
+            <input type="text" id="good-input" name="name" aria-required="true" />
+
+            <label for="good-email">Email:</label>
+            <input type="email" id="good-email" name="email" />
+
+            <button type="submit" aria-label="Submit form">Submit</button>
+        </form>
+
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='blue'/%3E%3C/svg%3E" alt="Blue square" />
+    </section>
+
+    <!-- Section with accessibility violations -->
+    <section id="bad-section" aria-label="Section with violations">
+        <h2>Form with Violations</h2>
+
+        <!-- Missing label for input -->
+        <input type="text" id="no-label-input" name="nolabel" />
+
+        <!-- Image without alt text -->
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='red'/%3E%3C/svg%3E" />
+
+        <!-- Button without accessible name -->
+        <button type="button"></button>
+
+        <!-- Low contrast text (white on white) -->
+        <div style="background-color: white; color: white;">Invisible text</div>
+    </section>
+
+    <!-- Section for testing context parameter -->
+    <section id="context-section" aria-label="Context test section">
+        <h2>Context Test Section</h2>
+        <label for="context-input">Context Input:</label>
+        <input type="text" id="context-input" name="context" />
+
+        <!-- This has a violation -->
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Ccircle cx='25' cy='25' r='20' fill='green'/%3E%3C/svg%3E" />
+    </section>
+</body>
+</html>

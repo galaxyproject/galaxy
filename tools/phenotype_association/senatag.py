@@ -21,6 +21,7 @@ d) Mark that SNP and all the snps connected to it as "visited". This should be
 done for each population.
 e) Continue steps b-e until all SNPs, in all populations have been visited.
 """
+
 from __future__ import print_function
 
 import heapq
@@ -94,7 +95,7 @@ class graph(object):
 
     def check_graph(self):
         for n in self.nodes.values():
-            ms = [x for x in n.edges]
+            ms = list(n.edges)
             for m in ms:
                 if n not in m.edges:
                     print("check : %s - %s" % (n, m), file=stderr)

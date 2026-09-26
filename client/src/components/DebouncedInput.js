@@ -36,7 +36,7 @@ export default {
                 debounceTime(this.delay),
                 distinctUntilChanged(),
                 filter((val) => val !== null && val !== this.value),
-                finalize(() => this.sendUpdate(this.incomingValue))
+                finalize(() => this.sendUpdate(this.incomingValue)),
             );
             this.$subscribeTo(debounced$, (val) => this.sendUpdate(val));
         }

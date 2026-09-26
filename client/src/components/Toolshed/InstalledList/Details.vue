@@ -3,9 +3,9 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <span v-if="loading">
-                <b-card>
+                <BCard>
                     <LoadingSpan message="Loading installed repository details" />
-                </b-card>
+                </BCard>
             </span>
             <div v-else>
                 <RepositoryDetails :repo="toolshedRepository" :toolshed-url="repo.tool_shed_url" />
@@ -14,15 +14,18 @@
     </div>
 </template>
 <script>
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
+import { BCard } from "bootstrap-vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
+        BCard,
         LoadingSpan,
         RepositoryDetails,
     },

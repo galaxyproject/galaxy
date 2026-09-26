@@ -1,20 +1,22 @@
 from enum import Enum
 from typing import (
-    List,
-    Optional,
+    Literal,
 )
 
-from pydantic import Field
-from typing_extensions import Literal
+from pydantic import (
+    Field,
+    RootModel,
+)
 
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
     GroupModel,
     Model,
     UserModel,
+    WithModelClass,
 )
 
 QUOTA = Literal["Quota"]
@@ -66,7 +68,9 @@ QuotaOperationField = Field(
 )
 
 
-class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+class DefaultQuota(
+    Model, WithModelClass
+):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
     model_class: DEFAULT_QUOTA_ASSOCIATION = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
@@ -79,7 +83,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
     )
 
 
-class UserQuota(Model):
+class UserQuota(Model, WithModelClass):
     model_class: USER_QUOTA_ASSOCIATION = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
@@ -88,7 +92,7 @@ class UserQuota(Model):
     )
 
 
-class GroupQuota(Model):
+class GroupQuota(Model, WithModelClass):
     model_class: GROUP_QUOTA_ASSOCIATION = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
@@ -97,17 +101,17 @@ class GroupQuota(Model):
     )
 
 
-class QuotaBase(Model):
+class QuotaBase(Model, WithModelClass):
     """Base model containing common fields for Quotas."""
 
     model_class: QUOTA = ModelClassField(QUOTA)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",
     )
     name: str = QuotaNameField
-    quota_source_label: Optional[str] = Field(
+    quota_source_label: str | None = Field(
         None,
         title="Quota Source Label",
         description="Quota source label",
@@ -121,12 +125,13 @@ class QuotaSummary(QuotaBase):
         ...,
         title="URL",
         description="The relative URL to get this particular Quota details from the rest API.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 
-class QuotaSummaryList(Model):
-    __root__: List[QuotaSummary] = Field(
+class QuotaSummaryList(RootModel):
+    root: list[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
     )
@@ -145,17 +150,17 @@ class QuotaDetails(QuotaBase):
         title="Display Amount",
         description="Human-readable representation of the `amount` field.",
     )
-    default: List[DefaultQuota] = Field(
+    default: list[DefaultQuota] = Field(
         [],
         title="Default",
         description="A list indicating which types of default user quotas, if any, are associated with this quota.",
     )
-    users: List[UserQuota] = Field(
+    users: list[UserQuota] = Field(
         [],
         title="Users",
         description="A list of specific users associated with this quota.",
     )
-    groups: List[GroupQuota] = Field(
+    groups: list[GroupQuota] = Field(
         [],
         title="Groups",
         description="A list of specific groups of users associated with this quota.",
@@ -188,17 +193,17 @@ class CreateQuotaParams(Model):
             " equivalent to ``no``."
         ),
     )
-    quota_source_label: Optional[str] = Field(
+    quota_source_label: str | None = Field(
         default=None,
         title="Quota Source Label",
         description="If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.",
     )
-    in_users: Optional[List[str]] = Field(
+    in_users: list[str] | None = Field(
         default=[],
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: Optional[List[str]] = Field(
+    in_groups: list[str] | None = Field(
         default=[],
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",
@@ -206,17 +211,17 @@ class CreateQuotaParams(Model):
 
 
 class UpdateQuotaParams(Model):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="Name",
         description="The new name of the quota. This must be unique within a Galaxy instance.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         title="Description",
         description="Detailed text description for this Quota.",
     )
-    amount: Optional[str] = Field(
+    amount: str | None = Field(
         None,
         title="Amount",
         description="Quota size (E.g. ``10000MB``, ``99 gb``, ``0.2T``, ``unlimited``)",
@@ -229,7 +234,7 @@ class UpdateQuotaParams(Model):
             " you must also provide the ``amount``, otherwise it will not take effect."
         ),
     )
-    default: Optional[DefaultQuotaValues] = Field(
+    default: DefaultQuotaValues | None = Field(
         default=None,
         title="Default",
         description=(
@@ -240,12 +245,12 @@ class UpdateQuotaParams(Model):
             " passing this parameter is equivalent to passing ``no``."
         ),
     )
-    in_users: Optional[List[str]] = Field(
+    in_users: list[str] | None = Field(
         default=None,
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: Optional[List[str]] = Field(
+    in_groups: list[str] | None = Field(
         default=None,
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",

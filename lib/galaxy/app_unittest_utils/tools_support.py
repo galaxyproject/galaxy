@@ -1,6 +1,6 @@
-""" Module contains test fixtures meant to aide in the testing of jobs and
+"""Module contains test fixtures meant to aide in the testing of jobs and
 tool evaluation. Such extensive "fixtures" are something of an anti-pattern
-so use of this should be limitted to tests of very 'extensive' classes.
+so use of this should be limited to tests of very 'extensive' classes.
 """
 
 import os.path
@@ -10,7 +10,6 @@ import tempfile
 from collections import defaultdict
 from typing import (
     cast,
-    Optional,
 )
 
 import galaxy.datatypes.registry
@@ -20,18 +19,24 @@ from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
 from galaxy.util.bunch import Bunch
+from galaxy.util.path import StrPath
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
+def mock_app_for_tool_support() -> UniverseApplication:
+    app = cast(UniverseApplication, MockApp())
+    app.config.new_file_path = tempfile.mkdtemp()
+    app.config.admin_users = "mary@example.com"
+    return app
+
+
 class UsesApp:
     def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = cast(UniverseApplication, MockApp())
-        self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
-        self.app.config.admin_users = "mary@example.com"
+        self.app = mock_app_for_tool_support()
 
     def tear_down_app(self):
         shutil.rmtree(self.test_directory)
@@ -72,7 +77,7 @@ class MockActionI:
 
 
 class UsesTools(UsesApp):
-    tool_action: Optional[MockActionI] = None
+    tool_action: MockActionI | None = None
 
     def _init_tool(
         self,
@@ -83,10 +88,10 @@ class UsesTools(UsesApp):
         tool_id="test_tool",
         extra_file_contents=None,
         extra_file_path=None,
-        tool_path=None,
+        tool_path: StrPath | None = None,
     ):
         if tool_path is None:
-            self.tool_file = os.path.join(self.test_directory, filename)
+            self.tool_file: StrPath = os.path.join(self.test_directory, filename)
             contents_template = string.Template(tool_contents)
             tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
             self.__write_tool(tool_contents)
@@ -96,7 +101,7 @@ class UsesTools(UsesApp):
             self.tool_file = tool_path
         return self.__setup_tool()
 
-    def _init_tool_for_path(self, tool_file):
+    def _init_tool_for_path(self, tool_file: StrPath):
         self.tool_file = tool_file
         return self.__setup_tool()
 
@@ -106,10 +111,13 @@ class UsesTools(UsesApp):
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
 
-    def __setup_tool(self):
+    @property
+    def tool_source(self):
         tool_source = get_tool_source(self.tool_file)
-        self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
-        self.tool.assert_finalized()
+        return tool_source
+
+    def __setup_tool(self):
+        self.tool = create_tool_from_source(self.app, self.tool_source, config_file=self.tool_file)
         if getattr(self, "tool_action", None):
             self.tool.tool_action = self.tool_action
         return self.tool
@@ -124,9 +132,8 @@ class MockContext:
     def __init__(self, model_objects=None):
         self.expunged_all = False
         self.flushed = False
-        self.model_objects = model_objects or defaultdict(lambda: {})
+        self.model_objects = model_objects or defaultdict(dict)
         self.created_objects = []
-        self.current = self
 
     def expunge_all(self):
         self.expunged_all = True
@@ -134,11 +141,17 @@ class MockContext:
     def query(self, clazz):
         return MockQuery(self.model_objects.get(clazz))
 
+    def get(self, clazz, id):
+        return self.query(clazz).get(id)
+
     def flush(self):
         self.flushed = True
 
     def add(self, object):
         self.created_objects.append(object)
+
+    def commit(self):
+        pass
 
 
 class MockQuery:

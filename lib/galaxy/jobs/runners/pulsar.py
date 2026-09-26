@@ -3,15 +3,18 @@
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
 
+import copy
 import errno
 import logging
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from time import sleep
 from typing import (
     Any,
-    Dict,
+    Optional,
+    TYPE_CHECKING,
 )
 
 import pulsar.core
@@ -35,23 +38,39 @@ from pulsar.client import (
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
+from sqlalchemy import select
 
 from galaxy import model
-from galaxy.job_execution.compute_environment import ComputeEnvironment
-from galaxy.jobs import JobDestination
+from galaxy.job_execution.compute_environment import (
+    ComputeEnvironment,
+    dataset_path_to_extra_path,
+)
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.handler import JobHandlerQueue
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
     JobState,
 )
+from galaxy.model.base import check_database_connection
+from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
+from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
+from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     galaxy_directory,
     specs,
     string_as_bool_or_none,
+    unicodify,
 )
-from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from pulsar.client.client import BaseJobClient
+
+    from galaxy.jobs import MinimalJobWrapper
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +86,7 @@ MINIMUM_PULSAR_VERSIONS = {
     "_default_": Version("0.7.0.dev3"),
     "remote_metadata": Version("0.8.0"),
     "remote_container_handling": Version("0.9.1.dev0"),  # probably 0.10 ultimately?
+    "dataset_collector_descriptions": Version("0.15.13.dev0"),  # Support for directory-aware pattern matching
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -76,6 +96,23 @@ FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitori
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
+
+
+def _tool_provided_metadata_client_outputs(
+    tool: "Tool", tool_working_directory: str
+) -> tuple[str | None, list[dict[str, str]]]:
+    if not tool.uses_tool_provided_metadata:
+        return None, []
+    safe_path_from_directory(tool.provided_metadata_file, tool_working_directory)
+    dynamic_output = re.escape(tool.provided_metadata_file)
+    dynamic_file_sources = [
+        {
+            "path": tool.provided_metadata_file,
+            "type": "galaxy" if tool.provided_metadata_style == "default" else "legacy_galaxy",
+        }
+    ]
+    return dynamic_output, dynamic_file_sources
+
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -183,6 +220,26 @@ PULSAR_PARAM_SPECS = dict(
         map=int,
         default=None,
     ),
+    relay_url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_username=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_password=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_topic_prefix=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    custom_vm_image=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
 )
 
 
@@ -190,7 +247,18 @@ PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
 
 
-class PulsarJobRunner(AsynchronousJobRunner):
+@dataclass
+class PulsarFinishJobResult:
+    tool_stdout: str | None
+    tool_stderr: str | None
+    exit_code: int | None
+    job_stdout: str | None
+    job_stderr: str | None
+    remote_metadata_directory: str | None
+    job_metrics_directory: str
+
+
+class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """Base class for pulsar job runners."""
 
     start_methods = ["_init_worker_threads", "_init_client_manager", "_monitor"]
@@ -198,6 +266,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
     default_build_pulsar_app = False
     use_mq = False
     poll = True
+    recovers_finishing_jobs = True
+    client_manager_kwargs: dict[str, Any] = {}
 
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
@@ -228,19 +298,27 @@ class PulsarJobRunner(AsynchronousJobRunner):
             pulsar_conf_file = self.runner_params.get("pulsar_config", None)
         self.__init_pulsar_app(pulsar_conf, pulsar_conf_file)
 
-        client_manager_kwargs = {}
-        for kwd in "manager", "cache", "transport", "persistence_directory":
-            client_manager_kwargs[kwd] = self.runner_params[kwd]
+        client_manager_kwargs = self._pulsar_client_manager_args()
         if self.pulsar_app is not None:
             client_manager_kwargs["pulsar_app"] = self.pulsar_app
-            # TODO: Hack remove this following line pulsar lib update
-            # that includes https://github.com/galaxyproject/pulsar/commit/ce0636a5b64fae52d165bcad77b2caa3f0e9c232
-            client_manager_kwargs["file_cache"] = None
+        self.client_manager = build_client_manager(**client_manager_kwargs)
+
+    def _pulsar_client_manager_args(self):
+        """Most connection parameters can be specified as environment parameters, but...
+
+        ... global parameters about message queues, what Pulsar client to use, etc... must
+        be specified as runner parameters. This method returns a configuration based
+        on the runner parameters that is ready for Pulsar's build_client_manager.
+        """
+        client_manager_kwargs = self.client_manager_kwargs.copy()
+        for kwd in "manager", "cache", "transport", "persistence_directory":
+            client_manager_kwargs[kwd] = self.runner_params[kwd]
 
         for kwd in self.runner_params.keys():
-            if kwd.startswith("amqp_") or kwd.startswith("transport_"):
+            if kwd.startswith("amqp_") or kwd.startswith("transport_") or kwd.startswith("relay_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
-        self.client_manager = build_client_manager(**client_manager_kwargs)
+
+        return client_manager_kwargs
 
     def __init_pulsar_app(self, conf, pulsar_conf_path):
         if conf is None and pulsar_conf_path is None and not self.default_build_pulsar_app:
@@ -264,11 +342,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
 
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str) -> JobDestination:
         """Convert a legacy URL to a job destination."""
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         if self.use_mq:
             # Might still need to check pod IPs.
             job_wrapper = job_state.job_wrapper
@@ -281,7 +359,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                         job_state.job_id,
                         persisted_state,
                     )
-                    job_state = None
+                    return None
                 elif persisted_state == model.Job.states.RUNNING:
                     client = self.get_client_from_state(job_state)
                     job_ip = client.job_ip()
@@ -291,15 +369,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
                             ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
                         self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
                         log.debug("(%s) Got ports for entry point: %s", job_state.job_id, str(ports_dict))
-                        job_state = None
+                        return None
             else:
                 # No need to monitor MQ jobs that have no entry points
-                job_state = None
+                return None
             return job_state
         else:
             return self.check_watched_item_state(job_state)
 
-    def check_watched_item_state(self, job_state):
+    def check_watched_item_state(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -311,12 +389,21 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        job_state = self._update_job_state_for_status(job_state, status)
-        return job_state
+        return self._update_job_state_for_status(job_state, status)
 
-    def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
+    def _update_job_state_for_status(
+        self,
+        job_state: AsynchronousJobState,
+        pulsar_status: str | None,
+        full_status: dict[str, Any] | None = None,
+    ) -> AsynchronousJobState | None:
         log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
-        if pulsar_status in ["complete", "cancelled"] or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+        if pulsar_status in ["complete", "cancelled"]:
+            self.mark_as_finished(job_state)
+            return None
+        if job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+            client = self.get_client_from_state(job_state)
+            client.kill()
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:
@@ -332,7 +419,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_state.job_wrapper.change_state(model.Job.states.RUNNING)
         return job_state
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         job_destination = job_wrapper.job_destination
         self._populate_parameter_defaults(job_destination)
 
@@ -353,7 +440,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+                    compute_environment.materialized_objects
+                ):
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -411,15 +500,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_directory_path = tool_env.get("job_directory_path")
                 if job_directory_path:
                     config_files.append(job_directory_path)
+            assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
                 client_inputs=client_inputs,  # Only one of these input defs should be non-None
-                client_outputs=self.__client_outputs(client, job_wrapper),
+                client_outputs=self.__client_outputs(client, job_wrapper, remote_job_config),
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
-                tool=job_wrapper.tool,
+                tool=job_wrapper.tool if job_wrapper.tool and job_wrapper.tool.tool_dir else None,
                 config_files=config_files,
                 dependencies_description=dependencies_description,
                 env=env,
@@ -437,18 +527,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
-            # Flush with change_state.
-            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=False, job=job)
-            job_wrapper.change_state(model.Job.states.QUEUED, job=job)
+            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=True, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
             return
 
         pulsar_job_state = AsynchronousJobState(
-            job_wrapper=job_wrapper, job_id=external_job_id, job_destination=job_destination
+            job_wrapper=job_wrapper, job_destination=job_destination, job_id=external_job_id
         )
-        pulsar_job_state.old_state = True
+        pulsar_job_state.old_state = model.Job.states.NEW
         pulsar_job_state.running = False
         self.monitor_job(pulsar_job_state)
 
@@ -458,17 +546,18 @@ class PulsarJobRunner(AsynchronousJobRunner):
             "remote_container_handling": PulsarJobRunner.__remote_container_handling(client),
         }
 
-    def __prepare_job(self, job_wrapper, job_destination):
+    def __prepare_job(self, job_wrapper: "MinimalJobWrapper", job_destination):
         """Build command-line and Pulsar client for this job."""
         command_line = None
         client = None
         remote_job_config = None
-        compute_environment = None
+        compute_environment: PulsarComputeEnvironment | None = None
         remote_container = None
 
         fail_or_resubmit = False
         try:
             client = self.get_client_from_wrapper(job_wrapper)
+            assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
             remote_container_handling = PulsarJobRunner.__remote_container_handling(client)
@@ -485,14 +574,34 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if rewrite_parameters:
                 compute_environment = PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
                 prepare_kwds["compute_environment"] = compute_environment
-            job_wrapper.prepare(**prepare_kwds)
+
+            try:
+                job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
+            except Exception as e:
+                if isinstance(e, ParameterValueError):
+                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                else:
+                    log.exception("failure preparing job %d", job_wrapper.job_id)
+                job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+                job_state.fail_message = str(e)
+                self.work_queue.put((self.fail_job, job_state))
+                job_prepare_ret = False
+            if job_prepare_ret is False:
+                return command_line, client, remote_job_config, compute_environment, remote_container
+
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
-            metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            metadata_kwds = self.__build_metadata_configuration(
+                client,
+                job_wrapper,
+                remote_metadata,
+                remote_job_config,
+                compute_environment=compute_environment,
+            )
             remote_working_directory = remote_job_config["working_directory"]
-            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
-            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            remote_job_directory = remote_job_config["job_directory"]
+            remote_tool_directory = remote_job_config["tools_directory"]
             pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
             remote_command_params = dict(
                 working_directory=remote_job_config["metadata_directory"],
@@ -512,6 +621,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
                     compute_tool_directory=remote_tool_directory,
                     compute_job_directory=remote_job_directory,
                 )
+                self._rewrite_container_for_compute_environment(container, compute_environment)
+            metadata_container = self._get_metadata_container(
+                job_wrapper, job_directory_type="pulsar", working_directory=remote_job_directory
+            )
 
             # Pulsar handles ``create_tool_working_directory`` and
             # ``include_work_dir_outputs`` details.
@@ -524,6 +637,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
                 remote_job_directory=remote_job_directory,
+                metadata_container=metadata_container,
             )
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
@@ -542,6 +656,30 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
+
+    @staticmethod
+    def _rewrite_container_for_compute_environment(container, compute_environment):
+        """Rewrite the resolved container image path for the compute environment.
+
+        Container resolution runs against the Galaxy-side filesystem, but the
+        image is read on the compute node, which may expose e.g. CVMFS at a
+        different path (cvmfsexec mountrepo mode). Route the resolved image path
+        through ``ComputeEnvironment.container_path_rewrite`` (only populated in
+        ``rewrite_parameters`` mode) so a destination ``file_actions`` rule with
+        ``path_types: container`` can remap it.
+
+        No-op when there is no compute environment (the rewrite is a Pulsar
+        ``rewrite_parameters`` concept), when the image identifier is not a
+        filesystem path (e.g. a ``docker://`` or registry reference, which the
+        compute node resolves itself), or when no matching rule is configured.
+        """
+        if container is None or compute_environment is None:
+            return
+        if not container.image_identifier_is_path:
+            return
+        rewritten_container_id = compute_environment.container_path_rewrite(container.container_id)
+        if rewritten_container_id:
+            container.container_id = rewritten_container_id
 
     def __prepare_input_files_locally(self, job_wrapper):
         """Run task splitting commands locally."""
@@ -580,17 +718,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
         output_paths = job_wrapper.job_io.get_output_fnames()
         return [str(o) for o in output_paths]  # Force job_path from DatasetPath objects.
 
-    def get_input_files(self, job_wrapper):
-        input_paths = job_wrapper.job_io.get_input_paths()
+    def get_input_files(self, job_wrapper: "MinimalJobWrapper"):
+        input_paths = job_wrapper.job_io.get_input_paths(None)
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
-    def get_client_from_wrapper(self, job_wrapper):
+    def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
         job_id = job_wrapper.job_id
-        if hasattr(job_wrapper, "task_id"):
-            job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
-        user = job_wrapper.get_job().user
-        if user:
+        if user := job_wrapper.get_job().user:
             for key, value in params.items():
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
@@ -598,12 +733,22 @@ class PulsarJobRunner(AsynchronousJobRunner):
         env = getattr(job_wrapper.job_destination, "env", [])
         return self.get_client(params, job_id, env)
 
-    def get_client_from_state(self, job_state):
+    def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
         job_destination_params = job_state.job_destination.params
-        job_id = job_state.job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
-        return self.get_client(job_destination_params, job_id)
+        job_wrapper = job_state.job_wrapper
+        job_id = job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
+        # Read the external id from the job rather than from job_state.job_id, which falls
+        # back to the Galaxy id when nothing was ever recorded.
+        external_id = job_wrapper.get_job().get_job_runner_external_id()
+        return self.get_client(job_destination_params, job_id, external_id=external_id)
 
-    def get_client(self, job_destination_params, job_id, env=None):
+    def get_client(
+        self,
+        job_destination_params: dict[str, Any],
+        job_id,
+        env: list | None = None,
+        external_id: str | None = None,
+    ) -> "BaseJobClient":
         # Cannot use url_for outside of web thread.
         # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
         if env is None:
@@ -620,11 +765,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
+        if external_id:
+            # TES assigns a task id at submission that cannot be derived from the
+            # Galaxy job id. Pass it beside the Galaxy id so provider operations use
+            # the recorded task while Galaxy file and token endpoints remain valid.
+            get_client_kwds["external_id"] = str(external_id)
         # Turn MutableDict into standard dict for pulsar consumption
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
-    def finish_job(self, job_state: JobState):
+    def finish_job(self, job_state: JobState) -> None:
         assert isinstance(
             job_state, AsynchronousJobState
         ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
@@ -633,8 +783,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_metadata_directory = run_results.get("metadata_directory", None)
-            tool_stdout = run_results.get("stdout", "")
-            tool_stderr = run_results.get("stderr", "")
+            tool_stdout = unicodify(run_results.get("stdout", ""), strip_null=True)
+            tool_stderr = unicodify(run_results.get("stderr", ""), strip_null=True)
+            for file in ("tool_stdout", "tool_stderr"):
+                if tool_stdout and tool_stderr:
+                    pass
+                try:
+                    file_path = os.path.join(job_wrapper.working_directory, "outputs", file)
+                    file_content = open(file_path)
+                    if tool_stdout is None and file == "tool_stdout":
+                        tool_stdout = file_content.read()
+                    elif tool_stderr is None and file == "tool_stderr":
+                        tool_stderr = file_content.read()
+                except Exception:
+                    pass
             job_stdout = run_results.get("job_stdout")
             job_stderr = run_results.get("job_stderr")
             exit_code = run_results.get("returncode")
@@ -648,7 +810,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
             cleanup_job = job_wrapper.cleanup_job
-            client_outputs = self.__client_outputs(client, job_wrapper)
+            # Pass run_results as remote_job_config for version detection
+            client_outputs = self.__client_outputs(client, job_wrapper, run_results)
             finish_args = dict(
                 client=client,
                 job_completed_normally=completed_normally,
@@ -665,35 +828,87 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
-        if not PulsarJobRunner.__remote_metadata(client):
+        result = PulsarFinishJobResult(
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+            remote_metadata_directory=remote_metadata_directory,
+            job_metrics_directory=os.path.join(job_wrapper.working_directory, "metadata"),
+        )
+        self._complete_staged_job(
+            job_wrapper,
+            result,
+            handle_metadata_externally=not PulsarJobRunner.__remote_metadata(client),
+        )
+
+    def _complete_staged_job(
+        self,
+        job_wrapper,
+        result: PulsarFinishJobResult,
+        handle_metadata_externally=True,
+    ):
+        """Set metadata and finish the job, once outputs are already staged back."""
+        if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
                 os.path.join(job_wrapper.working_directory, f"galaxy_{job_wrapper.job_id}.ec"), "w"
             ) as exit_code_file:
-                exit_code_file.write(str(exit_code))
+                exit_code_file.write(str(result.exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        # Finish the job
+        self._finish_pulsar_job(job_wrapper, result)
+
+    def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
         try:
-            job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
-            # Following check is a hack for jobs started during 19.01 or earlier release
-            # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
-            # along with hacks for legacy metadata compute strategy.
-            if not os.path.exists(job_metrics_directory) or not any(
-                "__instrument" in f for f in os.listdir(job_metrics_directory)
-            ):
-                job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
-                tool_stdout,
-                tool_stderr,
-                exit_code,
-                job_stdout=job_stdout,
-                job_stderr=job_stderr,
-                remote_metadata_directory=remote_metadata_directory,
-                job_metrics_directory=job_metrics_directory,
+                result.tool_stdout,
+                result.tool_stderr,
+                result.exit_code,
+                job_stdout=result.job_stdout,
+                job_stderr=result.job_stderr,
+                remote_metadata_directory=result.remote_metadata_directory,
+                job_metrics_directory=result.job_metrics_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True)
+            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=result.job_metrics_directory)
+
+    def _finish_staged_job(self, job_state):
+        """Redo the tail of ``finish_job`` for a job interrupted during external metadata."""
+        job_wrapper = job_state.job_wrapper
+        working_directory = job_wrapper.working_directory
+        exit_code_path = os.path.join(working_directory, f"galaxy_{job_wrapper.job_id}.ec")
+        try:
+            with open(exit_code_path) as exit_code_file:
+                exit_code = int(exit_code_file.read().strip())
+        except Exception:
+            # Written just before the metadata step, so its absence means the job was
+            # interrupted earlier than FINISHING implies - finishing on a guessed exit
+            # code would be worse than failing loudly.
+            log.exception("(%s) Cannot recover FINISHING job, no exit code at %s", job_wrapper.job_id, exit_code_path)
+            job_wrapper.fail("Unable to recover job interrupted while setting metadata", exception=True)
+            return
+        tool_stdout = self.__read_staged_stream(working_directory, "tool_stdout")
+        tool_stderr = self.__read_staged_stream(working_directory, "tool_stderr")
+        result = PulsarFinishJobResult(
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=None,
+            job_stderr=None,
+            remote_metadata_directory=None,
+            job_metrics_directory=os.path.join(working_directory, "metadata"),
+        )
+        self._complete_staged_job(job_wrapper, result)
+
+    @staticmethod
+    def __read_staged_stream(working_directory, name):
+        try:
+            with open(os.path.join(working_directory, "outputs", name)) as stream:
+                return unicodify(stream.read(), strip_null=True)
+        except Exception:
+            return ""
 
     def check_pid(self, pid):
         try:
@@ -701,11 +916,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
             return True
         except OSError as e:
             if e.errno == errno.ESRCH:
-                log.debug("check_pid(): PID %d is dead" % pid)
+                log.debug("check_pid(): PID %d is dead", pid)
             else:
                 log.warning(
-                    "check_pid(): Got errno %s when attempting to check PID %d: %s"
-                    % (errno.errorcode[e.errno], pid, e.strerror)
+                    "check_pid(): Got errno %s when attempting to check PID %d: %s",
+                    errno.errorcode[e.errno],
+                    pid,
+                    e.strerror,
                 )
             return False
 
@@ -714,7 +931,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if not job.job_runner_external_id:
             return
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
-        client = self.get_client(job.destination_params, job.job_runner_external_id)
+        client = self.get_client(
+            job.destination_params, job.job_runner_external_id, external_id=job.job_runner_external_id
+        )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata(client) and job_ext_output_metadata:
             pid = job_ext_output_metadata[
@@ -725,40 +944,47 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 return
             pid = int(pid)
             if not self.check_pid(pid):
-                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled", job.id, pid)
                 return
             for sig in [15, 9]:
                 try:
                     os.killpg(pid, sig)
                 except OSError as e:
                     log.warning(
-                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
-                        % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
+                        job.id,
+                        errno.errorcode[e.errno],
+                        sig,
+                        pid,
+                        e.strerror,
                     )
                     return  # give up
                 sleep(2)
                 if not self.check_pid(pid):
-                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
+                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d", job.id, pid, sig)
                     return
                 else:
-                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL", job.id, pid)
         else:
             # Remote kill
             pulsar_url = job.job_runner_name
             job_id = job.job_runner_external_id
             log.debug(f"Attempt remote Pulsar kill of job with url {pulsar_url} and id {job_id}")
-            client = self.get_client(job.destination_params, job_id)
+            client = self.get_client(job.destination_params, job_id, external_id=job_id)
             client.kill()
 
-    def recover(self, job, job_wrapper):
-        """Recover jobs stuck in the queued/running state when Galaxy started."""
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
+        """Recover jobs stuck in the queued/running/finishing state when Galaxy started."""
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
+        if state == model.Job.states.FINISHING:
+            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running external metadata for recovery")
+            self.work_queue.put((self._finish_staged_job, job_state))
+        elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
-            job_state.old_state = True
-            job_state.running = state == model.Job.states.RUNNING
+            job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
+            job_state.running = state != model.Job.states.QUEUED
             self.monitor_queue.put(job_state)
 
     def shutdown(self):
@@ -767,24 +993,39 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if self.pulsar_app:
             self.pulsar_app.shutdown()
 
-    def _job_state(self, job, job_wrapper):
-        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
-        job_state = AsynchronousJobState(
-            job_wrapper=job_wrapper, job_id=raw_job_id, job_destination=job_wrapper.job_destination
-        )
+    def _job_state(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> AsynchronousJobState:
         # TODO: Determine why this is set when using normal message queue updates
         # but not CLI submitted MQ updates...
-        job_state.runner_url = job_wrapper.get_job_runner_url()
+        raw_job_id = job.get_job_runner_external_id() or str(job_wrapper.job_id)
+        job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_destination=job_wrapper.job_destination, job_id=raw_job_id
+        )
         return job_state
 
-    def __client_outputs(self, client, job_wrapper):
+    def __client_outputs(
+        self, client: "BaseJobClient", job_wrapper: "MinimalJobWrapper", remote_job_config
+    ) -> ClientOutputs:
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration("metadata_strategy", None)
+        assert job_wrapper.tool is not None
         tool = job_wrapper.tool
-        tool_provided_metadata_file_path = tool.provided_metadata_file
-        tool_provided_metadata_style = tool.provided_metadata_style
+        tool_provided_metadata_dynamic_output, dynamic_file_sources = _tool_provided_metadata_client_outputs(
+            tool, job_wrapper.tool_working_directory
+        )
 
         dynamic_outputs = None  # use default
+        dataset_collector_descriptions = []
+
+        # Check if Pulsar version supports dataset collector descriptions (>= 0.15.13)
+        pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
+        supports_dataset_collectors = pulsar_version >= MINIMUM_PULSAR_VERSIONS["dataset_collector_descriptions"]
+        if supports_dataset_collectors:
+            log.debug(f"Pulsar version {pulsar_version} supports dataset collector descriptions")
+        else:
+            log.debug(
+                f"Pulsar version {pulsar_version} does not support dataset collector descriptions, using legacy pattern matching"
+            )
+
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
@@ -794,18 +1035,43 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
-            # grab discovered outputs...
-            dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
-            # grab tool provided metadata (galaxy.json) also...
-            dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
+
+            # Collect dataset collector descriptions for proper pattern matching in Pulsar
+            # These will be used for pattern matching with full support for directory, recurse, match_relative_path
+            # Only if Pulsar version supports it (>= 0.15.13)
+            # Only include FilePatternDatasetCollectionDescription - ToolProvidedMetadataDatasetCollection
+            # uses the dynamic_file_sources mechanism (galaxy.json) and has no patterns for file matching
+            if supports_dataset_collectors:
+                for output in job_wrapper.tool.outputs.values():
+                    if isinstance(output, ToolOutput):
+                        dataset_collector_descriptions.extend(
+                            [
+                                desc.to_dict()
+                                for desc in output.dataset_collector_descriptions
+                                if isinstance(desc, FilePatternDatasetCollectionDescription)
+                            ]
+                        )
+                for output_collection in job_wrapper.tool.output_collections.values():
+                    collector_descs = output_collection.structure.dataset_collector_descriptions
+                    if collector_descs:
+                        dataset_collector_descriptions.extend(
+                            [
+                                desc.to_dict()
+                                for desc in collector_descs
+                                if isinstance(desc, FilePatternDatasetCollectionDescription)
+                            ]
+                        )
+
+            # Only add raw patterns to dynamic_outputs if we don't have dataset collector descriptions
+            # (dataset collectors provide more precise matching with directory restrictions)
+            else:
+                # grab discovered outputs...
+                dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
+            if tool_provided_metadata_dynamic_output is not None:
+                # Grab explicitly enabled tool-provided metadata also.
+                dynamic_outputs.append(tool_provided_metadata_dynamic_output)
             output_files = self.get_output_files(job_wrapper)
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-        dynamic_file_sources = [
-            {
-                "path": tool_provided_metadata_file_path,
-                "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy",
-            }
-        ]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,
@@ -814,6 +1080,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             version_file=job_wrapper.get_version_string_path(),
             dynamic_outputs=dynamic_outputs,
             dynamic_file_sources=dynamic_file_sources,
+            dataset_collector_descriptions=dataset_collector_descriptions,
         )
         return client_outputs
 
@@ -893,15 +1160,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __rewrite_parameters(pulsar_client):
         return string_as_bool_or_none(pulsar_client.destination_params.get("rewrite_parameters", False)) or False
 
-    def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
-        metadata_kwds = {}
-        if remote_metadata and not job_wrapper.use_metadata_binary:
-            remote_system_properties = remote_job_config.get("system_properties", {})
-            remote_galaxy_home = remote_system_properties.get("galaxy_home", None)
-            if not remote_galaxy_home:
-                raise Exception(NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE)
-            metadata_kwds["exec_dir"] = remote_galaxy_home
-            outputs_directory = remote_job_config["outputs_directory"]
+    def __build_metadata_configuration(
+        self,
+        client,
+        job_wrapper,
+        remote_metadata,
+        remote_job_config,
+        compute_environment: Optional["PulsarComputeEnvironment"] = None,
+    ):
+        metadata_kwds: dict[str, Any] = {}
+        if remote_metadata:
             working_directory = remote_job_config["working_directory"]
             metadata_directory = remote_job_config["metadata_directory"]
             # For metadata calculation, we need to build a list of of output
@@ -909,29 +1177,44 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # and false path indicating location on compute server. Since the
             # Pulsar disables from_work_dir copying as part of the job command
             # line we need to take the list of output locations on the Pulsar
-            # server (produced by self.get_output_files(job_wrapper)) and for
+            # server (produced by job_wrapper.job_io.get_output_fnames() and for
             # each work_dir output substitute the effective path on the Pulsar
             # server relative to the remote working directory as the
             # false_path to send the metadata command generation module.
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
-            outputs = [
-                Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path)
-                for path in self.get_output_files(job_wrapper)
-            ]
-            for output in outputs:
-                for pulsar_workdir_path, real_path in work_dir_outputs:
-                    if real_path == output.real_path:
-                        output.false_path = pulsar_workdir_path
-            metadata_kwds["output_fnames"] = outputs
-            metadata_kwds["compute_tmp_dir"] = metadata_directory
-            metadata_kwds["config_root"] = remote_galaxy_home
-            default_config_file = os.path.join(remote_galaxy_home, "config/galaxy.ini")
-            metadata_kwds["config_file"] = remote_system_properties.get("galaxy_config_file", default_config_file)
-            metadata_kwds["dataset_files_path"] = remote_system_properties.get("galaxy_dataset_files_path", None)
+            outputs = job_wrapper.job_io.get_output_fnames()
+            # copy fixes 'test/integration/test_pulsar_embedded_remote_metadata.py::test_tools[job_properties]'
+            real_path_to_output = {o.real_path: copy.copy(o) for o in outputs}
+            rewritten_outputs = []
+            for pulsar_workdir_path, real_path in work_dir_outputs:
+                work_dir_output = real_path_to_output.pop(real_path, None)
+                if work_dir_output:
+                    work_dir_output.false_path = pulsar_workdir_path
+                    rewritten_outputs.append(work_dir_output)
+
+            for output in real_path_to_output.values():
+                if compute_environment:
+                    output.false_path = compute_environment.path_mapper.remote_output_path_rewrite(str(output))
+                rewritten_outputs.append(output)
+
+            metadata_kwds["output_fnames"] = rewritten_outputs
+            remote_system_properties = remote_job_config.get("system_properties", {})
+            remote_galaxy_home = remote_system_properties.get("galaxy_home")
+            if not job_wrapper.use_metadata_binary:
+                if not remote_galaxy_home:
+                    raise Exception(NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE)
+                metadata_kwds["exec_dir"] = remote_galaxy_home
+                metadata_kwds["compute_tmp_dir"] = metadata_directory
+                metadata_kwds["config_root"] = remote_galaxy_home
+                default_config_file = os.path.join(remote_galaxy_home, "config/galaxy.ini")
+                metadata_kwds["config_file"] = remote_system_properties.get("galaxy_config_file", default_config_file)
+                metadata_kwds["dataset_files_path"] = remote_system_properties.get("galaxy_dataset_files_path", None)
             if PulsarJobRunner.__use_remote_datatypes_conf(client):
-                remote_datatypes_config = remote_system_properties.get("galaxy_datatypes_config_file", None)
+                remote_datatypes_config = remote_system_properties.get("galaxy_datatypes_config_file")
                 if not remote_datatypes_config:
                     log.warning(NO_REMOTE_DATATYPES_CONFIG)
+                    if not remote_galaxy_home:
+                        raise Exception(NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE)
                     remote_datatypes_config = os.path.join(remote_galaxy_home, "datatypes_conf.xml")
                 metadata_kwds["datatypes_config"] = remote_datatypes_config
             else:
@@ -942,20 +1225,26 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_kwds["datatypes_config"] = datatypes_config
         return metadata_kwds
 
-    def __async_update(self, full_status):
+    def __async_update(self, full_status: dict[str, Any]) -> None:
         galaxy_job_id = None
         remote_job_id = None
         try:
+            check_database_connection(self.sa_session)
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...
-                sa_session = self.app.model.session
-                galaxy_job_id = (
-                    sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
-                )
+                stmt = select(model.Job.id).filter(model.Job.job_runner_external_id == remote_job_id)
+                galaxy_job_id = self.app.model.session.execute(stmt).scalar_one()
             else:
                 galaxy_job_id = remote_job_id
+            assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
+            if full_status["status"] in ("complete", "cancelled") and job.handler != self.app.config.server_name:
+                # Claim the job: startup recovery only picks up jobs whose handler is this
+                # server, and the terminal message arrived here rather than at the old owner.
+                # Commit now - the finish work runs on another thread with its own session.
+                job.handler = self.app.config.server_name
+                self.sa_session.commit()
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
@@ -990,10 +1279,9 @@ class PulsarMQJobRunner(PulsarJobRunner):
 
 
 DEFAULT_PULSAR_CONTAINER = "galaxy/pulsar-pod-staging:0.15.0.2"
-COEXECUTION_DESTENTATION_DEFAULTS = {
+COEXECUTION_DESTINATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",
-    "jobs_directory": "/pulsar_staging",
     "pulsar_container_image": DEFAULT_PULSAR_CONTAINER,
     "remote_container_handling": True,
     "url": PARAMETER_SPECIFICATION_IGNORED,
@@ -1001,37 +1289,63 @@ COEXECUTION_DESTENTATION_DEFAULTS = {
 }
 
 
-class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
-    destination_defaults = COEXECUTION_DESTENTATION_DEFAULTS
-
-    def _populate_parameter_defaults(self, job_destination):
-        super()._populate_parameter_defaults(job_destination)
-        params = job_destination.params
-        # Set some sensible defaults for Pulsar application that runs in staging container.
-        if "pulsar_app_config" not in params:
-            params["pulsar_app_config"] = {}
-        pulsar_app_config = params["pulsar_app_config"]
-        if "staging_directory" not in pulsar_app_config:
-            # coexecution always uses a fixed path for staging directory
-            pulsar_app_config["staging_directory"] = params.get("jobs_directory")
+class PulsarCoexecutionJobRunner(PulsarJobRunner):
+    destination_defaults = COEXECUTION_DESTINATION_DEFAULTS
 
 
-KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTENTATION_DEFAULTS}
+KUBERNETES_DESTINATION_DEFAULTS: dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
+
+KUBERNETES_CLIENT_MANAGER_KWARGS = {"k8s_enabled": True}
 
 
 class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
     destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
+    use_mq = True
     poll = True  # Poll so we can check API for pod IP for ITs.
+    client_manager_kwargs = KUBERNETES_CLIENT_MANAGER_KWARGS
 
 
-TES_DESTENTATION_DEFAULTS: Dict[str, Any] = {
+TES_DESTINATION_DEFAULTS: dict[str, Any] = {
     "tes_url": PARAMETER_SPECIFICATION_REQUIRED,
-    **COEXECUTION_DESTENTATION_DEFAULTS,
+    **COEXECUTION_DESTINATION_DEFAULTS,
 }
+
+TES_CLIENT_MANAGER_KWARGS = {"tes_enabled": True}
 
 
 class PulsarTesJobRunner(PulsarCoexecutionJobRunner):
-    destination_defaults = TES_DESTENTATION_DEFAULTS
+    destination_defaults = TES_DESTINATION_DEFAULTS
+    client_manager_kwargs = TES_CLIENT_MANAGER_KWARGS
+    use_mq = True
+    poll = False
+
+
+GCP_DESTINATION_DEFAULTS: dict[str, Any] = {
+    "project_id": PARAMETER_SPECIFICATION_REQUIRED,
+    **COEXECUTION_DESTINATION_DEFAULTS,
+}
+GCP_BATCH_CLIENT_MANAGER_KWARGS = {"gcp_batch_enabled": True}
+
+
+class PulsarGcpBatchJobRunner(PulsarCoexecutionJobRunner):
+    use_mq = True
+    poll = False
+
+    client_manager_kwargs = GCP_BATCH_CLIENT_MANAGER_KWARGS
+    destination_defaults = GCP_DESTINATION_DEFAULTS
+
+    # Runner-level params that should be passed through to the Pulsar client
+    # as destination params (destination overrides runner).
+    PASSTHROUGH_PARAMS = ["custom_vm_image"]
+
+    def _populate_parameter_defaults(self, job_destination):
+        updated = super()._populate_parameter_defaults(job_destination)
+        params = job_destination.params
+        for key in self.PASSTHROUGH_PARAMS:
+            if key not in params and self.runner_params.get(key):
+                params[key] = self.runner_params[key]
+                updated = True
+        return updated
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
@@ -1098,7 +1412,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_input_path_rewrite is not None:
             local_input_path = local_input_path_rewrite
         else:
-            local_input_path = dataset.file_name
+            local_input_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
         return remote_path
 
@@ -1107,21 +1421,19 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_output_path_rewrite is not None:
             local_output_path = local_output_path_rewrite
         else:
-            local_output_path = dataset.file_name
+            local_output_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_output_path_rewrite(local_output_path)
         return remote_path
 
     def input_extra_files_rewrite(self, dataset):
         input_path_rewrite = self.input_path_rewrite(dataset)
-        base_input_path = input_path_rewrite[0 : -len(".dat")]
-        remote_extra_files_path_rewrite = f"{base_input_path}_files"
+        remote_extra_files_path_rewrite = dataset_path_to_extra_path(input_path_rewrite)
         self.path_rewrites_input_extra[dataset.extra_files_path] = remote_extra_files_path_rewrite
         return remote_extra_files_path_rewrite
 
     def output_extra_files_rewrite(self, dataset):
         output_path_rewrite = self.output_path_rewrite(dataset)
-        base_output_path = output_path_rewrite[0 : -len(".dat")]
-        remote_extra_files_path_rewrite = f"{base_output_path}_files"
+        remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
     def input_metadata_rewrite(self, dataset, metadata_val):
@@ -1151,6 +1463,18 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         else:
             # Did not need to rewrite, use original path or value.
             return None
+
+    def container_path_rewrite(self, container_path):
+        # Container images are resolved against the Galaxy-side filesystem but
+        # read on the compute node, which may expose them at a different path
+        # (e.g. cvmfsexec mountrepo mode). A destination ``file_actions`` rule
+        # with ``path_types: container`` remaps the image; unlike unstructured
+        # paths, container images are never staged.
+        #
+        # getattr guards older pulsar-galaxy-lib releases lacking the method
+        # (added in galaxyproject/pulsar#475); drop once the pin requires it.
+        check = getattr(self.path_mapper, "check_for_container_rewrite", None)
+        return check(container_path) if check else None
 
     def working_directory(self):
         return self._working_directory

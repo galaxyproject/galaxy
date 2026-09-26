@@ -1,3 +1,4 @@
+import os.path
 import shutil
 import tempfile
 
@@ -6,6 +7,7 @@ from galaxy.tool_util.deps.mulled.mulled_list import (
     get_missing_envs,
     get_singularity_containers,
 )
+from galaxy.util.unittest_utils import skip_if_galaxy_depot_down
 from ..util import external_dependency_management
 
 # def test_get_quay_containers():
@@ -16,6 +18,7 @@ from ..util import external_dependency_management
 
 
 @external_dependency_management
+@skip_if_galaxy_depot_down
 def test_get_singularity_containers():
     lst = get_singularity_containers()
     assert "aragorn:1.2.36--1" in lst
@@ -25,7 +28,7 @@ def test_get_singularity_containers():
 def test_get_missing_containers():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = "%s/blocklist.txt" % test_dir
+        exclude_list = os.path.join(test_dir, "blocklist.txt")
         with open(exclude_list, "w") as f:
             f.write("a\n\nb\nc\nd")
         containers = get_missing_containers(
@@ -39,7 +42,7 @@ def test_get_missing_containers():
 def test_get_missing_envs():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = "%s/blocklist.txt" % test_dir
+        exclude_list = os.path.join(test_dir, "blocklist.txt")
         with open(exclude_list, "w") as f:
             f.write("a\n\nb\nc\nd")
         envs = get_missing_envs(

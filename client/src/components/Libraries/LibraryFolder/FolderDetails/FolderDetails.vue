@@ -1,150 +1,163 @@
+<script setup lang="ts">
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
+
+import { getLibrary, type LibraryFolderMetadata, type LibrarySummary } from "@/api/libraries";
+import { buildFields } from "@/components/Libraries/library-utils";
+import _l from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import UtcDate from "@/components/UtcDate.vue";
+
+// Types
+type FieldEntry = { name: string; value: string };
+
+// Constants
+const DETAILS_CAPTION = _l("Details");
+const FOLDER_HEADER = _l("Folder");
+const LIBRARY_HEADER = _l("Library");
+const TITLE_LOCATION_DETAILS = _l("Location Details");
+
+const FIELDS = [
+    {
+        key: "name",
+        label: _l("Name"),
+        class: "name-column",
+    },
+    {
+        key: "value",
+        label: _l("Value"),
+    },
+];
+
+const FOLDER_FIELD_TITLES = {
+    folder_name: _l("Name"),
+    folder_description: _l("Description"),
+    id: "ID",
+} as const satisfies Partial<Record<keyof LibraryFolderMetadata | "id", string>>;
+
+const LIBRARY_FIELD_TITLES = {
+    name: _l("Name"),
+    description: _l("Description"),
+    synopsis: _l("Synopsis"),
+    create_time_pretty: _l("Created"),
+    id: "ID",
+} as const satisfies Partial<Record<keyof LibrarySummary, string>>;
+
+// Props
+const props = defineProps<{
+    id: string;
+    metadata: LibraryFolderMetadata;
+}>();
+
+const showModal = ref(false);
+
+const libraryDetails = ref<FieldEntry[] | null>(null);
+
+const folderDetails = ref<FieldEntry[] | null>(null);
+
+const error = ref<string | null>(null);
+const fetchingDetails = ref(false);
+
+async function retrieveLibraryDetails() {
+    try {
+        fetchingDetails.value = true;
+        error.value = null;
+        const data = await getLibrary(props.metadata.parent_library_id);
+        return buildFields(LIBRARY_FIELD_TITLES, data) as FieldEntry[];
+    } catch (e) {
+        error.value = `${_l("Failed to retrieve library details.")} ${errorMessageAsString(e)}`;
+        return null;
+    } finally {
+        fetchingDetails.value = false;
+    }
+}
+
+async function getDetails() {
+    // Compose the folder metadata with it's id as a new object
+    const folderData = { ...props.metadata, id: props.id };
+    folderDetails.value = buildFields(FOLDER_FIELD_TITLES, folderData) as FieldEntry[];
+    libraryDetails.value = await retrieveLibraryDetails();
+}
+</script>
+
 <template>
     <div>
-        <b-button
-            v-b-modal.details-modal
+        <GButton
+            size="medium"
             class="details-btn"
             title="Show location details"
-            data-testid="loc-details-btn">
-            <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
-        </b-button>
+            data-testid="loc-details-btn"
+            @click="showModal = true">
+            <FontAwesomeIcon :icon="faInfoCircle" />
+            {{ DETAILS_CAPTION }}
+        </GButton>
 
-        <b-modal
+        <GModal
             id="details-modal"
-            :static="isStatic"
-            :title="titleLocationDetails"
-            title-tag="h3"
-            ok-only
-            @show="getDetails">
+            size="small"
+            :show.sync="showModal"
+            :title="TITLE_LOCATION_DETAILS"
+            @open="getDetails">
             <div>
-                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
+                <GAlert :show="Boolean(error)" variant="danger" data-testid="error-alert">
+                    {{ error }}
+                </GAlert>
+
                 <div v-if="libraryDetails">
-                    <b-table-lite
-                        :fields="fields"
-                        :items="libraryDetails"
-                        striped
-                        small
+                    <GTable
                         caption-top
-                        thead-class="d-none"
+                        compact
+                        hide-header
+                        striped
+                        :fields="FIELDS"
+                        :items="libraryDetails"
                         data-testid="library-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
-                                <b>{{ libraryHeader }}</b>
+                                <b>{{ LIBRARY_HEADER }}</b>
                             </h2>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
-                <div>
-                    <b-table-lite
-                        :fields="fields"
-                        :items="folderDetails"
-                        striped
-                        small
+                <GAlert v-else-if="fetchingDetails">
+                    <LoadingSpan :message="_l('Retrieving library details')" />
+                </GAlert>
+
+                <div v-if="folderDetails">
+                    <GTable
                         caption-top
-                        thead-class="d-none"
+                        compact
+                        hide-header
+                        striped
+                        :fields="FIELDS"
+                        :items="folderDetails"
                         data-testid="folder-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
-                                <b>{{ folderHeader }}</b>
+                                <b>{{ FOLDER_HEADER }}</b>
                             </h2>
                         </template>
+
                         <template v-slot:cell(value)="row">
-                            <div v-if="row.item.name === libraryFieldTitles.create_time_pretty">
+                            <div v-if="row.item.name === LIBRARY_FIELD_TITLES.create_time_pretty">
                                 <UtcDate :date="row.item.value" mode="elapsed" />
                             </div>
                             <div v-else>{{ row.item.value }}</div>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
             </div>
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
-import { buildFields } from "components/Libraries/library-utils";
-import UtcDate from "components/UtcDate";
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
-
-library.add(faInfoCircle);
-
-export default {
-    components: {
-        FontAwesomeIcon,
-        UtcDate,
-    },
-    props: {
-        id: {
-            type: String,
-            required: true,
-        },
-        metadata: {
-            type: Object,
-            required: true,
-        },
-        isStatic: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            detailsCaption: _l("Details"),
-            folderHeader: _l("Folder"),
-            libraryHeader: _l("Library"),
-            titleLocationDetails: _l("Location Details"),
-            fields: [
-                {
-                    key: "name",
-                    tdClass: "name-column",
-                },
-                { key: "value" },
-            ],
-            folderFieldTitles: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
-            libraryFieldTitles: {
-                name: _l("Name"),
-                description: _l("Description"),
-                synopsis: _l("Synopsis"),
-                create_time_pretty: _l("Created"),
-                id: "ID",
-            },
-            libraryDetails: null,
-            folderDetails: null,
-            error: null,
-        };
-    },
-    computed: {
-        /** @return {Boolean} */
-        hasError() {
-            return !!this.error;
-        },
-    },
-    methods: {
-        async getDetails() {
-            // Compose the folder metadata with it's id as a new object
-            const folderData = { ...this.metadata, ...{ id: this.id } };
-            this.folderDetails = buildFields(this.folderFieldTitles, folderData);
-            this.libraryDetails = await this.retrieveLibraryDetails();
-        },
-        async retrieveLibraryDetails() {
-            try {
-                this.error = null;
-                const url = `${getAppRoot()}api/libraries/${this.metadata.parent_library_id}`;
-                const response = await axios.get(url);
-                return buildFields(this.libraryFieldTitles, response.data);
-            } catch (e) {
-                this.error = `${_l("Failed to retrieve library details.")} ${e}`;
-                return null;
-            }
-        },
-    },
-};
-</script>
 <style>
 /* Cannot be scoped because name-column is used in tdClass */
 .name-column {

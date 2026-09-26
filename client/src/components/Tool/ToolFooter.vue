@@ -1,101 +1,95 @@
 <template>
-    <b-card v-if="hasContent" class="tool-footer">
-        <div v-if="hasCitations" class="mb-1">
-            <span v-localize class="footer-section-name">Citations</span>
-            <b-button
-                v-b-tooltip.hover
-                title="Copy all citations as BibTeX"
-                style="cursor: pointer"
-                variant="link"
-                size="sm"
-                @click="copyBibtex">
-                <FontAwesomeIcon icon="copy" />
-            </b-button>
-            <Citation
+    <div v-if="hasContent" class="tool-footer">
+        <div v-if="hasCitations" class="mt-2 mb-4">
+            <Heading h2 separator bold size="sm">
+                <span v-localize>References</span>
+                <GButton
+                    v-g-tooltip.hover
+                    title="Copy all references as BibTeX"
+                    transparent
+                    size="small"
+                    icon-only
+                    @click="copyBibtex">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </GButton>
+            </Heading>
+            <CitationItem
                 v-for="(citation, index) in citations"
                 :key="index"
                 class="formatted-reference"
                 :citation="citation"
                 prefix="-" />
         </div>
-        <div v-if="hasRequirements" class="mb-1">
-            <span v-localize class="footer-section-name">Requirements</span>
-            <a
-                v-b-tooltip.hover
-                title="Learn more about Galaxy Requirements"
-                href="https://galaxyproject.org/tools/requirements/"
-                target="_blank">
-                See details
-                <FontAwesomeIcon icon="external-link-alt" />
-            </a>
+        <div v-if="hasRequirements" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Requirements</Heading>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
                 <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
             </div>
         </div>
-        <div v-if="hasLicense" class="mb-1">
-            <span v-localize class="footer-section-name">License</span>
+        <div v-if="hasLicense" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">License</Heading>
             <License :license-id="license" />
         </div>
-        <div v-if="hasReferences" class="mb-1">
-            <span v-localize class="footer-section-name">References</span>
+        <div v-if="hasReferences" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">External links</Heading>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
-                <template v-if="xref.reftype == 'bio.tools'">
+                <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <FontAwesomeIcon
-                            v-b-tooltip.hover
-                            title="Visit bio.tools reference"
-                            icon="external-link-alt" /> </a
+                        <FontAwesomeIcon v-g-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
                         <FontAwesomeIcon
-                            v-b-tooltip.hover
-                            title="Visit OpenEBench reference"
-                            icon="external-link-alt" /> </a
+                            v-g-tooltip.hover
+                            title="Visit OpenEBench page"
+                            :icon="faExternalLinkAlt" /> </a
                     >)
                 </template>
-                <template v-else-if="xref.reftype == 'bioconductor'">
+                <template v-else-if="xref.type == 'bioconductor'">
                     Bioconductor Package:
                     <a :href="`https://bioconductor.org/packages/${xref.value}/`" target="_blank"
                         >{{ xref.value }} (doi:10.18129/B9.bioc.{{ xref.value }})</a
                     >
                 </template>
-                <template v-else> {{ xref.reftype }}: {{ xref.value }} </template>
+                <template v-else> {{ xref.type }}: {{ xref.value }} </template>
             </div>
         </div>
-        <div v-if="hasCreators" class="mb-1">
-            <span class="font-weight-bold">Creators:</span>
+        <div v-if="hasCreators" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Creators</Heading>
             <Creators :creators="creators" />
         </div>
-        <div v-if="hasFunding" class="mb-1">
-            <span class="font-weight-bold">Funding:</span>
+        <div v-if="hasFunding" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Funding</Heading>
             <Funding :funding="funding" />
         </div>
-    </b-card>
+    </div>
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Citation from "components/Citation/Citation";
-import { getCitations } from "components/Citation/services";
-import License from "components/License/License";
-import Creators from "components/SchemaOrg/Creators";
-import Funding from "components/SchemaOrg/Funding";
-import { copy } from "utils/clipboard";
 
-library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
+import { getCitations } from "@/components/Citation/services";
+import { copy } from "@/utils/clipboard";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import CitationItem from "@/components/Citation/CitationItem.vue";
+import Heading from "@/components/Common/Heading.vue";
+import License from "@/components/License/License.vue";
+import Creators from "@/components/SchemaOrg/Creators.vue";
+import Funding from "@/components/SchemaOrg/Funding.vue";
 
 export default {
     components: {
-        Citation,
+        CitationItem,
+        Heading,
         License,
         Creators,
         Funding,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         id: {
@@ -124,6 +118,8 @@ export default {
     data() {
         return {
             citations: [],
+            faCopy,
+            faExternalLinkAlt,
         };
     },
     computed: {
@@ -165,8 +161,8 @@ export default {
         loadCitations() {
             if (this.hasCitations) {
                 getCitations("tools", this.id)
-                    .then((citations) => {
-                        this.citations = citations;
+                    .then((result) => {
+                        this.citations = result.citations;
                     })
                     .catch((e) => {
                         console.error(e);
@@ -180,18 +176,8 @@ export default {
                 const bibtex = cite.format("bibtex", {});
                 text += bibtex;
             });
-            copy(text, "Citations copied to your clipboard as BibTeX");
+            copy(text, "References copied to your clipboard as BibTeX");
         },
     },
 };
 </script>
-
-<style scoped>
-.footer-section-name {
-    font-weight: bold;
-}
-
-.footer-section-name::after {
-    content: ":";
-}
-</style>

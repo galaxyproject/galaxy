@@ -7,6 +7,19 @@
     backends to the distributed and hierarchical object stores (including
     distributed and hierarchical themselves).
 -->
+<!--
+    Most of the Object Stores have <cache> option like:
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+
+    Here
+    "path" - local path to store cached data,
+    "size" - size of the cache in gigabytes.
+    "cache_updated_data" - optional parameter that allows to control data
+       is being sent directly
+       to an object store without storing it in the cache.
+       By default data is also copied to the cache (cache_updated_data="True").
+-->
+
 
 <!--
     Sample Disk Object Store
@@ -49,7 +62,7 @@
 <!--
     Sample Distributed Object Store with disk backends
 
-    In the distributed object store, existing dataests will be located by the
+    In the distributed object store, existing datasets will be located by the
     `object_store_id` column in the `dataset` table of the Galaxy database,
     which corresponds to the `id` attribute on the backend tag. New datasets are
     created based on the "weight" attribute: a backend with weight "2" has a
@@ -135,14 +148,57 @@
 <object_store type="aws_s3">
      <auth access_key="...." secret_key="....." />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
+     <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
      <extra_dir type="job_work" path="database/job_working_directory_s3"/>
      <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
 -->
 
 <!--
+    Sample Onedata Object Store
+
+    Note for developers: you can easily set up a minimal, dockerized Onedata environment
+    using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+
+    Onedata specific options:
+    //auth/@access_token -
+        an access token suitable for data access (allowing calls to the Oneprovider REST API).
+
+    //connection/@onezone_domain -
+        the domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
+        devel instances (see above). The minimal supported Onezone version is 21.02.4.
+
+    //connection/@disable_tls_certificate_validation - 
+        Allows connection to Onedata servers that do not present trusted SSL certificates. 
+        SHOULD NOT be used unless you really know what you are doing.
+
+    //space/@name -
+        the name of the Onedata space where the Galaxy data will be stored.
+        If there is more than one space with the same name, you can explicitly
+        specify which one to select by using the format <space_name>@<space_id>
+        (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
+
+    //space/@galaxy_root_dir -
+        the relative directory path in the space at which the Galaxy data will be stored.
+        Optional, if not provided, the data will be stored in the root of space.
+-->
+<!--
+<object_store type="onedata">
+    <auth access_token="..." />
+    <connection onezone_domain="datahub.egi.eu" disable_tls_certificate_validation="False"/>
+    <space name="demo-space" galaxy_root_dir="galaxy-data" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+    <extra_dir type="job_work" path="database/job_working_directory_onedata"/>
+    <extra_dir type="temp" path="database/tmp_onedata"/>
+</object_store>
+-->
+
+<!--
     Sample iRODS Object Store
+
+    The ssl section is optional
+    The logical section is optional and is meant for defining the remote path
+    if not defined the default path is: /zone_name/home/username
 -->
 <!--
 <object_store type="irods">
@@ -150,7 +206,11 @@
     <resource name="demoResc" />
     <zone name="tempZone" />
     <connection host="localhost" port="1247" timeout="30" refresh_time="300" connection_pool_monitor_interval="3600"/>
-    <cache path="database/object_store_cache_irods" size="1000" />
+    <ssl client_server_negotiation="request_server_negotiation" client_server_policy="CS_NEG_REQUIRE" 
+         encryption_algorithm="AES-256-CBC" encryption_key_size="32" encryption_num_hash_rounds="16" 
+         encryption_salt_size="8" ssl_verify_server="cert" ssl_ca_certificate_file="/etc/irods/ssl/irods.crt" />
+    <logical path="/tempZone/home/rods" />
+    <cache path="database/object_store_cache_irods" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_irods"/>
     <extra_dir type="temp" path="database/tmp_irods"/>
 </object_store>
@@ -166,7 +226,7 @@
     <auth access_key="...." secret_key="....." />
     <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
     <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
-    <cache path="database/object_store_cache" size="1000" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_swift"/>
     <extra_dir type="temp" path="database/tmp_swift"/>
 </object_store>
@@ -181,7 +241,7 @@
 <object_store type="azure_blob">
     <auth account_name="..." account_key="...." />
     <container name="unique_container_name" max_chunk_size="250"/>
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
@@ -196,7 +256,7 @@
 <object_store type="cloud" provider="aws" order="0">
     <auth access_key="..." secret_key="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
     <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
@@ -211,7 +271,7 @@
 <object_store type="cloud" provider="azure" order="0">
     <auth subscription_id="..." client_id="..." secret="..." tenant="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
@@ -226,7 +286,7 @@
 <object_store type="cloud" provider="google" order="0">
     <auth credentials_file="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="1000" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_gcp"/>
     <extra_dir type="temp" path="database/tmp_gcp"/>
 </object_store>
@@ -259,11 +319,16 @@
     of regular functionality and Galaxy handles regularly cleaned
     datasets fairly gracefully when the appropriate admin scripts
     are used.
+
+    It is safe to just relabel the object store that a dataset belongs
+    to if the underlying paths mapped to by the object stores are the
+    same and the dataset has not been copied. To enable users to relocate
+    datasets this way set the backends' `device` property to the same value.
 -->
 <!--
 <object_store type="distributed">
     <backends>
-        <backend id="default" allow_selection="true" type="disk" weight="1" name="Default Galaxy Storage">
+        <backend id="default" allow_selection="true" type="disk" device="device1" weight="1" name="Default Galaxy Storage">
             <description>This is Galaxy's default object store - this disk is regularly backed up and all user's have a default quota of 200 GB.
             </description>
             <files_dir path="database/objects/deafult"/>
@@ -273,7 +338,7 @@
                 <backed_up>Backed up to Galaxy's institutional long term tape drive nightly. More information about our tape drive can be found on our [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.</backed_up>
             </badges>
         </backend>
-        <backend id="scratch" allow_selection="true" type="disk" weight="0" name="Scratch Storage" private="true">
+        <backend id="scratch" allow_selection="true" type="disk" device="device2" weight="0" name="Scratch Storage" private="true">
             <quota source="second_tier" />
             <description>This object store is connected to institutional scratch storage. This disk is not backed up and private to your user and datasets belonging to this storage will be automatically deleted after one month.
 </description>
@@ -319,7 +384,7 @@
             <resource name="demoResc" />
             <zone name="tempZone" />
             <connection host="localhost" port="1247" timeout="30" refresh_time="300" connection_pool_monitor_interval="3600"/>
-            <cache path="database/object_store_cache_irods" size="1000" />
+            <cache path="database/object_store_cache_irods" size="1000" cache_updated_data="True" />
             <badges>
                 <less_stable />
                 <backed_up>This data is backed up using iRODs native hierarchal storage management mechanisms. The rules describing how data is stored and backed up in iRODS can be found in our institutional [iRODS documentation](https://irods.org/uploads/2018/Saum-SURFsara-Data_Archiving_in_iRODS-slides.pdf)</backed_up>

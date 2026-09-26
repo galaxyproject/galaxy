@@ -17,7 +17,7 @@ Configuration
 -------------
 
 The Galaxy GDPR compliance is enabled by switching the ``gdpr_compliance`` flag available in
-the configuration of Galaxy, Reports, and the Tool Shed. If you intend to serve
+the configuration of Galaxy and the Tool Shed. If you intend to serve
 users from anywhere in the EU, you should set this to true. This has some
 important implications of which you must be aware:
 

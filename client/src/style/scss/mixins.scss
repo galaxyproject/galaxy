@@ -2,8 +2,8 @@
 //@import "~font-awesome/scss/font-awesome.scss";
 //@import "~font-awesome/scss/_mixins";
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/_variables";
 
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};

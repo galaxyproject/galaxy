@@ -69,16 +69,14 @@ class ManagesIntegratedToolPanelMixin:
             filename = os.path.join(tracking_directory, name)
         else:
             filename = destination
-        template = string.Template(
-            """<?xml version="1.0"?>
+        template = string.Template("""<?xml version="1.0"?>
 <toolbox>
     <!--
     $INTEGRATED_TOOL_PANEL_DESCRIPTION
     -->
 $INTEGRATED_TOOL_PANEL
 </toolbox>
-"""
-        )
+""")
         integrated_tool_panel = []
         for _, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:

@@ -3,6 +3,7 @@ from galaxy.managers.citations import (
     CitationCollection,
     parse_citation,
 )
+from galaxy.tool_util.parser.xml import parse_citation_elem
 from galaxy.util import parse_xml_string
 
 EXAMPLE_BIBTEX_CITATION = """<citation type="bibtex">@article{goecks2010galaxy,
@@ -19,7 +20,10 @@ EXAMPLE_BIBTEX_CITATION = """<citation type="bibtex">@article{goecks2010galaxy,
 def test_parse_citation():
     xml_text = EXAMPLE_BIBTEX_CITATION
     citation_elem = parse_xml_string(xml_text)
-    citation = parse_citation(citation_elem, None)
+    citation_model = parse_citation_elem(citation_elem)
+    assert citation_model
+    citation = parse_citation(citation_model, None)
+    assert citation
     bibtex = citation.to_bibtex()
     assert "title={Galaxy" in bibtex
 

@@ -1,30 +1,34 @@
-import json
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
-    Optional,
+    Generic,
+    Literal,
     Union,
 )
 
 from pydantic import (
-    AnyUrl,
+    ConfigDict,
     Field,
-    Required,
-)
-from pydantic.utils import GetterDict
-from typing_extensions import (
-    Annotated,
-    Literal,
+    RootModel,
 )
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
 )
+from galaxy.schema.generics import (
+    DatabaseIdT,
+    GenericModel,
+    PatchGenericPickle,
+)
 from galaxy.schema.schema import Model
+from galaxy.schema.storage_operations import StorageOperationRunState
+from galaxy.schema.types import (
+    AbsoluteOrRelativeUrl,
+    OffsetNaiveDatetime,
+)
 
 
 class NotificationVariant(str, Enum):
@@ -57,25 +61,26 @@ class PersonalNotificationCategory(str, Enum):
 
     message = "message"
     new_shared_item = "new_shared_item"
+    storage_operation = "storage_operation"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
 
-NotificationCategory = Union[MandatoryNotificationCategory, PersonalNotificationCategory]
+NotificationCategory = MandatoryNotificationCategory | PersonalNotificationCategory
 
 
 class MessageNotificationContentBase(Model):
-    subject: str = Field(Required, title="Subject", description="The subject of the notification.")
-    message: str = Field(Required, title="Message", description="The message of the notification (supports Markdown).")
+    subject: str = Field(..., title="Subject", description="The subject of the notification.")
+    message: str = Field(..., title="Message", description="The message of the notification (supports Markdown).")
 
 
 class ActionLink(Model):
     """An action link to be displayed in the notification as a button."""
 
-    action_name: str = Field(
-        Required, title="Action name", description="The name of the action, will be the button title."
+    action_name: str = Field(..., title="Action name", description="The name of the action, will be the button title.")
+    link: AbsoluteOrRelativeUrl = Field(
+        ..., title="Link", description="The link to be opened when the button is clicked."
     )
-    link: AnyUrl = Field(Required, title="Link", description="The link to be opened when the button is clicked.")
 
 
 # Create the corresponding model for the registered category below and
@@ -84,7 +89,7 @@ class ActionLink(Model):
 
 class BroadcastNotificationContent(MessageNotificationContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
-    action_links: Optional[List[ActionLink]] = Field(
+    action_links: list[ActionLink] | None = Field(
         None,
         title="Action links",
         description="The optional action links (buttons) to be displayed in the notification.",
@@ -105,79 +110,89 @@ SharableItemType = Literal[
 
 class NewSharedItemNotificationContent(Model):
     category: Literal[PersonalNotificationCategory.new_shared_item] = PersonalNotificationCategory.new_shared_item
-    item_type: SharableItemType = Field(Required, title="Item type", description="The type of the shared item.")
-    item_name: str = Field(Required, title="Item name", description="The name of the shared item.")
-    owner_name: str = Field(Required, title="Owner name", description="The name of the owner of the shared item.")
-    slug: str = Field(Required, title="Slug", description="The slug of the shared item. Used for the link to the item.")
+    item_type: SharableItemType = Field(..., title="Item type", description="The type of the shared item.")
+    item_name: str = Field(..., title="Item name", description="The name of the shared item.")
+    owner_name: str = Field(..., title="Owner name", description="The name of the owner of the shared item.")
+    slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
+
+class StorageOperationNotificationContent(MessageNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.storage_operation] = PersonalNotificationCategory.storage_operation
+    history_id: EncodedDatabaseIdField = Field(..., title="History ID", description="The encoded history ID.")
+    run_id: EncodedDatabaseIdField = Field(..., title="Run ID", description="The encoded storage operation run ID.")
+    run_url: AbsoluteOrRelativeUrl = Field(
+        ...,
+        title="Run URL",
+        description="Absolute or relative URL to the storage operation run status view.",
+    )
+    mode: str = Field(..., title="Mode", description="Storage operation mode.")
+    state: StorageOperationRunState = Field(
+        ...,
+        title="State",
+        description="The current state of the storage operation run when this notification was generated.",
+    )
+    total_count: int = Field(..., title="Total Count", description="Total datasets in the run.")
+    succeeded_count: int = Field(default=0, title="Succeeded Count", description="Succeeded datasets count.")
+    failed_count: int = Field(default=0, title="Failed Count", description="Failed datasets count.")
+    skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
+
+
+NotificationContentField = Field(
+    default=...,
+    discriminator="category",
+    title="Content",
+    description="The content of the notification. The structure depends on the category.",
+)
+
+AnyUserNotificationContent = Annotated[
+    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent,
+    NotificationContentField,
+]
 
 AnyNotificationContent = Annotated[
-    Union[
-        MessageNotificationContent,
-        NewSharedItemNotificationContent,
-        BroadcastNotificationContent,
-    ],
-    Field(
-        default=Required,
-        discriminator="category",
-        title="Content",
-        description="The content of the notification. The structure depends on the category.",
-    ),
+    AnyUserNotificationContent | BroadcastNotificationContent,
+    NotificationContentField,
 ]
 
 
-class NotificationGetter(GetterDict):
-    """Helper to convert a Notification ORM model into a NotificationResponse.
-    For more information: https://docs.pydantic.dev/usage/models/#data-binding
-    """
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        # The `content` column of the ORM model is a JSON string that needs to be passed
-        # as a dictionary to the `from_orm` constructor to build the correct `AnyNotificationContent`.
-        if key in {"content"} and isinstance(self._obj.content, str):
-            return json.loads(self._obj.content)
-
-        return super().get(key, default)
-
-
 NotificationIdField = Field(
-    Required,
+    ...,
     title="ID",
     description="The encoded ID of the notification.",
 )
 
 NotificationSourceField = Field(
-    Required,
+    ...,
     title="Source",
     description="The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.",
 )
 
 NotificationCategoryField = Field(
-    Required,
+    ...,
     title="Category",
     description="The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.",
 )
 
 NotificationVariantField = Field(
-    Required,
+    ...,
     title="Variant",
     description="The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.",
 )
 
 NotificationCreateTimeField = Field(
-    Required,
+    ...,
     title="Create time",
     description="The time when the notification was created.",
 )
 
 NotificationUpdateTimeField = Field(
-    Required,
+    ...,
     title="Update time",
     description="The time when the notification was last updated.",
 )
 
 NotificationPublicationTimeField = Field(
-    Required,
+    ...,
     title="Publication time",
     description="The time when the notification was published. Notifications can be created and then published at a later time.",
 )
@@ -199,25 +214,23 @@ class NotificationResponse(Model):
     create_time: datetime = NotificationCreateTimeField
     update_time: datetime = NotificationUpdateTimeField
     publication_time: datetime = NotificationPublicationTimeField
-    expiration_time: Optional[datetime] = NotificationExpirationTimeField
+    expiration_time: datetime | None = NotificationExpirationTimeField
     content: AnyNotificationContent
-
-    class Config:
-        orm_mode = True
-        getter_dict = NotificationGetter
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserNotificationResponse(NotificationResponse):
     """A notification response specific to the user."""
 
     category: PersonalNotificationCategory = NotificationCategoryField
-    seen_time: Optional[datetime] = Field(
+    content: AnyUserNotificationContent
+    seen_time: datetime | None = Field(
         None,
         title="Seen time",
         description="The time when the notification was seen by the user. If not set, the notification was not seen yet.",
     )
     deleted: bool = Field(
-        Required,
+        ...,
         title="Deleted",
         description="Whether the notification is marked as deleted by the user. Deleted notifications don't show up in the notification list.",
     )
@@ -230,29 +243,29 @@ class BroadcastNotificationResponse(NotificationResponse):
     content: BroadcastNotificationContent
 
 
-class UserNotificationListResponse(Model):
+class UserNotificationListResponse(RootModel):
     """A list of user notifications."""
 
-    __root__: List[UserNotificationResponse]
+    root: list[UserNotificationResponse]
 
 
-class BroadcastNotificationListResponse(Model):
+class BroadcastNotificationListResponse(RootModel):
     """A list of broadcast notifications."""
 
-    __root__: List[BroadcastNotificationResponse]
+    root: list[BroadcastNotificationResponse]
 
 
 class NotificationStatusSummary(Model):
     """A summary of the notification status for a user. Contains only updates since a particular timestamp."""
 
     total_unread_count: int = Field(
-        Required, title="Total unread count", description="The total number of unread notifications for the user."
+        ..., title="Total unread count", description="The total number of unread notifications for the user."
     )
-    notifications: List[UserNotificationResponse] = Field(
-        Required, title="Notifications", description="The list of updated notifications for the user."
+    notifications: list[UserNotificationResponse] = Field(
+        ..., title="Notifications", description="The list of updated notifications for the user."
     )
-    broadcasts: List[BroadcastNotificationResponse] = Field(
-        Required, title="Broadcasts", description="The list of updated broadcasts."
+    broadcasts: list[BroadcastNotificationResponse] = Field(
+        ..., title="Broadcasts", description="The list of updated broadcasts."
     )
 
 
@@ -263,51 +276,65 @@ class NotificationCreateData(Model):
     category: NotificationCategory = NotificationCategoryField
     variant: NotificationVariant = NotificationVariantField
     content: AnyNotificationContent
-    publication_time: Optional[datetime] = Field(
+    publication_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
 
 
-class NotificationRecipients(Model):
+class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
-    user_ids: List[DecodedDatabaseIdField] = Field(
+    user_ids: list[DatabaseIdT] = Field(
         default=[],
         title="User IDs",
         description="The list of encoded user IDs of the users that should receive the notification.",
     )
-    group_ids: List[DecodedDatabaseIdField] = Field(
+    group_ids: list[DatabaseIdT] = Field(
         default=[],
         title="Group IDs",
         description="The list of encoded group IDs of the groups that should receive the notification.",
     )
-    role_ids: List[DecodedDatabaseIdField] = Field(
+    role_ids: list[DatabaseIdT] = Field(
         default=[],
         title="Role IDs",
         description="The list of encoded role IDs of the roles that should receive the notification.",
     )
 
 
-class NotificationCreateRequest(Model):
+class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
     """Contains the recipients and the notification to create."""
 
-    recipients: NotificationRecipients = Field(
-        Required,
+    recipients: GenericNotificationRecipients[DatabaseIdT] = Field(
+        ...,
         title="Recipients",
         description="The recipients of the notification. Can be a combination of users, groups and roles.",
     )
     notification: NotificationCreateData = Field(
-        Required,
+        ...,
         title="Notification",
         description="The notification to create. The structure depends on the category.",
     )
+
+
+class NotificationCreateRequest(GenericNotificationCreate[int]):
+    galaxy_url: str | None = Field(
+        None,
+        title="Galaxy URL",
+        description="The URL of the Galaxy instance. Used to generate links in the notification content.",
+    )
+
+
+NotificationRecipients = GenericNotificationRecipients[int]
+
+
+NotificationCreateRequestBody = GenericNotificationCreate[DecodedDatabaseIdField]
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):
@@ -315,7 +342,7 @@ class BroadcastNotificationCreateRequest(NotificationCreateData):
 
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
     content: BroadcastNotificationContent = Field(
-        Required,
+        ...,
         title="Content",
         description="The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.",
     )
@@ -323,12 +350,12 @@ class BroadcastNotificationCreateRequest(NotificationCreateData):
 
 class NotificationCreatedResponse(Model):
     total_notifications_sent: int = Field(
-        Required,
+        ...,
         title="Total notifications sent",
         description="The total number of notifications that were sent to the recipients.",
     )
     notification: NotificationResponse = Field(
-        Required,
+        ...,
         title="Notification",
         description="The notification that was created. The structure depends on the category.",
     )
@@ -337,18 +364,18 @@ class NotificationCreatedResponse(Model):
 class NotificationUpdateRequest(Model):
     def has_changes(self) -> bool:
         """Whether the notification update request contains at least one change."""
-        return any(getattr(self, field) is not None for field in self.__fields__.keys())
+        return any(getattr(self, field) is not None for field in type(self).model_fields)
 
 
 class UserNotificationUpdateRequest(NotificationUpdateRequest):
     """A notification update request specific to the user."""
 
-    seen: Optional[bool] = Field(
+    seen: bool | None = Field(
         None,
         title="Seen",
         description="Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.",
     )
-    deleted: Optional[bool] = Field(
+    deleted: bool | None = Field(
         None,
         title="Deleted",
         description="Whether the notification should be marked as deleted by the user. If not set, the notification will not be changed.",
@@ -358,27 +385,27 @@ class UserNotificationUpdateRequest(NotificationUpdateRequest):
 class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
     """A notification update request specific for broadcasting."""
 
-    source: Optional[str] = Field(
+    source: str | None = Field(
         None,
         title="Source",
         description="The source of the notification. Represents the agent that created the notification.",
     )
-    variant: Optional[NotificationVariant] = Field(
+    variant: NotificationVariant | None = Field(
         None,
         title="Variant",
         description="The variant of the notification. Used to express the importance of the notification.",
     )
-    publication_time: Optional[datetime] = Field(
+    publication_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
-    content: Optional[BroadcastNotificationContent] = Field(
+    content: BroadcastNotificationContent | None = Field(
         None,
         title="Content",
         description="The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.",
@@ -386,8 +413,8 @@ class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
 
 
 class NotificationsBatchRequest(Model):
-    notification_ids: List[DecodedDatabaseIdField] = Field(
-        Required,
+    notification_ids: list[DecodedDatabaseIdField] = Field(
+        ...,
         title="Notification IDs",
         description="The list of encoded notification IDs of the notifications that should be updated.",
     )
@@ -397,7 +424,7 @@ class UserNotificationsBatchUpdateRequest(NotificationsBatchRequest):
     """A batch update request specific for user notifications."""
 
     changes: UserNotificationUpdateRequest = Field(
-        Required,
+        ...,
         title="Changes",
         description="The changes that should be applied to the notifications. Only the fields that are set will be changed.",
     )
@@ -407,7 +434,7 @@ class NotificationsBatchUpdateResponse(Model):
     """The response of a batch update request."""
 
     updated_count: int = Field(
-        Required,
+        ...,
         title="Updated count",
         description="The number of notifications that were updated.",
     )
@@ -421,8 +448,15 @@ class NotificationChannelSettings(Model):
         title="Push",
         description="Whether the user wants to receive push notifications in the browser for this category.",
     )
-    # TODO: Add more channels
-    # email: bool # Not supported for now
+    email: bool = Field(
+        default=True,
+        title="Email",
+        description=(
+            "Whether the user wants to receive email notifications for this category. "
+            "This setting will be ignored unless the server supports asynchronous tasks."
+        ),
+    )
+    # TODO: Add more channels here and implement the corresponding plugin in lib/galaxy/managers/notification.py
     # matrix: bool # Possible future Matrix.org integration?
 
 
@@ -439,7 +473,7 @@ class NotificationCategorySettings(Model):
     )
 
 
-PersonalNotificationPreferences = Dict[PersonalNotificationCategory, NotificationCategorySettings]
+PersonalNotificationPreferences = dict[PersonalNotificationCategory, NotificationCategorySettings]
 
 
 def get_default_personal_notification_preferences() -> PersonalNotificationPreferences:
@@ -447,11 +481,18 @@ def get_default_personal_notification_preferences() -> PersonalNotificationPrefe
     return {category: NotificationCategorySettings() for category in PersonalNotificationCategory.__members__.values()}
 
 
+def get_default_personal_notification_preferences_example() -> dict[str, Any]:
+    return {
+        category: NotificationCategorySettings().model_dump()
+        for category in PersonalNotificationCategory.__members__.values()
+    }
+
+
 class UserNotificationPreferences(Model):
     """Contains the full notification preferences of a user."""
 
     preferences: PersonalNotificationPreferences = Field(
-        Required,
+        ...,
         title="Preferences",
         description="The notification preferences of the user.",
     )
@@ -475,26 +516,31 @@ class UserNotificationPreferences(Model):
         """Create a new instance with default preferences."""
         return cls(preferences=get_default_personal_notification_preferences())
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "preferences": get_default_personal_notification_preferences(),
-            }
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "preferences": get_default_personal_notification_preferences_example(),
+                }
+            ]
         }
+    )
 
 
 class UpdateUserNotificationPreferencesRequest(Model):
     """Contains the new notification preferences of a user."""
 
     preferences: PersonalNotificationPreferences = Field(
-        Required,
+        ...,
         title="Preferences",
         description="The new notification preferences of the user.",
     )
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "preferences": get_default_personal_notification_preferences(),
-            }
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "preferences": get_default_personal_notification_preferences_example(),
+                }
+            ]
         }
+    )

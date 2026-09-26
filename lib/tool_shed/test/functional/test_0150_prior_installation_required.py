@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_0150"
 column_repository_description = "Add column"
@@ -29,7 +27,7 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 """
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     def test_0000_initiate_users(self):
@@ -49,16 +47,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="convert_chars/convert_chars.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "convert_chars/convert_chars.tar",
             commit_message="Uploaded convert_chars tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_create_column_repository(self):
@@ -72,16 +64,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "column_maker/column_maker.tar",
             commit_message="Uploaded column_maker tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_repository_dependency(self):

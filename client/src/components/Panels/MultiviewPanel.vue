@@ -1,0 +1,160 @@
+<script setup lang="ts">
+import { faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
+
+import { HistoriesFilters } from "@/components/History/HistoriesFilters";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import HistoryList from "@/components/History/HistoryScrollList.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+
+const route = useRoute();
+const router = useRouter();
+
+const filter = ref("");
+const showAdvanced = ref(false);
+const loading = ref(false);
+const pinnedOrderResetKey = ref(0);
+
+const isAnonymous = computed(() => useUserStore().isAnonymous);
+const historyStore = useHistoryStore();
+const { historiesLoading, currentHistoryId } = storeToRefs(historyStore);
+
+const pinnedHistoryCount = computed(() => {
+    return Object.keys(historyStore.pinnedHistories).length;
+});
+
+const pinRecentTitle = computed(() => {
+    if (pinnedHistoryCount.value > 0) {
+        return localize("Reset selection to show most recently updated histories instead");
+    } else {
+        return localize("Currently showing most recently updated histories in Multiview");
+    }
+});
+
+const pinRecentText = computed(() => {
+    if (pinnedHistoryCount.value > 1) {
+        return localize(`${pinnedHistoryCount.value} histories pinned. Click here to reset`);
+    } else if (pinnedHistoryCount.value == 1) {
+        return localize("1 history pinned. Click here to reset");
+    } else {
+        return localize("Select histories to pin to Multiview");
+    }
+});
+
+async function createAndPin() {
+    try {
+        loading.value = true;
+        await historyStore.createNewHistory();
+        if (!currentHistoryId.value) {
+            throw new Error("Error creating history");
+        }
+        if (pinnedHistoryCount.value > 0) {
+            historyStore.pinHistory(currentHistoryId.value);
+        }
+        router.push("/histories/view_multiple");
+    } catch (error: any) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+    } finally {
+        loading.value = false;
+    }
+}
+
+/** Reset to _default_ state; showing latest updated histories */
+function pinRecent() {
+    historyStore.clearPinnedHistories();
+    pinnedOrderResetKey.value++;
+    Toast.info(
+        "Showing the most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
+        "History Multiview",
+    );
+}
+
+function setFilter(newFilter: string, newValue: string) {
+    filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
+}
+
+function userTitle(title: string) {
+    if (isAnonymous.value == true) {
+        return `Log in to ${title}`;
+    } else {
+        return title;
+    }
+}
+</script>
+
+<template>
+    <ActivityPanel title="Select Histories">
+        <template v-slot:header-buttons>
+            <GButtonGroup>
+                <GButton
+                    v-g-tooltip.bottom.hover
+                    data-description="create new history for multiview"
+                    size="small"
+                    transparent
+                    icon-only
+                    :title="userTitle('Create new history and show in multiview')"
+                    :disabled="isAnonymous"
+                    @click="createAndPin">
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                </GButton>
+            </GButtonGroup>
+        </template>
+
+        <template v-slot:header>
+            <FilterMenu
+                name="Histories"
+                placeholder="search histories"
+                :filter-class="HistoriesFilters"
+                :filter-text.sync="filter"
+                :loading="historiesLoading || loading"
+                :show-advanced.sync="showAdvanced" />
+            <section v-if="!showAdvanced">
+                <GButtonGroup
+                    v-if="route.path === '/histories/view_multiple'"
+                    v-g-tooltip.hover.bottom
+                    class="w-100 mt-2"
+                    :aria-label="pinRecentTitle"
+                    :title="pinRecentTitle">
+                    <GButton
+                        data-description="reset multiview history selection"
+                        size="small"
+                        :disabled="!pinnedHistoryCount"
+                        @click="pinRecent">
+                        <span class="position-relative">
+                            <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
+                            <b>{{ pinRecentText }}</b>
+                        </span>
+                    </GButton>
+                </GButtonGroup>
+            </section>
+        </template>
+
+        <div v-if="isAnonymous">
+            <BBadge class="alert-info w-100 mx-2">
+                Please <a :href="withPrefix('/login')">log in or register</a> to create multiple histories.
+            </BBadge>
+        </div>
+
+        <HistoryList
+            v-show="!showAdvanced"
+            multiple
+            :filter="filter"
+            :loading.sync="loading"
+            :pinned-order-reset-key="pinnedOrderResetKey"
+            @setFilter="setFilter" />
+    </ActivityPanel>
+</template>

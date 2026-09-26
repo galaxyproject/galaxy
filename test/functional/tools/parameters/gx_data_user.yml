@@ -1,0 +1,20 @@
+class: GalaxyUserTool
+id: gx_data_user
+version: "0.1"
+name: gx_data_user
+container: busybox
+shell_command: cat '$(inputs.parameter.path)' > output.txt
+inputs:
+  - name: parameter
+    type: data
+outputs:
+  - name: output
+    type: data
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      parameter:
+        class: File
+        path: simple_line.txt
+    outputs:
+      output: simple_line.txt

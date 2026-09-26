@@ -22,7 +22,7 @@ echo '${species_2}' >> '${output}'
         </options>
     </param>
     <!-- test meta_file_key referring a collection to define options-->
-    <param name="input_2" type="data_collection" collection_type="list" format="maf" label="MAF Collection" multiple="true"/>
+    <param name="input_2" type="data_collection" collection_type="list" format="maf" label="MAF Collection" />
     <param name="species_2" type="select" optional="false" label="Select species for the input dataset" multiple="true">
         <options from_dataset="input_2" meta_file_key="species_chromosomes">
             <column name="name" index="0"/>

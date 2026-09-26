@@ -2,12 +2,16 @@ import logging
 import os
 
 from galaxy import web
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.util.path import (
     join,
     safe_contains,
 )
 from galaxy.webapps.base.controller import BaseUIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +24,7 @@ def _asset_exists_and_is_safe(repo_path, asset_path):
 
 class ShedToolStatic(BaseUIController):
     @web.expose
-    def index(self, trans, shed, owner, repo, tool, version, image_file, **kwargs):
+    def index(self, trans: GalaxyWebTransaction, shed, owner, repo, tool, version, image_file, **kwargs):
         """
         Open an image file that is contained in an installed tool shed repository or that is referenced by a URL for display.  The
         image can be defined in either a README.rst file contained in the repository or the help section of a Galaxy tool config that
@@ -34,6 +38,9 @@ class ShedToolStatic(BaseUIController):
         """
         guid = "/".join((shed, "repos", owner, repo, tool, version))
         tool = trans.app.toolbox.get_tool(guid)
+        if tool is None:
+            raise ObjectNotFound(f"Could not find tool with guid '{guid}'.")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="packaging")
         repo_path = os.path.abspath(tool._repository_dir)
         found_path = None
 

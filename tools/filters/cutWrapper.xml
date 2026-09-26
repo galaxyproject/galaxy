@@ -1,5 +1,8 @@
 <tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>

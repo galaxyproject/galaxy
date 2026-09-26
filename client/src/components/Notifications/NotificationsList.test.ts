@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { mergeObjectListsById } from "@/utils/utils";
@@ -16,15 +17,18 @@ const localVue = getLocalVue(true);
 const { notifications: FAKE_NOTIFICATIONS, messageCount, sharedItemCount } = generateNotificationsList(10);
 
 async function mountNotificationsList() {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const notificationsStore = useNotificationsStore(pinia);
     notificationsStore.notifications = mergeObjectListsById(FAKE_NOTIFICATIONS, []);
 
-    const wrapper = shallowMount(NotificationsList, {
+    const wrapper = mount(NotificationsList as object, {
         localVue,
         pinia,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
     });
 
     await flushPromises();
@@ -34,9 +38,10 @@ async function mountNotificationsList() {
 describe("NotificationsList", () => {
     it("render and count unread notifications", async () => {
         const wrapper = await mountNotificationsList();
-        expect(wrapper.findAll(".notification-card")).toHaveLength(messageCount + sharedItemCount);
 
-        const unreadNotification = wrapper.findAll(".unread-status");
+        expect(wrapper.findAll(".g-card")).toHaveLength(messageCount + sharedItemCount);
+
+        const unreadNotification = wrapper.findAll(".unread-notification");
         expect(unreadNotification).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
     });
 
@@ -49,9 +54,7 @@ describe("NotificationsList", () => {
 
         await wrapper.vm.$nextTick();
 
-        expect(wrapper.findAll(".notification-card")).toHaveLength(
-            FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length
-        );
+        expect(wrapper.findAll(".g-card")).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
     });
 
     it("show no notifications message", async () => {

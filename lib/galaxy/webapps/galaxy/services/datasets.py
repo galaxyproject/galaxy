@@ -1,19 +1,19 @@
 """
 API operations on the contents of a history dataset.
 """
+
 import logging
 import os
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
 )
 
-from pydantic import Field
+from pydantic import (
+    ConfigDict,
+    Field,
+    RootModel,
+)
 from starlette.datastructures import URL
 
 from galaxy import (
@@ -22,12 +22,20 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import compute_dataset_hash
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
-from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.managers.datasets import (
+    DatasetAssociationManager,
+    DatasetManager,
+)
 from galaxy.managers.hdas import (
     HDAManager,
     HDASerializer,
@@ -39,7 +47,15 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
-from galaxy.model.base import transaction
+from galaxy.managers.markdown_util import (
+    ready_galaxy_markdown_for_export,
+    resolve_job_markdown,
+)
+from galaxy.objectstore import (
+    DataStream,
+    ObjectStoreAuth,
+)
+from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -64,6 +80,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     EncodedDatasetSourceId,
     Model,
+    ToolReportForDataset,
     UpdateDatasetPermissionsPayload,
 )
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
@@ -78,14 +95,24 @@ from galaxy.visualization.data_providers.genome import (
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.webapps.base.controller import UsesVisualizationMixin
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = 500
+
+
+def is_direct_download_candidate(filename, to_ext, raw, offset, ck_size, is_archive) -> bool:
+    """Whether a display request is a plain whole-file download eligible for a direct backing-store link.
+
+    Excludes extra-files access, chunked display, datatype-processed previews, and archived/composite
+    downloads -- only a request for the single stored object's bytes can be served directly.
+    """
+    if filename or offset is not None or ck_size is not None:
+        return False
+    if is_archive:
+        return False
+    return raw or to_ext is not None
 
 
 class RequestDataType(str, Enum):
@@ -111,7 +138,7 @@ class DatasetContentType(str, Enum):
 
 
 class ConcreteObjectStoreQuotaSourceDetails(Model):
-    source: Optional[str] = Field(
+    source: str | None = Field(
         description="The quota source label corresponding to the object store the dataset is stored in (or would be stored in)"
     )
     enabled: bool = Field(
@@ -120,43 +147,57 @@ class ConcreteObjectStoreQuotaSourceDetails(Model):
 
 
 class DatasetStorageDetails(Model):
-    object_store_id: Optional[str] = Field(
+    object_store_id: str | None = Field(
         description="The identifier of the destination ObjectStore for this dataset.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="The display name of the destination ObjectStore for this dataset.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="A description of how this dataset is stored.",
     )
-    percent_used: Optional[float] = Field(
+    percent_used: float | None = Field(
         description="The percentage indicating how full the store is.",
     )
     dataset_state: str = Field(
         description="The model state of the supplied dataset instance.",
     )
-    hashes: List[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
-    sources: List[dict] = Field(description="The file sources associated with the supplied dataset instance.")
+    hashes: list[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
+    sources: list[dict] = Field(description="The file sources associated with the supplied dataset instance.")
     shareable: bool = Field(
         description="Is this dataset shareable.",
     )
-    quota: dict = Field(description="Information about quota sources around dataset storage.")
-    badges: List[Dict[str, Any]] = Field(
-        description="A mapping of object store labels to badges describing object store properties."
+    quota: ConcreteObjectStoreQuotaSourceDetails = Field(
+        description="Information about quota sources around dataset storage."
+    )
+    badges: list[BadgeDict] = Field(
+        description="A list of badges describing object store properties for concrete object store dataset is stored in."
+    )
+    relocatable: bool = Field(
+        description="Indicator of whether the objectstore for this dataset can be switched by this user."
+    )
+    private: bool = Field(
+        description="Indicator of whether the objectstore is marked as private.",
     )
 
 
 class DatasetInheritanceChainEntry(Model):
+    id: EncodedDatabaseIdField = Field(
+        description="ID of the referenced dataset",
+    )
     name: str = Field(
         description="Name of the referenced dataset",
     )
     dep: str = Field(
         description="Name of the source of the referenced dataset at this point of the inheritance chain.",
     )
+    user_id: EncodedDatabaseIdField | None = Field(
+        description="ID of the user who owns the referenced dataset.",
+    )
 
 
-class DatasetInheritanceChain(Model):
-    __root__: List[DatasetInheritanceChainEntry] = Field(
+class DatasetInheritanceChain(RootModel):
+    root: list[DatasetInheritanceChainEntry] = Field(
         default=[],
         title="Dataset inheritance chain",
     )
@@ -177,8 +218,14 @@ class ExtraFileEntry(Model):
     )
 
 
+class DatasetExtraFiles(RootModel):
+    """A list of extra files associated with a dataset."""
+
+    root: list[ExtraFileEntry]
+
+
 class DatasetTextContentDetails(Model):
-    item_data: Optional[str] = Field(
+    item_data: str | None = Field(
         description="First chunk of text content (maximum 1MB) of the dataset.",
     )
     truncated: bool = Field(
@@ -189,17 +236,17 @@ class DatasetTextContentDetails(Model):
     )
 
 
-class ConvertedDatasetsMap(Model):
+class ConvertedDatasetsMap(RootModel):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
-    __root__: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
-
-    class Config:
-        schema_extra = {
+    root: dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "csv": "dataset_id",
             }
         }
+    )
 
 
 class DataMode(str, Enum):
@@ -208,10 +255,10 @@ class DataMode(str, Enum):
 
 
 class DataResult(Model):
-    data: List[Any]
-    dataset_type: Optional[str]
-    message: Optional[str]
-    extra_info: Optional[Any]  # Seems to be always None, deprecate?
+    data: list[Any]
+    dataset_type: str | None = None
+    message: str | None = None
+    extra_info: Any | None = None  # Seems to be always None, deprecate?
 
 
 class BamDataResult(DataResult):
@@ -220,10 +267,10 @@ class BamDataResult(DataResult):
 
 
 class DeleteDatasetBatchPayload(Model):
-    datasets: List[DatasetSourceId] = Field(
+    datasets: list[DatasetSourceId] = Field(
         description="The list of datasets IDs with their sources to be deleted/purged.",
     )
-    purge: Optional[bool] = Field(
+    purge: bool | None = Field(
         default=False,
         description=(
             "Whether to permanently delete from disk the specified datasets. "
@@ -233,13 +280,18 @@ class DeleteDatasetBatchPayload(Model):
 
 
 class ComputeDatasetHashPayload(Model):
-    hash_function: Optional[HashFunctionNameEnum] = Field(
+    hash_function: HashFunctionNameEnum | None = Field(
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
-    extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
+    extra_files_path: str | None = Field(default=None, description="If set, extra files path to compute a hash for.")
+    model_config = ConfigDict(use_enum_values=True)
 
-    class Config:
-        use_enum_values = True  # When using .dict()
+
+class UpdateObjectStoreIdPayload(Model):
+    object_store_id: str = Field(
+        ...,
+        description="Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.",
+    )
 
 
 class DatasetErrorMessage(Model):
@@ -255,7 +307,7 @@ class DeleteDatasetBatchResult(Model):
     success_count: int = Field(
         description="The number of datasets successfully processed.",
     )
-    errors: Optional[List[DatasetErrorMessage]] = Field(
+    errors: list[DatasetErrorMessage] | None = Field(
         default=None,
         description=(
             "A list of dataset IDs and the corresponding error message if something "
@@ -276,6 +328,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_contents_manager: HistoryContentsManager,
         history_contents_filters: HistoryContentsFilters,
         data_provider_registry: DataProviderRegistry,
+        dataset_manager: DatasetManager,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -286,22 +339,23 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.history_contents_manager = history_contents_manager
         self.history_contents_filters = history_contents_filters
         self.data_provider_registry = data_provider_registry
+        self.dataset_manager = dataset_manager
 
     @property
-    def serializer_by_type(self) -> Dict[str, ModelSerializer]:
+    def serializer_by_type(self) -> dict[str, ModelSerializer]:
         return {"dataset": self.hda_serializer, "dataset_collection": self.hdca_serializer}
 
     @property
-    def dataset_manager_by_type(self) -> Dict[str, DatasetAssociationManager]:
+    def dataset_manager_by_type(self) -> dict[str, DatasetAssociationManager]:
         return {"hda": self.hda_manager, "ldda": self.ldda_manager}
 
     def index(
         self,
         trans: ProvidesHistoryContext,
-        history_id: Optional[DecodedDatabaseIdField],
+        history_id: DecodedDatabaseIdField | None,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> tuple[list[AnyHistoryContentItem], int]:
         """
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
@@ -321,12 +375,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             order_by=order_by,
             user_id=user.id,
         )
-        return [
-            self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.dict()
-            )
-            for content in contents
-        ]
+        total_matches = self.history_contents_manager.contents_count(
+            container=container,
+            filters=filters,
+            user_id=user.id,
+        )
+        return (
+            [
+                self.serializer_by_type[content.history_content_type].serialize_to_view(
+                    content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
+                )
+                for content in contents
+            ],
+            total_matches,
+        )
 
     def show(
         self,
@@ -334,13 +396,23 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
         hda_ldda: DatasetSourceType,
         serialization_params: SerializationParams,
-        data_type: Optional[RequestDataType] = None,
+        data_type: RequestDataType | None = None,
         **extra_params,
     ):
         """
         Displays information about and/or content of a dataset.
         """
-        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(dataset_id, trans.user)
+        requests_that_require_data = (
+            RequestDataType.converted_datasets_state,
+            RequestDataType.data,
+            RequestDataType.features,
+            RequestDataType.raw_data,
+            RequestDataType.track_config,
+        )
+        if data_type in requests_that_require_data:
+            dataset_manager.ensure_dataset_on_disk(trans, dataset)
 
         # Use data type to return particular type of data.
         rval: Any
@@ -359,8 +431,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             rval = self._search_features(trans, dataset, query=extra_params.get("query", None))
         elif data_type == RequestDataType.raw_data:
             rval = self._raw_data(trans, dataset, **extra_params)
-        elif data_type == RequestDataType.track_config:
-            rval = self.get_new_track_config(trans, dataset)
         elif data_type == RequestDataType.genome_data:
             rval = self._get_genome_data(trans, dataset, dbkey=extra_params.get("dbkey", None))
         elif data_type == RequestDataType.in_use_state:
@@ -369,7 +439,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # Default: return dataset as dict.
             if hda_ldda == DatasetSourceType.hda:
                 return self.hda_serializer.serialize_to_view(
-                    dataset, view=serialization_params.view or "detailed", user=trans.user, trans=trans
+                    dataset,
+                    view=serialization_params.view or "detailed",
+                    keys=serialization_params.keys,
+                    user=trans.user,
+                    trans=trans,
                 )
             else:
                 dataset_dict = dataset.to_dict()
@@ -393,6 +467,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
         badges = object_store.get_concrete_store_badges(dataset)
+        private = object_store.is_private(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -400,7 +475,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # not implemented on nestedobjectstores yet.
             percent_used = None
         except FileNotFoundError:
-            # uninitalized directory (emtpy) disk object store can cause this...
+            # uninitialized directory (empty) disk object store can cause this...
             percent_used = None
 
         quota_source = dataset.quota_source_info
@@ -408,7 +483,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             source=quota_source.label,
             enabled=quota_source.use,
         )
-
+        relocatable = trans.app.security_agent.can_change_object_store_id(trans.user, dataset)
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
@@ -423,6 +498,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             sources=sources,
             quota=quota,
             badges=badges,
+            relocatable=relocatable,
+            private=private,
         )
 
     def show_inheritance_chain(
@@ -438,9 +515,16 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
-            result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
+            result.append(
+                DatasetInheritanceChainEntry(
+                    id=dep[0].id,
+                    name=dep[0].name,
+                    dep=dep[1],
+                    user_id=dep[0].user.id if dep[0].user else None,
+                )
+            )
 
-        return DatasetInheritanceChain(__root__=result)
+        return DatasetInheritanceChain(root=result)
 
     def compute_hash(
         self,
@@ -459,12 +543,24 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         result = compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
-    def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
+    def report(self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField) -> ToolReportForDataset:
+        dataset_instance = self.hda_manager.get_accessible(dataset_id, trans.user)
+        self.hda_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        file_path = trans.app.object_store.get_filename(dataset_instance.dataset, auth=ObjectStoreAuth(user=trans.user))
+        raw_content = open(file_path).read(1024 * 10)
+        internal_markdown = resolve_job_markdown(trans, dataset_instance.creating_job, raw_content)
+        _, content_embed_expanded, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
+        return ToolReportForDataset(
+            content=content_embed_expanded,
+            **extra_attributes,
+        )
+
+    def drs_dataset_instance(self, object_id: str) -> tuple[int, DatasetSourceType]:
         if object_id.startswith("hda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("hda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("hda-") :], kind="drs")
             hda_ldda = DatasetSourceType.hda
         elif object_id.startswith("ldda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("ldda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("ldda-") :], kind="drs")
             hda_ldda = DatasetSourceType.ldda
         else:
             raise galaxy_exceptions.RequestParameterInvalidException(
@@ -481,7 +577,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         # TODO: issue warning if not being served on HTTPS @ 443 - required by the spec.
         self_uri = f"drs://drs.{request_url.components.netloc}/{object_id}"
-        checksums: List[Checksum] = []
+        checksums: list[Checksum] = []
         for dataset_hash in dataset_instance.dataset.hashes:
             if dataset_hash.extra_files_path:
                 continue
@@ -490,11 +586,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             checksums.append(Checksum(type=type, checksum=checksum))
 
         if len(checksums) == 0:
-            hash_funciton = HashFunctionNameEnum.md5
+            hash_function = HashFunctionNameEnum.md5
             request = ComputeDatasetHashTaskRequest(
                 dataset_id=dataset_instance.dataset.id,
                 extra_files_path=None,
-                hash_function=hash_funciton,
+                hash_function=hash_function,
                 user=None,
             )
             compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
@@ -530,11 +626,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
-        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
+        return dataset_manager.serialize_dataset_association_roles(dataset)
 
     def extra_files(
         self,
@@ -545,17 +641,114 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Generate list of extra files.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
-        extra_files_path = hda.extra_files_path
         rval = []
-        for root, directories, files in safe_walk(extra_files_path):
-            for directory in directories:
-                rval.append(
-                    {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
-                )
-            for file in files:
-                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+        if not hda.is_pending and hda.extra_files_path_exists():
+            extra_files_path = hda.extra_files_path
+            for root, directories, files in safe_walk(extra_files_path):
+                for directory in directories:
+                    rval.append(
+                        {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
+                    )
+                for file in files:
+                    rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
 
         return rval
+
+    def direct_download_url(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        to_ext: str | None = None,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> str | None:
+        """Return a backing-store URL a whole-file download can be redirected to, or None to stream.
+
+        Used by the dedicated download route; the regular display route never redirects.
+        """
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+        dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        datatype = dataset_instance.datatype
+        is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
+        if not is_direct_download_candidate(None, to_ext, False, None, None, is_archive):
+            return None
+        content_disposition = None
+        content_type = None
+        if to_ext is not None:
+            # Match the filename/content-type a streamed download would produce.
+            content_disposition = datatype.content_disposition(dataset_instance, to_ext)
+            content_type = "application/octet-stream"
+        return trans.app.object_store.get_direct_download_url(
+            dataset_instance.dataset, content_disposition=content_disposition, content_type=content_type
+        )
+
+    def download_head_headers(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        to_ext: str | None = None,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> dict[str, str]:
+        """Build response headers for a HEAD download request from object-store metadata.
+
+        Answers without redirecting or pulling the object into cache, so clients (which may not follow
+        redirects on HEAD) can learn the size and filename of a download.
+        """
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+        dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        datatype = dataset_instance.datatype
+        headers = {
+            "content-type": "application/octet-stream",
+            "Content-Disposition": datatype.content_disposition(dataset_instance, to_ext),
+            "accept-ranges": "bytes",
+        }
+        # Composite/archived downloads are zipped on the fly, so their size is not known up front.
+        if not datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension):
+            size = trans.app.object_store.size(dataset_instance.dataset)
+            if size:
+                headers["Content-Length"] = str(size)
+        return headers
+
+    def _stream_from_object_store(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_instance,
+        filename: str | None,
+        to_ext: str | None,
+        offset: int | None,
+        ck_size: int | None,
+    ) -> tuple[DataStream, dict[str, str]] | None:
+        """Proxy a whole-file download straight from the backing store, warming the cache on the way.
+
+        Returns None -- meaning the caller should pull the object into the cache and serve it from
+        there -- when the request is not a plain whole-file download, or when the store has no
+        streaming read (a disk store, or an object already in the cache).
+        """
+        datatype = dataset_instance.datatype
+        is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
+        if not is_direct_download_candidate(filename, to_ext, False, offset, ck_size, is_archive):
+            return None
+        headers = {
+            # Force octet-stream so Safari doesn't append mime extensions to the filename.
+            "content-type": "application/octet-stream",
+            "Content-Disposition": datatype.content_disposition(dataset_instance, to_ext),
+        }
+        size = trans.app.object_store.size(dataset_instance.dataset)
+        if size:
+            # Known up front from the store's metadata, so clients still get a progress bar.
+            headers["Content-Length"] = str(size)
+        # Opened last so that nothing between here and the response can fail with a read already in
+        # flight: an open stream is only released once something starts consuming it.
+        stream = trans.app.object_store.get_data_stream(dataset_instance.dataset)
+        if stream is None:
+            return None
+        try:
+            trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
+        except BaseException:
+            stream.close()
+            raise
+        return stream, headers
 
     def display(
         self,
@@ -563,11 +756,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         raw: bool = False,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
+        allow_stream: bool = False,
         **kwd,
     ):
         """
@@ -576,20 +770,38 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         The query parameter 'raw' should be considered experimental and may be dropped at
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the default if raw is unspecified or explicitly false.
+
+        ``allow_stream`` says the caller can consume a forward-only stream of the whole object (a
+        plain GET with no Range header). Whole-file downloads are then proxied straight from the
+        backing store, so the client gets its first byte immediately instead of waiting for the
+        object to be pulled into the cache. Callers that need a seekable file -- HEAD and Range
+        requests, and every legacy controller -- leave it False and get today's behavior.
         """
-        headers = {}
+        headers: dict[str, str] = {}
         rval: Any = ""
         try:
-            dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+            dataset_manager = self.dataset_manager_by_type[hda_ldda]
+            dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+            dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+            if filename and filename.startswith("/"):
+                # Path needs to relative to extra files path
+                filename = filename.lstrip("/")
+            if allow_stream and not raw:
+                streamed = self._stream_from_object_store(trans, dataset_instance, filename, to_ext, offset, ck_size)
+                if streamed is not None:
+                    return streamed
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
                     dir_name = dataset_instance.dataset.extra_files_path_name
                     file_path = object_store.get_filename(
-                        dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
+                        dataset_instance.dataset,
+                        extra_dir=dir_name,
+                        alt_name=filename,
+                        auth=ObjectStoreAuth(user=trans.user),
                     )
                 else:
-                    file_path = dataset_instance.file_name
+                    file_path = dataset_instance.get_file_name(auth=ObjectStoreAuth(user=trans.user))
                 rval = open(file_path, "rb")
             else:
                 if offset is not None:
@@ -606,15 +818,21 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return rval, headers
 
     def get_content_as_text(
-        self,
-        trans: ProvidesHistoryContext,
-        dataset_id: DecodedDatabaseIdField,
+        self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField, filename: str | None
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
         user = trans.user
         hda = self.hda_manager.get_accessible(dataset_id, user)
         hda = self.hda_manager.error_if_uploading(hda)
-        truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
+        if filename and filename != "index":
+            object_store = trans.app.object_store
+            dir_name = hda.dataset.extra_files_path_name
+            file_path = object_store.get_filename(
+                hda.dataset, extra_dir=dir_name, alt_name=filename, auth=ObjectStoreAuth(user=user)
+            )
+            truncated, dataset_data = self.hda_manager.text_data_truncated(file_path, preview=True)
+        else:
+            truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
         item_url = web.url_for(
             controller="dataset",
             action="display_by_username_and_slug",
@@ -642,12 +860,22 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
-        file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
-        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda.name)[0:150]
+        self.hda_manager.ensure_dataset_on_disk(trans, hda)
+        metadata_spec = hda.metadata.spec.get(metadata_file)
+        if metadata_spec is None:
+            raise galaxy_exceptions.RequestParameterInvalidException(f"Unknown metadata file: {metadata_file}")
+        file_ext = metadata_spec.get("file_ext", metadata_file)
+        hda_name = hda.name or "Unnamed dataset"
+        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda_name)[0:150]
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        file_path = hda.metadata.get(metadata_file).file_name
+        mf = hda.metadata.get(metadata_file)
+        if mf is None:
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                f"Metadata file {metadata_file} is not set for this dataset"
+            )
+        file_path = mf.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         if open_file:
             return open(file_path, "rb"), headers
         return file_path, headers
@@ -666,7 +894,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         serialization_params.default_view = "detailed"
         converted = self._get_or_create_converted(trans, hda, ext)
         return self.hda_serializer.serialize_to_view(
-            converted, user=trans.user, trans=trans, **serialization_params.dict()
+            converted, user=trans.user, trans=trans, **serialization_params.model_dump()
         )
 
     def converted(
@@ -691,12 +919,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Warning: only the ownership of the dataset and upload state for HDAs is checked, no other checks or restrictions are made.
         """
         success_count = 0
-        errors: List[DatasetErrorMessage] = []
+        errors: list[DatasetErrorMessage] = []
         for dataset in payload.datasets:
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
                 dataset_instance = manager.get_owned(dataset.id, trans.user)
-                manager.error_unless_mutable(dataset_instance.history)
+                if hasattr(dataset_instance, "history"):
+                    manager.error_unless_mutable(dataset_instance.history)
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
@@ -713,9 +942,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+            trans.sa_session.commit()
+        return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(
         self,
@@ -727,6 +955,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Retrieves contents of a dataset. It is left to the datatype to decide how
         to interpret the content types.
+
+        Returns a ``(content, headers)`` tuple. ``content`` is usually a ``bytes``
+        body, but datatypes that stream large content may return an iterator of
+        ``bytes`` chunks, which the controller serves as a ``StreamingResponse``.
         """
         headers = {}
         content: Any = ""
@@ -741,7 +973,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
         return content, headers
 
-    def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
+    def update_object_store_id(
+        self, trans: ProvidesUserContext, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload
+    ):
+        hda = self.hda_manager.get_accessible(dataset_id, trans.user)
+        dataset = hda.dataset
+        self.dataset_manager.update_object_store_id(trans, dataset, payload.object_store_id)
+
+    def _get_or_create_converted(self, trans: ProvidesUserContext, original: model.DatasetInstance, target_ext: str):
         try:
             original.get_converted_dataset(trans, target_ext)
             converted = original.get_converted_files_by_type(target_ext)
@@ -771,11 +1010,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _converted_datasets_state(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
-        chrom: Optional[str] = None,
+        chrom: str | None = None,
         retry: bool = False,
-    ) -> Union[model.Dataset.conversion_messages, dict]:
+    ) -> model.Dataset.conversion_messages | dict:
         """
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
@@ -801,7 +1040,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             data_provider = self.data_provider_registry.get_data_provider(
                 trans, original_dataset=dataset, source="index"
             )
-            if not data_provider.has_data(chrom):
+            if not dataset.has_data() or not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here
@@ -809,10 +1048,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _search_features(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
-        query: Optional[str],
-    ) -> List[List[str]]:
+        query: str | None,
+    ) -> list[list[str]]:
         """
         Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]
@@ -838,9 +1077,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         low: int,
         high: int,
         start_val: int = 0,
-        max_vals: Optional[int] = None,
+        max_vals: int | None = None,
         **kwargs,
-    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
+    ) -> model.Dataset.conversion_messages | BamDataResult | DataResult:
         """
         Provides a block of data from a dataset.
         """
@@ -849,25 +1088,22 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         # Get datasources and check for messages.
         data_sources = dataset.get_datasources(trans)
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        return_message = self._get_highest_priority_msg(messages_list)
-        if return_message:
+        if return_message := self._get_highest_priority_msg(messages_list):
             return return_message
 
         extra_info = None
         mode = kwargs.get("mode", "Auto")
-        indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             return indexer.get_data(chrom, low, high, **kwargs)
 
         # TODO:
@@ -877,13 +1113,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # If mode is Auto, need to determine what type of data to return.
         if mode == "Auto":
             # Get stats from indexer.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
 
             # If stats were requested, return them.
             if "stats" in kwargs:
                 if stats["data"]["max"] == 0:
-                    return DataResult(dataset_type=indexer.dataset_type, data=None)
+                    return DataResult(dataset_type=indexer.dataset_type, data=[])
                 else:
                     return stats
 
@@ -927,8 +1163,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
             # Get mean depth.
-            if not indexer:
-                indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
             mean_depth = stats["data"]["mean"]
 
@@ -941,19 +1176,18 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _raw_data(
         self,
-        trans,
+        trans: ProvidesAppContext,
         dataset,
         provider=None,
         **kwargs,
-    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
+    ) -> model.Dataset.conversion_messages | BamDataResult | DataResult:
         """
         Uses original (raw) dataset to return data. This method is useful
         when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         registry = self.data_provider_registry
@@ -980,3 +1214,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         data = data_provider.get_data(**kwargs)
 
         return data
+
+    def _get_indexer(self, trans: ProvidesAppContext, dataset):
+        indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+        if indexer is None:
+            msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"
+            log.exception(msg)
+            raise galaxy_exceptions.ObjectNotFound(msg)
+        return indexer

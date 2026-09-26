@@ -40,19 +40,19 @@ def __main__():
             # indexed species
             for spec in indexed_for_species:
                 if spec not in species_indexed_in_maf:
-                    print("Line %i, %s claims to be indexed for %s, but indexes do not exist." % (i, uid, spec))
+                    print(f"Line {i}, {uid} claims to be indexed for {spec}, but indexes do not exist.")
             for spec in species_indexed_in_maf:
                 if spec not in indexed_for_species:
-                    print("Line %i, %s is indexed for %s, but is not listed in loc file." % (i, uid, spec))
+                    print(f"Line {i}, {uid} is indexed for {spec}, but is not listed in loc file.")
             # existing species
             for spec in species_exist:
                 if spec not in species_found_in_maf:
-                    print("Line %i, %s claims to have blocks for %s, but was not found in MAF files." % (i, uid, spec))
+                    print(f"Line {i}, {uid} claims to have blocks for {spec}, but was not found in MAF files.")
             for spec in species_found_in_maf:
                 if spec not in species_exist:
-                    print("Line %i, %s contains %s, but is not listed in loc file." % (i, uid, spec))
+                    print(f"Line {i}, {uid} contains {spec}, but is not listed in loc file.")
         except Exception as e:
-            print("Line %i is invalid: %s" % (i, e))
+            print(f"Line {i} is invalid: {e}")
 
 
 if __name__ == "__main__":

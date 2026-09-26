@@ -8,7 +8,7 @@ from common import submit
 try:
     assert sys.argv[2]
 except IndexError:
-    print("usage: %s key url [name] " % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url [name] ")
     sys.exit(1)
 try:
     data = {}

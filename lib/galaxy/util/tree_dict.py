@@ -5,7 +5,6 @@ from collections.abc import (
 )
 from typing import (
     Any,
-    Optional,
 )
 
 from boltons.iterutils import remap
@@ -24,7 +23,7 @@ class TreeDict(UserDict):
     """
 
     def __init__(self, dict=None, **kwargs):
-        self._parent_data: Optional[TreeDict] = None
+        self._parent_data: TreeDict | None = None
         self._injected_data = {}
         super().__init__(dict, **kwargs)
 

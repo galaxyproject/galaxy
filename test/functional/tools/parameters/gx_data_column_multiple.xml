@@ -1,0 +1,33 @@
+<tool id="gx_data_column_multiple" name="gx_data_column_multiple" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo 'parameter: $parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data" format="tabular" />
+        <param name="parameter" type="data_column" data_ref="ref_parameter" multiple="true" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <param name="parameter" value="1" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 1"/>
+            </expand>
+        </test>
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <param name="parameter" value="1,2,3" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 1,2,3"/>
+            </expand>
+        </test>
+        <!-- these parameters are not implicitly optional! -->
+        <test expect_failure="true">
+            <param name="ref_parameter" value="2.tabular" />
+        </test>
+    </tests>
+</tool>

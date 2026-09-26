@@ -1,6 +1,6 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 
-define({
+export default {
     // ----------------------------------------------------------------------------- masthead
 
     "Analyze Data": "Analizar Datos",
@@ -54,7 +54,7 @@ define({
 
     Register: "Registro",
 
-    "Login or Register": "Iniciar sesión o Registrarse",
+    "Log in or Register": "Iniciar sesión o Registrarse",
     "Subscribe to mailing list": false,
     "Already have an account?": false,
     "Log in here.": false,
@@ -80,6 +80,10 @@ define({
     "Saved Datasets": "Conjuntos de Datos Guardados",
 
     "Saved Pages": "Páginas Guardadas",
+
+    Saved: "Guardado",
+
+    Unsaved: "Sin guardar",
 
     "Using ": "Utilizando ",
 
@@ -608,7 +612,7 @@ define({
         "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
 
     "Manage Toolbox Filters": "Manejar filtros de la caja de herramientas",
-    "Manage Custom Builds": "Administrar compilaciones personalizadas",
+    "Manage Custom Builds": "Administrar construcciones personalizadas",
 
     "Enable notifications": "Habilitar notificaciones",
     "Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser.":
@@ -817,4 +821,4 @@ define({
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Mensaje de información sobre herramientas",
     // ----------------------------------------------------------------------------
-});
+};

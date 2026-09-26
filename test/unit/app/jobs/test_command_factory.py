@@ -2,26 +2,21 @@ import os
 import shutil
 from os import getcwd
 from tempfile import mkdtemp
-from typing import (
-    List,
-    Tuple,
-)
 
 from galaxy.jobs.command_factory import (
     build_command,
-    PREPARE_DIRS,
     SETUP_GALAXY_FOR_METADATA,
 )
+from galaxy.model import Dataset
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
-TEST_FILES_PATH = "file_path"
 TEE_REDIRECT = '> "$__out" 2> "$__err"'
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
-CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
+CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" -a -f "bar" ] ; then cp "foo" "bar" ; fi'
 
 
 class TestCommandFactory(TestCase):
@@ -33,15 +28,13 @@ class TestCommandFactory(TestCase):
     def setUp(self):
         self.job_dir = mkdtemp()
         self.job_wrapper = MockJobWrapper(self.job_dir)
-        self.workdir_outputs: List[Tuple[str, str]] = []
+        self.workdir_outputs: list[tuple[str, str]] = []
 
         def workdir_outputs(job_wrapper, **kwds):
             assert job_wrapper == self.job_wrapper
             return self.workdir_outputs
 
-        self.runner = Bunch(
-            app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))), get_work_dir_outputs=workdir_outputs
-        )
+        self.runner = Bunch(get_work_dir_outputs=workdir_outputs)
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
@@ -65,10 +58,7 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.dependency_shell_commands = dep_commands
         self._assert_command_is(
             self._surround_command(
-                "{} {}/tool_script.sh".format(
-                    self.job_wrapper.shell,
-                    self.job_wrapper.working_directory,
-                )
+                f"{self.job_wrapper.shell} {os.path.join(self.job_wrapper.working_directory, 'tool_script.sh')}"
             )
         )
         self.__assert_tool_script_is(f"#!/bin/sh\n{dep_commands[0]}; {MOCK_COMMAND_LINE}")
@@ -95,6 +85,40 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
         self._assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}"))
 
+    def test_remote_tool_eval_command(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.remote_command_line = True
+
+        source_command = self.__command()
+
+        assert (
+            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" '
+            '"${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+        ) in source_command
+        assert (
+            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+            not in source_command
+        )
+
+        self.job_wrapper.galaxy_lib_dir = None
+        package_command = self.__command()
+        assert "galaxy-remote-tool-eval" in package_command
+        assert '"$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py' not in package_command
+
+    def test_remote_tool_eval_command_for_pulsar_defers_to_remote_layout(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.remote_command_line = True
+        pulsar_params = {"pulsar_version": "0.15.0"}
+
+        source_command = self.__command(remote_command_params=pulsar_params)
+        self.job_wrapper.galaxy_lib_dir = None
+        package_command = self.__command(remote_command_params=pulsar_params)
+
+        # Pulsar sets GALAXY_LIB itself, so the command cannot depend on this Galaxy's lib dir.
+        assert source_command == package_command
+        assert 'if [ "$GALAXY_LIB" != "None" ]' in source_command
+        assert '"$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py; else galaxy-remote-tool-eval; fi' in source_command
+
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
@@ -105,7 +129,7 @@ class TestCommandFactory(TestCase):
         self.workdir_outputs = [("foo*bar", "foo_x_bar")]
         self._assert_command_is(
             self._surround_command(
-                MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'
+                MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" -a -f "foo_x_bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'
             )
         )
 
@@ -130,6 +154,16 @@ class TestCommandFactory(TestCase):
         )
         self._assert_command_is(expected_command)
 
+    def test_containerized_metadata_command(self):
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        container = Bunch(containerize_command=lambda command: f"docker run site/metadata:1 {command}")
+        expected_command = self._surround_command(
+            MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'; docker run site/metadata:1 galaxy-set-metadata"
+        )
+        self._assert_command_is(expected_command, metadata_container=container)
+
     def test_empty_metadata(self):
         """
         Test empty metadata as produced by TaskWrapper.
@@ -145,7 +179,7 @@ class TestCommandFactory(TestCase):
         configured_kwds = self.__set_metadata_with_kwds()
         assert configured_kwds["exec_dir"] == getcwd()
         assert configured_kwds["tmp_dir"] == self.job_wrapper.working_directory
-        assert configured_kwds["dataset_files_path"] == TEST_FILES_PATH
+        assert configured_kwds["dataset_files_path"] == Dataset.file_path
         assert configured_kwds["output_fnames"] == ["output1"]
 
     def test_metadata_kwds_overrride(self):
@@ -193,7 +227,7 @@ class TestCommandFactory(TestCase):
         return build_command(**kwds)
 
     def _surround_command(self, command, post_command=""):
-        command = f'''{PREPARE_DIRS};{self.TEE_LOG}{command} {self.CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
+        command = f'''cd working;{self.TEE_LOG}{command} {self.CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
         return command.replace("galaxy_1.ec", os.path.join(self.job_wrapper.working_directory, "galaxy_1.ec"), 1)
 
 
@@ -233,6 +267,7 @@ class MockJobWrapper:
         self.shell = "/bin/sh"
         self.use_metadata_binary = False
         self.job_id = 1
+        self.galaxy_lib_dir: str | None = "/galaxy/lib"
         self.remote_command_line = False
 
     def get_command_line(self):

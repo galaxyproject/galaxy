@@ -21,13 +21,6 @@ def test_stock_filtering_hidden_tools():
     assert is_filtered(filters, trans, mock_tool(hidden=True))
 
 
-def test_trackster_filtering():
-    trans = mock_trans()
-    filters = filter_factory({}).build_filters(trans, trackster=True)["tool"]
-    assert is_filtered(filters, trans, mock_tool(trackster_conf=False))
-    assert not is_filtered(filters, trans, mock_tool(trackster_conf=True))
-
-
 def test_custom_filters():
     filters = filter_factory().build_filters(mock_trans())
     tool_filters = filters["tool"]
@@ -63,15 +56,13 @@ def is_filtered(filters, trans, tool):
     return not all(_(context, tool) for _ in filters)
 
 
-def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_access=True):
-    def allow_user_access(user, attempting_access):
-        assert not attempting_access
+def mock_tool(require_login=False, hidden=False, tool_type="default", allow_access=True):
+    def allow_user_access(user, attempting_access=True):
         return allow_access
 
-    tool = Bunch(
+    return Bunch(
         require_login=require_login,
         hidden=hidden,
-        trackster_conf=trackster_conf,
+        tool_type=tool_type,
         allow_user_access=allow_user_access,
     )
-    return tool

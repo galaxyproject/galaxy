@@ -26,6 +26,7 @@ GTN, and your users can click on these to have that tool loaded in Galaxy.
 
 ```nginx
 location /training-material/ {
+    proxy_ssl_server_name on;
     proxy_pass https://training.galaxyproject.org/training-material/;
 }
 ```

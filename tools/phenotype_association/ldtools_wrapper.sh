@@ -5,7 +5,7 @@
 
 set -e
 
-SCRIPT_DIR=$(dirname $0)
+SCRIPT_DIR=$(dirname "$0")
 
 ## pagetag options
 input=
@@ -46,16 +46,7 @@ do
 done
 
 ## run pagetag
-python $SCRIPT_DIR/pagetag.py --rsquare $rsquare --freq $freq "$input" snps.txt neighborhood.txt
-if [ $? -ne 0 ]; then
-	echo "failed: pagetag.py --rsquare $rsquare --freq $freq \"$input\" snps.txt neighborhood.txt"
-	exit 1
-fi
+python "$SCRIPT_DIR/pagetag.py" --rsquare $rsquare --freq $freq "$input" snps.txt neighborhood.txt
 
-## run sentag
-python $SCRIPT_DIR/senatag.py neighborhood.txt snps.txt > "$output"
-if [ $? -ne 0 ]; then
-	echo "failed: senatag.py neighborhood.txt snps.txt"
-	exit 1
-fi
-
+## run senatag
+python "$SCRIPT_DIR/senatag.py" neighborhood.txt snps.txt > "$output"

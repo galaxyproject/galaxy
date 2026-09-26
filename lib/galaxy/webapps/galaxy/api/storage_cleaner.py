@@ -1,11 +1,8 @@
 """
 API operations on User storage management.
 """
+
 import logging
-from typing import (
-    List,
-    Optional,
-)
 
 from fastapi import (
     Body,
@@ -36,7 +33,7 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["storage management"])
 
-OrderQueryParam: Optional[StoredItemOrderBy] = Query(
+OrderQueryParam: StoredItemOrderBy | None = Query(
     default=None,
     title="Order",
     description=(
@@ -67,10 +64,10 @@ class FastAPIStorageCleaner:
     def discarded_histories(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        offset: Optional[int] = OffsetQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        order: Optional[StoredItemOrderBy] = OrderQueryParam,
-    ) -> List[StoredItem]:
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
+    ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "history", offset, limit, order)
 
     @router.delete(
@@ -102,10 +99,10 @@ class FastAPIStorageCleaner:
     def discarded_datasets(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        offset: Optional[int] = OffsetQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        order: Optional[StoredItemOrderBy] = OrderQueryParam,
-    ) -> List[StoredItem]:
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
+    ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "dataset", offset, limit, order)
 
     @router.delete(
@@ -119,3 +116,26 @@ class FastAPIStorageCleaner:
         **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
         """
         return self.service.cleanup_items(trans, stored_item_type="dataset", item_ids=set(payload.item_ids))
+
+    @router.get(
+        "/api/storage/histories/archived/summary",
+        summary="Returns information with the total storage space taken by non-purged archived histories associated with the given user.",
+    )
+    def archived_histories_summary(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> CleanableItemsSummary:
+        return self.service.get_archived_summary(trans, stored_item_type="history")
+
+    @router.get(
+        "/api/storage/histories/archived",
+        summary="Returns archived histories owned by the given user that are not purged. The results can be paginated.",
+    )
+    def archived_histories(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
+    ) -> list[StoredItem]:
+        return self.service.get_archived(trans, "history", offset, limit, order)

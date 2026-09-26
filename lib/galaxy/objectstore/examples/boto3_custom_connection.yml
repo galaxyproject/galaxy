@@ -1,0 +1,21 @@
+type: boto3
+auth:
+  access_key: access_moo
+  secret_key: secret_cow
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+connection:
+  endpoint_url: https://s3.example.org/
+  region: the_example_region
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_s3
+- type: temp
+  path: database/tmp_s3

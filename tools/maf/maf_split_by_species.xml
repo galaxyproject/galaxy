@@ -1,9 +1,13 @@
-<tool id="MAF_split_blocks_by_species1" name="Split MAF blocks" version="1.0.0">
+<tool id="MAF_split_blocks_by_species1" name="Split MAF blocks" version="1.0.0" profile="24.2">
   <description>by Species</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/maf_split_by_species.py' '$input1' '$out_file1' $collapse_columns</command>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="maf_split_by_species.py"/>
+  </required_files>
+  <command>python '$__tool_directory__/maf_split_by_species.py' '$input1' '$out_file1' '$collapse_columns'</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to split"/>
     <param name="collapse_columns" type="select" label="Collapse empty alignment columns" help="Removes columns that are gaps in all sequences">

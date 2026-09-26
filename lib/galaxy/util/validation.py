@@ -1,4 +1,4 @@
-""" Module for validation of incoming inputs.
+"""Module for validation of incoming inputs.
 
 TODO: Refactor BaseController references to similar methods to use this module.
 """

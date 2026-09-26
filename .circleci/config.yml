@@ -1,5 +1,4 @@
-# Python CircleCI 2.0 configuration file
-version: 2
+version: 2.1
 variables:
   restore_repo_cache: &restore_repo_cache
     restore_cache:
@@ -15,7 +14,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.10
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -73,7 +72,7 @@ jobs:
             - ~/repo
   validate_test_tools:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.10
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -82,7 +81,6 @@ jobs:
       - *install_tox
       - run: tox -e validate_test_tools
 workflows:
-  version: 2
   get_code_and_test:
     jobs:
       - get_code

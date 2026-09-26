@@ -5,6 +5,7 @@ See full license at:
 https://github.com/dmfrey/FileLock/blob/master/LICENSE.txt
 
 """
+
 import errno
 import os
 import time

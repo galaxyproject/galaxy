@@ -1607,7 +1607,7 @@ DynaTreeNode.prototype = {
 								callback.call(tree, child, "error");
 							}
 						});
-						// we can ignore it, since it will only be exectuted once, the the loop is ended
+						// we can ignore it, since it will only be executed once, the loop is ended
 						// See also http://stackoverflow.com/questions/3037598/how-to-get-around-the-jslint-error-dont-make-functions-within-a-loop
 					} else {
 						callback.call(tree, child, "loaded");

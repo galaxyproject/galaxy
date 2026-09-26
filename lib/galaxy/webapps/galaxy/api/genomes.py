@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    List,
 )
 
 from fastapi import (
@@ -11,6 +10,7 @@ from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
@@ -54,7 +54,9 @@ FormatQueryParam: str = Query(None, title="Format", description="Format")
 ReferenceQueryParam: bool = Query(None, title="Reference", description="If true, return reference data")
 
 IndexTypeQueryParam: str = Query(
-    "fasta_indexes", title="Index type", description="Index type"  # currently this is the only supported index type
+    "fasta_indexes",
+    title="Index type",
+    description="Index type",  # currently this is the only supported index type
 )
 
 
@@ -71,7 +73,7 @@ class FastAPIGenomes:
     @router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
     def index(
         self, trans: ProvidesUserContext = DependsOnTrans, chrom_info: bool = ChromInfoQueryParam
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         return self.manager.get_dbkeys(trans.user, chrom_info)
 
     @router.get(
@@ -81,7 +83,7 @@ class FastAPIGenomes:
     )
     def show(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
         num: int = NumQueryParam,
@@ -100,6 +102,7 @@ class FastAPIGenomes:
     )
     def indexes(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,  # may want to get custom index in the future
         id: str = IdPathParam,
         type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,

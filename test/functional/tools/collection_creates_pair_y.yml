@@ -2,10 +2,10 @@ id: collection_creates_pair_y
 name: collection_creates_pair_y
 class: GalaxyTool
 version: 1.0
-command:
+shell_command:
   >
-    sed 'n;d' '$input1' > '$paired_output.forward';
-    sed -n 'g;n;p' '$input1' > '$paired_output.reverse';
+    sed 'n;d' '$(inputs.input1.path)' > 'forward.fastq';
+    sed -n 'g;n;p' '$(inputs.input1.path)' > '$reverse.fastq';
 inputs:
 - name: input1
   type: data
@@ -16,3 +16,26 @@ outputs:
     type: collection
     collection_type: paired
     label: Split Pair
+    elements:
+      forward: 
+        from_work_dir: forward.fastq
+      reverse:
+        from_work_dir: reverse.fastq
+tests:
+- inputs:
+    input1:
+      class: File
+      path: simple_lines_interleaved.txt
+  outputs:
+    paired_output:
+      class: Collection
+      collection_type: paired
+      elements:
+        forward:
+          asserts:
+          - that: has_text
+            text: "This is a line of text.\nThis is a line of text."
+        reverse:
+          asserts:
+          - that: has_text
+            text: "This is a different line of text.\nThis is a different line of text."

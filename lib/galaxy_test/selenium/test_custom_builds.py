@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -48,11 +50,8 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
         key_input = self.wait_for_selector('input[id="id"]')
         key_input.send_keys(build_key)
 
-        len_type_select = self.wait_for_selector('select[id="type"]')
-        len_type_select.click()
-
-        option = self.wait_for_sizzle_selector_clickable('option[value="text"]')
-        option.click()
+        self.wait_for_selector('select[id="type"]')
+        self.select_by_value(("css selector", 'select[id="type"]'), "text")
         content_area = self.wait_for_and_click_selector('textarea[id="len-file-text-area"]')
         content_area.send_keys("content")
 
@@ -60,12 +59,12 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
 
     def delete_custom_build(self, build_name):
         delete_button = None
-        grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
-            td = row.find_elements(self.by.TAG_NAME, "td")
+        custom_builds_table = self.wait_for_selector(".g-table > tbody")
+        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element(self.by.CSS_SELECTOR, ".fa-trash-o")
+                delete_button = td[3].find_element(By.CSS_SELECTOR, "button[data-title='Delete build']")
                 break
 
         if delete_button is None:
@@ -76,9 +75,9 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
     def get_custom_builds(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
-        grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
-            name = row.find_elements(self.by.TAG_NAME, "td")[0].text
+        custom_builds_table = self.wait_for_selector(".g-table > tbody")
+        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
+            name = row.find_elements(By.TAG_NAME, "td")[0].text
             builds.append(name)
         return builds
 

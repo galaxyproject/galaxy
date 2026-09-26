@@ -16,7 +16,7 @@ export function useActiveElement<T extends HTMLElement>(options: ConfigurableWin
     const { window = defaultWindow } = options;
     const activeElement = computedWithControl(
         () => null,
-        () => window?.document.activeElement as T | null | undefined
+        () => window?.document.activeElement as T | null | undefined,
     );
 
     if (window) {
@@ -27,7 +27,7 @@ export function useActiveElement<T extends HTMLElement>(options: ConfigurableWin
                 const scheduler = window.requestAnimationFrame || window.setTimeout;
                 scheduler(() => activeElement.trigger());
             },
-            true
+            true,
         );
         useEventListener(window, "focus", activeElement.trigger, true);
     }
@@ -45,7 +45,7 @@ export function useFocusWithin(target: MaybeElementRef, options: ConfigurableWin
     const activeElement = useActiveElement(options);
     const targetElement = computed(() => unrefElement(target));
     const focused = computed(() =>
-        targetElement.value && activeElement.value ? targetElement.value.contains(activeElement.value) : false
+        targetElement.value && activeElement.value ? targetElement.value.contains(activeElement.value) : false,
     );
 
     return { focused };

@@ -40,7 +40,7 @@ options (listed below) default to 'None' if omitted
 
     parser.add_option("-s", "--start", type="int", default=0, help="Trim from beginning to here (1-based)")
 
-    parser.add_option("-e", "--end", type="int", default="0", help="Trim from here to the ned (1-based)")
+    parser.add_option("-e", "--end", type="int", default="0", help="Trim from here to the end (1-based)")
 
     parser.add_option(
         "-f", "--file", dest="input_txt", default=False, help="Name of file to be chopped. STDIN is default"

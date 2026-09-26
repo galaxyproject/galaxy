@@ -1,10 +1,49 @@
 import logging
 import sys
 from copy import deepcopy
+from typing import (
+    Protocol,
+    runtime_checkable,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import listify
 
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
+
 log = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class ToolFilterContext(Protocol):
+    """The attribute surface that toolbox filters are allowed to read.
+
+    ``galaxy.tools.Tool`` implements this protocol, and any lighter-weight
+    stand-in a toolbox implementation hands to the filter layer must too.
+    Admin / user-configured filter functions should only read fields
+    documented here — it is the contract that lets the filter pass run
+    against something cheaper than a fully-parsed ``Tool``.
+    """
+
+    id: str
+    name: str
+    description: str
+    hidden: bool
+    require_login: bool
+    tool_type: str
+    labels: list[str]
+    tags: list[str]
+
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
+        """Return ``True`` if ``user`` may see/run this tool.
+
+        ``Tool`` implements this directly (with subclass overrides for
+        admin-only flavours like ``DataManagerTool``); implementations
+        should answer from their own state so the filter layer never
+        needs to reach through ``context.trans.app.config``.
+        """
+        ...
 
 
 class FilterFactory:
@@ -17,8 +56,7 @@ class FilterFactory:
         self.toolbox = toolbox
 
         # Prepopulate dict containing filters that are always checked,
-        # other filters that get checked depending on context (e.g. coming from
-        # trackster or no user found are added in build filters).
+        # other filters that get checked depending on context.
         self.default_filters = dict(tool=[_not_hidden, _handle_authorization], section=[], label=[])
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
@@ -29,7 +67,7 @@ class FilterFactory:
         self.__init_filters("section", getattr(config, "tool_section_filters", ""), self.default_filters)
         self.__init_filters("label", getattr(config, "tool_label_filters", ""), self.default_filters)
 
-    def build_filters(self, trans, **kwds):
+    def build_filters(self, trans: "ProvidesUserContext", **kwds):
         """
         Build list of filters to check tools against given current context.
         """
@@ -48,8 +86,6 @@ class FilterFactory:
                     if category:
                         validate = getattr(trans.app.config, f"user_tool_{category}_filters", [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
-        if kwds.get("trackster", False):
-            filters["tool"].append(_has_trackster_conf)
 
         return filters
 
@@ -69,7 +105,7 @@ class FilterFactory:
         """
         if ":" in filter_name:
             # Should be a submodule of filters (e.g. examples:restrict_development_tools)
-            (module_name, function_name) = filter_name.rsplit(":", 1)
+            module_name, function_name = filter_name.rsplit(":", 1)
             function = self._import_filter(module_name, function_name)
         else:
             # No module found, just load a function from this file or
@@ -92,18 +128,14 @@ class FilterFactory:
 
 
 # Stock Filter Functions
-def _not_hidden(context, tool):
+def _not_hidden(context, tool: ToolFilterContext) -> bool:
     return not tool.hidden
 
 
-def _handle_authorization(context, tool):
+def _handle_authorization(context, tool: ToolFilterContext) -> bool:
     user = context.trans.user
     if tool.require_login and not user:
         return False
     if not tool.allow_user_access(user, attempting_access=False):
         return False
     return True
-
-
-def _has_trackster_conf(context, tool):
-    return tool.trackster_conf

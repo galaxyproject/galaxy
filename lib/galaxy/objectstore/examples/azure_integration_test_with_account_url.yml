@@ -1,0 +1,15 @@
+type: azure_blob
+store_by: uuid
+auth:
+  account_name: ${GALAXY_TEST_AZURE_ACCOUNT_NAME}
+  account_key: ${GALAXY_TEST_AZURE_ACCOUNT_KEY}
+  account_url: ${GALAXY_TEST_AZURE_ACCOUNT_URL}
+
+container:
+  name: ${GALAXY_TEST_AZURE_CONTAINER_NAME}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure

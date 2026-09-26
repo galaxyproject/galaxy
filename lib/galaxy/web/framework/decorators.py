@@ -3,23 +3,32 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 import paste.httpexceptions
-from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.exceptions import (
     error_codes,
     MessageException,
-    RequestParameterInvalidException,
-    RequestParameterMissingException,
+)
+from galaxy.exceptions.utils import (
+    api_error_to_dict,
+    validation_error_to_message_exception,
 )
 from galaxy.util import (
     parse_non_hex_float,
+    smart_str,
     unicodify,
 )
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +63,7 @@ def json(func, pretty=False):
     """
 
     @wraps(func)
-    def call_and_format(self, trans, *args, **kwargs):
+    def call_and_format(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
         jsonp_callback = kwargs.pop(JSONP_CALLBACK_KEY, None)
         if jsonp_callback:
@@ -79,7 +88,7 @@ def json_pretty(func):
 def require_login(verb="perform this action", use_panels=False):
     def argcatcher(func):
         @wraps(func)
-        def decorator(self, trans, *args, **kwargs):
+        def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
             if trans.get_user():
                 return func(self, trans, *args, **kwargs)
             else:
@@ -100,7 +109,7 @@ def require_login(verb="perform this action", use_panels=False):
 
 def require_admin(func):
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         if not trans.user_is_admin:
             msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
@@ -131,7 +140,7 @@ def do_not_cache(func):
     """
 
     @wraps(func)
-    def set_nocache_headers(self, trans, *args, **kwargs):
+    def set_nocache_headers(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         trans.response.headers["Cache-Control"] = ["no-cache", "no-store", "must-revalidate"]
         trans.response.headers["Pragma"] = "no-cache"
         trans.response.headers["Expires"] = "0"
@@ -147,10 +156,10 @@ def legacy_expose_api(func, to_json=True, user_required=True):
     """
 
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         def error(environ, start_response):
             start_response(error_status, [("Content-type", "text/plain")])
-            return error_message
+            return [smart_str(error_message)]
 
         error_status = "403 Forbidden"
         if trans.error_message:
@@ -158,7 +167,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
         if user_required and trans.anonymous:
             error_message = "API Authentication Required for this request"
             return error
-        if trans.request.body:
+        if trans.request.is_body_readable:
             try:
                 kwargs["payload"] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:
@@ -206,7 +215,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
     return expose(_save_orig_fn(decorator, func))
 
 
-def __extract_payload_from_request(trans, func, kwargs):
+def __extract_payload_from_request(trans: "GalaxyWebTransaction", func, kwargs):
     content_type = trans.request.headers.get("content-type", "")
     if content_type.startswith("application/x-www-form-urlencoded") or content_type.startswith("multipart/form-data"):
         # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
@@ -225,7 +234,9 @@ def __extract_payload_from_request(trans, func, kwargs):
                     # note: parse_non_hex_float only needed here for single string values where something like
                     # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings
                     # in larger JSON structures where quoting prevents this (further below)
-                    payload[k] = loads(v, parse_float=parse_non_hex_float)
+                    # Encoded history IDs can contain only digits. Preserve them as strings so tool
+                    # submission does not mistake them for already-decoded database IDs.
+                    payload[k] = loads(v, parse_float=parse_non_hex_float, parse_int=str if k == "history_id" else int)
                 except Exception:
                     # may not actually be json, just continue
                     pass
@@ -236,8 +247,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
-    run_as = trans.request.headers.get("run-as")
-    if run_as:
+    if run_as := trans.request.headers.get("run-as"):
         payload["run_as"] = run_as
     return payload
 
@@ -272,7 +282,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
     """
 
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         # errors passed in from trans._authenticate_api
         if trans.error_message:
             return __api_error_response(
@@ -296,7 +306,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
                     err_msg="API authentication or Galaxy session required for this request",
                 )
 
-        if trans.request.body:
+        if trans.request.is_body_readable:
             try:
                 kwargs["payload"] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:
@@ -373,7 +383,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     if isinstance(rval, BaseModel):
-        json = rval.json(**dumps_kwargs)
+        json = rval.model_dump_json(indent=4)
     else:
         json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
@@ -381,59 +391,14 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: ValidationError) -> MessageException:
-    invalid_found = False
-    missing_found = False
-    for error in e.errors():
-        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
-            missing_found = True
-        elif error["type"].startswith("type_error"):
-            invalid_found = True
-    if missing_found and not invalid_found:
-        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
-    else:
-        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
-
-
-def api_error_message(trans, **kwds):
-    exception = kwds.get("exception", None)
-    if exception:
-        # If we are passed a MessageException use err_msg.
-        default_error_code = getattr(exception, "err_code", error_codes.UNKNOWN)
-        default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)
-        extra_error_info = getattr(exception, "extra_error_info", {})
-        if not isinstance(extra_error_info, dict):
-            extra_error_info = {}
-    else:
-        default_error_message = "Error processing API request."
-        default_error_code = error_codes.UNKNOWN
-        extra_error_info = {}
-    traceback_string = kwds.get("traceback", "No traceback available.")
-    err_msg = kwds.get("err_msg", default_error_message)
-    error_code_object = kwds.get("err_code", default_error_code)
-    try:
-        error_code = error_code_object.code
-    except AttributeError:
-        # Some sort of bad error code sent in, logic failure on part of
-        # Galaxy developer.
-        error_code = error_codes.UNKNOWN.code
-    # Would prefer the terminology of error_code and error_message, but
-    # err_msg used a good number of places already. Might as well not change
-    # it?
-    error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
-    if trans and trans.debug:  # TODO: Should admins get to see traceback as well?
-        error_response["traceback"] = traceback_string
-    return error_response
-
-
-def __api_error_dict(trans, **kwds):
-    error_dict = api_error_message(trans, **kwds)
+def __api_error_dict(trans: "GalaxyWebTransaction", **kwds):
+    error_dict = api_error_to_dict(debug=trans.debug, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.
     if "status_code" in kwds:
-        status_code = int(kwds.get("status_code"))
-    elif hasattr(exception, "status_code"):
+        status_code = int(kwds["status_code"])
+    elif exception is not None and hasattr(exception, "status_code"):
         status_code = int(exception.status_code)
     else:
         status_code = 500
@@ -446,7 +411,7 @@ def __api_error_dict(trans, **kwds):
     return error_dict
 
 
-def __api_error_response(trans, **kwds):
+def __api_error_response(trans: "GalaxyWebTransaction", **kwds):
     error_dict = __api_error_dict(trans, **kwds)
     return safe_dumps(error_dict)
 

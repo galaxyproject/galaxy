@@ -1,0 +1,60 @@
+<tool id="select_from_dataset_in_conditional" name="select_from_dataset_in_conditional"
+    version="0.1.0">
+    <description>Create dynamic options from data sets</description>
+    <command><![CDATA[
+echo select_single '$cond.select_single' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="single" type="data" format="tabular" label="single" />
+        <conditional name="cond">
+            <param name="cond" type="select">
+                <option value="single">single</option>
+            </param>
+            <when value="single">
+                <param name="select_single" type="select" label="select_single">
+                    <options from_dataset="single">
+                        <column name="name" index="1" />
+                        <column name="value" index="0" />
+                        <validator type="no_options" message="No data is available in single" />
+                    </options>
+                </param>
+                <conditional name="inner_cond">
+                    <param name="inner_cond" type="select">
+                        <option value="single">single</option>
+                    </param>
+                    <when value="single">
+                        <param name="select_single" type="select" label="select_single">
+                            <options from_dataset="single">
+                                <column name="name" index="1" />
+                                <column name="value" index="0" />
+                                <validator type="no_options"
+                                    message="No data is available in single" />
+                            </options>
+                        </param>
+                    </when>
+                </conditional>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="single" value="1.tabular" />
+            <conditional name="cond">
+                <param name="select_single" value="chr10" />
+                <conditional name="inner_cond">
+                    <param name="select_single" value="chr10" />
+                </conditional>
+            </conditional>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="select_single chr10" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

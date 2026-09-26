@@ -3,6 +3,7 @@ Determine what optional dependencies are needed.
 """
 
 import os
+import re
 import sys
 from os.path import (
     dirname,
@@ -10,41 +11,94 @@ from os.path import (
     join,
 )
 
-import pkg_resources
 import yaml
+from dparse import parse
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import (
     asbool,
     etree,
     parse_xml,
     which,
 )
+from galaxy.util.config_templates import apply_syntactic_sugar
 from galaxy.util.properties import (
     find_config_file,
     load_app_properties,
 )
 
 
-class ConditionalDependencies:
+class BaseConditionalDependencies:
+    """Machinery and checks shared by every app that ships a config file.
+
+    A ``check_<dependency>`` method here must only read options that every
+    subclass' config schema defines. App-specific checks belong on the subclass;
+    ``check()`` treats a missing method as "not needed".
+    """
+
+    # Section to read from a YAML config file; None keeps load_app_properties'
+    # own default, which is what the Galaxy config path has always relied on.
+    config_section: str | None = None
+
     def __init__(self, config_file, config=None):
         self.config_file = config_file
-        self.job_runners = []
-        self.authenticators = []
-        self.object_stores = []
-        self.file_sources = []
         self.conditional_reqs = []
-        self.container_interface_types = []
-        self.job_rule_modules = []
-        self.error_report_modules = []
-        self.vault_type = None
         if config is None:
-            self.config = load_app_properties(config_file=self.config_file)
+            self.config = load_app_properties(config_file=self.config_file, config_section=self.config_section)
         else:
             self.config = config
         self.parse_configs()
         self.get_conditional_requirements()
 
     def parse_configs(self):
+        """Collect app-specific signals from auxiliary config files."""
+
+    def get_conditional_requirements(self):
+        crfile = join(dirname(__file__), "conditional-requirements.txt")
+        with open(crfile) as fh:
+            dependency_file = parse(fh.read(), file_type="requirements.txt")
+            for dep in dependency_file.dependencies:
+                self.conditional_reqs.append(dep)
+
+    def check(self, name):
+        try:
+            name = name.replace("-", "_").replace(".", "_")
+            return getattr(self, f"check_{name}")()
+        except Exception:
+            return False
+
+    def check_psycopg2_binary(self):
+        return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
+
+    def check_psycopg(self):
+        return self.config["database_connection"].startswith("postgresql+psycopg://")
+
+    def check_mysqlclient(self):
+        return self.config["database_connection"].startswith("mysql")
+
+    def check_sentry_sdk(self):
+        return self.config.get("sentry_dsn", None) is not None
+
+
+class ToolShedConditionalDependencies(BaseConditionalDependencies):
+    config_section = "tool_shed"
+
+
+class ConditionalDependencies(BaseConditionalDependencies):
+    def __init__(self, config_file, config=None):
+        self.job_runners = []
+        self.authenticators = []
+        self.object_stores = []
+        self.file_sources = []
+        self.container_interface_types = []
+        self.job_rule_modules = []
+        self.error_report_modules = []
+        self.vault_type = None
+        super().__init__(config_file, config=config)
+
+    def parse_configs(self):
+        self.config_object = GalaxyAppConfiguration(config_file=self.config_file, override_tempdir=False, **self.config)
+
         def load_job_config_dict(job_conf_dict):
             runners = job_conf_dict.get("runners", {})
             for runner in runners.values():
@@ -52,13 +106,16 @@ class ConditionalDependencies:
                     self.job_runners.append(runner.get("load"))
             environments = job_conf_dict.get("execution", {}).get("environments", {})
             for env in environments.values():
-                if "rules_module" in env:
+                runner = env.get("runner")
+                if runner == "dynamic_tpv":
+                    self.job_rule_modules.append("tpv.rules")
+                elif "rules_module" in env:
                     self.job_rule_modules.append(env.get("rules_module"))
 
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
         else:
-            job_conf_path = self.config.get("job_config_file")
+            job_conf_path = self.config_object.job_config_file
             if not job_conf_path:
                 job_conf_path = join(dirname(self.config_file), "job_conf.yml")
                 if not exists(job_conf_path):
@@ -67,18 +124,15 @@ class ConditionalDependencies:
                 job_conf_path = join(dirname(self.config_file), job_conf_path)
             if ".xml" in job_conf_path:
                 try:
-                    try:
-                        for plugin in parse_xml(job_conf_path).find("plugins").findall("plugin"):
+                    job_conf_tree = parse_xml(job_conf_path)
+                    plugins_elem = job_conf_tree.find("plugins")
+                    if plugins_elem:
+                        for plugin in plugins_elem.findall("plugin"):
                             if "load" in plugin.attrib:
                                 self.job_runners.append(plugin.attrib["load"])
-                    except OSError:
-                        pass
-                    try:
-                        for plugin in parse_xml(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
-                            self.job_rule_modules.append(plugin.text)
-                    except OSError:
-                        pass
-                except etree.ParseError:
+                    for plugin in job_conf_tree.findall('.//destination/param[@id="rules_module"]'):
+                        self.job_rule_modules.append(plugin.text)
+                except (OSError, etree.ParseError):
                     pass
             else:
                 try:
@@ -88,9 +142,7 @@ class ConditionalDependencies:
                 except OSError:
                     pass
 
-        object_store_conf_path = self.config.get(
-            "object_store_config_file", join(dirname(self.config_file), "object_store_conf.xml")
-        )
+        object_store_conf_path = self.config_object.object_store_config_file
         try:
             if ".xml" in object_store_conf_path:
                 for store in parse_xml(object_store_conf_path).iter("object_store"):
@@ -120,7 +172,7 @@ class ConditionalDependencies:
             pass
 
         # Parse auth conf
-        auth_conf_xml = self.config.get("auth_config_file", join(dirname(self.config_file), "auth_conf.xml"))
+        auth_conf_xml = self.config_object.auth_config_file
         try:
             for auth in parse_xml(auth_conf_xml).findall("authenticator"):
                 auth_type = auth.find("type")
@@ -129,21 +181,18 @@ class ConditionalDependencies:
         except OSError:
             pass
 
-        # Parse oidc_backends_config_file specifically for PKCE support.
-        self.pkce_support = False
-        oidc_backend_conf_xml = self.config.get(
-            "oidc_backends_config_file", join(dirname(self.config_file), "oidc_backends_config.xml")
+        # Install pkce whenever OIDC is in use. PKCE can be toggled per-provider
+        # in oidc_backends_config.xml at runtime, so tying the install decision
+        # to any top-level OIDC signal avoids rebuilding the venv when
+        # pkce_support is flipped (issue #22502).
+        self.oidc_active = (
+            asbool(self.config.get("enable_oidc", False))
+            or bool(self.config.get("oidc_auth_pipeline"))
+            or bool(self.config.get("oidc_auth_pipeline_extra"))
         )
-        try:
-            for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
-                if pkce_support_element.text == "true":
-                    self.pkce_support = True
-                    break
-        except OSError:
-            pass
 
         # Parse error report config
-        error_report_yml = self.config.get("error_report_file", join(dirname(self.config_file), "error_report.yml"))
+        error_report_yml = self.config_object.error_report_file
         try:
             with open(error_report_yml) as f:
                 error_reporters = yaml.safe_load(f)
@@ -152,9 +201,7 @@ class ConditionalDependencies:
             pass
 
         # Parse file sources config
-        file_sources_conf_yml = self.config.get(
-            "file_sources_config_file", join(dirname(self.config_file), "file_sources_conf.yml")
-        )
+        file_sources_conf_yml = self.config_object.file_sources_config_file
         if exists(file_sources_conf_yml):
             with open(file_sources_conf_yml) as f:
                 file_sources_conf = yaml.safe_load(f)
@@ -162,32 +209,22 @@ class ConditionalDependencies:
             file_sources_conf = []
         self.file_sources = [c.get("type", None) for c in file_sources_conf]
 
+        # Parse file source templates config
+        file_source_templates_conf_yml = self.config_object.file_source_templates_config_file
+        if file_source_templates_conf_yml and exists(file_source_templates_conf_yml):
+            with open(file_source_templates_conf_yml) as f:
+                file_source_templates_conf = apply_syntactic_sugar(yaml.safe_load(f))
+            for file_source_template in file_source_templates_conf:
+                self.file_sources.append(file_source_template["configuration"].get("type"))
+
         # Parse vault config
-        vault_conf_yml = self.config.get("vault_config_file", join(dirname(self.config_file), "vault_conf.yml"))
+        vault_conf_yml = self.config_object.vault_config_file
         if exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 vault_conf = yaml.safe_load(f)
         else:
             vault_conf = {}
         self.vault_type = vault_conf.get("type", "").lower()
-
-    def get_conditional_requirements(self):
-        crfile = join(dirname(__file__), "conditional-requirements.txt")
-        for req in pkg_resources.parse_requirements(open(crfile).readlines()):
-            self.conditional_reqs.append(req)
-
-    def check(self, name):
-        try:
-            name = name.replace("-", "_").replace(".", "_")
-            return getattr(self, f"check_{name}")()
-        except Exception:
-            return False
-
-    def check_psycopg2_binary(self):
-        return self.config["database_connection"].startswith("postgres")
-
-    def check_mysqlclient(self):
-        return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
         return (
@@ -205,20 +242,23 @@ class ConditionalDependencies:
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
-    def check_pykube(self):
+    def check_pykube_ng(self):
         return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners or which("kubectl")
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
+
+    def check_htcondor(self):
+        return (
+            "galaxy.jobs.runners.htcondor:HTCondorJobRunner" in self.job_runners
+            or os.environ.get("GALAXY_DEPENDENCIES_INSTALL_HTCONDOR") == "1"
+        )
 
     def check_boto3_python(self):
         return "galaxy.jobs.runners.aws:AWSBatchJobRunner" in self.job_runners
 
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
-
-    def check_sentry_sdk(self):
-        return self.config.get("sentry_dsn", None) is not None
 
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
@@ -235,16 +275,22 @@ class ConditionalDependencies:
     def check_azure_storage(self):
         return "azure_blob" in self.object_stores
 
+    def check_boto3(self):
+        return "boto3" in self.object_stores
+
+    def check_cloudbridge(self):
+        return "cloud" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 
     def check_python_irodsclient(self):
         return "irods" in self.object_stores
 
-    def check_fs_dropboxfs(self):
+    def check_dropboxdrivefs(self):
         return "dropbox" in self.file_sources
 
-    def check_fs_webdavfs(self):
+    def check_webdav4(self):
         return "webdav" in self.file_sources
 
     def check_fs_anvilfs(self):
@@ -254,20 +300,29 @@ class ConditionalDependencies:
     def check_fs_sshfs(self):
         return "ssh" in self.file_sources
 
-    def check_fs_googledrivefs(self):
+    def check_gdrive_fsspec(self):
         return "googledrive" in self.file_sources
 
-    def check_fs_gcsfs(self):
+    def check_gcsfs(self):
         return "googlecloudstorage" in self.file_sources
 
-    def check_google_cloud_storage(self):
-        return "googlecloudstorage" in self.file_sources
+    def check_onedatafilerestclient(self):
+        return "onedata" in self.object_stores
 
-    def check_fs_onedatafs(self):
+    def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
 
     def check_fs_basespace(self):
         return "basespace" in self.file_sources
+
+    def check_rspace_client(self):
+        return "rspace" in self.file_sources
+
+    def check_fs_irods(self):
+        return "irods" in self.file_sources
+
+    def check_pybis(self):
+        return "openbis" in self.file_sources
 
     def check_watchdog(self):
         install_set = {"auto", "True", "true", "polling", True}
@@ -285,29 +340,99 @@ class ConditionalDependencies:
     def check_tensorflow(self):
         return asbool(self.config["enable_tool_recommendations"])
 
+    def check_openai(self):
+        return self.config.get("openai_api_key", None) is not None
+
+    def check_pydantic_ai(self):
+        return (
+            self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
+        )
+
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
-    def check_custos_sdk(self):
-        return "custos" == self.vault_type
+    def check_pydyf(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
     def check_hvac(self):
         return "hashicorp" == self.vault_type
 
     def check_pkce(self):
-        return self.pkce_support
+        return self.oidc_active
+
+    def check_rucio_clients(self):
+        return "rucio" in self.object_stores
+
+    def check_redis(self):
+        celery_enabled = self.config.get("enable_celery_tasks", False)
+        celery_conf = self.config.get("celery_conf") or {}
+        celery_result_backend = celery_conf.get("result_backend") or ""
+        celery_broker_url = celery_conf.get("broker_url") or ""
+
+        def is_redis_url(url: str) -> bool:
+            # https://docs.celeryq.dev/en/stable/userguide/configuration.html#conf-redis-result-backend
+            protocol = url.split("://")[0]
+            return protocol in {"redis", "rediss", "redis+socket", "socket"}
+
+        return celery_enabled and is_redis_url(celery_result_backend) or is_redis_url(celery_broker_url)
+
+    def check_adlfs(self):
+        return "azureflat" in self.file_sources
+
+    def check_huggingface_hub(self):
+        return "huggingface" in self.file_sources
+
+    def check_omero_py(self):
+        return "omero" in self.file_sources
+
+    def check_iiif_fsspec(self):
+        return "iiif" in self.file_sources
+
+    def check_ipfsspec(self):
+        return "ipfs" in self.file_sources
+
+    def check_mavedb_fsspec(self):
+        return "mavedb" in self.file_sources
+
+    def check_commoncrawl_fsspec(self):
+        return "commoncrawl" in self.file_sources
+
+    def check_arcfs_fsspec(self):
+        return "gitlab" in self.file_sources or "arc" in self.file_sources
 
 
-def optional(config_file=None):
+def strip_comment(line):
+    # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
+    # xref https://github.com/pyupio/dparse/issues/34
+    return re.sub(r"\s+#.*", "", line).strip()
+
+
+GALAXY_APP = "galaxy"
+TOOL_SHED_APP = "tool_shed"
+
+# Each app resolves its own config file and evaluates its own set of checks, so
+# that conditional-requirements.txt governs every app we ship, not just Galaxy.
+APPS = {
+    GALAXY_APP: (ConditionalDependencies, ["galaxy", "universe_wsgi"]),
+    TOOL_SHED_APP: (ToolShedConditionalDependencies, ["tool_shed", "tool_shed_wsgi"]),
+}
+
+
+def optional(config_file=None, app=GALAXY_APP):
+    try:
+        dependencies_class, config_file_names = APPS[app]
+    except KeyError:
+        raise ValueError(f"Unknown app '{app}', expected one of: {', '.join(sorted(APPS))}")
     if not config_file:
-        config_file = find_config_file(["galaxy", "universe_wsgi"], include_samples=True)
+        config_file = find_config_file(config_file_names, include_samples=True)
     if not config_file:
-        print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
+        print(f"galaxy.dependencies.optional: no {app} config file found", file=sys.stderr)
         return []
     rval = []
-    conditional = ConditionalDependencies(config_file)
-    for opt in conditional.conditional_reqs:
-        if conditional.check(opt.key):
-            rval.append(str(opt))
+    conditional = dependencies_class(config_file)
+    for dependency in conditional.conditional_reqs:
+        if conditional.check(dependency.name):
+            rval.append(strip_comment(dependency.line))
     return rval

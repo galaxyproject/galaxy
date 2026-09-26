@@ -17,13 +17,14 @@ for version in $VERSIONS; do
         conformance_filepath=conformance_tests.yaml
         tests_dir=tests
     fi
-    wget "https://github.com/common-workflow-language/${repo_name}/archive/main.zip"
-    unzip main.zip
+    branch=main
+    wget "https://github.com/common-workflow-language/${repo_name}/archive/${branch}.zip"
+    unzip ${branch}.zip
     rm -rf "${DEST_DIR}/v${version}"
     mkdir -p "${DEST_DIR}/v${version}"
-    cp "${repo_name}-main/${conformance_filepath}" "${DEST_DIR}/v${version}/conformance_tests.yaml"
-    cp -r "${repo_name}-main/${tests_dir}" "${DEST_DIR}/v${version}"/
-    rm -rf "${repo_name}-main"
-    rm -rf main.zip
+    cp "${repo_name}-${branch}/${conformance_filepath}" "${DEST_DIR}/v${version}/conformance_tests.yaml"
+    cp -r "${repo_name}-${branch}/${tests_dir}" "${DEST_DIR}/v${version}"/
+    rm -rf "${repo_name}-${branch}"
+    rm -rf ${branch}.zip
     python3 scripts/cwl_conformance_to_test_cases.py "${DEST_DIR}" "v${version}"
 done

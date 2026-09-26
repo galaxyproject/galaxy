@@ -8,6 +8,8 @@ This document is a reference for the job configuration file. [Detailed documenta
 
 Configuration of where to run jobs is performed in the `job_conf.yml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations can be found at `config/job_conf.sample.yml`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used. Examples of XML job configuration files are also available in [basic](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_basic) and [advanced](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) forms. 
 
+For metadata runtime images, including Pulsar staging, versioning and custom datatype dependencies, see [Containerized metadata collection](containerized_metadata.md).
+
 ## job_conf.xml Syntax
 
 The root element is `<job_conf>`.
@@ -38,7 +40,7 @@ workers
 
 The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.md)) should be used for running jobs, and how to group those processes.
 
-The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
+The handlers configuration may define a ``default`` attribute. This is the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
 
 The collection contains `<handler>` elements.
 
@@ -47,6 +49,31 @@ id
 
 tags
 : A comma-separated set of strings that optional define tags to which this handler belongs.
+
+#### Ready window size
+
+The ready window limits how many pending jobs each handler checks per user on each pass. It defaults to 100 and can be configured in `job_conf.yml`:
+
+```yaml
+handling:
+  ready_window_size: 100
+```
+
+The equivalent XML setting is the `ready_window_size` attribute on `<handlers>`:
+
+```xml
+<handlers ready_window_size="100">
+    <!-- Existing handler definitions go here. -->
+</handlers>
+```
+
+This setting limits the work spent checking pending jobs; concurrency limits separately control how many jobs may run. A smaller window can improve responsiveness for other users when one user has a large backlog. Each anonymous session has its own window, while authenticated sessions share their user's window. This setting does not apply to SQLite or in-memory job queues.
+
+When a dynamic destination rule defers a job, the handler continues checking later jobs for that user over subsequent passes. For example, with a window of two, five deferred jobs followed by a sixth runnable job are checked in three passes: jobs 1–2, then 3–4, then 5–6. The sixth job can run without waiting for the first five to become runnable, provided it meets the usual input and concurrency requirements.
+
+The handler then returns to the beginning to retry deferred jobs. This means an earlier job may wait for the handler to finish checking the existing backlog before it is checked again, even if its resources become available sooner. A smaller window can increase this delay. Jobs arriving during this traversal are considered on the next traversal, so new submissions cannot indefinitely postpone retries.
+
+For administrators writing dynamic destination rules, this behavior is triggered by `JobNotReadyException` when it leaves the job waiting; deferred jobs remain in the `new` state. Ordinary concurrency waits alone do not start a traversal, but an existing traversal continues through them. Progress is local to each handler and resets when the handler restarts.
 
 ### Job Destinations
 
@@ -159,7 +186,7 @@ execution:
       k8s_namespace: default
       runner: pulsar_k8s
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: 'amqp://guest:guest@host.docker.internal:5672//'
     local_environment:
@@ -254,7 +281,7 @@ def ncbi_blastn_wrapper(job):
     # Allocate extra time
     inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
     inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-    query_file = inp_data[ "query" ].file_name
+    query_file = inp_data[ "query" ].get_file_name()
     query_size = os.path.getsize( query_file )
     if query_size > 1024 * 1024:
         walltime_str = "walltime=24:00:00/"
@@ -279,7 +306,7 @@ def ncbi_blastn_wrapper(app, user_email):
 ```
 
 
-The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
+The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
 
 The above examples demonstrate that the dynamic job destination framework will pass in the arguments to your function that are needed based on the argument names. The valid argument names at this time are:
 
@@ -316,7 +343,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 Also available though less likely useful are ``job_id``.
 
-The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the the dynamic destination:
+The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the dynamic destination:
 
 ```xml
     <destination id="blast_dynamic" runner="dynamic">

@@ -7,6 +7,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
@@ -26,12 +27,13 @@ class HDATestCase(BaseTestCase):
         self.history_manager = self.app[HistoryManager]
         self.dataset_manager = self.app[DatasetManager]
 
-    def _create_vanilla_hda(self, user_data=None):
+    def _create_vanilla_hda(self, user_data=None, extension=None):
         user_data = user_data or user2_data
         owner = self.user_manager.create(**user_data)
         history1 = self.history_manager.create(name="history1", user=owner)
         dataset1 = self.dataset_manager.create()
-        return self.hda_manager.create(history=history1, dataset=dataset1)
+        kwargs = {"extension": extension} if extension else {}
+        return self.hda_manager.create(history=history1, dataset=dataset1, **kwargs)
 
 
 # =============================================================================
@@ -90,18 +92,6 @@ class TestHDAManager(HDATestCase):
         assert hda3.history is None, "history will be None"
         assert hda3.hid is None, "should allow setting hid to None (or any other value)"
 
-    def test_hda_tags(self):
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
-
-        self.log("should be able to set tags on an hda")
-        tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(hda1, tags_to_set, user=owner)
-        tag_str_array = self.hda_manager.get_tags(hda1)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
-
     def test_hda_annotation(self):
         owner = self.user_manager.create(**user2_data)
         history1 = self.history_manager.create(name="history1", user=owner)
@@ -131,11 +121,9 @@ class TestHDAManager(HDATestCase):
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
         tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(tagged, tags_to_set, user=owner)
-
+        self.app.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
         hda2 = self.hda_manager.copy(tagged, history=history1)
-        tag_str_array = self.hda_manager.get_tags(hda2)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
+        assert tagged.make_tag_string_list() == hda2.make_tag_string_list()
 
         self.log("annotations should be copied between HDAs")
         annotated = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
@@ -145,13 +133,6 @@ class TestHDAManager(HDATestCase):
         hda3 = self.hda_manager.copy(annotated, history=history1)
         hda3_annotation = self.hda_manager.annotation(hda3)
         assert annotation == hda3_annotation
-
-    # def test_copy_from_ldda( self ):
-    #    owner = self.user_manager.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-    #
-    #    self.log( "should be able to copy an HDA" )
-    #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
 
     def test_delete(self):
         owner = self.user_manager.create(**user2_data)
@@ -241,8 +222,7 @@ class TestHDAManager(HDATestCase):
         assert accessible == item1
 
         self.log(
-            "after setting a dataset to private (one user) permissions, "
-            + "access should be not allowed for other users"
+            "after setting a dataset to private (one user) permissions, access should be not allowed for other users"
         )
         with self.assertRaises(exceptions.ItemAccessibilityException):
             self.hda_manager.get_accessible(
@@ -252,8 +232,7 @@ class TestHDAManager(HDATestCase):
             )
 
         self.log(
-            "a copy of a restricted dataset in another users history should be inaccessible even to "
-            + "the histories owner"
+            "a copy of a restricted dataset in another users history should be inaccessible even to the histories owner"
         )
         history2 = self.history_manager.create(name="history2", user=non_owner)
         self.trans.set_history(history2)
@@ -320,7 +299,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "anonymous users should not be able to access datasets within their own histories if "
-            + "permissions do not allow"
+            "permissions do not allow"
         )
         assert not self.hda_manager.is_accessible(item1, anon_user)
         with self.assertRaises(exceptions.ItemAccessibilityException):
@@ -328,7 +307,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "those users with access permissions should still be allowed access to datasets "
-            + "within anon users' histories"
+            "within anon users' histories"
         )
         assert self.hda_manager.is_accessible(item1, dataset_owner)
 
@@ -359,13 +338,7 @@ class TestHDAManager(HDATestCase):
     # def test_text_data( self ):
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", mock_url_builder)
 class TestHDASerializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
@@ -473,7 +446,6 @@ class TestHDASerializer(HDATestCase):
         assert serialized["type"] == "file"
 
         assert isinstance(serialized["url"], str)
-        assert isinstance(serialized["urls"], dict)
         assert isinstance(serialized["download_url"], str)
 
         self.log("serialized should jsonify well")
@@ -506,6 +478,27 @@ class TestHDASerializer(HDATestCase):
         self.app.config.expose_dataset_path = True
         serialized = self.hda_serializer.serialize(hda, keys, user=self.admin_user)
         assert "file_name" in serialized
+
+    def test_serialize_metadata_skips_file_path_for_purged(self):
+        # Purged datasets have no object store path, so metadata serialization must skip it.
+        assert self.app.config.expose_dataset_path
+
+        def _serialize(purged):
+            metadata_file = model.MetadataFile(name="bam_index")
+            metadata_file.get_file_name = mock.Mock(return_value="/objects/bam_index.dat")
+            item = mock.MagicMock(purged=purged)
+            item.metadata.spec.items.return_value = [("bam_index", {})]
+            item.metadata.get.return_value = metadata_file
+            result = self.hda_serializer.serialize_metadata(item, "metadata")
+            return metadata_file.get_file_name, result
+
+        get_file_name, result = _serialize(purged=True)
+        get_file_name.assert_not_called()
+        assert "bam_index" not in result
+
+        get_file_name, result = _serialize(purged=False)
+        get_file_name.assert_called_once()
+        assert result["bam_index"] == "/objects/bam_index.dat"
 
     def test_serializing_inaccessible(self):
         owner = self.user_manager.create(**user2_data)
@@ -631,6 +624,96 @@ class TestHDADeserializer(HDATestCase):
         self.log("should be deserializable from empty string")
         self.hda_deserializer.deserialize(hda, {"info": ""})
         assert hda.info == ""
+
+    def test_deserialize_metadata(self):
+        hda = self._create_vanilla_hda()
+
+        self.log("should be able to deserialize writable metadata (dbkey)")
+        assert hda.dbkey == "?"
+        self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+        assert hda.dbkey == "hg38"
+
+        self.log("should silently skip readonly metadata keys")
+        self.hda_deserializer.deserialize(hda, {"metadata": {"data_lines": 42}})
+        assert hda.metadata.data_lines != 42
+
+        self.log("should silently skip unknown metadata keys")
+        self.hda_deserializer.deserialize(hda, {"metadata": {"nonexistent_key": "value"}})
+
+        self.log("should raise when deserializing metadata from non-dict")
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"metadata": "not a dict"})
+
+    def test_deserialize_metadata_guard(self):
+        hda = self._create_vanilla_hda()
+
+        self.log("should raise when dataset is in use as input/output of a running job")
+        with mock.patch.object(type(hda), "ok_to_edit_metadata", return_value=False):
+            with self.assertRaises(exceptions.RequestParameterInvalidException):
+                self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+
+    def test_deserialize_metadata_failed_state_reset(self):
+        hda = self._create_vanilla_hda(extension="bed")
+
+        self.log("should reset FAILED_METADATA state when required metadata is now present")
+        # Clear a required field so missing_meta() genuinely returns truthy
+        hda._state = model.Dataset.states.FAILED_METADATA
+        hda.metadata.chromCol = None
+        assert hda.missing_meta()
+        # Now set the required field via the deserializer — missing_meta() should be falsy
+        self.hda_deserializer.deserialize(hda, {"metadata": {"chromCol": 1}})
+        assert not hda.missing_meta()
+        assert hda.state != model.Dataset.states.FAILED_METADATA
+
+        self.log("should NOT reset FAILED_METADATA state when required metadata is still missing")
+        hda._state = model.Dataset.states.FAILED_METADATA
+        hda.metadata.chromCol = None
+        assert hda.missing_meta()
+        # Update only dbkey (optional) — chromCol is still missing
+        self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+        assert hda.missing_meta()
+        assert hda.state == model.Dataset.states.FAILED_METADATA
+
+    def test_deserialize_metadata_no_op_preserves_associated_files(self):
+        """No-op metadata updates must not invoke after_setting_metadata
+        (which clears implicit conversions). A real writable key must."""
+        hda = self._create_vanilla_hda()
+
+        # Attach an implicit conversion with metadata_safe=False — exactly what
+        # clear_associated_files(metadata_safe=True) would delete.
+        converted_hda = self.hda_manager.create(
+            history=hda.history, dataset=self.dataset_manager.create(), hid=hda.hid + 1
+        )
+        assoc = model.ImplicitlyConvertedDatasetAssociation(
+            parent=hda, file_type="txt", dataset=converted_hda, metadata_safe=False
+        )
+        self.trans.sa_session.add(assoc)
+        self.trans.sa_session.flush()
+        assert not assoc.deleted
+
+        # Spy on after_setting_metadata to detect whether it was called
+        with mock.patch.object(type(hda.datatype), "after_setting_metadata", return_value=None) as mock_after:
+            self.log("empty metadata dict should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {}})
+            assert not mock_after.called, "after_setting_metadata was called for empty metadata dict"
+            assert not assoc.deleted, "Implicit conversion was deleted by a no-op metadata update"
+
+            mock_after.reset_mock()
+            self.log("unknown-only keys should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"nonexistent_key": "value"}})
+            assert not mock_after.called, "after_setting_metadata was called for unknown-only keys"
+            assert not assoc.deleted, "Implicit conversion was deleted by unknown-only keys"
+
+            mock_after.reset_mock()
+            self.log("readonly-only keys should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"data_lines": 42}})
+            assert not mock_after.called, "after_setting_metadata was called for readonly-only keys"
+            assert not assoc.deleted, "Implicit conversion was deleted by readonly-only keys"
+
+            mock_after.reset_mock()
+            self.log("a real writable key SHOULD invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+            assert mock_after.called, "after_setting_metadata was not called for a real writable key"
 
 
 # =============================================================================

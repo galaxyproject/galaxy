@@ -1,7 +1,6 @@
 import json
 from typing import (
     Any,
-    Dict,
 )
 
 import pytest
@@ -22,9 +21,14 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
+
+APPLY_RULES_TUTORIAL_DATA_BASE_URL = (
+    "https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules"
+)
 
 
-class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -102,6 +106,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
+        # the table renders its header before its body is populated
+        self.wait_for_selector_visible(f"{table_selector} tbody tr")
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         trs = tbody_element.find_elements(By.CSS_SELECTOR, "tr")
         assert trs
@@ -112,6 +118,87 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
             key_value_pairs.append((tds[0], tds[1]))
 
         return key_value_pairs
+
+    @selenium_test
+    def test_repeat_reordering(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: list[str]):
+            for index, input in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                parameter_value = parameter_input.wait_for_value()
+                assert parameter_value == input
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        assert_input_order(["Text A", "Text B", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text B", "Text A", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_2").wait_for_and_click()
+        assert_input_order(["Text B", "Text C", "Text A"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text C", "Text B", "Text A"])
+        # no longer clickable, don't need to check the no-op here anymore.
+        # self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        # assert_input_order(["Text C", "Text B", "Text A"])
+
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
+
+        assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
+
+    @selenium_test
+    def test_repeat_cloning(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: list[str]):
+            for index, input_value in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                assert parameter_input.wait_for_value() == input_value
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        # Validate for: order of insertion
+        self.components.tool_form.repeat_clone(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text A", "Text B", "Text B", "Text C"])
+
+        # Validate for: deep copy, not a "shared reference"
+        self.tool_set_value("the_repeat_2|texttest", "Cloned Text B")
+        assert_input_order(["Text A", "Text B", "Cloned Text B", "Text C"])
+
+        # Validate for: deep copy independence holds in both directions
+        self.tool_set_value("the_repeat_1|texttest", "Edited Text B")
+        assert_input_order(["Text A", "Edited Text B", "Cloned Text B", "Text C"])
+
+        # Job parameters are recorded server-side, so this assertion is independent of the live form.
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
+        assert details == [
+            "texttest",
+            "Text A",
+            "texttest",
+            "Edited Text B",
+            "texttest",
+            "Cloned Text B",
+            "texttest",
+            "Text C",
+        ]
 
     @selenium_test
     def test_rerun(self):
@@ -135,10 +222,24 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
+    def test_rerun_with_non_latest_version(self):
+        version = "0.1+galaxy6"
+        self._run_multiple_version_test_tool(version)
+        self.history_panel_wait_for_hid_ok(1)
+        self.hda_click_primary_action_button(1, "rerun")
+        self.components.tool_form.tool_version_button.wait_for_and_click()
+        menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
+        menu_options = menu_element.find_elements(By.CSS_SELECTOR, "a.dropdown-item")
+        for menu_option in menu_options:
+            if f"Selected {version}" in menu_option.text:
+                return
+        raise Exception("Tool version does not match job version")
+
+    @selenium_test
     def test_rerun_deleted_dataset(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.tabular")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         self.tool_open("column_param")
         self.select_set_value("#col", "3")
@@ -155,18 +256,18 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
         # validate errors when inputs are missing
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
         assert error_input1.text == "Please provide a value for this option."
-        assert error_col.text == "parameter 'col': requires a value, but no legal values defined"
-        assert error_col_names.text == "parameter 'col_names': requires a value, but no legal values defined"
+        assert error_col.text == "Parameter 'col': requires a value, but no legal values defined"
+        assert error_col_names.text == "Parameter 'col_names': requires a value, but no legal values defined"
         # validate warnings when inputs are restored
         self.components.tool_form.parameter_data_input_single(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -174,28 +275,29 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
         # upload a nested collection
-        collection_id = self.dataset_collection_populator.create_list_of_list_in_history(
+        self.dataset_collection_populator.create_list_of_list_in_history(
             history_id,
             collection_type="list:list",
             wait=True,
         ).json()["id"]
         self.tool_open("identifier_multiple")
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.data_option_value(item_id=collection_id).wait_for_and_click()
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1")
+        self.select_set_value(select_field, "list:list")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(7)
@@ -205,7 +307,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.hda_click_primary_action_button(1, "rerun")
         self.sleep_for(self.wait_types.UX_RENDER)
-        assert self.driver.find_element(By.CSS_SELECTOR, "option:checked").text == "Selected: test0"
         self.tool_form_execute()
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
@@ -217,9 +318,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         test_path_decoy = self.get_filename("1.txt")
         # Upload form posts bad data if executed two times in a row like this, so
         # wait between uploads. xref https://github.com/galaxyproject/galaxy/issues/5169
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.perform_upload(test_path_decoy)
+        self.upload_context("local-file").stage_local_file(test_path_decoy).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.home()
@@ -233,7 +334,95 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
-        assert latest_hda["name"] == "Select first on data 1"
+        assert latest_hda["name"] == "Select first on dataset 1"
+
+    @selenium_test
+    def test_data_options_paginated_smoke(self):
+        """Tool form opens responsively with a large history and the dropdown
+        is bounded — proves the build endpoint paginates and the client handles
+        the response without trying to render every HDA."""
+        history_id = self.current_history_id()
+        # Seed the history with 60 datasets in a single fetch request so the
+        # default 50-per-page cap kicks in.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.home()
+        self.tool_open("cat1")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        # Open the multiselect so its options render in the DOM.
+        trigger = select_field.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+        # 60 datasets uploaded but the default page size is 50, so the dropdown
+        # must contain exactly 50 — anything less would indicate client-side
+        # under-rendering, anything more would mean pagination is broken.
+        assert (
+            len(options) == 50
+        ), f"Expected dropdown to render exactly 50 options (default page size), got {len(options)}"
+
+    @selenium_test
+    def test_data_options_load_more_appends(self):
+        """Scrolling the dropdown's ``Loading more…`` sentinel into view must
+        fetch the next page and *append* it to the select. Regression test for
+        issue #23135 — the load-more request fired but the fetched options never
+        reached the dropdown because ``FormDisplay`` renders from a clone of
+        ``inputs`` that only re-syncs on array-identity change."""
+        history_id = self.current_history_id()
+        # 60 datasets with a default 50-per-page cap leaves a full second page.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.home()
+        self.tool_open("cat1")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        trigger = select_field.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == 50
+
+        # Scroll the load-more sentinel into view to trigger the intersection
+        # observer, then confirm additional options were appended. Re-query and
+        # re-scroll on each retry: the sentinel disappears once the final page
+        # loads, and the option list re-renders when the new page arrives.
+        @retry_assertion_during_transitions
+        def assert_more_options_loaded():
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(options) > 50, f"Expected the dropdown to append a second page (>50 options), got {len(options)}"
+
+        assert_more_options_loaded()
+
+    @selenium_test
+    def test_data_options_pinned_via_rerun(self):
+        """A dataset selected as a tool input but living deep in history (past
+        the first page window) must still appear in the rerun form's dropdown
+        via the ``pinned`` mechanism — otherwise the user couldn't see what was
+        previously selected."""
+        history_id = self.current_history_id()
+        # Upload the to-be-pinned dataset first so it gets the lowest hid and
+        # ends up far below the page window once we add the bulk uploads.
+        first_hda = self.dataset_populator.fetch_hda(history_id, {"src": "pasted", "paste_content": "pinned"})
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        run_response = self.dataset_populator.run_tool(
+            "cat1",
+            inputs={"input1": {"src": "hda", "id": first_hda["id"]}},
+            history_id=history_id,
+        )
+        output_hid = run_response["outputs"][0]["hid"]
+        self.dataset_populator.wait_for_history(history_id)
+        self.home()
+        self.hda_click_primary_action_button(output_hid, "rerun")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+
+        @retry_assertion_during_transitions
+        def assert_pinned_value_selected():
+            selected = select_field.find_element(By.CSS_SELECTOR, ".multiselect__single")
+            text = selected.text
+            assert text.startswith(
+                f"{first_hda['hid']}: "
+            ), f"Expected rerun form to display the pinned input '{first_hda['hid']}: ...', got '{text}'"
+
+        assert_pinned_value_selected()
 
     @selenium_test
     def test_bibtex_rendering(self):
@@ -247,8 +436,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            references_rendered = len(references)
-            if references_rendered != citation_count:
+            if (references_rendered := len(references)) != citation_count:
                 citations_api = self.api_get("tools/bibtex/citations")
                 current_citation_count = len(citations_api)
                 message = f"Expected {citation_count} references to be rendered, {references_rendered} actually rendered. Currently the API yields {current_citation_count} references"
@@ -261,13 +449,19 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
+        tds = self._get_dataset_tool_parameters(hid)
+        assert tds
+        assert any(expected_value in td.text for td in tds)
+
+    def _get_dataset_tool_parameters(self, hid):
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
+        # the table renders its header before its body is populated
+        self.components.dataset_details.tool_parameters_row.wait_for_visible()
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
-        assert tds
-        assert any(expected_value in td.text for td in tds)
+        return tds
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()
@@ -275,8 +469,15 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_set_value("inttest", inttest_value)
         self.tool_form_execute()
 
+    def _run_multiple_version_test_tool(self, version):
+        self.home()
+        self.tool_open("multiple_versions")
+        self.components.tool_form.tool_version_button.wait_for_and_click()
+        self.select_dropdown_item(f"Switch to {version}")
+        self.tool_form_execute()
 
-class TestLoggedInToolForm(SeleniumTestCase):
+
+class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -285,7 +486,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
         # normally HID 2 would be selected but since it is discarded - it won't
         # be an option so verify the result was run with HID 1.
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
@@ -304,7 +505,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
-        assert latest_hda["name"] == "Select first on data 1"
+        assert latest_hda["name"] == "Select first on dataset 1"
 
     @selenium_test
     def test_run_apply_rules_1(self):
@@ -327,35 +528,61 @@ class TestLoggedInToolForm(SeleniumTestCase):
         self.screenshot("tool_apply_rules_example_4_final")
 
     @selenium_test
+    def test_run_apply_rules_paired_unpaired_flatten(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    @managed_history
+    def test_run_apply_rules_create_paired_or_unpaired_list(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
+        self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
+
+    @selenium_test
+    def test_run_apply_rules_flatten_with_indices(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
+        self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
+
+    def _apply_rules_tutorial_table(self) -> str:
+        rows = [
+            ("treated1fb.txt", "treated_single_1"),
+            ("treated2fb.txt", "treated_paired_2"),
+            ("treated3fb.txt", "treated_paired_3"),
+            ("untreated1fb.txt", "untreated_single_4"),
+            ("untreated2fb.txt", "untreated_single_5"),
+            ("untreated3fb.txt", "untreated_paired_6"),
+            ("untreated4fb.txt", "untreated_paired_7"),
+        ]
+        lines = []
+        for name, identifier in rows:
+            url = self.test_http_server.get_url(
+                remote_url=f"{APPLY_RULES_TUTORIAL_DATA_BASE_URL}/{name}",
+                file_path=f"test-data/rules/{name}",
+                content_type="text/plain",
+            )
+            lines.append(f"{url} {identifier}")
+        return "\n".join(lines) + "\n"
+
+    @selenium_test
     @managed_history
     @skip_if_github_down
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
-            """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated1fb.txt untreated_single_4
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated2fb.txt untreated_single_5
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated3fb.txt untreated_paired_6
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated4fb.txt untreated_paired_7
-"""
+        self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
+            self._apply_rules_tutorial_table()
         )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.rule_builder_set_mapping("url", "A")
         self.rule_builder_set_mapping("list-identifiers", ["B"])
         self.rule_builder_set_collection_name("flat_count_list")
         self.rule_builder_set_extension("txt")
 
         self.screenshot("rules_apply_rules_example_4_2_input_rules")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(1)
         self.screenshot("rules_apply_rules_example_4_3_input_ready")
         self.history_multi_view_display_collection_contents(1, "list")
@@ -475,7 +702,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
+    def _apply_rules_and_check(self, example: dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()

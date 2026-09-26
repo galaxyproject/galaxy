@@ -1,0 +1,29 @@
+<tool id="gx_genomebuild_multiple" name="gx_genomebuild_multiple" version="1.0.0">
+    <command><![CDATA[
+echo 'parameter: $parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="genomebuild" multiple="true">
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value="hg19,hg18" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="parameter: hg19,hg18" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="parameter: None" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,13 @@
+<tool id="discover_long_name" name="discover_long_name" version="0.1.0" profile="20.09">
+    <command><![CDATA[
+echo "data" > '${output_name}.txt'
+    ]]></command>
+    <inputs>
+        <param name="output_name" type="text" label="Output name" />
+    </inputs>
+    <outputs>
+        <data format="txt" name="output">
+            <discover_datasets pattern="__name_and_ext__" visible="true" />
+        </data>
+    </outputs>
+</tool>

@@ -28,6 +28,7 @@ should annotate their dependency on the narrowest context they require.
 A method that requires a user but not a history should declare its
 ``trans`` argument as requiring type :class:`galaxy.managers.context.ProvidesUserContext`.
 """
+
 # TODO: Refactor this class so that galaxy.managers depends on a package
 # containing this.
 # TODO: Provide different classes for real users and potentially bootstrapped
@@ -36,33 +37,42 @@ A method that requires a user but not a history should declare its
 # more checks against this issue.
 import abc
 import string
+from collections.abc import (
+    Callable,
+    Hashable,
+)
 from json import dumps
 from typing import (
-    Callable,
-    List,
+    Any,
+    cast,
+    Literal,
     Optional,
+    TYPE_CHECKING,
 )
 
-from galaxy.exceptions import (
-    AuthenticationRequired,
-    UserActivationRequiredException,
-)
+from sqlalchemy import select
+
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model import (
     Dataset,
+    Event,
+    GalaxySession,
     History,
     HistoryDatasetAssociation,
     Role,
+    User,
+    UserAction,
 )
-from galaxy.model.base import (
-    ModelMapping,
-    transaction,
-)
-from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model.base import ModelMapping
+from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.dataset_matcher import DatasetMatcherFactory
 
 
 class ProvidesAppContext:
@@ -72,12 +82,14 @@ class ProvidesAppContext:
     Mixed in class must provide `app` property.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def app(self) -> MinimalManagerApp:
         """Provide access to the Galaxy ``app`` object."""
 
-    @abc.abstractproperty
-    def url_builder(self) -> Optional[Callable[..., str]]:
+    @property
+    @abc.abstractmethod
+    def url_builder(self) -> Callable[..., str] | None:
         """
         Provide access to Galaxy URLs (if available).
 
@@ -99,7 +111,7 @@ class ProvidesAppContext:
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=str(dumps(params)))
+            action = UserAction(action=action, context=context, params=str(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -112,59 +124,49 @@ class ProvidesAppContext:
             except Exception:
                 action.session_id = None
             self.sa_session.add(action)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
-    def log_event(self, message, tool_id=None, **kwargs):
+    def log_event(self, message: str, tool_id: str | None = None, **kwargs: Any) -> None:
         """
         Application level logging. Still needs fleshing out (log levels and such)
         Logging events is a config setting - if False, do not log.
         """
         if self.app.config.log_events:
-            event = self.app.model.Event()
+            # History, user and session are only available on some subclasses,
+            # so look them up best-effort.
+            context: Any = self
+            event = Event()
             event.tool_id = tool_id
             try:
                 event.message = message % kwargs
             except Exception:
                 event.message = message
             try:
-                event.history = self.get_history()
+                event.history = context.get_history()
             except Exception:
                 event.history = None
             try:
-                event.history_id = self.history.id
+                event.history_id = context.history.id
             except Exception:
                 event.history_id = None
             try:
-                event.user = self.user
+                event.user = context.user
             except Exception:
                 event.user = None
             try:
-                event.session_id = self.galaxy_session.id
+                event.session_id = context.galaxy_session.id
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     @property
-    def sa_session(self) -> galaxy_scoped_session:
+    def sa_session(self):
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
+        :rtype: sqlalchemy.orm.scoped_session
         """
         return self.app.model.session
-
-    def expunge_all(self):
-        """Expunge all the objects in Galaxy's SQLAlchemy sessions."""
-        app = self.app
-        context = app.model.context
-        context.expunge_all()
-        # This is a bit hacky, should refctor this. Maybe refactor to app -> expunge_all()
-        if hasattr(app, "install_model"):
-            install_model = app.install_model
-            if install_model != app.model:
-                install_model.context.expunge_all()
 
     def get_toolbox(self):
         """Returns the application toolbox.
@@ -198,6 +200,11 @@ class ProvidesAppContext:
         return self.app.install_model
 
 
+# Sentinel distinguishing a cached value (which may legitimately be ``None``)
+# from a cache miss in ``get_or_set_cache_value``.
+_CACHE_MISS: Any = object()
+
+
 class ProvidesUserContext(ProvidesAppContext):
     """For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
@@ -206,13 +213,43 @@ class ProvidesUserContext(ProvidesAppContext):
     properties.
     """
 
+    workflow_building_mode: Literal[1, True, False] = False
+    galaxy_session: GalaxySession | None = None
+    _tag_handler: GalaxyTagHandlerSession | None = None
+    _short_term_cache: dict[tuple[Hashable, ...], Any]
+
+    def set_cache_value(self, args: tuple[Hashable, ...], value: Any):
+        self._short_term_cache[args] = value
+
+    def get_cache_value(self, args: tuple[Hashable, ...], default: Any = None) -> Any:
+        return self._short_term_cache.get(args, default)
+
+    def get_or_set_cache_value(self, args: tuple[Hashable, ...], factory: Callable[[], Any]) -> Any:
+        """Return the cached value for ``args``, computing and storing it via
+        ``factory`` on a miss. Request-scoped memoization for work repeated
+        within a single transaction (e.g. identical history-option queries
+        otherwise issued once per parameter while building a workflow Run form)."""
+        value = self.get_cache_value(args, _CACHE_MISS)
+        if value is _CACHE_MISS:
+            value = factory()
+            self.set_cache_value(args, value)
+        return value
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.galaxy_session)
+        return self._tag_handler
+
     @property
     def async_request_user(self) -> RequestUser:
+        galaxy_session_id = self.galaxy_session.id if self.galaxy_session else None
         if self.user is None:
-            raise AuthenticationRequired("The async task requires user authentication.")
-        return RequestUser(user_id=self.user.id)
+            return RequestUser(galaxy_session_id=galaxy_session_id)
+        return RequestUser(user_id=self.user.id, galaxy_session_id=galaxy_session_id)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """Provide access to the user object."""
 
@@ -221,13 +258,16 @@ class ProvidesUserContext(ProvidesAppContext):
         """Provide access to a user's personal vault."""
         return UserVaultWrapper(self.app.vault, self.user)
 
+    def get_user(self) -> User | None:
+        user = cast(User | None, self.user or self.galaxy_session and self.galaxy_session.user)
+        return user
+
     @property
     def anonymous(self) -> bool:
         return self.user is None
 
-    def get_current_user_roles(self) -> List[Role]:
-        user = self.user
-        if user:
+    def get_current_user_roles(self) -> list[Role]:
+        if user := self.user:
             roles = user.all_roles()
         else:
             roles = []
@@ -256,7 +296,7 @@ class ProvidesUserContext(ProvidesAppContext):
             raise UserActivationRequiredException()
 
     @property
-    def user_ftp_dir(self) -> Optional[str]:
+    def user_ftp_dir(self) -> str | None:
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None or self.user is None:
             return None
@@ -282,14 +322,27 @@ class ProvidesHistoryContext(ProvidesUserContext):
     properties.
     """
 
-    @abc.abstractproperty
-    def history(self) -> Optional[History]:
+    # set per-request by galaxy.tools.parameters.dataset_matcher while a tool
+    # form is being evaluated
+    dataset_matcher_factory: Optional["DatasetMatcherFactory"] = None
+
+    @abc.abstractmethod
+    def get_history(self, create: bool = False) -> History | None:
+        """Return the current history, optionally creating one when there is none.
+
+        Transactions do not always have an active history, so None is a valid
+        response even when create is set.
+        """
+
+    @property
+    @abc.abstractmethod
+    def history(self) -> History | None:
         """Provide access to the user's current history model object.
 
         :rtype: Optional[galaxy.model.History]
         """
 
-    def db_dataset_for(self, dbkey) -> Optional[HistoryDatasetAssociation]:
+    def db_dataset_for(self, dbkey) -> HistoryDatasetAssociation | None:
         """Optionally return the db_file dataset associated/needed by `dataset`."""
         # If no history, return None.
         if self.history is None:
@@ -301,15 +354,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
             return None
         non_ready_or_ok = set(Dataset.non_ready_states)
         non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
-        datasets = (
-            self.sa_session.query(HistoryDatasetAssociation)
-            .filter_by(deleted=False, history_id=self.history.id, extension="len")
-            .filter(
-                HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
-            )
-        )
         valid_ds = None
-        for ds in datasets:
+        for ds in get_hdas(self.sa_session, self.history.id, non_ready_or_ok):
             if ds.dbkey == dbkey:
                 if ds.state == HistoryDatasetAssociation.states.OK:
                     return ds
@@ -324,3 +370,12 @@ class ProvidesHistoryContext(ProvidesUserContext):
         """
         # FIXME: This method should be removed
         return self.app.genome_builds.get_genome_build_names(trans=self)
+
+
+def get_hdas(session, history_id, states):
+    stmt = (
+        select(HistoryDatasetAssociation)
+        .filter_by(deleted=False, history_id=history_id, extension="len")
+        .where(HistoryDatasetAssociation._state.in_(states))
+    )
+    return session.scalars(stmt)

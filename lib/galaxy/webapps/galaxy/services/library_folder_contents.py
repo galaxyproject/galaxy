@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import List
 
 from galaxy import (
     exceptions,
@@ -8,7 +7,10 @@ from galaxy import (
     util,
 )
 from galaxy.managers import base as managers_base
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
@@ -48,7 +50,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         self.hda_manager = hda_manager
         self.folder_manager = folder_manager
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -72,7 +76,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         user_permissions = self._retrieve_user_permissions_on_folder(trans, current_user_roles, folder)
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
-        folder_contents: List[AnyLibraryFolderItem] = []
+        folder_contents: list[AnyLibraryFolderItem] = []
         contents, total_rows = self.folder_manager.get_contents(trans, folder, payload)
         for content_item in contents:
             if isinstance(content_item, model.LibraryFolder):
@@ -88,7 +92,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
     def create(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         folder_id: LibraryFolderDatabaseIdField,
         payload: CreateLibraryFilePayload,
     ):
@@ -123,7 +127,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 raise exc
 
     def _retrieve_user_permissions_on_folder(
-        self, trans: ProvidesUserContext, current_user_roles: List[model.Role], folder: model.LibraryFolder
+        self, trans: ProvidesUserContext, current_user_roles: list[model.Role], folder: model.LibraryFolder
     ) -> UserFolderPermissions:
         """Returns the permissions of the user for the given folder.
 
@@ -153,7 +157,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
     def _serialize_library_dataset(
         self,
         trans: ProvidesUserContext,
-        current_user_roles: List[model.Role],
+        current_user_roles: list[model.Role],
         tag_manager: tags.GalaxyTagHandler,
         library_dataset: model.LibraryDataset,
     ) -> FileLibraryFolderItem:
@@ -183,7 +187,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             file_size=util.nice_size(raw_size),
             raw_size=raw_size,
             ldda_id=ldda.id,
-            tags=tag_manager.get_tags_str(ldda.tags),
+            tags=tag_manager.get_tags_list(ldda.tags),
             message=ldda.message or ldda.info,
         )
         return dataset_item

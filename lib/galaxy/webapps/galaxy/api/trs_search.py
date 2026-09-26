@@ -2,9 +2,11 @@
 
 Information on TRS can be found at https://github.com/ga4gh/tool-registry-service-schemas.
 """
+
 import logging
 
 from galaxy.web import expose_api
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.workflow.trs_proxy import (
     parse_search_kwds,
     TrsProxy,
@@ -27,7 +29,7 @@ class TrsSearchAPIController(BaseGalaxyAPIController):
     _trs_proxy: TrsProxy = depends(TrsProxy)
 
     @expose_api
-    def index(self, trans, trs_server=None, query=None, **kwd):
+    def index(self, trans: GalaxyWebTransaction, trs_server=None, query=None, **kwd):
         """
         GET /api/trs_search
 

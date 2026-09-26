@@ -11,14 +11,13 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Extra,
+    ConfigDict,
     Field,
 )
 
 
 class ErrorDomain(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     empirical_error: Dict[str, Any] = Field(
         ...,

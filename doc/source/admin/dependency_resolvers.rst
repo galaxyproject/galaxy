@@ -207,7 +207,7 @@ debug
 ensure_channels
     Conda channels to enable by default. See https://conda.io/docs/user-guide/tasks/manage-channels.html for more
     information about channels. This defaults to the value of the global ``conda_ensure_channels`` option or
-    ``iuc,conda-forge,bioconda,defaults`` otherwise.  This order should be consistent with the `Bioconda prescribed
+    ``conda-forge,bioconda`` otherwise.  This order should be consistent with the `Bioconda prescribed
     order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml>`__ if it includes ``bioconda``.
 
 auto_install
@@ -264,6 +264,7 @@ Lmod Dependency Resolver
       settargexec: <filesystem path>
       modulepath: <filesystem path[:filesystem path:...]>
       mapping_files: <filesystem path>
+      skip_availability_check: <true|false>
 
 
 The ``lmod`` dependency resolver interacts with the `Lmod environment modules system <https://lmod.readthedocs.io/>`__
@@ -291,6 +292,13 @@ mapping_files
     Path to a YAML configuration file that can be used to link tools requirements with existing Lmod modules. Default:
     ``config/lmod_modules_mapping.yml``
 
+skip_availability_check
+    Set to ``true`` to skip filtering module dependencies using ``module avail`` and attempt to load each
+    module listed in the dependencies (default: ``false``).
+    This setting should be used when during dependency resolution modules are not listed in ``module avail``,
+    but can be expected to be present when using ``module load`` in the job script,  such as child modules
+    in hierarchical module systems. Note: the order in which dependencies are listed could be important.
+
 Environment Modules Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -303,6 +311,7 @@ Environment Modules Dependency Resolver
       find_by: <directory|avail>
       prefetch: <true|false>
       default_indicator: <string>
+      skip_availability_check: <true|false>
 
 
 The ``modules`` dependency resolver interacts with the `Environment Modules system <https://modules.sourceforge.net/>`__
@@ -330,6 +339,13 @@ default_indicator
     What indicates to the AvailModuleChecker that a module is the default version (default: ``(default)``). Note
     that the first module found is considered the default when no version is used by the resolver, so
     the sort order of modules matters.
+
+skip_availability_check
+    Set to ``true`` to skip filtering module dependencies using ``module avail`` and attempt to load each
+    module listed in the dependencies (default: ``false``).
+    This setting should be used when during dependency resolution modules are not listed in ``module avail``,
+    but can be expected to be present when using ``module load`` in the job script,  such as child modules
+    in hierarchical module systems. Note: the order in which dependencies are listed could be important.
 
 The Environment Modules dependency resolver can work in two modes. The ``AvailModuleChecker`` searches the results
 of the ``module avail`` command for the name of the dependency. If it is configured in versionless mode,
@@ -360,6 +376,6 @@ It is highly experimental, undocumented, and unmaintained, and likely to be drop
 Brewed Tool Shed Package Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``brewed_tool_shed`` dependency resolver was an attmept to resolve tool shed packages that had been auto converted
+The ``brewed_tool_shed`` dependency resolver was an attempt to resolve tool shed packages that had been auto converted
 to the tool shed. It is highly experimental, undocumented, unmaintained, and will almost certainly be removed from the
 code base.

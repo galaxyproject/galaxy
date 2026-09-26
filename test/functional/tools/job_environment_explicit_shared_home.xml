@@ -1,6 +1,6 @@
 <tool id="job_environment_explicit_shared_home" name="job_environment_explicit_shared_home" version="0.1.0" profile="18.01">
     <requirements>
-        <container type="docker">busybox:ubuntu-14.04</container>
+        <container type="docker">busybox:1.36.1-glibc</container>
     </requirements>
     <command use_shared_home="true"><![CDATA[
 mktemp -d &&

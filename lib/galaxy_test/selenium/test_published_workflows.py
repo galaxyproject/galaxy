@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Dict,
 )
 
 from .framework import (
@@ -30,7 +29,7 @@ class TestPublishedWorkflowsGrid(SharedStateSeleniumTestCase):
         self.id_2 = workflow_2["id"]
         self.logout_if_needed()
 
-    def _new_public_workflow(self) -> Dict[str, Any]:
+    def _new_public_workflow(self) -> dict[str, Any]:
         name = self._get_random_name()
         contents = self.workflow_populator.load_workflow(name)
         workflow_response = self.workflow_populator.create_workflow_response(contents, publish=True)

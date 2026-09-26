@@ -22,11 +22,11 @@ class TestManageInformation(SeleniumTestCase):
         self.components.preferences.get_new_key.wait_for_and_click()
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         new_api_key = self.get_api_key()
-        input_value = api_key_input.get_property("value")
+        input_value = api_key_input.get_attribute("value")
         assert new_api_key == input_value
         # Hover the input to view the key
-        self.action_chains().move_to_element(api_key_input).perform()
-        hover_value = api_key_input.get_property("value")
+        self.hover(api_key_input)
+        hover_value = api_key_input.get_attribute("value")
         assert new_api_key == hover_value
 
     @selenium_test
@@ -88,9 +88,6 @@ class TestManageInformation(SeleniumTestCase):
 
     @selenium_test
     def test_user_address(self):
-        def get_address_form():
-            return self.find_element_by_selector("div.ui-portlet-section > div.portlet-content")
-
         self.register(self._get_random_email())
         self.navigate_to_manage_information()
         self.components.change_user_address.address_button.wait_for_and_click()
@@ -112,7 +109,7 @@ class TestManageInformation(SeleniumTestCase):
         for input_field_label in address_field_labels:
             input_value = self._get_random_name(prefix=input_field_label)
             address_fields[input_field_label] = input_value
-            input_field = self.get_address_input_field(get_address_form(), input_field_label)
+            input_field = self.get_address_input_field(input_field_label)
             self.clear_input_field_and_write(input_field, input_value)
         # save new address
         self.components.change_user_email.submit.wait_for_and_click()
@@ -123,7 +120,7 @@ class TestManageInformation(SeleniumTestCase):
 
         # check if address was saved correctly
         for input_field_label in address_fields.keys():
-            input_field = self.get_address_input_field(get_address_form(), input_field_label)
+            input_field = self.get_address_input_field(input_field_label)
             assert input_field.get_attribute("value") == address_fields[input_field_label]
 
     def navigate_to_manage_information(self):
@@ -134,10 +131,8 @@ class TestManageInformation(SeleniumTestCase):
         element.clear()
         element.send_keys(new_input_text)
 
-    def get_address_input_field(self, address_form, input_field_label):
-        return address_form.find_element(
-            self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > input"
-        )
+    def get_address_input_field(self, input_field_label):
+        return self.wait_for_selector_visible(f"[data-label='{input_field_label}'] > div > div > input")
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):

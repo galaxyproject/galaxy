@@ -46,8 +46,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-@import "base.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .card-body {
     overflow: auto;

@@ -20,7 +20,7 @@
             <p>Use this link to download the archive or import it on another Galaxy server.</p>
             <b-alert show variant="warning"
                 >History archives are removed at regular intervals. For permanent storage download the archive, export
-                to a remote file or import the archive on another Galaxy server.
+                to a repository or import the archive on another Galaxy server.
             </b-alert>
         </div>
         <div v-else-if="hasReadyExport">
@@ -49,14 +49,15 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import JobError from "components/JobInformation/JobError";
-import { waitOnJob } from "components/JobStates/wait";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import { waitOnJob } from "@/components/JobStates/wait";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import ExportLink from "./ExportLink.vue";
+import JobError from "@/components/JobInformation/JobError.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 Vue.use(BootstrapVue);
 
@@ -145,7 +146,7 @@ export default {
                     } else {
                         // error ....
                         this.errorMessage = `Unexpected error while polling history export ${errorMessageAsString(
-                            response
+                            response,
                         )}`;
                     }
                 })

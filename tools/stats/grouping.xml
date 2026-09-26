@@ -1,9 +1,12 @@
-<tool id="Grouping1" name="Group" version="2.1.4">
+<tool id="Grouping1" name="Group" version="2.1.4" profile="24.2">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <requirements>
     <requirement type="package" version="1.15.4">numpy</requirement>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
+  <required_files>
+    <include path="grouping.py"/>
+  </required_files>
   <command detect_errors="exit_code">
   python '$__tool_directory__/grouping.py'
       '${out_file1}'

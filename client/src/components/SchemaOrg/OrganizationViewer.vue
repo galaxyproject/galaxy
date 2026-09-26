@@ -1,67 +1,71 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <b-button
-            ref="button"
-            v-b-modal.organization-details
-            class="py-0 px-1"
-            size="sm"
-            variant="link"
-            title="Organization details">
-            <FontAwesomeIcon icon="building" fixed-width />
-        </b-button>
-        <b-modal id="organization-details" title="Organization" hide-footer>
-            <b-table striped :items="items"> </b-table>
-        </b-modal>
+        <FontAwesomeIcon ref="button" :icon="faBuilding" />
+
+        <BPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Organization">
+            <GTable :items="items" :fields="fields" />
+        </BPopover>
+
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
             <span v-if="email">
-                (<span itemprop="email" :content="organization.email">{{ email }}</span
-                >)
+                (
+                <span itemprop="email" :content="organization.email">{{ email }}</span>
+                )
             </span>
         </span>
         <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
-        <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
+
+        <GLink v-if="url" v-g-tooltip.hover tooltip title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <FontAwesomeIcon icon="external-link-alt" />
-        </a>
+            <FontAwesomeIcon :icon="faExternalLinkAlt" />
+        </GLink>
+
         <meta
             v-for="attribute in explicitMetaAttributes"
             :key="attribute.attribute"
             :itemprop="attribute.attribute"
             :content="attribute.value" />
-        <slot name="buttons"></slot>
+
+        <slot name="buttons" />
     </span>
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BPopover } from "bootstrap-vue";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
-library.add(faExternalLinkAlt, faBuilding);
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BPopover,
         FontAwesomeIcon,
+        GLink,
+        GTable,
     },
     mixins: [ThingViewerMixin],
     props: {
         organization: {
             type: Object,
         },
-        hoverPlacement: {
-            type: String,
-            default: "left",
-        },
     },
     data() {
         return {
+            faBuilding,
+            faExternalLinkAlt,
             implicitMicrodataProperties: ["name", "email", "url", "identifier"],
             thing: this.organization,
+            fields: [
+                { key: "attribute", label: "Attribute" },
+                { key: "value", label: "Value" },
+            ],
         };
     },
     computed: {

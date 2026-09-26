@@ -1,0 +1,99 @@
+<tool id="__FILTER_NULL__" name="Filter null elements" version="1.1.0" tool_type="filter_null">
+    <description>from a collection</description>
+    <type class="FilterNullTool" module="galaxy.tools"/>
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <action module="galaxy.tools.actions.model_operations" class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection"/>
+        <param type="data" name="replacement" optional="true" label="Replace null elements with this dataset" help="If provided, null elements will be replaced with this dataset"/>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (without null datasets)">
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt"/>
+                </collection>
+            </param>
+            <output_collection name="output" type="list" count="1">
+                <element name="e1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Removes null (missing) elements from a collection.
+
+===========
+Description
+===========
+
+This tool takes a dataset collection and filters out null elements. A null element is a placeholder that contains no actual dataset — it appears when a workflow uses conditional steps and a step is skipped, or when an expression tool produces a ``null`` value.
+
+This is useful for cleaning up collections produced by conditional workflows. Downstream tools cannot process null elements, so removing them ensures the rest of the analysis can proceed.
+
+Optionally, you can provide a **replacement dataset**. When specified, null elements are replaced with that dataset instead of being removed. This preserves the collection size, which is important when element-wise pairing with another collection is needed.
+
+========
+Examples
+========
+
+**Remove null elements**
+
+Given a list collection produced by a conditional workflow where one branch was skipped::
+
+ List: "Workflow outputs"
+
+   sample1  →  result.txt  (ok)
+   sample2  →  (null)
+   sample3  →  result.txt  (ok)
+
+The output keeps only real elements::
+
+ List: "Workflow outputs (without null datasets)"
+
+   sample1  →  result.txt
+   sample3  →  result.txt
+
+-------
+
+**Replace instead of remove**
+
+If a replacement dataset is provided, null elements are swapped rather than dropped, preserving the collection structure::
+
+ List: "Workflow outputs (without null datasets)"
+
+   sample1  →  result.txt
+   sample2  →  replacement.txt
+   sample3  →  result.txt
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/filter_null.svg
+  :alt: Filter null elements from collection
+  :width: 500
+
+-------
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+      ]]></help>
+</tool>

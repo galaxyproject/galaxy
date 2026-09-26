@@ -39,7 +39,9 @@
     <tests>
         <test expect_exit_code="0">
             <param name="thebool" value="true" />
-            <output name="out_file1" file="simple_line.txt" />
+            <output name="out_file1" file="simple_line.txt" >
+                <metadata name="data_lines" value="1" />
+            </output>
             <assert_command>
                 <has_text text="really" />
             </assert_command>

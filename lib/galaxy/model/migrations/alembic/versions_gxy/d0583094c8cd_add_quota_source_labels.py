@@ -5,6 +5,7 @@ Revises: c39f1de47a04
 Create Date: 2022-06-09 12:24:44.329038
 
 """
+
 from sqlalchemy import (
     Column,
     ForeignKey,

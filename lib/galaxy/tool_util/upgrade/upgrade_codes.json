@@ -1,0 +1,94 @@
+{
+    "16_04_fix_interpreter": {
+        "level": "must_fix",
+        "message": "This tool uses an interpreter on the command block, this was disabled with 16.04. The command line needs to be rewritten to call the language runtime with a full path to the target script using `$tool_directory` to refer to the path to the tool and its script.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/1688"
+    },
+    "16_04_ready_interpreter": {
+        "level": "ready",
+        "message": "This tool follows best practice and does not specify an interpreter on the command block.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/1688"
+    },
+    "16_04_consider_implicit_extra_file_collection": {
+        "level": "consider",
+        "message": "Starting is with profile 16.04 tools, Galaxy no longer attempts to just find tool outputs keyed on the output ID in the working directory. Tool outputs need to be explicitly declared and dynamic outputs need to be specified in a 'galaxy.json' file or with a 'discover_datasets' block.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/1688",
+        "niche": true
+    },
+    "16_04_fix_output_format": {
+        "level": "must_fix",
+        "message": "Starting with 16.04 tools, having format='input' on a tool output is disabled. The behavior was not well defined for these outputs. Please add 'format_source=\"a_specific_input_name\" for a specific input to inherit the format from.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/1688"
+    },
+    "16_04_exit_code": {
+        "level": "consider",
+        "message": "Starting with 16.04 tools the exit code of the command executed will be used to detect errors by default. This tool previously would have discovered errors by checking if any content is written to standard error. Add '<stdio><regex match=\".*\" source=\"stderr\" level=\"fatal\" description=\"Unknown error encountered\" /></stdio>' to your tool to restore the legacy behavior or restructure your command block to rely on the exit code.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/1688"
+    },
+    "18_01_consider_structured_like": {
+        "level": "consider",
+        "message": "Starting with 18.01 tools, the 'structured_like` attribute must reference inputs in a fully qualified manner - using '|' to describe parent conditionals for instance.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/6162"
+    },
+    "20_05_consider_inputs_as_json_changes": {
+        "level": "consider",
+        "message": "Starting with 20.05, the format of data in 'inputs' config files changed slightly. Unselected optional `select` and `data_column` parameters get json null values instead of the string 'None' and multiple `select` and `data_column` parameters are lists (instead of comma separated strings).",
+        "url": "https://github.com/galaxyproject/galaxy/pull/9776/files"
+    },
+    "20_09_consider_output_collection_order": {
+        "level": "consider",
+        "message": "Starting in profile 20.09 tools, the order elements defined in tool test became relevant in order to verify collections are properly sorted. This may cause tool tests to fail after the upgrade, rearrange the elements defined in output collections if this occurs.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/10434"
+    },
+    "20_09_consider_set_e": {
+        "level": "consider",
+        "message": "Starting with profile 20.09 tools, tool scripts are executed with the 'set -e' instruction. The 'set -e' option instructs the shell to immediately exit if any command has a non-zero exit status. If your command uses multiple sub-commands and you'd like to allow them to execute with non-zero exit codes add 'strict=\"false\"' to the command tag to restore the tool's legacy behavior.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/9962"
+    },
+    "18_01_consider_home_directory": {
+        "level": "consider",
+        "message": "Starting with profile 18.01 tools, each job is given its own home directory. Most tools should not depend on global state in a home directory, if this is required though set 'use_shared_home=\"true\"' on the command tag of the tool.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/5193",
+        "niche": true
+    },
+    "18_09_consider_python_environment": {
+        "level": "consider",
+        "message": "Starting with profile 18.09 tools, data managers run without Galaxy's virtual environment. Be sure your requirements reflect all the data manager's dependencies.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/6466"
+    },
+    "17_09_consider_provided_metadata_style": {
+        "level": "consider",
+        "message": "Starting with 17.09 tools, the format of 'galaxy.json' (a rarely used file that can be used to dynamically collect datasets or metadata about datasets produced by the tool) changed - the original behavior can be restored by adding 'provided_metadata_style=\"legacy\"' to the tool's outputs tag.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/4437",
+        "niche": true
+    },
+    "21_09_fix_from_work_dir_whitespace": {
+        "level": "must_fix",
+        "message": "Starting with 21.09 tools, from_work_dir output file names are quoted so white space needs to be stripped out of attribute.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/12536"
+    },
+    "21_09_consider_python_environment": {
+        "level": "consider",
+        "message": "Starting with 21.09 data source tools, Galaxy's virtual environment is no longer included in the tool's runtime environment. Tools that require it, should include the galaxy-util package in their requirements.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/12515"
+    },
+    "23_0_consider_optional_text": {
+        "level": "consider",
+        "message": "Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string) are set to `None` for templating in Cheetah. Previous to this version tools would receive the empty string `\"\"` as the templated value.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/15491/files"
+    },
+    "24_0_consider_python_environment": {
+        "level": "consider",
+        "message": "Starting with 24.0 async data source tools, Galaxy's virtual environment is no longer included in the tool's runtime environment. Tools that require it, should include the galaxy-util package in their requirements.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/17422"
+    },
+    "24_0_request_cleaning": {
+        "level": "consider",
+        "message": "Starting with 24.0 data source tools, Galaxy requires explicit `request_param_translation` for each parameter sent to the tool. If this tools depends on unspecified parameters - new xml elements will need to be added for these parameters."
+    },
+    "24_2_fix_test_case_validation": {
+        "level": "must_fix",
+        "message": "Starting with 24.2 tools, test cases must validate against a more stringent schema. Unknown parameters are disallowed (prevents misspellings), select parameters must be specified by value (to prevent ambiguity and match the API), column parameters must be specified as integers, and parameters must be full qualified ('|' separation to include parent repeat, cond, and sections).",
+        "url": "https://github.com/galaxyproject/galaxy/pull/18679"
+    }
+}

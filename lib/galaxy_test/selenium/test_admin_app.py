@@ -78,13 +78,11 @@ class TestAdminApp(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_repo_install_settings")
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        ok_button = self.find_element_by_xpath(
-            "//*[@id='repo-install-settings___BV_modal_footer_']/button[contains(., 'OK')]"
-        )
+        ok_button = self.find_element_by_selector("#repo-install-settings .g-modal-confirm-buttons button:last-child")
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
         installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
-        self.action_chains().move_to_element(installed_only).click().perform()
+        self.move_to_and_click(installed_only)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # This serves as a check for the presence of the upgrade notification.
         admin_component.toolshed.upgrade_notification.wait_for_visible()
@@ -116,7 +114,7 @@ class TestAdminApp(SeleniumTestCase):
         # Ensure that #manage-resolver-type is visible.
         admin_component.manage_dependencies.resolver_type.wait_for_visible()
         self.screenshot("admin_dependencies_landing")
-        self.action_chains().move_to_element(unused_link).click().perform()
+        self.move_to_and_click(unused_link)
         self.sleep_for(self.wait_types.UX_RENDER)
         # Ensure that the unused paths table is visible.
         admin_component.manage_dependencies.unused_paths.wait_for_visible()
@@ -192,7 +190,6 @@ class TestAdminApp(SeleniumTestCase):
         admin_component.registration_form.wait_for_visible()
         self.screenshot("admin_user_registration")
 
-        self.admin_open()
         admin_component.index.groups.wait_for_and_click()
         admin_component.groups_grid.wait_for_visible()
         self.screenshot("admin_groups")
@@ -201,7 +198,6 @@ class TestAdminApp(SeleniumTestCase):
         admin_component.groups_create_view.wait_for_visible()
         self.screenshot("admin_groups_create")
 
-        self.admin_open()
         admin_component.index.roles.wait_for_and_click()
         admin_component.roles_grid.wait_for_visible()
         self.screenshot("admin_roles")

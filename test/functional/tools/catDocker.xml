@@ -1,7 +1,7 @@
 <tool id="catdc" name="Concatenate datasets (in docker)" version="1.0.0">
     <description>tail-to-head</description>
     <requirements>
-        <container type="docker">busybox:ubuntu-14.04</container>
+        <container type="docker">busybox:1.36.1-glibc</container>
     </requirements>
     <command><![CDATA[
 echo "Galaxy slots passed through contain as \$GALAXY_SLOTS" &&

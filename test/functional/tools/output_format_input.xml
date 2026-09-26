@@ -1,0 +1,26 @@
+<tool id="output_format_input" name="output_format_input" version="1.0" profile="21.01">
+  <!-- test format="input" for the profile version where the format is set to "input"
+       (for legacy tools, i.e. profile <16.04, the format of a random input is used) -->
+  <description></description>
+  <command>
+    cat '$input' > '$output'
+  </command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Select cells from"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="output" metadata_source="input" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="simple_line.txt" ftype="txt" />
+      <output name="output" file="simple_line.txt" ftype="input"/>
+    </test>
+    <test>
+      <param name="input" value="simple_line.txt" ftype="tabular" />
+      <output name="output" file="simple_line.txt" ftype="input"/>
+    </test>
+  </tests>
+  <help>
+  </help>
+</tool>

@@ -1,7 +1,8 @@
 import axios from "axios";
-import { getRootFromIndexLink } from "onload";
 
-const getUrl = (path) => getRootFromIndexLink() + path;
+import { getAppRoot } from "@/onload/loadConfig";
+
+const getUrl = (path) => getAppRoot() + path;
 
 export async function getAPIKey(userId) {
     const url = getUrl(`api/users/${userId}/api_key/detailed`);

@@ -7,5 +7,6 @@
     "command_line": "commandline",
     "job_messages": ["test-msg1", "test-msg2", "test-msg3", "test-msg4"],
     "id": "test_id",
-    "copied_from_job_id": "test_copied_from_job_id"
+    "copied_from_job_id": "test_copied_from_job_id",
+    "state": "running"
 }

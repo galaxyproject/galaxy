@@ -3,64 +3,91 @@ from unittest.mock import Mock
 import pytest
 
 from galaxy import model
-from galaxy.model.base import transaction
-from galaxy.tools.parameters import basic
+from galaxy.tools.parameters.options import ParameterOption
+from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from .util import BaseParameterTestCase
 
 
 class TestSelectToolParameter(BaseParameterTestCase):
+    def new_hda(self):
+        hda = model.HistoryDatasetAssociation()
+        hda._state = model.Dataset.states.OK
+        return hda
+
     def test_validated_values(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
-            self.param.from_json("42", self.trans, {"input_bam": model.HistoryDatasetAssociation()})
-            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
+            self.param.from_json("42", self.trans, {"input_bam": self.new_hda()})
+        assert str(exc_info.value) == "Parameter 'my_name': requires a value, but no legal values defined"
 
     def test_validated_values_missing_dependency(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
             self.param.from_json("42", self.trans)
-            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
+        assert str(exc_info.value) == "Parameter 'my_name': requires a value, but no legal values defined"
+
+    def test_dict_value_is_invalid_option(self):
+        # A dict value is unhashable; checking it against the set of legal
+        # values used to raise an opaque "unhashable type: 'dict'" TypeError.
+        param = self._parameter_for(xml="""<param name="my_name" type="select"><option value="a">A</option></param>""")
+        with pytest.raises(ValueError) as exc_info:
+            param.from_json({"not": "valid"}, self.trans)
+        assert "an invalid option" in str(exc_info.value)
 
     def test_unvalidated_values(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
         assert self.param.from_json("42", self.trans) == "42"
 
+    def test_get_initial_value_without_trans(self):
+        # conditional case inference calls this with no transaction
+        param = self._parameter_for(
+            xml="""<param name="my_name" type="select"><option value="a">A</option><option value="b" selected="true">B</option></param>"""
+        )
+        assert param.get_initial_value(None, {}) == "b"
+
     def test_validated_datasets(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
-            self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": None})
-            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
+            self.param.from_json(self.new_hda(), self.trans, {"input_bam": None})
+        assert str(exc_info.value) == "Parameter 'my_name': requires a value, but no legal values defined"
 
     def test_unvalidated_datasets(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
         assert isinstance(
-            self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": basic.RuntimeValue()}),
+            self.param.from_json(self.new_hda(), self.trans, {"input_bam": RuntimeValue()}),
             model.HistoryDatasetAssociation,
         )
 
     def test_filter_param_value(self):
         self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>"""
-        assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testname1"})
-        assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testname2"})
+        assert ParameterOption("testname1", "testpath1", False) in self.param.get_options(
+            self.trans, {"input_bam": "testname1"}
+        )
+        assert ParameterOption("testname2", "testpath2", False) in self.param.get_options(
+            self.trans, {"input_bam": "testname2"}
+        )
         assert len(self.param.get_options(self.trans, {"input_bam": "testname3"})) == 0
 
     def test_filter_param_value2(self):
         # Same test as above, but filtering on a different column.
         self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>"""
-        assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testpath1"})
-        assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testpath2"})
+        assert ParameterOption("testname1", "testpath1", False) in self.param.get_options(
+            self.trans, {"input_bam": "testpath1"}
+        )
+        assert ParameterOption("testname2", "testpath2", False) in self.param.get_options(
+            self.trans, {"input_bam": "testpath2"}
+        )
         assert len(self.param.get_options(self.trans, {"input_bam": "testpath3"})) == 0
 
     # TODO: Good deal of overlap here with TestDataToolParameter, refactor.
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.app.tool_data_tables["test_table"] = MockToolDataTable()
         self.trans = Mock(
             app=self.app,
@@ -68,6 +95,7 @@ class TestSelectToolParameter(BaseParameterTestCase):
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=Mock(name="galaxy"),
+            user=None,
         )
         self.type = "select"
         self.set_data_ref = False

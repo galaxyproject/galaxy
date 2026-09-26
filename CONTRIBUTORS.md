@@ -35,7 +35,7 @@ The following individuals have contributed code to Galaxy:
 * Richard Burhans <burhans@bx.psu.edu>
 * Jennifer Cabral <jencabral@gmail.com>
 * Martin Čech <marten@bx.psu.edu>
-* Eli Chadwick <eli.chadwick@stfc.ac.uk>
+* Eli Chadwick <eli.chadwick@manchester.ac.uk>
 * Ramkrishna Chakrabarty <rc@bx.psu.edu>
 * Matt Chambers <matt.chambers42@gmail.com>
 * Brad Chapman <chapmanb@50mail.com>
@@ -69,11 +69,12 @@ The following individuals have contributed code to Galaxy:
 * Ben Fulton <benmarkfulton@gmail.com>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
-* Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
+* Jeremy Goecks <jeremy.goecks@moffitt.org>
 * Nuwan Goonasekera <nuwan.goonasekera@gmail.com>
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
 * Aysam Guerler <aysam.guerler@gmail.com>
 * Simon Guest <simon.guest@agresearch.co.nz>
+* Nalin Gupta <nalin.gupta@stfc.ac.uk>
 * Jianbin He <jbhe@bx.psu.edu>
 * Peter van Heusden <pvh@sanbi.ac.za>
 * Morita Hideyuki <h-morita@esm.co.jp>

@@ -65,7 +65,7 @@ def _possible_uri_to_path(location):
     return path
 
 
-def handle_outputs(job_directory=None):
+def handle_outputs(job_directory: str | None = None):
     # Relocate dynamically collected files to pre-determined locations
     # registered with ToolOutput objects via from_work_dir handling.
     if job_directory is None:
@@ -118,8 +118,7 @@ def handle_outputs(job_directory=None):
         file_description = file_dict_to_description(output)
         file_description.write_to(target_path)
 
-        secondary_files = output.get("secondaryFiles", [])
-        if secondary_files:
+        if secondary_files := output.get("secondaryFiles", []):
             order = []
             index_contents = {"order": order}
 

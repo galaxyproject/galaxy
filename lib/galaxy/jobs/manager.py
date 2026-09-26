@@ -1,8 +1,13 @@
 """
 Top-level Galaxy job manager, moves jobs to handler(s)
 """
+
 import logging
 from functools import partial
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy.exceptions import (
     HandlerAssignmentError,
@@ -14,6 +19,10 @@ from galaxy.jobs import (
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
+
+if TYPE_CHECKING:
+    from galaxy.model import Job
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +55,7 @@ class JobManager:
     def _message_callback(self, job):
         return JobHandlerMessage(task="setup", job_id=job.id)
 
-    def enqueue(self, job, tool=None, flush=True):
+    def enqueue(self, job: "Job", tool: Union["Tool", None] = None, flush: bool = True) -> str:
         """Queue a job for execution.
 
         Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
@@ -65,11 +74,10 @@ class JobManager:
         configured_handler = None
         if tool:
             tool_id = tool.id
-            configured_handler = tool.get_configured_job_handler(job.params)
+            configured_handler = tool.get_configured_job_handler()
             if configured_handler is not None:
-                p = f" (with job params: {str(job.params)})" if job.params else ""
                 log.debug(
-                    "(%s) Configured job handler for tool '%s'%s is: %s", job.log_str(), tool_id, p, configured_handler
+                    "(%s) Configured job handler for tool '%s' is: %s", job.log_str(), tool_id, configured_handler
                 )
         queue_callback = partial(self._queue_callback, job, tool_id)
         message_callback = partial(self._message_callback, job)
@@ -77,9 +85,9 @@ class JobManager:
             return self.app.job_config.assign_handler(
                 job,
                 configured=configured_handler,
+                flush=flush,
                 queue_callback=queue_callback,
                 message_callback=message_callback,
-                flush=flush,
             )
         except HandlerAssignmentError as exc:
             raise ToolExecutionError(exc.args[0], job=exc.obj)
@@ -95,6 +103,23 @@ class JobManager:
         :type message:  str
         """
         self.job_handler.job_stop_queue.put(job.id, error_msg=message)
+
+    def stop_without_failing(self, job: "Job") -> None:
+        """Stop a running job without cancelling or failing it.
+
+        The job is moved into a stopping state, so the handler ends the job
+        process and collects the outputs it has produced as a normal, successful
+        completion. ``stop`` on its own is a no-op for a job whose state does not
+        already indicate that it should end, so the state change belongs here.
+
+        :param job:     Job to stop.
+        :type job:      Instance of :class:`galaxy.model.Job`.
+        """
+        job.mark_stopped(self.app.config.track_jobs_in_database)
+        self.stop(job)
+        session = self.app.model.session
+        session.add(job)
+        session.commit()
 
     def shutdown(self):
         self.job_handler.shutdown()
@@ -112,6 +137,9 @@ class NoopManager:
         pass
 
     def stop(self, *args, **kwargs):
+        pass
+
+    def stop_without_failing(self, *args, **kwargs):
         pass
 
 

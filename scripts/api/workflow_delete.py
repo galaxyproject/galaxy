@@ -17,7 +17,7 @@ from common import delete
 try:
     assert sys.argv[2]
 except IndexError:
-    print("usage: %s key url [purge (true/false)] " % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url [purge (true/false)] ")
     sys.exit(1)
 try:
     data = {}

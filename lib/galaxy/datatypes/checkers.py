@@ -2,6 +2,7 @@
 
 External datatypes may make use of these functions.
 """
+
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,

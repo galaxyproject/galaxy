@@ -3,7 +3,7 @@
     cut -f 1 '$input1' > '$output1'
   </command>
   <inputs>
-    <param type="data" format="fasta" name="input1" label="Input 1" />
+    <param type="data" format="txt" name="input1" label="Input 1" />
   </inputs>
   <outputs>
     <data name="output1" format="input" />

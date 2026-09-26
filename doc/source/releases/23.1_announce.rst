@@ -1,12 +1,211 @@
 
-:orphan:
-
 ===========================================================
-Mid 2023 Galaxy Release (v 23.1)
+23.1 Galaxy Release (June 2023)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2023-05-15
- * Planned Release Date: 2023-06-30
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_23.1 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_23.1 && git pull --ff-only origin release_23.1
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Administration Notes
+====================
+
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.tool_shed.mapping.citation_cache_schema_name
+-  mapping.tool_shed.mapping.citation_cache_table_name
+-  mapping.tool_shed.mapping.citation_cache_url
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/file_sources_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'accessToken': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+
+   to
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'accessToken': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+
+
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.cache_dir.desc has changed from
+
+   ::
+
+    Top level cache directory. Any other cache directories (tool_cache_data_dir,
+    template_cache_path, etc.) should be subdirectories.
+
+   to
+
+   ::
+
+    Top level cache directory. Any other cache directories
+    (template_cache_path, etc.) should be subdirectories.
+
+
+-  mapping.galaxy.mapping.container_resolvers_config_file.desc has changed from
+
+   ::
+
+    Container resolvers configuration. Set up a file describing
+    container resolvers to use when discovering containers for Galaxy. If
+    this is set to None, the default container resolvers loaded is
+    determined by enable_mulled_containers.
+    For available options see config/container_resolvers_conf.xml.sample.
+
+   to
+
+   ::
+
+    Container resolvers configuration. Set up a file describing
+    container resolvers to use when discovering containers for Galaxy. If
+    this is set to None, the default container resolvers loaded is
+    determined by enable_mulled_containers.
+    For available options see https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
+
+
+-  mapping.galaxy.mapping.enable_tool_document_cache.desc has changed from
+
+   ::
+
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly faster startup
+    times. The tool cache is backed by a SQLite database, which cannot
+    be stored on certain network disks. The cache location is configurable
+    using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
+
+   to
+
+   ::
+
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly faster startup
+    times. The tool cache is backed by a SQLite database, which cannot
+    be stored on certain network disks. The cache location is configurable
+    with the ``tool_cache_data_dir`` tag in tool config files.
+
+
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.delay_tool_initialization
+-  mapping.galaxy.mapping.myexperiment_target_url
+-  mapping.galaxy.mapping.tool_cache_data_dir
+-  mapping.galaxy.mapping.use_legacy_history
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/container_resolvers.yml.sample``
+
+Deprecation Notices
+===========================================================
+
+The first Galaxy release of 2024 (24.0) will drop support for Python 3.7, which has already reached end of life (EOL).
+
+The **api/search** API endpoint is deprecated and will be removed in the next release.
+
+Release Notes
+===========================================================
+
+.. include:: 23.1.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

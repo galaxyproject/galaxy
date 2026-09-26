@@ -6,10 +6,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 import click
 import yaml
-from pydantic.networks import (
-    AnyUrl,
-    url_regex,
-)
+from pydantic.networks import AnyUrl
 
 from galaxy.webapps.galaxy.fast_app import get_openapi_schema
 
@@ -23,13 +20,21 @@ class YamlDumper(yaml.SafeDumper):
 
 
 YamlDumper.add_representer(AnyUrl, _any_url_representer)
-YamlDumper.add_implicit_resolver("!anyurl", url_regex(), None)
 
 
 @click.command("Write openapi schema to path")
 @click.argument("schema_path", type=click.Path(dir_okay=False, writable=True), required=False)
-def write_open_api_schema(schema_path):
-    openapi_schema = get_openapi_schema()
+@click.option("--app", type=click.Choice(["gx", "shed"]), required=False, default="gx")
+def write_open_api_schema(schema_path, app: str):
+    if app == "shed":
+        # Importing this causes the Galaxy schema to generate
+        # in a different fashion and causes a diff in downstream
+        # typescript generation for instance. So delay this.
+        from tool_shed.webapp.fast_app import get_openapi_schema as get_openapi_schema_shed
+
+        openapi_schema = get_openapi_schema_shed()
+    else:
+        openapi_schema = get_openapi_schema()
     if schema_path:
         if schema_path.endswith((".yml", ".yaml")):
             with open(schema_path, "w") as f:

@@ -1,0 +1,163 @@
+<tool id="collection_column_join" name="Column Join" version="0.0.3">
+    <description>on Collections</description>
+    <requirements>
+        <requirement type="package" version="8.25">coreutils</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        #if 'output_shell_script' in str( $include_outputs ).split( "," ):
+            cp '${collection_column_join_script}' '${script_output}' &&
+        #end if
+        sh '${collection_column_join_script}'
+    ]]>
+    </command>
+    <configfiles>
+        <configfile name="collection_column_join_script"><![CDATA[
+#!/bin/sh
+touch header0.tmp &&
+touch output0.tmp &&
+#set $delimiter = '\t'
+#set $left_identifier_column = $identifier_column
+#set $tail_offset = int( str( $has_header ) ) + 1
+#for $i, $tabular_item in enumerate( $input_tabular ):
+    #if $old_col_in_header:
+        #if $has_header:
+            head -n ${has_header} "${tabular_item}" | awk '{ n = split(\$0,arr,"${delimiter}"); ctr=1; for(i=1;i<=n;i++){ if( i != $identifier_column ){ if( ctr > 1) {printf("${delimiter}")}; printf( "${tabular_item.element_identifier}_%s", arr[i] ); ctr++ } }; printf( "\n" ); }' > input_header.tmp &&
+            tail -n +${tail_offset} "${tabular_item}" | LC_ALL=C sort -t "${delimiter}" -k $identifier_column > input_file.tmp &&
+        #else:
+            awk '{ n = split(\$0,arr,"${delimiter}"); ctr=1; for(i=1;i<=n;i++){ if( i != $identifier_column ){ if( ctr > 1) {printf("${delimiter}")}; printf( "${tabular_item.element_identifier}_%s", i ); ctr++ } }; exit }' "${tabular_item}" > input_header.tmp &&
+            LC_ALL=C sort -t "${delimiter}" -k $identifier_column "${tabular_item}" > input_file.tmp &&
+        #end if
+    #else:
+        #if $has_header:
+            head -n ${has_header} "${tabular_item}" | awk '{ n = split(\$0,arr,"${delimiter}"); ctr=1; for(i=1;i<=n;i++){ if( i != $identifier_column ){ if( ctr > 1) {printf("${delimiter}")}; printf( "${tabular_item.element_identifier}" ); ctr++ } }; printf( "\n" ); }' > input_header.tmp &&
+            tail -n +${tail_offset} "${tabular_item}" | LC_ALL=C sort -t "${delimiter}" -k $identifier_column > input_file.tmp &&
+        #else:
+            awk '{ n = split(\$0,arr,"${delimiter}"); ctr=1; for(i=1;i<=n;i++){ if( i != $identifier_column ){ if( ctr > 1) {printf("${delimiter}")}; printf( "${tabular_item.element_identifier}"); ctr++ } }; exit }' "${tabular_item}" > input_header.tmp &&
+            LC_ALL=C sort -t "${delimiter}" -k $identifier_column "${tabular_item}" > input_file.tmp &&
+        #end if
+    #end if
+    #if $i == 0:
+        mv input_file.tmp output${ ( $i + 1 ) % 2 }.tmp &&
+        #if $has_header:
+            awk '{ printf \$${identifier_column}; exit }' "${tabular_item}" > header${ $i % 2 }.tmp &&
+        #else:
+            echo "#KEY" > header${ $i % 2 }.tmp &&
+        #end if
+    #else:
+        LC_ALL=C join -o auto -a 1 -a 2 -1 ${left_identifier_column} -2 ${identifier_column} -t "${delimiter}" -e "${fill_char}" output${ $i % 2 }.tmp input_file.tmp  > output${ ( $i + 1 ) % 2 }.tmp &&
+        #set $left_identifier_column = 1
+    #end if
+    paste -d "${delimiter}" header${ $i % 2 }.tmp input_header.tmp > header${ ( $i + 1 ) % 2 }.tmp &&
+#end for
+cat header${ ( $i + 1 ) % 2 }.tmp output${ ( $i + 1 ) % 2 }.tmp > "${tabular_output}"
+    ]]>
+        </configfile>
+    </configfiles>
+    <inputs>
+        <param name="input_tabular" type="data" format="tabular" multiple="True" optional="False" label="Tabular files"/>
+        <!-- <param name="identifier_column" type="data_column" data_ref="input_tabular" value="0" min="0" optional="False" label="Identifier column"/> -->
+        <param name="identifier_column" type="integer" value="1" min="0" optional="False" label="Identifier column" help="The column that will be used to join the input datasets"/>
+        <param name="has_header" type="integer" value="0" min="0" optional="False" label="Number of header lines in each input file" help="If this is set to 0, a header line will be added containing column names as follows: the identifier column will be named #KEY and the other columns are named by the input dataset names/columns. If you have one or more header lines in your input, set this to the number of header lines."/>
+        <param name="old_col_in_header" type="boolean" checked="true" label="Add column name to header" help="Disable if you want column headers to only be composed of the input file names, for example, if you want headers like file1 and not file1_column1, see Help section below. Default: Yes"/>
+        <param name="fill_char" type="text" value="." optional="False" label="Fill character"/>
+        <param name="include_outputs" type="select" multiple="True" label="Additional datasets to create">
+            <option value="output_shell_script" selected="false">Shell script</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="tabular_output"/>
+        <data format="txt" name="script_output">
+            <filter>include_outputs and "output_shell_script" in include_outputs</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_tabular" value="in_1.tabular,in_2.tabular,in_3.tabular" ftype="tabular"/>
+            <param name="identifier_column" value="1"/>
+            <param name="has_header" value="1"/>
+            <param name="old_col_in_header" value="true"/>
+            <param name="fill_char" value="."/>
+            <param name="include_outputs" />
+            <output name="tabular_output" file="out_1.tabular" ftype="tabular"/>
+        </test>
+        <test>
+            <param name="input_tabular" value="in_1_headerless.tabular,in_2_headerless.tabular,in_3_headerless.tabular" ftype="tabular"/>
+            <param name="identifier_column" value="1"/>
+            <param name="has_header" value="0"/>
+            <param name="old_col_in_header" value="true"/>
+            <param name="fill_char" value="."/>
+            <param name="include_outputs" />
+            <output name="tabular_output" file="out_2.tabular" ftype="tabular"/>
+        </test>
+        <test>
+            <param name="input_tabular" value="in_1.tabular,in_2.tabular,in_3.tabular" ftype="tabular"/>
+            <param name="identifier_column" value="1"/>
+            <param name="has_header" value="1"/>
+            <param name="old_col_in_header" value="false"/>
+            <param name="fill_char" value="."/>
+            <param name="include_outputs" />
+            <output name="tabular_output" file="out_3.tabular" ftype="tabular"/>
+        </test>
+        <test>
+            <param name="input_tabular" value="in_1_headerless.tabular,in_2_headerless.tabular,in_3_headerless.tabular" ftype="tabular"/>
+            <param name="identifier_column" value="1"/>
+            <param name="has_header" value="0"/>
+            <param name="old_col_in_header" value="false"/>
+            <param name="fill_char" value="."/>
+            <param name="include_outputs" />
+            <output name="tabular_output" file="out_4.tabular" ftype="tabular"/>
+        </test>
+    </tests>
+    <help>
+        <![CDATA[
+Joins lists of tabular datasets together on a field.
+
+-----
+
+**Example**
+
+To join three files, with headers, based on the first column:
+
+**First file (in_1)**::
+
+    #KEY    c2  c3  c4
+    one     1-1 1-2 1-3
+    two     1-4 1-5 1-6
+    three   1-7 1-8 1-9
+
+
+**Second File (in_2)**::
+
+    #KEY    c2  c3  c4
+    one     2-1 2-2 2-3
+    two     2-4 2-5 2-6
+    three   2-7 2-8 2-9
+
+**Third file (in_3)**::
+
+    #KEY    c2  c3  c4
+    one     3-3 3-2 3-3
+    two     3-4 3-5 3-6
+    three   3-7 3-8 3-9
+
+
+**Joining** the files, using **identifier column of 1** and a **header lines of 1**, will return::
+
+    #KEY    in_1_c2 in_1_c3 in_1_c4 in_2_c2 in_2_c3 in_2_c4 in_3_c2 in_3_c3 in_3_c4
+    one     1-1              1-2            1-3             2-1              2-2             2-3             3-3             3-2             3-3
+    three   1-7              1-8            1-9             2-7              2-8             2-9             3-7             3-8             3-9
+    two     1-4              1-5            1-6             2-4              2-5             2-6             3-4             3-5             3-6
+
+
+**Joining** the files, using **identifier column of 1** and a **header lines of 1**, but disabling **Add column name to header**, will return::
+
+    #KEY    in_1 in_1 in_1 in_2 in_2 in_2 in_3 in_3 in_3
+    one     1-1              1-2            1-3             2-1              2-2             2-3             3-3             3-2             3-3
+    three   1-7              1-8            1-9             2-7              2-8             2-9             3-7             3-8             3-9
+    two     1-4              1-5            1-6             2-4              2-5             2-6             3-4             3-5             3-6
+
+        ]]>
+    </help>
+    <citations>
+    </citations>
+</tool>

@@ -2,15 +2,24 @@
 
 import json
 import os
+import subprocess
 import unittest
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any
 
+from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util.commands import which
-from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy.version import VERSION
+from galaxy_test.base.populators import (
+    CredentialsPopulator,
+    DatasetPopulator,
+    skip_without_tool,
+    WorkflowPopulator,
+)
+from galaxy_test.driver.driver_util import galaxy_root
+from galaxy_test.driver.integration_util import (
+    ConfiguresDatabaseVault,
+    IntegrationTestCase,
+)
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -23,6 +32,32 @@ SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_co
 
 EXTENDED_TIMEOUT = 120
 
+MULLED_EXAMPLE_MULTI_1_HASH = (
+    "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+)
+
+CREDENTIALS_TEST_TOOL = "secret_tool"
+CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
+CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
+
+def build_metadata_container():
+    subprocess.check_output(
+        [
+            "docker",
+            "build",
+            "-t",
+            "galaxyproject/galaxy-job-execution:integration",
+            "--build-arg",
+            "RUNTIME_SOURCE=source",
+            "--build-arg",
+            f"GALAXY_VERSION={VERSION}",
+            "-f",
+            os.path.join(galaxy_root, "packages", "job_execution", "Dockerfile"),
+            galaxy_root,
+        ]
+    )
+
 
 class MulledJobTestCases:
     """
@@ -30,32 +65,48 @@ class MulledJobTestCases:
     """
 
     dataset_populator: DatasetPopulator
+    credentials_populator: CredentialsPopulator
+    container_type: str
+
+    def _run_and_get_contents(self, tool_id: str, history_id: str):
+        run_response = self.dataset_populator.run_tool(tool_id, {}, history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{job_id}/metrics").json()
+        # would be nice if it wasn't just a list of unpredictable order ...
+        container_id = None
+        container_type = None
+        for metric in job_metrics:
+            if metric["name"] == "container_id":
+                container_id = metric["value"]
+            if metric["name"] == "container_type":
+                container_type = metric["value"]
+        assert container_id, "Job metrics did not include container_id"
+        assert container_type, "Job metrics did not include container_type"
+        assert container_type == self.container_type
+        return self.dataset_populator.get_history_dataset_content(
+            history_id, content_id=run_response["outputs"][0]["id"]
+        )
 
     def test_explicit(self, history_id: str) -> None:
         """
         tool having one package + one explicit container requirement
         """
-        self.dataset_populator.run_tool("mulled_example_explicit", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_explicit", history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_simple(self, history_id: str) -> None:
         """
         tool having one package requirement
         """
-        self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_simple", history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_explicit_invalid_case(self, history_id: str) -> None:
         """
         tool having one package + one (invalid? due to capitalization) explicit container requirement
         """
-        self.dataset_populator.run_tool("mulled_example_invalid_case", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_invalid_case", history_id)
         assert "0.7.15-r1140" in output
 
 
@@ -72,7 +123,7 @@ class ContainerizedIntegrationTestCase(IntegrationTestCase):
         disable_dependency_resolution(config)
 
 
-def disable_dependency_resolution(config: Dict[str, Any]) -> None:
+def disable_dependency_resolution(config: dict[str, Any]) -> None:
     # Disable tool dependency resolution.
     config["tool_dependency_dir"] = "none"
     config["conda_auto_init"] = False
@@ -84,7 +135,7 @@ def skip_if_container_type_unavailable(cls) -> None:
         raise unittest.SkipTest(f"Executable '{cls.container_type}' not found on PATH")
 
 
-class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases, ConfiguresDatabaseVault):
     dataset_populator: DatasetPopulator
     jobs_directory: str
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
@@ -98,6 +149,7 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
+        cls._configure_database_vault(config)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -106,6 +158,14 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
 
     def setUp(self) -> None:
         super().setUp()
+        self.credentials_populator = CredentialsPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def _setup_credentials_context(self, **kwargs):
+        kwargs.setdefault("tool_id", CREDENTIALS_TEST_TOOL)
+        kwargs.setdefault("variables", CONTAINER_TEST_VARIABLES)
+        kwargs.setdefault("secrets", CONTAINER_TEST_SECRETS)
+        return self.credentials_populator.setup_credentials_context(**kwargs)
 
     def test_container_job_environment(self) -> None:
         """
@@ -180,35 +240,85 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         }
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
-        create_response = self._get(
-            "dependency_resolvers/toolbox",
-            data={
-                "tool_ids": tool_ids,
-                "container_type": self.container_type,
-                "include_containers": True,
-                "index_by": "tools",
-            },
-            admin=True,
-        )
-        response = create_response.json()
-        assert len(response) == 1
-        status = response[0]["status"]
-        assert status[0]["model_class"] == "ContainerDependency"
-        assert status[0]["dependency_type"] == self.container_type
-        self._assert_container_description_identifier(
-            status[0]["container_description"]["identifier"],
-            "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-        )
+        self._assert_mulled_image_built(MULLED_EXAMPLE_MULTI_1_HASH)
 
-    def _assert_container_description_identifier(self, identifier: str, expected_hash: str):
+    def _assert_mulled_image_built(self, expected_hash: str) -> None:
         """
-        function to check the identifier of container against a mulled hash
-        here we assert that locally built containers are cached in the "local"
-        namespace as if they were from quay.io
+        check that the build cached an image in the "local" namespace, as if it came from quay.io
 
         may need to be overwritten in derived classes.
         """
-        assert identifier == f"quay.io/local/{expected_hash}"
+        identifiers = [image.image_identifier for image in list_docker_cached_mulled_images(namespace="local")]
+        assert f"quay.io/local/{expected_hash}" in identifiers
+
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container(self) -> None:
+        """
+        Test that tool credentials are passed as environment variables into containerized environments.
+        """
+        credentials_context = self._setup_credentials_context()
+
+        # Run the containerized tool that outputs credential environment variables
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool(
+                "secret_tool", {}, history_id, credentials_context=credentials_context
+            )
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+
+            # Get the output - should contain the credential environment variables
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=run_response["outputs"][0]["id"]
+            )
+
+            # Verify that credential environment variables were available in the container
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
+
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container_in_workflow(self) -> None:
+        """
+        Test that tool credentials are passed into containerized workflow steps.
+
+        This is a regression test for issue #21715: when a tool using credentials
+        is run as a workflow step, the credentials are silently dropped because
+        ToolModule.execute() does not forward credentials_context.
+        """
+        self._setup_credentials_context()
+
+        workflow_yaml = """
+class: GalaxyWorkflow
+steps:
+  secret_step:
+    tool_id: secret_tool
+"""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                assert_ok=True,
+            )
+
+            # Get the single output dataset from the history
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            datasets = [item for item in history_contents if item["history_content_type"] == "dataset"]
+            assert len(datasets) == 1, f"Expected 1 output dataset, got {len(datasets)}"
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=datasets[0]["id"], timeout=EXTENDED_TIMEOUT
+            )
+
+            # Verify that credential environment variables were available in the container.
+            # This will fail because credentials are not forwarded through workflow execution.
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
 
 
 class TestMappingContainerResolver(IntegrationTestCase):
@@ -237,15 +347,13 @@ class TestMappingContainerResolver(IntegrationTestCase):
         disable_dependency_resolution(config)
         container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
         with open(container_resolvers_config_path, "w") as f:
-            f.write(
-                """
+            f.write("""
 - type: mapping
   mappings:
     - container_type: docker
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
-"""
-            )
+""")
         config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod
@@ -401,6 +509,6 @@ class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"
 
-    def _assert_container_description_identifier(self, identifier, expected_hash):
-        assert os.path.exists(identifier)
-        assert identifier.endswith(f"singularity/mulled/{expected_hash}")
+    def _assert_mulled_image_built(self, expected_hash: str) -> None:
+        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
+        assert os.path.exists(os.path.join(cache_directory, expected_hash))

@@ -34,7 +34,7 @@ type UntypedParameterReferenceTypes =
     | ToolInputUntypedParameterReference
     | PjaUntypedParameterReference;
 
-class UntypedParameter {
+export class UntypedParameter {
     name: string;
     references: UntypedParameterReferenceTypes[];
 

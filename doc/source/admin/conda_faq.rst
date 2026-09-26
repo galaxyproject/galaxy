@@ -4,7 +4,7 @@
 Conda for Tool Dependencies
 ===========================
 
-.. note:: This document describes configuring Galaxy using YAML based configuraiton
+.. note:: This document describes configuring Galaxy using YAML based configuration
   options. For Galaxy instances before version 18.01, `this variant
   <https://docs.galaxyproject.org/en/release_17.09/admin/conda_faq.html>`__ of this
   document will be more directly relatable.

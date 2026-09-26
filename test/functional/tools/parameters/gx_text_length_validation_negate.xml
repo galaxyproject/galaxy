@@ -1,0 +1,20 @@
+<tool id="gx_text_length_validation" name="gx_text_length_validation" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output';
+cat '$inputs' >> $inputs_json;
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    </configfiles>
+    <inputs>
+        <param name="parameter" type="text">
+            <validator type="length" min="2" max="10" negate="true" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="inputs_json" format="json" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

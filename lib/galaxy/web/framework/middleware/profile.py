@@ -2,6 +2,7 @@
 Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
+
 import cProfile
 import pstats
 import threading
@@ -37,7 +38,6 @@ show profile output: <a href="javascript:show_inline();">inline</a> | <a href="j
 
 
 class ProfileMiddleware:
-
     """
     Middleware that profiles all requests.
 
@@ -67,7 +67,7 @@ class ProfileMiddleware:
         prof = cProfile.Profile()
         prof.runctx("run_app()", globals(), locals())
         # Build up body with stats
-        body = "".join(body)
+        body = b"".join(body)
         headers = catch_response[1]
         content_type = response.header_value(headers, "content-type")
         if not content_type.startswith("text/html"):
@@ -77,7 +77,7 @@ class ProfileMiddleware:
         stats.strip_dirs()
         stats.sort_stats("time", "calls")
         output = pstats_as_html(stats, self.limit)
-        body += template % output
+        body += (template % output).encode("utf-8")
         return [body]
 
 
@@ -88,8 +88,7 @@ def pstats_as_html(stats, *sel_list):
     rval = []
     # Number of function calls, primitive calls, total time
     rval.append(
-        "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-        % (stats.total_calls, stats.prim_calls, stats.total_tt)
+        f"<div>{stats.total_calls} function calls ({stats.prim_calls} primitive) in {stats.total_tt:0.3f} CPU seconds</div>"
     )
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list(stats, sel_list)
@@ -171,8 +170,8 @@ def func_std_string(func_name):
         # special case for built-in functions
         name = func_name[2]
         if name.startswith("<") and name.endswith(">"):
-            return "{%s}" % name[1:-1]
+            return f"{{{name[1:-1]}}}"
         else:
             return name
     else:
-        return "%s:%d(%s)" % func_name
+        return "{}:{}({})".format(*func_name)

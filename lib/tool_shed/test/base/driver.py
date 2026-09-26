@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-"""Test driver for tool shed functional tests.
-"""
+"""Test driver for tool shed functional tests."""
 
 import os
 import string
 import tempfile
 
-# This is for the tool shed application.
-from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
+from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 
 log = driver_util.build_logger()
 
@@ -36,14 +35,63 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
+# Global variable to pass database contexts around - only needed for the numbered
+# Tool Shed tests that assert against the database instead of the API.
+tool_shed_context = None
+
+
+def build_shed_app(simple_kwargs):
+    """Build a Galaxy app object from a simple keyword arguments.
+
+    Construct paste style complex dictionary. Also setup "global" reference
+    to sqlalchemy database context for tool shed database.
+    """
+    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
+    # TODO: Simplify global_conf to match Galaxy above...
+    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
+    simple_kwargs["global_conf"] = driver_util.get_webapp_global_conf()
+
+    app = ToolshedUniverseApplication(**simple_kwargs)
+    log.info("Embedded Toolshed application started")
+
+    global tool_shed_context
+    tool_shed_context = app.model.context
+
+    return app
+
+
+def build_shed_web_app(simple_kwargs, init_fast_app=init_tool_shed_fast_app) -> driver_util.WebAppBundle:
+    """Build the tool shed application objects for an embedded test server."""
+    app = build_shed_app(simple_kwargs)
+    # build_shed_app records the global_conf it handed the application here.
+    wsgi_webapp = toolshedbuildapp.app_factory(
+        simple_kwargs["global_conf"],
+        app=app,
+        use_translogger=False,
+        static_enabled=True,
+        register_shutdown_at_exit=False,
+    )
+    return driver_util.WebAppBundle(app=app, asgi_app=init_fast_app(wsgi_webapp, app))
 
 
 class ToolShedTestDriver(driver_util.TestDriver):
     """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
-    def setup(self):
+    def setup(self) -> None:
         """Entry point for test driver script."""
+        self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
+        if not self.external_shed:
+            self._setup_local()
+        else:
+            # Going to also need to set TOOL_SHED_TEST_HOST.
+            assert os.environ["TOOL_SHED_TEST_HOST"]
+
+    def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
+
+        # disable sensitive request limiting for the test suite
+        os.environ["TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT"] = "10000/second"
+
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
             os.mkdir(tool_shed_test_tmp_dir)
@@ -72,19 +120,22 @@ class ToolShedTestDriver(driver_util.TestDriver):
             os.environ["GALAXY_TEST_TOOL_DATA_PATH"] = tool_data_path
         galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
         shed_file_path = os.path.join(shed_db_path, "files")
-        hgweb_config_file_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
+        whoosh_index_dir = os.path.join(shed_db_path, "toolshed_whoosh_indexes")
+        hgweb_config_dir = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         new_repos_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_shed_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_migrated_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
-        hgweb_config_dir = hgweb_config_file_path
+        shed_email_path = os.path.join(tool_shed_test_tmp_dir, "email.json")
+        os.environ["TOOL_SHED_TEST_EMAIL_PATH"] = shed_email_path
         os.environ["TEST_HG_WEB_CONFIG_DIR"] = hgweb_config_dir
         print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
         kwargs = dict(
             admin_users="test@bx.psu.edu",
             bootstrap_admin_api_key=get_admin_api_key(),
-            allow_user_creation=True,
+            allow_local_account_creation=True,
             allow_user_deletion=True,
+            config_hg_for_dev=True,  # Allow hg push without authentication for tests
             datatype_converters_config_file="datatype_converters_conf.xml.sample",
             file_path=shed_file_path,
             hgweb_config_dir=hgweb_config_dir,
@@ -93,10 +144,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
             new_file_path=new_repos_path,
             running_functional_tests=True,
             shed_tool_data_table_config=shed_tool_data_table_conf_file,
-            smtp_server="smtp.dummy.string.tld",
+            smtp_server=f"mock_emails_to_path://{shed_email_path}",
             email_from="functional@localhost",
-            tool_parse_help=False,
             use_heartbeat=False,
+            whoosh_index_dir=whoosh_index_dir,
         )
         kwargs.update(toolshed_database_conf)
         # Generate the tool_data_table_conf.xml file.
@@ -109,8 +160,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
         tool_shed_server_wrapper = driver_util.launch_server(
-            app_factory=lambda: driver_util.build_shed_app(kwargs),
-            webapp_factory=toolshedbuildapp.app_factory,
+            lambda: build_shed_web_app(kwargs),
             galaxy_config=kwargs,
             prefix="TOOL_SHED",
         )
@@ -118,8 +168,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
         log.info(f"Functional tests will be run against {tool_shed_test_host}:{tool_shed_test_port}")
+        # The assigned port is only available after startup.
+        tool_shed_server_wrapper.app.config.tool_shed_url = f"http://{tool_shed_test_host}:{tool_shed_test_port}"
 
-        # Used by get_filename in tool shed's twilltestcase
+        # Used by get_filename in tool shed's testcase
         if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
             os.environ["TOOL_SHED_TEST_FILE_DIR"] = driver_util.TOOL_SHED_TEST_DATA
 
@@ -171,8 +223,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxy_server_wrapper = driver_util.launch_server(
-                app_factory=lambda: driver_util.build_galaxy_app(kwargs),
-                webapp_factory=galaxy_app_factory,
+                lambda: driver_util.WebAppBundle.from_galaxy_web_app(driver_util.build_galaxy_web_app(kwargs)),
                 galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")

@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export class Services {
     constructor(options = {}) {
@@ -30,12 +31,13 @@ export class Services {
         }
     }
 
-    async getFilteredFolderContents(id, excluded, searchText) {
+    async getFilteredFolderContents(id, excluded, searchText, limit) {
         // The intent of this method is to get folder contents applying
-        // seachText filters only; we explicitly set limit to 0
+        // seachText filters only; limit should match the total number of
+        // items in the folder, so that all items are returned.
         const config = {
             params: {
-                limit: 0,
+                limit,
             },
         };
         searchText = searchText?.trim();

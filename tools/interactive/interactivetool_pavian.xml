@@ -1,4 +1,5 @@
 <tool id="interactive_tool_pavian" tool_type="interactive" name="Pavian" version="1.0" profile="22.01">
+    <icon src="pavian.png" />
     <description>Interactive analysis of metagenomics data</description>
     <requirements>
         <container type="docker">quay.io/galaxy/pavian:0.1</container>
@@ -31,8 +32,8 @@ options(pavian.server_dir="/home/shiny/")
         ]]></configfile>
     </configfiles>
     <inputs>
-        <param name="infile" type="data" multiple="true" optional="true" format="tabular" 
-            label="Kraken and MetaPhlAn-style report(s)" 
+        <param name="infile" type="data" multiple="true" optional="true" format="tabular"
+            label="Kraken and MetaPhlAn-style report(s)"
             help="Centrifuge results can be used after running centrifuge-kreport on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output file"/>
     </inputs>
     <outputs>

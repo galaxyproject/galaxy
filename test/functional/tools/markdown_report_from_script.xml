@@ -1,0 +1,30 @@
+<tool id="markdown_report_from_script" name="markdown_report_from_script" version="1.0">
+    <command><![CDATA[
+        echo "Some contents for standard output";
+        echo "Hello World" > '$output_text';
+        cp '$__tool_directory__/data/1.bed' '$output_table';
+        cp '$__tool_directory__/data/rgWebLogo3_test.jpg' '$output_image';
+        python '$__tool_directory__/markdown_report_simple_script.py'
+    ]]></command>
+    <inputs>
+        <param name="title" type="text" label="Title"/>
+    </inputs>
+    <outputs>
+        <data name="output_text" format="txt"/>
+        <data name="output_image" format="jpg"/>
+        <data name="output_table" format="tsv"/>
+        <data name="output_report" format="tool_markdown" from_work_dir="output_report.md" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="title" value="foobar" />
+            <output name="output_report" ftype="tool_markdown">
+                <assert_contents>
+                    <has_line line="# Dynamically Generated Report" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

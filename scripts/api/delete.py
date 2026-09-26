@@ -4,6 +4,7 @@ Generic DELETE/delete script
 
 usage: delete.py key url
 """
+
 import sys
 
 from common import delete

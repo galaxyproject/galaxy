@@ -5,16 +5,16 @@ import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
 
-const { currentTheme, setCurrentTheme } = useCurrentTheme();
-const { config, isLoaded } = useConfig();
+const { currentTheme, setCurrentTheme, settingTheme } = useCurrentTheme();
+const { config, isConfigLoaded } = useConfig();
 
 const show = ref(false);
 const currentValue = computed({
     get: () => {
-        return currentTheme;
+        return currentTheme.value;
     },
-    set: (theme) => {
-        setCurrentTheme(theme);
+    set: async (theme) => {
+        await setCurrentTheme(theme);
     },
 });
 
@@ -23,25 +23,26 @@ function getLogo(themeDetails) {
 }
 
 watch(
-    () => isLoaded.value,
-    () => {
+    () => isConfigLoaded.value,
+    async () => {
         const themes = Object.keys(config.value.themes);
         show.value = themes?.length > 1 ?? false;
         if (!themes.includes(currentTheme.value)) {
-            setCurrentTheme(themes[0]);
+            await setCurrentTheme(themes[0]);
         }
-    }
+    },
 );
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3 overflow-auto">
+    <b-card :show="show" class="mr-3 overflow-auto reset-theme-variables">
         <b-form-radio-group v-model="currentValue">
             <b-form-radio
                 v-for="(themeDetails, theme, index) in config.themes"
                 :key="theme"
                 :value="theme"
-                class="mb-2">
+                class="mb-2"
+                :disabled="settingTheme">
                 <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div :style="themeDetails" class="theme-masthead">
@@ -56,11 +57,10 @@ watch(
 </template>
 
 <style lang="scss" scoped>
-@import "~bootstrap/scss/bootstrap.scss";
-@import "custom_theme_variables.scss";
+@import "@/style/scss/theme/blue.scss";
 .theme-element {
-    @extend .rounded;
-    @extend .p-1;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
 }
 .theme-masthead {
     @extend .theme-element;

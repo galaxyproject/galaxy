@@ -3,10 +3,10 @@ import logging
 import os
 import time
 from collections import namedtuple
-
-import requests
+from typing import TYPE_CHECKING
 
 from galaxy.util import (
+    requests,
     sockets,
     sqlite,
     unique_id,
@@ -17,6 +17,10 @@ from galaxy.util.lazy_process import (
     NoOpLazyProcess,
 )
 from galaxy.web.framework import url_for
+
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -32,23 +36,20 @@ class ProxyManager:
         "port",
     )
 
-    def __init__(self, config):
-        for option in [
-            "manage_dynamic_proxy",
-            "dynamic_proxy_bind_port",
-            "dynamic_proxy_bind_ip",
-            "dynamic_proxy_debug",
-            "dynamic_proxy_external_proxy",
-            "dynamic_proxy_prefix",
-            "proxy_session_map",
-            "dynamic_proxy",
-            "cookie_path",
-            "dynamic_proxy_golang_noaccess",
-            "dynamic_proxy_golang_clean_interval",
-            "dynamic_proxy_golang_docker_address",
-            "dynamic_proxy_golang_api_key",
-        ]:
-            setattr(self, option, getattr(config, option))
+    def __init__(self, config: "GalaxyAppConfiguration"):
+        self.manage_dynamic_proxy = config.manage_dynamic_proxy
+        self.dynamic_proxy_bind_port = config.dynamic_proxy_bind_port
+        self.dynamic_proxy_bind_ip = config.dynamic_proxy_bind_ip
+        self.dynamic_proxy_debug = config.dynamic_proxy_debug
+        self.dynamic_proxy_external_proxy = config.dynamic_proxy_external_proxy
+        self.dynamic_proxy_prefix = config.dynamic_proxy_prefix
+        self.proxy_session_map = config.proxy_session_map
+        self.dynamic_proxy = config.dynamic_proxy
+        self.cookie_path = config.cookie_path
+        self.dynamic_proxy_golang_noaccess = config.dynamic_proxy_golang_noaccess
+        self.dynamic_proxy_golang_clean_interval = config.dynamic_proxy_golang_clean_interval
+        self.dynamic_proxy_golang_docker_address = config.dynamic_proxy_golang_docker_address
+        self.dynamic_proxy_golang_api_key = config.dynamic_proxy_golang_api_key
 
         if self.manage_dynamic_proxy:
             self.lazy_process = self.__setup_lazy_process(config)
@@ -65,7 +66,7 @@ class ProxyManager:
 
     def setup_proxy(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         host=DEFAULT_PROXY_TO_HOST,
         port=None,
         proxy_prefix="",
@@ -97,7 +98,7 @@ class ProxyManager:
             host = host[0 : host.index(":")]
         scheme = trans.request.scheme
         if not self.dynamic_proxy_external_proxy:
-            proxy_url = "%s://%s:%d" % (scheme, host, self.dynamic_proxy_bind_port)
+            proxy_url = f"{scheme}://{host}:{self.dynamic_proxy_bind_port}"
         else:
             proxy_url = f"{scheme}://{host}{proxy_prefix}"
         return {
@@ -106,14 +107,14 @@ class ProxyManager:
             "proxied_host": proxy_requests.host,
         }
 
-    def update_proxy(self, trans, **kwargs):
+    def update_proxy(self, trans: "GalaxyWebTransaction", **kwargs):
         authentication = AuthenticationToken(trans)
         for k in kwargs.keys():
             if k not in self.valid_update_keys:
                 raise Exception(f"Invalid proxy request update key: {k}")
         return self.proxy_ipc.update_requests(authentication, **kwargs)
 
-    def query_proxy(self, trans):
+    def query_proxy(self, trans: "GalaxyWebTransaction"):
         authentication = AuthenticationToken(trans)
         return self.proxy_ipc.fetch_requests(authentication)
 
@@ -161,11 +162,7 @@ class GolangProxyLauncher:
         args = [
             "gxproxy",  # Must be on path. TODO: wheel?
             "--listenAddr",
-            "%s:%d"
-            % (
-                config.dynamic_proxy_bind_ip,
-                config.dynamic_proxy_bind_port,
-            ),
+            f"{config.dynamic_proxy_bind_ip}:{config.dynamic_proxy_bind_port}",
             "--listenPath",
             "/".join(((config.cookie_path or url_for("/")), config.dynamic_proxy_prefix)),
             "--cookieName",
@@ -187,7 +184,7 @@ class GolangProxyLauncher:
 
 
 class AuthenticationToken:
-    def __init__(self, trans):
+    def __init__(self, trans: "GalaxyWebTransaction"):
         self.cookie_name = SECURE_COOKIE
         self.cookie_value = trans.get_cookie(self.cookie_name)
 
@@ -198,7 +195,7 @@ class ProxyRequests:
             host = DEFAULT_PROXY_TO_HOST
         if port is None:
             port = sockets.unused_port()
-            log.info("Obtained unused port %d" % port)
+            log.info("Obtained unused port %d", port)
         self.host = host
         self.port = port
 
@@ -280,14 +277,12 @@ class SqliteProxyIpc:
                 c = conn.cursor()
                 try:
                     # Create table
-                    c.execute(
-                        """CREATE TABLE gxproxy2
+                    c.execute("""CREATE TABLE gxproxy2
                                  (key text PRIMARY KEY,
                                   host text,
                                   port integer,
                                   container_ids text,
-                                  container_interface text)"""
-                    )
+                                  container_interface text)""")
                 except Exception:
                     pass
                 delete = """DELETE FROM gxproxy2 WHERE key=?"""

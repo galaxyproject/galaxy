@@ -1,8 +1,11 @@
-<tool id="join1" name="Join two Datasets" version="2.1.3">
+<tool id="join1" name="Join two Datasets" version="2.1.3" profile="24.2">
   <description>side by side on a specified field</description>
   <requirements>
-    <requirement type="package" version="19.9.0">galaxy-util</requirement>
+    <requirement type="package" version="25.0.2">galaxy-util</requirement>
   </requirements>
+  <required_files>
+    <include path="join.py"/>
+  </required_files>
   <command detect_errors="aggressive">
     python '$__tool_directory__/join.py' '$input1' '$input2' $field1 $field2 '$out_file1' $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file $header
   </command>
@@ -95,7 +98,9 @@ ${json.dumps( __fill_options )}
       <param name="field2" value="2"/>
       <param name="unmatched" value=""/>
       <param name="partial" value=""/>
-      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="no_fill"/>
+      </conditional>
       <output name="out_file1" file="joiner_out1.bed"/>
     </test>
     <test>
@@ -103,9 +108,11 @@ ${json.dumps( __fill_options )}
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="Yes"/>
-      <param name="partial" value="Yes"/>
-      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <param name="unmatched" value="-u"/>
+      <param name="partial" value="-p"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="no_fill"/>
+      </conditional>
       <output name="out_file1" file="joiner_out2.bed"/>
     </test>
     <test>
@@ -113,12 +120,16 @@ ${json.dumps( __fill_options )}
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="Yes"/>
-      <param name="partial" value="Yes"/>
-      <param name="fill_empty_columns_switch" value="fill_empty"/>
-      <param name="fill_columns_by" value="fill_all"/>
-      <param name="column_fill_type" value="single_fill_value"/>
-      <param name="fill_value" value="~"/>
+      <param name="unmatched" value="-u"/>
+      <param name="partial" value="-p"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="fill_empty"/>
+        <param name="fill_columns_by" value="fill_all"/>
+        <conditional name="do_fill_empty_columns">
+          <param name="column_fill_type" value="single_fill_value"/>
+          <param name="fill_value" value="~"/>
+        </conditional>
+      </conditional>
       <output name="out_file1" file="joiner_out3.bed"/>
     </test>
     <test>
@@ -126,15 +137,23 @@ ${json.dumps( __fill_options )}
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
       <param name="field2" value="2"/>
-      <param name="unmatched" value="Yes"/>
-      <param name="partial" value="Yes"/>
-      <param name="fill_empty_columns_switch" value="fill_empty"/>
-      <param name="fill_columns_by" value="fill_all"/>
-      <param name="column_fill_type" value="fill_value_by_column"/>
-      <param name="column_number1" value="6"/>
-      <param name="fill_value1" value="+"/>
-      <param name="column_number2" value="1"/>
-      <param name="fill_value2" value="NoChrom"/>
+      <param name="unmatched" value="-u"/>
+      <param name="partial" value="-p"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="fill_empty"/>
+        <param name="fill_columns_by" value="fill_all"/>
+        <conditional name="do_fill_empty_columns">
+          <param name="column_fill_type" value="fill_value_by_column"/>
+          <repeat name="column_fill1">
+            <param name="column_number1" value="6"/>
+            <param name="fill_value1" value="+"/>
+          </repeat>
+          <repeat name="column_fill2">
+            <param name="column_number2" value="1"/>
+            <param name="fill_value2" value="NoChrom"/>
+          </repeat>
+        </conditional>
+      </conditional>
       <output name="out_file1" file="joiner_out4.bed"/>
     </test>
     <test>
@@ -145,7 +164,9 @@ ${json.dumps( __fill_options )}
       <param name="unmatched" value=""/>
       <param name="partial" value=""/>
       <param name="header" value="-H"/>
-      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="no_fill"/>
+      </conditional>
       <output name="out_file1" file="joiner_out5.tab"/>
     </test>
     <test>
@@ -153,13 +174,17 @@ ${json.dumps( __fill_options )}
       <param name="input2" value="joiner_header_in2.tab"/>
       <param name="field1" value="4"/>
       <param name="field2" value="1"/>
-      <param name="unmatched" value="Yes"/>
-      <param name="partial" value="Yes"/>
+      <param name="unmatched" value="-u"/>
+      <param name="partial" value="-p"/>
       <param name="header" value="-H"/>
-      <param name="fill_empty_columns_switch" value="fill_empty"/>
-      <param name="fill_columns_by" value="fill_all"/>
-      <param name="column_fill_type" value="single_fill_value"/>
-      <param name="fill_value" value="."/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="fill_empty"/>
+        <param name="fill_columns_by" value="fill_all"/>
+        <conditional name="do_fill_empty_columns">
+          <param name="column_fill_type" value="single_fill_value"/>
+          <param name="fill_value" value="."/>
+        </conditional>
+      </conditional>
       <output name="out_file1" file="joiner_out6.tab"/>
     </test>
     <test>
@@ -170,7 +195,9 @@ ${json.dumps( __fill_options )}
       <param name="unmatched" value=""/>
       <param name="partial" value=""/>
       <param name="header" value=""/>
-      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <conditional name="fill_empty_columns">
+        <param name="fill_empty_columns_switch" value="no_fill"/>
+      </conditional>
       <output name="out_file1" file="joiner_out7.tab"/>
     </test>
   </tests>

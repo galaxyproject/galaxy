@@ -1,8 +1,6 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
+    Literal,
     Union,
 )
 
@@ -12,29 +10,31 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirements,
 )
 from galaxy.util import bunch
-from .mulled.mulled_build import DEFAULT_CHANNELS
+from .mulled.util import DEFAULT_CHANNELS
 
 
 class AppInfo:
     def __init__(
         self,
-        galaxy_root_dir: Optional[str] = None,
-        default_file_path: Optional[str] = None,
-        tool_data_path: Optional[str] = None,
-        shed_tool_data_path: Optional[str] = None,
+        galaxy_root_dir: str | None = None,
+        default_file_path: str | None = None,
+        tool_data_path: str | None = None,
+        galaxy_data_manager_data_path: str | None = None,
+        shed_tool_data_path: str | None = None,
         outputs_to_working_directory: bool = False,
-        container_image_cache_path: Optional[str] = None,
-        library_import_dir: Optional[str] = None,
+        container_image_cache_path: str | None = None,
+        library_import_dir: str | None = None,
         enable_mulled_containers: bool = False,
-        container_resolvers_config_file: Optional[str] = None,
-        container_resolvers_config_dict: Optional[Dict[str, Any]] = None,
-        involucro_path: Optional[str] = None,
+        container_resolvers_config_file: str | None = None,
+        container_resolvers_config_dict: list[Any] | None = None,
+        involucro_path: str | None = None,
         involucro_auto_init: bool = True,
-        mulled_channels: List[str] = DEFAULT_CHANNELS,
+        mulled_channels: list[str] = DEFAULT_CHANNELS,
     ) -> None:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
         self.shed_tool_data_path = shed_tool_data_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
@@ -55,17 +55,23 @@ class ToolInfo:
 
     def __init__(
         self,
-        container_descriptions: Optional[List["ContainerDescription"]] = None,
-        requirements: Optional[Union["ToolRequirements", List["ToolRequirement"]]] = None,
+        container_descriptions: list["ContainerDescription"] | None = None,
+        requirements: Union["ToolRequirements", list["ToolRequirement"]] | None = None,
         requires_galaxy_python_environment: bool = False,
         env_pass_through=None,
         guest_ports=None,
-        tool_id: Optional[str] = None,
-        tool_version: Optional[str] = None,
+        tool_id: str | None = None,
+        tool_version: str | None = None,
         profile: float = -1,
     ):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
+            env_pass_through = [
+                "GALAXY_SLOTS",
+                "GALAXY_MEMORY_MB",
+                "GALAXY_MEMORY_MB_PER_SLOT",
+                "GALAXY_MEMORY_GB",
+                "GALAXY_MEMORY_GB_PER_SLOT",
+            ]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -79,6 +85,10 @@ class ToolInfo:
         self.tool_version = tool_version
         self.profile = profile
 
+    @property
+    def disable_galaxy_root_mount(self):
+        return self.tool_id == "__SET_METADATA__"
+
 
 class JobInfo:
     def __init__(
@@ -88,7 +98,9 @@ class JobInfo:
         job_directory,
         tmp_directory,
         home_directory,
-        job_directory_type,
+        job_directory_type: Literal["galaxy", "pulsar"],
+        output_paths: set[str],
+        job_type: Literal["tool", "prolog", "epilog"] = "tool",
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -97,7 +109,9 @@ class JobInfo:
         self.job_directory = job_directory
         self.tmp_directory = tmp_directory
         self.home_directory = home_directory
-        self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
+        self.job_directory_type = job_directory_type
+        self.job_type = job_type
+        self.output_paths = output_paths
 
 
 class DependenciesDescription:
@@ -122,13 +136,12 @@ class DependenciesDescription:
         return dict(
             requirements=[r.to_dict() for r in self.requirements],
             installed_tool_dependencies=[
-                DependenciesDescription._toolshed_install_dependency_to_dict(d)
-                for d in self.installed_tool_dependencies
+                self._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies
             ],
         )
 
-    @staticmethod
-    def from_dict(as_dict):
+    @classmethod
+    def from_dict(cls, as_dict):
         if as_dict is None:
             return None
 
@@ -136,11 +149,9 @@ class DependenciesDescription:
         requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get("installed_tool_dependencies", [])
         installed_tool_dependencies = list(
-            map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
+            map(cls._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
         )
-        return DependenciesDescription(
-            requirements=requirements, installed_tool_dependencies=installed_tool_dependencies
-        )
+        return cls(requirements=requirements, installed_tool_dependencies=installed_tool_dependencies)
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):

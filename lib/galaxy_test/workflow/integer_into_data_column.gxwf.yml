@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+  column:
+    type: integer
+outputs:
+  output:
+    outputSource: data_column_step/output
+steps:
+  data_column_step:
+    tool_id: gx_data_column
+    in:
+      ref_parameter: input
+      parameter: column

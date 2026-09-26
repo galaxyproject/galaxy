@@ -25,6 +25,18 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         json_response = index_response.json()
         assert len(json_response) > 0
 
+    def test_index_returns_encoded_ids(self):
+        quota = self._create_quota_with_name("test-index-encoded-quota")
+        created_quota_id = quota["id"]
+        index_response = self._get("quotas")
+        index_response.raise_for_status()
+        json_response = index_response.json()
+        assert len(json_response) > 0
+        quota_ids = [quota["id"] for quota in json_response]
+        for quota_id in quota_ids:
+            assert isinstance(quota_id, str)
+        assert created_quota_id in quota_ids
+
     def test_index_deleted(self):
         quota = self._create_quota_with_name("test-index-deleted-quota")
         quota_id = quota["id"]
@@ -72,6 +84,62 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         show_response.raise_for_status()
         json_response = show_response.json()
         assert json_response["name"] == new_quota_name
+
+    def test_update_description(self):
+        quota_name = "test-update-quota-description"
+        quota = self._create_quota_with_name(quota_name)
+        quota_id = quota["id"]
+
+        # update description (one needs to specify a name even if should not be changed)
+        quota_description = "description of test-updated-quota-name"
+        update_payload = {
+            "name": quota_name,
+            "description": quota_description,
+        }
+        put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
+        put_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        json_response = show_response.json()
+        assert json_response["name"] == quota_name
+        assert json_response["description"] == quota_description
+
+    def test_update_users(self):
+        user_email = "test-update-quota-users@galaxy.test"
+        user = self.galaxy_interactor.ensure_user_with_email(user_email)
+        quota_id = self._create_quota_with_name("test-update-quota-users")["id"]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_users": [user["id"]]}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"name": "test-update-quota-users-renamed"}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_groups": []}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_users": []}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == []
+
+    def test_show_with_group(self):
+        group_name = "test-show-quota-group"
+        group_response = self._post("groups", data={"name": group_name}, json=True)
+        group_response.raise_for_status()
+        group_id = group_response.json()[0]["id"]
+        payload = self._build_quota_payload_with_name("test-show-quota-with-group")
+        payload["in_groups"].append(group_id)
+        create_response = self._post("quotas", data=payload, json=True)
+        create_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{create_response.json()['id']}")
+        show_response.raise_for_status()
+        groups = [association["group"] for association in show_response.json()["groups"]]
+        assert [(group["id"], group["name"]) for group in groups] == [(group_id, group_name)]
 
     def test_delete(self):
         quota_name = "test-delete-quota"
@@ -184,6 +252,13 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         labels = [q["quota_source_label"] for q in quotas]
         assert "mylabel" in labels
 
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator._get_contents_request(
+                history_id, data={"q": "quota_source_label-eq", "qv": "invalid", "v": "dev"}
+            )
+        assert response.status_code == 400
+        assert "unparsable value for filter" in response.json()["err_msg"]
+
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)
         create_response = self._post("quotas", data=payload, json=True)
@@ -201,6 +276,11 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
             "in_users": [],
             "in_groups": [],
         }
+
+    def _quota_user_emails(self, quota_id: str) -> list[str]:
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        return [association["user"]["email"] for association in show_response.json()["users"]]
 
     def _delete_and_purge(self, quota_id):
         data = {"purge": "true"}

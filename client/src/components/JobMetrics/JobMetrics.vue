@@ -1,54 +1,39 @@
 <script setup lang="ts">
-import { computed, ref, unref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
 
+import Heading from "../Common/Heading.vue";
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
 
-const props = defineProps({
-    datasetFilesize: {
-        type: Number,
-        default: 0,
-    },
-    datasetId: {
-        type: String,
-        default: "",
-    },
-    datasetType: {
-        type: String,
-        default: "hda",
-    },
-    includeTitle: {
-        type: Boolean,
-        default: true,
-    },
-    jobId: {
-        type: String,
-        default: null,
-    },
-    powerUsageEffectiveness: {
-        type: Number,
-        default: worldwidePowerUsageEffectiveness,
-    },
-    geographicalServerLocationName: {
-        type: String,
-        default: "GLOBAL",
-    },
-    carbonIntensity: {
-        type: Number,
-        default: worldwideCarbonIntensity,
-    },
-    shouldShowAwsEstimate: {
-        type: Boolean,
-        default: false,
-    },
-    shouldShowCarbonEmissionsEstimates: {
-        type: Boolean,
-        default: true,
-    },
+interface Props {
+    datasetFilesize?: number;
+    datasetId?: string;
+    datasetType?: "hda" | "ldda";
+    includeTitle?: boolean;
+    jobId?: string | null;
+    powerUsageEffectiveness?: number;
+    geographicalServerLocationName?: string;
+    carbonIntensity?: number;
+    shouldShowAwsEstimate?: boolean;
+    shouldShowCarbonEmissionEstimates?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    datasetFilesize: 0,
+    datasetId: "",
+    datasetType: "hda",
+    includeTitle: true,
+    jobId: null,
+    powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
+    geographicalServerLocationName: "GLOBAL",
+    carbonIntensity: worldwideCarbonIntensity,
+    shouldShowAwsEstimate: false,
+    shouldShowCarbonEmissionEstimates: true,
 });
 
 const jobMetricsStore = useJobMetricsStore();
@@ -57,10 +42,17 @@ async function getJobMetrics() {
     if (props.jobId) {
         await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
     } else {
-        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType as "hda" | "ldda");
     }
 }
-getJobMetrics();
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true },
+);
 
 const ec2Instances = ref<EC2[]>();
 import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
@@ -88,7 +80,7 @@ const jobMetrics = computed(() => {
 });
 
 const jobMetricsGroupedByPluginType = computed(() => {
-    const pluginGroups: Record<string, any> = {};
+    const pluginGroups: Record<string, Record<string, string>> = {};
 
     for (const metric of jobMetrics.value) {
         // new group found
@@ -98,7 +90,9 @@ const jobMetricsGroupedByPluginType = computed(() => {
 
         // Add metric to group
         const group = pluginGroups[metric.plugin];
-        group[metric.title] = metric.value;
+        if (group) {
+            group[metric.title] = metric.value;
+        }
     }
 
     return pluginGroups;
@@ -176,7 +170,7 @@ const estimatedServerInstance = computed(() => {
 
 <template>
     <div v-if="pluginsSortedByPluginType.length > 0">
-        <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
+        <Heading v-if="includeTitle" id="job-metrics-heading" h1 separator inline size="md"> Job Metrics </Heading>
 
         <div v-for="pluginType in pluginsSortedByPluginType" :key="pluginType" class="metrics_plugin">
             <h3 class="metrics_plugin_title m-sm">{{ pluginType }}</h3>
@@ -194,17 +188,14 @@ const estimatedServerInstance = computed(() => {
         </div>
 
         <AwsEstimate
-            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances"
+            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
             :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"
@@ -213,4 +204,5 @@ const estimatedServerInstance = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
+    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
 </template>

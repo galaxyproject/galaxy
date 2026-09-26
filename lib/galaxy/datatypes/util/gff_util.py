@@ -1,6 +1,7 @@
 """
 Provides utilities for working with GFF files.
 """
+
 import copy
 
 from bx.intervals.io import (
@@ -20,7 +21,7 @@ from galaxy.util import unicodify
 FASTA_DIRECTIVE = "##FASTA"
 
 
-class GFFInterval(GenomicInterval):
+class GFFInterval(GenomicInterval):  # type: ignore[misc]  # bx-python is untyped
     """
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
@@ -55,11 +56,11 @@ class GFFInterval(GenomicInterval):
         # Handle feature, score column.
         self.feature_col = feature_col
         if self.nfields <= self.feature_col:
-            raise MissingFieldError("No field for feature_col (%d)" % feature_col)
+            raise MissingFieldError(f"No field for feature_col ({feature_col})")
         self.feature = self.fields[self.feature_col]
         self.score_col = score_col
         if self.nfields <= self.score_col:
-            raise MissingFieldError("No field for score_col (%d)" % score_col)
+            raise MissingFieldError(f"No field for score_col ({score_col})")
         self.score = self.fields[self.score_col]
 
         # GFF attributes.
@@ -170,7 +171,7 @@ class GFFFeature(GFFInterval):
         return lines
 
 
-class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
+class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):  # type: ignore[misc]  # bx-python is untyped
     """
     Reader wrapper that reads GFF intervals/lines and automatically converts
     them to BED format.
@@ -193,7 +194,7 @@ class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
         return interval
 
 
-class GFFReaderWrapper(NiceReaderWrapper):
+class GFFReaderWrapper(NiceReaderWrapper):  # type: ignore[misc]  # bx-python is untyped
     """
     Reader wrapper for GFF files.
 

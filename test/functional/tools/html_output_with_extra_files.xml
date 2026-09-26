@@ -1,0 +1,27 @@
+<tool id="html_output_with_extra_files" name="html_output_with_extra_files" version="1.0.0">
+    <command><![CDATA[
+mkdir -p '$output.extra_files_path' &&
+cp '$html_file' '$output' &&
+cp '$__tool_directory__/data/rgWebLogo3_test.jpg' '$output.extra_files_path/image.jpg'
+    ]]></command>
+    <configfiles>
+        <configfile name="html_file"><![CDATA[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title data-description="extra-files-test">Extra Files Test</title>
+</head>
+<body>
+    <main>
+       <h1 id="main-heading">HTML with Extra Files</h1>
+       <img id="extra-file-image" src="image.jpg" alt="test image" />
+    </main>
+</body>
+</html>
+        ]]></configfile>
+    </configfiles>
+    <outputs>
+        <data name="output" format="html" />
+    </outputs>
+</tool>

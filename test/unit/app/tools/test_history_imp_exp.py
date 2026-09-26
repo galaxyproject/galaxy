@@ -3,6 +3,7 @@ import os
 import tarfile
 import tempfile
 from shutil import rmtree
+from typing import Any
 from unittest.mock import Mock
 
 from sqlalchemy import select
@@ -10,9 +11,9 @@ from sqlalchemy import select
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
-from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.tools.actions.history_imp_exp import ImportHistoryToolAction
 from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
     JobImportHistoryArchiveWrapper,
@@ -29,6 +30,24 @@ HISTORY_ATTRS = """{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058
 JOBS_ATTRS = """[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]"""
 
 
+class ConcreteImportHistoryToolAction(ImportHistoryToolAction):
+    def get_output_name(self, *args: Any, **kwargs: Any) -> str:
+        raise NotImplementedError
+
+
+def test_import_history_action_reports_url_archive_source():
+    action = ConcreteImportHistoryToolAction()
+    archive_source = "https://example.org/history.tar.gz"
+    assert list(
+        action.iter_referenced_file_source_uris({"__ARCHIVE_TYPE__": "url", "__ARCHIVE_SOURCE__": archive_source})
+    ) == [archive_source]
+    assert not list(
+        action.iter_referenced_file_source_uris(
+            {"__ARCHIVE_TYPE__": "file", "__ARCHIVE_SOURCE__": "/tmp/history.tar.gz"}
+        )
+    )
+
+
 def t_data_path(name):
     return os.path.join(galaxy_directory(), "test-data", name)
 
@@ -39,10 +58,9 @@ def _run_jihaw_cleanup(archive_dir, app=None):
     job.user = model.User(email="test@test.org", password="test")
     job.tool_stderr = ""
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
-    app.model.context.current.add_all([job, jiha])
     session = app.model.context
-    with transaction(session):
-        session.commit()
+    session.add_all([job, jiha])
+    session.commit()
     jihaw = JobImportHistoryArchiveWrapper(app, job.id)  # yeehaw!
     return app, jihaw.cleanup_after_job()
 
@@ -51,7 +69,7 @@ def _mock_app(store_by="id"):
     app = MockApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
-    app.model.Dataset.object_store = app.object_store
+    model.Dataset.object_store = app.object_store
     return app
 
 
@@ -142,8 +160,7 @@ def test_export_dataset():
     sa_session.add(d2)
     sa_session.add(h)
     sa_session.add(j)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
     app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
@@ -172,9 +189,9 @@ def test_export_dataset():
     dataset_source = datasets[0].dataset.sources[0]
     assert dataset_source.source_uri == "http://google.com/mycooldata.txt"
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -209,8 +226,7 @@ def test_export_dataset_with_deleted_and_purged():
     sa_session.add(j1)
     sa_session.add(j2)
     sa_session.add(h)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     assert d1.deleted
 
@@ -248,8 +264,7 @@ def test_multi_inputs():
     sa_session.add(d3)
     sa_session.add(h)
     sa_session.add(j)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
     app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
@@ -275,9 +290,9 @@ def test_multi_inputs():
     for hid in [1, 2]:
         assert hid in hids
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -319,8 +334,7 @@ def test_export_collection_history():
     sa_session.add(hc1)
     sa_session.add(hc2)
     sa_session.add(j)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     imported_history = _import_export(app, h)
 
@@ -390,8 +404,7 @@ def test_export_collection_with_mapping_history():
     sa_session.add(hc2)
     sa_session.add(j1)
     sa_session.add(j2)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     implicit_collection_jobs = model.ImplicitCollectionJobs()
     j1.add_output_dataset_collection("out_file1", hc2)  # really?
@@ -411,8 +424,7 @@ def test_export_collection_with_mapping_history():
     sa_session.add(implicit_collection_jobs)
     sa_session.add(ija1)
     sa_session.add(ija2)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     imported_history = _import_export(app, h)
     assert len(imported_history.jobs) == 2
@@ -441,8 +453,7 @@ def test_export_collection_with_datasets_from_other_history():
     sa_session.add(d1)
     sa_session.add(d2)
     sa_session.add(hc1)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     imported_history = _import_export(app, h)
 
@@ -466,8 +477,7 @@ def test_export_collection_with_copied_datasets_and_overlapping_hids():
     sa_session.add(d1)
     sa_session.add(d2)
     sa_session.add(dataset_history)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     app.object_store.update_from_file(d1, file_name=t_data_path("1.txt"), create=True)
     app.object_store.update_from_file(d2, file_name=t_data_path("2.bed"), create=True)
@@ -489,8 +499,7 @@ def test_export_collection_with_copied_datasets_and_overlapping_hids():
     sa_session.add(d1_copy)
     sa_session.add(d2_copy)
     sa_session.add(hc1)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     _import_export(app, h)
     # Currently d1 and d1_copy would have conflicting paths in the tar file... this test verifies at least
@@ -511,16 +520,14 @@ def test_export_copied_collection():
     dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
 
     sa_session.add_all((dce1, dce2, d1, d2, hc1))
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     hc2 = hc1.copy(element_destination=h)
     h.add_pending_items()
     assert h.hid_counter == 7
 
     sa_session.add(hc2)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     assert hc2.copied_from_history_dataset_collection_association == hc1
 
@@ -549,8 +556,7 @@ def test_export_copied_objects_copied_outside_history():
     dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
 
     sa_session.add_all((dce1, dce2, d1, d2, hc1))
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     hc2 = hc1.copy(element_destination=h)
 
@@ -558,8 +564,7 @@ def test_export_copied_objects_copied_outside_history():
 
     other_h = model.History(name=h.name + "-other", user=h.user)
     sa_session.add(other_h)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     hc3 = hc2.copy(element_destination=other_h)
     other_h.add_pending_items()
@@ -567,8 +572,7 @@ def test_export_copied_objects_copied_outside_history():
     hc4 = hc3.copy(element_destination=h)
     sa_session.add(hc4)
     h.add_pending_items()
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     assert h.hid_counter == 10
 
@@ -610,8 +614,7 @@ def test_export_collection_hids():
     sa_session.add(d1)
     sa_session.add(d2)
     sa_session.add(hc1)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
 
     imported_history = _import_export(app, h)
 
@@ -673,13 +676,10 @@ def _import_export(app, h, dest_export=None):
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
     job = model.Job()
-    app.model.session.add(job, h)
     session = app.model.session
-    with transaction(session):
-        session.commit()
-    jeha = model.JobExportHistoryArchive.create_for_history(
-        h, job, app.model.context, app.object_store, compressed=True
-    )
+    session.add(job, h)
+    session.commit()
+    jeha = model.JobExportHistoryArchive.create_for_history(h, job, session, app.object_store, compressed=True)
     wrapper = JobExportHistoryArchiveWrapper(app, job.id)
     wrapper.setup_job(h, jeha.temp_directory)
 

@@ -2,15 +2,12 @@
 Deserialize Galaxy resources (hdas, ldas, datasets, genomes, etc.) from
 a dictionary of string data/ids (often from a query string).
 """
+
 import json
 import logging
 import weakref
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-    Union,
-)
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import galaxy.exceptions
 import galaxy.util
@@ -18,6 +15,7 @@ from galaxy.managers import (
     hdas as hda_manager,
     visualizations as visualization_manager,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,
@@ -25,13 +23,14 @@ from galaxy.model import (
 )
 from galaxy.util import bunch
 
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+
 log = logging.getLogger(__name__)
 
 
-ParameterPrimitiveType = Union[int, float, str]
-ParameterType = Union[
-    ParameterPrimitiveType, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization
-]
+ParameterPrimitiveType = int | float | str
+ParameterType = ParameterPrimitiveType | HistoryDatasetAssociation | LibraryDatasetDatasetAssociation | Visualization
 
 
 class ResourceParser:
@@ -46,7 +45,7 @@ class ResourceParser:
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
 
-    primitive_parsers: Dict[str, Callable[[str], ParameterPrimitiveType]] = {
+    primitive_parsers: dict[str, Callable[[str], ParameterPrimitiveType]] = {
         "str": lambda param: galaxy.util.sanitize_html.sanitize_html(param),
         "bool": lambda param: galaxy.util.string_as_bool(param),
         "int": int,
@@ -65,7 +64,9 @@ class ResourceParser:
             hda=app[hda_manager.HDAManager],
         )
 
-    def parse_parameter_dictionary(self, trans, param_config_dict, query_params, param_modifiers=None):
+    def parse_parameter_dictionary(
+        self, trans: "GalaxyWebTransaction", param_config_dict, query_params, param_modifiers=None
+    ):
         """
         Parse all expected params from the query dictionary `query_params`.
 
@@ -117,7 +118,7 @@ class ResourceParser:
 
         return resources
 
-    def parse_config(self, trans, param_config_dict, query_params):
+    def parse_config(self, trans: ProvidesUserContext, param_config_dict, query_params):
         """
         Return `query_params` dict parsing only JSON serializable params.
         Complex params such as models, etc. are left as the original query value.
@@ -134,8 +135,11 @@ class ResourceParser:
 
                 except Exception as exception:
                     log.warning(
-                        "Exception parsing visualization param from query: "
-                        + f"{param_name}, {config_val}, ({str(type(exception))}) {str(exception)}"
+                        "Exception parsing visualization param from query: %s, %s, (%s) %s",
+                        param_name,
+                        config_val,
+                        type(exception),
+                        exception,
                     )
                     config_val = None
 
@@ -152,21 +156,21 @@ class ResourceParser:
 
     # TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers(
-        self, trans, param_modifiers, query_params
-    ) -> Dict[str, Dict[str, Optional[ParameterType]]]:
+        self, trans: ProvidesUserContext, param_modifiers, query_params
+    ) -> dict[str, dict[str, ParameterType | None]]:
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
         """
         # only one level of modification - down that road lies madness
         # parse the modifiers out of query_params first since they modify the other params coming next
-        parsed_modifiers: Dict[str, Dict[str, Optional[ParameterType]]] = {}
+        parsed_modifiers: dict[str, dict[str, ParameterType | None]] = {}
         if not param_modifiers:
             return parsed_modifiers
         # precondition: expects a two level dictionary
         # { target_param_name -> { param_modifier_name -> { param_modifier_data }}}
         for target_param_name, modifier_dict in param_modifiers.items():
-            target_modifiers: Dict[str, Optional[ParameterType]] = {}
+            target_modifiers: dict[str, ParameterType | None] = {}
             parsed_modifiers[target_param_name] = target_modifiers
 
             for modifier_name, modifier_config in modifier_dict.items():
@@ -180,7 +184,7 @@ class ResourceParser:
 
         return parsed_modifiers
 
-    def parse_parameter_default(self, trans, param_config) -> Optional[ParameterType]:
+    def parse_parameter_default(self, trans: ProvidesUserContext, param_config) -> ParameterType | None:
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -195,13 +199,15 @@ class ResourceParser:
         #   (and adding this code to the xml parser)
         return self.parse_parameter(trans, param_config, default)
 
-    def parse_parameter(self, trans, expected_param_data, query_param, recurse=True, param_modifiers=None):
+    def parse_parameter(
+        self, trans: ProvidesUserContext, expected_param_data, query_param, recurse=True, param_modifiers=None
+    ):
         """
         Use data in `expected_param_data` to parse `query_param` from a string into
         a resource usable directly by a template.
         """
         param_type = expected_param_data.get("type")
-        parsed_param: Optional[ParameterType] = None
+        parsed_param: ParameterType | None = None
 
         if param_type in self.primitive_parsers:
             # TODO: what about param modifiers on primitives?

@@ -46,6 +46,6 @@ def test_singularity_container_test(tmp_path) -> None:
         "singularity",
         tmp_path,
     )
-    assert "samtools:1.0--1" in results["passed"]
-    assert "pybigwig:0.3.22--py36h54a71a5_0" in results["passed"]
-    assert "yasm:1.3.0--0" in results["notest"]
+    assert "samtools:1.0--1" in results["passed"], results
+    assert "pybigwig:0.3.22--py36h54a71a5_0" in results["passed"], results
+    assert "yasm:1.3.0--0" in results["notest"], results

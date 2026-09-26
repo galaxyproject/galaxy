@@ -115,7 +115,7 @@ class Uploader:
         all_files = [x.strip() for x in list(sys.stdin.readlines())]
 
         for idx, path in enumerate(all_files):
-            (dirName, fname) = path.rsplit(os.path.sep, 1)
+            dirName, fname = path.rsplit(os.path.sep, 1)
             if not os.path.exists(os.path.join(dirName, fname)):
                 continue
             # Figure out what the memo key will be early

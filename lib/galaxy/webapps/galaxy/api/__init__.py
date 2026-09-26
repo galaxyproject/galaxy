@@ -1,18 +1,19 @@
 """
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
+
 import inspect
+from collections.abc import (
+    AsyncGenerator,
+    Callable,
+)
 from enum import Enum
 from string import Template
 from typing import (
     Any,
-    AsyncGenerator,
     cast,
-    MutableMapping,
+    Literal,
     NamedTuple,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
 )
 from urllib.parse import (
@@ -21,9 +22,12 @@ from urllib.parse import (
 )
 
 from a2wsgi.wsgi import build_environ
+from a2wsgi.wsgi_typing import Environ
 from fastapi import (
+    APIRouter,
     Form,
     Header,
+    Path,
     Query,
     Request,
     Response,
@@ -36,12 +40,23 @@ from fastapi.security import (
     APIKeyCookie,
     APIKeyHeader,
     APIKeyQuery,
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
 )
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter
-from pydantic import ValidationError
+from fastapi.types import DecoratedCallable
+from pydantic import (
+    UUID4,
+    ValidationError,
+)
 from pydantic.main import BaseModel
-from starlette.datastructures import Headers
+from routes import (
+    Mapper,
+    request_config,
+)
+from starlette.datastructures import (
+    Headers,
+    URL,
+)
 from starlette.routing import (
     Match,
     NoMatchFound,
@@ -61,6 +76,7 @@ from galaxy import (
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
+    UserRequiredException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -68,8 +84,14 @@ from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.parameters import (
+    HasToolParameters,
+    to_json_schema_string,
+    ToolState,
+)
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.galaxy.api.cbv import cbv
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -79,6 +101,7 @@ from galaxy.work.context import (
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
+api_bearer_token = HTTPBearer(auto_error=False)
 
 
 def get_app() -> StructuredApp:
@@ -89,10 +112,12 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
+    app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
         app.model.unset_request_id(request_id)
+        app.install_model.unset_request_id(request_id)
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
@@ -109,9 +134,10 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> T:
-    def _do_resolve(request: Request):
-        return get_app().resolve(dep_type)
+def depends(dep_type: type[T], app=get_app_with_request_session) -> T:
+    async def _do_resolve(request: Request):
+        async for _dep in app():
+            yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
@@ -125,7 +151,7 @@ def get_session(
     session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
     security: IdEncodingHelper = depends(IdEncodingHelper),
     galaxysession: str = Security(api_key_cookie),
-) -> Optional[model.GalaxySession]:
+) -> model.GalaxySession | None:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
         if session_key:
@@ -138,7 +164,8 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
-    run_as: Optional[DecodedDatabaseIdField] = Header(
+    bearer_token: HTTPAuthorizationCredentials = Security(api_bearer_token),
+    run_as: DecodedDatabaseIdField | None = Header(
         default=None,
         title="Run as User",
         description=(
@@ -146,11 +173,13 @@ def get_api_user(
             "Only admins and designated users can make API calls on behalf of other users."
         ),
     ),
-) -> Optional[User]:
-    api_key = key or x_api_key
-    if not api_key:
+) -> User | None:
+    if api_key := key or x_api_key:
+        user = user_manager.by_api_key(api_key=api_key)
+    elif bearer_token:
+        user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)
+    else:
         return None
-    user = user_manager.by_api_key(api_key=api_key)
     if run_as:
         if user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)
@@ -160,12 +189,23 @@ def get_api_user(
 
 
 def get_user(
-    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
-    api_user=cast(Optional[User], Depends(get_api_user)),
-) -> Optional[User]:
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
+    api_user=cast(User | None, Depends(get_api_user)),
+) -> User | None:
     if galaxy_session:
         return galaxy_session.user
     return api_user
+
+
+def get_required_user(
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
+    api_user=cast(User | None, Depends(get_api_user)),
+) -> User:
+    if galaxy_session and (user := galaxy_session.user):
+        return user
+    if api_user:
+        return api_user
+    raise UserRequiredException
 
 
 class UrlBuilder:
@@ -178,17 +218,43 @@ class UrlBuilder:
         query_params = path_params.pop("query_params", None)
         try:
             if qualified:
-                url = str(self.request.url_for(name, **path_params))
+                if name == "/":
+                    url = str(self.request.base_url)
+                else:
+                    url = str(self.request.url_for(name, **path_params))
             else:
-                url = self.request.app.url_path_for(name, **path_params)
+                url = self._url_path_for(name, **path_params)
             if query_params:
                 url = f"{url}?{urlencode(query_params)}"
             return url
         except NoMatchFound:
-            # Fallback to legacy url_for
+            # Fallback to legacy WSGI url_for for routes not registered with FastAPI
             if query_params:
                 path_params.update(query_params)
-            return web.url_for(name, **path_params)
+            url = web.url_for(name, **path_params)
+            if qualified and not url.startswith(("http://", "https://")):
+                # routes.url_for has no thread-local request_config in an ASGI
+                # request, so qualify the URL using the FastAPI request base_url.
+                url = str(self.request.base_url).rstrip("/") + url
+            return url
+
+    def _url_path_for(self, name: str, **path_params) -> str:
+        """O(1) route lookup using the app's pre-built name index.
+
+        The index is built once at startup in initialize_fast_app and maps
+        route names to their route objects, replacing Starlette's O(n)
+        linear scan with a direct dict lookup.
+        """
+        candidates = self.request.app.state.route_name_index.get(name)
+        if candidates is not None:
+            for route in candidates:
+                try:
+                    return route.url_path_for(name, **path_params)
+                except NoMatchFound:
+                    pass
+            raise NoMatchFound(name, path_params)
+        # Fallback for names not in the index (e.g. Mount sub-routes)
+        return self.request.app.url_path_for(name, **path_params)
 
 
 class GalaxyASGIRequest(GalaxyAbstractRequest):
@@ -197,9 +263,11 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     Implements the GalaxyAbstractRequest interface to provide access to some properties
     of the request commonly used."""
 
+    __request: Request
+
     def __init__(self, request: Request):
         self.__request = request
-        self.__environ: Optional[MutableMapping[str, Any]] = None
+        self.__environ: Environ | None = None
 
     @property
     def base(self) -> str:
@@ -208,20 +276,21 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
-        root_path = scope.get("root_path")
         url = self.base
-        if root_path:
+        if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
 
     @property
-    def host(self) -> str:
-        client = self.__request.client
-        assert client is not None
-        return str(client.host)
+    def url(self) -> URL:
+        return self.__request.url
 
     @property
-    def environ(self) -> MutableMapping[str, Any]:
+    def host(self) -> str:
+        return self.__request.base_url.netloc
+
+    @property
+    def environ(self) -> Environ:
         """
         Fallback WSGI environ.
 
@@ -230,6 +299,28 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         if self.__environ is None:
             self.__environ = build_environ(self.__request.scope, None)  # type: ignore[arg-type]
         return self.__environ
+
+    @property
+    def headers(self):
+        return self.__request.headers
+
+    @property
+    def remote_host(self) -> str:
+        # was available in wsgi and is used create_new_session
+        return self.host
+
+    @property
+    def remote_addr(self) -> str | None:
+        # was available in wsgi and is used create_new_session
+        # not sure what to do here...
+        return None
+
+    @property
+    def is_secure(self) -> bool:
+        return self.__request.url.scheme == "https"
+
+    def get_cookie(self, name):
+        return self.__request.cookies.get(name)
 
 
 class GalaxyASGIResponse(GalaxyAbstractResponse):
@@ -245,26 +336,62 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
     def headers(self):
         return self.__response.headers
 
+    def set_cookie(
+        self,
+        key: str,
+        value: str = "",
+        max_age: int | None = None,
+        expires: int | None = None,
+        path: str = "/",
+        domain: str | None = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: Literal["lax", "strict", "none"] | None = "lax",
+    ) -> None:
+        """Set a cookie."""
+        self.__response.set_cookie(
+            key,
+            value,
+            max_age=max_age,
+            expires=expires,
+            path=path,
+            domain=domain,
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
+        )
 
-DependsOnUser = cast(Optional[User], Depends(get_user))
+
+DependsOnUser = cast(User, Depends(get_required_user))
 
 
-def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
+def get_current_history_from_session(galaxy_session: model.GalaxySession | None) -> model.History | None:
     if galaxy_session:
         return galaxy_session.current_history
     return None
+
+
+def fix_url_for(mapper: Mapper, galaxy_request: GalaxyASGIRequest):
+    rc = request_config()
+    rc.environ = galaxy_request.environ
+    rc.mapper = mapper
+    if hasattr(rc, "using_request_local"):
+        rc.request_local = lambda: rc
+        rc = request_config()
 
 
 def get_trans(
     request: Request,
     response: Response,
     app: StructuredApp = DependsOnApp,
-    user=cast(Optional[User], Depends(get_user)),
-    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    user=cast(User | None, Depends(get_user)),
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
 ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
     galaxy_response = GalaxyASGIResponse(response)
+    if mapper := getattr(app, "legacy_mapper", None):
+        fix_url_for(mapper, galaxy_request)
     return SessionRequestContext(
         app=app,
         user=user,
@@ -288,7 +415,21 @@ def get_admin_user(trans: SessionRequestContext = DependsOnTrans):
 AdminUserRequired = Depends(get_admin_user)
 
 
+def cors_preflight(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    # Only allow CORS safe-listed headers for now (https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header)
+    response.headers["Access-Control-Allow-Headers"] = "Accept,Accept-Language,Content-Language,Content-Type,Range"
+    response.headers["Access-Control-Max-Age"] = "600"
+    response.status_code = 200
+    return response
+
+
+CORSPreflightRequired = Depends(cors_preflight)
+
+
 class BaseGalaxyAPIController(BaseAPIController):
+    app: StructuredApp
+
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
@@ -303,18 +444,29 @@ class RestVerb(str, Enum):
     options = "OPTIONS"
 
 
-class Router(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy."""
+class FrameworkRouter(APIRouter):
+    """A FastAPI Router tailored to Galaxy."""
 
-    def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
+    admin_user_dependency: Any
+
+    def wrap_with_alias(
+        self, verb: RestVerb, *args: Any, alias: str | None = None, **kwd: Any
+    ) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """
-        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+        Wraps FastAPI methods with additional alias keyword, require_admin and CORS handling.
 
         @router.get("/api/thing", alias="/api/deprecated_thing") will then create
         routes for /api/thing and /api/deprecated_thing.
         """
         kwd = self._handle_galaxy_kwd(kwd)
         include_in_schema = kwd.pop("include_in_schema", True)
+
+        allow_cors = kwd.pop("allow_cors", False)
+        if allow_cors:
+            assert (
+                "route_class_override" not in kwd
+            ), "Cannot use allow_cors=True on route and specify `route_class_override`"
+            kwd["route_class_override"] = APICorsRoute
 
         def decorate_route(route, include_in_schema=include_in_schema):
             # Decorator solely exists to allow passing `route_class_override` to add_api_route
@@ -326,6 +478,20 @@ class Router(InferringRouter):
                     include_in_schema=include_in_schema,
                     **kwd,
                 )
+
+                if allow_cors:
+                    dependencies = kwd.pop("dependencies", [])
+                    dependencies.append(CORSPreflightRequired)
+
+                    self.add_api_route(
+                        route,
+                        endpoint=lambda: None,
+                        methods=[RestVerb.options],
+                        include_in_schema=False,
+                        dependencies=dependencies,
+                        **kwd,
+                    )
+
                 return func
 
             return decorated_route
@@ -337,7 +503,7 @@ class Router(InferringRouter):
             else:
                 routes.append(decorate_route(path))
 
-        def dec(f):
+        def dec(f: DecoratedCallable) -> DecoratedCallable:
             for route in routes:
                 f = route(f)
             return f
@@ -345,7 +511,7 @@ class Router(InferringRouter):
         return dec
 
     @staticmethod
-    def construct_aliases(path: str, alias: Optional[str]):
+    def construct_aliases(path: str, alias: str | None):
         yield path
         if path != "/" and not path.endswith("/"):
             yield f"{path}/"
@@ -354,50 +520,101 @@ class Router(InferringRouter):
             if not alias == "/" and not alias.endswith("/"):
                 yield f"{alias}/"
 
-    def get(self, *args, **kwd):
+    def get(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.get, *args, **kwd)
 
-    def patch(self, *args, **kwd):
+    def patch(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.patch, *args, **kwd)
 
-    def put(self, *args, **kwd):
+    def put(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.put, *args, **kwd)
 
-    def post(self, *args, **kwd):
+    def post(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.post, *args, **kwd)
 
-    def delete(self, *args, **kwd):
+    def delete(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.delete, *args, **kwd)
 
-    def options(self, *args, **kwd):
+    def options(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         return self.wrap_with_alias(RestVerb.options, *args, **kwd)
 
-    def head(self, *args, **kwd):
+    def head(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         return self.wrap_with_alias(RestVerb.head, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
         if require_admin:
             if "dependencies" in kwd:
-                kwd["dependencies"].append(AdminUserRequired)
+                kwd["dependencies"].append(self.admin_user_dependency)
             else:
-                kwd["dependencies"] = [AdminUserRequired]
+                kwd["dependencies"] = [self.admin_user_dependency]
+
+        public = kwd.pop("public", False)
+        openapi_extra = kwd.pop("openapi_extra", {})
+        if public:
+            openapi_extra["security"] = []
+        if openapi_extra:
+            kwd["openapi_extra"] = openapi_extra
+
+        unstable = kwd.pop("unstable", False)
+        if unstable:
+            warning = "**Warning**: This API is unstable and may change without notice.\n\n"
+            if "description" in kwd:
+                kwd["description"] = warning + kwd["description"]
+            else:
+                kwd["description"] = warning
 
         return kwd
 
     @property
-    def cbv(self):
+    def cbv(self) -> Callable[[type[T]], type[T]]:
         """Short-hand for frequently used Galaxy-pattern of FastAPI class based views.
 
         Creates a class-based view for for this router, for more information see:
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+class Router(FrameworkRouter):
+    admin_user_dependency = AdminUserRequired
+    user_dependency = DependsOnUser
+
+
+class APICorsRoute(APIRoute):
+    """
+    Sends CORS headers
+    """
+
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            try:
+                response: Response = await original_route_handler(request)
+            except Exception as exc:
+                # Find and use FastAPI's exception handler
+                handler = None
+                for exc_class, exc_handler in request.app.exception_handlers.items():
+                    if isinstance(exc, exc_class):
+                        handler = exc_handler
+                        break
+
+                if handler is None:
+                    raise exc
+
+                # Call the handler - it's already a callable that takes (request, exc)
+                response = await handler(request, exc)
+            response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+            response.headers["Access-Control-Max-Age"] = "600"
+            return response
+
+        return custom_route_handler
 
 
 class APIContentTypeRoute(APIRoute):
@@ -407,7 +624,7 @@ class APIContentTypeRoute(APIRoute):
 
     match_content_type: str
 
-    def accept_matches(self, scope: Scope) -> Tuple[Match, Scope]:
+    def accept_matches(self, scope: Scope) -> tuple[Match, Scope]:
         content_type_header = Headers(scope=scope).get("content-type", None)
         if not content_type_header:
             return Match.PARTIAL, scope
@@ -415,7 +632,7 @@ class APIContentTypeRoute(APIRoute):
             return Match.NONE, scope
         return Match.FULL, scope
 
-    def matches(self, scope: Scope) -> Tuple[Match, Scope]:
+    def matches(self, scope: Scope) -> tuple[Match, Scope]:
         accept_match, accept_scope = self.accept_matches(scope)
         if accept_match == Match.NONE:
             return accept_match, accept_scope
@@ -426,7 +643,7 @@ class APIContentTypeRoute(APIRoute):
         )
 
 
-def as_form(cls: Type[BaseModel]):
+def as_form(cls: type[BaseModel]):
     """
     Adds an as_form class method to decorated models. The as_form class method
     can be used with FastAPI endpoints.
@@ -435,18 +652,18 @@ def as_form(cls: Type[BaseModel]):
     """
     new_params = [
         inspect.Parameter(
-            field.alias,
+            field_name,
             inspect.Parameter.POSITIONAL_ONLY,
-            default=(Form(field.default) if not field.required else Form(...)),
+            default=(Form(field.default) if not field.is_required() else Form(...)),
         )
-        for field in cls.__fields__.values()
+        for field_name, field in cls.model_fields.items()
     ]
 
     async def _as_form(**data):
         try:
             return cls(**data)
         except ValidationError as e:
-            raise RequestValidationError(e.raw_errors)
+            raise RequestValidationError(e.errors())
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
@@ -455,7 +672,15 @@ def as_form(cls: Type[BaseModel]):
     return cls
 
 
-async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
+def json_schema_response_for_tool_state_model(
+    state_type: type[ToolState], has_parameters: HasToolParameters
+) -> Response:
+    pydantic_model = state_type.parameter_model_for(has_parameters)
+    json_str = to_json_schema_string(pydantic_model)
+    return Response(content=json_str, media_type="application/json")
+
+
+async def try_get_request_body_as_json(request: Request) -> Any | None:
     """Returns the request body as a JSON object if the content type is JSON."""
     if "application/json" in request.headers.get("content-type", ""):
         body = await request.json()
@@ -463,8 +688,7 @@ async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
     return None
 
 
-search_description_template = Template(
-    """A mix of free text and GitHub-style tags used to filter the index operation.
+search_description_template = Template("""A mix of free text and GitHub-style tags used to filter the index operation.
 
 ## Query Structure
 
@@ -489,27 +713,25 @@ ${tags}
 Free text search terms will be searched against the following attributes of the
 ${model_name}s: ${freetext}.
 
-"""
-)
+""")
 
 
 class IndexQueryTag(NamedTuple):
     tag: str
     description: str
-    alias: Optional[str] = None
+    alias: str | None = None
     admin_only: bool = False
 
     def as_markdown(self):
         desc = self.description
-        alias = self.alias
-        if alias:
+        if alias := self.alias:
             desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
         if self.admin_only:
             desc += " This tag is only available for requests using admin keys and/or sessions."
         return f"`{self.tag}`\n: {desc}"
 
 
-def search_query_param(model_name: str, tags: list, free_text_fields: list) -> Optional[str]:
+def search_query_param(model_name: str, tags: list, free_text_fields: list) -> str | None:
     tags_markdown_str = "\n\n".join([t.as_markdown() for t in tags])
     description = search_description_template.safe_substitute(
         model_name=model_name, tags=tags_markdown_str, freetext=", ".join([f"`{t}`" for t in free_text_fields])
@@ -519,3 +741,10 @@ def search_query_param(model_name: str, tags: list, free_text_fields: list) -> O
         title="Search query.",
         description=description,
     )
+
+
+LandingUuidPathParam: UUID4 = Path(
+    ...,
+    title="Landing UUID",
+    description="The UUID used to identify a persisted landing request.",
+)

@@ -1,0 +1,23 @@
+{
+  "description": "A test tour",
+  "name": "Test Galaxy Tour", 
+  "requirements": [],
+  "steps": [
+    {
+      "content": "Welcome to the Test Tour!",
+      "element": "#masthead",
+      "orphan": true,
+      "placement": "bottom",
+      "title": "Welcome to Test Tour"
+    },
+    {
+      "content": "This is the tool panel where you can find all available analysis tools. You can search for tools using the search box.",
+      "element": "#left",
+      "orphan": false,
+      "placement": "right",
+      "title": "Tool Panel"
+    }
+  ],
+  "tags": [],
+  "title_default": "Galaxy Test Tour"
+}

@@ -1,0 +1,3 @@
+# The repository's pre-commit prettier hook sets exclude_types: [json], so
+# formatting JSON here would rewrite test fixtures that nothing else touches.
+*.json

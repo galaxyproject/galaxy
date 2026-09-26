@@ -1,10 +1,5 @@
 import logging
 from collections import defaultdict
-from typing import (
-    Dict,
-    List,
-    Tuple,
-)
 
 from sqlalchemy.orm import defer
 
@@ -20,9 +15,9 @@ class ToolShedRepositoryCache:
     Cache installed ToolShedRepository objects.
     """
 
-    local_repositories: List[ToolConfRepository]
-    repositories: List[ToolShedRepository]
-    repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
+    local_repositories: list[ToolConfRepository]
+    repositories: list[ToolShedRepository]
+    repos_by_tuple: dict[tuple[str, str, str], list[ToolConfRepository]]
 
     def __init__(self, session: install_model_scoped_session):
         self.session = session()

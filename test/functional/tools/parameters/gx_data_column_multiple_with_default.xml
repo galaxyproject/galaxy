@@ -1,0 +1,21 @@
+<tool id="gx_data_column_multiple_with_default" name="gx_data_column_multiple_with_default" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data" format="tabular" />
+        <param name="parameter" type="data_column" data_ref="ref_parameter" multiple="true" value="1,2" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 1,2"/>
+            </expand>
+        </test>
+    </tests>
+</tool>

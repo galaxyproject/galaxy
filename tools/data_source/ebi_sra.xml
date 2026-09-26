@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="EBI SRA" id="ebi_sra_main" tool_type="data_source" version="1.0.1">
+<tool name="EBI SRA" id="ebi_sra_main" tool_type="data_source" version="1.0.1" profile="20.09">
     <description>ENA SRA</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>
@@ -9,7 +9,7 @@
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
     <!-- The URL where Galaxy will forwards the user when this tool is accessed from the Get Data menu -->
-    <inputs action="https://www.ebi.ac.uk/ena/data/search" check_values="false" method="get">
+    <inputs action="https://www.ebi.ac.uk/ena/browser/search" check_values="false" method="get">
         <display>go to EBI SRA server $GALAXY_URL</display>
     </inputs>
     <uihints minwidth="800"/>

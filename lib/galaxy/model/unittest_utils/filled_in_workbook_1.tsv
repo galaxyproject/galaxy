@@ -1,0 +1,9 @@
+URI	"Element identifier"	"replicate number"	treatment	"is control?"				
+https://zenodo.org/records/3263975/files/DRR000770.fastqsanger.gz	DRR000770	1	treatment1	false				
+https://zenodo.org/records/3263975/files/DRR000771.fastqsanger.gz	DRR000771	2	treatment1	false		Instructions		
+https://zenodo.org/records/3263975/files/DRR000772.fastqsanger.gz	DRR000772	1	none	true			> 1.	Use this spreadsheet to describe your samples. For each sample (i.e. each file), ensure all the labeled columns are specified and correct.
+https://zenodo.org/records/3263975/files/DRR000773.fastqsanger.gz	DRR000773	1	treatment2	false			> 2.	If you're using Google Sheets, data validation will be applied automatically - just make sure no cell values have a red mark indicating they are invalid.
+https://zenodo.org/records/3263975/files/DRR000774.fastqsanger.gz	DRR000774	2	treatment3	false			> 3.	If you're using Microsft Excel, it is best to run data validation after you've completed filling out this sheet. This can be done by clicking on 'Data' > 'Data Validation' > 'Circle Invalid Data'.
+https://zenodo.org/records/3263975/files/DRR000775.fastqsanger.gz	DRR000775	badnumber	treatment2	false			> 4.	Once data entry is complete, drop this file back into Galaxy to finish creating a sample sheet collection for your inputs.
+https://zenodo.org/records/3263975/files/DRR000776.fastqsanger.gz	DRR000776	2	wrongtreament	false				
+https://zenodo.org/records/3263975/files/DRR000777.fastqsanger.gz	DRR000777	3	treatment2	badbool		Columns		

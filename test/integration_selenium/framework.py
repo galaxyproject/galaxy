@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 selenium_test = framework.selenium_test
+managed_history = framework.managed_history
 
 
 class SeleniumIntegrationTestCase(

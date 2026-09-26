@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""
-"""
+""" """
+
 from galaxy import model
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
@@ -28,6 +28,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
 
     def test_create_simple_list(self):
         owner = self.user_manager.create(**user2_data)
+        self.trans.set_user(owner)
 
         history = self.history_manager.create(name="history1", user=owner)
 
@@ -80,6 +81,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
 
     def test_update_from_dict(self):
         owner = self.user_manager.create(**user2_data)
+        self.trans.set_user(owner)
 
         history = self.history_manager.create(name="history1", user=owner)
 
@@ -98,7 +100,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
                 "deleted": True,
                 "visible": False,
                 "name": "New Name",
-                "tags": ["name:one", "group:two", "three"]
+                "tags": ["name:one", "group:two", "three"],
                 # TODO: doesn't work
                 # 'annotations'      : [?]
             },

@@ -1,0 +1,309 @@
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
+import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+
+import type { UserConcreteObjectStore } from "./types";
+
+import CreateForm from "./CreateForm.vue";
+
+const FAKE_OBJECT_STORE: UserConcreteObjectStore = {
+    name: "My New Name",
+    template_id: "moo",
+    template_version: 0,
+    active: true,
+    badges: [],
+    hidden: false,
+    private: false,
+    purged: false,
+    quota: {
+        enabled: false,
+    },
+    type: "aws_s3",
+    uuid: "test_UUID",
+    variables: {
+        myvar: "default",
+    },
+    secrets: ["mysecret"],
+};
+
+const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "myvar",
+            type: "string",
+            help: "*myvar help*",
+            default: "default",
+        },
+    ],
+    secrets: [
+        {
+            name: "mysecret",
+            help: "**mysecret help**",
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
+const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "myvar",
+            type: "string",
+            help: "*myvar help*",
+            default: "default",
+        },
+    ],
+    secrets: [
+        {
+            name: "mysecret",
+            help: "**mysecret help**",
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
+const OPTIONAL_SECRET_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "myvar",
+            type: "string",
+            help: "myvar help",
+            default: "default",
+        },
+    ],
+    secrets: [
+        {
+            name: "optional_secret",
+            help: "An optional secret",
+            optional: true,
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
+const OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "optional_var",
+            type: "string",
+            help: "optional var help",
+            default: "",
+            optional: true,
+            validators: [
+                {
+                    type: "length",
+                    min: 5,
+                    message: "Must be at least 5 characters",
+                    negate: false,
+                    implicit: false,
+                },
+            ],
+        },
+    ],
+    secrets: [
+        {
+            name: "mysecret",
+            help: "mysecret help",
+            optional: true,
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
+const localVue = getLocalVue(true);
+const { server, http } = useServerMock();
+
+describe("CreateForm", () => {
+    it("should render a form with admin markdown converted to HTML in help", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: STANDARD_TEMPLATE,
+            },
+            localVue,
+        });
+        await flushPromises();
+
+        const varFormEl = wrapper.find("#form-element-myvar");
+        expect(varFormEl).toBeTruthy();
+        expect(varFormEl.html()).toContain("<em>myvar help</em>");
+
+        const secretFormEl = wrapper.find("#form-element-mysecret");
+        expect(secretFormEl).toBeTruthy();
+        expect(secretFormEl.html()).toContain("<strong>mysecret help</strong>");
+    });
+
+    it("should post to create a new object store on submit", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: SIMPLE_TEMPLATE,
+            },
+            localVue,
+        });
+
+        server.use(
+            http.post("/api/object_store_instances", ({ response }) => {
+                return response(200).json(FAKE_OBJECT_STORE);
+            }),
+            http.post("/api/object_store_instances/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+        );
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        const passwordElement = wrapper.find("#form-element-mysecret");
+        await passwordElement.find("input").setValue("mysecretvalue");
+
+        const submitElement = wrapper.find("#submit");
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0][0]).toMatchObject(FAKE_OBJECT_STORE);
+    });
+
+    it("should indicate an error on failure", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: SIMPLE_TEMPLATE,
+            },
+            localVue,
+        });
+        server.use(
+            http.post("/api/object_store_instances", ({ response }) => {
+                return response("4XX").json({ err_msg: "Error creating this", err_code: 400 }, { status: 400 });
+            }),
+            http.post("/api/object_store_instances/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+        );
+
+        await flushPromises();
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        nameForElement.find("input").setValue("My New Name");
+
+        const passwordElement = wrapper.find("#form-element-mysecret");
+        await passwordElement.find("input").setValue("mysecretvalue");
+
+        expect(wrapper.find("[data-description='object-store-creation-error']").exists()).toBe(false);
+
+        const submitElement = wrapper.find("#submit");
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(0);
+        const errorEl = wrapper.find("[data-description='object-store-creation-error']");
+        expect(errorEl.exists()).toBe(true);
+        expect(errorEl.html()).toContain("Error creating this");
+    });
+
+    it("should disable submit when there are validation errors", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: SIMPLE_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Leave secret empty to trigger validation error
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+
+        // Try to click when submit is disabled will not emit created event
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(0);
+    });
+
+    it("should allow submission when optional secret is empty", async () => {
+        server.use(
+            http.post("/api/object_store_instances", ({ response }) => {
+                return response(200).json(FAKE_OBJECT_STORE);
+            }),
+            http.post("/api/object_store_instances/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+        );
+
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: OPTIONAL_SECRET_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Don't fill in the optional secret
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(false);
+
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(1);
+    });
+
+    it("should validate optional fields when they have values", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Set optional field to a value that's too short
+        const optionalVarElement = wrapper.find("#form-element-optional_var");
+        await optionalVarElement.find("input").setValue("abc"); // Too short (< 5 chars)
+        await flushPromises();
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+
+        // Fix the validation error
+        await optionalVarElement.find("input").setValue("validvalue");
+        await flushPromises();
+
+        expect(submitElement.classes().includes("g-disabled")).toBe(false);
+    });
+});

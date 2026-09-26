@@ -6,7 +6,8 @@
     "inputs": [],
     "outputs": {
         "output1": {
-            "format": "txt"
+            "format": "txt",
+            "type": "data"
         }
     }
 }

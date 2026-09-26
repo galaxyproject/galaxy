@@ -2,8 +2,8 @@ import codecs
 import collections
 import logging
 from typing import (
-    Optional,
-    Union,
+    Any,
+    Protocol,
 )
 
 from Crypto.Cipher import Blowfish
@@ -11,6 +11,8 @@ from Crypto.Random import get_random_bytes
 
 import galaxy.exceptions
 from galaxy.util import (
+    hex_to_lowercase_alphanum,
+    lowercase_alphanum_to_hex,
     smart_str,
     unicodify,
 )
@@ -24,18 +26,26 @@ KIND_TOO_LONG_MESSAGE = (
 )
 
 
+class _Cipher(Protocol):
+    def encrypt(self, plaintext: bytes) -> bytes: ...
+
+    def decrypt(self, ciphertext: bytes) -> bytes: ...
+
+
 class IdEncodingHelper:
-    def __init__(self, **config):
+    def __init__(self, **config: Any) -> None:
         id_secret = config["id_secret"]
         self.id_secret = id_secret
-        self.id_cipher = Blowfish.new(smart_str(self.id_secret), mode=Blowfish.MODE_ECB)
+        self.id_cipher: _Cipher = Blowfish.new(smart_str(self.id_secret), mode=Blowfish.MODE_ECB)
 
         per_kind_id_secret_base = config.get("per_kind_id_secret_base", self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
 
-    def encode_id(self, obj_id, kind=None):
+    def encode_id(self, obj_id: int | str, kind: str | None = None, strict_integer: bool = False) -> str:
         if obj_id is None:
             raise galaxy.exceptions.MalformedId("Attempted to encode None id")
+        if strict_integer and not isinstance(obj_id, int):
+            raise galaxy.exceptions.MalformedId("Attempted to encode id that is not an integer")
         id_cipher = self.__id_cipher(kind)
         # Convert to bytes
         s = smart_str(obj_id)
@@ -44,7 +54,9 @@ class IdEncodingHelper:
         # Encrypt
         return unicodify(codecs.encode(id_cipher.encrypt(s), "hex"))
 
-    def encode_dict_ids(self, a_dict, kind=None, skip_startswith=None):
+    def encode_dict_ids(
+        self, a_dict: dict[str, Any], kind: str | None = None, skip_startswith: str | None = None
+    ) -> dict[str, Any]:
         """
         Encode all ids in dictionary. Ids are identified by (a) an 'id' key or
         (b) a key that ends with '_id'
@@ -55,7 +67,7 @@ class IdEncodingHelper:
 
         return a_dict
 
-    def encode_all_ids(self, rval, recursive=False):
+    def encode_all_ids(self, rval: Any, recursive: bool = False) -> Any:
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end
         with '_id' excluding `tool_id` which are consumed and produced as is
@@ -84,7 +96,7 @@ class IdEncodingHelper:
                     rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
-    def decode_id(self, obj_id, kind=None, object_name: Optional[str] = None):
+    def decode_id(self, obj_id: str, kind: str | None = None, object_name: str | None = None) -> int:
         try:
             id_cipher = self.__id_cipher(kind)
             return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, "hex"))).lstrip("!"))
@@ -97,15 +109,15 @@ class IdEncodingHelper:
                 f"Wrong {object_name if object_name is not None else ''} id ( {obj_id} ) specified, unable to decode."
             )
 
-    def encode_guid(self, session_key):
+    def encode_guid(self, session_key: str | bytes) -> bytes:
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!"
-        session_key = smart_str(session_key)
-        s = (b"!" * (8 - len(session_key) % 8)) + session_key
+        session_key_bytes = smart_str(session_key)
+        s = (b"!" * (8 - len(session_key_bytes) % 8)) + session_key_bytes
         # Encrypt
         return codecs.encode(self.id_cipher.encrypt(s), "hex")
 
-    def decode_guid(self, session_key: Union[bytes, str]) -> str:
+    def decode_guid(self, session_key: bytes | str) -> str:
         # Session keys are strings
         try:
             decoded_session_key = codecs.decode(session_key, "hex")
@@ -118,11 +130,11 @@ class IdEncodingHelper:
         except ValueError:
             raise galaxy.exceptions.MalformedId(f"Wrong guid '{session_key!r}' specified, unable to decode.")
 
-    def get_new_guid(self):
+    def get_new_guid(self) -> str:
         # Generate a unique, high entropy 128 bit random number
         return unicodify(codecs.encode(get_random_bytes(16), "hex"))
 
-    def __id_cipher(self, kind):
+    def __id_cipher(self, kind: str | None) -> _Cipher:
         if not kind:
             id_cipher = self.id_cipher
         else:
@@ -130,19 +142,34 @@ class IdEncodingHelper:
         return id_cipher
 
 
-class _cipher_cache(collections.defaultdict):
-    def __init__(self, secret_base):
+class _cipher_cache(collections.defaultdict[str, _Cipher]):
+    def __init__(self, secret_base: str) -> None:
         self.secret_base = secret_base
 
-    def __missing__(self, key):
+    def __missing__(self, key: str) -> _Cipher:
         assert len(key) < 15, KIND_TOO_LONG_MESSAGE
         secret = f"{self.secret_base}__{key}"
         return Blowfish.new(_last_bits(secret), mode=Blowfish.MODE_ECB)
 
 
-def _last_bits(secret):
+def _last_bits(secret: str) -> bytes:
     """We append the kind at the end, so just use the bits at the end."""
     last_bits = smart_str(secret)
     if len(last_bits) > MAXIMUM_ID_SECRET_LENGTH:
         last_bits = last_bits[-MAXIMUM_ID_SECRET_LENGTH:]
     return last_bits
+
+
+class IdAsLowercaseAlphanumEncodingHelper:
+    """
+    Helper class to encode IDs as lowercase alphanumeric strings, and vice versa
+    """
+
+    def __init__(self, security: IdEncodingHelper):
+        self.security = security
+
+    def encode_id(self, id: int) -> str:
+        return hex_to_lowercase_alphanum(self.security.encode_id(id))
+
+    def decode_id(self, id: str) -> int:
+        return self.security.decode_id(lowercase_alphanum_to_hex(id).rjust(16, "0"))

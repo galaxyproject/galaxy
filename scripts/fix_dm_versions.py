@@ -44,7 +44,7 @@ with open(args.shed_data_manager_conf) as fh:
     tree = etree.parse(args.shed_data_manager_conf)
 root = tree.getroot()
 
-guid_mapping = dict()
+guid_mapping = {}
 for dm in root.iter("data_manager"):
     guid = dm.attrib["guid"]
     if guid not in guid_mapping:
@@ -62,7 +62,7 @@ for guid in guid_mapping:
         tool_version = dm.find("./tool/version")
         tool_version = tool_version.text
 
-        new_guid = f"{guid[:guid.rfind('/')]}/{tool_version}"
+        new_guid = f"{guid[: guid.rfind('/')]}/{tool_version}"
         dm.attrib["guid"] = new_guid
         print(f"changing guid: {guid} -> {new_guid}")
         if "version" in dm.attrib:

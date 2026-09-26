@@ -1,0 +1,38 @@
+# Resubmission through chained dynamic destinations more than once.
+# Verifies that each resubmit re-walks the dynamic chain so the second
+# (and subsequent) resubmits land on a fresh destination rather than the
+# cached bottom of the previous walk.
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  failure_runner:
+    load: integration.resubmission_runners:FailsJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.resubmission_rules
+
+execution:
+  default: initial_destination
+  environments:
+    initial_destination:
+      runner: dynamic
+      type: python
+      function: dynamic_resubmit_initial
+
+    secondary_destination:
+      runner: dynamic
+      type: python
+      function: dynamic_resubmit_secondary
+
+    tertiary_destination:
+      runner: dynamic
+      type: python
+      function: dynamic_resubmit_tertiary
+
+    local:
+      runner: local
+
+tools:
+  - class: local
+    environment: local

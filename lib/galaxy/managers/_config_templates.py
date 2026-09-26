@@ -1,0 +1,665 @@
+import logging
+import os
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import (
+    Any,
+    cast,
+    TypeVar,
+)
+
+from pydantic import (
+    BaseModel,
+    UUID4,
+)
+from typing_extensions import TypedDict
+
+from galaxy.exceptions import (
+    InconsistentDatabase,
+    InternalServerError,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import (
+    CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE,
+    HasConfigEnvironment,
+    HasConfigSecrets,
+    HasConfigTemplate,
+    User,
+    UsesTemplatesAppConfig,
+)
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.security.vault import (
+    UserVaultWrapper,
+    Vault,
+)
+from galaxy.util import config_templates  # defer get_token_from_refresh_raw access for monkey patching
+from galaxy.util.config_templates import (
+    EnvironmentDict,
+    find_template_by,
+    ImplicitConfigurationParameters,
+    OAuth2ClientPair,
+    OAuth2Configuration,
+    PluginAspectStatus,
+    secrets_as_dict,
+    SecretsDict,
+    Template,
+    TemplateEnvironmentEntry,
+    TemplateEnvironmentSecret,
+    TemplateEnvironmentVariable,
+    TemplateReference,
+    TemplateVariableValueType,
+    validate_no_extra_variables_defined,
+    validate_specified_datatypes_variables,
+)
+from galaxy.work.context import SessionRequestContext
+
+log = logging.getLogger(__name__)
+
+SuppliedVariables = dict[str, TemplateVariableValueType]
+SuppliedSecrets = dict[str, str]
+
+# GitHub user access tokens last eight hours. Refresh a little early so an in-flight operation
+# cannot start with a token that expires before GitHub receives its request.
+_OAUTH2_ACCESS_TOKEN_EXPIRY_SKEW_SECONDS = 5 * 60
+_OAUTH2_ACCESS_TOKEN_CACHE_MAXSIZE = 10_000
+
+
+@dataclass(frozen=True)
+class _CachedOAuth2AccessToken:
+    value: str
+    expires_at: float
+
+
+_oauth2_access_token_cache: dict[str, _CachedOAuth2AccessToken] = {}
+_oauth2_access_token_cache_lock = threading.Lock()
+# A bounded set of lock stripes prevents duplicate refreshes for one source without retaining a
+# lock object for every source ever created. Collisions only serialize unrelated refreshes.
+_oauth2_access_token_refresh_locks = [threading.Lock() for _ in range(256)]
+
+
+class CreateInstancePayload(BaseModel):
+    name: str
+    description: str | None = None
+    template_id: str
+    template_version: int
+    variables: SuppliedVariables
+    secrets: SuppliedSecrets
+    uuid: UUID4 | None = None
+
+
+class UpdateInstancePayload(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    variables: SuppliedVariables | None = None
+    hidden: bool | None = None
+    active: bool | None = None
+
+
+class UpdateInstanceSecretPayload(BaseModel):
+    secret_name: str
+    secret_value: str
+
+
+class UpgradeInstancePayload(BaseModel):
+    template_version: int
+    variables: SuppliedVariables
+    secrets: SuppliedSecrets
+
+
+class TestUpdateInstancePayload(BaseModel):
+    variables: SuppliedVariables | None = None
+
+
+class TestUpgradeInstancePayload(BaseModel):
+    template_version: int
+    variables: SuppliedVariables
+    secrets: SuppliedSecrets
+
+
+class UpgradeTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpgradeInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpgradeInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
+class UpdateTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpdateInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpdateInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
+class CreateTestTarget:
+    payload: CreateInstancePayload
+    instance_class: type[HasConfigSecrets]
+
+    def __init__(self, payload: CreateInstancePayload, instance_class: type[HasConfigSecrets]):
+        self.payload = payload
+        self.instance_class = instance_class
+
+
+ModifyInstancePayload = UpdateInstanceSecretPayload | UpgradeInstancePayload | UpdateInstancePayload
+TestModifyInstancePayload = TestUpgradeInstancePayload | TestUpdateInstancePayload
+CanTestPluginStatus = HasConfigTemplate | CreateTestTarget | UpgradeTestTarget | UpdateTestTarget
+
+
+def recover_secrets(
+    user_object_store: HasConfigSecrets, vault: UserVaultWrapper | Vault, app_config: UsesTemplatesAppConfig
+) -> SecretsDict:
+    if isinstance(vault, UserVaultWrapper):
+        user_vault = vault
+    else:
+        user: User = user_object_store.user
+        user_vault = UserVaultWrapper(vault, user)
+    secrets: SecretsDict = {}
+    # now we could recover the list of secrets to fetch from...
+    # ones recorded as written in the persisted object, the ones
+    # expected in the catalog, or the ones expected in the definition
+    # persisted.
+    persisted_secret_names = user_object_store.template_secrets or []
+    for secret in persisted_secret_names:
+        vault_key = user_object_store.vault_key(secret, app_config)
+        secret_value = user_vault.read_secret(vault_key)
+        if secret_value is not None:
+            secrets[secret] = secret_value
+    return secrets
+
+
+class TemplateParameters(TypedDict):
+    secrets: SuppliedSecrets
+    variables: SuppliedVariables
+    environment: EnvironmentDict
+    user_details: dict[str, Any]
+    implicit: ImplicitConfigurationParameters | None
+
+
+class TemplateServerConfiguration:
+    """Extra configuration relevant to a given template.
+
+    For state defined in the server but not defined in the template JSON/YAML directly.
+    Currently this only contains optional oauth2 client credentials and oauth2 configuration
+    information (provider URLs and provider specific configuration for the oauth2 flow).
+    """
+
+    oauth2_client_pair: OAuth2ClientPair | None
+    oauth2_configuration: OAuth2Configuration | None
+
+    def __init__(
+        self,
+        oauth2_client_pair: OAuth2ClientPair | None = None,
+        oauth2_configuration: OAuth2Configuration | None = None,
+        oauth2_scope: str | None = None,
+    ):
+        self.oauth2_client_pair = oauth2_client_pair
+        self.oauth2_configuration = oauth2_configuration
+        self.oauth2_scope = oauth2_scope
+
+    @property
+    def uses_oauth2(self):
+        return self.oauth2_configuration is not None
+
+
+def prepare_template_parameters_for_testing(
+    trans: ProvidesUserContext,
+    template: Template,
+    template_server_configuration: TemplateServerConfiguration,
+    target: CanTestPluginStatus,
+    vault: Vault,
+    app_config: UsesTemplatesAppConfig,
+) -> TemplateParameters:
+    secrets = _secrets_for_plugin_status_test(target, trans.user_vault, app_config)
+    variables = _variables_for_plugin_status_test(target)
+    environment = prepare_environment_from_root(template.environment, vault, app_config)
+    user_details = trans.user.config_template_details()
+    implicit = implicit_parameters_for_testing(
+        trans,
+        template_server_configuration,
+        target,
+        app_config,
+    )
+    return TemplateParameters(
+        {
+            "secrets": secrets,
+            "variables": variables,
+            "environment": environment,
+            "user_details": user_details,
+            "implicit": implicit,
+        }
+    )
+
+
+def _variables_for_plugin_status_test(target: CanTestPluginStatus) -> SuppliedVariables:
+    if isinstance(target, CreateTestTarget):
+        return target.payload.variables
+    elif isinstance(target, UpgradeTestTarget) or isinstance(target, UpdateTestTarget):
+        if target.instance.template_variables:
+            variables = target.instance.template_variables.copy()
+        else:
+            variables = {}
+        new_variables = target.payload.variables or {}
+        for new_variable in new_variables:
+            variables[new_variable] = new_variables[new_variable]
+        return new_variables
+    else:
+        return target.template_variables or {}
+
+
+def _secrets_for_plugin_status_test(
+    target: CanTestPluginStatus, user_vault: UserVaultWrapper, app_config: UsesTemplatesAppConfig
+) -> SecretsDict:
+    if isinstance(target, CreateTestTarget):
+        payload = target.payload
+        secrets = payload.secrets.copy()
+        return secrets
+    elif isinstance(target, UpgradeTestTarget):
+        secrets = recover_secrets(target.instance, user_vault, app_config)
+        new_secrets = target.payload.secrets or {}
+        for new_secret in new_secrets:
+            secrets[new_secret] = new_secrets[new_secret]
+        return secrets
+    elif isinstance(target, UpdateTestTarget):
+        secrets = recover_secrets(target.instance, user_vault, app_config)
+        return secrets
+    else:
+        secrets = recover_secrets(target, user_vault, app_config)
+        return secrets
+
+
+def to_template_reference(persisted_instance: HasConfigTemplate) -> TemplateReference:
+    # for mypy convert Mapped[X] -> X
+    return cast(TemplateReference, persisted_instance)
+
+
+def prepare_environment(
+    configuration_template: HasConfigEnvironment, vault: Vault, app_config: UsesTemplatesAppConfig
+) -> EnvironmentDict:
+    return prepare_environment_from_root(configuration_template.template_environment.root, vault, app_config)
+
+
+def prepare_environment_from_root(
+    root: list[TemplateEnvironmentEntry] | None, vault: Vault, app_config: UsesTemplatesAppConfig
+) -> EnvironmentDict:
+    environment: EnvironmentDict = {}
+    for environment_entry in root or []:
+        e_type = environment_entry.type
+        e_name = environment_entry.name
+        if e_type == "secret":
+            template_secret = cast(TemplateEnvironmentSecret, environment_entry)
+            secret_value = vault.read_secret(template_secret.vault_key) or template_secret.default
+            if secret_value:
+                environment[e_name] = secret_value
+            else:
+                raise InternalServerError(f"Failed to retrieve {template_secret.vault_key} from vault")
+        elif e_type == "variable":
+            template_variable = cast(TemplateEnvironmentVariable, environment_entry)
+            variable_value = os.environ.get(template_variable.variable)
+            if variable_value is None:
+                variable_value = template_variable.default
+            if variable_value:
+                environment[e_name] = variable_value
+            else:
+                raise InternalServerError(
+                    f"Environment variable {template_variable.variable} not found and no default provided. Please set this variable in the environment or provide a default value in the template definition."
+                )
+        else:
+            raise Exception(f"Unknown environment entry type detected [{e_type}]")
+
+    return environment
+
+
+def update_template_instance(
+    sa_session: galaxy_scoped_session,
+    template_instance: HasConfigTemplate,
+    payload: UpdateInstancePayload,
+    template: Template,
+):
+    if payload.variables is not None:
+        validate_specified_datatypes_variables(payload.variables, template)
+        validate_no_extra_variables_defined(payload.variables, template)
+    if payload.name is not None:
+        template_instance.name = payload.name
+    if payload.description is not None:
+        template_instance.description = payload.description
+    if payload.variables is not None:
+        actual_variables = updated_template_variables(payload.variables, template_instance, template)
+        template_instance.template_variables = actual_variables
+    if payload.hidden is not None:
+        template_instance.hidden = payload.hidden
+    if payload.active is not None:
+        if payload.active:
+            # unhide and activate
+            template_instance.active = True
+            template_instance.hidden = False
+        else:
+            # deactivate and hide
+            template_instance.active = False
+            template_instance.hidden = True
+    save_template_instance(sa_session, template_instance)
+    return template_instance
+
+
+def updated_template_variables(
+    supplied_variables: SuppliedVariables, template_instance: HasConfigTemplate, template: Template
+):
+    old_variables = template_instance.template_variables or {}
+    updated_variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = {}
+    for variable in template.variables or []:
+        variable_name = variable.name
+        old_value = old_variables.get(variable_name)
+        updated_value = supplied_variables.get(variable_name, old_value)
+        if updated_value:
+            updated_variables[variable_name] = updated_value
+    return updated_variables
+
+
+def purge_template_instance(
+    trans: ProvidesUserContext, template_instance: HasConfigTemplate, app_config: UsesTemplatesAppConfig
+):
+    user_vault = trans.user_vault
+    user_vault_key_prefix = template_instance.vault_id_prefix(app_config)
+    # it would be nice to just list the secrets but none of them do that... so catch NotImplemented
+    # and try with the secrets as we have record in the database of recording them.
+    try:
+        for secret in user_vault.list_secrets(user_vault_key_prefix):
+            user_vault.delete_secret(secret)
+    except NotImplementedError:
+        for secret in template_instance.template_secrets or []:
+            user_vault.delete_secret(f"{user_vault_key_prefix}/{secret}")
+    template_instance.active = False
+    template_instance.purged = True
+    save_template_instance(trans.sa_session, template_instance)
+
+
+def update_instance_secret(
+    trans: ProvidesUserContext,
+    template_instance: HasConfigTemplate,
+    template: Template,
+    payload: UpdateInstanceSecretPayload,
+    app_config: UsesTemplatesAppConfig,
+):
+    template_secrets = secrets_as_dict(template.secrets or [])
+    if (secret_name := payload.secret_name) not in template_secrets:
+        raise RequestParameterInvalidException(f"Configuration template does not specify a secret named {secret_name}")
+
+    user_vault = trans.user_vault
+    key = template_instance.vault_key(payload.secret_name, app_config)
+    user_vault.write_secret(key, payload.secret_value)
+
+
+def upgrade_secrets(
+    trans: ProvidesUserContext,
+    template_instance: HasConfigTemplate,
+    target_template: Template,
+    payload: UpgradeInstancePayload,
+    app_config: UsesTemplatesAppConfig,
+):
+    recorded_secrets = template_instance.template_secrets or []
+
+    old_secrets = template_instance.template_secrets or []
+    new_secrets = payload.secrets
+
+    user_vault = trans.user_vault
+    upgraded_template_secrets = []
+    for secret in target_template.secrets or []:
+        secret_name = secret.name
+        upgraded_template_secrets.append(secret_name)
+        if secret_name not in new_secrets and secret_name not in old_secrets:
+            raise RequestParameterMissingException(f"secret {secret_name} not set in supplied request")
+        if secret_name not in new_secrets:
+            # keep old value
+            continue
+
+        secret_value = new_secrets[secret_name]
+        key = template_instance.vault_key(secret_name, app_config)
+        user_vault.write_secret(key, secret_value)
+        if secret_name not in recorded_secrets:
+            recorded_secrets.append(secret_name)
+
+    secrets_to_delete: list[str] = []
+    for recorded_secret in recorded_secrets:
+        if recorded_secret not in upgraded_template_secrets:
+            key = template_instance.vault_key(recorded_secret, app_config)
+            log.info(f"deleting {key} from user vault")
+            user_vault.delete_secret(key)
+            secrets_to_delete.append(recorded_secret)
+
+    for secret_to_delete in secrets_to_delete:
+        recorded_secrets.remove(secret_to_delete)
+
+    template_instance.template_secrets = recorded_secrets
+
+
+def save_template_instance(sa_session: galaxy_scoped_session, template_instance: HasConfigTemplate):
+    sa_session.add(template_instance)
+    sa_session.flush([template_instance])
+    sa_session.commit()
+
+
+T = TypeVar("T", bound=Template, covariant=True)
+
+
+def sort_templates(config, catalog: list[T], instance: HasConfigTemplate) -> list[T]:
+    configured_template: T | None = None
+    try:
+        configured_template = find_template_by(
+            catalog, instance.template_id, instance.template_version, "config template"
+        )
+    except ObjectNotFound:
+        if config.user_config_templates_use_saved_configuration == "never":
+            raise
+    stored_template: T = instance.template
+    if config.user_config_templates_use_saved_configuration == "preferred" and configured_template:
+        templates = [stored_template, configured_template]
+    elif configured_template:
+        templates = [configured_template, stored_template]
+    else:
+        templates = [stored_template]
+    return templates
+
+
+def implicit_parameters_for_testing(
+    trans: ProvidesUserContext,
+    template_server_configuration: TemplateServerConfiguration,
+    target: CanTestPluginStatus,
+    app_config: UsesTemplatesAppConfig,
+) -> ImplicitConfigurationParameters | None:
+    implicit: ImplicitConfigurationParameters = {}
+    if template_server_configuration.oauth2_configuration:
+        refresh_token_key = None
+        if isinstance(target, CreateTestTarget):
+            if target.payload.uuid:
+                refresh_token_key = target.instance_class.vault_key_from_uuid(
+                    target.payload.uuid, "_oauth2_refresh_token", app_config
+                )
+        else:
+            if isinstance(target, UpgradeTestTarget | UpdateTestTarget):
+                instance = target.instance
+            else:
+                instance = target
+            refresh_token_key = instance.vault_key_from_uuid(instance.uuid, "_oauth2_refresh_token", app_config)
+        assert refresh_token_key
+
+        def get_refresh_token() -> str:
+            oauth2_refresh_token = trans.user_vault.read_secret(refresh_token_key)
+            if not oauth2_refresh_token:
+                raise InconsistentDatabase(
+                    f"Failed to recover oauth2 refresh token from vault at location {refresh_token_key}, Galaxy is in an inconsistent state and probably requires admin intervention"
+                )
+            return oauth2_refresh_token
+
+        _inject_oauth2_access_token(
+            implicit, refresh_token_key, get_refresh_token, trans.user_vault.write_secret, template_server_configuration
+        )
+
+    return implicit
+
+
+def implicit_parameters_for_instance(
+    user_instance: HasConfigSecrets,
+    template_server_configuration: TemplateServerConfiguration,
+    vault: Vault,
+    app_config: UsesTemplatesAppConfig,
+) -> ImplicitConfigurationParameters:
+    implicit: ImplicitConfigurationParameters = {}
+
+    if template_server_configuration.oauth2_configuration:
+        refresh_token_key = user_instance.__class__.vault_key_from_uuid(
+            str(user_instance.uuid), "_oauth2_refresh_token", app_config
+        )
+        user_vault = UserVaultWrapper(vault, user_instance.user)
+
+        def get_refresh_token() -> str:
+            oauth2_refresh_token = user_vault.read_secret(refresh_token_key)
+            if not oauth2_refresh_token:
+                raise Exception("null refresh token key read from user vault")
+            return oauth2_refresh_token
+
+        _inject_oauth2_access_token(
+            implicit, refresh_token_key, get_refresh_token, user_vault.write_secret, template_server_configuration
+        )
+
+    return implicit
+
+
+def access_token_for_uuid(
+    trans: ProvidesUserContext,
+    template_server_configuration: TemplateServerConfiguration,
+    uuid: str,
+    instance_class: type[HasConfigSecrets],
+    app_config: UsesTemplatesAppConfig,
+) -> str:
+    """Mint a fresh OAuth2 access token from the refresh token stored at ``uuid``.
+
+    Reads the refresh token stashed in the user vault at OAuth callback time (keyed by the
+    pre-allocated ``uuid``), exchanges it for an access token, and persists any rotated refresh
+    token back to the vault. Mirrors the token handling in ``implicit_parameters_for_testing``.
+    """
+    refresh_token_key = instance_class.vault_key_from_uuid(uuid, "_oauth2_refresh_token", app_config)
+
+    def get_refresh_token() -> str:
+        oauth2_refresh_token = trans.user_vault.read_secret(refresh_token_key)
+        if not oauth2_refresh_token:
+            raise InconsistentDatabase(
+                f"Failed to recover oauth2 refresh token from vault at location {refresh_token_key}, Galaxy is in an inconsistent state and probably requires admin intervention"
+            )
+        return oauth2_refresh_token
+
+    implicit: ImplicitConfigurationParameters = {}
+    _inject_oauth2_access_token(
+        implicit, refresh_token_key, get_refresh_token, trans.user_vault.write_secret, template_server_configuration
+    )
+    return implicit["oauth2_access_token"]
+
+
+def _inject_oauth2_access_token(
+    implicit: ImplicitConfigurationParameters,
+    refresh_token_key: str,
+    get_refresh_token: Callable[[], str],
+    save_refresh_token: Callable[[str, str], None],
+    template_server_configuration: TemplateServerConfiguration,
+) -> None:
+    cached_access_token = _cached_oauth2_access_token(refresh_token_key)
+    if cached_access_token:
+        implicit["oauth2_access_token"] = cached_access_token
+        return
+
+    refresh_lock = _oauth2_access_token_refresh_locks[hash(refresh_token_key) % len(_oauth2_access_token_refresh_locks)]
+    with refresh_lock:
+        # Another request for the same source may have refreshed while this request waited.
+        cached_access_token = _cached_oauth2_access_token(refresh_token_key)
+        if cached_access_token:
+            implicit["oauth2_access_token"] = cached_access_token
+            return
+
+        _refresh_oauth2_access_token(
+            implicit, refresh_token_key, get_refresh_token, save_refresh_token, template_server_configuration
+        )
+
+
+def _refresh_oauth2_access_token(
+    implicit: ImplicitConfigurationParameters,
+    refresh_token_key: str,
+    get_refresh_token: Callable[[], str],
+    save_refresh_token: Callable[[str, str], None],
+    template_server_configuration: TemplateServerConfiguration,
+) -> None:
+    oauth2_client_pair = template_server_configuration.oauth2_client_pair
+    oauth2_configuration = template_server_configuration.oauth2_configuration
+    assert oauth2_client_pair
+    assert oauth2_configuration
+    oauth2_refresh_token = get_refresh_token()
+    response = config_templates.get_token_from_refresh_raw(
+        oauth2_refresh_token, oauth2_client_pair, oauth2_configuration
+    )
+    response.raise_for_status()
+    token_response = response.json()
+    access_token = token_response["access_token"]
+    implicit["oauth2_access_token"] = access_token
+    # Some providers (e.g. GitHub) rotate the refresh token on every use and invalidate the
+    # previous one. Persist the replacement before releasing the per-source refresh lock.
+    rotated_refresh_token = token_response.get("refresh_token")
+    if rotated_refresh_token and rotated_refresh_token != oauth2_refresh_token:
+        save_refresh_token(refresh_token_key, rotated_refresh_token)
+
+    expires_in = token_response.get("expires_in")
+    if isinstance(expires_in, int | float) and expires_in > _OAUTH2_ACCESS_TOKEN_EXPIRY_SKEW_SECONDS:
+        _cache_oauth2_access_token(refresh_token_key, access_token, expires_in)
+
+
+def _cached_oauth2_access_token(refresh_token_key: str) -> str | None:
+    with _oauth2_access_token_cache_lock:
+        cached_token = _oauth2_access_token_cache.get(refresh_token_key)
+        if cached_token and cached_token.expires_at > time.monotonic():
+            return cached_token.value
+        _oauth2_access_token_cache.pop(refresh_token_key, None)
+    return None
+
+
+def _cache_oauth2_access_token(refresh_token_key: str, access_token: str, expires_in: float) -> None:
+    expires_at = time.monotonic() + expires_in - _OAUTH2_ACCESS_TOKEN_EXPIRY_SKEW_SECONDS
+    with _oauth2_access_token_cache_lock:
+        if len(_oauth2_access_token_cache) >= _OAUTH2_ACCESS_TOKEN_CACHE_MAXSIZE:
+            expired_keys = [
+                key
+                for key, cached_token in _oauth2_access_token_cache.items()
+                if cached_token.expires_at <= time.monotonic()
+            ]
+            for key in expired_keys:
+                _oauth2_access_token_cache.pop(key, None)
+            if len(_oauth2_access_token_cache) >= _OAUTH2_ACCESS_TOKEN_CACHE_MAXSIZE:
+                _oauth2_access_token_cache.pop(next(iter(_oauth2_access_token_cache)))
+        _oauth2_access_token_cache[refresh_token_key] = _CachedOAuth2AccessToken(access_token, expires_at)
+
+
+def oauth2_refresh_token_status(
+    template_server_configuration: TemplateServerConfiguration, exception: Exception | None
+) -> PluginAspectStatus | None:
+    if not template_server_configuration.uses_oauth2:
+        # no oauth enabled, don't report a status associated with
+        return None
+    else:
+        if not exception:
+            return PluginAspectStatus(
+                state="ok", message="OAuth2 secret refresh token generated an access token for this resource"
+            )
+        else:
+            return PluginAspectStatus(
+                state="not_ok",
+                message=f"OAuth2 secret refresh token failed to generate an access token for this resource: {exception}",
+            )
+
+
+def oauth2_redirect_uri(trans: SessionRequestContext) -> str:
+    galaxy_root = trans.request.url_path
+    redirect_uri = f"{galaxy_root}oauth2_callback"
+    return redirect_uri

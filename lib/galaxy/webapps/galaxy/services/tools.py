@@ -1,14 +1,17 @@
 import logging
+import os
 import shutil
 import tempfile
 from json import dumps
 from typing import (
     Any,
-    Dict,
-    List,
+    cast,
+    get_args,
     Optional,
-    Union,
+    TYPE_CHECKING,
+    TypeAlias,
 )
+from uuid import UUID
 
 from starlette.datastructures import UploadFile
 
@@ -17,26 +20,190 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.model import PostJobAction
-from galaxy.model.base import transaction
+from galaxy.managers.tools import (
+    get_tool_from_trans,
+    ToolRunReference,
+)
+from galaxy.model import (
+    LibraryDatasetDatasetAssociation,
+    User,
+)
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
+    CreateFileLandingPayload,
+    DataElementsTarget,
     FetchDataFormPayload,
     FetchDataPayload,
     FilesPayload,
+    HdaDestination,
+    HdcaDataItemsTarget,
+    HdcaDestination,
+    NestedElement,
+    TargetsAdapter,
+    UrlDataElement,
 )
+from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
+    ToolLike,
+)
+from galaxy.tool_util_models.parameters import (
+    CollectionElementCollectionRequestUri,
+    CollectionElementDataRequestUri,
+    DataRequestCollectionUri,
+    DataRequestUri,
+    FileRequestUri,
+)
 from galaxy.tools import Tool
+from galaxy.tools._types import InputFormatT
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.work.context import SessionRequestContext
+
+    PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
+
 log = logging.getLogger(__name__)
+
+ToolRunPayload = dict[str, Any]
+JobCreateResponse = dict[str, Any]
+
+
+def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    tool: ToolLike | None = None
+    if tool_ref.tool_uuid and trans.user:
+        tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
+    if not tool:
+        tool_id = tool_ref.tool_id
+        tool_uuid = tool_ref.tool_uuid
+        tool_version = tool_ref.tool_version
+        tool = trans.app.toolbox.get_tool(
+            tool_id=tool_id,
+            tool_uuid=tool_uuid,
+            tool_version=tool_version,
+        )
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
+    return trans.app.toolbox.materialize_tool(tool, reason="execution")
+
+
+def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
+    if trans.user_is_bootstrap_admin:
+        raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
+
+    if tool_ref.tool_id is None and tool_ref.tool_uuid is None:
+        raise exceptions.RequestParameterMissingException("Must specify a valid tool_id to use this endpoint.")
+
+    tool = get_tool_from_trans(trans, tool_ref)
+    if not tool.allow_user_access(trans.user):
+        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+    return tool
+
+
+def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandingPayload):
+    """Convert a CreateDataLandingPayload with DataOrCollectionRequest format to FetchDataPayload with Targets format.
+
+    This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
+    """
+    # Validate sample sheet metadata before conversion
+    for request_item in data_landing_payload.request_state:
+        if isinstance(request_item, DataRequestCollectionUri):
+            has_sample_sheet_metadata = request_item.column_definitions is not None or request_item.rows is not None
+            if has_sample_sheet_metadata:
+                collection_type = request_item.collection_type
+                if not collection_type.startswith("sample_sheet"):
+                    raise RequestParameterInvalidException(
+                        f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                    )
+
+    targets: list[DataElementsTarget | HdcaDataItemsTarget] = []
+
+    for request_item in data_landing_payload.request_state:
+        if isinstance(request_item, (DataRequestUri, FileRequestUri)):
+            # Convert single file/URL request to a DataElementsTarget
+            element = UrlDataElement(
+                src="url",
+                url=str(request_item.url),
+                ext=request_item.ext,
+                dbkey=request_item.dbkey,
+                name=request_item.name,
+                deferred=request_item.deferred,
+                info=request_item.info,
+                tags=request_item.tags,
+                space_to_tab=request_item.space_to_tab,
+                to_posix_lines=request_item.to_posix_lines,
+                created_from_basename=request_item.created_from_basename,
+            )
+
+            targets.append(
+                DataElementsTarget(
+                    destination=HdaDestination(type="hdas"),
+                    elements=[element],
+                )
+            )
+
+        elif isinstance(request_item, DataRequestCollectionUri):
+            # Convert collection request to HdcaDataItemsTarget
+            def convert_collection_element(elem):
+                """Convert a collection element (file or nested collection) recursively."""
+                if isinstance(elem, CollectionElementDataRequestUri):
+                    # This is a file element
+                    return UrlDataElement(
+                        src="url",
+                        url=str(elem.url),
+                        ext=elem.ext,
+                        dbkey=elem.dbkey,
+                        name=elem.identifier,
+                        deferred=elem.deferred,
+                        info=elem.info,
+                        tags=elem.tags,
+                        space_to_tab=elem.space_to_tab,
+                        to_posix_lines=elem.to_posix_lines,
+                        created_from_basename=elem.created_from_basename,
+                    )
+                elif isinstance(elem, CollectionElementCollectionRequestUri):
+                    # This is a nested collection element
+                    # Recursively convert its elements
+                    nested_elements = [convert_collection_element(nested_elem) for nested_elem in elem.elements]
+                    return NestedElement(
+                        name=elem.identifier,
+                        elements=nested_elements,
+                        collection_type=elem.collection_type,
+                    )
+                else:
+                    raise ValueError(f"Unknown collection element type: {type(elem)}")
+
+            elements = [convert_collection_element(elem) for elem in request_item.elements]
+
+            targets.append(
+                HdcaDataItemsTarget(
+                    destination=HdcaDestination(type="hdca"),
+                    elements=elements,
+                    collection_type=request_item.collection_type,
+                    name=request_item.name,
+                    column_definitions=request_item.column_definitions,
+                    rows=request_item.rows,
+                )
+            )
+
+    return [target.model_dump(mode="json", exclude_unset=True) for target in TargetsAdapter.validate_python(targets)]
 
 
 class ToolsService(ServiceBase):
@@ -52,13 +219,82 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
+        """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.
+
+        Sidecar for the My Tools panel; keeps `tool_tags` out of the bulk /api/tools
+        payload (and out of its cache key).
+        """
+        mapping: dict[str, list[str]] = {}
+        for _, tool in trans.app.toolbox.tools():
+            if tool.tool_tags:
+                mapping[tool.id] = list(tool.tool_tags)
+        return mapping
+
+    def file_landing_to_tool_landing(
+        self,
+        trans: ProvidesUserContext,
+        file_landing_payload: CreateFileLandingPayload,
+    ) -> CreateToolLandingRequestPayload:
+        request_version = "1"
+        payload = {"targets": file_landing_payload_to_fetch_targets(file_landing_payload)}
+        validate_and_normalize_targets(trans, payload, set_internal_fields=False)
+        request_state = {
+            "request_version": request_version,
+            "request_json": {
+                "targets": payload["targets"],
+            },
+            "file_count": "0",
+        }
+        return CreateToolLandingRequestPayload(
+            tool_id="__DATA_FETCH__",
+            tool_version=None,
+            request_state=request_state,
+            client_secret=file_landing_payload.client_secret,
+            public=file_landing_payload.public,
+            origin=file_landing_payload.origin,
+        )
+
+    def data_landing_to_tool_landing(
+        self,
+        trans: ProvidesUserContext,
+        data_landing_payload: CreateDataLandingPayload,
+    ) -> CreateToolLandingRequestPayload:
+        request_version = "1"
+        payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        validate_and_normalize_targets(trans, payload, set_internal_fields=False)
+        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
+        request_state = {
+            "request_version": request_version,
+            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
+            "file_count": "0",
+        }
+        return CreateToolLandingRequestPayload(
+            tool_id="__DATA_FETCH__",
+            tool_version=None,
+            request_state=request_state,
+            client_secret=data_landing_payload.client_secret,
+            public=data_landing_payload.public,
+            origin=data_landing_payload.origin,
+        )
+
+    def inputs(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_ref: ToolRunReference,
+    ) -> list[ToolParameterT]:
+        tool = get_tool(trans, tool_ref)
+        if tool.parameters is None:
+            raise exceptions.RequestParameterInvalidException("Tool input parameter schema could not be retrieved.")
+        return tool.parameters
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
-        fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
-        files: Optional[List[UploadFile]] = None,
-    ):
-        payload = fetch_payload.dict(exclude_unset=True)
+        fetch_payload: FetchDataFormPayload | FetchDataPayload,
+        files: list[UploadFile] | None = None,
+    ) -> JobCreateResponse:
+        payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
         clean_payload = {}
@@ -68,7 +304,8 @@ class ToolsService(ServiceBase):
                 with tempfile.NamedTemporaryFile(
                     dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
                 ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                    shutil.copyfileobj(upload_file.file, dest)
+                    util.umask_fix_perms(dest.name, trans.app.config.umask, 0o0666)
                 upload_file.file.close()
                 files_payload[f"files_{i}|file_data"] = FilesPayload(
                     filename=upload_file.filename, local_filename=dest.name
@@ -82,8 +319,16 @@ class ToolsService(ServiceBase):
             clean_payload[key] = value
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
+        preferred_object_store_id = clean_payload.get("preferred_object_store_id")
+        if preferred_object_store_id is not None:
+            validation_error = trans.app.object_store.validate_selected_object_store_id(
+                trans.user,
+                preferred_object_store_id,
+            )
+            if validation_error:
+                raise RequestParameterInvalidException(validation_error)
         request = dumps(clean_payload)
-        create_payload = {
+        create_payload: ToolRunPayload = {
             "tool_id": "__DATA_FETCH__",
             "history_id": history_id,
             "inputs": {
@@ -92,51 +337,31 @@ class ToolsService(ServiceBase):
                 "file_count": str(len(files_payload)),
             },
         }
+        if preferred_object_store_id is not None:
+            create_payload["preferred_object_store_id"] = preferred_object_store_id
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
-        if trans.user_is_bootstrap_admin:
-            raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
+    def _create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
         action = payload.get("action")
         if action == "rerun":
             raise Exception("'rerun' action has been deprecated")
 
-        # Get tool.
-        tool_version = payload.get("tool_version")
-        tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        get_kwds = dict(
-            tool_id=tool_id,
-            tool_uuid=tool_uuid,
-            tool_version=tool_version,
+        tool_run_reference = ToolRunReference(
+            payload.get("tool_id"), payload.get("tool_uuid"), payload.get("tool_version")
         )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
-
-        tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool:
-            log.debug(f"Not found tool with kwds [{get_kwds}]")
-            raise exceptions.ToolMissingException("Tool not found.")
-        if not tool.allow_user_access(trans.user):
-            raise exceptions.ItemAccessibilityException("Tool not accessible.")
-        if self.config.user_activation_on:
-            if not trans.user:
-                log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
-            elif not trans.user.active:
-                log.warning(
-                    f'User "{trans.user.email}" attempts to execute tool, but account activation is turned on and user account is not active.'
-                )
+        tool = validate_tool_for_running(trans, tool_run_reference)
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get("history_id")
-        if history_id:
+        if history_id := payload.get("history_id"):
             history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
             target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
-            target_history = None
+            if trans.history is None:
+                raise exceptions.RequestParameterMissingException("A valid history is required to execute tools.")
+            target_history = trans.history
 
         # Set up inputs.
         inputs = payload.get("inputs", {})
@@ -163,9 +388,14 @@ class ToolsService(ServiceBase):
             inputs.get("use_cached_job", "false")
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
+        credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
+        if input_format not in get_args(InputFormatT):
+            raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
+        input_format = cast(InputFormatT, input_format)  # https://github.com/python/mypy/issues/15106
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
+        tags = payload.get("__tags")
         vars = tool.handle_input(
             trans,
             incoming,
@@ -173,35 +403,32 @@ class ToolsService(ServiceBase):
             use_cached_job=use_cached_job,
             input_format=input_format,
             preferred_object_store_id=preferred_object_store_id,
+            credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
+            tags=tags,
+            send_email_notification=inputs.get("send_email_notification", False),
         )
-
-        new_pja_flush = False
-        for job in vars.get("jobs", []):
-            if inputs.get("send_email_notification", False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = PostJobAction("EmailAction")
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
+    def _handle_inputs_output_to_api_response(
+        self, trans: ProvidesHistoryContext, tool, target_history, vars
+    ) -> JobCreateResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
-        rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
+        rval: dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
         rval["produces_entry_points"] = tool.produces_entry_points
-        job_errors = vars.get("job_errors", [])
-        if job_errors:
+        if job_errors := vars.get("job_errors", []):
             # If we are here - some jobs were successfully executed but some failed.
-            rval["errors"] = job_errors
+            # TODO: We should probably alter the response status code and have a component that knows
+            # how to template in things like src and id, so we don't have to rely just on a textual error message.
+            execution_errors = [
+                (
+                    trans.security.encode_all_ids(api_error_to_dict(exception=e))
+                    if isinstance(e, exceptions.MessageException)
+                    else e
+                )
+                for e in job_errors
+            ]
+            rval["errors"] = execution_errors
 
         outputs = rval["outputs"]
         # TODO:?? poss. only return ids?
@@ -211,10 +438,10 @@ class ToolsService(ServiceBase):
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs
             output_dict["output_name"] = output_name
-            outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
+            outputs.append(output_dict)
 
         for job in vars.get("jobs", []):
-            rval["jobs"].append(self.encode_all_ids(job.to_dict(view="collection"), recursive=True))
+            rval["jobs"].append(job.to_dict(view="collection"))
 
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
@@ -238,9 +465,10 @@ class ToolsService(ServiceBase):
             output_dict["output_name"] = output_name
             rval["implicit_collections"].append(output_dict)
 
+        trans.security.encode_all_ids(rval, recursive=True)
         return rval
 
-    def _search(self, q, view):
+    def _search(self, q: str, view: str | None) -> list[str]:
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -277,7 +505,9 @@ class ToolsService(ServiceBase):
 
     def _patch_library_dataset(self, trans: ProvidesHistoryContext, v, target_history):
         if isinstance(v, dict) and "id" in v and v.get("src") == "ldda":
-            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v["id"]))
+            ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, self.decode_id(v["id"]))
+            if not ldda:
+                raise exceptions.ObjectNotFound("Could not find library dataset dataset association.")
             if trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), ldda.dataset
             ):
@@ -286,13 +516,41 @@ class ToolsService(ServiceBase):
     #
     # -- Helper methods --
     #
-    def _get_tool(self, trans, id, tool_version=None, user=None) -> Tool:
+    def _get_tool(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+    ) -> ToolLike:
+        if tool_uuid:
+            try:
+                UUID(tool_uuid)
+            except ValueError:
+                raise exceptions.RequestParameterInvalidException(f"Invalid tool_uuid '{tool_uuid}'.")
         tool = trans.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
+            if user and (id or tool_uuid):
+                tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
+            if not tool:
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool
+
+    def _get_materialized_tool(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+        *,
+        materialization_reason: MaterializationReasonName,
+    ) -> Tool:
+        tool = self._get_tool(trans, id, tool_version, tool_uuid, user)
+        return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
         """
@@ -311,3 +569,165 @@ class ToolsService(ServiceBase):
                 if tool and tool.allow_user_access(trans.user):
                     detected_versions.append(tool.version)
         return detected_versions
+
+    def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
+        tool = self._get_tool(trans, tool_id, tool_version)
+        if tool.icon:
+            materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
+            icon_file_path = tool.icon
+            if icon_file_path and materialized_tool.tool_dir:
+                # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
+                if not safe_contains(materialized_tool.tool_dir, icon_file_path):
+                    raise Exception(
+                        f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
+                    )
+                file_path = os.path.join(materialized_tool.tool_dir, icon_file_path)
+                if os.path.exists(file_path):
+                    return file_path
+        return None
+
+    # === Batch Endpoint Methods (use cached toolbox index when available) ===
+
+    def _get_cached_toolbox(self, trans: ProvidesUserContext) -> Optional["CachedToolBox"]:
+        """Return the active toolbox if it's a CachedToolBox, else None."""
+        toolbox = trans.app.toolbox
+        return toolbox if isinstance(toolbox, CachedToolBox) else None
+
+    def get_tests_summary(self, trans: ProvidesUserContext) -> dict[str, dict[str, dict[str, Any]]]:
+        """
+        Get tests summary for all tools.
+
+        Uses the cached toolbox index when available for O(1) access,
+        otherwise falls back to iterating over the traditional toolbox.
+
+        Returns:
+            Dictionary of {tool_id: {version: {tool_name, count}}}.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
+            # The index is store-wide and ``get_tests_summary`` already drops
+            # datatype converters; scope the result to tools this toolbox
+            # actually holds so ids present in the store but never loaded here
+            # don't leak into the summary (the eager loop below only ever sees
+            # loaded tools).
+            summary = cached_toolbox.tool_index.get_tests_summary()
+            return {tool_id: versions for tool_id, versions in summary.items() if cached_toolbox.has_tool(tool_id)}
+
+        # Fallback to traditional toolbox iteration
+        test_counts_by_tool: dict[str, dict] = {}
+        for _id, tool in trans.app.toolbox.tools():
+            if not tool.is_datatype_converter:
+                tests = tool.tests
+                if tests:
+                    if tool.id not in test_counts_by_tool:
+                        test_counts_by_tool[tool.id] = {}
+                    available_versions = test_counts_by_tool[tool.id]
+                    available_versions[tool.version] = {
+                        "tool_name": tool.name,
+                        "count": len(tests),
+                    }
+        return test_counts_by_tool
+
+    def get_all_requirements(self, trans: ProvidesUserContext) -> list[dict[str, Any]]:
+        """
+        Get all unique requirements from all tools.
+
+        Uses the cached toolbox index when available for O(1) access.
+
+        Returns:
+            List of unique requirement dictionaries.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
+            return cached_toolbox.tool_index.get_all_requirements()
+
+        # Fallback to traditional toolbox
+        return trans.app.toolbox.all_requirements
+
+    def get_panel_views(self, trans: ProvidesUserContext) -> dict[str, Any]:
+        """
+        Get panel views information.
+
+        Uses the cached toolbox index when available.
+
+        Returns:
+            Dictionary with default_panel_view and views.
+        """
+        toolbox = trans.app.toolbox
+        cached_toolbox = self._get_cached_toolbox(trans)
+        # Prefer the index's pre-computed view dicts when present, but fall
+        # back to the live ``toolbox.panel_view_dicts()`` when empty —
+        # ``CachedToolBox`` doesn't currently populate
+        # ``tool_index.panel_views`` (the views are registered live in
+        # ``_setup_panel_views``), so the index lookup yields ``{}`` and
+        # callers like ``test_edam_toolbox`` see no views at all.
+        if cached_toolbox and cached_toolbox.tool_index:
+            indexed_views = cached_toolbox.tool_index.get_panel_views()
+            if indexed_views:
+                return {
+                    "default_panel_view": toolbox.default_panel_view(trans),
+                    "views": indexed_views,
+                }
+
+        return {
+            "default_panel_view": toolbox.default_panel_view(trans),
+            "views": toolbox.panel_view_dicts(),
+        }
+
+    def list_tools(
+        self,
+        trans: "PanelViewTrans",
+        in_panel: bool,
+        tool_help: bool,
+        view: str | None,
+    ) -> list[dict[str, Any]]:
+        """List tools in the panel or as a flat list."""
+        # Both modes go through ``AbstractToolBox.to_dict``: the flat listing
+        # runs the ``FilterFactory`` pass (admin/user tool filters and
+        # ``allow_user_access``) over every tool, and ``get_tool_to_dict``
+        # serves ``CachedTool`` stubs from the index without materialising —
+        # so cached-toolbox mode stays O(1) parses while honoring the same filters as
+        # the eager toolbox.
+        return trans.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
+
+    def search_tools(
+        self,
+        trans: ProvidesUserContext,
+        query: str,
+        view: str | None = None,
+        limit: int = 50,
+    ) -> list[str]:
+        """Search tools via the ``app.toolbox_search`` singleton.
+
+        Cached and eager toolbox search both own a Whoosh corpus for each
+        rendered panel view and expose the same
+        ``search(q, panel_view, config)`` interface.
+
+        Every hit is resolved with a per-tool access check
+        (``allow_user_access``, e.g. ``require_login`` tools for anonymous
+        users) so denied tools are filtered out.
+
+        In cached-toolbox mode ``get_tool`` would materialise every hit, so
+        hits are instead resolved against registered stubs via
+        :meth:`CachedToolBox.resolve_search_hit`.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        results: list[str] = []
+        hits = self._search(query, view) or []
+        if cached_toolbox is not None:
+            hits = cached_toolbox.latest_search_hits(hits)
+        for hit in hits:
+            if cached_toolbox is not None:
+                cached_tool = cached_toolbox.resolve_search_hit(hit)
+                if cached_tool is not None and cached_tool.id and cached_tool.allow_user_access(trans.user):
+                    results.append(cached_tool.id)
+                continue
+            try:
+                tool_like = self._get_tool(trans, hit, user=trans.user)
+                if tool_like.id:
+                    results.append(tool_like.id)
+            except exceptions.AuthenticationFailed:
+                pass
+            except exceptions.ObjectNotFound:
+                pass
+        return results

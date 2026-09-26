@@ -1,38 +1,46 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 
-const props = defineProps({
-    status: String,
-});
+import localize from "@/utils/localization";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+interface Props {
+    status?: string;
+    isBusy?: boolean;
+}
+
+const props = defineProps<Props>();
 
 const installState = computed(() => !props.status || props.status === "Uninstalled");
 const uninstallState = computed(() => props.status === "Installed");
 
-const emit = defineEmits(["onInstall", "onUninstall"]);
+const emit = defineEmits(["onInstall", "onUninstall", "onReset"]);
 
-function onCancel() {
+function onReset() {
     if (window.confirm(`Do you want to reset this repository?`)) {
-        emit("onUninstall");
+        emit("onReset");
     }
 }
 </script>
 
 <template>
     <div>
-        <b-button v-if="installState" variant="primary" class="btn-sm" @click="() => emit('onInstall')">
-            Install
-        </b-button>
-        <b-button v-else-if="uninstallState" variant="danger" class="btn-sm" @click="() => emit('onUninstall')">
+        <GButton v-if="isBusy" size="small" disabled>
+            <b-spinner small></b-spinner>
+        </GButton>
+        <GButton v-else-if="installState" color="blue" size="small" @click="() => emit('onInstall')"> Install </GButton>
+        <GButton v-else-if="uninstallState" color="red" size="small" @click="() => emit('onUninstall')">
             Uninstall
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-else
-            variant="warning"
-            class="btn-sm"
-            :title="l('Reset Broken or Stuck Installation')"
-            @click="onCancel">
+            color="yellow"
+            size="small"
+            :title="localize('Reset Broken or Stuck Installation')"
+            @click="onReset">
             Reset
-        </b-button>
+        </GButton>
     </div>
 </template>
 

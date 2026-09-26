@@ -1,13 +1,11 @@
 import { createLocalVue, mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
-import { Services } from "../services";
-import Repositories from "./Repositories";
+import Repositories from "./Repositories.vue";
 
-jest.mock("app");
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
+vi.mock("app");
+vi.mock("../services", () => ({
+    Services: class Services {
         async getRepositories() {
             return [
                 {
@@ -23,9 +21,9 @@ Services.mockImplementation(() => {
                     times_downloaded: "times_downloaded_1",
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Repositories", () => {
     const localVue = createLocalVue();

@@ -10,7 +10,6 @@ from __future__ import (
 
 import sys
 from ast import (
-    Module,
     parse,
     walk,
 )
@@ -46,6 +45,8 @@ AST_NODE_TYPE_WHITELIST = [
     "UnaryOp",
     "Invert",
     "Not",
+    "UAdd",
+    "USub",
     "NotIn",
     "In",
     "Is",
@@ -53,6 +54,7 @@ AST_NODE_TYPE_WHITELIST = [
     "List",
     "Index",
     "Subscript",
+    "Constant",
     "Name",
 ]
 
@@ -112,8 +114,6 @@ def check_simple_name(text):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False
@@ -171,8 +171,6 @@ def check_expression(text):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False

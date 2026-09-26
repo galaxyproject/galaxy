@@ -6,6 +6,11 @@ from uuid import UUID
 
 from celery.result import AsyncResult
 
+from galaxy.schema.tasks import (
+    TaskResult,
+    TaskState,
+)
+
 
 class AsyncTasksManager(metaclass=ABCMeta):
     @abstractmethod
@@ -28,8 +33,12 @@ class AsyncTasksManager(metaclass=ABCMeta):
         """Return `True` if the task failed."""
 
     @abstractmethod
-    def get_state(self, task_uuid: UUID) -> str:
+    def get_state(self, task_uuid: UUID) -> TaskState:
         """Returns the current state of the task as a string."""
+
+    @abstractmethod
+    def get_result(self, task_uuid: UUID) -> TaskResult:
+        """Returns the final state and result message of the task."""
 
 
 class CeleryAsyncTasksManager(AsyncTasksManager):
@@ -50,9 +59,16 @@ class CeleryAsyncTasksManager(AsyncTasksManager):
         """Return `True` if the task failed."""
         return self._get_result(task_uuid).failed()
 
-    def get_state(self, task_uuid: UUID) -> str:
+    def get_state(self, task_uuid: UUID) -> TaskState:
         """Returns the tasks current state as a string."""
-        return str(self._get_result(task_uuid).state)
+        result = self._get_result(task_uuid)
+        state = TaskState(result.state)
+        return state
+
+    def get_result(self, task_uuid: UUID) -> TaskResult:
+        async_result = self._get_result(task_uuid)
+        result = TaskResult(state=TaskState(async_result.state), result=str(async_result.result or ""))
+        return result
 
     def _get_result(self, task_uuid: UUID) -> AsyncResult:
         return AsyncResult(str(task_uuid))

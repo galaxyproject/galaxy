@@ -1,10 +1,6 @@
 import abc
 import logging
 import os
-from typing import (
-    Set,
-    Union,
-)
 
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
@@ -26,7 +22,7 @@ class GoldenPath(Tabular):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
-        AGPFile(dataset.file_name)
+        AGPFile(dataset.get_file_name())
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -84,7 +80,7 @@ class GoldenPath(Tabular):
                         assert line[8] in ["+", "-", "?", "0", "na"]
                     if line[4] == "U":
                         assert int(line[5]) == 100
-                    assert all(map(lambda x: str(x).isnumeric() and int(x) > 0, ostensible_numbers))
+                    assert all(str(x).isnumeric() and int(x) > 0 for x in ostensible_numbers)
                     found_non_comment_lines = True
         except Exception:
             return False
@@ -177,7 +173,7 @@ class AGPFile:
                 if not all(fields):
                     raise AGPError(self.fname, line_number, "detected an empty field")
 
-                agp_line: Union[AGPGapLine, AGPSeqLine]
+                agp_line: AGPGapLine | AGPSeqLine
                 # Instantiate all the AGPLine objects. These will do line-specific validations.
                 if fields[4] == "N" or fields[4] == "U":
                     agp_line = AGPGapLine(self.fname, line_number, *fields)
@@ -312,7 +308,7 @@ class AGPLine(metaclass=abc.ABCMeta):
     checks that involve multiple lines should not be considered.
     """
 
-    allowed_comp_types: Set[str] = set()
+    allowed_comp_types: set[str] = set()
 
     def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type):
         self.is_gap = None
@@ -365,7 +361,6 @@ class AGPLine(metaclass=abc.ABCMeta):
 
 
 class AGPSeqLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequences.
     """
@@ -462,7 +457,6 @@ class AGPSeqLine(AGPLine):
 
 
 class AGPGapLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequence gaps.
     """

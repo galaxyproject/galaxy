@@ -1,4 +1,4 @@
-import { mountVueComponent } from "utils/mountVueComponent";
+import { mountVueComponent } from "@/utils/mountVueComponent";
 
 import CollectionJobStates from "./CollectionJobStates";
 

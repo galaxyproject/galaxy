@@ -1,9 +1,11 @@
-""" API for asynchronous job running mechanisms can use to fetch or put files
+"""API for asynchronous job running mechanisms can use to fetch or put files
 related to running and queued jobs.
 """
+
 from galaxy.job_execution.ports import JobPortsView
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 
@@ -21,7 +23,7 @@ class JobPortsAPIController(BaseGalaxyAPIController):
         self._job_ports_view = JobPortsView(app)
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, job_id, payload, **kwargs):
+    def create(self, trans: GalaxyWebTransaction, job_id, payload, **kwargs):
         """
         create( self, trans, job_id, payload, **kwargs )
         * POST /api/jobs/{job_id}/ports

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
 
 import { getAllValues, type Option, type Value } from "./utilities";
@@ -11,11 +12,13 @@ const props = withDefaults(
         value?: Value;
         options: Array<Option>;
         multiple: boolean;
+        showIcons?: boolean;
     }>(),
     {
         value: null,
         multiple: true,
-    }
+        showIcons: false,
+    },
 );
 
 const emit = defineEmits<{
@@ -53,22 +56,17 @@ const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
 });
 
 // Handle click on individual check/radio element
-function handleClick(value: string): void {
+function handleClick(clickedElement: string, value: string): void {
     if (props.multiple) {
-        const newValue: string[] = currentValue.value.slice();
-        const index: number = newValue.indexOf(value);
-        if (index !== -1) {
-            newValue.splice(index, 1);
-        } else {
-            newValue.push(value);
-        }
-        if (newValue.length === 0) {
+        // Only the chosen option is submitted; the server expands a recurse hierarchy.
+        const selectedElements: string[] = setElementValues(currentValue.value, [clickedElement], value);
+        if (selectedElements.length === 0) {
             emit("input", null);
         } else {
-            emit("input", newValue);
+            emit("input", selectedElements);
         }
     } else {
-        emit("input", value);
+        emit("input", clickedElement);
     }
 }
 
@@ -76,23 +74,39 @@ function handleClick(value: string): void {
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
 }
+
+function setElementValues(oldArray: string[], newArray: string[], value: string): string[] {
+    if (value) {
+        return Array.from(new Set([...oldArray, ...newArray]));
+    } else {
+        const newSet = new Set(newArray);
+        return oldArray.filter((item) => !newSet.has(item));
+    }
+}
 </script>
 
 <template>
-    <div v-if="hasOptions">
-        <b-form-checkbox
-            v-if="multiple"
-            v-localize
-            :checked="selectAllChecked"
-            :indeterminate="selectAllIndeterminate"
-            class="d-inline select-all-checkbox"
-            @change="onSelectAll">
-            Select / Deselect All
-        </b-form-checkbox>
-        <FormDrilldownList
-            :multiple="multiple"
-            :current-value="currentValue"
-            :options="options"
-            :handle-click="handleClick" />
+    <div>
+        <div v-if="hasOptions">
+            <BFormCheckbox
+                v-if="multiple"
+                v-localize
+                :checked="selectAllChecked"
+                :indeterminate="selectAllIndeterminate"
+                class="d-inline select-all-checkbox"
+                @change="onSelectAll">
+                Select / Deselect All
+            </BFormCheckbox>
+
+            <FormDrilldownList
+                :show-icons="showIcons"
+                :multiple="multiple"
+                :current-value="currentValue"
+                :options="options"
+                :handle-click="handleClick" />
+        </div>
+        <div v-else>
+            <BAlert show variant="info" class="mt-2"> No options available. </BAlert>
+        </div>
     </div>
 </template>

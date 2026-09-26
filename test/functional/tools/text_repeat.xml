@@ -1,0 +1,15 @@
+<tool id="text_repeat" name="text_repeat" version="1.0.0">
+    <command><![CDATA[
+#for $repeat_instance in $the_repeat#
+    echo '$repeat_instance.texttest' >> 'out_file1';
+#end for#
+    ]]></command>
+    <inputs>
+        <repeat name="the_repeat" title="Repeat Inputs">
+            <param name="texttest" type="text" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

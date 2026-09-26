@@ -98,16 +98,16 @@ def build_tests(
             continue
         name = name_prefix + tool_id.replace(" ", "_")
         baseclasses = (baseclass,)
-        namespace = dict()
+        namespace = {}
 
         all_versions_test_count = 0
 
         for tool_version, version_summary in tool_summary.items():
             count = version_summary["count"]
             for i in range(count):
-                test_function_name = "test_tool_%06d" % all_versions_test_count
+                test_function_name = f"test_tool_{all_versions_test_count:06d}"
                 test_method = make_test_method(tool_version, i, test_function_name)
-                test_method.__doc__ = "( %s ) > Test-%d" % (tool_id, all_versions_test_count + 1)
+                test_method.__doc__ = f"( {tool_id} ) > Test-{all_versions_test_count + 1}"
                 namespace[test_function_name] = test_method
                 namespace["tool_id"] = tool_id
                 namespace["galaxy_interactor"] = galaxy_interactor

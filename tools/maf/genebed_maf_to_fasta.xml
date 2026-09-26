@@ -1,16 +1,20 @@
-<tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks" version="1.0.1">
+<tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks" version="1.0.1" profile="20.05">
   <description>given a set of coding exon intervals</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="interval_maf_to_merged_fasta.py"/>
+  </required_files>
   <command>
-python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --species=$maf_source_type.species
+python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey='$dbkey' --species='$maf_source_type.species'
 #if $maf_source_type.maf_source == "user"
     --mafSource='$maf_source_type.maf_file' --mafIndex='$maf_source_type.maf_file.metadata.maf_index'
 #else
     --mafSource='$maf_source_type.maf_identifier'
 #end if
---interval_file='$input1' --output_file='$out_file1' --mafSourceType=$maf_source_type.maf_source --geneBED --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps=$overwrite_with_gaps
+--interval_file='$input1' --output_file='$out_file1' --mafSourceType='$maf_source_type.maf_source' --geneBED --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps='$overwrite_with_gaps'
   </command>
   <inputs>
     <param name="input1" type="data" format="bed" label="Gene BED File">
@@ -67,7 +71,7 @@ python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --sp
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="8.bed"/>
+      <param name="input1" value="8.bed" dbkey="hg17"/>
       <param name="maf_source" value="cached"/>
       <param name="maf_identifier" value="8_WAY_MULTIZ_hg17"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
@@ -75,7 +79,7 @@ python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --sp
       <output name="out_file1" file="gene_bed_maf_to_fasta_out.fasta" />
     </test>
     <test>
-      <param name="input1" value="8.bed"/>
+      <param name="input1" value="8.bed" dbkey="hg17"/>
       <param name="maf_source" value="user"/>
       <param name="maf_file" value="4.maf"/>
       <param name="species" value="hg17,panTro1"/>

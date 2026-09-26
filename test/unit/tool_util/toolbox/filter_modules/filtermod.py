@@ -1,5 +1,4 @@
-""" Test filters used by test_toolbox_filters.py.
-"""
+"""Test filters used by test_toolbox_filters.py."""
 
 
 def filter_tool(context, tool):

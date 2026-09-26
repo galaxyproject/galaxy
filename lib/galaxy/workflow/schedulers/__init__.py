@@ -1,11 +1,16 @@
-""" Module containing Galaxy workflow scheduling plugins. Galaxy's interface
+"""Module containing Galaxy workflow scheduling plugins. Galaxy's interface
 for workflow scheduling is highly experimental and the interface required for
 scheduling plugins will almost certainly change.
 """
+
 from abc import (
     ABCMeta,
     abstractmethod,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from galaxy.workflow.modules import SchedulingDependencies
 
 
 class WorkflowSchedulingPlugin(metaclass=ABCMeta):
@@ -34,8 +39,7 @@ class WorkflowSchedulingPlugin(metaclass=ABCMeta):
 
 class ActiveWorkflowSchedulingPlugin(WorkflowSchedulingPlugin, metaclass=ABCMeta):
     @abstractmethod
-    def schedule(self, workflow_invocation):
-        """Optionally return one or more commands to instrument job. These
-        commands will be executed on the compute server prior to the job
-        running.
+    def schedule(self, workflow_invocation) -> "SchedulingDependencies":
+        """Schedule the workflow invocation and return any scheduling
+        dependencies that should be tracked for the next iteration.
         """

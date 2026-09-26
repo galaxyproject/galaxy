@@ -1,0 +1,34 @@
+class: GalaxyWorkflow
+doc: |
+  Workflow with one inline user-defined tool (UDT) step. Exercises the
+  end-to-end path through Galaxy: format2 normalization (including
+  _expand_format2 pass-through for GalaxyUserToolStub, gxformat2 PR #218),
+  workflow import with tool_representation, on-import DynamicTool
+  registration, and execution via the YAML tool runtime.
+inputs:
+  input1:
+    type: data
+outputs:
+  wf_output:
+    outputSource: udt_cat/output1
+steps:
+  udt_cat:
+    run:
+      class: GalaxyUserTool
+      id: cat_user_defined
+      version: "0.1"
+      name: cat_user_defined
+      description: concatenates a file
+      container: busybox
+      shell_command: cat '$(inputs.input1.path)' > output.txt
+      inputs:
+        - name: input1
+          type: data
+          format: txt
+      outputs:
+        - name: output1
+          type: data
+          format: txt
+          from_work_dir: output.txt
+    in:
+      input1: input1

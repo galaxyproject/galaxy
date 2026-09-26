@@ -1,40 +1,249 @@
-import { HistoryFilters } from "components/History/HistoryFilters";
+import { describe, expect, it } from "vitest";
 
-describe("test filtering helpers to convert settings to filter text", () => {
-    it("conversion from settings to new filter text", async () => {
-        const normalized = HistoryFilters.getDefaults();
+import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getHistoryListFilters } from "@/components/History/historyList";
+import { quoteToolTagValue } from "@/components/Panels/utilities";
+import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
+import Filtering, { contains } from "@/utils/filtering";
+
+describe("test filtering helpers to convert filters to filter text", () => {
+    const MyWorkflowFilters = getWorkflowFilters("my");
+    const PublishedWorkflowFilters = getWorkflowFilters("published");
+    // Mirror ToolsList.vue's real wiring — same `quoteToolTagValue` import —
+    // so a regression in the production helper trips this test instead of the
+    // test silently agreeing with itself via an inline reimplementation.
+    const ToolTagFilters = new Filtering(
+        {
+            tag: {
+                type: "MultiTags",
+                handler: contains("tag", undefined, quoteToolTagValue),
+                menuItem: true,
+            },
+        },
+        undefined,
+        false,
+    );
+    it("conversion from filters to new filter text", async () => {
+        const normalized = HistoryFilters.defaultFilters;
         expect(Object.keys(normalized).length).toBe(2);
-        expect(normalized["deleted:"]).toBe(false);
-        expect(normalized["visible:"]).toBe(true);
+        expect(normalized["deleted"]).toBe(false);
+        expect(normalized["visible"]).toBe(true);
     });
 
     it("verify the existence of defaults", async () => {
-        const settings = {};
+        const filters = {};
         Object.entries(HistoryFilters.defaultFilters).forEach(([key, value]) => {
-            settings[`${key}:`] = value;
+            filters[key] = value;
         });
-        expect(HistoryFilters.containsDefaults(settings)).toBe(true);
-        settings["deleted:"] = !HistoryFilters.defaultFilters.deleted;
-        expect(HistoryFilters.containsDefaults(settings)).toBe(false);
-        settings["deleted:"] = HistoryFilters.defaultFilters.deleted;
-        settings["visible:"] = !HistoryFilters.defaultFilters.visible;
-        expect(HistoryFilters.containsDefaults(settings)).toBe(false);
-        settings["visible:"] = String(HistoryFilters.defaultFilters.visible).toUpperCase();
-        expect(HistoryFilters.containsDefaults(settings)).toBe(true);
+        expect(HistoryFilters.containsDefaults(filters)).toBe(true);
+        filters["deleted"] = !HistoryFilters.defaultFilters.deleted;
+        expect(HistoryFilters.containsDefaults(filters)).toBe(false);
+        filters["deleted"] = HistoryFilters.defaultFilters.deleted;
+        filters["visible"] = !HistoryFilters.defaultFilters.visible;
+        expect(HistoryFilters.containsDefaults(filters)).toBe(false);
+        filters["visible"] = String(HistoryFilters.defaultFilters.visible).toUpperCase();
+        expect(HistoryFilters.containsDefaults(filters)).toBe(true);
     });
 
-    it("verify correct conversion of settings", async () => {
-        const settings = {
-            "deleted:": HistoryFilters.defaultFilters.deleted,
-            "visible:": HistoryFilters.defaultFilters.visible,
-            "other:": "other",
-            "anything:": undefined,
-            "value:": "",
+    it("published filters exclude shared_with_me for anonymous users", async () => {
+        const loggedInFilters = getWorkflowFilters("published", false);
+        const anonFilters = getWorkflowFilters("published", true);
+        const filters = { shared_with_me: true };
+        expect(Object.keys(loggedInFilters.getValidFilters(filters).validFilters)).toContain("shared_with_me");
+        expect(Object.keys(anonFilters.getValidFilters(filters).validFilters)).not.toContain("shared_with_me");
+    });
+
+    it("verify correct conversion of filters", async () => {
+        const filters = {
+            deleted: HistoryFilters.defaultFilters.deleted,
+            visible: HistoryFilters.defaultFilters.visible,
+            name: "name",
+            other: "other",
+            tag: ["tag1", "'tag2'", "'#tag3'"],
+            genome_build: "",
+            published: true,
         };
-        expect(HistoryFilters.getFilterText(settings)).toBe("other:other");
-        settings["visible:"] = !HistoryFilters.defaultFilters.visible;
-        expect(HistoryFilters.getFilterText(settings)).toBe("deleted:false visible:false other:other");
-        settings["visible:"] = HistoryFilters.defaultFilters.visible;
-        expect(HistoryFilters.getFilterText(settings)).toBe("other:other");
+        const validHistFilters = HistoryFilters.getValidFilters(filters).validFilters;
+        expect(Object.keys(validHistFilters)).toEqual(["deleted", "visible", "name"]);
+        const validMyWfFilters = MyWorkflowFilters.getValidFilters(filters).validFilters;
+        expect(Object.keys(validMyWfFilters)).toEqual(["deleted", "name", "tag", "published"]);
+        const validPubWfFilters = PublishedWorkflowFilters.getValidFilters(filters).validFilters;
+        expect(Object.keys(validPubWfFilters)).toEqual(["name", "tag"]);
+
+        expect(HistoryFilters.getFilterText(filters)).toBe("name:name");
+        filters["visible"] = !HistoryFilters.defaultFilters.visible;
+        expect(HistoryFilters.getFilterText(filters)).toBe("deleted:false visible:false name:name");
+        filters["visible"] = HistoryFilters.defaultFilters.visible;
+        expect(HistoryFilters.getFilterText(filters)).toBe("name:name");
+
+        // non-backend filter text keeps filters as is
+        expect(MyWorkflowFilters.getFilterText(filters)).toBe("name:name tag:tag1 tag:'tag2' tag:'#tag3' is:published");
+
+        // backend filter text adjusts name tag by replacing `#` with `name:`
+        expect(MyWorkflowFilters.getFilterText(filters, true)).toBe(
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3' is:published",
+        );
+
+        expect(PublishedWorkflowFilters.getFilterText(filters, true)).toBe(
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3'",
+        );
+        delete filters["published"];
+        expect(MyWorkflowFilters.getFilterText(filters, true)).toBe("name:name tag:tag1 tag:'tag2' tag:'name:tag3'");
+    });
+
+    it("quotes multi-word MultiTags values when a converter requires it", async () => {
+        expect(ToolTagFilters.getFilterText({ tag: ["data cleanup", "collection_ops"] })).toBe(
+            'tag:"data cleanup" tag:collection_ops',
+        );
+    });
+});
+
+describe("test filtering helpers to convert filter text to filters", () => {
+    const PublishedWorkflowFilters = getWorkflowFilters("published");
+    function getFilters(filteringClass, filterText) {
+        return filteringClass.getValidFilters(Object.fromEntries(filteringClass.getFiltersForText(filterText)))
+            .validFilters;
+    }
+
+    it("verify the existence of defaults", async () => {
+        let filterText = "";
+        expect(HistoryFilters.containsDefaults(getFilters(HistoryFilters, filterText))).toBe(true);
+        filterText = "deleted:true";
+        expect(HistoryFilters.containsDefaults(getFilters(HistoryFilters, filterText))).toBe(false);
+        filterText = "visible:false";
+        expect(HistoryFilters.containsDefaults(getFilters(HistoryFilters, filterText))).toBe(false);
+        filterText = "deleted:any";
+        expect(HistoryFilters.containsDefaults(getFilters(HistoryFilters, filterText))).toBe(false);
+        filterText = "deleted:false visible:true";
+        expect(HistoryFilters.containsDefaults(getFilters(HistoryFilters, filterText))).toBe(true);
+    });
+
+    it("verify correct conversion of filterText (HistoryFilters)", async () => {
+        const filters = {
+            deleted: HistoryFilters.defaultFilters.deleted,
+            visible: HistoryFilters.defaultFilters.visible,
+            name: "name",
+        };
+        let filterText = "name:name";
+        expect(getFilters(HistoryFilters, filterText)).toEqual(filters);
+        filterText = "visible:false name:name";
+        filters["visible"] = !HistoryFilters.defaultFilters.visible;
+        delete filters["deleted"];
+        expect(getFilters(HistoryFilters, filterText)).toEqual(filters);
+        filterText = "visible:false deleted:any name:name";
+        expect(getFilters(HistoryFilters, filterText)).toEqual(filters);
+        filterText = "visible:false deleted:true name:name";
+        filters["deleted"] = true;
+        expect(getFilters(HistoryFilters, filterText)).toEqual(filters);
+        filterText = "visible:false deleted:true name:name invalid:invalid";
+        expect(getFilters(HistoryFilters, filterText)).toEqual(filters);
+    });
+
+    it("verify correct conversion of filterText (PublishedWorkflowFilters)", async () => {
+        const filters = {
+            name: "name",
+        };
+        let filterText = "name:name is:published";
+        expect(getFilters(PublishedWorkflowFilters, filterText)).toEqual(filters);
+        filterText = "published:false name:name";
+        expect(getFilters(PublishedWorkflowFilters, filterText)).toEqual(filters);
+        filterText = "name:name invalid:invalid user:testUser";
+        filters["user"] = "testUser";
+        expect(getFilters(PublishedWorkflowFilters, filterText)).toEqual(filters);
+    });
+});
+
+/**
+ * `validatedFilterText` in WorkflowList.vue/HistoryList.vue/GridList.vue/CredentialsManagement.vue
+ * all follow this same shape: pass `filterText` through untouched if nothing matched, otherwise
+ * rebuild it from the parsed filters. Mirrored here so a regression in any of those trips this test
+ *
+ * **TODO:** _We need to put this in a centralized file (maybe the `Filtering` class...)._
+ */
+function validatedFilterText(filterClass, filterText) {
+    const rawFilters = Object.fromEntries(filterClass.getFiltersForText(filterText, true, false));
+    if (Object.keys(rawFilters).length === 0) {
+        return filterText;
+    }
+    const validFilters = filterClass.getValidFilters(rawFilters, true).validFilters;
+    return filterClass.getFilterText(validFilters, true, filterText);
+}
+
+describe("validatedFilterText keeps unspecified text alongside other filters", () => {
+    // WorkflowList (getWorkflowFilters) intentionally has no autoFilterKey: it uses
+    // quoteStrings: false, whose regex matches a filter value up to the *next* `key:` token so
+    // values can contain unquoted spaces (e.g. `tool:my tool name`). That means it can't tell
+    // "tag:foo bar" apart from "tag value is 'foo bar'".
+    // `autoFilterKey` would corrupt the tag value by absorbing trailing unspecified text into it.
+    // Pure unspecified text alone still passes straight through untouched.
+    it("WorkflowList (getWorkflowFilters) leaves multi-word tag values untouched", () => {
+        const wf = getWorkflowFilters("my");
+        expect(validatedFilterText(wf, "tag:amrfinderplus_report metagenomics")).toBe(
+            "tag:amrfinderplus_report metagenomics",
+        );
+        expect(validatedFilterText(wf, "grep1")).toBe("grep1");
+    });
+
+    it("HistoryList (getHistoryListFilters)", () => {
+        const hl = getHistoryListFilters("my");
+        expect(validatedFilterText(hl, "grep1 tag:foo")).toBe("tag:foo grep1");
+        expect(validatedFilterText(hl, "grep1")).toBe("grep1");
+    });
+
+    it("CredentialsManagement (name/tool/service)", () => {
+        const cf = new Filtering(
+            {
+                name: { type: String, handler: contains("name"), menuItem: true },
+                tool: { type: String, handler: contains("tool"), menuItem: true },
+                service: { type: String, handler: contains("service"), menuItem: true },
+            },
+            undefined,
+            true,
+            "name",
+        );
+        expect(validatedFilterText(cf, "grep1 tool:foo")).toBe("tool:foo grep1");
+        expect(validatedFilterText(cf, "grep1")).toBe("grep1");
+    });
+
+    it("GridList (a config with name + another filter)", () => {
+        const gf = new Filtering(
+            {
+                name: { type: String, handler: contains("name"), menuItem: true },
+                extension: { type: String, handler: contains("extension"), menuItem: true },
+            },
+            undefined,
+            true,
+            "name",
+        );
+        expect(validatedFilterText(gf, "grep1 extension:txt")).toBe("extension:txt grep1");
+        expect(validatedFilterText(gf, "grep1")).toBe("grep1");
+    });
+});
+
+describe("quoteStrings: false (Workflows) maintains behavior with unquoted multi-word values", () => {
+    const wf = getWorkflowFilters("my");
+
+    it("parses key:value tokens the same way", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:RNAseq tag:foo"))).toEqual({
+            name: "RNAseq",
+            tag: ["foo"],
+        });
+    });
+
+    it("keeps a quoted value's quotes in the parsed value (no stripping in this mode)", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:'RNAseq'"))).toEqual({ name: "'RNAseq'" });
+    });
+
+    it("leaves multi-word unquoted values intact", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:my workflow name"))).toEqual({
+            name: "my workflow name",
+        });
+    });
+
+    it("validates filter text unchanged", () => {
+        expect(validatedFilterText(wf, "name:RNAseq is:published")).toBe("name:RNAseq is:published");
+        expect(validatedFilterText(wf, "tag:amrfinderplus_report metagenomics")).toBe(
+            "tag:amrfinderplus_report metagenomics",
+        );
     });
 });

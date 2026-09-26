@@ -1,12 +1,14 @@
 import json
 import typing
 from logging import getLogger
-from os import getcwd
+from os import (
+    getcwd,
+    makedirs,
+)
 from os.path import (
     abspath,
     join,
 )
-from typing import Optional
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -15,6 +17,7 @@ from galaxy.jobs.runners.util.job_script import (
     ScriptIntegrityChecks,
     write_script,
 )
+from galaxy.model import Dataset
 from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
@@ -30,19 +33,20 @@ CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True"""
-PREPARE_DIRS = """mkdir -p working outputs configs
-if [ -d _working ]; then
-    rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
-else
-    cp -R working _working; cp -R outputs _outputs; cp -R configs _configs
-fi
-cd working"""
+REMOTE_TOOL_EVAL_SOURCE_COMMAND = (
+    'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+)
+REMOTE_TOOL_EVAL_PACKAGE_COMMAND = "galaxy-remote-tool-eval"
+REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
+    'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
+    f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
+)
 
 
 def build_command(
     runner: "BaseJobRunner",
     job_wrapper: "MinimalJobWrapper",
-    container: Optional[Container] = None,
+    container: Container | None = None,
     modify_command_for_container: bool = True,
     include_metadata: bool = False,
     include_work_dir_outputs: bool = True,
@@ -50,6 +54,7 @@ def build_command(
     remote_command_params=None,
     remote_job_directory=None,
     stream_stdout_stderr: bool = False,
+    metadata_container: Container | None = None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -81,8 +86,16 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     __handle_task_splitting(commands_builder, job_wrapper)
-
     for_pulsar = "pulsar_version" in remote_command_params
+    if container:
+        if core_job_metric_plugin := runner.app.job_metrics.default_job_instrumenter.get_configured_plugin("core"):
+            directory = join(job_wrapper.working_directory, "metadata") if for_pulsar else job_wrapper.working_directory
+            makedirs(directory, exist_ok=True)
+            container_file_path = core_job_metric_plugin.get_container_file_path(directory)
+            with open(container_file_path, "w") as container_file:
+                container_file.write(
+                    json.dumps({"container_id": container.container_id, "container_type": container.container_type})
+                )
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
@@ -108,23 +121,19 @@ def build_command(
     # it should be preferred - at least if the directory exists.
     io_directory = "../metadata" if for_pulsar else "../outputs"
     commands_builder.capture_stdout_stderr(
-        f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
+        join(io_directory, "tool_stdout"), join(io_directory, "tool_stderr"), stream_stdout_stderr=stream_stdout_stderr
     )
 
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
-        # usually working will already exist, but it will not for task
-        # split jobs.
-
-        # Copy working and outputs before job submission so that these can be restored on resubmission
-        # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command(PREPARE_DIRS)
+        # Working (and outputs, configs) are backed up and restored in the job script for both Galaxy and Pulsar jobs,
+        # but Pulsar automatically changes into the working dir, whereas Galaxy does not.
+        commands_builder.prepend_command("cd working")
 
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
-    container_monitor_command = job_wrapper.container_monitor_command(container)
-    if container_monitor_command:
+    if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
 
     working_directory = remote_job_directory or job_wrapper.working_directory
@@ -132,6 +141,7 @@ def build_command(
 
     if job_wrapper.is_cwl_job:
         # Minimal metadata needed by the relocate script
+        assert job_wrapper.tool
         cwl_metadata_params = {
             "job_metadata": join("working", job_wrapper.tool.provided_metadata_file),
             "job_id_tag": job_wrapper.get_id_tag(),
@@ -153,7 +163,7 @@ def build_command(
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         commands_builder.append_command(f"cd '{working_directory}'")
-        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
+        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params, metadata_container)
 
     return commands_builder.build()
 
@@ -164,7 +174,7 @@ def __externalize_commands(
     commands_builder,
     remote_command_params,
     script_name="tool_script.sh",
-    container: Optional[Container] = None,
+    container: Container | None = None,
 ):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
@@ -182,13 +192,7 @@ def __externalize_commands(
     source_command = ""
     if container:
         source_command = container.source_environment
-    script_contents = "#!{}\n{}{}{}{}".format(
-        shell,
-        integrity_injection,
-        set_e,
-        source_command,
-        tool_commands,
-    )
+    script_contents = f"#!{shell}\n{integrity_injection}{set_e}{source_command}{tool_commands}"
     write_script(
         local_container_script,
         script_contents,
@@ -213,11 +217,16 @@ def __externalize_commands(
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
         sep = "" if for_pulsar else "&&"
-        command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
         if for_pulsar:
+            # Pulsar sets GALAXY_LIB from its own galaxy_home, so this Galaxy's layout says
+            # nothing about the remote's - let the remote pick between the two forms.
             # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
             # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
-            command = f"{command} && bash ../tool_script.sh"
+            command = f"{REMOTE_TOOL_EVAL_PULSAR_COMMAND} && bash ../tool_script.sh"
+        elif job_wrapper.galaxy_lib_dir:
+            command = REMOTE_TOOL_EVAL_SOURCE_COMMAND
+        else:
+            command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
         commands_builder.prepend_command(command, sep=sep)
 
 
@@ -249,14 +258,18 @@ def __handle_work_dir_outputs(
 
 
 def __handle_metadata(
-    commands_builder, job_wrapper: "MinimalJobWrapper", runner: "BaseJobRunner", remote_command_params
+    commands_builder,
+    job_wrapper: "MinimalJobWrapper",
+    runner: "BaseJobRunner",
+    remote_command_params,
+    metadata_container: Container | None = None,
 ):
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
     metadata_kwds = remote_command_params.get("metadata_kwds", {})
     exec_dir = metadata_kwds.get("exec_dir", abspath(getcwd()))
     tmp_dir = metadata_kwds.get("tmp_dir", job_wrapper.working_directory)
-    dataset_files_path = metadata_kwds.get("dataset_files_path", runner.app.model.Dataset.file_path)
+    dataset_files_path = metadata_kwds.get("dataset_files_path", Dataset.file_path)
     output_fnames = metadata_kwds.get("output_fnames", job_wrapper.job_io.get_output_fnames())
     config_root = metadata_kwds.get("config_root", None)
     config_file = metadata_kwds.get("config_file", None)
@@ -284,6 +297,9 @@ def __handle_metadata(
     )
     metadata_command = metadata_command.strip()
     if metadata_command:
+        if metadata_container:
+            commands_builder.append_command(metadata_container.containerize_command("galaxy-set-metadata"))
+            return
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         if not job_wrapper.is_cwl_job:
             commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
@@ -292,9 +308,17 @@ def __handle_metadata(
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
+    is_directory = True if destination.endswith("_files") else False
+    test_flag = "-d" if is_directory else "-f"
+    recursive_flag = " -r" if is_directory else ""
+    delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
     if "?" in source_file or "*" in source_file:
         source_file = source_file.replace("*", '"*"').replace("?", '"?"')
-    return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
+    # Check if source and destination exist.
+    # Users can purge outputs before the job completes,
+    # in that case we don't want to copy the output to a purged path.
+    # Static, non work_dir_output files are handled in job_finish code.
+    return f'\nif [ {test_flag} "{source_file}" -a {test_flag} "{destination}" ] ; then{delete_destination_dir} cp{recursive_flag} "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:

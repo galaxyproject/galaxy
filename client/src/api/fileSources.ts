@@ -1,0 +1,150 @@
+import { faAws, faDropbox, faGithub, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
+import { faCloud, faFolderTree, faGlobe, faNetworkWired, type IconDefinition } from "font-awesome-6";
+
+import type { components } from "@/api/schema";
+import { contains } from "@/utils/filtering";
+
+export type FileSourceTemplateSummary = components["schemas"]["FileSourceTemplateSummary"];
+export type FileSourceTemplateSummaries = FileSourceTemplateSummary[];
+
+export type UserFileSourceModel = components["schemas"]["UserFileSourceModel"];
+export type FileSourceTypes = UserFileSourceModel["type"];
+export type FileSourceTypesDetail = Record<FileSourceTypes, { icon: IconDefinition; message: string }>;
+
+export const templateTypes: FileSourceTypesDetail = {
+    azure: {
+        icon: faCloud,
+        message: "This is a repository plugin based on the Azure service.",
+    },
+    azureflat: {
+        icon: faCloud,
+        message: "This is a repository plugin based on the Azure flat namespace service.",
+    },
+    dropbox: {
+        icon: faDropbox,
+        message: "This is a repository plugin that connects with the commercial Dropbox service.",
+    },
+    ftp: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin based on the FTP/S protocol.",
+    },
+    googledrive: {
+        icon: faGoogleDrive,
+        message: "This is a  repository plugin that connects with the commercial Google Drive service.",
+    },
+    mavedb: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with MaveDB score set files.",
+    },
+    onedrive: {
+        icon: faCloud,
+        message: "This is a repository plugin that connects with Microsoft OneDrive.",
+    },
+    onedata: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin based on the Onedata service.",
+    },
+    posix: {
+        icon: faFolderTree,
+        message:
+            "This is a simple path based file source that assumes the all the relevant paths are already mounted on the Galaxy server and target worker nodes.",
+    },
+    s3fs: {
+        icon: faAws,
+        message:
+            "This is a repository plugin based on the Amazon Simple Storage Service (S3) interface. The AWS interface has become an industry standard and many storage vendors support it and use it to expose 'object' based storage.",
+    },
+    webdav: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin based on the WebDAV protocol.",
+    },
+    elabftw: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with an eLabFTW instance.",
+    },
+    inveniordm: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with an InvenioRDM instance.",
+    },
+    zenodo: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with the Zenodo instance.",
+    },
+    rspace: {
+        icon: faNetworkWired,
+        message: "This is a remote file source that connects with the Gallery of an RSpace instance.",
+    },
+    dataverse: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a Dataverse.org instance.",
+    },
+    cbioportal: {
+        icon: faNetworkWired,
+        message: "This is a read-only file repository plugin that connects with a cBioPortal instance.",
+    },
+    huggingface: {
+        icon: faHubspot,
+        message: "This is a file repository plugin that connects with the Hugging Face Hub.",
+    },
+    github: {
+        icon: faGithub,
+        message: "This is a file repository plugin that connects with a GitHub repository.",
+    },
+    iiif: {
+        icon: faNetworkWired,
+        message:
+            "This is a read-only file repository plugin that connects to IIIF (International Image Interoperability Framework) sources. IIIF is a framework widely used by museums, libraries, and archives for delivering high-resolution image-based cultural heritage materials.",
+    },
+    ipfs: {
+        icon: faNetworkWired,
+        message: "This is a read-only file source for browsing and importing IPFS files.",
+    },
+    omero: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with an OMERO server.",
+    },
+    openbis: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with an openBIS instance.",
+    },
+    ssh: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with a remote server over SSH.",
+    },
+    irods: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with an iRODS server.",
+    },
+    ckan: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a CKAN instance.",
+    },
+    commoncrawl: {
+        icon: faGlobe,
+        message: "This is a read-only file repository plugin that connects with the Common Crawl archive.",
+    },
+    gitlab: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with a GitLab instance.",
+    },
+    arc: {
+        icon: faNetworkWired,
+        message:
+            "This is a file source that connects with an ARC DataHUB (GitLab) instance. Exported files are submitted as a merge request.",
+    },
+};
+
+export const FileSourcesValidFilters = {
+    name: {
+        placeholder: "name",
+        type: String,
+        handler: contains("name"),
+        menuItem: false,
+    },
+    type: {
+        placeholder: "type",
+        type: String,
+        handler: contains("type"),
+        menuItem: false,
+    },
+};

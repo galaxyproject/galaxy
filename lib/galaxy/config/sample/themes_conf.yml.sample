@@ -74,3 +74,20 @@ smoky:
       active: "#FF206E"
     logo:
       img: "/static/favicon.svg"
+
+anvil:
+  masthead:
+    color: "#012840"
+    height: "3rem"
+    text:
+      color: "#f6f7f4"
+      hover: "#e0dd10"
+      active: "#ffff"
+    link:
+      color: transparent
+      hover: transparent
+      active: "#00090e"
+    logo:
+      height: "1.8rem"
+      img: "/static/images/galaxy_project_logo_white_square.png"
+      img-secondary: "/static/images/anvilwhite.png"

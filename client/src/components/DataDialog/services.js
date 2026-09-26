@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 /** Data populator traverses raw server responses **/
 export class Services {
@@ -48,6 +49,7 @@ export class Services {
     /** Populate record data from raw record source **/
     getRecord(record) {
         const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+        record.extension = record.extension ?? record.file_ext;
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
         record.isLeaf = this.isDataset(record);

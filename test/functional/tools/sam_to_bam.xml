@@ -11,7 +11,8 @@ cat '$input1' > '$out_file1'
     <tests>
         <test>
             <param name="input1" value="sam_with_header.sam" ftype="sam"/>
-            <output name="out_file1" file="bam_from_sam.bam" ftype="bam"/>
+            <!-- allow up to 2 differences (4 lines) due to version change of the implicitly running converter  -->
+            <output name="out_file1" file="bam_from_sam.bam" ftype="bam" lines_diff="4"/>
         </test>
     </tests>
     <help>

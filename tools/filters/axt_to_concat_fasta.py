@@ -2,6 +2,7 @@
 """
 Adapted from bx/scripts/axt_to_concat_fasta.py
 """
+
 from __future__ import print_function
 
 import sys
@@ -27,8 +28,8 @@ def main():
     # convert the alignment blocks
 
     reader = bx.align.axt.Reader(sys.stdin, support_ids=True, species1=species1, species2=species2)
-    sp1text = list()
-    sp2text = list()
+    sp1text = []
+    sp2text = []
     for a in reader:
         sp1text.append(a.components[0].text)
         sp2text.append(a.components[1].text)

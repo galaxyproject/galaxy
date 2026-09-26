@@ -2,39 +2,39 @@ import STATES from "mvc/dataset/states";
 // ============================================================================
 // plain 3 step job chain
 var datasets1 = [
-    { name: "SET1-01_1.fastq", state: STATES.OK },
-    { name: "SET1-01_2.fastq", state: STATES.OK },
-    { name: "SET1-02_1.fastq", state: STATES.OK },
-    { name: "SET1-02_2.fastq", state: STATES.OK },
-    { name: "SET1-03_1.fastq", state: STATES.OK },
-    { name: "SET1-03_2.fastq", state: STATES.OK },
-    { name: "SET1-04_1.fastq", state: STATES.OK },
-    { name: "SET1-04_2.fastq", state: STATES.OK },
-    { name: "SET1-05_1.fastq", state: STATES.OK },
-    { name: "SET1-05_2.fastq", state: STATES.OK },
-    { name: "SET1-06_1.fastq", state: STATES.OK },
-    { name: "SET1-06_2.fastq", state: STATES.OK },
-    { name: "SET1-07_1.fastq", state: STATES.OK },
-    { name: "SET1-07_2.fastq", state: STATES.OK },
+    { name: "SET1-01_1.fastq", state: STATES.OK, id: "011" },
+    { name: "SET1-01_2.fastq", state: STATES.OK, id: "012" },
+    { name: "SET1-02_1.fastq", state: STATES.OK, id: "021" },
+    { name: "SET1-02_2.fastq", state: STATES.OK, id: "022" },
+    { name: "SET1-03_1.fastq", state: STATES.OK, id: "031" },
+    { name: "SET1-03_2.fastq", state: STATES.OK, id: "032" },
+    { name: "SET1-04_1.fastq", state: STATES.OK, id: "041" },
+    { name: "SET1-04_2.fastq", state: STATES.OK, id: "042" },
+    { name: "SET1-05_1.fastq", state: STATES.OK, id: "051" },
+    { name: "SET1-05_2.fastq", state: STATES.OK, id: "052" },
+    { name: "SET1-06_1.fastq", state: STATES.OK, id: "061" },
+    { name: "SET1-06_2.fastq", state: STATES.OK, id: "062" },
+    { name: "SET1-07_1.fastq", state: STATES.OK, id: "071" },
+    { name: "SET1-07_2.fastq", state: STATES.OK, id: "072" },
 ];
 
 var datasets2 = [
-    { name: "DP134_1_FS_PSII_FSB_42C_A10.1.fastq", state: STATES.OK },
-    { name: "DP134_1_FS_PSII_FSB_42C_A10.2.fastq", state: STATES.OK },
+    { name: "DP134_1_FS_PSII_FSB_42C_A10.1.fastq", state: STATES.OK, id: "101" },
+    { name: "DP134_1_FS_PSII_FSB_42C_A10.2.fastq", state: STATES.OK, id: "102" },
 ];
 
 var datasets3 = [
-    { name: "UII_moo_1.1.fastq", state: STATES.OK },
-    { name: "UII_moo_1.2.fastq", state: STATES.OK },
+    { name: "UII_moo_1.1.fastq", state: STATES.OK, id: "11" },
+    { name: "UII_moo_1.2.fastq", state: STATES.OK, id: "12" },
 ];
 
 var datasets4 = [
-    { name: "SET1-01_R1.fastq", state: STATES.OK },
-    { name: "SET1-01_R2.fastq", state: STATES.OK },
-    { name: "SET1-02_R1.fastq", state: STATES.OK },
-    { name: "SET1-02_R2.fastq", state: STATES.OK },
-    { name: "SET1-03_R1.fastq", state: STATES.OK },
-    { name: "SET1-03_R2.fastq", state: STATES.OK },
+    { name: "SET1-01_R1.fastq", state: STATES.OK, id: "111" },
+    { name: "SET1-01_R2.fastq", state: STATES.OK, id: "112" },
+    { name: "SET1-02_R1.fastq", state: STATES.OK, id: "211" },
+    { name: "SET1-02_R2.fastq", state: STATES.OK, id: "212" },
+    { name: "SET1-03_R1.fastq", state: STATES.OK, id: "311" },
+    { name: "SET1-03_R2.fastq", state: STATES.OK, id: "312" },
 ];
 
 var datasets1CreateRequestJSON = {

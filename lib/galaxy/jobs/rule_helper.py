@@ -48,6 +48,8 @@ class RuleHelper:
         else:
             # Have a Job object.
             tool = self.app.toolbox.get_tool(job_or_tool.tool_id, tool_version=job_or_tool.tool_version)
+            assert tool is not None
+            tool = self.app.toolbox.materialize_tool(tool, reason="dependency")
         tool_info = ToolInfo(
             tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through
         )

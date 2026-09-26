@@ -72,7 +72,7 @@ watch(
     },
     {
         deep: true,
-    }
+    },
 );
 </script>
 

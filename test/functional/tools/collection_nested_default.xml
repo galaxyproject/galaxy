@@ -1,0 +1,50 @@
+<tool id="collection_nested_default" name="collection_nested_default" version="0.1.0">
+  <command>
+    echo #for $f in $f1# ${f.is_collection} #end for# >> $out1;
+    cat #for $f in $f1# #if $f.is_collection# #for $inner in $f# ${inner} #end for# #else# $f # #end if# #end for# >> $out2
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection">
+        <default collection_type="list:paired">
+          <element name="i1">
+            <collection collection_type="paired">
+              <element name="forward" location="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed" />
+              <element name="reverse" location="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta" />
+            </collection>
+          </element>
+        </default>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+    <data format="txt" name="out2" />
+  </outputs>
+  <tests>
+    <test>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="True" />
+        </assert_contents>
+      </output>
+      <output name="out2">
+        <assert_contents>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r" />
+          <has_text text=">hg17" />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="False False" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

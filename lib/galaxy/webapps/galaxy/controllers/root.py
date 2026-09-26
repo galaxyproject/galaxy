@@ -3,69 +3,55 @@ Contains the main interface in the Universe class
 """
 
 import logging
+from html import escape
 
 from webob.exc import HTTPNotFound
 
-from galaxy import web
+from galaxy import (
+    exceptions,
+    web,
+)
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
+from galaxy.util import is_safe_local_redirect
 from galaxy.webapps.base import controller
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from .authnz import LOGIN_NEXT_COOKIE_NAME
 from ..api import depends
 
 log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class RootController(controller.JSAppLauncher, UsesAnnotations):
+class RootController(controller.BaseUIController, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
 
+    app: StructuredApp
     history_manager: HistoryManager = depends(HistoryManager)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
     @web.expose
-    def default(self, trans, target1=None, target2=None, **kwd):
+    def default(self, trans: GalaxyWebTransaction, target1=None, target2=None, **kwd):
         """
         Called on any url that does not match a controller method.
         """
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
-    def index(
-        self, trans: GalaxyWebTransaction, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
-    ):
+    def client(self, trans: GalaxyWebTransaction, app_name="analysis", **kwd):
         """
         Root and entry point for client-side web app.
 
-        :type       tool_id: str or None
-        :param      tool_id: load center panel with given tool if not None
-        :type   workflow_id: encoded id or None
-        :param  workflow_id: load center panel with given workflow if not None
-        :type    history_id: encoded id or None
-        :param   history_id: switch current history to given history if not None
-        :type           m_c: str or None
-        :param          m_c: controller name (e.g. 'user')
-        :type           m_a: str or None
-        :param          m_a: controller method/action (e.g. 'dbkeys')
-
-        If m_c and m_a are present, the center panel will be loaded using the
-        controller and action as a url: (e.g. 'user/dbkeys').
+        :type       app_name: str or None
+        :param      app_name: javascript application bundle name
         """
-
-        self._check_require_login(trans)
-
-        # if a history_id was sent, attempt to switch to that history
-        history = trans.history
-        if history_id:
-            unencoded_id = trans.security.decode_id(history_id)
-            history = self.history_manager.get_owned(unencoded_id, trans.user)
-            trans.set_history(history)
-        return self._bootstrapped_client(trans)
+        return trans.fill_template("/js-app.mako", js_app_name=app_name)
 
     @web.expose
     def login(self, trans: GalaxyWebTransaction, redirect=None, is_logout_redirect=False, **kwd):
@@ -81,6 +67,13 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             and is_logout_redirect is False
         ):
             provider = next(iter(trans.app.config.oidc.keys()))
+            # Stash where the user was headed before handing them to the provider --
+            # the OIDC callback has no other way to recover it. Matches what the authnz
+            # controller does for the multi-provider case.
+            login_next = redirect if is_safe_local_redirect(redirect) else "/"
+            if redirect and login_next != redirect:
+                log.warning("Ignoring redirect target outside of Galaxy: %s", redirect)
+            trans.set_cookie(value=login_next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
@@ -95,26 +88,35 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if the file could not be returned, returns a message as a string.
         """
         # TODO: unencoded id
-        data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        authz_method = "rbac"
-        if "authz_method" in kwd:
-            authz_method = kwd["authz_method"]
-        if data:
+        authz_method = kwd.get("authz_method", "rbac")
+        try:
+            decoded_id = int(id)
+        except (TypeError, ValueError):
+            trans.response.status = 400
+            return f"Invalid dataset id: {escape(str(id))}"
+        if data := trans.sa_session.get(HistoryDatasetAssociation, decoded_id):
             if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), data.dataset
             ):
-                trans.response.set_content_type(data.get_mime())
-                trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
-                return data.as_display_type(display_app, **kwd)
+                pass
             elif authz_method == "display_at" and trans.app.host_security_agent.allow_action(
                 trans.request.remote_addr, data.permitted_actions.DATASET_ACCESS, dataset=data
             ):
-                trans.response.set_content_type(data.get_mime())
-                return data.as_display_type(display_app, **kwd)
+                pass
             else:
+                trans.response.status = 403
                 return "You are not allowed to access this dataset."
+            try:
+                self.app.hda_manager.ensure_dataset_on_disk(trans, data)
+            except exceptions.MessageException as e:
+                trans.response.status = e.status_code
+                return str(e)
+            trans.response.set_content_type(data.get_mime())
+            trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
+            return data.as_display_type(display_app, **kwd)
         else:
-            return "No data with id=%d" % id
+            trans.response.status = 400
+            return f"No data with id={id}"
 
     @web.expose
     def welcome(self, trans: GalaxyWebTransaction, **kwargs):

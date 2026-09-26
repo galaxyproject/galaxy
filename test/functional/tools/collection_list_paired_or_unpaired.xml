@@ -1,0 +1,88 @@
+<tool id="collection_list_paired_or_unpaired" name="collection_list_paired_or_unpaired" version="0.1.0">
+  <command>
+    #for $key in $f1.keys()#
+      echo "identifier is $key";
+      #set $element = $f1[$key]
+
+    #if $element.has_single_item:
+        cat $element.single_item >> $out1;
+        echo "Single item";
+    #else
+        cat $element.forward $element['reverse'] >> $out1;
+        echo "Paired items";
+    #end if
+    #end for#
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="list:paired_or_unpaired" label="Input" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="list:paired_or_unpaired">
+          <element name="i1">
+            <collection type="paired_or_unpaired" name="collection name">
+            <element name="forward" value="simple_line.txt" />
+            <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+      <assert_stdout>
+          <has_line line="identifier is i1" />
+          <has_line line="Paired items" />
+      </assert_stdout>
+    </test>
+    <test>
+      <param name="f1">
+        <collection type="list:paired">
+          <element name="i1">
+            <collection type="paired" name="collection name">
+            <element name="forward" value="simple_line.txt" />
+            <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+      <assert_stdout>
+          <has_line line="identifier is i1" />
+          <has_line line="Paired items" />
+      </assert_stdout>
+    </test>
+    <test>
+      <param name="f1">
+        <collection type="list">
+            <element name="i1" value="simple_line.txt" />
+            <element name="i2" value="simple_line_alternative.txt" />
+            <element name="i3" value="simple_line.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+        </assert_contents>
+      </output>
+      <assert_stdout>
+          <has_line line="identifier is i1" />
+          <has_line line="identifier is i2" />
+          <has_line line="identifier is i3" />
+          <has_line line="Single item" />
+      </assert_stdout>
+    </test>
+  </tests>
+</tool>

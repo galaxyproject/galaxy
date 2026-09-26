@@ -1,16 +1,46 @@
 import logging
+from typing import (
+    TYPE_CHECKING,
+)
 
+from galaxy.model import (
+    History,
+    Job,
+)
+from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.objectstore import ObjectStorePopulator
+from galaxy.schema.credentials import CredentialsContext
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
-    ToolExecutionCache,
+    OutputDatasetsT,
+    ToolActionExecuteResult,
 )
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+)
+from galaxy.tools.execution_helpers import ToolExecutionCache
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.tools import (
+        DatabaseOperationTool,
+        Tool,
+    )
 
 log = logging.getLogger(__name__)
 
 
 class ModelOperationToolAction(DefaultToolAction):
-    produces_real_jobs = False
+    produces_real_jobs: bool = False
+    file_source_uri_discovery_complete = True
 
     def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None, collection_info=None):
         if execution_cache is None:
@@ -21,22 +51,30 @@ class ModelOperationToolAction(DefaultToolAction):
             tool, trans, incoming, history, current_user_roles, collection_info
         )
 
-        tool.check_inputs_ready(inp_data, inp_dataset_collections)
+        tool.check_inputs_ready(inp_data, inp_dataset_collections, security=trans.security)
 
     def execute(
         self,
-        tool,
+        tool: "Tool",
         trans,
-        incoming=None,
-        set_output_hid=False,
-        overwrite=True,
-        history=None,
+        incoming: ToolStateJobInstancePopulatedT | None = None,
+        history: History | None = None,
         job_params=None,
-        execution_cache=None,
-        collection_info=None,
-        job_callback=None,
-        **kwargs,
-    ):
+        rerun_remap_job_id: int | None = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: ToolExecutionCache | None = None,
+        dataset_collection_elements: DatasetCollectionElementsSliceT | None = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Job | None = None,
+        collection_info: MatchingCollections | None = None,
+        job_callback: JobCallbackT | None = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: str | None = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: CredentialsContext | None = None,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
+        from galaxy.tools import DatabaseOperationTool
+
+        assert isinstance(tool, DatabaseOperationTool)
         incoming = incoming or {}
         trans.check_user_activation()
 
@@ -54,12 +92,12 @@ class ModelOperationToolAction(DefaultToolAction):
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
-        out_data = {}
+        out_data: OutputDatasetsT = {}
         input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
@@ -67,7 +105,7 @@ class ModelOperationToolAction(DefaultToolAction):
             tool=tool,
             tool_action=self,
             input_collections=input_collections,
-            dataset_collection_elements=kwargs.get("dataset_collection_elements", None),
+            dataset_collection_elements=dataset_collection_elements,
             on_text=on_text,
             incoming=incoming,
             params=wrapped_params.params,
@@ -79,7 +117,7 @@ class ModelOperationToolAction(DefaultToolAction):
         #
         # Create job.
         #
-        job, galaxy_session = self._new_job_for_session(trans, tool, history)
+        job, _ = self._new_job_for_session(trans, tool, history)
         self._produce_outputs(
             trans,
             tool,
@@ -89,12 +127,16 @@ class ModelOperationToolAction(DefaultToolAction):
             history=history,
             tags=preserved_tags,
             hdca_tags=preserved_hdca_tags,
+            skip=skip,
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         if job_callback:
             job_callback(job)
-        job.state = job.states.OK
+        if skip:
+            job.state = job.states.SKIPPED
+        else:
+            job.state = job.states.OK
         trans.sa_session.add(job)
 
         # Queue the job for execution
@@ -103,8 +145,18 @@ class ModelOperationToolAction(DefaultToolAction):
         log.info(f"Calling produce_outputs, tool is {tool}")
         return job, out_data, history
 
-    def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags, hdca_tags):
-        tag_handler = trans.app.tag_handler.create_tag_handler_session()
+    def _produce_outputs(
+        self,
+        trans: "ProvidesUserContext",
+        tool: "DatabaseOperationTool",
+        out_data,
+        output_collections,
+        incoming,
+        history,
+        tags,
+        hdca_tags,
+        skip,
+    ):
         tool.produce_outputs(
             trans,
             out_data,
@@ -113,13 +165,21 @@ class ModelOperationToolAction(DefaultToolAction):
             history=history,
             tags=tags,
             hdca_tags=hdca_tags,
-            tag_handler=tag_handler,
         )
-        mapped_over_elements = output_collections.dataset_collection_elements
-        if mapped_over_elements:
+        if mapped_over_elements := output_collections.dataset_collection_elements:
             for name, value in out_data.items():
                 if name in mapped_over_elements:
                     value.visible = False
                     mapped_over_elements[name].hda = value
 
+        # We probably need to mark all outputs as skipped, not just the outputs of whatever the database op tools do ?
+        # This is probably not exactly right, but it might also work in most cases
+        if skip:
+            for output_collection in output_collections.out_collections.values():
+                output_collection.mark_as_populated()
+            object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+            for hdca in output_collections.out_collection_instances.values():
+                hdca.visible = False
+                for data in hdca.dataset_instances:
+                    data.set_skipped(object_store_populator, replace_dataset=True)
         trans.sa_session.add_all(out_data.values())

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<object_store type="disk">
+    <files_dir path="${temp_directory}/files1"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+    <badges>
+        <short_term />
+        <faster>Fast interconnects.</faster>
+        <less_stable />
+        <more_secure />
+        <backed_up>Storage is backed up to tape nightly.</backed_up>
+    </badges>
+</object_store>

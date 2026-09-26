@@ -1,6 +1,9 @@
 from galaxy.util.search import (
+    filter_terms,
+    FilteredTerm,
     parse_filters,
     parse_filters_structured,
+    RawTextTerm,
 )
 
 
@@ -94,3 +97,74 @@ def test_parse_filters_structured():
     assert text_terms[1].quoted is True
     assert text_terms[2].text == "foo"
     assert text_terms[2].quoted is False
+
+
+def test_filter_terms_drops_short_raw_terms():
+    parsed = parse_filters_structured("Copy of Genomic Assembly and analysis", {})
+    filtered = filter_terms(parsed, min_raw_term_length=4, max_raw_terms=None)
+    kept = [t.text for t in filtered.terms]
+    assert kept == ["Copy", "Genomic", "Assembly", "analysis"]
+
+
+def test_filter_terms_preserves_quoted_raw_terms():
+    parsed = parse_filters_structured("'ab' Copy 'de'", {})
+    filtered = filter_terms(parsed, min_raw_term_length=4, max_raw_terms=None)
+    assert [(t.text, t.quoted) for t in filtered.terms] == [
+        ("ab", True),
+        ("Copy", False),
+        ("de", True),
+    ]
+
+
+def test_filter_terms_preserves_filtered_terms_of_any_length():
+    parsed = parse_filters_structured("tag:ab user:cd Copy", {"tag": "tag", "user": "user"})
+    filtered = filter_terms(parsed, min_raw_term_length=4, max_raw_terms=None)
+    kinds = [(t.__class__.__name__, t.text) for t in filtered.terms]
+    # Both filtered terms are preserved even though their text is shorter than 4;
+    # "Copy" (4) is preserved too.
+    assert ("FilteredTerm", "ab") in kinds
+    assert ("FilteredTerm", "cd") in kinds
+    assert ("RawTextTerm", "Copy") in kinds
+
+
+def test_filter_terms_caps_raw_terms_only():
+    parsed = parse_filters_structured(
+        "tag:foo Copy Genomic Assembly analysis shared user nedflanders extra1 extra2",
+        {"tag": "tag"},
+    )
+    filtered = filter_terms(parsed, min_raw_term_length=4, max_raw_terms=3)
+    raw = [t.text for t in filtered.terms if isinstance(t, RawTextTerm)]
+    filt = [t.text for t in filtered.terms if isinstance(t, FilteredTerm)]
+    assert raw == ["Copy", "Genomic", "Assembly"]
+    assert filt == ["foo"]
+
+
+def test_filter_terms_defaults():
+    # Default behaviour: 4-char min length, 7-term cap on raw terms.
+    parsed = parse_filters_structured(
+        "Copy of Genomic Assembly and analysis - RDH shared by user nedflanders",
+        {},
+    )
+    filtered = filter_terms(parsed)
+    kept = [t.text for t in filtered.terms]
+    # of, and, -, RDH, by dropped for length; everything else survives.
+    assert kept == ["Copy", "Genomic", "Assembly", "analysis", "shared", "user", "nedflanders"]
+
+
+def test_filter_terms_caps_filtered_and_quoted_terms():
+    # Keyed and quoted terms each become their own SQL predicate, so they need
+    # a bound too or a single request can build an arbitrarily large WHERE.
+    query = " ".join(f"name:x{i}" for i in range(500)) + " " + " ".join(f"'q{i}'" for i in range(500))
+    parsed = parse_filters_structured(query, {"name": "name"})
+    filtered = filter_terms(parsed)
+    explicit = [t for t in filtered.terms if isinstance(t, FilteredTerm) or t.quoted]
+    assert 0 < len(explicit) <= 10
+
+
+def test_filter_terms_keeps_typical_filtered_queries_intact():
+    parsed = parse_filters_structured(
+        "tag:foo tag:bar name:'rna seq' user:alice is:published 'exact phrase' Genomic",
+        {"tag": "tag", "name": "name", "user": "user", "is": "is"},
+    )
+    filtered = filter_terms(parsed)
+    assert filtered.terms == parsed.terms

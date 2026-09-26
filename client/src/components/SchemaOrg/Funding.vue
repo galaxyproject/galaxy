@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import GrantViewer from "./GrantViewer";
+import GrantViewer from "./GrantViewer.vue";
 
 export default {
     components: {

@@ -1,0 +1,7 @@
+<object_store type="azure_blob">
+    <auth account_name="azureact" account_key="password123" />
+    <container name="unique_container_name" max_chunk_size="250"/>
+    <cache path="database/object_store_cache" size="100" />
+    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+    <extra_dir type="temp" path="database/tmp_azure"/>
+</object_store>

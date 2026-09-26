@@ -8,7 +8,7 @@ build   description
 import sys
 import xml.etree.ElementTree as ElementTree
 
-import requests
+from galaxy.util import requests
 
 
 def getbuilds(url):

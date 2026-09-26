@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import FormUpload from "./FormUpload";
+import FormUpload from "./FormUpload.vue";
 
 const localVue = getLocalVue();
 

@@ -26,7 +26,7 @@ developed by the Galaxy community including
 `Python <https://bioblend.readthedocs.io/>`__,
 `PHP <https://github.com/galaxyproject/blend4php>`__,
 `Java <https://github.com/galaxyproject/blend4j>`__, and
-`TypeScript <https://github.com/galaxyproject/galaxy/tree/dev/client/src/schema>`__.
+`TypeScript <https://github.com/galaxyproject/galaxy/tree/dev/client/src/api/schema>`__.
 
 Overview of available API resources is available at https://galaxyproject.org/develop/api/ .
 

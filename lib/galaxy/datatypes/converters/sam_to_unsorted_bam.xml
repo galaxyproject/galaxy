@@ -1,12 +1,13 @@
-<tool id="CONVERTER_sam_to_unsorted_bam" name="Convert SAM to BAM without sorting" version="1.0.0" profile="18.01">
+<tool id="CONVERTER_sam_to_unsorted_bam" name="Convert SAM to BAM without sorting" version="1.0.1" profile="18.01">
     <requirements>
-        <requirement type="package" version="1.6">samtools</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
     </requirements>
     <command><![CDATA[
         samtools view
             -b
             -h
             -@ \${GALAXY_SLOTS:-2}
+            --no-PG
             -o '${output}'
             '$input'
     ]]>

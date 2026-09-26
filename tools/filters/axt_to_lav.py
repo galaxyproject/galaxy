@@ -9,9 +9,11 @@ Application to convert AXT file to LAV file
 The application reads an AXT file from standard input and writes a LAV file to
 standard out;  some statistics are written to standard error.
 """
+
 from __future__ import print_function
 
 import sys
+from typing import Optional
 
 import bx.align.axt
 import bx.align.lav
@@ -44,11 +46,9 @@ axt_to_lav primary_spec secondary_spec [--silent] < axt_file > lav_file
 
 
 def main():
-    global debug
-
     # parse the command line
 
-    primary = None
+    primary: Optional[str] = None
     secondary = None
     silent = False
 
@@ -85,12 +85,12 @@ def main():
         usage("missing secondary file name and length")
 
     try:
-        (primaryFile, primary, primaryLengths) = parse_spec(primary)
+        primaryFile, primary, primaryLengths = parse_spec(primary)
     except Exception:
         usage("bad primary spec (must be seq_file[:species_name]:lengths_file")
 
     try:
-        (secondaryFile, secondary, secondaryLengths) = parse_spec(secondary)
+        secondaryFile, secondary, secondaryLengths = parse_spec(secondary)
     except Exception:
         usage("bad secondary spec (must be seq_file[:species_name]:lengths_file")
 

@@ -1,0 +1,349 @@
+# agreed to re-licensing
+# GitHub username, evidence
+
+dannon, https://github.com/galaxyproject/galaxy/pull/14540
+jmchilton, https://github.com/galaxyproject/galaxy/pull/14540
+natefoo, https://github.com/galaxyproject/galaxy/pull/14540
+hexylena, https://github.com/galaxyproject/galaxy/pull/14540
+bgruening, https://github.com/galaxyproject/galaxy/pull/14540
+blankenberg, https://github.com/galaxyproject/galaxy/pull/14540
+martenson, https://github.com/galaxyproject/galaxy/pull/14540
+nuwang, https://github.com/galaxyproject/galaxy/pull/14540
+anuprulez, https://github.com/galaxyproject/galaxy/pull/14540
+jdavcs, https://github.com/galaxyproject/galaxy/pull/14540
+mvdbeek, https://github.com/galaxyproject/galaxy/pull/14540
+VJalili, https://github.com/galaxyproject/galaxy/pull/14540
+davelopez, https://github.com/galaxyproject/galaxy/pull/14540
+ahmedhamidawan, https://github.com/galaxyproject/galaxy/pull/13332
+abretaud, https://github.com/galaxyproject/galaxy/pull/12159
+ZimmerA, https://github.com/galaxyproject/galaxy/pull/12337
+ajs6f, https://github.com/galaxyproject/galaxy/pull/13301
+astrovsky01, https://github.com/galaxyproject/galaxy/pull/11802
+almahmoud, https://github.com/galaxyproject/galaxy/pull/12155
+itisAliRH, https://github.com/galaxyproject/galaxy/pull/13104
+annefou, https://github.com/galaxyproject/galaxy/pull/11812
+abretaud, https://github.com/galaxyproject/galaxy/pull/12159
+assuntad23, https://github.com/galaxyproject/galaxy/pull/11799
+guerler, https://github.com/galaxyproject/galaxy/pull/13923
+beatrizserrano, https://github.com/galaxyproject/galaxy/pull/13616
+Paprikant, https://github.com/galaxyproject/galaxy/pull/15131
+bebatut, https://github.com/galaxyproject/galaxy/pull/15068
+bernt-matthias, https://github.com/galaxyproject/galaxy/pull/16668
+bdwheele, https://github.com/galaxyproject/galaxy/pull/16443
+thepineapplepirate, https://github.com/galaxyproject/galaxy/pull/13126
+slugger70, private email from Simon Gladman's heirs to hexylena affirming the license change
+neoformit, https://github.com/galaxyproject/galaxy/pull/16616
+cat-bro, https://github.com/galaxyproject/galaxy/pull/11923
+claudiofr, https://github.com/galaxyproject/galaxy/pull/16576
+hujambo-dunia, https://github.com/galaxyproject/galaxy/pull/13912
+gallardoalba, https://github.com/galaxyproject/galaxy/pull/13708
+TanguyGen, https://github.com/galaxyproject/galaxy/pull/16478
+tcollins2011, https://github.com/galaxyproject/galaxy/pull/15855
+TheoMathurin, https://github.com/galaxyproject/galaxy/pull/16105
+quacksawbones, https://github.com/galaxyproject/galaxy/pull/13067
+davebx, https://github.com/galaxyproject/galaxy/pull/13310
+elichad, https://github.com/galaxyproject/galaxy/pull/12375
+afgane, https://github.com/galaxyproject/galaxy/pull/16844
+eancelet, https://github.com/galaxyproject/galaxy/pull/12234/
+ebolyen, https://github.com/galaxyproject/galaxy/pull/14216
+alexlenail, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-1791587514
+dfornika, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711306604
+dglaetzer, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711309084
+djcomlab, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711311572
+bwlang, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711314974
+andrewjrobinson, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711338222
+ClaytonTurner, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711353602
+trel, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711382523
+chambm, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711447510
+cganote, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711451101
+charz, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711884707
+Christian-B, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711915780
+bedroesb, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712001736
+fbacall, https://github.com/galaxyproject/galaxy/pull/14927
+francoismg, https://github.com/galaxyproject/galaxy/pull/16187
+gmauro, https://github.com/galaxyproject/galaxy/pull/13811
+gregvonkuster, https://github.com/galaxyproject/galaxy/pull/14813
+jarrah42, https://github.com/galaxyproject/galaxy/pull/15394
+gulsumgudukbay, https://github.com/galaxyproject/galaxy/pull/12775
+anilthanki, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712190856
+HadleyKing, https://github.com/galaxyproject/galaxy/pull/14374
+jj-umn, https://github.com/galaxyproject/galaxy/pull/13087
+jancrichter, https://github.com/galaxyproject/galaxy/pull/14475
+scholtalbers, https://github.com/galaxyproject/galaxy/pull/12752
+jennaj, https://github.com/galaxyproject/galaxy/pull/13148
+jhl667, https://github.com/galaxyproject/galaxy/pull/15280
+johanneskoester, https://github.com/galaxyproject/galaxy/pull/14770
+laperlej, https://github.com/galaxyproject/galaxy/pull/16320
+kysrpex, https://github.com/galaxyproject/galaxy/pull/16449
+jvanbraekel, https://github.com/galaxyproject/galaxy/pull/16132
+SandyRogers, https://github.com/galaxyproject/galaxy/pull/16179
+selten, https://github.com/galaxyproject/galaxy/pull/12333
+simonbray, https://github.com/galaxyproject/galaxy/pull/11844
+sveinugu, https://github.com/galaxyproject/galaxy/pull/14694
+tensionhead, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712368424
+ooobik, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712493853
+alanamoose, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712585650
+aswarren, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712585650
+chapmanb, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712608110
+ericenns, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712695728
+caleb-easterly, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712869635
+ccedmendoza, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712905299
+andreyto, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713541725
+benfulton, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713561941
+atyryshkin, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713563069
+Airistotal, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713564514
+AndreasSko, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713735509
+kxk302, https://github.com/galaxyproject/galaxy/pull/14714
+ksuderman, https://github.com/galaxyproject/galaxy/pull/16233
+jlhg, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713740627
+hmenager, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713742259
+cumbof, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713748840
+shiltemann, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713749762
+jjkoehorst, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713750442
+eteriSokhoyan, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713753043
+johnbradley, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713788099
+saketkc, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713788190
+glormph, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713790717
+CarlosBorroto, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713792053
+bagnacan, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713808274
+abrenner, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713815484
+jaidevjoshi83, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713822591
+KeizoUehara, https://github.com/galaxyproject/galaxy/pull/13074
+khaled196, https://github.com/galaxyproject/galaxy/pull/16503
+kjetilkl, https://github.com/galaxyproject/galaxy/pull/12269
+knutwa-ext, https://github.com/galaxyproject/galaxy/pull/12099
+athos-ribeiro, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713887074
+JeffreyThiessen, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713887074
+JenCabral, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713887074
+jvolkening, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714023869
+Hillrunner2008, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714034873
+iracooke, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714048235
+stevenweaver, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714048235
+JeanFred, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714452121
+BioinformaticsPlatformWIV-ISP, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714544959
+hrhotz, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714544959
+Realjuan, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1714736375
+IslamHeggy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1715298011
+hackdna, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1715473671
+ghuls, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1717354534
+cche, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1717367540
+janani-prasad, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1718490381
+fangly, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1724203742
+carlfeberhard, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1726049269
+fescudie, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1726295851
+IyadKandalaft, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1754307673
+JanKanis, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1770191691
+ElectronicBlueberry, https://github.com/galaxyproject/galaxy/pull/14892
+Lain-inrae, https://github.com/galaxyproject/galaxy/pull/15265
+abueg, https://github.com/galaxyproject/galaxy/pull/15096
+lldelisle, https://github.com/galaxyproject/galaxy/pull/13411
+luke-c-sargent, https://github.com/galaxyproject/galaxy/pull/12902
+mahendrapaipuri, https://github.com/galaxyproject/galaxy/pull/16119
+maikenp, https://github.com/galaxyproject/galaxy/pull/12097
+Nerdinacan, https://github.com/galaxyproject/galaxy/pull/12351
+xtrojak, https://github.com/galaxyproject/galaxy/pull/14766
+maximskorik, https://github.com/galaxyproject/galaxy/pull/12077
+mtekman, https://github.com/galaxyproject/galaxy/pull/12336
+melibleq, https://github.com/galaxyproject/galaxy/pull/12384
+mr-c, https://github.com/galaxyproject/galaxy/pull/16963
+mschatz, https://github.com/galaxyproject/galaxy/pull/15123
+hujambo-dunia, https://github.com/galaxyproject/galaxy/pull/18074
+minh-biocommons, https://github.com/galaxyproject/galaxy/pull/15998
+mira-miracoli, https://github.com/galaxyproject/galaxy/pull/17510
+tnabtaf, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1819222603
+fubar2, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1812328933
+matthdsm, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145433909
+lparsons, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145435807
+xiemaisi, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145442153
+loraine-gueguen, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145443698
+kaukrise, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145456687
+tizzir, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145457606
+mdshw5, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145510830
+telukir, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145520159
+mariabernard, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145533151
+einonm, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145602162
+mbargull, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145707579
+ilveroluca, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145746457
+kaktus42, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145754145
+khillion, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145762267
+eslerm, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145802437
+thermokarst, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145930733
+kellrott, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146085259
+kanwei, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146114511
+maxf130, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146179536
+mmiladi, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146473191
+machristie, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146776249
+MiguelJulia, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147150944
+nsoranzo, https://github.com/galaxyproject/galaxy/pull/18423
+innovate-invent, https://github.com/galaxyproject/galaxy/pull/13608
+nuwang, https://github.com/galaxyproject/galaxy/pull/17748
+OlegZharkov, https://github.com/galaxyproject/galaxy/pull/12937
+mblue9, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147309479
+Mataivic, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147324370
+Delphine-L, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147329464
+nekrut, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147347824
+mtangaro, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147366950
+pcm32, https://github.com/galaxyproject/galaxy/pull/15238
+pvanheus, https://github.com/galaxyproject/galaxy/pull/14389
+qiagu, https://github.com/galaxyproject/galaxy/pull/14992
+rhpvorderman, https://github.com/galaxyproject/galaxy/pull/13179
+richard-burhans, https://github.com/galaxyproject/galaxy/pull/17565
+shenweiyan, https://github.com/galaxyproject/galaxy/pull/13323
+heisner-tillman, https://github.com/galaxyproject/galaxy/pull/17463
+ieguinoa, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147638955
+wm75, https://github.com/galaxyproject/galaxy/pull/17586
+yvanlebras, https://github.com/galaxyproject/galaxy/pull/16713
+semenko, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147813980
+lecorguille, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147838932
+julozi, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147839291
+tom-tan, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147839291
+ValentinMarcon, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147848988
+theosotr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147854653
+Takadonet, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147861691
+souravsingh, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147862161
+roalva1, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147862274
+vimalkvn, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147907660
+rdvelazquez, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147937206
+trevor, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147944477
+RJMW, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147953775
+msauria, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147958781
+pavanvidem, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147983489
+frederikcoppens, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147989316
+rikeshi, https://github.com/galaxyproject/galaxy/pull/16970
+rupertnash, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148017249
+varunshankar, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148132174
+yochannah, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148154276
+pkrog, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148227360
+NickSto, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148309698
+rpark37, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148430871
+yhoogstrate, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148445252
+kpbioteam & kkamieniecka, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148448901
+nvk747, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148466787
+unode, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148625133
+ValentinChCloud, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148688261
+BenjaminHCCarr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148706049
+kiwiroy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148846395
+torfinnnome, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148929362
+rwwh, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148994965
+linnil1, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149097400
+jgoecks, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149586713
+shano, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149828812
+stevecassidy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149922864
+takawitter, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149953931
+chrisbarnettster, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149963693
+BradHolmes, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-1792780245
+abdulrahmanazab, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-2198545978
+tomithy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150199047
+moskalenko, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150205033
+sneumann, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150606285
+Petraea, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150708344
+fretn, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2151141471
+mepcotterell, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2151857571
+thobalose, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154578396
+rdallet, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154616875
+manabuishii, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
+ratzeni, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156437442
+ianschenck, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156554721
+roryk, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156734170
+NCEichner, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156822869
+meekrob, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2157094723
+nagoue, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2162541083
+tshtatland, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2163521867
+katrinleinweber, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2172337847
+jdlogicman, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2183469757
+dpryan79, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227060871
+FredericBGA, 2024-08-08 personal email to mr-c
+lindenb, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227066629
+inkuzmin, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227069559
+osallou, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227121052
+joachimwolff, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227158926
+scrathat, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227309669
+remimarenco, 2024-08-08 personal email to mr-c
+MatthewRalston, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227802568
+charesredhat, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228040313
+blankclemens, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228339100
+kellyv, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228731480
+tesujimath, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228830419
+ycgong, 2024-08-08 personal email to mr-c
+aloraine, 2024-08-09 personal email to mr-c
+thomcuddihy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
+cbare, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
+anatskiy, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2229566214
+dan-blanchard, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2230421183
+cginmn, 2024-08-09 personal email to mr-c
+markiskander, 2024-08-12 personal email to mr-c
+leobiscassi, 2024-08-12 personal email to mr-c
+ThomasWollmann, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2259147420
+fmareuil, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2260099669
+FreekDB, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2263520321
+arbernard, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319692992
+remyd1, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319836450
+npinter, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2321413840
+jenzopr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-3841679625
+claresloggett, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-3844414931
+nturaga, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-3954162420
+hanfeisun, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-3852218069
+
+# not yet agreed, special handling
+jxtx, James Taylor, deceased; RIP buddy
+
+# not yet agreed, need to find a 2024-valid email for them
+crashGoBoom, Christopher Mundus
+NA, Ilya ichorny, currently at Quantum-Si
+dlal-group, Marie Gramm
+carmstrong1gw, Chris Armstrong, address bounced
+NA, Hiral Vora, address bounced
+odoppelt, Olivia Doppelt-Azeroual, address bounced
+sszakony, Scott Szakonyi, address bounced; last contribution in 2016
+RichardJActon, Richard James Acton, address bounced
+NicHerndon, Nic Herndon, address bounced
+NA, Chinmay Rao, address bounced
+NA, Hunter Moseley, address bounced
+jessevdam, Jesse c j van Dam, address bounced
+NA, Jianbin He, address bounced
+jra001k, Jerome Raciazek, address bounced
+martijnvermaattest, Martijn Vermaat, address bounced
+NA, MORITA Hideyuki, address bounced
+NA, Raj Ayyampalayam, address bounced
+NA, Radhesh Kamath, address bounced
+saxtouri, Stavros Sachtouris, address bounced
+tmcgowan, Thomas McGowan, address bounced
+XDtim, Tim Thompson, address bounced
+
+# not yet agreed, needs research
+# GitHub username or NA, Name, Comment
+arjunnath, Arjun Nath
+ashvark, Ashok Varadharajan
+BalthazarPavot, Balthazar Pavot, GitHub account deleted
+the-nidhogg, balto, ¿same as BalthazarPavot (only commits from both are in the same PR)?
+bensellak, Taoufik Bensellak
+dtrudg, Dave Trudgian, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712375794
+cmonjeau, Cyril Monjeaud
+NA, dorine francheteau
+NA, Eric Paniagua
+NA, Guruprasad Ananda
+vdtoorn, Henk van den Toorn
+theboocock, James Boocock
+joachimjacob, Joachim Jacob
+jraysajulga, (JR) Ray Sajulga
+juleengraham, Juleen Graham
+junzwang, Junzhou Wang
+NA, Scott McManus, last contribution in 2012
+kidanem, Kidane M. Tekle
+lawrence1470, Lawrence Nicastro
+vavrusa, Marek Vavruša
+ffinfo, Peter van 't Hof
+ramezrawas, Ramez Alrawas
+NA, Ramkrishna Chakrabarty
+golharam, Ryan Golhar
+simleo, Simone Leo
+NA, Wen-Yu Chung, last contribution in 2009
+WilliamHolden, William Holden
+simpsonw, Will Simpson
+xgaia, Xavier Garnier
+xiaojay, Jay Young
+xiaoqian1984, Xiaoqian Jiang
+NA, Yi Zhang, last contribution in 2007
+
+# not agreed, but contributions no longer present
+NA, Andrea Sbardellati, address bounced; only one commit to bowtie2 wrapper; since moved to the tool shed

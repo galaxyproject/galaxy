@@ -11,7 +11,7 @@ try:
     data["name"] = sys.argv[4]
     data["create_type"] = "folder"
 except IndexError:
-    print("usage: %s key url folder_id name [description]" % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url folder_id name [description]")
     sys.exit(1)
 try:
     data["description"] = sys.argv[5]

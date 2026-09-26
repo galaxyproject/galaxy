@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pytest
 from sqlalchemy import union
 
@@ -7,9 +9,10 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     Job,
 )
-from galaxy.model.base import transaction
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 @pytest.fixture
@@ -24,11 +27,11 @@ def job_connections_manager(sa_session) -> JobConnectionsManager:
 
 
 # =============================================================================
-def setup_connected_dataset(sa_session: galaxy_scoped_session):
-    center_hda = HistoryDatasetAssociation(sa_session=sa_session)
-    input_hda = HistoryDatasetAssociation(sa_session=sa_session)
+def setup_connected_dataset(sa_session: "scoped_session"):
+    center_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hdca = HistoryDatasetCollectionAssociation()
-    output_hda = HistoryDatasetAssociation(sa_session=sa_session)
+    output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     output_hdca = HistoryDatasetCollectionAssociation()
     input_job = Job()
     output_job = Job()
@@ -39,8 +42,7 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
     output_job.add_output_dataset("output_hda", output_hda)
     output_job.add_output_dataset_collection("output_hdca", output_hdca)
     sa_session.add_all([center_hda, input_hda, input_hdca, output_hdca, input_job, output_job])
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     expected_graph = {
         "inputs": [
             {"src": "HistoryDatasetAssociation", "id": input_hda.id},
@@ -54,12 +56,12 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
     return center_hda, expected_graph
 
 
-def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
+def setup_connected_dataset_collection(sa_session: "scoped_session"):
     center_hdca = HistoryDatasetCollectionAssociation()
-    input_hda1 = HistoryDatasetAssociation(sa_session=sa_session)
-    input_hda2 = HistoryDatasetAssociation(sa_session=sa_session)
+    input_hda1 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_hda2 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hdca = HistoryDatasetCollectionAssociation()
-    output_hda = HistoryDatasetAssociation(sa_session=sa_session)
+    output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     output_hdca = HistoryDatasetCollectionAssociation()
     input_job = Job()
     output_job = Job()
@@ -71,8 +73,7 @@ def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
     output_job.add_output_dataset("output_hda", output_hda)
     output_job.add_output_dataset_collection("output_hdca", output_hdca)
     sa_session.add_all([center_hdca, input_hda1, input_hda2, input_hdca, output_hdca, input_job, output_job])
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     expected_graph = {
         "inputs": [
             {"src": "HistoryDatasetAssociation", "id": input_hda1.id},

@@ -1,13 +1,14 @@
-"""
-"""
+""" """
 
 import json
+from typing import cast
 
 import sqlalchemy
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
 from galaxy.util.unittest import TestCase
+from galaxy.work.context import SessionRequestContext
 
 # =============================================================================
 admin_email = "admin@admin.admin"
@@ -33,11 +34,15 @@ class BaseTestCase(TestCase):
 
     def set_up_mocks(self):
         admin_users_list = [u for u in admin_users.split(",") if u]
-        self.trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
+        self.mock_trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
+        self.trans = cast(SessionRequestContext, self.mock_trans)
         self.app = self.trans.app
 
+    def init_user_in_database(self):
+        self.mock_trans.init_user_in_database()
+
     def set_up_managers(self):
-        self.user_manager = self.app[UserManager]
+        self.user_manager: UserManager = self.app[UserManager]
 
     def set_up_trans(self):
         self.admin_user = self.user_manager.create(email=admin_email, username="admin", password=default_password)
@@ -99,7 +104,7 @@ class BaseTestCase(TestCase):
 
 
 class CreatesCollectionsMixin:
-    trans: galaxy_mock.MockTrans
+    trans: SessionRequestContext
 
     def build_element_identifiers(self, elements):
         identifier_list = []
