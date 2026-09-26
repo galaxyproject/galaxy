@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 
 import pytest
@@ -248,6 +249,29 @@ def test_current_galaxy_session(make_user, make_galaxy_session):
     new_galaxy_session = make_galaxy_session()
     user.galaxy_sessions.append(new_galaxy_session)
     assert user.current_galaxy_session == new_galaxy_session
+
+
+def test_user_effective_last_login_prefers_explicit_value(make_user, make_galaxy_session):
+    session_last_login = datetime(2025, 1, 1, 12, 0, 0)
+    explicit_last_login = datetime(2025, 2, 1, 12, 0, 0)
+    user = make_user(last_login=explicit_last_login)
+    make_galaxy_session(user=user, update_time=session_last_login)
+
+    assert user.effective_last_login == explicit_last_login
+
+
+def test_user_effective_last_login_falls_back_to_session(make_user, make_galaxy_session):
+    session_last_login = datetime(2025, 1, 1, 12, 0, 0)
+    user = make_user()
+    make_galaxy_session(user=user, update_time=session_last_login)
+
+    assert user.effective_last_login == session_last_login
+
+
+def test_user_effective_last_login_without_login(make_user):
+    user = make_user()
+
+    assert user.effective_last_login is None
 
 
 def test_next_hid(make_history):
