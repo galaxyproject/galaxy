@@ -33,6 +33,11 @@
                 </Alert>
             </template>
 
+            <Alert v-if="userLoadError && !embedded" id="user-load-error" variant="danger">
+                Unable to load your user data: {{ userLoadError }}
+                <button type="button" class="btn btn-link" @click="loadUser">Retry</button>
+            </Alert>
+
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <template v-if="!embedded">
@@ -68,6 +73,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -135,13 +141,23 @@ export default {
             historyStore.startWatchingHistory();
         }
 
+        const userLoadError = ref("");
+        async function loadUser() {
+            userLoadError.value = "";
+            try {
+                await userStore.loadUser();
+            } catch (error) {
+                userLoadError.value = errorMessageAsString(error);
+            }
+        }
+
         watch(
             () => embedded.value,
             () => {
                 if (embedded.value) {
                     userStore.$reset();
                 } else {
-                    userStore.loadUser();
+                    loadUser();
                 }
             },
             { immediate: true },
@@ -167,6 +183,8 @@ export default {
         );
 
         return {
+            userLoadError,
+            loadUser,
             confirmation,
             toastRef,
             confirmDialogRef,
