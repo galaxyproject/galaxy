@@ -128,6 +128,41 @@ def sanitize_fts5_query(query: str, preserve_phrases: bool = True) -> str:
     return re.sub(r"\s+", " ", sanitized).strip()
 
 
+_ELLIPSIS = "..."
+# Kramdown/Liquid constructs FTS5 can cut off at either end of a snippet.
+_LEADING_FRAGMENT = re.compile(r"^(?:[^{}<>]*?%\}|[^\[\]]*\]\([^)]*\)?|[^<>]*?-->|[\w-]+>)")
+_TRAILING_FRAGMENT = re.compile(r"(?:\{[%:{][^}]*|!\[[^\]]*(?:\]\([^)]*)?|<[^>]*)$")
+
+
+def plain_excerpt(text: str) -> str:
+    """Turn a GTN markdown snippet into plain prose for display to a learner.
+
+    Tutorial bodies are kramdown with Liquid tags, and FTS5 snippets cut them
+    at arbitrary points, so partial tags at either end are dropped as well.
+    """
+    text = text.strip()
+    lead = text.startswith(_ELLIPSIS)
+    trail = text.endswith(_ELLIPSIS)
+    text = text[len(_ELLIPSIS) if lead else 0 : len(text) - len(_ELLIPSIS) if trail else None]
+    if lead:
+        text = _LEADING_FRAGMENT.sub("", text)
+    if trail:
+        text = _TRAILING_FRAGMENT.sub("", text)
+    text = re.sub(r"\{%\s*tool\s*\[([^\]]*)\]\([^)]*\)\s*%\}", r"\1", text)
+    text = re.sub(r"\s*\{%.*?%\}|\{\{.*?\}\}|<!--.*?-->", "", text, flags=re.DOTALL)
+    text = re.sub(r"\{:[^}]*\}", "", text)
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)?|\[([^\]]*)$", r"\1\2", text)
+    text = re.sub(r"</?[A-Za-z][\w-]*[^>]*>", " ", text)
+    text = re.sub(r"(?m)^\s*(?:>\s*)+", "", text)
+    text = re.sub(r"(?m)^\s*#{1,6}\s+", "", text)
+    text = re.sub(r"```\w*|[*`|]+", "", text)
+    text = " ".join(text.split())
+    if not text:
+        return ""
+    return (_ELLIPSIS if lead else "") + text + (_ELLIPSIS if trail else "")
+
+
 @dataclass
 class SearchResult:
     """Represents a search result from the GTN database."""

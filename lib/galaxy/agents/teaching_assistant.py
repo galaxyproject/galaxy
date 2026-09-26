@@ -40,6 +40,7 @@ from .base import (
     truncate_middle,
 )
 from .gtn import GTNSearchDB
+from .gtn.search import plain_excerpt
 from .operations import AgentOperationsManager
 
 log = logging.getLogger(__name__)
@@ -330,7 +331,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                         "id": uuid4().hex[:12],
                         "title": record["title"],
                         "url": url,
-                        "excerpt": record.get("snippet") or record.get("description", ""),
+                        "excerpt": plain_excerpt(record.get("snippet") or "") or result.description,
                         "difficulty": result.difficulty or "unknown",
                     }
                 )
