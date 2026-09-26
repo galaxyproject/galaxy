@@ -9,6 +9,7 @@ const MESSAGES = {
         "This is a Microsoft Azure Blob based Galaxy storage. More information on Microsoft's Azure Blob Storage can be found at https://azure.microsoft.com/en-us/products/storage/blobs/.",
     disk: "This is a simple path based Galaxy storage that assumes the all the relevant paths are already mounted on the Galaxy server and target worker nodes.",
     boto3: "This is a Galaxy storage based on the Amazon Simple Storage Service (S3) interface, but likely not stored by Amazon. The AWS interface has become an industry standard and many storage vendors support it and use it to expose object based storage.",
+    cloud: "This is a Galaxy storage based on the provider-agnostic CloudBridge library, which can store data in Amazon S3, Azure Blob Storage, Google Cloud Storage, or OpenStack Swift.",
     generic_s3:
         "This is a Galaxy storage based on the Amazon Simple Storage Service (S3) interface, but likely not stored by Amazon. The AWS interface has become an industry standard and many storage vendors support it and use it to expose object based storage.",
     onedata: "This is a Galaxy storage based on the Onedata system.",

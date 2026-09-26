@@ -158,6 +158,47 @@ store configuration).
 
 ![](object_store_azure_configuration.png)
 
+#### `cloud`
+
+Object stores of the type `cloud` connect to Amazon S3, Azure Blob Storage, Google Cloud
+Storage or OpenStack Swift through a single configuration surface - the `provider` option
+selects which one. Galaxy reaches the service through
+[CloudBridge](http://cloudbridge.cloudve.org/), so one template shape covers all four,
+including native Swift access that the S3 compatible object stores cannot offer.
+
+Here is a template for AWS S3 buckets. Pointing it at a different cloud is a matter of
+changing `provider` and the matching `auth` fields.
+
+```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+:language: yaml
+```
+
+Large datasets are transferred as multiple parts in parallel in both directions. The
+optional `transfer` section tunes the size at which that kicks in, the size of each part,
+and how many parts are transferred at once; prefixing any of those options with `upload_`
+or `download_` tunes just one direction.
+
+The providers named by your templates decide which client libraries Galaxy needs, so
+Galaxy's dependency installer installs the matching CloudBridge extras for the providers
+used by your templates and by `object_store_conf.yml`.
+
+What a template may set is deliberately narrower than what the object store itself accepts
+in `object_store_conf.yml`: user defined stores are stored in Galaxy's database and are
+expected to keep working indefinitely, so templates cannot hand out short lived credentials
+(which would expire and leave the user with a broken store) or point Galaxy at credential
+files on the server.
+
+The syntax for the `configuration` section of `cloud` templates looks like this.
+
+![](object_store_cloud_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's object store infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `object_store_conf.yml` (Galaxy's global object
+store configuration).
+
+![](object_store_cloud_configuration.png)
+
 #### `aws_s3` (Legacy)
 
 Object stores of the type `aws_s3` are be used to treat AWS Simple Storage Service (S3) buckets
@@ -261,6 +302,16 @@ and you're comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_object_store_form_full_aws_s3.png)
+
+#### Allow Users to Define Cloud Storage Buckets as Object Stores
+
+This template lets users bring their own AWS S3 bucket through Galaxy's multi-cloud
+storage plugin. The same form works for Azure, Google Cloud and OpenStack Swift by
+changing the `provider` and `auth` fields.
+
+```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+:language: yaml
+```
 
 #### Allow Users to Define Google Cloud Provider S3 Interop Storage Buckets as Object Stores
 

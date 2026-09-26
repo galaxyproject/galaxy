@@ -1,0 +1,29 @@
+type: cloud
+provider: aws
+auth:
+  access_key: access_moo
+  secret_key: secret_cow
+  # Session token for temporary (STS) credentials.
+  session_token: session_token_moo
+  region: us-east-2
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+# For S3-compatible endpoints (MinIO, Ceph RGW, Swift S3 middleware, ...).
+# The endpoint scheme conveys http/https.
+connection:
+  endpoint_url: https://s3.example.org/
+  validate_certs: false
+  signature_version: s3v4
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud

@@ -1,0 +1,23 @@
+type: cloud
+store_by: uuid
+provider: openstack
+auth:
+  username: ${GALAXY_TEST_OS_USERNAME}
+  password: ${GALAXY_TEST_OS_PASSWORD}
+  project_name: ${GALAXY_TEST_OS_PROJECT_NAME}
+  auth_url: ${GALAXY_TEST_OS_AUTH_URL}
+  region: ${GALAXY_TEST_OS_REGION_NAME}
+
+bucket:
+  name: ${GALAXY_TEST_OS_CONTAINER}
+
+# Swift static large objects require >= 5 MiB segments (except the last).
+transfer:
+  multipart_threshold: 5242880
+  multipart_chunksize: 5242880
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
