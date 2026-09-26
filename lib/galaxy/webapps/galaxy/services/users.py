@@ -11,6 +11,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.managers.users import (
     UserDeserializer,
     UserManager,
@@ -58,6 +59,7 @@ class UsersService(ServiceBase):
         user_serializer: UserSerializer,
         user_deserializer: UserDeserializer,
         quota_agent: QuotaAgent,
+        extra_preferences_manager: ExtraPreferencesManager,
     ):
         super().__init__(security)
         self.user_manager = user_manager
@@ -65,6 +67,7 @@ class UsersService(ServiceBase):
         self.user_serializer = user_serializer
         self.user_deserializer = user_deserializer
         self.quota_agent = quota_agent
+        self.extra_preferences_manager = extra_preferences_manager
 
     def recalculate_disk_usage(
         self,
@@ -110,6 +113,12 @@ class UsersService(ServiceBase):
         """Deletes a particular API key"""
         user = self.get_user(trans, user_id)
         self.api_key_manager.delete_api_key(user)
+
+    def purge_user(self, user: User) -> None:
+        """Purge a deleted user, including the extra preference values kept in the vault."""
+        self.user_manager.purge(user)
+        # After the user is purged, so a failed purge leaves the vault as it was.
+        self.extra_preferences_manager.purge(user)
 
     def get_user(self, trans: ProvidesUserContext, user_id):
         user = trans.user

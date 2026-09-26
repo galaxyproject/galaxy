@@ -72,6 +72,26 @@ class ExtraPreferencesManager:
         }
         return json.dumps({key: value for key, value in stored.items() if key not in sensitive})
 
+    def purge(self, user: User, *, commit: bool = True) -> None:
+        """Remove every extra preference value of ``user``, from the database and the vault.
+
+        The inputs are defined by an administrator, so their values may hold
+        anything personal.
+        """
+        session = required_object_session(user)
+        # Dropping the row from the collection alone would only orphan it.
+        if (stored := user._preferences.pop(EXTRA_PREFERENCES_KEY, None)) is not None:
+            session.delete(stored)
+        if self._has_vault:
+            user_vault = UserVaultWrapper(self.vault, user)
+            for section in self.definition():
+                for field in section.inputs:
+                    # Deleting writes an empty value, so only keys the user set are touched.
+                    if field.in_vault and user_vault.read_secret(_vault_key(section, field)):
+                        user_vault.delete_secret(_vault_key(section, field))
+        if commit:
+            session.commit()
+
     def values(self, user: User) -> UserExtraPreferences:
         stored = user.extra_preferences
         user_vault = UserVaultWrapper(self.vault, user)

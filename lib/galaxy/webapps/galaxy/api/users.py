@@ -767,7 +767,7 @@ class FastAPIUsers:
         if trans.user_is_admin:
             if purge:
                 log.debug("Purging user %s", user_to_update)
-                self.service.user_manager.purge(user_to_update)
+                self.service.purge_user(user_to_update)
             else:
                 self.service.user_manager.delete(user_to_update)
         else:

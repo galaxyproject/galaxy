@@ -2,6 +2,7 @@ import json
 import os
 from typing import Any
 
+from galaxy.model import User
 from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
@@ -14,6 +15,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         super().handle_galaxy_config_kwds(config)
         cls._configure_database_vault(config)
         config["user_preferences_extra_conf_path"] = EXTRA_PREFS_CONF
+        config["allow_user_deletion"] = True
 
     def test_definition(self):
         with self._different_user("extra-prefs-definition@test.gx"):
@@ -254,6 +256,25 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
             )
             self._assert_status_code_is(response, 400)
 
+    def test_purge_removes_values(self):
+        email = "extra-prefs-purge@test.gx"
+        user = self._setup_user(email)
+        with self._different_user(email):
+            self._put_prefs(
+                {"typed_section": {"note": "personal", "vault_count": 3}, "vaulttestsection": {"refresh_token": "t"}}
+            )
+        self._assert_status_code_is(self._delete(f"users/{user['id']}", admin=True), 200)
+        self._assert_status_code_is(
+            self._delete(f"users/{user['id']}", data={"purge": True}, admin=True, json=True), 200
+        )
+
+        db_user = self._db_user_by_id(user["id"])
+        assert db_user.purged
+        assert "extra_user_preferences" not in db_user.preferences
+        assert not self._read_vault(db_user, "typed_section/vault_count")
+        assert not self._read_vault(db_user, "vaulttestsection/refresh_token")
+        assert self._read_vault(db_user, "vaulttestsection/client_id") is None
+
     def _get_prefs(self):
         response = self._get("users/current")
         response = self._get(f"users/{response.json()['id']}/extra_preferences")
@@ -268,6 +289,13 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         session = self._app.model.session
         session.expire_all()
         user = get_user_by_email(session, email)
+        assert user
+        return user
+
+    def _db_user_by_id(self, encoded_id):
+        session = self._app.model.session
+        session.expire_all()
+        user = session.get(User, self._app.security.decode_id(encoded_id))
         assert user
         return user
 
