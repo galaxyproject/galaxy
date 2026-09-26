@@ -88,6 +88,9 @@ def populate_model(
             pagination_spec = options_pagination.get(full_name) if input.type in ("data", "data_collection") else None
             try:
                 initial_value = input.get_initial_value(request_context, other_values)
+                # Inactive conditional cases start from an empty state; record defaults so
+                # later siblings (e.g. ``param_value`` filters) can resolve references to them.
+                state_inputs.setdefault(input.name, initial_value)
                 if pagination_spec is not None:
                     tool_dict = input.to_dict(request_context, other_values=other_values, pagination=pagination_spec)
                 else:
