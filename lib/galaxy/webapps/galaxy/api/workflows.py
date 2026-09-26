@@ -92,6 +92,7 @@ from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.web import (
     expose_api,
+    expose_api_anonymous,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -557,24 +558,21 @@ class WorkflowsAPIController(
             step_dict["tool_version"] = module.get_version()
         return step_dict
 
-    @expose_api
+    @expose_api_anonymous
     def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         :type   payload: dict
         :param  payload:
-            a dictionary containing two parameters
             'tool_sequence' - comma separated sequence of tool ids
-            'remote_model_url' - (optional) path to the deep learning model
         """
-        remote_model_url = payload.get("remote_model_url", trans.app.config.tool_recommendation_model_path)
+        # Model downloads must use administrator configuration, never request-supplied URLs.
+        model_url = trans.app.config.tool_recommendation_model_path
         tool_sequence = payload.get("tool_sequence", "")
-        if "tool_sequence" not in payload or remote_model_url is None:
+        if "tool_sequence" not in payload or model_url is None:
             return
-        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
-            trans, tool_sequence, remote_model_url
-        )
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(trans, tool_sequence, model_url)
         return {"current_tool": tool_sequence, "predicted_data": recommended_tools}
 
     #
