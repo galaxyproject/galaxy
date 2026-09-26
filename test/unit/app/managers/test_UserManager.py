@@ -25,7 +25,9 @@ from galaxy.managers import (
     histories,
     users,
 )
+from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.security.passwords import check_password
+from galaxy.security.vault import NullVault
 from galaxy.util import now
 from .base import BaseTestCase
 
@@ -499,7 +501,7 @@ class TestUserManager(BaseTestCase):
 class TestUserSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.user_serializer = users.UserSerializer(self.app)
+        self.user_serializer = users.UserSerializer(self.app, ExtraPreferencesManager(self.app.config, NullVault()))
 
     def test_views(self):
         user = self.user_manager.create(**user2_data)
@@ -557,7 +559,9 @@ class TestCurrentUserSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[histories.HistoryManager]
-        self.user_serializer = users.CurrentUserSerializer(self.app)
+        self.user_serializer = users.CurrentUserSerializer(
+            self.app, ExtraPreferencesManager(self.app.config, NullVault())
+        )
 
     def test_anonymous(self):
         anonym = None

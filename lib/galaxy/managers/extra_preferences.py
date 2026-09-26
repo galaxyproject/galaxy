@@ -59,6 +59,19 @@ class ExtraPreferencesManager:
             self._definition = (preferences, _parse_definition(preferences))
         return self._definition[1]
 
+    def redact(self, extra_preferences_json: str) -> str:
+        """The stored JSON without the values of sensitive inputs, for serializing a user's preferences."""
+        try:
+            stored = json.loads(extra_preferences_json)
+        except ValueError:
+            return "{}"
+        if not isinstance(stored, dict):
+            return "{}"
+        sensitive = {
+            _stored_key(section, field) for section in self.definition() for field in section.inputs if field.sensitive
+        }
+        return json.dumps({key: value for key, value in stored.items() if key not in sensitive})
+
     def values(self, user: User) -> UserExtraPreferences:
         stored = user.extra_preferences
         user_vault = UserVaultWrapper(self.vault, user)

@@ -221,6 +221,23 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         assert db_user.extra_preferences["non_vault_test_section|pass"] == "legacy_pass"
         assert "vaulttestsection|no_such_input" not in json.loads(db_user.preferences["extra_user_preferences"])
 
+    def test_sensitive_values_are_not_serialized(self):
+        email = "extra-prefs-redacted@test.gx"
+        with self._different_user(email):
+            self._put_prefs(
+                {
+                    "typed_section": {"plain_password": "hunter2", "note": "visible"},
+                    "non_vault_test_section": {"user": "u", "pass": "also_hidden"},
+                }
+            )
+            assert self._get_prefs()["typed_section"]["plain_password"] == {"is_set": True}
+            preferences = self._get("users/current").json()["preferences"]
+        stored = json.loads(preferences["extra_user_preferences"])
+        assert stored["typed_section|note"] == "visible"
+        assert "typed_section|plain_password" not in stored
+        assert "non_vault_test_section|pass" not in stored
+        assert self._db_user(email).extra_preferences["typed_section|plain_password"] == "hunter2"
+
     def test_admin_can_read_and_write_another_users_values(self):
         owner = self._setup_user("extra-prefs-admin-target@test.gx")
         url = f"users/{owner['id']}/extra_preferences"

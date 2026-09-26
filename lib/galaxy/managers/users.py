@@ -44,6 +44,10 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.extra_preferences import (
+    EXTRA_PREFERENCES_KEY,
+    ExtraPreferencesManager,
+)
 from galaxy.model import (
     Job,
     User,
@@ -808,12 +812,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: MinimalManagerApp, extra_preferences_manager: ExtraPreferencesManager):
         """
         Convert a User and associated data to a dictionary representation.
         """
         super().__init__(app)
         self.user_manager = self.manager
+        self.extra_preferences_manager = extra_preferences_manager
 
         self.default_view = "summary"
         self.add_view("summary", ["id", "email", "username"])
@@ -847,7 +852,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "update_time": self.serialize_date,
                 "active": lambda i, k, **c: bool(i.active),
                 "is_admin": lambda i, k, **c: self.user_manager.is_admin(i),
-                "preferences": lambda i, k, **c: self.user_manager.preferences(i),
+                "preferences": lambda i, k, **c: self.serialize_preferences(i),
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
@@ -887,6 +892,15 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             quota=quota,
             quota_bytes=quota_bytes,
         )
+
+    def serialize_preferences(self, user: User) -> dict[str, str]:
+        preferences = self.user_manager.preferences(user)
+        if EXTRA_PREFERENCES_KEY in preferences:
+            # Values of password and secret inputs are written by the user but never sent back.
+            preferences[EXTRA_PREFERENCES_KEY] = self.extra_preferences_manager.redact(
+                preferences[EXTRA_PREFERENCES_KEY]
+            )
+        return preferences
 
 
 class UserDeserializer(base.ModelDeserializer):
