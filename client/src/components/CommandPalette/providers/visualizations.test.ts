@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import MockDate from "timezone-mock";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadVisualizations, type VisualizationSummary } from "@/api/visualizations";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
@@ -51,10 +52,17 @@ function mockList(...visualizations: VisualizationSummary[]) {
 
 describe("visualizationsProvider", () => {
     beforeEach(() => {
+        // subtitles carry a date formatted in local time, so the zone is pinned
+        // the way utils/dates.test.ts pins it
+        MockDate.register("Etc/GMT+4");
         setActivePinia(createPinia());
         vi.mocked(loadVisualizations).mockReset();
         resetListRefreshTracking();
         recentEntries.length = 0;
+    });
+
+    afterEach(() => {
+        MockDate.unregister();
     });
 
     it("maps a visualization to the display route the grid opens", async () => {
@@ -67,7 +75,8 @@ describe("visualizationsProvider", () => {
         expect(items[0]?.id).toBe("visualizations:viz-1");
         expect(items[0]?.title).toBe("ATAC peaks");
         expect(items[0]?.to).toBe("/visualizations/display?visualization=nvd3_bar&visualization_id=viz-1");
-        expect(items[0]?.subtitle).toBe("nvd3_bar · Jan 2, 2026");
+        // the update time is midnight UTC, so the pinned zone shows the day before
+        expect(items[0]?.subtitle).toBe("nvd3_bar · Jan 1, 2026");
     });
 
     it("hydrates the store once and ranks the cache before merging backend hits", async () => {
