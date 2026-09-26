@@ -1,5 +1,5 @@
 import logging
-import re
+from functools import partial
 from typing import (
     Any,
 )
@@ -15,6 +15,9 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.markdown_parse import is_quotable_argument_value
+from galaxy.managers.workflow_extraction_naming import normalize_label
+from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
     RefactorRequest,
     RefactorResponse,
@@ -25,6 +28,7 @@ from galaxy.managers.workflows import (
 from galaxy.model import (
     ImplicitCollectionJobs,
     LandingRequestToWorkflowInvocationAssociation,
+    Page,
     StoredWorkflow,
     WorkflowInvocation,
     WorkflowLandingRequest,
@@ -50,6 +54,7 @@ from galaxy.workflow.extract import (
     collect_output_label_targets,
     extract_workflow,
     extract_workflow_by_ids,
+    ExtractionLabelIndex,
     normalize_output_label_key,
 )
 from galaxy.workflow.run import queue_invoke
@@ -59,39 +64,82 @@ from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 log = logging.getLogger(__name__)
 
 
-def _to_extraction_result(stored_workflow: StoredWorkflow) -> WorkflowExtractionResult:
-    return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+def _to_extraction_result(
+    stored_workflow: StoredWorkflow, report_warnings: list[str] | None = None
+) -> WorkflowExtractionResult:
+    return WorkflowExtractionResult.model_validate({"id": stored_workflow.id, "report_warnings": report_warnings or []})
+
+
+def _build_report_config(
+    trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
+) -> tuple[dict[str, Any], list[str]]:
+    """Turn a notebook page into the extracted workflow's ``reports_config``.
+
+    Runs while the extracted steps are still uncommitted. Reconcile mutates them
+    (assigning labels, exposing outputs the user did not star) and the rewrite can
+    fail, so both land in the single transaction that creates the workflow rather
+    than leaving a report-less workflow behind on error.
+    """
+    markdown, warnings = reconcile_and_build_report(trans, page, index)
+    return {"markdown": markdown, "title": title}, warnings
+
+
+def _reject_unquotable(value: str, described_as: str) -> None:
+    """Reject a label that cannot be expressed as a workflow report directive argument.
+
+    Labels are emitted into report directives as double-quoted arguments and the
+    directive grammar has no escape syntax, so a quote or line break in one has no
+    representable form. Rejected up front, where the user can still correct it.
+    """
+    if not is_quotable_argument_value(value):
+        raise exceptions.RequestParameterInvalidException(
+            f"{described_as} must not contain double quotes or line breaks: {value!r}"
+        )
 
 
 def _sanitize_output_label(label: str) -> str:
-    label = re.sub(r"\s+", " ", label.strip())
-    if not label:
+    _reject_unquotable(label, "output labels")
+    sanitized = normalize_label(label)
+    if not sanitized:
         raise exceptions.RequestParameterInvalidException("output_labels contains an empty label")
-    return label[:255]
+    return sanitized
 
 
-def _validate_input_names(
+def _validate_extraction_labels(
     dataset_names: list[str] | None,
     dataset_collection_names: list[str] | None,
+    step_labels: list[str] | None = None,
 ) -> None:
-    """Validate user-supplied workflow input names (step labels).
+    """Validate user-supplied workflow input names and tool step labels.
 
-    Dataset and collection input names share one namespace (the single
-    ``step_labels`` set in ``extract_steps``), so uniqueness is checked across
-    the combined list. Only inspects names that were actually supplied — the
-    no-names default path (the ``"Input Dataset"`` constants) is untouched.
-    Names are kept raw: limits are enforced by rejection, never truncation.
+    Input dataset/collection names and tool step labels share one namespace
+    (the single ``step_labels`` set in ``extract_steps_by_ids``), so uniqueness
+    is checked across the combined list. Only inspects values that were actually
+    supplied — the no-names default path (the ``"Input Dataset"`` constants) and
+    unlabeled steps are untouched. Values are kept raw: limits are enforced by
+    rejection, never truncation (no whitespace collapse — unlike output labels).
     """
-    provided = (dataset_names or []) + (dataset_collection_names or [])
     seen: set[str] = set()
-    for name in provided:
+    for name in (dataset_names or []) + (dataset_collection_names or []):
         if not name.strip():
             raise exceptions.RequestParameterInvalidException("workflow input names must not be empty")
+        _reject_unquotable(name, "workflow input names")
         if len(name) > 255:
             raise exceptions.RequestParameterInvalidException(f"workflow input name exceeds 255 characters: {name!r}")
         if name in seen:
             raise exceptions.RequestParameterInvalidException(f"workflow input names must be unique: {name!r}")
         seen.add(name)
+    for label in step_labels or []:
+        if not label.strip():
+            raise exceptions.RequestParameterInvalidException("workflow step labels must not be empty")
+        _reject_unquotable(label, "workflow step labels")
+        if len(label) > 255:
+            raise exceptions.RequestParameterInvalidException(f"workflow step label exceeds 255 characters: {label!r}")
+        if label in seen:
+            raise exceptions.RequestParameterInvalidException(
+                f"workflow step label collides with another input name or step label: {label!r}"
+            )
+        seen.add(label)
 
 
 class WorkflowsService(ServiceBase):
@@ -253,7 +301,7 @@ class WorkflowsService(ServiceBase):
     ) -> WorkflowExtractionResult:
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
-        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
+        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names)
         stored_workflow = extract_workflow(
             trans,
             user=trans.user,
@@ -275,7 +323,11 @@ class WorkflowsService(ServiceBase):
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
         self._validate_extract_by_ids_payload(trans, payload)
-        stored_workflow = extract_workflow_by_ids(
+        build_report = None
+        if payload.from_page_id is not None:
+            page = self._load_report_page(trans, payload.from_page_id)
+            build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
+        stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
             user=trans.user,
             workflow_name=payload.workflow_name,
@@ -287,8 +339,25 @@ class WorkflowsService(ServiceBase):
             dataset_names=payload.dataset_names,
             dataset_collection_names=payload.dataset_collection_names,
             output_labels=payload.output_labels,
+            step_labels=payload.step_labels,
+            build_report=build_report,
         )
-        return _to_extraction_result(stored_workflow)
+        return _to_extraction_result(stored_workflow, report_warnings)
+
+    def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):
+        """Load and gate a notebook page used to build the workflow report.
+
+        Mirrors the page workflow-extraction-summary endpoint: only history-backed
+        pages are extractable, and page accessibility must not leak the underlying
+        history - require access to the history too.
+        """
+        page = self.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
+        if page.history_id is None:
+            raise exceptions.RequestParameterInvalidException(
+                "Workflow report extraction is only available for history-backed pages (notebooks)."
+            )
+        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        return page
 
     def _validate_extract_by_ids_payload(
         self,
@@ -334,7 +403,26 @@ class WorkflowsService(ServiceBase):
             for hdca in output_hdcas:
                 dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
 
-        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
+        selected_job_ids = set(payload.job_ids)
+        selected_icj_ids = set(payload.implicit_collection_jobs_ids)
+        seen_step_keys: set[tuple[str, int]] = set()
+        step_label_strings: list[str] = []
+        for step_label in payload.step_labels:
+            step_key = (step_label.kind, step_label.id)
+            if step_key in seen_step_keys:
+                raise exceptions.RequestParameterInvalidException(
+                    f"step_labels contains duplicate {step_label.kind} id {step_label.id}"
+                )
+            seen_step_keys.add(step_key)
+            selected = selected_job_ids if step_label.kind == "job" else selected_icj_ids
+            if step_label.id not in selected:
+                raise exceptions.RequestParameterInvalidException(
+                    f"step_labels includes {step_label.kind} id {step_label.id} "
+                    "that is not a selected extraction step"
+                )
+            step_label_strings.append(step_label.label)
+
+        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names, step_label_strings)
 
         output_targets = collect_output_label_targets(
             trans,
