@@ -9,27 +9,16 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { createPage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { slugify } from "@/utils/slug";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
-import { rankPaletteItems } from "../utilities";
-import { myWorkflowItems } from "./workflows";
-
-interface ActionDefinition extends PaletteItem {
-    /** Whether the action is available without a logged-in user */
-    anonymous: boolean;
-    /** Extra availability check against the Galaxy configuration */
-    configGate?: (ctx: PaletteContext) => boolean;
-}
-
-/** Per argument section cap, matching the scoped providers */
-const ARGUMENT_LIMIT = 8;
+import { type Gated, rankPaletteItems, visibleFor } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
+import { myWorkflowItems } from "./workflowRows";
 
 /** Upload methods, filtered by config and login exactly like the upload panel */
 function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[] {
@@ -71,32 +60,12 @@ function namedHistoryItems(argQuery: string): PaletteItem[] {
     ];
 }
 
-/** The backend rejects a slug that the user already has with this message */
-function isSlugConflict(error: unknown): boolean {
-    return /must be unique/i.test(String(errorMessageAsString(error, "")));
-}
-
-async function createTitledPage(title: string, ctx: PaletteContext) {
-    // a title made of punctuation alone would leave no slug to send
-    const slug = slugify(title, "page");
+async function createTitledReport(title: string, ctx: PaletteContext) {
     try {
-        let page;
-        try {
-            page = await createPage({ title, slug, content_format: "markdown" });
-        } catch (error) {
-            if (!isSlugConflict(error)) {
-                throw error;
-            }
-            // one retry is enough: the suffixed slug is free unless the user
-            // already owns both, which is worth reporting
-            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
-        }
-        // the `p:` scope renders from the store and stops asking the backend once
-        // it holds every page, so the new one has to be seeded or it stays hidden
-        usePageStore().savePages("my", [page], true);
+        const page = await usePageStore().createMarkdownPage(title);
         ctx.navigate?.(`/pages/editor?id=${page.id}`);
     } catch (error) {
-        Toast.error(errorMessageAsString(error), "Failed to create page");
+        Toast.error(errorMessageAsString(error), "Failed to create report");
     }
 }
 
@@ -110,9 +79,9 @@ function titledPageItems(argQuery: string): PaletteItem[] {
         {
             id: "actions:create-page:titled",
             icon: faFileAlt,
-            title: `Create page titled '${title}'`,
+            title: `Create report titled '${title}'`,
             handler: (ctx: PaletteContext) => {
-                void createTitledPage(title, ctx);
+                void createTitledReport(title, ctx);
             },
         },
     ];
@@ -149,117 +118,128 @@ async function galaxyAiItems(argQuery: string): Promise<PaletteItem[]> {
               },
           ]
         : [];
-    return [...seeded, ...rankPaletteItems(existing, question).slice(0, ARGUMENT_LIMIT)];
+    return [...seeded, ...rankPaletteItems(existing, question).slice(0, PALETTE_LIMITS.section)];
 }
 
-const ACTIONS: ActionDefinition[] = [
+const ACTIONS: Gated<PaletteItem>[] = [
     {
-        id: "actions:upload",
         anonymous: true,
-        icon: faUpload,
-        keywords: "data import files url paste",
-        subtitle: "Upload files from disk, URL or pasted content",
-        title: "Upload data",
-        to: "/upload",
-        argumentMode: {
-            getItems: (argQuery: string, ctx: PaletteContext) => uploadMethodItems(argQuery, ctx),
-            label: "pick a method",
-            placeholder: "Search upload methods…",
+        item: {
+            id: "actions:upload",
+            icon: faUpload,
+            keywords: "data import files url paste",
+            subtitle: "Upload files from disk, URL or pasted content",
+            title: "Upload data",
+            to: "/upload",
+            argumentMode: {
+                getItems: (argQuery: string, ctx: PaletteContext) => uploadMethodItems(argQuery, ctx),
+                label: "pick a method",
+                placeholder: "Search upload methods…",
+            },
         },
     },
     {
-        id: "actions:new-history",
         anonymous: false,
-        icon: faPlus,
-        keywords: "analysis start fresh",
-        subtitle: "Create a new history and switch to it",
-        title: "Create new history",
-        handler: () => {
-            void useHistoryStore().createNewHistory();
-        },
-        argumentMode: {
-            getItems: (argQuery: string) => namedHistoryItems(argQuery),
-            label: "name it",
-            placeholder: "Name the new history…",
-        },
-    },
-    {
-        id: "actions:create-workflow",
-        anonymous: false,
-        icon: faSitemap,
-        keywords: "editor build new",
-        subtitle: "Create a new workflow in the editor",
-        title: "Create workflow",
-        to: "/workflows/create",
-    },
-    {
-        id: "actions:import-workflow",
-        anonymous: false,
-        icon: faFileImport,
-        keywords: "upload trs url file",
-        subtitle: "Import a workflow from file, URL or TRS",
-        title: "Import workflow",
-        to: "/workflows/import",
-    },
-    {
-        id: "actions:create-page",
-        anonymous: false,
-        icon: faFileAlt,
-        keywords: "markdown document report notebook new",
-        subtitle: "Create a new page and open the editor",
-        title: "Create new page",
-        to: "/pages/create",
-        argumentMode: {
-            getItems: (argQuery: string) => titledPageItems(argQuery),
-            label: "title it",
-            placeholder: "Title the new page…",
+        item: {
+            id: "actions:new-history",
+            icon: faPlus,
+            keywords: "analysis start fresh",
+            subtitle: "Create a new history and switch to it",
+            title: "Create new history",
+            handler: () => {
+                void useHistoryStore().createNewHistory();
+            },
+            argumentMode: {
+                emptyHint: "Type a name for the new history…",
+                getItems: (argQuery: string) => namedHistoryItems(argQuery),
+                label: "name it",
+                placeholder: "Name the new history…",
+            },
         },
     },
     {
-        id: "actions:run-workflow",
         anonymous: false,
-        icon: faPlay,
-        keywords: "execute launch invoke start",
-        subtitle: "Pick one of your workflows and open its run form",
-        title: "Run workflow",
-        argumentMode: {
-            getItems: (argQuery: string) => myWorkflowItems(argQuery, ARGUMENT_LIMIT),
-            // there is nothing to run without picking a workflow first
-            immediate: true,
-            label: "pick a workflow",
-            placeholder: "Search my workflows…",
+        item: {
+            id: "actions:create-workflow",
+            icon: faSitemap,
+            keywords: "editor build new",
+            subtitle: "Create a new workflow in the editor",
+            title: "Create workflow",
+            to: "/workflows/create",
         },
     },
     {
-        id: "actions:galaxy-ai",
+        anonymous: false,
+        item: {
+            id: "actions:import-workflow",
+            icon: faFileImport,
+            keywords: "upload trs url file",
+            subtitle: "Import a workflow from file, URL or TRS",
+            title: "Import workflow",
+            to: "/workflows/import",
+        },
+    },
+    {
+        anonymous: false,
+        item: {
+            id: "actions:create-page",
+            icon: faFileAlt,
+            keywords: "markdown document report page notebook new",
+            subtitle: "Create a new report and open the editor",
+            title: "Create new report",
+            to: "/pages/create",
+            argumentMode: {
+                emptyHint: "Type a title for the new report…",
+                getItems: (argQuery: string) => titledPageItems(argQuery),
+                label: "title it",
+                placeholder: "Title the new report…",
+            },
+        },
+    },
+    {
+        anonymous: false,
+        item: {
+            id: "actions:run-workflow",
+            icon: faPlay,
+            keywords: "execute launch invoke start",
+            subtitle: "Pick one of your workflows and open its run form",
+            title: "Run workflow",
+            argumentMode: {
+                getItems: (argQuery: string) => myWorkflowItems(argQuery, PALETTE_LIMITS.section),
+                // there is nothing to run without picking a workflow first
+                immediate: true,
+                label: "pick a workflow",
+                placeholder: "Search my workflows…",
+            },
+        },
+    },
+    {
         anonymous: false,
         configGate: (ctx) => Boolean(ctx.config.llm_api_configured),
-        icon: faMagic,
-        keywords: "chat assistant llm question help",
-        subtitle: "Ask the Galaxy assistant about tools, workflows or errors",
-        title: "Ask GalaxyAI",
-        handler: (ctx: PaletteContext) => ctx.startNewChat?.(true),
-        argumentMode: {
-            getItems: (argQuery: string) => galaxyAiItems(argQuery),
-            label: "ask a question",
-            placeholder: "Ask GalaxyAI…",
+        item: {
+            id: "actions:galaxy-ai",
+            icon: faMagic,
+            keywords: "chat assistant llm question help",
+            subtitle: "Ask the Galaxy assistant about tools, workflows or errors",
+            title: "Ask GalaxyAI",
+            handler: (ctx: PaletteContext) => ctx.startNewChat?.(true),
+            argumentMode: {
+                emptyHint: "Type a question to start a new chat…",
+                getItems: (argQuery: string) => galaxyAiItems(argQuery),
+                label: "ask a question",
+                placeholder: "Ask GalaxyAI…",
+            },
         },
     },
 ];
-
-function actionItems(ctx: PaletteContext): PaletteItem[] {
-    return ACTIONS.filter((action) => (action.anonymous || !ctx.isAnonymous) && (action.configGate?.(ctx) ?? true)).map(
-        ({ anonymous: _anonymous, configGate: _configGate, ...item }) => item,
-    );
-}
 
 export const actionsProvider: CommandPaletteProvider = {
     id: "actions",
     title: "Actions",
     emptyQueryItems(ctx: PaletteContext) {
-        return actionItems(ctx);
+        return visibleFor(ACTIONS, ctx);
     },
     search(query: string, ctx: PaletteContext) {
-        return rankPaletteItems(actionItems(ctx), query);
+        return rankPaletteItems(visibleFor(ACTIONS, ctx), query);
     },
 };

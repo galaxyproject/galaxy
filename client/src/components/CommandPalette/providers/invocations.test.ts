@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { invocationsProvider } from "./invocations";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -69,10 +69,6 @@ const INVOCATIONS = [
 ];
 
 const SCOPE: ScopeDefinition = { key: "i", label: "Invocations", providerId: "invocations" };
-
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
-}
 
 describe("invocationsProvider", () => {
     beforeEach(() => {

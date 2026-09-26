@@ -15,6 +15,10 @@ TEST_KEYS_FOR_ALL_USERS = [
     "terms_url",
     "allow_user_dataset_purge",
     "subdomain_switcher",
+    "enable_command_palette",
+    "command_palette_allow_anonymous",
+    "command_palette_disabled_providers",
+    "command_palette_placeholder",
 ]
 TEST_KEYS_FOR_ADMIN_ONLY = [
     "library_import_dir",

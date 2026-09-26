@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faQuestionCircle,
+    faSearch,
+    faSignInAlt,
+    faSpinner,
+    faTimes,
+    faUserPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { watchDebounced, watchImmediate } from "@vueuse/core";
+import { watchImmediate } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
+import { getOIDCIdpsWithRegistration } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
@@ -16,30 +24,21 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
 
-import { helpSections } from "./paletteHelp";
-import { findPaletteProvider, paletteProviders } from "./providers";
-import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
-import { isPaletteFetchError } from "./providers/errors";
-import type { ScopeDefinition } from "./providers/scopes";
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
+import { ALL_CATEGORY, availableCategories, type PaletteCategory } from "./providers/categories";
+import { isScopeLoginGated } from "./providers/scopes";
+import type { PaletteContext, PaletteItem, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
-import { secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
-import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
+import { OPTIONAL_HINTS, secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
+import { usePaletteMachine } from "./usePaletteMachine";
 import { usePaletteModifiers } from "./usePaletteModifiers";
+import { CATEGORY_ROW_INDEX, usePaletteSearch } from "./usePaletteSearch";
 import { useScrollEdges } from "./useScrollEdges";
-import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
+import { parsePaletteQuery } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
 
-const SEARCH_DEBOUNCE = 150;
-/** Cap per section on an empty query so defaults stay scannable */
-const MAX_EMPTY_QUERY_ITEMS = 8;
-/** Cap per section of the "All" fan-out, so every provider stays visible */
-const MAX_ROOT_SECTION_ITEMS = 5;
-/** Cap per section once a single category narrows the results */
-const MAX_CATEGORY_SECTION_ITEMS = 15;
-/** `selectedIndex` value selecting the category row instead of a result */
-const CATEGORY_ROW_INDEX = -1;
+/** Placeholder rows standing in for a provider that has not answered yet */
+const SKELETON_ROWS = 3;
 
 const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
 const { addRecentItem } = useRecentPaletteItems();
@@ -47,6 +46,7 @@ const { addRecentItem } = useRecentPaletteItems();
 // and hands them to the providers through the context
 const uploadMethods = useFilteredUploadMethods();
 const startNewChat = useStartNewChat();
+const route = useRoute();
 const router = useRouter();
 const { config } = useConfig();
 const toolStore = useToolStore();
@@ -77,32 +77,103 @@ const categoriesElement = ref<HTMLElement | null>(null);
 const { closeDialog, onClickDialog, onDialogCancel, onDialogClose, onDialogMousedown, openDialog, paletteVisible } =
     usePaletteDialog({ closePalette, dialogElement, handleEscape, inputElement, isPaletteOpen, resultsElement });
 const { fadeEnd, fadeStart, revealChild } = useScrollEdges(categoriesElement);
-
-const searching = ref(false);
-const sections = ref<ResultSection[]>([]);
-const selectedIndex = ref(0);
 const { modifierHeld, modifierLabel, releaseModifiers, shiftHeld } = usePaletteModifiers(togglePalette);
-/** Scope whose provider has not landed yet; renders the temporary hint row */
-const pendingScope = ref<ScopeDefinition | null>(null);
-/** What the palette could not load, naming the scope in the error row */
-const failedSubject = ref<string | null>(null);
 
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
 
-const flatItems = computed(() => sections.value.flatMap((section) => section.items));
+/** Where a login has to land the user again once it is done */
+const loginRedirect = computed(() => `/login/start?redirect=${encodeURIComponent(route.fullPath)}`);
 
-const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
+/**
+ * Where "Create a Galaxy account" leads, or nothing where the instance registers
+ * no one. The masthead's Register button decides it the same way (see
+ * `performRegistration` there): an instance that creates no local accounts still
+ * registers through OIDC, and a single provider offering it is gone to directly.
+ */
+const registrationTarget = computed<string | undefined>(() => {
+    if (config.value.allow_local_account_creation) {
+        return "/register/start";
+    }
+    const endpoints = Object.values(getOIDCIdpsWithRegistration(config.value.oidc ?? {})).map(
+        (idp) => idp.end_user_registration_endpoint,
+    );
+    if (endpoints.length === 0) {
+        return undefined;
+    }
+    // several providers need the form to pick one, a single one does not
+    return endpoints.length === 1 ? endpoints[0] : "/register/start";
+});
+
+/**
+ * The way in for an anonymous visitor who typed a scope only an account reaches.
+ * The machine refuses the badge for such a token, so it is still sitting in the
+ * input to be read here — and the offer is a section of ordinary rows rather
+ * than a banner, so ↑↓ and enter reach it like any other result.
+ */
+const loginPromptSection = computed<ResultSection | undefined>(() => {
+    if (mode.value.type !== "root") {
+        return undefined;
+    }
+    const parsed = parsePaletteQuery(text.value);
+    const ctx = buildContext();
+    if (parsed.type !== "scope" || !isScopeLoginGated(parsed.scope, ctx)) {
+        return undefined;
+    }
+    const items: PaletteItem[] = [
+        {
+            id: "login-prompt:login",
+            icon: faSignInAlt,
+            title: `${localize("Log in to search")} ${localize(parsed.scope.label).toLowerCase()}`,
+            to: loginRedirect.value,
+        },
+    ];
+    // registering is offered exactly where the masthead offers it
+    const registration = registrationTarget.value;
+    if (registration) {
+        items.push({
+            id: "login-prompt:register",
+            icon: faUserPlus,
+            title: localize("Create a Galaxy account"),
+            // an OIDC registration endpoint is off-app, so the router cannot go there
+            ...(registration.startsWith("/")
+                ? { to: registration }
+                : {
+                      handler: () => {
+                          window.location.assign(registration);
+                      },
+                  }),
+        });
+    }
+    return { id: "login-prompt", items, title: "Log in required" };
+});
+
+const {
+    categoryRowSelected,
+    failedSubject,
+    highlightItem,
+    moveSelection,
+    pendingScope,
+    runSearch,
+    searching,
+    selectedIndex,
+    selectedItem,
+    showCategoryRow,
+    visibleSections,
+} = usePaletteSearch({
+    activeCategory,
+    buildContext,
+    helpHandlers: { enterScope, popMode, setText },
+    leadingSection: loginPromptSection,
+    mode,
+    modifierLabel,
+    query,
+    text,
+});
 
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
 
 const paletteCategories = computed(() => availableCategories(buildContext()));
-
-/** The row only narrows an unscoped search, so it needs a query to narrow */
-const showCategoryRow = computed(() => mode.value.type === "root" && query.value !== "");
-
-/** Whether the arrow keys currently move the category instead of the selection */
-const categoryRowSelected = computed(() => showCategoryRow.value && selectedIndex.value === CATEGORY_ROW_INDEX);
 
 const activeCategoryId = computed(() => activeCategory.value?.id ?? ALL_CATEGORY.id);
 
@@ -116,10 +187,19 @@ const { footerHints, placeholder } = usePaletteFooter({
     mode,
     modifierHeld,
     modifierLabel,
+    placeholderPhrase: computed(() => config.value?.command_palette_placeholder),
     selectedItem,
     shiftHeld,
     showCategoryRow,
     text,
+});
+
+/** A running search still owns the icon; help mode otherwise names itself */
+const inputIcon = computed(() => {
+    if (searching.value) {
+        return faSpinner;
+    }
+    return mode.value.type === "help" ? faQuestionCircle : faSearch;
 });
 
 const scopeHint = computed(() => {
@@ -130,23 +210,26 @@ const scopeHint = computed(() => {
     return `${localize(scope.label)} — ${localize("this filter has no results provider yet.")}`;
 });
 
+/**
+ * Prompt for a free text argument that has nothing to offer until something is
+ * typed, so the mode asks for a value instead of reporting no results. The
+ * providers are handed the trimmed text, so whitespace alone is still nothing
+ * typed and has to keep asking rather than report an empty result.
+ */
+const argumentHint = computed(() => {
+    const activeMode = mode.value;
+    if (activeMode.type !== "action" || query.value !== "") {
+        return undefined;
+    }
+    const hint = activeMode.action.argumentMode?.emptyHint;
+    return hint ? localize(hint) : undefined;
+});
+
 /** Says a scope is broken rather than empty, once its very first fetch failed */
 const errorHint = computed(() => {
     const subject = failedSubject.value;
     return subject ? `${localize("Couldn't load")} ${subject}. ${localize("Try again.")}` : undefined;
 });
-
-/** What the current search is *of*, as the error row would name it */
-function searchSubject(activeMode: PaletteMode): string {
-    if (activeMode.type === "scoped") {
-        return localize(activeMode.scope.label).toLowerCase();
-    }
-    if (activeMode.type === "action") {
-        return localize(activeMode.action.title).toLowerCase();
-    }
-    const category = activeCategory.value;
-    return category ? localize(category.label).toLowerCase() : localize("the results");
-}
 
 function optionId(index: number) {
     return `${uid.value}-option-${index}`;
@@ -155,7 +238,7 @@ function optionId(index: number) {
 function optionIndex(sectionIndex: number, itemIndex: number) {
     let offset = 0;
     for (let i = 0; i < sectionIndex; i++) {
-        offset += sections.value[i]?.items.length ?? 0;
+        offset += visibleSections.value[i]?.items.length ?? 0;
     }
     return offset + itemIndex;
 }
@@ -164,6 +247,9 @@ function buildContext(): PaletteContext {
     return {
         canUseUnprivilegedTools: unprivilegedToolStore.canUseUnprivilegedTools ?? false,
         config: {
+            allow_local_account_creation: config.value?.allow_local_account_creation,
+            // an unset list arrives as null, so it is normalized once here
+            command_palette_disabled_providers: config.value?.command_palette_disabled_providers ?? [],
             enable_notification_system: config.value?.enable_notification_system,
             interactivetools_enable: config.value?.interactivetools_enable,
             llm_api_configured: config.value?.llm_api_configured,
@@ -177,194 +263,6 @@ function buildContext(): PaletteContext {
         startNewChat,
         uploadMethods: uploadMethods.value,
     };
-}
-
-/** One provider failing must never cost the user every other section */
-function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallback: T): Promise<T> {
-    return Promise.resolve()
-        .then(run)
-        .catch((error) => {
-            if (isPaletteFetchError(error)) {
-                // a scope that could not be loaded at all says so, rather than
-                // rendering as an empty one — see `runSearch`
-                throw error;
-            }
-            console.debug(`Command palette provider "${providerId}" failed`, error);
-            return fallback;
-        });
-}
-
-async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
-    const provider = findPaletteProvider(providerId);
-    if (!provider) {
-        return [];
-    }
-    return withoutFailing(
-        providerId,
-        () =>
-            !query.value && provider.emptyQueryItems
-                ? provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS)
-                : provider.search(query.value, ctx),
-        [],
-    );
-}
-
-function limitSections(list: ResultSection[], limit: number): ResultSection[] {
-    return list.map((section) =>
-        section.items.length > limit ? { ...section, items: section.items.slice(0, limit) } : section,
-    );
-}
-
-/** Unscoped search: every provider contributes a section, best match first */
-async function fanOutSections(ctx: PaletteContext): Promise<ResultSection[]> {
-    const scored = await Promise.all(
-        paletteProviders.map(async (provider) => {
-            const items = await providerItems(provider.id, ctx);
-            // sections are shown best-match first
-            let score = 0;
-            if (query.value) {
-                score =
-                    provider.id === "tools"
-                        ? BACKEND_RANKED_SCORE
-                        : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
-            }
-            return { id: provider.id, items, score, title: provider.title };
-        }),
-    );
-    return scored.sort((a, b) => b.score - a.score).map(({ score: _score, ...section }) => section);
-}
-
-/**
- * Root mode: the fan-out over every provider, or — once the category row picked
- * one — that single provider searched through its own scope.
- */
-async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
-    const category = activeCategory.value;
-    if (category) {
-        return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
-    }
-    const fanOut = await fanOutSections(ctx);
-    return query.value ? limitSections(fanOut, MAX_ROOT_SECTION_ITEMS) : fanOut;
-}
-
-/**
- * A category is a soft scope: the provider's own scoped search runs it where
- * there is one, everything else falls back to its unscoped — and therefore
- * cache-only — root search.
- */
-async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
-    const providerId = categoryProviderId(category);
-    const provider = providerId ? findPaletteProvider(providerId) : undefined;
-    if (!provider) {
-        return [];
-    }
-    return providerSections(provider, category.scope, ctx);
-}
-
-async function providerSections(
-    provider: CommandPaletteProvider,
-    scope: ScopeDefinition | undefined,
-    ctx: PaletteContext,
-): Promise<ResultSection[]> {
-    if (scope && provider.searchScoped) {
-        const scoped = await withoutFailing(provider.id, () => provider.searchScoped!(scope, query.value, ctx), []);
-        return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
-    }
-    return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
-}
-
-async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Promise<ResultSection[]> {
-    const provider = findPaletteProvider(scope.providerId);
-    // a variant (shared, published, …) can only be served by a scoped search
-    if (!provider || (scope.variant && !provider.searchScoped)) {
-        pendingScope.value = scope;
-        return [];
-    }
-    return providerSections(provider, scope, ctx);
-}
-
-/**
- * Argument mode: the input collects the action's argument and the action itself
- * turns the typed text into the rows to pick from. Free text actions surface the
- * text as their own first item, so enter always runs the selected row.
- */
-async function actionSections(action: PaletteItem, ctx: PaletteContext): Promise<ResultSection[]> {
-    const argumentMode = action.argumentMode;
-    if (!argumentMode) {
-        return [];
-    }
-    const items = await withoutFailing(action.id, () => argumentMode.getItems(query.value, ctx), []);
-    return [{ id: `action:${action.id}`, items, title: localize(action.title) }];
-}
-
-function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<ResultSection[]> | ResultSection[] {
-    switch (activeMode.type) {
-        case "help":
-            return helpSections(ctx, query.value, modifierLabel.value, { enterScope, setText });
-        case "action":
-            return actionSections(activeMode.action, ctx);
-        case "scoped":
-            return scopedSections(activeMode.scope, ctx);
-        default:
-            return rootSections(ctx);
-    }
-}
-
-let searchEpoch = 0;
-
-/** Badge or category the results belong to; any change but the query invalidates them */
-function searchIdentity(activeMode: PaletteMode): string {
-    switch (activeMode.type) {
-        case "scoped":
-            return `scoped:${activeMode.scope.key}`;
-        case "action":
-            return `action:${activeMode.action.id}`;
-        case "help":
-            return "help";
-        default:
-            return `root:${activeMode.category?.id ?? ALL_CATEGORY.id}`;
-    }
-}
-
-/** Drops the rendered results and any search still in flight for them */
-function clearResults() {
-    searchEpoch++;
-    sections.value = [];
-    selectedIndex.value = 0;
-    pendingScope.value = null;
-    failedSubject.value = null;
-    searching.value = true;
-}
-
-async function runSearch() {
-    const epoch = ++searchEpoch;
-    const ctx = buildContext();
-    // picking a category reruns the search; the row keeps the selection so the
-    // next ←→ moves on to the neighboring category
-    const keepCategoryRow = categoryRowSelected.value;
-    pendingScope.value = null;
-    failedSubject.value = null;
-    searching.value = true;
-    try {
-        const results = await modeSections(mode.value, ctx);
-        if (epoch === searchEpoch) {
-            sections.value = results.filter((section) => section.items.length > 0);
-            selectedIndex.value = keepCategoryRow && showCategoryRow.value ? CATEGORY_ROW_INDEX : 0;
-        }
-    } catch (error) {
-        // only a scope that could not be loaded at all reaches this, everything
-        // else is degraded to an empty section by `withoutFailing`
-        console.debug("Command palette could not load the current scope", error);
-        if (epoch === searchEpoch) {
-            sections.value = [];
-            selectedIndex.value = 0;
-            failedSubject.value = searchSubject(mode.value);
-        }
-    } finally {
-        if (epoch === searchEpoch) {
-            searching.value = false;
-        }
-    }
 }
 
 /**
@@ -478,23 +376,6 @@ function onInput(event: Event) {
 }
 
 /**
- * Vertical traversal. The category row rides along as one more stop above the
- * first result, so ↑ from it — or wrapping past the last item — selects it.
- */
-function moveSelection(delta: 1 | -1) {
-    const count = flatItems.value.length;
-    if (!showCategoryRow.value) {
-        if (count > 0) {
-            selectedIndex.value = (Math.max(selectedIndex.value, 0) + delta + count) % count;
-        }
-        return;
-    }
-    const stops = count + 1;
-    const position = selectedIndex.value + 1;
-    selectedIndex.value = ((position + delta + stops) % stops) - 1;
-}
-
-/**
  * Moving onto a category applies it right away, no confirmation needed. The
  * rerun rides the shared debounce, so holding ←→ across the row costs one
  * search instead of one per category passed over.
@@ -583,12 +464,6 @@ watch(
     { flush: "post" },
 );
 
-// sync so old rows never show under a new badge; reads `mode` as a sync watcher can see a stale computed
-watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
-
-// the category is part of the mode, so a sweep across the row shares the debounce
-watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
-
 /** Bumped by every open, so a hydration landing after a close is dropped */
 let openEpoch = 0;
 /** Whether the one-off tool store hydration already succeeded this session */
@@ -650,11 +525,7 @@ watchImmediate(isPaletteOpen, (open) => {
         @close="onDialogClose"
         @mousedown="onDialogMousedown">
         <div class="palette-input">
-            <FontAwesomeIcon
-                class="palette-input-icon"
-                fixed-width
-                :icon="searching ? faSpinner : faSearch"
-                :spin="searching" />
+            <FontAwesomeIcon class="palette-input-icon" fixed-width :icon="inputIcon" :spin="searching" />
 
             <button
                 v-if="badgeText"
@@ -717,23 +588,39 @@ watchImmediate(isPaletteOpen, (open) => {
             role="listbox"
             :aria-label="localize('Search results')">
             <div
-                v-for="(section, sectionIdx) in sections"
+                v-for="(section, sectionIdx) in visibleSections"
                 :key="section.id"
                 role="group"
                 :aria-label="localize(section.title)"
                 :data-description="`palette section ${section.id}`">
                 <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
 
-                <CommandPaletteItem
-                    v-for="(item, itemIdx) in section.items"
-                    :id="optionId(optionIndex(sectionIdx, itemIdx))"
-                    :key="item.id"
-                    :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
-                    :item="item"
-                    :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
-                    :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
-                    @select="runItem(item, $event)"
-                    @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
+                <!-- Nothing rendered and nothing answered yet, so the section holds its place -->
+                <template v-if="section.loading && section.items.length === 0">
+                    <div
+                        v-for="row in SKELETON_ROWS"
+                        :key="row"
+                        class="palette-skeleton"
+                        aria-hidden="true"
+                        data-description="palette skeleton">
+                        <span class="skeleton-bar skeleton-title"></span>
+
+                        <span class="skeleton-bar skeleton-subtitle"></span>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <CommandPaletteItem
+                        v-for="(item, itemIdx) in section.items"
+                        :id="optionId(optionIndex(sectionIdx, itemIdx))"
+                        :key="item.id"
+                        :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
+                        :item="item"
+                        :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
+                        :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
+                        @select="runItem(item, $event)"
+                        @highlight="highlightItem(optionIndex(sectionIdx, itemIdx))" />
+                </template>
             </div>
 
             <div v-if="scopeHint" class="palette-hint" data-description="palette scope hint">
@@ -744,14 +631,22 @@ watchImmediate(isPaletteOpen, (open) => {
                 {{ errorHint }}
             </div>
 
+            <!-- A section still loading speaks for itself, so the hints only stand in for nothing at all -->
             <div
-                v-else-if="flatItems.length === 0 && searching"
+                v-else-if="visibleSections.length === 0 && argumentHint"
+                class="palette-hint"
+                data-description="palette argument hint">
+                {{ argumentHint }}
+            </div>
+
+            <div
+                v-else-if="visibleSections.length === 0 && searching"
                 class="palette-hint"
                 data-description="palette searching">
                 {{ localize("Searching…") }}
             </div>
 
-            <div v-else-if="flatItems.length === 0" class="palette-hint" data-description="palette empty">
+            <div v-else-if="visibleSections.length === 0" class="palette-hint" data-description="palette empty">
                 {{ localize("No results.") }}
             </div>
         </div>
@@ -760,7 +655,11 @@ watchImmediate(isPaletteOpen, (open) => {
             <span
                 v-for="hint in footerHints"
                 :key="hint.id"
-                :class="{ 'hint-active': hint.active, 'hint-right': hint.id === 'help' }"
+                :class="{
+                    'hint-active': hint.active,
+                    'hint-right': hint.id === 'help',
+                    'hint-optional': OPTIONAL_HINTS.includes(hint.id),
+                }"
                 :data-description="`palette hint ${hint.id}`">
                 <kbd>{{ hint.keys }}</kbd>
 
@@ -816,6 +715,17 @@ $palette-transition: 130ms ease-out;
         &::backdrop {
             transition: none;
         }
+    }
+
+    // a short viewport has no room for the drop, so the dialog rides near the top
+    @media (max-height: 40rem) {
+        margin-top: var(--spacing-3);
+    }
+
+    // a phone-width viewport gives the dialog everything but a thin gutter
+    @media (max-width: 30rem) {
+        width: calc(100vw - var(--spacing-3));
+        border-radius: var(--spacing-1);
     }
 
     .palette-input {
@@ -919,8 +829,10 @@ $palette-transition: 130ms ease-out;
 
     .palette-results {
         // fixed rather than capped, so the dialog keeps one height across every
-        // result set, the help mode and the empty states
-        height: 21rem;
+        // result set, the help mode and the empty states — until the viewport is
+        // too short for it, where the 14rem reserve keeps input and footer on screen
+        height: min(21rem, calc(100vh - 14rem));
+        height: min(21rem, calc(100dvh - 14rem));
         display: flex;
         flex-direction: column;
         overflow-y: auto;
@@ -938,6 +850,42 @@ $palette-transition: 130ms ease-out;
             letter-spacing: 0.08em;
             color: var(--color-grey-500);
             padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+        }
+
+        // stands in for a row of a provider that has not answered yet, laid out
+        // like the title and subtitle it will be replaced by
+        .palette-skeleton {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-1);
+            padding: var(--spacing-2) var(--spacing-3);
+
+            .skeleton-bar {
+                height: 0.55rem;
+                border-radius: var(--spacing);
+                background-image: linear-gradient(
+                    90deg,
+                    var(--color-grey-200) 25%,
+                    var(--color-grey-100) 37%,
+                    var(--color-grey-200) 63%
+                );
+                background-size: 400% 100%;
+                animation: palette-skeleton-shimmer 1.4s ease infinite;
+            }
+
+            .skeleton-title {
+                width: 40%;
+            }
+
+            .skeleton-subtitle {
+                width: 25%;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .skeleton-bar {
+                    animation: none;
+                }
+            }
         }
 
         .palette-hint {
@@ -973,6 +921,13 @@ $palette-transition: 130ms ease-out;
             margin-left: auto;
         }
 
+        // a narrow footer keeps only what runs an item or leaves the palette
+        @media (max-width: 30rem) {
+            .hint-optional {
+                display: none;
+            }
+        }
+
         kbd {
             background-color: var(--background-color);
             border: 1px solid var(--color-grey-300);
@@ -996,6 +951,16 @@ $palette-transition: 130ms ease-out;
                 color: var(--color-blue-800);
             }
         }
+    }
+}
+
+@keyframes palette-skeleton-shimmer {
+    from {
+        background-position: 100% 50%;
+    }
+
+    to {
+        background-position: 0 50%;
     }
 }
 </style>

@@ -12,6 +12,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 
+import { makeCtx as makeBaseCtx } from "../test-utils";
 import type { PaletteContext, PaletteItem } from "../types";
 import { actionsProvider } from "./actions";
 
@@ -35,15 +36,12 @@ vi.mock("@/components/Workflow/workflows.services", () => ({
 const RNA_SEQ = { id: "wf1", name: "RNA-seq analysis", owner: "me", tags: [] } as unknown as WorkflowSummary;
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: {},
-        isAnonymous: false,
+    return makeBaseCtx({
         // the palette resolves these with `useFilteredUploadMethods`, which
         // already dropped whatever this user may not run
         uploadMethods: Object.values(uploadMethodRegistry).filter((method) => !method.requiresLogin),
         ...overrides,
-    };
+    });
 }
 
 async function search(query: string, ctx: PaletteContext) {
@@ -131,6 +129,14 @@ describe("actionsProvider", () => {
         expect(importItem?.to).toBe("/workflows/import");
     });
 
+    it("finds the create-report action by searching page or report", async () => {
+        const byReport = await search("report", makeCtx());
+        expect(byReport.some((i) => i.id === "actions:create-page")).toBe(true);
+
+        const byPage = await search("page", makeCtx());
+        expect(byPage.some((i) => i.id === "actions:create-page")).toBe(true);
+    });
+
     it("creates a page from the typed title and opens its editor", async () => {
         const createItem = await action("actions:create-page");
         expect(createItem.to).toBe("/pages/create");
@@ -139,7 +145,7 @@ describe("actionsProvider", () => {
         const navigate = vi.fn();
         const ctx = makeCtx({ navigate });
         const [item] = await argumentItems("actions:create-page", " My New Page ", ctx);
-        expect(item?.title).toBe("Create page titled 'My New Page'");
+        expect(item?.title).toBe("Create report titled 'My New Page'");
 
         item?.handler?.(ctx);
         await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
@@ -148,29 +154,6 @@ describe("actionsProvider", () => {
             slug: "my-new-page",
             content_format: "markdown",
         });
-    });
-
-    it("seeds the created page into the page store, ahead of the cached ones", async () => {
-        vi.mocked(createPage).mockResolvedValue({
-            id: "page-1",
-            title: "My New Page",
-            slug: "my-new-page",
-            update_time: "2026-01-02T00:00:00",
-        } as never);
-
-        const pageStore = usePageStore();
-        // a cache the `p:` scope would otherwise consider complete, so a missing
-        // seed would leave the new page invisible until the next unfiltered fetch
-        pageStore.savePages("my", [{ id: "page-0", title: "Older page" } as never]);
-
-        const navigate = vi.fn();
-        const ctx = makeCtx({ navigate });
-        const [item] = await argumentItems("actions:create-page", "My New Page", ctx);
-        item?.handler?.(ctx);
-
-        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
-        expect(pageStore.getPageById("page-1")).toMatchObject({ title: "My New Page" });
-        expect(pageStore.getPages("my").map((page) => page.id)).toEqual(["page-1", "page-0"]);
     });
 
     it("leaves the page store untouched when the creation fails", async () => {
@@ -185,20 +168,6 @@ describe("actionsProvider", () => {
         await vi.waitFor(() => expect(Toast.error).toHaveBeenCalled());
         expect(navigate).not.toHaveBeenCalled();
         expect(pageStore.getPages("my")).toEqual([]);
-    });
-
-    it("retries a conflicting page slug once with a suffix", async () => {
-        vi.mocked(createPage)
-            .mockRejectedValueOnce(new Error("Page identifier must be unique"))
-            .mockResolvedValueOnce({ id: "page-2" } as never);
-
-        const navigate = vi.fn();
-        const ctx = makeCtx({ navigate });
-        const [item] = await argumentItems("actions:create-page", "Lab notes", ctx);
-        item?.handler?.(ctx);
-
-        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-2"));
-        expect(createPage).toHaveBeenNthCalledWith(2, expect.objectContaining({ slug: "lab-notes-2" }));
     });
 
     it("picks the workflow to run as an argument, with no plain enter target", async () => {

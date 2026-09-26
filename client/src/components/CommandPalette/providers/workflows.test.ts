@@ -6,7 +6,7 @@ import { loadWorkflows } from "@/api/workflows";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -57,6 +57,7 @@ const REMOTE_ONLY = workflow("wf6", "Zebrafish pipeline");
 
 interface LoadArgs {
     filterText?: string;
+    limit?: number;
     showPublished?: boolean;
     showShared?: boolean;
 }
@@ -86,10 +87,6 @@ function mockWorkflowsApi() {
         const matched = query ? data.filter((entry) => entry.name.toLowerCase().includes(query)) : data;
         return { data: matched, totalMatches: matched.length };
     });
-}
-
-function makeCtx(isAnonymous = false): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous };
 }
 
 function signIn(username = "me") {
@@ -204,6 +201,16 @@ describe("workflowsProvider", () => {
         expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zebrafish")).toBe(true);
     });
 
+    it("stays local for a single character", async () => {
+        // a full page keeps the cache incomplete, so only the length holds the query back
+        const page = Array.from({ length: 25 }, (_, index) => workflow(`filler-${index}`, `Filler ${index}`));
+        vi.mocked(loadWorkflows).mockImplementation(async () => ({ data: page, totalMatches: page.length }));
+
+        await scopedSections(OWN_SCOPE, "z");
+
+        expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "z")).toBe(false);
+    });
+
     it("drops backend rows the query does not match", async () => {
         // a full page keeps the cache incomplete, so the query reaches the
         // backend — which answers a short search with everything it has
@@ -265,30 +272,110 @@ describe("workflowsProvider", () => {
         expect((await scopedSections(OWN_SCOPE)).map((s) => s.id)).toContain("recent");
     });
 
-    it("stays out of the unscoped fan-out for short queries and anonymous users", async () => {
+    it("stays out of the unscoped fan-out for short queries", async () => {
         expect(await workflowsProvider.search("v", makeCtx())).toEqual([]);
-        expect(await workflowsProvider.search("variant", makeCtx(true))).toEqual([]);
+        expect(await workflowsProvider.search("v", makeCtx({ isAnonymous: true }))).toEqual([]);
         expect(loadWorkflows).not.toHaveBeenCalled();
     });
 
-    it("filters the cached list in the unscoped fan-out and never fetches there", async () => {
-        // nothing cached yet: the fan-out contributes nothing rather than fetching
+    it("filters the cached own list in the unscoped fan-out without fetching it", async () => {
+        // nothing cached yet: the own rows are whatever the store already holds
         expect(await workflowsProvider.search("variant", makeCtx())).toEqual([]);
-        expect(loadWorkflows).not.toHaveBeenCalled();
 
         await scopedSections(OWN_SCOPE);
-        const callsAfterHydration = vi.mocked(loadWorkflows).mock.calls.length;
+        const items = await workflowsProvider.search("variant", makeCtx());
+
+        expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
+        // the own list is only ever fetched by the `w:` scope
+        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => args.filterText !== "variant")).toBe(true);
+    });
+
+    it("merges the shared and public matches into the unscoped fan-out", async () => {
+        await scopedSections(OWN_SCOPE);
+        vi.mocked(loadWorkflows).mockClear();
+        const sharedRna = workflow("wf7", "RNA-seq alignment", "colleague");
+        const publicRna = workflow("wf8", "RNA-seq metagenomics", "stranger");
+        vi.mocked(loadWorkflows).mockImplementation(async ({ filterText = "", showPublished }: LoadArgs) => {
+            if (filterText.includes("is:shared_with_me")) {
+                return { data: [sharedRna], totalMatches: 1 };
+            }
+            return { data: showPublished ? [publicRna] : [], totalMatches: 1 };
+        });
+
+        const items = await workflowsProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title).sort()).toEqual([
+            "RNA-seq alignment",
+            "RNA-seq analysis",
+            "RNA-seq metagenomics",
+        ]);
+        expect(vi.mocked(loadWorkflows).mock.calls.map(([args]) => args.filterText)).toEqual([
+            "rna is:shared_with_me",
+            "rna is:published",
+        ]);
+        // one page per public list, which the client then ranks and caps itself
+        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => args.limit === 25)).toBe(true);
+    });
+
+    it("pages a public list in the fan-out, so a match below the newest rows survives", async () => {
+        await scopedSections(OWN_SCOPE);
+        vi.mocked(loadWorkflows).mockClear();
+        // the backend sorts by update time and matches loosely, so the rows it
+        // answers with first need not match the query at all
+        const loose = Array.from({ length: 20 }, (_, index) =>
+            workflow(`loose-${index}`, `Assembly ${index}`, "stranger"),
+        );
+        const publicRna = workflow("wf8", "RNA-seq metagenomics", "stranger");
+        // the backend honors the requested limit, so asking for a handful of
+        // rows only ever sees the newest few
+        vi.mocked(loadWorkflows).mockImplementation(async ({ limit, showPublished }: LoadArgs) => {
+            const data = showPublished ? [...loose, publicRna] : [];
+            return { data: data.slice(0, limit), totalMatches: data.length };
+        });
+
+        const items = await workflowsProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title)).toContain("RNA-seq metagenomics");
+        // the whole page is asked for, so the ranking has the match to find
+        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => (args.limit ?? 0) >= 25)).toBe(true);
+        // the section itself stays capped at the handful of rows it renders
+        expect(items.filter((i) => i.id.startsWith("workflows:published:")).length).toBeLessThanOrEqual(3);
+    });
+
+    it("keeps one row per workflow in the fan-out, preferring the user's own", async () => {
+        await scopedSections(OWN_SCOPE);
+        // the public list answers with a workflow the own cache already holds
+        vi.mocked(loadWorkflows).mockImplementation(async ({ showPublished }: LoadArgs) => ({
+            data: showPublished ? [RNA] : [],
+            totalMatches: 1,
+        }));
+
+        const items = await workflowsProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.id)).toEqual(["workflows:my:wf1"]);
+        expect(items[0]?.secondaryAction).toEqual({ label: "Edit workflow", to: "/workflows/edit?id=wf1" });
+    });
+
+    it("searches the public list alone for an anonymous root query", async () => {
+        const items = await workflowsProvider.search("public", makeCtx({ isAnonymous: true }));
+
+        expect(items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+        expect(vi.mocked(loadWorkflows).mock.calls.map(([args]) => args.filterText)).toEqual(["public is:published"]);
+    });
+
+    it("keeps the cached own rows in the fan-out when a public search fails", async () => {
+        await scopedSections(OWN_SCOPE);
+        vi.mocked(loadWorkflows).mockRejectedValue(new Error("boom"));
 
         const items = await workflowsProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
-        expect(vi.mocked(loadWorkflows).mock.calls.length).toBe(callsAfterHydration);
     });
 
     it("lists remembered workflows for an empty root query", async () => {
         recent = [{ type: "workflow", id: "wf1", name: "RNA-seq analysis" }];
 
         expect(workflowsProvider.emptyQueryItems?.(makeCtx())?.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
-        expect(workflowsProvider.emptyQueryItems?.(makeCtx(true))).toEqual([]);
+        expect(workflowsProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
     });
 });

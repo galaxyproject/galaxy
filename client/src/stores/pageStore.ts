@@ -7,7 +7,9 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
+import { createPage, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { slugify } from "@/utils/slug";
 
 /** `my` = pages owned by the current user, `published` = published (and shared) pages. */
 export type PageListVariant = "my" | "published";
@@ -18,9 +20,20 @@ const VARIANT_QUERY: Record<PageListVariant, Pick<LoadPagesOptions, "showOwn" | 
 };
 
 export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" | "showPublished"> & {
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched pages make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the pages are still
+     * cached as summaries, but the variant's id list and loaded flag are left
+     * alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 };
+
+/** The backend rejects a slug the user already has with this message */
+function isSlugConflict(error: unknown): boolean {
+    return /must be unique/i.test(String(errorMessageAsString(error, "")));
+}
 
 export const usePageStore = defineStore("pageStore", () => {
     const summariesById = ref<Record<string, PageSummary>>({});
@@ -139,6 +152,8 @@ export const usePageStore = defineStore("pageStore", () => {
                     }
                     set(loadedVariants.value, variant, true);
                 } else {
+                    // the pages answer this request alone, so they are cached as
+                    // summaries without joining (or completing) the listing
                     mergePageSummaries(data);
                 }
                 return data;
@@ -171,6 +186,28 @@ export const usePageStore = defineStore("pageStore", () => {
         return getPages.value(variant);
     }
 
+    /**
+     * Creates a markdown page slugged from `title` (an owned slug retries once with `-2`) and heads the
+     * cached listing with it, which would otherwise miss it until the next unfiltered fetch.
+     */
+    async function createMarkdownPage(title: string): Promise<PageDetails> {
+        // a title made of punctuation alone would leave no slug to send
+        const slug = slugify(title, "page");
+        let page: PageDetails;
+        try {
+            page = await createPage({ title, slug, content_format: "markdown" });
+        } catch (error) {
+            if (!isSlugConflict(error)) {
+                throw error;
+            }
+            // one retry is enough: the suffixed slug is free unless the user
+            // already owns both, which is worth reporting
+            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
+        }
+        savePages("my", [page], true);
+        return page;
+    }
+
     return {
         // state
         summariesById,
@@ -189,5 +226,6 @@ export const usePageStore = defineStore("pageStore", () => {
         removePage,
         fetchPages,
         fetchPagesOnce,
+        createMarkdownPage,
     };
 });

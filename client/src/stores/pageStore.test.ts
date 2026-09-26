@@ -1,10 +1,11 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadPages, type PageSummary } from "@/api/pages";
+import { createPage, loadPages, type PageSummary } from "@/api/pages";
 import { usePageStore } from "@/stores/pageStore";
 
 vi.mock("@/api/pages", () => ({
+    createPage: vi.fn(),
     loadPages: vi.fn(),
 }));
 
@@ -74,6 +75,17 @@ describe("usePageStore", () => {
                 limit: 5,
                 offset: 5,
             });
+        });
+
+        it("keeps an unrecorded search out of the listing while caching its summaries", async () => {
+            vi.mocked(loadPages).mockResolvedValue(mockResult([mockPage("p1")], 42));
+
+            const pages = await pageStore.fetchPages("published", { search: "rna", record: false });
+
+            expect(pages.map((page) => page.id)).toEqual(["p1"]);
+            expect(pageStore.getPageById("p1")?.title).toBe("Page p1");
+            expect(pageStore.publishedPages).toEqual([]);
+            expect(pageStore.isLoaded("published")).toBe(false);
         });
 
         it("merges search results into the cache without duplicating entries", async () => {
@@ -208,6 +220,34 @@ describe("usePageStore", () => {
             await pageStore.fetchPages("my");
 
             expect(pageStore.isComplete("my")).toBe(true);
+        });
+    });
+
+    describe("createMarkdownPage", () => {
+        it("creates a page slugged from its title, ahead of the cached ones", async () => {
+            vi.mocked(createPage).mockResolvedValue(mockPage("page-1", "My New Page") as never);
+            // a cache the `r:` scope would consider complete must still show the new page
+            pageStore.savePages("my", [mockPage("page-0")]);
+
+            const page = await pageStore.createMarkdownPage("My New Page");
+
+            expect(createPage).toHaveBeenCalledWith({
+                title: "My New Page",
+                slug: "my-new-page",
+                content_format: "markdown",
+            });
+            expect(page.id).toBe("page-1");
+            expect(pageStore.myPages.map((cached) => cached.id)).toEqual(["page-1", "page-0"]);
+        });
+
+        it("retries a slug the user already owns once with a suffix", async () => {
+            vi.mocked(createPage)
+                .mockRejectedValueOnce(new Error("Page identifier must be unique"))
+                .mockResolvedValueOnce(mockPage("page-2") as never);
+
+            await pageStore.createMarkdownPage("Lab notes");
+
+            expect(createPage).toHaveBeenNthCalledWith(2, expect.objectContaining({ slug: "lab-notes-2" }));
         });
     });
 

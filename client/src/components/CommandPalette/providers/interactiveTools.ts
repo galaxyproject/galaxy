@@ -7,9 +7,7 @@ import { filterLatestToolVersions } from "@/utils/tool-version";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
-
-/** Cap per section so the two-tier `it:` layout stays scannable */
-const MAX_ITEMS_PER_SECTION = 8;
+import { PALETTE_LIMITS } from "./limits";
 
 /** One running interactive tool, opened in the entry point display view */
 function entryPointToItem(entryPoint: { id: string; name: string; active: boolean }): PaletteItem {
@@ -93,13 +91,13 @@ export const interactiveToolsProvider: CommandPaletteProvider = {
     async searchScoped(_scope, query) {
         const [running, available] = await Promise.all([runningItems(), availableItems()]);
         const sections: ScopedSection[] = [];
-        const runningMatches = rankPaletteItems(running, query).slice(0, MAX_ITEMS_PER_SECTION);
+        const runningMatches = rankPaletteItems(running, query).slice(0, PALETTE_LIMITS.section);
         if (runningMatches.length > 0) {
             sections.push({ id: "running", items: runningMatches, title: "Running" });
         }
         sections.push({
             id: "available",
-            items: rankPaletteItems(available, query).slice(0, MAX_ITEMS_PER_SECTION),
+            items: rankPaletteItems(available, query).slice(0, PALETTE_LIMITS.section),
             title: "Available",
         });
         return sections;

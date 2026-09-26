@@ -1,49 +1,54 @@
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 
+import type { AnyHistory } from "@/api";
+import type { AnyHistoryEntry } from "@/api/histories";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
-import { fetchOrFail } from "./errors";
-import { markListRefreshed, refreshListWhenStale } from "./refresh";
+import type {
+    CommandPaletteProvider,
+    PaletteContext,
+    PaletteItem,
+    PaletteSearchOptions,
+    ScopedSection,
+} from "../types";
+import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
+import { type ListingSearch, rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
 export const HISTORY_RECENT_TYPE = "history";
 
-/** Per section caps, kept small so both sections fit without scrolling */
-const RESULTS_LIMIT = 8;
-const RECENT_LIMIT = 5;
-const ROOT_LIMIT = 5;
-
-/** Neither the unscoped fan-out nor a backend query runs on a single character */
-const MIN_QUERY_LENGTH = 2;
-
-/** Entries requested per fetch, for the own histories and the listings alike */
-const LIST_PAGE_SIZE = 25;
-
 /** Which cached list a scope reads: the user's own histories, or a listing */
 type HistoryVariant = "my" | HistoryListVariant;
 
-/**
- * The fields this provider reads off a history. The store keeps the user's own
- * histories (`AnyHistory`, serialized without `username`) apart from the shared,
- * published and archived listings (`AnyHistoryEntry`, which carry the owner), so
- * the two sources are narrowed to their common, optional shape here.
- */
-interface HistoryEntryLike {
+/** The fields a palette row reads off a history, whichever store list it came from */
+interface PaletteHistory {
     id: string;
     name: string;
-    annotation?: string | null;
-    count?: number;
+    annotation: string | null;
+    count: number;
+    /** The owner's username; unset for own histories, which are serialized without one */
     owner?: string;
-    tags?: string[];
-    update_time?: string;
-    username?: string;
+    tags: string[];
+    update_time: string;
+}
+
+/** Own and listed histories as one shape; the backend sends the owner as `username`, listings alone add `owner` */
+function toPaletteHistory(history: AnyHistory | AnyHistoryEntry): PaletteHistory {
+    const owner = ("username" in history && history.username) || ("owner" in history && history.owner) || undefined;
+    return {
+        id: history.id,
+        name: history.name,
+        annotation: history.annotation,
+        count: history.count,
+        owner,
+        tags: history.tags,
+        update_time: history.update_time,
+    };
 }
 
 /** Scope variant (`undefined` | `shared` | `published` | `archived`) to list */
@@ -80,16 +85,15 @@ function itemId(sectionId: string, historyId: string): string {
  * and `ha:`, both served by endpoints that never return another user's history)
  * count an entry without an owner as owned.
  */
-function ownsHistory(history: HistoryEntryLike, variant: HistoryVariant): boolean {
-    const owner = history.username ?? history.owner;
-    if (owner) {
-        return useUserStore().matchesCurrentUsername(owner);
+function ownsHistory(history: PaletteHistory, variant: HistoryVariant): boolean {
+    if (history.owner) {
+        return useUserStore().matchesCurrentUsername(history.owner);
     }
     return variant === "my" || variant === "archived";
 }
 
 /** The annotation says more than a bare item count, so it wins when present */
-function describeContents(history: HistoryEntryLike): string | undefined {
+function describeContents(history: PaletteHistory): string | undefined {
     const annotation = history.annotation?.trim();
     if (annotation) {
         return annotation;
@@ -104,7 +108,7 @@ function describeContents(history: HistoryEntryLike): string | undefined {
  * One result row. Enter opens the history in the history view; histories the
  * current user owns additionally switch to it on shift+enter.
  */
-function historyItem(history: HistoryEntryLike, sectionId: string, variant: HistoryVariant): PaletteItem {
+function historyItem(history: PaletteHistory, sectionId: string, variant: HistoryVariant): PaletteItem {
     const historyStore = useHistoryStore();
     const isCurrent = historyStore.currentHistoryId === history.id;
     const owned = ownsHistory(history, variant);
@@ -112,7 +116,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
         isCurrent ? "(current)" : undefined,
         describeContents(history),
         // the owner is only worth a line for histories that are not the user's own
-        owned ? undefined : (history.owner ?? history.username) && `by ${history.owner ?? history.username}`,
+        owned ? undefined : history.owner && `by ${history.owner}`,
         relativeUpdatedLabel(history.update_time),
     ]
         .filter(Boolean)
@@ -120,7 +124,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
     return {
         id: itemId(sectionId, history.id),
         icon: faHdd,
-        keywords: [history.owner, history.username, ...(history.tags ?? [])].filter(Boolean).join(" "),
+        keywords: [history.owner, ...history.tags].filter(Boolean).join(" "),
         mru: { type: HISTORY_RECENT_TYPE, id: history.id },
         title: history.name,
         to: viewUrl(history.id),
@@ -138,147 +142,75 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
     };
 }
 
-/** Newest first, so an empty query renders the "Latest" section as promised */
-function latestFirst(histories: HistoryEntryLike[]): HistoryEntryLike[] {
-    return [...histories].sort((a, b) => (b.update_time ?? "").localeCompare(a.update_time ?? ""));
-}
-
-/** A failing background fetch degrades to whatever the store already holds */
-async function fetchQuietly(fetch: () => Promise<unknown>) {
-    try {
-        await fetch();
-    } catch (error) {
-        console.debug("Command palette could not fetch histories", error);
-    }
+/** Rows of one list, newest first so an empty query renders "Latest" as promised */
+function historyRows(histories: PaletteHistory[], variant: HistoryVariant): PaletteItem[] {
+    return [...histories]
+        .sort((a, b) => b.update_time.localeCompare(a.update_time))
+        .map((history) => historyItem(history, variant, variant));
 }
 
 /** The cached histories of one variant, straight from the store */
-function cachedHistories(variant: HistoryVariant): HistoryEntryLike[] {
+function cachedHistories(variant: HistoryVariant): PaletteHistory[] {
     const historyStore = useHistoryStore();
-    if (variant === "my") {
-        return historyStore.histories as unknown as HistoryEntryLike[];
-    }
-    return historyStore.getListedHistories(variant) as unknown as HistoryEntryLike[];
+    const histories = variant === "my" ? historyStore.histories : historyStore.getListedHistories(variant);
+    return histories.map(toPaletteHistory);
 }
 
-/**
- * Fills an empty cache once; a populated cache answers the keystroke as is and
- * is only refreshed in the background (see {@link refreshListWhenStale}).
- *
- * Both store calls share whatever request is already running, so a keystroke
- * landing during the very first fetch waits for it instead of rendering the
- * still empty cache as "no results".
- *
- * Every variant is fetched one page at a time, the own histories included: the
- * palette renders a handful of rows and asks the backend again for anything the
- * page cannot answer, so pulling an unbounded list would be wasted work.
- */
-async function ensureHydrated(variant: HistoryVariant): Promise<void> {
+/** One history list, store first; every variant fetches a single page, as the palette shows a handful of rows */
+function historyList(variant: HistoryVariant): StoreFirstList {
     const historyStore = useHistoryStore();
-    const key = `histories:${variant}`;
-    if (variant === "my") {
-        if (historyStore.histories.length === 0) {
-            // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
-            markListRefreshed(key);
-        } else {
-            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
-        }
-        return;
-    }
-    if (!historyStore.hasLoadedHistoryList(variant)) {
-        await fetchOrFail(() => historyStore.ensureHistoryListLoaded(variant, { limit: LIST_PAGE_SIZE }));
-        markListRefreshed(key);
-    } else {
-        refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: LIST_PAGE_SIZE }));
-    }
+    return {
+        key: `histories:${variant}`,
+        isLoaded: () =>
+            variant === "my" ? historyStore.histories.length > 0 : historyStore.hasLoadedHistoryList(variant),
+        fetchListing: () =>
+            variant === "my"
+                ? historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page)
+                : historyStore.fetchHistoryList(variant, { limit: PALETTE_LIMITS.page }),
+        cachedItems: () => historyRows(cachedHistories(variant), variant),
+        // a short page is the whole list; the own histories additionally carry a
+        // total whenever the app paginated them itself, and it stays zero otherwise
+        isComplete: () => {
+            const cached = cachedHistories(variant).length;
+            const total = variant === "my" ? historyStore.totalHistoryCount : 0;
+            return cached < PALETTE_LIMITS.page && cached >= total;
+        },
+        async searchItems(query) {
+            if (variant === "my") {
+                // merged into the own histories, which the cache read picks up
+                await historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), PALETTE_LIMITS.page);
+                return [];
+            }
+            const found = await historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page });
+            return historyRows(found.map(toPaletteHistory), variant);
+        },
+    };
 }
 
-/** Asks the backend for `query` through the store, which merges the result in */
-async function searchBackend(variant: HistoryVariant, query: string): Promise<void> {
-    const historyStore = useHistoryStore();
-    if (variant === "my") {
-        await fetchQuietly(() =>
-            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), LIST_PAGE_SIZE),
-        );
-        return;
-    }
-    await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE }));
-}
-
-function rankHistories(histories: HistoryEntryLike[], variant: HistoryVariant, query: string): PaletteItem[] {
-    return rankPaletteItems(
-        latestFirst(histories).map((history) => historyItem(history, variant, variant)),
-        query,
-    );
-}
-
-/**
- * Whether the cache holds everything the backend has, in which case it can
- * answer any query on its own.
- *
- * Every list is fetched a page at a time, so a short page is the whole list.
- * The own histories additionally carry a total whenever the app paginated the
- * list itself — it stays zero otherwise, and a short page is all there is.
- */
-function cacheIsComplete(variant: HistoryVariant, cached: HistoryEntryLike[]): boolean {
-    if (variant === "my") {
-        return cached.length < LIST_PAGE_SIZE && cached.length >= useHistoryStore().totalHistoryCount;
-    }
-    return cached.length < LIST_PAGE_SIZE;
-}
-
-/**
- * Store first section data: the cached list renders instantly and answers every
- * keystroke locally. The backend is only asked when the cache is empty, or when
- * an incomplete cache cannot fill the section for the current query — its result
- * is merged into the store (deduplicated by id there) and read back from the
- * same cache.
- *
- * @param variant which cached list to read
- * @param query free text filter, already trimmed
- * @param limit section cap
- * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters
- * what the stores already hold; the scopes do the fetching.
- */
-async function listItems(
-    variant: HistoryVariant,
-    query: string,
-    limit: number,
-    cacheOnly = false,
-): Promise<PaletteItem[]> {
-    if (!cacheOnly) {
-        await ensureHydrated(variant);
-    }
-    const cached = cachedHistories(variant);
-    const local = rankHistories(cached, variant, query);
-    if (cacheOnly || query.length < MIN_QUERY_LENGTH || cacheIsComplete(variant, cached) || local.length >= limit) {
-        return local.slice(0, limit);
-    }
-    await searchBackend(variant, query);
-    return rankHistories(cachedHistories(variant), variant, query).slice(0, limit);
+/** Root-answer search of one listing; `record: false` keeps the matches out of the listing `hs:`/`hp:` hydrate */
+function listingSearch(variant: HistoryListVariant): ListingSearch {
+    return async (query) => {
+        const found = await useHistoryStore().fetchHistoryList(variant, {
+            search: query,
+            limit: PALETTE_LIMITS.page,
+            record: false,
+        });
+        return historyRows(found.map(toPaletteHistory), variant);
+    };
 }
 
 /** Histories opened through the palette before, most recently used first */
-function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
+function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const historyStore = useHistoryStore();
-    const { recentItems: recentEntries } = useRecentPaletteItems();
-    const items = recentEntries(HISTORY_RECENT_TYPE).map((entry) => {
-        const summary = (historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id]) as
-            | HistoryEntryLike
-            | undefined;
-        return summary
-            ? historyItem(summary, "recent", "my")
-            : {
-                  id: itemId("recent", entry.id),
-                  icon: faHdd,
-                  mru: { type: HISTORY_RECENT_TYPE, id: entry.id },
-                  title: entry.name,
-                  to: entry.to ?? viewUrl(entry.id),
-              };
-    });
-    return rankPaletteItems(items, query).slice(0, limit);
+    const rows: RecentRows = {
+        type: HISTORY_RECENT_TYPE,
+        stored: (entry) => {
+            const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
+            return summary ? historyItem(toPaletteHistory(summary), "recent", "my") : undefined;
+        },
+        fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faHdd, to: viewUrl(entry.id) }),
+    };
+    return recentPaletteItems(rows, query, limit);
 }
 
 function resultsTitle(scope: ScopeDefinition, query: string): string {
@@ -300,15 +232,14 @@ export const historiesProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous) {
             return [];
         }
-        return recentItems("", ROOT_LIMIT);
+        return recentItems("", PALETTE_LIMITS.rootOwn);
     },
-    /** Root mode fan-out, filtering the cached own histories without a request */
-    async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (ctx.isAnonymous || trimmed.length < MIN_QUERY_LENGTH) {
-            return [];
-        }
-        return listItems("my", trimmed, ROOT_LIMIT, true);
+    /** Root mode: the cached own histories, and the shared and published listings searched */
+    search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
+        // an anonymous visitor has neither own nor shared-with-me histories
+        const listings: HistoryListVariant[] = ctx.isAnonymous ? ["published"] : ["shared", "published"];
+        const own = ctx.isAnonymous ? undefined : historyList("my");
+        return rootListItems(query, own, listings.map(listingSearch), options);
     },
     /**
      * `h:` shows the palette recents on top of the user's own listing; `hs:`,
@@ -321,11 +252,10 @@ export const historiesProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
-        const trimmed = query.trim();
-        const results = await listItems(variant, trimmed, RESULTS_LIMIT);
+        const results = await storeFirstItems(historyList(variant), query, PALETTE_LIMITS.section);
         return [
-            ...section("recent", "Recent", variant === "my" ? recentItems(trimmed) : []),
-            ...section(variant, resultsTitle(scope, trimmed), results),
+            ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
+            ...section(variant, resultsTitle(scope, query), results),
         ];
     },
 };

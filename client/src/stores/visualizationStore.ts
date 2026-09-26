@@ -53,6 +53,8 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
     const totalMatchesByVariant = ref(emptyVariantRecord<number>(() => 0));
     const isLoading = ref(false);
     const loadError = ref<string | undefined>(undefined);
+    /** In-flight requests, keyed by variant and query, to avoid duplicate fetches. */
+    const fetchPromises = new Map<string, Promise<VisualizationSummary[]>>();
 
     const getVisualizations = computed(() => (variant: VisualizationVariant): VisualizationSummary[] => {
         return visualizationIdsByVariant.value[variant]
@@ -85,30 +87,44 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
         options: FetchVisualizationsOptions = {},
     ): Promise<VisualizationSummary[]> {
         const { search = "", limit = DEFAULT_LIMIT } = options;
-        isLoading.value = true;
-        loadError.value = undefined;
-        try {
-            const { data, totalMatches } = await loadVisualizations({
-                ...VARIANT_FLAGS[variant],
-                sortBy: "update_time",
-                sortDesc: true,
-                limit,
-                search,
-            });
-            saveVisualizations(data);
-            if (!search) {
-                const ids = Array.from(new Set(data.map((visualization) => visualization.id)));
-                set(visualizationIdsByVariant.value, variant, ids);
-                set(totalMatchesByVariant.value, variant, totalMatches);
-                set(loadedVariants.value, variant, true);
-            }
-            return data;
-        } catch (error) {
-            loadError.value = errorMessageAsString(error);
-            return [];
-        } finally {
-            isLoading.value = false;
+        const key = [variant, search, limit].join("|");
+
+        const pending = fetchPromises.get(key);
+        if (pending) {
+            return pending;
         }
+
+        const promise = (async () => {
+            isLoading.value = true;
+            loadError.value = undefined;
+            try {
+                const { data, totalMatches } = await loadVisualizations({
+                    ...VARIANT_FLAGS[variant],
+                    sortBy: "update_time",
+                    sortDesc: true,
+                    limit,
+                    search,
+                });
+                saveVisualizations(data);
+                if (!search) {
+                    const ids = Array.from(new Set(data.map((visualization) => visualization.id)));
+                    set(visualizationIdsByVariant.value, variant, ids);
+                    set(totalMatchesByVariant.value, variant, totalMatches);
+                    set(loadedVariants.value, variant, true);
+                }
+                return data;
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+                return [];
+            } finally {
+                isLoading.value = false;
+                fetchPromises.delete(key);
+            }
+        })();
+
+        fetchPromises.set(key, promise);
+
+        return promise;
     }
 
     /** Fetches a variant once; later calls resolve from the cache. */

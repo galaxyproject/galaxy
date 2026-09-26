@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { parsePaletteQuery } from "../utilities";
-import { ACTIONS_SCOPE, availableScopes, findScope, isScopeAvailable, PALETTE_SCOPES } from "./scopes";
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
+import {
+    ACTIONS_SCOPE,
+    availableScopes,
+    findScope,
+    isProviderEnabled,
+    isScopeAvailable,
+    isScopeLoginGated,
+    loginGatedScopes,
+    PALETTE_SCOPES,
+    type ScopeDefinition,
+} from "./scopes";
 
 describe("PALETTE_SCOPES", () => {
     it("has unique lowercase keys of at most two letters", () => {
@@ -33,9 +39,14 @@ describe("PALETTE_SCOPES", () => {
         expect(histories.map((scope) => scope.key)).toEqual(["h", "hs", "hp", "ha"]);
     });
 
-    it("requires a login for everything but tools and interactive tools", () => {
+    it("leaves the public scopes, tools and navigation open to anonymous users", () => {
         const anonymous = PALETTE_SCOPES.filter((scope) => !scope.requiresLogin).map((scope) => scope.key);
-        expect(anonymous).toEqual(["t", "it"]);
+        expect(anonymous).toEqual(["wp", "t", "hp", "rp", "it", "n"]);
+    });
+
+    it("keeps the own and shared-with-me scopes behind a login", () => {
+        const gated = PALETTE_SCOPES.filter((scope) => scope.requiresLogin).map((scope) => scope.key);
+        expect(gated).toEqual(["w", "ws", "h", "hs", "ha", "d", "v", "i", "r"]);
     });
 });
 
@@ -45,6 +56,7 @@ describe("findScope", () => {
         expect(findScope("W")?.label).toBe("My workflows");
         expect(findScope("hs")?.variant).toBe("shared");
         expect(findScope("IT")?.providerId).toBe("interactiveTools");
+        expect(findScope("n")?.providerId).toBe("navigation");
     });
 
     it("never falls back to a shorter or longer key", () => {
@@ -60,11 +72,36 @@ describe("findScope", () => {
     });
 });
 
+describe("isProviderEnabled", () => {
+    it("enables every provider while the instance disables none", () => {
+        expect(isProviderEnabled("workflows", makeCtx())).toBe(true);
+        expect(isProviderEnabled("workflows", makeCtx({ config: { command_palette_disabled_providers: [] } }))).toBe(
+            true,
+        );
+    });
+
+    it("disables exactly the providers the instance names", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows", "actions"] } });
+        expect(isProviderEnabled("workflows", ctx)).toBe(false);
+        expect(isProviderEnabled("actions", ctx)).toBe(false);
+        expect(isProviderEnabled("histories", ctx)).toBe(true);
+    });
+});
+
 describe("isScopeAvailable", () => {
     it("hides login-only scopes from anonymous users", () => {
         const ctx = makeCtx({ isAnonymous: true });
         expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
+        expect(isScopeAvailable(findScope("ws")!, ctx)).toBe(false);
         expect(isScopeAvailable(findScope("t")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("n")!, ctx)).toBe(true);
+    });
+
+    it("offers the public scopes to anonymous users", () => {
+        const ctx = makeCtx({ isAnonymous: true });
+        expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("hp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("rp")!, ctx)).toBe(true);
     });
 
     it("hides interactive tools unless they are enabled", () => {
@@ -78,7 +115,77 @@ describe("isScopeAvailable", () => {
         expect(availableScopes(ctx)).toEqual(PALETTE_SCOPES);
     });
 
+    it("hides every scope of a disabled provider, variants included", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows"] } });
+        expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
+        expect(isScopeAvailable(findScope("ws")!, ctx)).toBe(false);
+        expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(false);
+        expect(isScopeAvailable(findScope("h")!, ctx)).toBe(true);
+        expect(availableScopes(ctx).map((scope) => scope.providerId)).not.toContain("workflows");
+    });
+
+    it("gates the actions sigil on its own provider", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["actions"] } });
+        expect(isScopeAvailable(ACTIONS_SCOPE, makeCtx())).toBe(true);
+        expect(isScopeAvailable(ACTIONS_SCOPE, ctx)).toBe(false);
+    });
+
     it("keeps the registry order while filtering", () => {
-        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual(["t"]);
+        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual([
+            "wp",
+            "t",
+            "hp",
+            "rp",
+            "n",
+        ]);
+    });
+});
+
+describe("isScopeLoginGated", () => {
+    it("names the scopes an account alone stands between", () => {
+        const ctx = makeCtx({ isAnonymous: true });
+        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(true);
+        expect(isScopeLoginGated(findScope("d")!, ctx)).toBe(true);
+        // public, so nothing is being kept from anyone
+        expect(isScopeLoginGated(findScope("wp")!, ctx)).toBe(false);
+    });
+
+    it("gates nothing for a user who is logged in", () => {
+        expect(isScopeLoginGated(findScope("w")!, makeCtx())).toBe(false);
+    });
+
+    it("stays silent about a scope of a provider the instance disabled", () => {
+        const ctx = makeCtx({ isAnonymous: true, config: { command_palette_disabled_providers: ["workflows"] } });
+        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(false);
+        expect(isScopeLoginGated(findScope("h")!, ctx)).toBe(true);
+    });
+
+    it("stays silent while a config gate of the scope's own is unmet", () => {
+        const scope: ScopeDefinition = {
+            key: "x",
+            label: "Gated",
+            providerId: "workflows",
+            requiresLogin: true,
+            configGate: (ctx) => Boolean(ctx.config.interactivetools_enable),
+        };
+        expect(isScopeLoginGated(scope, makeCtx({ isAnonymous: true }))).toBe(false);
+        expect(
+            isScopeLoginGated(scope, makeCtx({ isAnonymous: true, config: { interactivetools_enable: true } })),
+        ).toBe(true);
+    });
+
+    it("lists the gated scopes in registry order", () => {
+        expect(loginGatedScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual([
+            "w",
+            "ws",
+            "h",
+            "hs",
+            "ha",
+            "d",
+            "v",
+            "i",
+            "r",
+        ]);
+        expect(loginGatedScopes(makeCtx())).toEqual([]);
     });
 });

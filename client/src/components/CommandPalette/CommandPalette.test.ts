@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
@@ -17,8 +18,10 @@ import { datasetsProvider } from "./providers/datasets";
 import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { navigationProvider } from "./providers/navigation";
+import { reportsProvider } from "./providers/reports";
+import { toolsProvider } from "./providers/tools";
 import { workflowsProvider } from "./providers/workflows";
-import type { CommandPaletteProvider } from "./types";
+import type { CommandPaletteProvider, PaletteItem } from "./types";
 
 import MountTarget from "./CommandPalette.vue";
 
@@ -55,6 +58,28 @@ function countScopedSearches(provider: CommandPaletteProvider): SearchCounter {
         return original!(scope, searchQuery, ctx);
     };
     return counter;
+}
+
+interface StalledSearch {
+    /** Lets the held search answer with these items */
+    land: (items: PaletteItem[]) => void;
+    restore: () => void;
+}
+
+/** Holds a provider's unscoped search open until the test lets it answer */
+function stallSearch(provider: CommandPaletteProvider): StalledSearch {
+    const original = provider.search;
+    let land: (items: PaletteItem[]) => void = () => {};
+    const pending = new Promise<PaletteItem[]>((resolve) => {
+        land = resolve;
+    });
+    provider.search = () => pending;
+    return {
+        land: (items) => land(items),
+        restore: () => {
+            provider.search = original;
+        },
+    };
 }
 
 /** Counts how often a provider answered a search that carried no query */
@@ -110,6 +135,11 @@ describe("CommandPalette", () => {
 
     function badge() {
         return wrapper.find("[data-description='palette badge']");
+    }
+
+    /** Icon names rendered in the input row, the leading mode icon included */
+    function inputIcons() {
+        return wrapper.findAll(".palette-input svg").wrappers.map((icon) => icon.attributes("data-icon"));
     }
 
     async function type(query: string) {
@@ -174,6 +204,15 @@ describe("CommandPalette", () => {
             .wrappers.map((section) => section.attributes("data-description"));
     }
 
+    /** Placeholder rows standing in for a provider that has not answered yet */
+    function skeletons() {
+        return wrapper.findAll("[data-description='palette skeleton']");
+    }
+
+    function selectedRow() {
+        return wrapper.find("[data-description='palette option'][aria-selected='true']");
+    }
+
     /** Presses or releases a modifier on the window, as holding it down would */
     async function holdKey(key: string, down: boolean) {
         window.dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { key }));
@@ -182,6 +221,16 @@ describe("CommandPalette", () => {
 
     function secondaryHints() {
         return wrapper.findAll("[data-description='palette option secondary']");
+    }
+
+    /** The offer standing in for a scope an anonymous visitor cannot reach */
+    function loginPrompt() {
+        return wrapper.find("[data-description='palette section login-prompt']");
+    }
+
+    /** Turns the current user into a visitor without an account */
+    function browseAnonymously() {
+        useUserStore().currentUser = { id: "anon", isAnonymous: true } as never;
     }
 
     it("shows actions and navigation sections for an empty query", () => {
@@ -218,6 +267,8 @@ describe("CommandPalette", () => {
         // the workflow store is empty here, so the scope has nothing to offer
         expect(wrapper.find("[data-description='palette scope hint']").exists()).toBe(false);
         expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+        // a known user is never asked to log in for a scope they already have
+        expect(loginPrompt().exists()).toBe(false);
     });
 
     it("remembers an opened entity in the palette recents", async () => {
@@ -283,6 +334,41 @@ describe("CommandPalette", () => {
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("Run workflow");
+    });
+
+    it("prompts for a free text argument instead of reporting no results", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+
+        await type("> create new history");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Create new history");
+
+        const prompt = () => wrapper.find("[data-description='palette argument hint']");
+        expect(prompt().text()).toContain("Type a name for the new history");
+        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
+
+        await type("rna seq");
+        expect(prompt().exists()).toBe(false);
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("rna seq");
+
+        await type("");
+        expect(prompt().exists()).toBe(true);
+    });
+
+    it("keeps prompting for a free text argument that is only whitespace", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+
+        await type("> create new report");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Create new report");
+
+        // a title of spaces alone leaves the action nothing to run, so the prompt
+        // has to ask again instead of the palette claiming there are no results
+        await type("   ");
+        expect(wrapper.find("[data-description='palette argument hint']").text()).toContain(
+            "Type a title for the new report",
+        );
+        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
     });
 
     it("leaves an action's argument badge on backspace at the start", async () => {
@@ -366,6 +452,14 @@ describe("CommandPalette", () => {
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("My workflows");
+    });
+
+    it("marks help mode with a question mark in place of the search icon", async () => {
+        expect(inputIcons()).toContain("search");
+
+        await type("?");
+        expect(inputIcons()).toContain("question-circle");
+        expect(inputIcons()).not.toContain("search");
     });
 
     it("lists one help row per action, applying the action scope with it", async () => {
@@ -456,6 +550,19 @@ describe("CommandPalette", () => {
         expect(secondaryHints().at(0).text()).toContain("pick a method");
 
         await holdKey("Shift", false);
+        expect(hint("secondary").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(0);
+    });
+
+    it("stops previewing the secondary binding once shift types a capital", async () => {
+        await type("> upload");
+        await holdKey("Shift", true);
+        expect(hint("secondary").classes()).toContain("hint-active");
+
+        // the capital of "Upload" is shift doing text entry, not a `⇧↵` preview
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "U", shiftKey: true }));
+        await wrapper.vm.$nextTick();
+
         expect(hint("secondary").classes()).not.toContain("hint-active");
         expect(secondaryHints().length).toBe(0);
     });
@@ -582,19 +689,19 @@ describe("CommandPalette", () => {
         pageStore.idsByVariant.my = ["p1"];
 
         await type("lab notes");
-        expect(sectionIds()).toContain("palette section pages");
+        expect(sectionIds()).toContain("palette section reports");
 
-        await pickCategory("pages");
-        expect(category("pages").attributes("aria-selected")).toBe("true");
-        // only the pages provider runs, through its own scoped search
-        expect(sectionIds()).toEqual(["palette section pages:latest"]);
+        await pickCategory("reports");
+        expect(category("reports").attributes("aria-selected")).toBe("true");
+        // only the reports provider runs, through its own scoped search
+        expect(sectionIds()).toEqual(["palette section reports:latest"]);
         expect(wrapper.text()).toContain("Lab notes");
 
         await pickCategory("navigation");
-        expect(sectionIds()).not.toContain("palette section pages");
+        expect(sectionIds()).not.toContain("palette section reports");
 
         await pickCategory("all");
-        expect(sectionIds()).toContain("palette section pages");
+        expect(sectionIds()).toContain("palette section reports");
     });
 
     it("resets the category when the query is cleared", async () => {
@@ -764,6 +871,112 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("renders every provider as it answers and holds the slow one's place", async () => {
+        const tools = stallSearch(toolsProvider);
+        try {
+            await type("workflows");
+
+            // one slow provider may not cost the sections that already answered
+            expect(optionRow("Workflows")).toBeDefined();
+            expect(sectionIds()).toContain("palette section tools");
+            expect(skeletons().length).toBe(3);
+            expect(inputIcons()).toContain("spinner");
+
+            tools.land([{ id: "tools:filter", title: "Filter workflows", to: "/?tool_id=filter" }]);
+            await settle();
+
+            expect(skeletons().length).toBe(0);
+            expect(inputIcons()).not.toContain("spinner");
+            expect(wrapper.text()).toContain("Filter workflows");
+            // sorted best match first, once, now that every provider landed
+            expect(sectionIds()[0]).toBe("palette section navigation");
+        } finally {
+            tools.restore();
+        }
+    });
+
+    it("keeps the rendered rows while the next keystroke is searched", async () => {
+        await type("workflows");
+        expect(optionRow("Workflows")).toBeDefined();
+
+        const navigation = stallSearch(navigationProvider);
+        try {
+            await type("workflowsx");
+
+            // the rows of the previous keystroke stand until the provider answers
+            expect(optionRow("Workflows")).toBeDefined();
+            expect(sectionIds()).toContain("palette section navigation");
+            expect(skeletons().length).toBe(0);
+
+            navigation.land([]);
+            await settle();
+
+            expect(optionRow("Workflows")).toBeUndefined();
+        } finally {
+            navigation.restore();
+        }
+    });
+
+    it("drops the results of a fan-out a newer search has replaced", async () => {
+        const tools = stallSearch(toolsProvider);
+        try {
+            await type("workflows");
+
+            // the next keystroke owns the sections now
+            toolsProvider.search = () => [{ id: "tools:fresh", title: "Fresh tool", to: "/?tool_id=fresh" }];
+            await type("workflow");
+
+            tools.land([{ id: "tools:stale", title: "Stale tool", to: "/?tool_id=stale" }]);
+            await settle();
+
+            expect(wrapper.text()).not.toContain("Stale tool");
+            expect(wrapper.text()).toContain("Fresh tool");
+        } finally {
+            tools.restore();
+        }
+    });
+
+    it("keeps the selection on the same row across the final sort", async () => {
+        const pages = stallSearch(reportsProvider);
+        try {
+            await type("workflow");
+            await press("ArrowDown");
+            const selected = selectedRow().text();
+            expect(selected).toBeTruthy();
+
+            // an exact match landing last outranks every section on screen, so
+            // the sort pushes the selected row down the list
+            pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
+            await settle();
+
+            expect(sectionIds()[0]).toBe("palette section reports");
+            expect(selectedRow().text()).toBe(selected);
+        } finally {
+            pages.restore();
+        }
+    });
+
+    it("keeps a selection moved back to the first row across the final sort", async () => {
+        const pages = stallSearch(reportsProvider);
+        try {
+            await type("workflow");
+            await press("ArrowDown");
+            await press("ArrowUp");
+            const selected = selectedRow().text();
+            expect(selected).toBeTruthy();
+
+            // the row the user pointed at may not be swapped for the exact match
+            // the sort brings to the top, first row or not
+            pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
+            await settle();
+
+            expect(sectionIds()[0]).toBe("palette section reports");
+            expect(selectedRow().text()).toBe(selected);
+        } finally {
+            pages.restore();
+        }
+    });
+
     it("says a scope could not be loaded instead of calling it empty", async () => {
         const original = workflowsProvider.searchScoped;
         workflowsProvider.searchScoped = () => Promise.reject(new PaletteFetchError());
@@ -788,6 +1001,168 @@ describe("CommandPalette", () => {
         await type("it: jupyter");
         expect(badge().exists()).toBe(false);
         expect(inputValue()).toBe("it: jupyter");
+    });
+
+    it("keeps a scope token still being typed away from every backend search", async () => {
+        const searches = [toolsProvider, historiesProvider].map((provider) => vi.spyOn(provider, "search"));
+        try {
+            // interactivetools_enable is off in the mocked config, so `it:` stays plain text
+            await type("it:");
+            searches.forEach((search) =>
+                expect(search).toHaveBeenLastCalledWith("it:", expect.anything(), { localOnly: true }),
+            );
+
+            await type("fastqc");
+            searches.forEach((search) =>
+                expect(search).toHaveBeenLastCalledWith("fastqc", expect.anything(), { localOnly: false }),
+            );
+        } finally {
+            searches.forEach((search) => search.mockRestore());
+        }
+    });
+
+    it("keeps a scope token still being typed away from the backend under a category", async () => {
+        const search = vi.spyOn(toolsProvider, "search");
+        const scoped = countScopedSearches(toolsProvider);
+        try {
+            await type("zz:foo");
+            await pickCategory("tools");
+            expect(category("tools").attributes("aria-selected")).toBe("true");
+            expect(scoped.calls).toBe(0);
+            expect(search).toHaveBeenLastCalledWith("zz:foo", expect.anything(), { localOnly: true });
+
+            await type("fastqc");
+            expect(scoped.calls).toBe(1);
+        } finally {
+            search.mockRestore();
+            scoped.restore();
+        }
+    });
+
+    it("offers a login when an anonymous visitor types a scope that needs one", async () => {
+        browseAnonymously();
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("w:rna");
+        // the token never became a badge, so the offer stands in its place
+        expect(badge().exists()).toBe(false);
+        expect(loginPrompt().text()).toContain("Log in to search my workflows");
+        expect(loginPrompt().text()).toContain("Create a Galaxy account");
+
+        // the offer is made of ordinary rows, so enter reaches it like any result
+        await press("Enter");
+        expect(push).toHaveBeenCalledWith(`/login/start?redirect=${encodeURIComponent("/")}`);
+    });
+
+    it("says nothing about a scope this instance does not offer at all", async () => {
+        browseAnonymously();
+
+        // interactivetools_enable is off in the mocked config, so an account
+        // would not unlock the scope either
+        await type("it:jupyter");
+        expect(loginPrompt().exists()).toBe(false);
+        expect(inputValue()).toBe("it:jupyter");
+    });
+
+    it("hides the register row where the instance creates no local accounts", async () => {
+        browseAnonymously();
+        setMockConfig({ allow_local_account_creation: false });
+        try {
+            await type("h:");
+            expect(loginPrompt().text()).toContain("Log in to search my histories");
+            expect(loginPrompt().text()).not.toContain("Create a Galaxy account");
+        } finally {
+            resetMockConfig();
+        }
+    });
+
+    it("registers through the single OIDC provider where local accounts are off", async () => {
+        browseAnonymously();
+        setMockConfig({
+            allow_local_account_creation: false,
+            oidc: { okta: { end_user_registration_endpoint: "https://okta.example.org/register" } },
+        });
+        const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+        try {
+            await type("h:");
+            // the masthead offers a Register button here, so the palette does too
+            const register = optionRow("Create a Galaxy account");
+            expect(register).toBeDefined();
+
+            await register?.trigger("click");
+            expect(assign).toHaveBeenCalledWith("https://okta.example.org/register");
+        } finally {
+            assign.mockRestore();
+            resetMockConfig();
+        }
+    });
+
+    it("lists the scopes an account would add behind a lock in help mode", async () => {
+        browseAnonymously();
+
+        await type("?");
+        // what an anonymous visitor may search is listed as it always is
+        expect(wrapper.text()).toContain("Search public workflows");
+
+        const locked = optionRow("Search my workflows");
+        expect(locked?.find(".item-icon svg").attributes("data-icon")).toBe("lock");
+
+        await locked?.trigger("click");
+        await settle();
+
+        // picking one types its token, which answers with the same login offer
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().exists()).toBe(false);
+        expect(inputValue()).toBe("w: ");
+        expect(loginPrompt().text()).toContain("Log in to search my workflows");
+    });
+
+    it("never searches, tabs or lists a provider the instance disabled", async () => {
+        wrapper.destroy();
+        useCommandPalette().closePalette();
+        setMockConfig({ command_palette_disabled_providers: ["workflows"] });
+        const search = vi.spyOn(workflowsProvider, "search");
+        try {
+            wrapper = mount(MountTarget as object, {
+                localVue,
+                router,
+                pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true }),
+            });
+            useCommandPalette().openPalette();
+            await settle();
+
+            await type("workflow");
+            expect(sectionIds()).not.toContain("palette section workflows");
+            expect(search).not.toHaveBeenCalled();
+            // the category row loses the tab with it, the other providers keep theirs
+            expect(category("workflows").exists()).toBe(false);
+            expect(category("histories").exists()).toBe(true);
+
+            // the scopes of a disabled provider are neither typeable nor offered
+            await type("w: rna");
+            expect(badge().exists()).toBe(false);
+            expect(inputValue()).toBe("w: rna");
+
+            await type("?");
+            expect(wrapper.text()).not.toContain("Search my workflows");
+            expect(wrapper.text()).toContain("Search my histories");
+        } finally {
+            search.mockRestore();
+            resetMockConfig();
+        }
+    });
+
+    it("leads the placeholder with the phrase the instance configured", async () => {
+        const hint = "…  > actions · w: t: … scopes · ? help";
+        expect(input().attributes("placeholder")).toBe(`Search Galaxy${hint}`);
+
+        try {
+            setMockConfig({ command_palette_placeholder: "Search UseGalaxy.eu" });
+            await wrapper.vm.$nextTick();
+            expect(input().attributes("placeholder")).toBe(`Search UseGalaxy.eu${hint}`);
+        } finally {
+            resetMockConfig();
+        }
     });
 
     it("re-runs the search once the tool store finishes hydrating", async () => {

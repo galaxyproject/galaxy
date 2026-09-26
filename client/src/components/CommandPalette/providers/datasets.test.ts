@@ -7,7 +7,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { datasetsProvider } from "./datasets";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -44,10 +44,6 @@ function makeDataset(id: string, name: string, updateTime: string): HDASummary {
 
 const ALPHA = makeDataset("d1", "alpha reads", "2026-01-03T00:00:00");
 const BETA = makeDataset("d2", "beta reads", "2026-01-05T00:00:00");
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 /** Serves the unfiltered "latest" list, and name-filters for search fetches */
 function mockLoadDatasets(all = [ALPHA, BETA]) {

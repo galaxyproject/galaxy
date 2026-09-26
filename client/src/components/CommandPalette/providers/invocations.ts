@@ -1,7 +1,6 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -9,6 +8,8 @@ import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -20,9 +21,6 @@ const LATEST_LIMIT = 15;
 
 /** Identity of the cached list in the palette's refresh bookkeeping */
 const REFRESH_KEY = "invocations:latest";
-
-/** Maximum rows rendered per section */
-const SECTION_CAP = 8;
 
 function invocationRoute(invocationId: string): string {
     return `/workflows/invocations/${invocationId}`;
@@ -110,26 +108,24 @@ function filterInvocations(invocations: WorkflowInvocation[], query: string): Pa
 /** Remembered invocations, refreshed against the store cache when it knows them */
 function recentInvocationItems(): PaletteItem[] {
     const invocationStore = useInvocationStore();
-    const { recentItems } = useRecentPaletteItems();
-    return recentItems(INVOCATION_RECENT_TYPE).map((recent) => {
-        const invocation = invocationStore.latestInvocations.find(
-            (candidate: WorkflowInvocation) => candidate.id === recent.id,
-        );
-        if (invocation) {
-            return invocationToItem(invocation);
-        }
-        return {
-            id: `invocations:${recent.id}`,
+    const rows: RecentRows = {
+        type: INVOCATION_RECENT_TYPE,
+        stored: (entry) => {
+            const invocation = invocationStore.latestInvocations.find((candidate) => candidate.id === entry.id);
+            return invocation ? invocationToItem(invocation) : undefined;
+        },
+        fallback: (entry) => ({
+            id: `invocations:${entry.id}`,
             icon: faSitemap,
-            mru: { type: INVOCATION_RECENT_TYPE, id: recent.id },
-            title: recent.name || `Invocation ${recent.id}`,
-            to: recent.to ?? invocationRoute(recent.id),
-        };
-    });
+            title: entry.name || `Invocation ${entry.id}`,
+            to: invocationRoute(entry.id),
+        }),
+    };
+    return recentPaletteItems(rows, "", PALETTE_LIMITS.section);
 }
 
 function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {
-    return items.length ? [{ id, items: items.slice(0, SECTION_CAP), title }] : [];
+    return items.length ? [{ id, items: items.slice(0, PALETTE_LIMITS.section), title }] : [];
 }
 
 export const invocationsProvider: CommandPaletteProvider = {
@@ -138,24 +134,22 @@ export const invocationsProvider: CommandPaletteProvider = {
     /** Whatever the store already knows, newest first -- never fetches */
     emptyQueryItems() {
         const invocationStore = useInvocationStore();
-        return invocationStore.latestInvocations.slice(0, SECTION_CAP).map(invocationToItem);
+        return invocationStore.latestInvocations.slice(0, PALETTE_LIMITS.section).map(invocationToItem);
     },
     /**
-     * Root mode fan-out: the unscoped palette asks every provider at once, so
-     * this only filters what the store already holds. The `i:` scope is the one
-     * that fetches.
+     * Root mode fan-out: this provider only filters what the store already
+     * holds, unlike the histories, workflows, reports and tools ones, which
+     * search the backend there too. The `i:` scope is the one that fetches.
      */
     search(query: string) {
-        const trimmed = query.trim();
-        if (!trimmed) {
+        if (!query) {
             return [];
         }
-        return filterInvocations(useInvocationStore().latestInvocations, trimmed).slice(0, SECTION_CAP);
+        return filterInvocations(useInvocationStore().latestInvocations, query).slice(0, PALETTE_LIMITS.section);
     },
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
-        const trimmed = query.trim();
         const invocations = await ensureLatestInvocations();
-        if (!trimmed) {
+        if (!query) {
             // "Latest" keeps the server's order (most recently created first) and drops
             // whatever the "Recent" section already shows.
             const recent = recentInvocationItems();
@@ -163,6 +157,6 @@ export const invocationsProvider: CommandPaletteProvider = {
             const latest = invocations.map(invocationToItem).filter((item) => !recentIds.has(item.id));
             return [...section("recent", "Recent", recent), ...section("latest", "Latest", latest)];
         }
-        return section("results", "Invocations", filterInvocations(invocations, trimmed));
+        return section("results", "Invocations", filterInvocations(invocations, query));
     },
 };

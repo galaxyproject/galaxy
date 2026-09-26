@@ -5,8 +5,14 @@ import { localize } from "@/utils/localization";
 import type { PaletteItem } from "./types";
 import type { PaletteMode } from "./usePaletteMachine";
 
-const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
+/** Leading phrase of the root placeholder, unless the instance configures its own */
+const ROOT_PLACEHOLDER_PHRASE = "Search Galaxy";
+/** Key hints trailing whichever leading phrase the root placeholder uses */
+const ROOT_PLACEHOLDER_HINT = "…  > actions · w: t: … scopes · ? help";
 const HELP_PLACEHOLDER = "Search shortcuts…";
+
+/** Hints a narrow footer drops first, keeping the bindings that run something or leave the palette */
+export const OPTIONAL_HINTS = ["navigate", "category", "remove-scope", "remove-action"];
 
 /** One key hint rendered in the footer, driven by the current palette mode */
 export interface FooterHint {
@@ -23,6 +29,8 @@ interface PaletteFooterOptions {
     modifierHeld: Readonly<Ref<boolean>>;
     /** The platform's "⌘" or "Ctrl+" */
     modifierLabel: Readonly<Ref<string>>;
+    /** Instance-configured leading phrase of the root placeholder */
+    placeholderPhrase: Readonly<Ref<string | undefined>>;
     selectedItem: Readonly<Ref<PaletteItem | undefined>>;
     shiftHeld: Readonly<Ref<boolean>>;
     showCategoryRow: Readonly<Ref<boolean>>;
@@ -43,8 +51,17 @@ function searchLabel(subject: string) {
 
 /** The input placeholder and the footer's key hints, both following the palette mode */
 export function usePaletteFooter(options: PaletteFooterOptions) {
-    const { categoryRowSelected, mode, modifierHeld, modifierLabel, selectedItem, shiftHeld, showCategoryRow, text } =
-        options;
+    const {
+        categoryRowSelected,
+        mode,
+        modifierHeld,
+        modifierLabel,
+        placeholderPhrase,
+        selectedItem,
+        shiftHeld,
+        showCategoryRow,
+        text,
+    } = options;
 
     const placeholder = computed(() => {
         const activeMode = mode.value;
@@ -58,7 +75,9 @@ export function usePaletteFooter(options: PaletteFooterOptions) {
         if (activeMode.type === "help") {
             return localize(HELP_PLACEHOLDER);
         }
-        return localize(ROOT_PLACEHOLDER);
+        // an instance-configured phrase is admin copy, so it is used verbatim
+        const phrase = placeholderPhrase.value || localize(ROOT_PLACEHOLDER_PHRASE);
+        return `${phrase}${localize(ROOT_PLACEHOLDER_HINT)}`;
     });
 
     /** Escape steps through clearing the text, then the badge, then closing */

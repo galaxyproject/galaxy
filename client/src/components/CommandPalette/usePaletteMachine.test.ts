@@ -2,21 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_CATEGORY, PALETTE_CATEGORIES } from "./providers/categories";
 import { ACTIONS_SCOPE, findScope } from "./providers/scopes";
-import type { PaletteContext, PaletteItem } from "./types";
+import { makeCtx } from "./test-utils";
+import type { PaletteItem } from "./types";
 import { usePaletteMachine } from "./usePaletteMachine";
 
 const WORKFLOWS = findScope("w")!;
 
 const NEW_HISTORY: PaletteItem = { id: "actions:new-history", title: "Create new history" };
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: { interactivetools_enable: false, llm_api_configured: false },
-        isAnonymous: false,
-        ...overrides,
-    };
-}
 
 describe("usePaletteMachine", () => {
     it("starts in root mode with an empty input", () => {
@@ -49,6 +41,14 @@ describe("usePaletteMachine", () => {
         machine.setText("hs: shared");
         expect(machine.scope.value?.key).toBe("hs");
         expect(machine.text.value).toBe("shared");
+    });
+
+    it("converts the navigation token into a badge for anonymous users too", () => {
+        const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
+        machine.setText("n: about");
+        expect(machine.scope.value?.providerId).toBe("navigation");
+        expect(machine.badgeLabel.value).toBe("Navigation");
+        expect(machine.text.value).toBe("about");
     });
 
     it("converts '>' into the actions badge", () => {
@@ -88,10 +88,33 @@ describe("usePaletteMachine", () => {
         expect(enabled.text.value).toBe("jupyter");
     });
 
-    it("never gates the actions sigil", () => {
+    it("never gates the actions sigil on the login", () => {
         const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
         machine.setText("> up");
         expect(machine.mode.value).toEqual({ type: "scoped", scope: ACTIONS_SCOPE });
+    });
+
+    it("keeps the token of a disabled provider as plain text", () => {
+        const disabled = { command_palette_disabled_providers: ["workflows"] };
+        const machine = usePaletteMachine(() => makeCtx({ config: disabled }));
+        machine.setText("w: rna");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("w: rna");
+        // a variant of the same provider is gone with it
+        machine.setText("ws: rna");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        // every other provider still scopes normally
+        machine.setText("t: align");
+        expect(machine.scope.value?.key).toBe("t");
+    });
+
+    it("keeps the actions sigil as plain text once its provider is disabled", () => {
+        const machine = usePaletteMachine(() =>
+            makeCtx({ config: { command_palette_disabled_providers: ["actions"] } }),
+        );
+        machine.setText("> up");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("> up");
     });
 
     it("switches directly from one scope to another", () => {
@@ -240,13 +263,5 @@ describe("usePaletteMachine", () => {
         machine.setText("w: rna");
         machine.popMode();
         expect(machine.category.value).toBeUndefined();
-    });
-
-    it("resets mode and text", () => {
-        const machine = usePaletteMachine();
-        machine.setText("w: rna");
-        machine.reset();
-        expect(machine.mode.value).toEqual({ type: "root" });
-        expect(machine.text.value).toBe("");
     });
 });

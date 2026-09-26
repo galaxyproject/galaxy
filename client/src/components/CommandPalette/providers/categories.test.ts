@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, PALETTE_CATEGORIES } from "./categories";
 import { paletteProviders } from "./index";
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 describe("PALETTE_CATEGORIES", () => {
     it("names a registered provider for every category", () => {
@@ -18,10 +14,8 @@ describe("PALETTE_CATEGORIES", () => {
         expect(PALETTE_CATEGORIES.map(categoryProviderId)).not.toContain("actions");
     });
 
-    it("gives every category either a scope or a provider of its own, never both", () => {
-        PALETTE_CATEGORIES.forEach((category) => {
-            expect(Boolean(category.scope) !== Boolean(category.providerId)).toBe(true);
-        });
+    it("gives every category a scope to borrow", () => {
+        PALETTE_CATEGORIES.forEach((category) => expect(category.scope).toBeDefined());
     });
 });
 
@@ -36,7 +30,7 @@ describe("availableCategories", () => {
             "Datasets",
             "Visualizations",
             "Invocations",
-            "Pages",
+            "Reports",
             "Tools",
             "Navigation",
         ]);
@@ -45,5 +39,18 @@ describe("availableCategories", () => {
     it("hides the categories whose scope needs a login", () => {
         const categories = availableCategories(makeCtx({ isAnonymous: true }));
         expect(categories.map((category) => category.id)).toEqual(["all", "tools", "navigation"]);
+    });
+
+    it("hides the navigation category through its scope once its provider is disabled", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["navigation"] } });
+        expect(availableCategories(ctx).map((category) => category.id)).not.toContain("navigation");
+    });
+
+    it("hides a scoped category once its provider is disabled", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows", "tools"] } });
+        const ids = availableCategories(ctx).map((category) => category.id);
+        expect(ids).not.toContain("workflows");
+        expect(ids).not.toContain("tools");
+        expect(ids).toContain("histories");
     });
 });

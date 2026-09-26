@@ -5,7 +5,7 @@ import { loadVisualizations, type VisualizationSummary } from "@/api/visualizati
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { resetListRefreshTracking } from "./refresh";
 import { visualizationsProvider } from "./visualizations";
 
@@ -41,10 +41,6 @@ function mockVisualization(id: string, title: string, type = "nvd3_bar"): Visual
     } as VisualizationSummary;
 }
 
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
-}
-
 function mockList(...visualizations: VisualizationSummary[]) {
     vi.mocked(loadVisualizations).mockResolvedValue({ data: visualizations, totalMatches: visualizations.length });
 }
@@ -71,7 +67,11 @@ describe("visualizationsProvider", () => {
     });
 
     it("hydrates the store once and ranks the cache before merging backend hits", async () => {
-        mockList(mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot"));
+        // two of many, so the cache cannot answer every query alone
+        vi.mocked(loadVisualizations).mockResolvedValue({
+            data: [mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")],
+            totalMatches: 30,
+        });
         // hydrate through the palette, the way opening the scope does
         await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
         vi.mocked(loadVisualizations).mockClear();
@@ -93,7 +93,7 @@ describe("visualizationsProvider", () => {
     it("queries the backend when the cache cannot answer and merges results into the store", async () => {
         vi.mocked(loadVisualizations).mockResolvedValueOnce({
             data: [mockVisualization("viz-1", "ATAC peaks")],
-            totalMatches: 1,
+            totalMatches: 30,
         });
         vi.mocked(loadVisualizations).mockResolvedValueOnce({
             data: [mockVisualization("viz-9", "Genome browser")],
@@ -105,6 +105,17 @@ describe("visualizationsProvider", () => {
         expect(loadVisualizations).toHaveBeenCalledTimes(2);
         expect(sections[0]?.items.map((item) => item.id)).toEqual(["visualizations:viz-9"]);
         expect(useVisualizationStore().getVisualizationSummary("viz-9")?.title).toBe("Genome browser");
+    });
+
+    it("answers from a cache holding every visualization without searching", async () => {
+        mockList(mockVisualization("viz-1", "ATAC peaks"));
+        await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
+        vi.mocked(loadVisualizations).mockClear();
+
+        const sections = await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "genome", makeCtx());
+
+        expect(sections).toEqual([]);
+        expect(loadVisualizations).not.toHaveBeenCalled();
     });
 
     it("refreshes the cached visualizations in the background once they go stale", async () => {

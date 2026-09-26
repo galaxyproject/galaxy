@@ -13,6 +13,9 @@ export interface PaletteContext {
     canUseUnprivilegedTools: boolean;
     /** Relevant subset of the Galaxy configuration */
     config: {
+        allow_local_account_creation?: boolean;
+        /** Provider ids the instance turned off, never unset — see the palette */
+        command_palette_disabled_providers?: string[];
         enable_notification_system?: boolean;
         interactivetools_enable?: boolean;
         llm_api_configured?: boolean;
@@ -47,6 +50,11 @@ export interface PaletteItem {
     id: string;
     /** Turns the item into a badge collecting a second value before it runs */
     argumentMode?: {
+        /**
+         * Prompt shown instead of "No results." while nothing is typed yet —
+         * for free text arguments, where an empty query has nothing to match.
+         */
+        emptyHint?: string;
         getItems(argQuery: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
         /**
          * Whether plain enter enters the argument mode as well — for actions
@@ -98,18 +106,31 @@ export interface ScopedSection {
 }
 
 /** A titled group of rows as the palette renders it, whichever search produced it */
-export type ResultSection = ScopedSection;
+export interface ResultSection extends ScopedSection {
+    /** Whether the provider is still answering, so the section renders skeletons */
+    loading?: boolean;
+    /** Match quality of the provider's results, sorting the fan-out sections */
+    score?: number;
+}
+
+/** How far a provider may go to answer one search */
+export interface PaletteSearchOptions {
+    /** Cached data only, never a backend: set while the text reads as a scope token (`xy:`) being typed */
+    localOnly?: boolean;
+}
 
 /**
  * A source of palette results. Sync providers (navigation, actions) filter
  * local data; async providers (tools, and per-entity searches later) may
  * call the backend.
+ *
+ * Every `query` arrives trimmed by the palette, so providers never trim it again.
  */
 export interface CommandPaletteProvider {
     id: string;
     /** Items shown when the query is empty (recents, defaults) */
     emptyQueryItems?(ctx: PaletteContext): PaletteItem[];
-    search(query: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
+    search(query: string, ctx: PaletteContext, options?: PaletteSearchOptions): PaletteItem[] | Promise<PaletteItem[]>;
     /** Multi-section search for one of the provider's scopes */
     searchScoped?(
         scope: ScopeDefinition,

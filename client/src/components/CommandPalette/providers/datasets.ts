@@ -1,13 +1,14 @@
 import { faFile } from "@fortawesome/free-solid-svg-icons";
 
 import type { HDASummary } from "@/api";
-import { type RecentPaletteItem, useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** MRU bucket the palette records dataset selections under */
@@ -18,10 +19,6 @@ const REFRESH_KEY = "datasets:latest";
 
 /** Maximum number of rows rendered per section */
 const SECTION_CAP = 6;
-/** Shortest query worth a backend round trip; below it the cache answers alone */
-const MIN_BACKEND_QUERY_LENGTH = 2;
-/** Page size of the unfiltered "latest" fetch */
-const LATEST_LIMIT = 25;
 
 /** Router location of a dataset preview */
 function datasetRoute(id: string): string {
@@ -51,16 +48,6 @@ function datasetToItem(dataset: HDASummary): PaletteItem {
     };
 }
 
-function recentToItem(entry: RecentPaletteItem): PaletteItem {
-    return {
-        id: `datasets:${entry.id}`,
-        icon: faFile,
-        mru: { type: DATASET_RECENT_TYPE, id: entry.id },
-        title: entry.name || localize("Unnamed dataset"),
-        to: entry.to ?? datasetRoute(entry.id),
-    };
-}
-
 /** Most recently updated first; datasets without a timestamp sort last */
 function byUpdateTimeDesc(a: HDASummary, b: HDASummary): number {
     const left = a.update_time ?? a.create_time ?? "";
@@ -76,7 +63,7 @@ function byUpdateTimeDesc(a: HDASummary, b: HDASummary): number {
 function cacheHoldsEveryDataset(): boolean {
     const datasetListStore = useDatasetListStore();
     // the total also counts collections, which the store drops, so compare it to the page size
-    return datasetListStore.hasLoadedLatest && datasetListStore.totalLatestMatches <= LATEST_LIMIT;
+    return datasetListStore.hasLoadedLatest && datasetListStore.totalLatestMatches <= PALETTE_LIMITS.page;
 }
 
 /**
@@ -86,10 +73,10 @@ function cacheHoldsEveryDataset(): boolean {
 async function ensureLatestHydrated(): Promise<void> {
     const datasetListStore = useDatasetListStore();
     if (!datasetListStore.hasLoadedLatest) {
-        await datasetListStore.ensureLatestLoaded(LATEST_LIMIT);
+        await datasetListStore.ensureLatestLoaded(PALETTE_LIMITS.page);
         markListRefreshed(REFRESH_KEY);
     } else {
-        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets({ limit: LATEST_LIMIT }));
+        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets({ limit: PALETTE_LIMITS.page }));
     }
 }
 
@@ -100,8 +87,9 @@ async function ensureLatestHydrated(): Promise<void> {
  * so the next keystroke is local again.
  *
  * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters what
- * the stores already hold; the `d:` scope does the fetching.
+ * this provider answers the root fan-out from the cache alone, unlike the
+ * histories, workflows, reports and tools ones, which search the backend there
+ * too; the `d:` scope does the fetching.
  */
 async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASummary[]> {
     const datasetListStore = useDatasetListStore();
@@ -110,7 +98,7 @@ async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASu
     }
     await ensureLatestHydrated();
     const cached = datasetListStore.searchCachedDatasets(query, SECTION_CAP);
-    if (cached.length >= SECTION_CAP || query.length < MIN_BACKEND_QUERY_LENGTH || cacheHoldsEveryDataset()) {
+    if (cached.length >= SECTION_CAP || query.length < PALETTE_LIMITS.minBackendQuery || cacheHoldsEveryDataset()) {
         return cached;
     }
     await datasetListStore.fetchDatasets({ search: query, limit: SECTION_CAP });
@@ -118,8 +106,16 @@ async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASu
 }
 
 function recentItems(query: string): PaletteItem[] {
-    const { recentItems: remembered } = useRecentPaletteItems();
-    return rankPaletteItems(remembered(DATASET_RECENT_TYPE).map(recentToItem), query).slice(0, SECTION_CAP);
+    const rows: RecentRows = {
+        type: DATASET_RECENT_TYPE,
+        fallback: (entry) => ({
+            id: `datasets:${entry.id}`,
+            icon: faFile,
+            title: entry.name || localize("Unnamed dataset"),
+            to: datasetRoute(entry.id),
+        }),
+    };
+    return recentPaletteItems(rows, query, SECTION_CAP);
 }
 
 /** Drops items already shown in an earlier section */
@@ -144,20 +140,18 @@ export const datasetsProvider: CommandPaletteProvider = {
     },
     /** Root mode fan-out, filtering the cached summaries without a request */
     async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (ctx.isAnonymous || !trimmed) {
+        if (ctx.isAnonymous || !query) {
             return [];
         }
-        const found = (await matchingDatasets(trimmed, true)).map(datasetToItem);
-        return rankPaletteItems(found, trimmed).slice(0, SECTION_CAP);
+        const found = (await matchingDatasets(query, true)).map(datasetToItem);
+        return rankPaletteItems(found, query).slice(0, SECTION_CAP);
     },
     async searchScoped(_scope, query: string, ctx: PaletteContext) {
         if (ctx.isAnonymous) {
             return [];
         }
-        const trimmed = query.trim();
-        const recent = recentItems(trimmed);
-        if (!trimmed) {
+        const recent = recentItems(query);
+        if (!query) {
             const datasetListStore = useDatasetListStore();
             await ensureLatestHydrated();
             const latest = [...datasetListStore.latestDatasets].sort(byUpdateTimeDesc).map(datasetToItem);
@@ -170,7 +164,7 @@ export const datasetsProvider: CommandPaletteProvider = {
                 },
             ]);
         }
-        const found = rankPaletteItems((await matchingDatasets(trimmed)).map(datasetToItem), trimmed);
+        const found = rankPaletteItems((await matchingDatasets(query)).map(datasetToItem), query);
         return toSections([
             { id: "recent", items: recent, title: localize("Recent") },
             { id: "results", items: withoutItems(found, recent).slice(0, SECTION_CAP), title: localize("Datasets") },
