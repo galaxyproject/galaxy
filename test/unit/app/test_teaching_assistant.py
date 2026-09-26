@@ -150,6 +150,42 @@ class TestTeachingAssistantAgent:
             assert "HISAT2 starting" in delegated_query
         assert "Check which reference index was selected." in result
 
+    async def test_history_summary_gives_failed_items_a_job_id(self):
+        # Without a job ID the tutor could only send the learner off to dig out the error themselves.
+        agent = TeachingAssistantAgent(self.deps)
+        self.mock_trans.get_history.return_value = mock.Mock(id=7)
+        agent.ops.get_history_contents = mock.Mock(
+            return_value={
+                "contents": [
+                    {"id": "ds-ok", "hid": 1, "name": "reads.fastq", "state": "ok", "history_content_type": "dataset"},
+                    {
+                        "id": "ds-bad",
+                        "hid": 2,
+                        "name": "Filter on 1",
+                        "state": "error",
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": "hdca",
+                        "hid": 3,
+                        "name": "trimmed",
+                        "state": "error",
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+                "pagination": {"total_items": 2},
+            }
+        )
+        agent.ops.get_job_details = mock.Mock(return_value={"job_id": "encoded-failed-job"})
+
+        result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
+
+        agent.ops.get_job_details.assert_called_once_with("ds-bad")
+        failed_line = next(line for line in result.splitlines() if "HID 2" in line)
+        assert "encoded-failed-job" in failed_line
+        assert "job" not in next(line for line in result.splitlines() if "HID 1" in line)
+        assert "job" not in next(line for line in result.splitlines() if "HID 3" in line)
+
     def test_prompt_excludes_internal_routing_state(self):
         agent = TeachingAssistantAgent(self.deps)
         context = {
