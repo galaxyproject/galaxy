@@ -2642,9 +2642,9 @@ class SubworkflowStep(WorkflowStepBase):
     )
 
 
-class Creator(Model):
-    class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-    name: str | None = Field(None, title="Name", description="The name of the creator.")
+class Thing(Model):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this thing.")
+    name: str | None = Field(None, title="Name", description="The name of the thing.")
     address: str | None = Field(
         None,
         title="Address",
@@ -2676,6 +2676,11 @@ class Creator(Model):
         None,
         title="URL",
     )
+
+
+class Creator(Thing):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
+    name: str | None = Field(None, title="Name", description="The name of the creator.")
 
 
 class CreatorOrganization(Creator):
@@ -2714,6 +2719,10 @@ class Person(Creator):
         alias="jobTitle",
         title="Job Title",
     )
+
+
+class Grant(Thing):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this Grant.")
 
 
 class Input(Model):

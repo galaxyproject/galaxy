@@ -790,6 +790,8 @@ tool_form:
     section_header: '.ui-portlet-section .portlet-header'
     reference: '.formatted-reference'
     about: '.tool-footer'
+    creator: '.tool-footer .creative-work-creator'
+    grant: '.tool-footer [itemprop="funding"]'
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'

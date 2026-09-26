@@ -1521,6 +1521,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
+        self.funding = tool_source.parse_funding()
         self.parse_inputs(self.tool_source)
         self.parse_outputs(self.tool_source)
         self.raw_help = None
@@ -2996,6 +2997,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "action": action,
                 "license": self.license,
                 "creator": self.creator,
+                "funding": self.funding,
                 "method": self.method,
                 "enctype": self.enctype,
             }

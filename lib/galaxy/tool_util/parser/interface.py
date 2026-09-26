@@ -423,6 +423,13 @@ class ToolSource(metaclass=ABCMeta):
         """
         return []
 
+    def parse_funding(self) -> list[dict[str, Any]]:
+        """Return list of metadata relating to funding of tool development.
+
+        Result should be list of schema.org data model Grant objects.
+        """
+        return []
+
     def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
         return []
 

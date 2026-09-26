@@ -802,7 +802,7 @@ class XmlToolSource(ToolSource):
     def parse_creator(self):
         creators_el = self.root.find("creator")
         if creators_el is None:
-            return None
+            return []
 
         creators = []
         for creator_el in creators_el:
@@ -817,6 +817,25 @@ class XmlToolSource(ToolSource):
             creator_as_dict.update(creator_el.attrib)
             creators.append(creator_as_dict)
         return creators
+
+    def parse_funding(self) -> list[dict[str, str]]:
+        """Parse the funding information from the XML tool file.
+
+        Returns:
+            funding: dict with array of grants holding the funding information
+        """
+        funding_el = self.root.find("funding")
+        if funding_el is None:
+            return []
+
+        funding = []
+        for grant_el in funding_el:
+            grant_as_dict = {}
+            if grant_el.tag == "grant":
+                grant_as_dict["class"] = "Grant"
+                grant_as_dict.update(_element_to_dict(grant_el))
+                funding.append(grant_as_dict)
+        return funding
 
 
 def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:

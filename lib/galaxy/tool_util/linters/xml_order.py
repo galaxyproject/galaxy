@@ -38,6 +38,8 @@ TAG_ORDER = [
     "tests",
     "help",
     "citations",
+    "creator",
+    "funding",
 ]
 
 DATASOURCE_TAG_ORDER = [
@@ -53,6 +55,8 @@ DATASOURCE_TAG_ORDER = [
     "options",
     "help",
     "citations",
+    "creator",
+    "funding",
 ]
 
 

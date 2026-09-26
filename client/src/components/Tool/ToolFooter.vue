@@ -60,6 +60,10 @@
             <Heading v-localize h2 separator bold size="sm">Creators</Heading>
             <Creators :creators="creators" />
         </div>
+        <div v-if="hasFunding" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Funding</Heading>
+            <Funding :funding="funding" />
+        </div>
     </div>
 </template>
 
@@ -75,6 +79,7 @@ import CitationItem from "@/components/Citation/CitationItem.vue";
 import Heading from "@/components/Common/Heading.vue";
 import License from "@/components/License/License.vue";
 import Creators from "@/components/SchemaOrg/Creators.vue";
+import Funding from "@/components/SchemaOrg/Funding.vue";
 
 export default {
     components: {
@@ -82,6 +87,7 @@ export default {
         Heading,
         License,
         Creators,
+        Funding,
         FontAwesomeIcon,
         GButton,
     },
@@ -100,6 +106,9 @@ export default {
             type: String,
         },
         creators: {
+            type: Array,
+        },
+        funding: {
             type: Array,
         },
         requirements: {
@@ -123,12 +132,20 @@ export default {
         hasCreators() {
             return this.creators && this.creators.length > 0;
         },
+        hasFunding() {
+            return this.funding && this.funding.length > 0;
+        },
         hasLicense() {
             return !!this.license;
         },
         hasContent() {
             return (
-                this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
+                this.hasRequirements ||
+                this.hasReferences ||
+                this.hasCreators ||
+                this.hasFunding ||
+                this.hasCitations ||
+                this.hasLicense
             );
         },
     },

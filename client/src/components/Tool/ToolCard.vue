@@ -282,6 +282,7 @@ onBeforeMount(() => {
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
                 :creators="props.options.creator"
+                :funding="props.options.funding"
                 :requirements="props.options.requirements" />
         </template>
     </FormCardSticky>
