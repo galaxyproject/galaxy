@@ -237,6 +237,15 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 return f"Could not retrieve job info: {e}"
             job_info = status.get("job", {})
             stderr = truncate_middle(str(job_info.get("stderr") or ""), JOB_LOG_EXCERPT_CHARS)
+            try:
+                parameters = teaching_assistant.ops.get_job_parameters(job_id)["parameters"]
+                settings = "\n".join(
+                    "  " * (p["depth"] - 1) + f"- {p['label']}" + (f": {p['value']}" if p["value"] is not None else "")
+                    for p in parameters
+                )
+            except Exception as e:
+                log.warning(f"Could not summarize job parameters: {e}")
+                settings = ""
 
             # Also try to get analysis from the error analysis agent
             analysis = ""
@@ -245,7 +254,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                     AgentType.ERROR_ANALYSIS,
                     f"Analyze job failure: tool={job_info.get('tool_id')}, "
                     f"exit_code={job_info.get('exit_code')}, "
-                    f"stderr={stderr}",
+                    f"stderr={stderr}" + (f", settings=\n{settings}" if settings else ""),
                     ctx,
                 )
             except Exception as e:
@@ -258,7 +267,12 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 f"- State: {job_info.get('state', 'unknown')}\n"
                 f"- Exit code: {job_info.get('exit_code', 'N/A')}\n"
                 f"- Stderr: {stderr or 'none'}\n\n"
-                f"Analysis: {analysis}"
+                + (
+                    f"Settings, labelled as in the tool form:\n{settings}\n\n"
+                    if settings
+                    else "Settings: unavailable. Do not name specific parameters or options.\n\n"
+                )
+                + f"Analysis: {analysis}"
             )
 
         @agent.tool
