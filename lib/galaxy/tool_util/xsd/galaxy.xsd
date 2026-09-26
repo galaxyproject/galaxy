@@ -4286,19 +4286,23 @@ appropriate command line variable.
 ```
 
 In a command block or configfile, ``$interval_file`` is replaced by Galaxy's
-internal filename. Sometimes a tool instead needs a meaningful name or the
-dataset's datatype extension. Dataset wrappers expose ``element_identifier``
-(the collection element identifier, or the dataset name), ``file_ext`` (the
-export datatype extension), and ``safe_element_identifier``.
+internal filename. Sometimes a tool instead needs a meaningful name or a
+filename extension. Dataset wrappers expose ``element_identifier`` (the
+collection element identifier, or the dataset name), ``ext`` (Galaxy's
+datatype identifier), ``file_ext`` (the filename extension, honoring any
+export alias), and ``safe_element_identifier``. Use ``ext`` for datatype
+comparisons and ``file_ext`` when constructing a filename. For example, a
+compressed VCF dataset has ``ext`` equal to ``vcf_bgzip`` but ``file_ext``
+equal to ``vcf.gz``.
 
 ``safe_element_identifier`` is a deterministic, non-empty, portable filename
 component. It keeps ASCII letters, numbers, ``-``, ``_``, and ``.``; replaces
 other characters with ``_``; removes leading ``.`` and ``-`` characters; and
 protects Windows reserved names. For dataset inputs, it also reserves enough
-of the usual 255-character component limit for ``.file_ext``. Collection
-wrappers without an element name return ``None`` for
-``safe_element_identifier``. Shell quoting is still required, as in this
-example:
+of the usual 255-character component limit for ``.file_ext``, so use the two
+together when constructing a filename. Collection wrappers without an element
+name return ``None`` for ``safe_element_identifier``. Shell quoting is still
+required, as in this example:
 
 ```bash
 ln -s '$interval_file' '${interval_file.safe_element_identifier}.${interval_file.file_ext}'
