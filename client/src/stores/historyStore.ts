@@ -369,21 +369,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function loadHistories(paginate = true, queryString?: string) {
         if (!historiesLoading.value) {
             setHistoriesLoading(true);
-            let limit: number | null = null;
-            if (!queryString || queryString == "") {
-                if (paginate) {
-                    await loadTotalHistoryCount();
-                    if (historiesOffset.value >= totalHistoryCount.value) {
-                        setHistoriesLoading(false);
-                        return;
-                    }
-                    limit = PAGINATION_LIMIT;
-                } else {
-                    historiesOffset.value = 0;
-                }
-            }
-            const offset = queryString ? 0 : historiesOffset.value;
             try {
+                let limit: number | null = null;
+                if (!queryString || queryString == "") {
+                    if (paginate) {
+                        await loadTotalHistoryCount();
+                        if (historiesOffset.value >= totalHistoryCount.value) {
+                            return;
+                        }
+                        limit = PAGINATION_LIMIT;
+                    } else {
+                        historiesOffset.value = 0;
+                    }
+                }
+                const offset = queryString ? 0 : historiesOffset.value;
                 const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
                 setHistories(histories);
                 if (paginate && !queryString && historiesOffset.value == offset) {
