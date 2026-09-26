@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faArrowLeft, faExchangeAlt, faEye, faSpinner, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { PageRevisionDetails } from "@/api/pages";
 
 import { computeLineDiff, diffStats } from "./sectionDiffUtils";
 
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 
 type ViewMode = "preview" | "changes_current" | "changes_previous";
@@ -56,56 +57,83 @@ const activeHasNoChanges = computed(() =>
 
 <template>
     <div class="page-revision-view d-flex flex-column h-100" data-description="page revision view">
-        <div class="revision-view-toolbar d-flex align-items-center p-2 border-bottom">
-            <BButton variant="link" size="sm" data-description="revision back button" @click="emit('back')">
-                <FontAwesomeIcon :icon="faArrowLeft" />
-                Back to revisions
-            </BButton>
-            <span class="d-flex mx-2" data-description="revision view mode toggle">
-                <BButton
-                    :variant="viewMode === 'preview' ? 'primary' : 'outline-primary'"
-                    size="sm"
-                    data-description="revision preview button"
-                    @click="emit('update:viewMode', 'preview')">
-                    <FontAwesomeIcon :icon="faEye" />
-                    Preview
-                </BButton>
-                <BButton
-                    v-if="!isNewestRevision"
-                    :variant="viewMode === 'changes_current' ? 'primary' : 'outline-primary'"
-                    size="sm"
-                    class="ml-1"
-                    data-description="revision compare current button"
-                    @click="emit('update:viewMode', 'changes_current')">
-                    <FontAwesomeIcon :icon="faExchangeAlt" />
-                    Compare to Current
-                </BButton>
-                <BButton
-                    v-if="!isOldestRevision"
-                    :variant="viewMode === 'changes_previous' ? 'primary' : 'outline-primary'"
-                    size="sm"
-                    class="ml-1"
-                    data-description="revision compare previous button"
-                    @click="emit('update:viewMode', 'changes_previous')">
-                    <FontAwesomeIcon :icon="faExchangeAlt" />
-                    Compare to Previous
-                </BButton>
-            </span>
-            <span class="flex-grow-1"></span>
-            <BButton
-                variant="primary"
-                size="sm"
-                data-description="revision restore button"
-                :disabled="isReverting"
-                @click="emit('restore', revision.id)">
-                <FontAwesomeIcon :icon="isReverting ? faSpinner : faUndo" :spin="isReverting" />
-                Restore this version
-            </BButton>
+        <div class="revision-view-toolbar border-bottom">
+            <div class="d-flex">
+                <GButtonGroup data-description="revision view mode toggle">
+                    <GButton
+                        color="blue"
+                        outline
+                        :pressed="viewMode === 'preview'"
+                        data-description="revision preview button"
+                        size="small"
+                        @click="emit('update:viewMode', 'preview')">
+                        <FontAwesomeIcon :icon="faEye" />
+                        Preview
+                    </GButton>
+                    <GButton
+                        v-if="!isNewestRevision"
+                        color="blue"
+                        outline
+                        :pressed="viewMode === 'changes_current'"
+                        data-description="revision compare current button"
+                        size="small"
+                        @click="emit('update:viewMode', 'changes_current')">
+                        <FontAwesomeIcon :icon="faExchangeAlt" />
+                        Compare to Current
+                    </GButton>
+                    <GButton
+                        v-if="!isOldestRevision"
+                        color="blue"
+                        outline
+                        :pressed="viewMode === 'changes_previous'"
+                        data-description="revision compare previous button"
+                        size="small"
+                        @click="emit('update:viewMode', 'changes_previous')">
+                        <FontAwesomeIcon :icon="faExchangeAlt" />
+                        Compare to Previous
+                    </GButton>
+                </GButtonGroup>
+
+                <div v-if="!activeHasNoChanges" class="d-flex align-items-center px-2">
+                    <span class="diff-stats">
+                        <span class="text-success">+{{ activeStats.additions }}</span>
+                        <span class="mx-1">/</span>
+                        <span class="text-danger">-{{ activeStats.deletions }}</span>
+                        lines
+                    </span>
+                </div>
+            </div>
+
+            <div class="d-flex flex-gapx-1 align-items-center">
+                <GButton
+                    color="blue"
+                    transparent
+                    size="small"
+                    data-description="revision back button"
+                    @click="emit('back')">
+                    <FontAwesomeIcon :icon="faArrowLeft" />
+                    Exit Revision
+                </GButton>
+                <GButton
+                    color="blue"
+                    size="small"
+                    title="Restore this version"
+                    tooltip
+                    data-description="revision restore button"
+                    :disabled="isReverting"
+                    @click="emit('restore', revision.id)">
+                    <FontAwesomeIcon :icon="isReverting ? faSpinner : faUndo" :spin="isReverting" />
+                    Restore
+                </GButton>
+            </div>
         </div>
+
         <div class="revision-view-content overflow-auto flex-grow-1">
             <Markdown
                 v-if="viewMode === 'preview'"
+                class="px-3 pt-3"
                 :markdown-config="markdownConfig"
+                no-heading
                 :read-only="true"
                 download-endpoint="" />
             <div
@@ -120,14 +148,6 @@ const activeHasNoChanges = computed(() =>
                     {{ viewMode === "changes_current" ? "current content" : "previous revision" }}.
                 </div>
                 <template v-else>
-                    <div class="diff-header d-flex align-items-center p-2">
-                        <span class="diff-stats">
-                            <span class="text-success">+{{ activeStats.additions }}</span>
-                            <span class="mx-1">/</span>
-                            <span class="text-danger">-{{ activeStats.deletions }}</span>
-                            lines
-                        </span>
-                    </div>
                     <div class="diff-content">
                         <div v-for="(change, idx) in activeChanges" :key="idx" class="diff-block">
                             <pre
@@ -151,16 +171,16 @@ const activeHasNoChanges = computed(() =>
 
 <style scoped>
 .revision-view-toolbar {
-    background: var(--panel-header-bg);
+    background: var(--color-grey-100);
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+    justify-content: space-between;
 }
 
 .revision-diff-view {
     font-size: 0.85rem;
-}
-
-.diff-header {
-    background: var(--panel-header-bg, #f8f9fa);
-    border-bottom: 1px solid var(--border-color, #dee2e6);
 }
 
 .diff-content {

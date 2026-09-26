@@ -172,13 +172,6 @@
       optional: true
       default: false
       help: Is this a bucket you have permission to write to?
-    request_checksum_calculation:
-      label: Request Checksum Calculation
-      type: string
-      optional: true
-      default: None
-      help: |
-        By default, users are opted-in to calculating a request checksum when sending a request. However some non AWS S3-compatible endpoint do not support this option. If you get errors like `An error occurred (MissingContentLength) when calling the PutObject operation: You must provide the Content-Length HTTP header.` when you try uploading data. Set this to `when_required`.
   secrets:
     secret_key:
       label: Secret Access Key
@@ -196,4 +189,3 @@
     secret: '{{ secrets.secret_key }}'
     bucket: '{{ variables.bucket }}'
     writable: '{{ variables.writable }}'
-    request_checksum_calculation: '{{ variables.request_checksum_calculation }}'

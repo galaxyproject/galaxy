@@ -5,9 +5,6 @@ from collections.abc import (
     Iterator,
 )
 from contextlib import contextmanager
-from typing import (
-    Optional,
-)
 
 import pytest
 from sqlalchemy import (
@@ -253,7 +250,7 @@ def _generate_unique_database_name() -> str:
     return f"galaxytest_{uuid.uuid4().hex}"
 
 
-def _get_connection_url() -> Optional[str]:
+def _get_connection_url() -> str | None:
     return os.environ.get("GALAXY_TEST_DBURI")
 
 

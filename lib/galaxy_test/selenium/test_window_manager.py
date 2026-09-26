@@ -6,9 +6,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestWindowManager(SeleniumTestCase):
+class TestWindowManager(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -33,7 +34,7 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_open_dataset_in_window(self):
         """Display a dataset with WM active — a window manager window should appear."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.window_manager_enable()
@@ -57,7 +58,7 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_window_content_loads(self):
         """Content inside the window manager iframe should render the dataset view."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.window_manager_enable()
@@ -75,7 +76,7 @@ class TestWindowManager(SeleniumTestCase):
     def test_multiple_windows(self):
         """Opening multiple datasets creates multiple window manager windows with correct focus."""
         for _i in range(3):
-            self.perform_upload(self.get_filename("1.fasta"))
+            self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(3)
 
         self.window_manager_enable()
@@ -103,8 +104,8 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_close_window(self):
         """Closing a window manager window removes it from DOM."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.perform_upload(self.get_filename("1.bed"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.bed")).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.window_manager_enable()
@@ -135,7 +136,7 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_display_only_in_window(self):
         """Windowed dataset view should have displayOnly=true in iframe URL."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.window_manager_enable()
@@ -154,7 +155,7 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_normal_navigation_when_disabled(self):
         """With WM disabled, display button navigates to dataset view normally."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         # Ensure WM is OFF
@@ -174,8 +175,8 @@ class TestWindowManager(SeleniumTestCase):
     @managed_history
     def test_focus_switching(self):
         """Clicking an unfocused window brings it to front (focus class)."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.perform_upload(self.get_filename("1.bed"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.bed")).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.window_manager_enable()

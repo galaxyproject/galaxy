@@ -7,7 +7,7 @@
 
 import { storeToRefs } from "pinia";
 
-import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useDatasetCollectionStore } from "@/stores/datasetCollectionStore";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -56,7 +56,7 @@ async function _fetchHistoryAndChangedItems(app, { force }) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
-    const collectionElementsStore = useCollectionElementsStore();
+    const datasetCollectionStore = useDatasetCollectionStore();
 
     const checkForUpdate = new Date();
     // Always pass the `since` cursor so the server can short-circuit cheaply
@@ -97,7 +97,7 @@ async function _fetchHistoryAndChangedItems(app, { force }) {
     historyStore.setHistory(history);
     datasetStore.saveDatasets(payload);
     historyItemsStore.saveHistoryItems(historyId, payload);
-    collectionElementsStore.saveCollections(payload);
+    datasetCollectionStore.saveCollections(payload);
 
     if (sizeChanged) {
         const userStore = useUserStore();

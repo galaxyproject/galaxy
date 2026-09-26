@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDADetailed } from "@/api";
 import { prependPath } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     item: HDADetailed;
@@ -26,7 +28,7 @@ const metaDownloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/metadata_file?metadata_file=`);
 });
 const downloadUrl = computed(() => {
-    return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
+    return prependPath(`api/datasets/${props.item.id}/download?to_ext=${props.item.extension}`);
 });
 const downloadTitle = computed(() => {
     const size = props.item.file_size;
@@ -72,15 +74,15 @@ function onDownload(resource: string, extension = "") {
         </BDropdownItem>
     </BDropdown>
 
-    <BButton
+    <GButton
         v-else
         v-g-tooltip.hover
         class="download-btn px-1"
         :title="downloadTitle"
-        size="sm"
-        variant="link"
+        size="small"
+        transparent
         :href="downloadUrl"
         @click.prevent.stop="onDownload(downloadUrl)">
         <FontAwesomeIcon :icon="faSave" />
-    </BButton>
+    </GButton>
 </template>

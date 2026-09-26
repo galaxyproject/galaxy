@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<data_managers>
+
+    <data_manager tool_file="data_manager/data_manager_fetch_genome_all_fasta_dbkeys.xml" id="fetch_genome_all_fasta_dbkeys">
+        <data_table name="all_fasta">
+            <output>
+                <column name="value" />
+                <column name="dbkey" />
+                <column name="name" />
+                <column name="path" output_ref="out_file" >
+                    <move type="file">
+                        <source>${path}</source>
+                        <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">${dbkey}/seq/${path}</target>
+                    </move>
+                    <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/${dbkey}/seq/${path}</value_translation>
+                    <value_translation type="function">abspath</value_translation>
+                </column>
+            </output>
+        </data_table>
+        <data_table name="__dbkeys__">
+            <output>
+                <column name="value" />
+                <column name="name" />
+                <column name="len_path" output_ref="out_file" >
+                    <move type="file">
+                        <source>${len_path}</source>
+                        <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">${value}/len/${len_path}</target>
+                    </move>
+                    <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/${value}/len/${len_path}</value_translation>
+                    <value_translation type="function">abspath</value_translation>
+                </column>
+            </output>
+        </data_table>
+    </data_manager>
+
+</data_managers>

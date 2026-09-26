@@ -5,7 +5,6 @@ from typing import (
     Any,
     Generic,
     Literal,
-    Optional,
     Union,
 )
 
@@ -67,7 +66,7 @@ class PersonalNotificationCategory(str, Enum):
     # workflow_execution_completed = "workflow_execution_completed"
 
 
-NotificationCategory = Union[MandatoryNotificationCategory, PersonalNotificationCategory]
+NotificationCategory = MandatoryNotificationCategory | PersonalNotificationCategory
 
 
 class MessageNotificationContentBase(Model):
@@ -90,7 +89,7 @@ class ActionLink(Model):
 
 class BroadcastNotificationContent(MessageNotificationContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
-    action_links: Optional[list[ActionLink]] = Field(
+    action_links: list[ActionLink] | None = Field(
         None,
         title="Action links",
         description="The optional action links (buttons) to be displayed in the notification.",
@@ -146,19 +145,12 @@ NotificationContentField = Field(
 )
 
 AnyUserNotificationContent = Annotated[
-    Union[
-        MessageNotificationContent,
-        NewSharedItemNotificationContent,
-        StorageOperationNotificationContent,
-    ],
+    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent,
     NotificationContentField,
 ]
 
 AnyNotificationContent = Annotated[
-    Union[
-        AnyUserNotificationContent,
-        BroadcastNotificationContent,
-    ],
+    AnyUserNotificationContent | BroadcastNotificationContent,
     NotificationContentField,
 ]
 
@@ -222,7 +214,7 @@ class NotificationResponse(Model):
     create_time: datetime = NotificationCreateTimeField
     update_time: datetime = NotificationUpdateTimeField
     publication_time: datetime = NotificationPublicationTimeField
-    expiration_time: Optional[datetime] = NotificationExpirationTimeField
+    expiration_time: datetime | None = NotificationExpirationTimeField
     content: AnyNotificationContent
     model_config = ConfigDict(from_attributes=True)
 
@@ -232,7 +224,7 @@ class UserNotificationResponse(NotificationResponse):
 
     category: PersonalNotificationCategory = NotificationCategoryField
     content: AnyUserNotificationContent
-    seen_time: Optional[datetime] = Field(
+    seen_time: datetime | None = Field(
         None,
         title="Seen time",
         description="The time when the notification was seen by the user. If not set, the notification was not seen yet.",
@@ -284,12 +276,12 @@ class NotificationCreateData(Model):
     category: NotificationCategory = NotificationCategoryField
     variant: NotificationVariant = NotificationVariantField
     content: AnyNotificationContent
-    publication_time: Optional[OffsetNaiveDatetime] = Field(
+    publication_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[OffsetNaiveDatetime] = Field(
+    expiration_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
@@ -332,7 +324,7 @@ class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
 
 
 class NotificationCreateRequest(GenericNotificationCreate[int]):
-    galaxy_url: Optional[str] = Field(
+    galaxy_url: str | None = Field(
         None,
         title="Galaxy URL",
         description="The URL of the Galaxy instance. Used to generate links in the notification content.",
@@ -378,12 +370,12 @@ class NotificationUpdateRequest(Model):
 class UserNotificationUpdateRequest(NotificationUpdateRequest):
     """A notification update request specific to the user."""
 
-    seen: Optional[bool] = Field(
+    seen: bool | None = Field(
         None,
         title="Seen",
         description="Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.",
     )
-    deleted: Optional[bool] = Field(
+    deleted: bool | None = Field(
         None,
         title="Deleted",
         description="Whether the notification should be marked as deleted by the user. If not set, the notification will not be changed.",
@@ -393,27 +385,27 @@ class UserNotificationUpdateRequest(NotificationUpdateRequest):
 class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
     """A notification update request specific for broadcasting."""
 
-    source: Optional[str] = Field(
+    source: str | None = Field(
         None,
         title="Source",
         description="The source of the notification. Represents the agent that created the notification.",
     )
-    variant: Optional[NotificationVariant] = Field(
+    variant: NotificationVariant | None = Field(
         None,
         title="Variant",
         description="The variant of the notification. Used to express the importance of the notification.",
     )
-    publication_time: Optional[OffsetNaiveDatetime] = Field(
+    publication_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[OffsetNaiveDatetime] = Field(
+    expiration_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
-    content: Optional[BroadcastNotificationContent] = Field(
+    content: BroadcastNotificationContent | None = Field(
         None,
         title="Content",
         description="The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.",

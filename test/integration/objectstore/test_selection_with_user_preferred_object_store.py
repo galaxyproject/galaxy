@@ -4,7 +4,6 @@ import os
 import string
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -433,7 +432,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         history_id: str,
         workflow: str,
         test_data: str,
-        extra_invocation_kwds: Optional[dict[str, Any]] = None,
+        extra_invocation_kwds: dict[str, Any] | None = None,
     ):
         self.workflow_populator.run_workflow(
             workflow,
@@ -453,7 +452,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         assert len(elements) > 0, "Collection has no elements"
         return [self._storage_info(element["object"]) for element in elements]
 
-    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
+    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_1,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -472,7 +471,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         output_info = self._storage_info(objects[0])
         return intermediate_info, output_info
 
-    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
+    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_2,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -492,7 +491,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return intermediate_info, output_info
 
     def _run_simple_nested_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_NESTED_SIMPLE,
@@ -512,7 +511,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None, twice_nested=False
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None, twice_nested=False
     ):
         workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
@@ -532,7 +531,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             TEST_WORKFLOW,
@@ -562,7 +561,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
 
-    def _set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+    def _set_user_preferred_object_store_id(self, store_id: str | None) -> None:
         self.dataset_populator.set_user_preferred_object_store_id(store_id)
 
     def _reset_user_preferred_object_store_id(self):

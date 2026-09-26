@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 from unittest import SkipTest
 from uuid import uuid4
@@ -498,6 +496,13 @@ steps:
         show_json = show_response.json()
         assert show_json["annotation"] == "newannotation"
 
+    def test_update_as_other_user(self):
+        response_json = self._create_valid_page_with_slug("pagetoupdateasother")
+        page_id = response_json["id"]
+        with self._different_user():
+            update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle", error_code=403)
+            assert update_response["err_msg"] == "Page is not owned by the current user"
+
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
         show_response = self._get(f"pages/{response_json['id']}")
@@ -597,21 +602,19 @@ steps:
         response = self._put(f"pages/{page_id}/share_with_users", data, json=True)
         api_asserts.assert_status_code_is_ok(response)
 
-    def _index_raw(self, params: Optional[dict[str, Any]] = None) -> Response:
+    def _index_raw(self, params: dict[str, Any] | None = None) -> Response:
         index_response = self._get("pages", data=params or {})
         return index_response
 
-    def _index(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def _index(self, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
         return index_response.json()
 
-    def _index_ids(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def _index_ids(self, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         return [p["id"] for p in self._index(params)]
 
-    def _users_index_has_page_with_id(
-        self, has_id: Union[dict[str, Any], str], params: Optional[dict[str, Any]] = None
-    ):
+    def _users_index_has_page_with_id(self, has_id: dict[str, Any] | str, params: dict[str, Any] | None = None):
         pages = self._index(params)
         if isinstance(has_id, dict):
             target_id = has_id["id"]

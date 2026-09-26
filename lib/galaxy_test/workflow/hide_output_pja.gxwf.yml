@@ -1,0 +1,16 @@
+class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+outputs:
+  hidden:
+    outputSource: cat/out_file1
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1:
+        source: input_data
+    out:
+      out_file1:
+        hide: true

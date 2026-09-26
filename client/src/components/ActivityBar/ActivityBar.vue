@@ -3,11 +3,12 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useActiveContext } from "@/composables/useActiveContext";
 import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
@@ -27,6 +28,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HistoryGraphPanel from "@/components/Panels/HistoryGraphPanel.vue";
 import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
@@ -82,6 +84,15 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const chatStore = useChatStore();
+const { activeContext } = useActiveContext();
+
+// Notebook context must never use center mode — the chat panel floats alongside
+// the page editor, so force right-panel whenever we enter a notebook context.
+watch(activeContext, (ctx) => {
+    if (ctx?.contextType === "notebook" && chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
+});
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
@@ -239,15 +250,30 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
 }
 
 function onChatGxyClick() {
+    // On notebook routes, always use the right panel — never navigate to center.
+    if (activeContext.value?.contextType === "notebook") {
+        if (chatStore.isCenterMode) {
+            chatStore.setLocation("right");
+        }
+        chatStore.toggleChat();
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
+        return;
+    }
+
     if (chatStore.isCenterMode) {
         toggleSidebar("galaxyai");
-        if (route.path.startsWith("/galaxyai")) {
-            router.push("/");
-        } else {
+        if (!route.path.startsWith("/galaxyai")) {
             router.push("/galaxyai");
         }
     } else {
         chatStore.toggleChat();
+
+        // if we click the activity, in not center mode, and the sidebar is open, we close it as well
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
     }
 }
 
@@ -450,10 +476,11 @@ defineExpose({
             :collapsible="false"
             :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
+            <UploadPanel v-else-if="isActiveSideBar('upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <HistoryGraphPanel v-else-if="isActiveSideBar('historygraph')" />
             <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />

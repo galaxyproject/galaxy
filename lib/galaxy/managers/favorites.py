@@ -41,8 +41,7 @@ class FavoritesManager:
     ) -> dict[str, Any]:
         favorites = self.get(user)
         canonical_id = self._resolve_object_id(trans, user, object_type, raw_object_id)
-        favorite_list = favorites[object_type.value]
-        if canonical_id not in favorite_list:
+        if canonical_id not in (favorite_list := favorites[object_type.value]):
             favorite_list.append(canonical_id)
             favorites = self._save(trans, user, favorites, commit=commit)
         return favorites

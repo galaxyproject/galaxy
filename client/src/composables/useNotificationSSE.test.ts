@@ -18,6 +18,7 @@ import {
     _resetHistoryViewerSubscriptionsForTest,
     _resetSSESharedSourceForTest,
     addHistoryViewerSubscription,
+    reconnectSSE,
     removeHistoryViewerSubscription,
     useSSE,
 } from "./useNotificationSSE";
@@ -255,5 +256,137 @@ describe("useNotificationSSE managed reconnect", () => {
         reopened.onerror?.();
         vi.advanceTimersByTime(2000);
         expect(FakeEventSource.instances).toHaveLength(beforeReset + 2);
+    });
+});
+
+/**
+ * Forced-reconnect tests.
+ *
+ * Background tabs throttle/suspend the timers both the browser's native retry
+ * and the managed backoff depend on, so a drop while hidden can sit
+ * un-recovered. ``reconnectSSE`` (the "click to refresh" affordance) and the
+ * wake/online listeners must reopen immediately, ignoring the backoff
+ * schedule, and only when a connection is actually wanted/lost.
+ */
+describe("useNotificationSSE forced reconnect", () => {
+    let originalEventSource: typeof EventSource | undefined;
+    let scope: EffectScope;
+
+    beforeEach(() => {
+        FakeEventSource.reset();
+        originalEventSource = (globalThis as unknown as { EventSource?: typeof EventSource }).EventSource;
+        (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
+        vi.useFakeTimers();
+        _resetSSESharedSourceForTest();
+        scope = effectScope();
+    });
+
+    afterEach(() => {
+        scope.stop();
+        vi.useRealTimers();
+        _resetSSESharedSourceForTest();
+        if (originalEventSource) {
+            (globalThis as unknown as { EventSource: typeof EventSource }).EventSource = originalEventSource;
+        } else {
+            delete (globalThis as unknown as { EventSource?: unknown }).EventSource;
+        }
+    });
+
+    it("reconnectSSE reopens immediately without waiting for backoff", () => {
+        scope.run(() => {
+            const { connect } = useSSE(() => {});
+            connect();
+        });
+        expect(FakeEventSource.instances).toHaveLength(1);
+
+        const first = FakeEventSource.instances[0]!;
+        first.readyState = FakeEventSource.CLOSED;
+        first.onerror?.();
+        // A managed reopen is now armed, but reconnectSSE should not wait for it.
+        reconnectSSE();
+        expect(FakeEventSource.instances).toHaveLength(2);
+
+        // The armed backoff timer was cancelled, so advancing time does not
+        // spawn a third instance.
+        vi.advanceTimersByTime(60_000);
+        expect(FakeEventSource.instances).toHaveLength(2);
+    });
+
+    it("reconnectSSE resets the backoff so the next failure starts at the base envelope", () => {
+        scope.run(() => {
+            const { connect } = useSSE(() => {});
+            connect();
+        });
+
+        // Stack failures to drive the unjittered delay to the 30s cap.
+        const STACKED = 5;
+        for (let i = 0; i < STACKED; i++) {
+            const current = FakeEventSource.instances.at(-1)!;
+            current.readyState = FakeEventSource.CLOSED;
+            current.onerror?.();
+            vi.advanceTimersByTime(45_001);
+        }
+        const beforeReconnect = FakeEventSource.instances.length;
+
+        // Forced reconnect opens now and zeroes the counter.
+        reconnectSSE();
+        expect(FakeEventSource.instances).toHaveLength(beforeReconnect + 1);
+
+        // Next failure must fire on the base [500, 1500) envelope — a 2s
+        // advance proves the counter reset (the capped path would need ~15s).
+        const reopened = FakeEventSource.instances.at(-1)!;
+        reopened.readyState = FakeEventSource.CLOSED;
+        reopened.onerror?.();
+        vi.advanceTimersByTime(2000);
+        expect(FakeEventSource.instances).toHaveLength(beforeReconnect + 2);
+    });
+
+    it("reconnectSSE is a no-op when there are no subscribers", () => {
+        // No connect() — the subscriber map is empty.
+        reconnectSSE();
+        expect(FakeEventSource.instances).toHaveLength(0);
+    });
+
+    it("reconnects when the tab becomes visible again while disconnected", () => {
+        scope.run(() => {
+            const { connect } = useSSE(() => {});
+            connect();
+        });
+        const first = FakeEventSource.instances[0]!;
+        first.onopen?.();
+        // Connection drops while backgrounded.
+        first.readyState = FakeEventSource.CLOSED;
+        first.onerror?.();
+
+        document.dispatchEvent(new Event("visibilitychange"));
+        // jsdom reports ``document.visibilityState === "visible"`` by default,
+        // so the wake handler should fire an immediate reopen.
+        expect(FakeEventSource.instances).toHaveLength(2);
+    });
+
+    it("does not reconnect on visibilitychange while the connection is healthy", () => {
+        scope.run(() => {
+            const { connect } = useSSE(() => {});
+            connect();
+        });
+        const first = FakeEventSource.instances[0]!;
+        first.onopen?.();
+
+        document.dispatchEvent(new Event("visibilitychange"));
+        expect(FakeEventSource.instances).toHaveLength(1);
+    });
+
+    it("reconnects when network connectivity returns while disconnected", () => {
+        scope.run(() => {
+            const { connect } = useSSE(() => {});
+            connect();
+        });
+        const first = FakeEventSource.instances[0]!;
+        first.onopen?.();
+        first.readyState = FakeEventSource.CLOSED;
+        first.onerror?.();
+
+        window.dispatchEvent(new Event("online"));
+        expect(FakeEventSource.instances).toHaveLength(2);
     });
 });

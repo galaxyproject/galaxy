@@ -1,5 +1,3 @@
-from typing import Optional
-
 from yaml import safe_load
 
 from galaxy.exceptions import (
@@ -29,8 +27,8 @@ SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my object store"
 
 
 class Config:
-    object_store_templates: Optional[list[RawTemplateConfig]] = None
-    object_store_templates_config_file: Optional[str] = None
+    object_store_templates: list[RawTemplateConfig] | None = None
+    object_store_templates_config_file: str | None = None
 
     def __init__(self, templates: list[RawTemplateConfig]):
         self.object_store_templates = templates

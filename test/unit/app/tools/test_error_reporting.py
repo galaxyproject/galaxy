@@ -20,14 +20,13 @@ TEST_SERVER_ERROR_EMAIL_TO = "admin@email.to"  # setup in mock config
 
 
 class TestErrorReporter(TestCase, UsesApp):
-
     def setUp(self):
         self.setup_app()
         self.app.config.email_from = TEST_SERVER_EMAIL_FROM
         self.tmp_path = Path(tempfile.mkdtemp())
         self.email_path = self.tmp_path / "email.json"
         smtp_server = f"mock_emails_to_path://{self.email_path}"
-        self.app.config.smtp_server = smtp_server  # type: ignore[attr-defined]
+        self.app.config.smtp_server = smtp_server
         self.app.workflow_manager = mock.MagicMock()
 
     def tearDown(self):

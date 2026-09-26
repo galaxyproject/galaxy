@@ -5,26 +5,31 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from contextlib import AbstractContextManager
 from typing import (
     Any,
     Generic,
     Literal,
-    Optional,
     Protocol,
     TypedDict,
     TypeVar,
-    Union,
 )
 
 from galaxy.navigation.components import Target
 from .axe_results import AxeResults
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 # Type for element locators - can be either a Target or a Selenium-style (locator_type, value) tuple
 ElementLocatorTuple = tuple[str, str]  # e.g., ("css selector", "#id") or ("id", "test")
-HasElementLocator = Union[Target, ElementLocatorTuple]
+HasElementLocator = Target | ElementLocatorTuple
+
+# Pixels of clearance hover_away() puts between the pointer and the element it left.
+HOVER_AWAY_OFFSET = 100
 
 
 class Cookie(TypedDict, total=False):
@@ -42,7 +47,7 @@ class Cookie(TypedDict, total=False):
 
 BackendType = Literal["selenium", "playwright"]
 WaitTypeT = TypeVar("WaitTypeT", contravariant=True)
-TimeoutCallback = Callable[[Optional[WaitTypeT]], float]
+TimeoutCallback = Callable[[WaitTypeT | None], float]
 
 
 def fixed_timeout_handler(timeout: float) -> TimeoutCallback:
@@ -89,7 +94,7 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
-    def wait(self, timeout=..., wait_type: Optional[WaitTypeT] = None, **kwds):
+    def wait(self, timeout=..., wait_type: WaitTypeT | None = None, **kwds):
         """Create a wait object with the specified timeout."""
         ...
 
@@ -129,27 +134,27 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Element finding - by locator type
     @abstractmethod
-    def find_element_by_id(self, id: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_id(self, id: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by ID attribute."""
         ...
 
     @abstractmethod
-    def find_element_by_selector(self, selector: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_selector(self, selector: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by CSS selector."""
         ...
 
     @abstractmethod
-    def find_element_by_xpath(self, xpath: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_xpath(self, xpath: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by XPath expression."""
         ...
 
     @abstractmethod
-    def find_element_by_link_text(self, text: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_link_text(self, text: str, element: Any | None = None) -> WebElementProtocol:
         """Find link element by visible text."""
         ...
 
     @abstractmethod
-    def find_elements_by_selector(self, selector: str, element: Optional[Any] = None) -> list[WebElementProtocol]:
+    def find_elements_by_selector(self, selector: str, element: Any | None = None) -> list[WebElementProtocol]:
         """Find all elements matching CSS selector."""
         ...
 
@@ -344,6 +349,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        ...
+
+    @abstractmethod
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         ...
@@ -370,17 +380,38 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Keyboard interactions
     @abstractmethod
-    def send_enter(self, element: Optional[WebElementProtocol] = None):
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        ...
+
+    @abstractmethod
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press named keys or single printable characters in order.
+
+        Focus element once if supplied, then send to the current focus. Hold
+        distinct modifier Keys across the sequence and release them afterward.
+        Invalid keys or modifiers raise ValueError before browser interaction.
+        A valid empty sequence does nothing.
+        """
+        ...
+
+    @abstractmethod
+    def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
         ...
 
     @abstractmethod
-    def send_escape(self, element: Optional[WebElementProtocol] = None):
+    def send_escape(self, element: WebElementProtocol | None = None):
         """Send ESCAPE key to element or active element."""
         ...
 
     @abstractmethod
-    def send_backspace(self, element: Optional[WebElementProtocol] = None):
+    def send_backspace(self, element: WebElementProtocol | None = None):
         """Send BACKSPACE key to element or active element."""
         ...
 
@@ -427,9 +458,20 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """
         ...
 
+    @abstractmethod
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        ...
+
     # Frame switching
     @abstractmethod
-    def switch_to_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+    def switch_to_frame(self, frame_reference: str | int | Any = "frame"):
         """Switch to iframe by name, id, index, or element."""
         ...
 
@@ -451,7 +493,13 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     @abstractmethod
     def set_element_value(self, element: WebElementProtocol, value: str) -> None:
-        """Set input element value using JavaScript."""
+        """Set input element value using JavaScript.
+
+        The value is passed via arguments (not string-interpolated) so that
+        values containing quotes or special characters are handled correctly.
+        Both ``input`` and ``change`` events are dispatched so reactive
+        frameworks (e.g. Vue) detect the change.
+        """
         ...
 
     @abstractmethod
@@ -461,7 +509,7 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Storage and cookies
     @abstractmethod
-    def set_local_storage(self, key: str, value: Union[str, float]) -> None:
+    def set_local_storage(self, key: str, value: str | float) -> None:
         """Set localStorage item."""
         ...
 
@@ -490,7 +538,7 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Accessibility
     @abstractmethod
-    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+    def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         """Run axe-core accessibility tests."""
         ...
 

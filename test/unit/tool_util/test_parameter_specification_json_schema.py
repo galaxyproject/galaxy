@@ -8,27 +8,23 @@ Many Galaxy validators now emit native JSON Schema keywords (pattern, minimum/ma
 minLength/maxLength, exclusiveMinimum/exclusiveMaximum, and negated length via not:{}).
 Remaining AfterValidator-only constraints (expression, empty_field) that cannot be represented
 in JSON Schema are annotated with _json_schema_skip in parameter_specification.yml so the test
-knows to tolerate those *_invalid entries passing validation.
+knows to tolerate those *_invalid entries passing validation. A skip value is either a string
+(tolerate every entry in that combo) or a mapping of index -> reason (tolerate only those
+entries, keeping JSON-Schema-catchable cases in the same combo under test).
 """
 
 import sys
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
 )
 
 import jsonschema
+import jsonschema.exceptions
 import pytest
 import yaml
+from pydantic_extra_types.color import Color as _Color
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="jsonschema<4.24 on Python 3.8 mishandles additionalProperties in anyOf"
-)
-
+from galaxy.tool_util.parameters.convert import OPENAPI_REF_TEMPLATE
 from galaxy.tool_util.parameters.json import to_json_schema
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
@@ -40,6 +36,10 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterBundleModel,
 )
 from galaxy.util.resources import resource_string
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="jsonschema<4.24 on Python 3.8 mishandles additionalProperties in anyOf"
+)
 
 REPRESENTATION_KEYS = [
     "relaxed_request",
@@ -56,7 +56,7 @@ REPRESENTATION_KEYS = [
     "workflow_step_linked",
 ]
 
-STATE_REPRESENTATION_FOR_KEY: Dict[str, StateRepresentationT] = {k: k for k in REPRESENTATION_KEYS}  # type: ignore[misc]
+STATE_REPRESENTATION_FOR_KEY: dict[str, StateRepresentationT] = {k: k for k in REPRESENTATION_KEYS}  # type: ignore[misc]
 
 
 def specification_object():
@@ -67,13 +67,26 @@ def specification_object():
     return yaml.safe_load(yaml_str)
 
 
-def _json_schema_for(bundle: ToolParameterBundleModel, state_representation: StateRepresentationT) -> Dict[str, Any]:
+def _json_schema_for(bundle: ToolParameterBundleModel, state_representation: StateRepresentationT) -> dict[str, Any]:
     model = create_field_model(bundle.parameters, name="TestModel", state_representation=state_representation)
     return to_json_schema(model)
 
 
-def _json_schema_validates(schema: Dict[str, Any], state_dict: RawStateDict) -> bool:
-    validator = jsonschema.Draft202012Validator(schema)
+_FORMAT_CHECKER = jsonschema.FormatChecker()
+
+
+@_FORMAT_CHECKER.checks("color", raises=jsonschema.exceptions.FormatError)
+def _check_color_format(value: object) -> bool:
+    if isinstance(value, str):
+        try:
+            _Color(value)
+        except Exception as e:
+            raise jsonschema.exceptions.FormatError(f"{value!r} is not a valid color", cause=e)
+    return True
+
+
+def _json_schema_validates(schema: dict[str, Any], state_dict: RawStateDict) -> bool:
+    validator = jsonschema.Draft202012Validator(schema, format_checker=_FORMAT_CHECKER)
     errors = list(validator.iter_errors(state_dict))
     return len(errors) == 0
 
@@ -81,7 +94,7 @@ def _json_schema_validates(schema: Dict[str, Any], state_dict: RawStateDict) -> 
 def _test_file_json_schema(
     file: str,
     specification=None,
-    parameter_bundle: Optional[ToolParameterBundleModel] = None,
+    parameter_bundle: ToolParameterBundleModel | None = None,
 ):
     spec = specification or specification_object()
     combos = spec[file]
@@ -89,12 +102,21 @@ def _test_file_json_schema(
         parameter_bundle = parameter_bundle_for_file(file)
     assert parameter_bundle
 
-    json_schema_skip: Dict[str, str] = combos.get("_json_schema_skip", {}) or {}
-    json_schema_valid_skip: Dict[str, str] = combos.get("_json_schema_valid_skip", {}) or {}
-    skipped_invalid_keys: Set[str] = set(json_schema_skip.keys())
-    skipped_valid_keys: Set[str] = set(json_schema_valid_skip.keys())
+    # A skip value may be a string (skip every entry in the combo, for combos where all cases
+    # exercise the same AfterValidator-only constraint) or a mapping of index -> reason (skip only
+    # those entries, so JSON-Schema-catchable cases in the same combo remain covered).
+    json_schema_skip: dict[str, Any] = combos.get("_json_schema_skip", {}) or {}
+    json_schema_valid_skip: dict[str, Any] = combos.get("_json_schema_valid_skip", {}) or {}
 
-    failures: List[str] = []
+    def _is_skipped(skip_map: dict[str, Any], key: str, index: int) -> bool:
+        entry = skip_map.get(key)
+        if entry is None:
+            return False
+        if isinstance(entry, dict):
+            return index in entry
+        return True
+
+    failures: list[str] = []
 
     for combo_key, test_cases in combos.items():
         if combo_key in ("_json_schema_skip", "_json_schema_valid_skip"):
@@ -120,9 +142,9 @@ def _test_file_json_schema(
         for i, test_case in enumerate(test_cases):
             passes = _json_schema_validates(schema, test_case)
 
-            if is_valid and not passes and combo_key not in skipped_valid_keys:
+            if is_valid and not passes and not _is_skipped(json_schema_valid_skip, combo_key, i):
                 failures.append(f"{file}/{combo_key}[{i}]: valid entry REJECTED by JSON Schema: {test_case}")
-            elif not is_valid and passes and combo_key not in skipped_invalid_keys:
+            elif not is_valid and passes and not _is_skipped(json_schema_skip, combo_key, i):
                 failures.append(
                     f"{file}/{combo_key}[{i}]: invalid entry ACCEPTED by JSON Schema (not skipped): {test_case}"
                 )
@@ -141,7 +163,7 @@ def test_specification_json_schema():
 
 def _conditional_type_def(
     file: str, state_representation: StateRepresentationT = "request"
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     bundle = parameter_bundle_for_file(file)
     schema = _json_schema_for(bundle, state_representation)
     defs = schema.get("$defs", {})
@@ -183,3 +205,60 @@ def test_job_internal_no_discriminator():
     defs = schema.get("$defs", {})
     for def_schema in defs.values():
         assert "discriminator" not in def_schema
+
+
+def _resolve_json_pointer(document: dict[str, Any], pointer: str) -> Any:
+    assert pointer.startswith("#/"), f"Expected a local JSON pointer, got {pointer!r}"
+    node: Any = document
+    for token in pointer[2:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        node = node[token]
+    return node
+
+
+def _collect_pointers(node: Any, path: str = "#") -> list[tuple[str, str]]:
+    """Return (location, pointer) for every $ref and every discriminator mapping value."""
+    pointers: list[tuple[str, str]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            location = f"{path}/{key}"
+            if key == "$ref" and isinstance(value, str):
+                pointers.append((location, value))
+            elif key == "discriminator" and isinstance(value, dict):
+                for tag, target in value.get("mapping", {}).items():
+                    pointers.append((f"{location}/mapping/{tag}", target))
+            else:
+                pointers.extend(_collect_pointers(value, location))
+    elif isinstance(node, list):
+        for index, item in enumerate(node):
+            pointers.extend(_collect_pointers(item, f"{path}/{index}"))
+    return pointers
+
+
+def _assert_pointers_resolve(document: dict[str, Any]) -> None:
+    pointers = _collect_pointers(document)
+    mapping_pointers = [pointer for location, pointer in pointers if "/discriminator/mapping/" in location]
+    assert mapping_pointers, "expected the collection element union to carry a discriminator mapping"
+    dangling = []
+    for location, pointer in pointers:
+        try:
+            _resolve_json_pointer(document, pointer)
+        except (KeyError, IndexError, TypeError, AssertionError):
+            dangling.append(f"{location} -> {pointer}")
+    assert not dangling, "pointers that do not resolve within the document:\n" + "\n".join(dangling)
+
+
+@pytest.mark.parametrize("file", ["gx_data_multiple", "gx_data_collection"])
+def test_request_schema_pointers_resolve(file: str):
+    bundle = parameter_bundle_for_file(file)
+    schema = _json_schema_for(bundle, "request")
+    _assert_pointers_resolve(schema)
+
+
+@pytest.mark.parametrize("file", ["gx_data_multiple", "gx_data_collection"])
+def test_openapi_schema_pointers_resolve(file: str):
+    bundle = parameter_bundle_for_file(file)
+    model = create_field_model(bundle.parameters, name="TestModel", state_representation="request")
+    schema = model.model_json_schema(ref_template=OPENAPI_REF_TEMPLATE)
+    document = {"components": {"schemas": schema.pop("$defs")}, "paths": {"/": schema}}
+    _assert_pointers_resolve(document)

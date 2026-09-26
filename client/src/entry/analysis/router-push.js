@@ -20,7 +20,7 @@ export function patchRouterPush(VueRouter) {
                 location = addSearchParams(location, { __vkey__: Date.now() });
             } else if (typeof location === "object") {
                 // convert to string version addSearchParams can handle
-                let url = this.resolve(location).href;
+                let url = this.resolve(location).route.fullPath;
                 url = addSearchParams(url, { __vkey__: Date.now() });
                 // convert back to object version
                 location = this.resolve(url).route;

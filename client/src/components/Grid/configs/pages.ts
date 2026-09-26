@@ -11,11 +11,12 @@ import {
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { loadPages, type PageSortBy } from "@/api/pages";
 import { getGalaxyInstance } from "@/app";
 import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
@@ -24,34 +25,23 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type PageEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const typeFilteredSearch = search ? `type:standalone ${search}` : "type:standalone";
-    const { response, data, error } = await GalaxyApi().GET("/api/pages", {
-        params: {
-            query: {
-                limit,
-                offset,
-                search: typeFilteredSearch,
-                sort_by: sort_by as SortKeyLiteral,
-                sort_desc,
-                show_published: false,
-                show_own: true,
-                show_shared: false,
-            },
-        },
+    const { data, totalMatches } = await loadPages({
+        limit,
+        offset,
+        search,
+        sortBy: sort_by as PageSortBy,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showShared: false,
+        showPublished: false,
     });
 
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
@@ -193,6 +183,11 @@ const fields: FieldArray = [
         title: "Status",
         type: "sharing",
     },
+    {
+        key: "history_id",
+        title: "History",
+        type: "history",
+    },
 ];
 
 /**
@@ -222,6 +217,13 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: equals("deleted", "deleted", toBool),
         menuItem: true,
     },
+    standalone: {
+        placeholder: "Only standalone",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("standalone", "type", toBool),
+        menuItem: true,
+    },
 };
 
 /**
@@ -231,7 +233,7 @@ const gridConfig: GridConfig = {
     id: "pages-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",

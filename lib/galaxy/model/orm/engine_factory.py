@@ -7,7 +7,7 @@ import time
 from multiprocessing.util import register_after_fork
 from typing import (
     Any,
-    Union,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -17,6 +17,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
+
+if TYPE_CHECKING:
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
 log = logging.getLogger(__name__)
 
@@ -52,9 +55,9 @@ def pretty_stack():
 
 def build_engine(
     url: str,
-    engine_options: Union[dict[str, Any], None] = None,
+    engine_options: dict[str, Any] | None = None,
     database_query_profiling_proxy=False,
-    trace_logger=None,
+    trace_logger: "FluentTraceLogger | None" = None,
     slow_query_log_threshold=0,
     thread_local_log=None,
     log_query_counts=False,

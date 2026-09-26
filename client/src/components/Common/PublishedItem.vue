@@ -10,6 +10,7 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Props {
     item?: PublishedItem;
+    overridePath?: string;
 }
 
 const props = defineProps<Props>();
@@ -37,7 +38,7 @@ const owner = computed(() => {
 });
 
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
-const pluralPath = computed(() => plural.value.toLowerCase());
+const pluralPath = computed(() => props.overridePath ?? plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 </script>

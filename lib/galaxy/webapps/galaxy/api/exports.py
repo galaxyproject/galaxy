@@ -6,8 +6,6 @@ import json
 import logging
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
 from uuid import UUID
 
@@ -48,7 +46,7 @@ class FastAPIExports:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         limit: Annotated[
-            Optional[int],
+            int | None,
             Query(
                 title="Limit",
                 description="Maximum number of exports to return.",
@@ -95,7 +93,7 @@ class FastAPIExports:
 
         return ExportTaskListResponse(root=results)
 
-    def _parse_export_metadata(self, metadata: Union[dict, str]) -> Optional[ExportObjectMetadata]:
+    def _parse_export_metadata(self, metadata: dict | str) -> ExportObjectMetadata | None:
         """Parse export metadata dict without double-encoding ID fields.
 
         We use model_construct() to skip Pydantic validation because the ID fields
@@ -106,13 +104,12 @@ class FastAPIExports:
             metadata = json.loads(metadata)
         assert isinstance(metadata, dict)
         request_data_raw = metadata.get("request_data", {})
-        result_data_raw = metadata.get("result_data")
 
         payload_raw = request_data_raw.get("payload") or {}
         # Pick the right payload flavour by presence of target_uri
         # (WriteStoreToPayload has it, ShortTermStoreExportPayload does not).
         if "target_uri" in payload_raw:
-            payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload] = WriteStoreToPayload.model_construct(
+            payload: WriteStoreToPayload | ShortTermStoreExportPayload = WriteStoreToPayload.model_construct(
                 **payload_raw
             )
         else:
@@ -131,7 +128,7 @@ class FastAPIExports:
         )
 
         result_data = None
-        if result_data_raw:
+        if result_data_raw := metadata.get("result_data"):
             result_data = ExportObjectResultMetadata.model_construct(
                 success=result_data_raw.get("success"),
                 uri=result_data_raw.get("uri"),

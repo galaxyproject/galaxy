@@ -1,0 +1,15 @@
+- doc: |
+    A HideDatasetAction post job action clears the visible flag on the step
+    output even when that output is a declared workflow output.
+  job:
+    input_data:
+      class: File
+      path: 1.bed
+      filetype: bed
+  outputs:
+    hidden:
+      class: File
+      visible: false
+      asserts:
+        - that: has_text
+          text: "chr1"

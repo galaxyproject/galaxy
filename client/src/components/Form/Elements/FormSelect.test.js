@@ -71,6 +71,20 @@ describe("FormSelect", () => {
         expect(unselectDefault.text()).toBe("Nothing selected");
     });
 
+    it("required multi-select emits null when fully cleared", async () => {
+        const wrapper = createTarget({
+            optional: false,
+            multiple: true,
+            options: defaultOptions,
+            value: ["value_1"],
+        });
+        const selected = wrapper.findAll(".multiselect__option--selected");
+        expect(selected.length).toBe(1);
+        selected.at(0).trigger("click");
+        const emitted = wrapper.emitted().input[0][0];
+        expect(emitted).toBe(null);
+    });
+
     it("multiple values", async () => {
         const wrapper = createTarget({
             optional: true,

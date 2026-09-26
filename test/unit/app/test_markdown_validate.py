@@ -1,5 +1,3 @@
-from typing import Optional
-
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 
 
@@ -7,7 +5,7 @@ def assert_markdown_valid(markdown):
     validate_galaxy_markdown(markdown)
 
 
-def assert_markdown_invalid(markdown, at_line: Optional[int] = None):
+def assert_markdown_invalid(markdown, at_line: int | None = None):
     failed = False
     try:
         validate_galaxy_markdown(markdown)

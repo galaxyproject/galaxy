@@ -9,6 +9,7 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { MY_PANEL_VIEW_ID } from "./panelViews";
+import { countUniqueToolsInList, countUniqueToolsInPanel } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
@@ -28,13 +29,30 @@ const emit = defineEmits<{
     (e: "onInsertTool", toolId: string, toolName: string): void;
 }>();
 
-const { currentPanelView, currentToolSections, isPanelPopulated, toolSections, toolsById } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, defaultPanelView, isPanelPopulated, toolSections, toolsById } =
+    storeToRefs(toolStore);
 const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 
 const errorMessage = ref("");
 const panelsFetched = ref(false);
 const showFavorites = ref(false);
-const toolsCount = computed(() => Object.keys(toolsById.value || {}).length);
+const defaultToolSections = computed(() => {
+    return (
+        toolSections.value.default ||
+        (defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+            ? toolSections.value[defaultPanelView.value]
+            : null)
+    );
+});
+const headerToolSections = computed(() => {
+    if (isMyPanel.value) {
+        return defaultToolSections.value || currentToolSections.value;
+    }
+    return currentToolSections.value;
+});
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(headerToolSections.value, countUniqueToolsInList(toolsById.value)),
+);
 
 function formatToolsCount(count: number) {
     if (count < 1000) {

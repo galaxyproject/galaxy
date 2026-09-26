@@ -1,9 +1,5 @@
 import json
 from datetime import timedelta
-from typing import (
-    Optional,
-    Union,
-)
 
 from pydantic import BaseModel
 from sqlalchemy import (
@@ -58,7 +54,7 @@ class StoreExportTracker:
         return export_association
 
     def get_object_exports(
-        self, object_id: int, object_type: ExportObjectType, limit: Optional[int] = None, offset: Optional[int] = None
+        self, object_id: int, object_type: ExportObjectType, limit: int | None = None, offset: int | None = None
     ) -> list[StoreExportAssociation]:
         stmt = (
             select(
@@ -82,7 +78,7 @@ class StoreExportTracker:
     def get_user_exports(
         self,
         user_id: int,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         days: int = 30,
     ) -> list[StoreExportAssociation]:
         """
@@ -120,7 +116,7 @@ class StoreExportTracker:
             if export.export_metadata:
                 # Access dict directly - JSONType handles deserialization
                 # however old records might be JSON strings.
-                metadata_value: Union[str, dict] = export.export_metadata
+                metadata_value: str | dict = export.export_metadata
                 if isinstance(metadata_value, str):
                     export_metadata = json.loads(metadata_value)
                 else:

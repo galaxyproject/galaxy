@@ -1,5 +1,3 @@
-from typing import Optional
-
 from galaxy.model.db.user import get_user_by_email
 from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base.api_util import random_name
@@ -431,8 +429,9 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         user_credentials_id = credentials_list[0]["id"]
 
         # Save the tool reference before removing it
-        tool = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
-        assert tool is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+        tool_like = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
+        assert tool_like is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+        tool = self._app.toolbox.materialize_tool(tool_like, reason="detail")
 
         try:
             # Remove the tool to simulate it being unavailable
@@ -524,7 +523,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         return list_user_credentials
 
     def _check_vault_entry_exists(
-        self, user_email: str, vault_ref: str, expected_value: Optional[str] = None, should_exist=True
+        self, user_email: str, vault_ref: str, expected_value: str | None = None, should_exist=True
     ):
         app = self._app
         user = get_user_by_email(app.model.session, user_email)

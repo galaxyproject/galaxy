@@ -19,7 +19,7 @@
                                     @keyup.esc.native="filter = ''" />
 
                                 <BInputGroupAppend>
-                                    <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </BInputGroupAppend>
                             </BInputGroup>
                         </BFormGroup>
@@ -82,7 +82,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BBreadcrumb,
-    BButton,
     BCard,
     BCol,
     BContainer,
@@ -104,7 +103,6 @@ export default {
     components: {
         Alert,
         BBreadcrumb,
-        BButton,
         BCard,
         BCol,
         BContainer,

@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
@@ -25,31 +21,31 @@ log = logging.getLogger(__name__)
 
 
 class GoogleCloudStorageFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    bucket_name: Union[str, TemplateExpansion]
-    root_path: Union[str, TemplateExpansion, None] = None
-    project: Union[str, TemplateExpansion, None] = None
-    anonymous: Union[bool, TemplateExpansion, None] = True
-    service_account_json: Union[str, TemplateExpansion, None] = None
+    bucket_name: str | TemplateExpansion
+    root_path: str | TemplateExpansion | None = None
+    project: str | TemplateExpansion | None = None
+    anonymous: bool | TemplateExpansion | None = True
+    service_account_json: str | TemplateExpansion | None = None
     # OAuth credentials
-    client_id: Union[str, TemplateExpansion, None] = None
-    client_secret: Union[str, TemplateExpansion, None] = None
-    token: Union[str, TemplateExpansion, None] = None
-    refresh_token: Union[str, TemplateExpansion, None] = None
-    token_uri: Union[str, TemplateExpansion, None] = "https://oauth2.googleapis.com/token"
+    client_id: str | TemplateExpansion | None = None
+    client_secret: str | TemplateExpansion | None = None
+    token: str | TemplateExpansion | None = None
+    refresh_token: str | TemplateExpansion | None = None
+    token_uri: str | TemplateExpansion | None = "https://oauth2.googleapis.com/token"
 
 
 class GoogleCloudStorageFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     bucket_name: str
-    root_path: Optional[str] = None
-    project: Optional[str] = None
-    anonymous: Optional[bool] = True
-    service_account_json: Optional[str] = None
+    root_path: str | None = None
+    project: str | None = None
+    anonymous: bool | None = True
+    service_account_json: str | None = None
     # OAuth credentials
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    token_uri: Optional[str] = "https://oauth2.googleapis.com/token"
+    client_id: str | None = None
+    client_secret: str | None = None
+    token: str | None = None
+    refresh_token: str | None = None
+    token_uri: str | None = "https://oauth2.googleapis.com/token"
 
 
 class GoogleCloudStorageFilesSource(
@@ -71,7 +67,7 @@ class GoogleCloudStorageFilesSource(
             raise self.required_package_exception
 
         config = context.config
-        token: Union[str, dict[str, Optional[str]], None]
+        token: str | dict[str, str | None] | None
 
         if config.anonymous:
             # Use token='anon' for anonymous access to public buckets

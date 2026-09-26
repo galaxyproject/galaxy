@@ -490,7 +490,7 @@ async function download() {
     </GenericWizard>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 @import "@/components/Collections/wizard/workbook-dropzones.scss";
 
 .dropzone {

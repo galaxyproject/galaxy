@@ -3,15 +3,16 @@ import os
 import re
 import sys
 from json import loads
-from typing import (
-    Optional,
-)
 
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
+)
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
 from galaxy.model import (
     HistoryDatasetAssociation,
@@ -261,7 +262,7 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, user: Optional[User], chrom_info=False):
+    def get_dbkeys(self, user: User | None, chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
         chromosome lengths are returned."""
         self.check_and_reload()
@@ -289,7 +290,7 @@ class Genomes:
 
         return dbkeys
 
-    def chroms(self, trans, dbkey=None, num=None, chrom=None, low=None):
+    def chroms(self, trans: ProvidesHistoryContext, dbkey=None, num=None, chrom=None, low=None):
         """
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
@@ -367,7 +368,7 @@ class Genomes:
 
         return False
 
-    def reference(self, trans, dbkey, chrom, low, high):
+    def reference(self, trans: ProvidesUserContext, dbkey, chrom, low, high):
         """
         Return reference data for a build.
         """

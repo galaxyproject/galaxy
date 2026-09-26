@@ -3,17 +3,16 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class AgentService:
         self.job_manager = job_manager
         self.registry = registry
 
-    def create_dependencies(self, trans: ProvidesUserContext, user: User) -> GalaxyAgentDependencies:
+    def create_dependencies(self, trans: SessionRequestContext, user: User) -> GalaxyAgentDependencies:
         """Create agent dependencies for dependency injection."""
         toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
         return GalaxyAgentDependencies(
@@ -41,15 +40,16 @@ class AgentService:
             job_manager=self.job_manager,
             toolbox=toolbox,
             get_agent=self.registry.get_agent,
+            get_capability_blurb=self.registry.get_capability_blurb,
         )
 
     async def execute_agent(
         self,
         agent_type: str,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
@@ -96,9 +96,9 @@ class AgentService:
     async def route_and_execute(
         self,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
         """
@@ -107,7 +107,10 @@ class AgentService:
         When agent_type is 'auto', the router agent handles the query directly,
         either answering it or using output functions to hand off to specialists.
         """
-        if agent_type == "auto":
+        if agent_type == "auto" and isinstance(context, dict) and context.get("page_id"):
+            log.info("Routing to page_assistant for notebook context")
+            return await self.execute_agent("page_assistant", query, trans, user, context)
+        elif agent_type == "auto":
             # Router handles everything via output functions:
             # - Answers general questions directly
             # - Hands off to error_analysis for debugging

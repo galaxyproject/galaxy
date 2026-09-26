@@ -7,6 +7,7 @@ to async SSE endpoint handlers running in the uvicorn event loop.
 
 import asyncio
 import logging
+import threading
 from collections import defaultdict
 from collections.abc import (
     AsyncIterator,
@@ -15,9 +16,6 @@ from collections.abc import (
 )
 from dataclasses import dataclass
 from datetime import datetime
-from typing import (
-    Optional,
-)
 
 from galaxy.util import now
 from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
@@ -35,7 +33,7 @@ def make_event_id() -> str:
     return now().isoformat()
 
 
-def parse_event_id(event_id: str) -> Optional[datetime]:
+def parse_event_id(event_id: str) -> datetime | None:
     """Inverse of :func:`make_event_id`. Returns ``None`` if unparseable."""
     try:
         return datetime.fromisoformat(event_id)
@@ -54,7 +52,7 @@ class SSEEvent:
 
     event: str  # e.g. "notification_update", "broadcast_update", "notification_status"
     data: str  # JSON payload
-    id: Optional[str] = None  # ISO timestamp, used by EventSource as Last-Event-ID on reconnect
+    id: str | None = None  # ISO timestamp, used by EventSource as Last-Event-ID on reconnect
 
     def to_wire(self) -> str:
         """Serialize this event to the SSE wire format (``event:…\\ndata:…\\n[id:…\\n]\\n``)."""
@@ -79,11 +77,11 @@ class SSEConnectionManager:
       (typically the Kombu daemon thread via control task handlers).
     """
 
-    def __init__(self, statsd_client: Optional[VanillaGalaxyStatsdClient] = None) -> None:
+    def __init__(self, statsd_client: VanillaGalaxyStatsdClient | None = None) -> None:
         self._connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._session_connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._broadcast_connections: set[asyncio.Queue] = set()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
         self._statsd_client = statsd_client
         # Viewer subscriptions for non-owned histories. Each worker keeps its
         # own copy; the producer fans out subscribe/unsubscribe via Kombu so
@@ -99,7 +97,7 @@ class SSEConnectionManager:
 
     # -- Called from ASYNC context (uvicorn event loop thread) --
 
-    def connect(self, user_id: Optional[int], galaxy_session_id: Optional[int] = None) -> asyncio.Queue:
+    def connect(self, user_id: int | None, galaxy_session_id: int | None = None) -> asyncio.Queue:
         """Register a new SSE connection. Returns a queue to await events from.
 
         Called from the SSE endpoint handler (async context). A ``ready`` event is
@@ -128,9 +126,9 @@ class SSEConnectionManager:
 
     def disconnect(
         self,
-        user_id: Optional[int],
+        user_id: int | None,
         queue: asyncio.Queue,
-        galaxy_session_id: Optional[int] = None,
+        galaxy_session_id: int | None = None,
     ) -> None:
         """Unregister an SSE connection.
 
@@ -274,15 +272,38 @@ class SSEConnectionManager:
         """Number of active SSE connections bound to a specific user_id."""
         return sum(len(queues) for queues in self._connections.values())
 
+    def emit_connection_gauges(self, server_name: str) -> None:
+        """Publish this worker's SSE connection counts as statsd gauges.
+
+        No-ops when statsd isn't configured. The counts are per-process — only
+        the worker holding a connection knows about it — so this must be called
+        from the web worker that owns the manager, and each worker tags its
+        sample with ``server_name`` so the per-worker series don't collide
+        (statsd gauges are last-write-wins per metric+tag set). Sum across
+        workers for a cluster total.
+        """
+        if self._statsd_client is None:
+            return
+        self._statsd_client.gauge(
+            "galaxy.sse.connections.active",
+            self.total_broadcast_connections,
+            tags={"kind": "broadcast", "server_name": server_name},
+        )
+        self._statsd_client.gauge(
+            "galaxy.sse.connections.active",
+            self.total_per_user_connections,
+            tags={"kind": "per_user", "server_name": server_name},
+        )
+
     # -- High-level streaming helper --
 
     async def stream(
         self,
         is_disconnected: IsDisconnected,
-        user_id: Optional[int],
-        catch_up: Optional[SSEEvent] = None,
+        user_id: int | None,
+        catch_up: SSEEvent | None = None,
         keepalive: float = 30.0,
-        galaxy_session_id: Optional[int] = None,
+        galaxy_session_id: int | None = None,
     ) -> AsyncIterator[str]:
         """Yield SSE-framed strings for one connected client.
 
@@ -291,6 +312,11 @@ class SSEConnectionManager:
         ``disconnect`` in ``finally``. The ``is_disconnected`` callable is
         what the service passes in (typically ``request.is_disconnected`` from
         starlette) so the manager stays framework-agnostic.
+
+        The request-scoped DB connection is released before this loop runs by
+        :class:`galaxy.webapps.base.api.GalaxyStreamingResponse`, which wraps
+        this generator — see that class for why long-lived streams must not
+        pin a pooled connection.
         """
         queue = self.connect(user_id, galaxy_session_id)
         if catch_up is not None:
@@ -306,3 +332,33 @@ class SSEConnectionManager:
                     yield ": keepalive\n\n"
         finally:
             self.disconnect(user_id, queue, galaxy_session_id)
+
+
+class SSEConnectionGaugeEmitter(threading.Thread):
+    """Periodically publish a web worker's SSE connection-count gauges.
+
+    Runs as a daemon thread inside each web worker — the only process that
+    knows how many SSE connections it holds. Sampling these counts from the
+    Celery beat task instead would always report zero, since that process has
+    no live connections. Reads are plain ``len()`` over the manager's
+    in-memory sets; a transient race with connect/disconnect is acceptable for
+    a monitoring gauge.
+    """
+
+    def __init__(self, manager: SSEConnectionManager, server_name: str, interval: int = 15) -> None:
+        super().__init__(name=f"sse_connection_gauge.{server_name}", daemon=True)
+        self._manager = manager
+        self._server_name = server_name
+        self._interval = interval
+        self._exit = threading.Event()
+
+    def run(self) -> None:
+        while not self._exit.is_set():
+            try:
+                self._manager.emit_connection_gauges(self._server_name)
+            except Exception:
+                log.warning("Failed to emit SSE connection gauges", exc_info=True)
+            self._exit.wait(self._interval)
+
+    def shutdown(self) -> None:
+        self._exit.set()

@@ -7,7 +7,6 @@ from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.populators import flakey
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -16,7 +15,6 @@ from .framework import (
 class TestHistoryPanelCollections(SeleniumTestCase):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_mapping_collection_states_terminal(self):
         history_id = self.current_history_id()
@@ -72,7 +70,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
             for job in running_response.json()["jobs"]:
                 self.dataset_populator.cancel_job(job["id"])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_output_collection_states_terminal(self):
         history_id = self.current_history_id()
@@ -128,7 +125,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
             for job in payload["jobs"]:
                 self.dataset_populator.cancel_job(job["id"])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_collection_job_details(self):
         ok_collection_hid, failed_collection_hid = self._generate_ok_and_failed_collections()
@@ -147,7 +143,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         self.screenshot("history_panel_collections_job_details_failed")
         assert int(tool_exit_code_component.text) > 0
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_back_to_history_button(self):
         input_collection = self._populated_paired_and_wait_for_it()
@@ -165,7 +160,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         back.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename_collection(self):
         input_collection = self._populated_paired_and_wait_for_it()
@@ -184,7 +178,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
 
         assert_name_changed()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_name_tags_display(self):
         # Test setting a name tag and viewing it from the outer history panel.
@@ -202,7 +195,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         assert nametags == ["#moo"]
         self.screenshot("history_panel_collection_with_nametag")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_paired_display(self):
         input_collection = self._populated_paired_and_wait_for_it()
@@ -240,7 +232,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         check_four_datasets_shown()
         self.screenshot("history_panel_collection_view_list")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_list_paired_display(self):
         history_id = self.current_history_id()
@@ -251,7 +242,6 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         self.history_panel_expand_collection(collection_hid)
         self.screenshot("history_panel_collection_view_list_paired")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_list_list_display(self):
         history_id = self.current_history_id()

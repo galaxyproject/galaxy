@@ -3,7 +3,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.model import (
@@ -32,11 +31,11 @@ if TYPE_CHECKING:
 
 # Type aliases for callbacks
 DatasetToRuntimeJson = Callable[[DataJobInternalT], DataInternalJson]
-CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], DataCollectionInternalJsonBase]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, str | None], DataCollectionInternalJsonBase]
 
 # Input dataset collections dict type - values are HDCAs (from job.input_dataset_collections)
 # or DCEs (from job.input_dataset_collection_elements for subcollection mapping).
-InpDataCollectionsDictT = dict[str, Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]]
+InpDataCollectionsDictT = dict[str, HistoryDatasetCollectionAssociation | DatasetCollectionElement]
 
 
 def is_list_like(collection_type: str) -> bool:
@@ -53,7 +52,7 @@ def setup_for_runtimeify(
     app: "MinimalToolApp",
     compute_environment: Optional["ComputeEnvironment"],
     input_datasets: InpDataDictT,
-    input_dataset_collections: Optional[InpDataCollectionsDictT] = None,
+    input_dataset_collections: InpDataCollectionsDictT | None = None,
 ):
     """Set up callbacks for runtimeify to convert tool state to runtime representations.
 
@@ -115,7 +114,7 @@ def setup_for_runtimeify(
 
     def adapt_collection(
         value: DataCollectionRequestInternal,
-        collection_type: Optional[str],
+        collection_type: str | None,
     ) -> DataCollectionInternalJsonBase:
         """Convert a collection request to runtime representation.
 
@@ -134,8 +133,7 @@ def setup_for_runtimeify(
             return _adapt_from_dce(dce, adapt_dataset, compute_environment)
 
         # Handle HDCA reference (direct collection input)
-        hdca = hdcas_by_id.get(value.id)
-        if hdca:
+        if hdca := hdcas_by_id.get(value.id):
             return _adapt_from_hdca(hdca, adapt_dataset, compute_environment)
 
         raise ValueError(f"Collection {value.id} not found (src={value.src})")
@@ -181,11 +179,11 @@ def _adapt_from_dce(
 
 def collection_to_runtime(
     collection: DatasetCollection,
-    name: Optional[str],
+    name: str | None,
     tags: list[str],
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-    columns: Optional[list] = None,
+    columns: list | None = None,
 ) -> DataCollectionInternalJsonBase:
     """Convert DatasetCollection to validated typed runtime model."""
     raw = _build_collection_runtime_dict(collection, name, tags, adapt_dataset, compute_environment, columns)
@@ -199,19 +197,18 @@ def _validate_collection_runtime_dict(raw: dict[str, Any]) -> DataCollectionInte
     which handles both leaf types and nested types with precise inner type validation.
     """
     ct = raw.get("collection_type", "")
-    model = build_collection_model_for_type(ct)
-    if model is not None:
+    if (model := build_collection_model_for_type(ct)) is not None:
         return model.model_validate(raw)
     raise ValueError(f"Cannot build runtime model for collection_type: '{ct}'")
 
 
 def _build_collection_runtime_dict(
     collection: DatasetCollection,
-    name: Optional[str],
+    name: str | None,
     tags: list[str],
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-    columns: Optional[list] = None,  # from parent DCE for sample_sheet elements
+    columns: list | None = None,  # from parent DCE for sample_sheet elements
 ) -> dict[str, Any]:
     """Convert DatasetCollection to runtime representation.
 

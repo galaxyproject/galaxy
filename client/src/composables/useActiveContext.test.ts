@@ -1,5 +1,8 @@
+import { faFile, faMagic, faSitemap, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { describe, expect, it, vi } from "vitest";
 import { type Ref, ref } from "vue";
+
+import { PAGE_LABELS } from "@/components/Page/constants";
 
 import type { ActiveContext } from "./useActiveContext";
 
@@ -118,6 +121,60 @@ describe("useActiveContext", () => {
                 jobId: "job-7",
             });
         });
+
+        it("detects notebook context from notebook editor route", () => {
+            const { activeContext } = withRoute(
+                "/histories/test-history-id/pages/test-page-id",
+                {},
+                { historyId: "test-history-id", pageId: "test-page-id" },
+            );
+            expect(activeContext.value).toEqual({
+                contextType: "notebook",
+                pageId: "test-page-id",
+                historyId: "test-history-id",
+            });
+        });
+
+        it("returns null for slightly invalid notebook editor route", () => {
+            // Note how the route has "page" instead of "pages"
+            const { activeContext } = withRoute(
+                "/histories/test-history-id/page/test-page-id",
+                {},
+                { historyId: "test-history-id", pageId: "test-page-id" },
+            );
+            expect(activeContext.value).toBeNull();
+        });
+
+        it("detects notebook context from invocation reports route", () => {
+            const { activeContext } = withRoute(
+                "/workflows/invocations/inv-1/reports",
+                { id: "p-1" },
+                { invocationId: "inv-1" },
+            );
+            expect(activeContext.value).toEqual({
+                contextType: "notebook",
+                pageId: "p-1",
+                invocationId: "inv-1",
+            });
+        });
+
+        it("returns null for invocation reports route without page id query param", () => {
+            const { activeContext } = withRoute("/workflows/invocations/inv-1/reports", {}, { invocationId: "inv-1" });
+            expect(activeContext.value).toBeNull();
+        });
+
+        it("detects notebook context from page editor route", () => {
+            const { activeContext } = withRoute("/pages/editor", { id: "test-page-id" }, {});
+            expect(activeContext.value).toEqual({
+                contextType: "notebook",
+                pageId: "test-page-id",
+            });
+        });
+
+        it("returns null for page editor route without id", () => {
+            const { activeContext } = withRoute("/pages/editor");
+            expect(activeContext.value).toBeNull();
+        });
     });
 
     describe("contextLabel", () => {
@@ -159,6 +216,70 @@ describe("useActiveContext", () => {
         it("labels job context", () => {
             const { contextLabel } = withRoute("/jobs/j-5", {}, { jobId: "j-5" });
             expect(contextLabel.value).toBe("Job: j-5");
+        });
+
+        it("labels notebook context", () => {
+            const { contextLabel } = withRoute(
+                "/histories/test-history-id/pages/test-page-id",
+                {},
+                { historyId: "test-history-id", pageId: "test-page-id" },
+            );
+            expect(contextLabel.value).toBe("Galaxy Notebook: test-page-id");
+        });
+
+        it("labels standalone page editor context without historyId", () => {
+            const { contextLabel } = withRoute("/pages/editor", { id: "test-page-id" }, {});
+            expect(contextLabel.value).toBe("Report: test-page-id");
+        });
+
+        it("labels invocation notebook context", () => {
+            const { contextLabel } = withRoute(
+                "/workflows/invocations/inv-1/reports",
+                { id: "p-1" },
+                { invocationId: "inv-1" },
+            );
+            expect(contextLabel.value).toBe("Invocation Report: p-1");
+        });
+    });
+
+    describe("contextIcon", () => {
+        it("returns faWrench for tool context", () => {
+            const { contextIcon } = withRoute("/", { tool_id: "bwa" });
+            expect(contextIcon.value).toBe(faWrench);
+        });
+
+        it("returns faFile for dataset context", () => {
+            const { contextIcon } = withRoute("/datasets/d-1", {}, { datasetId: "d-1" });
+            expect(contextIcon.value).toBe(faFile);
+        });
+
+        it("returns faSitemap for workflow editor context", () => {
+            const { contextIcon } = withRoute("/workflows/edit", { id: "wf-1" });
+            expect(contextIcon.value).toBe(faSitemap);
+        });
+
+        it("returns faSitemap for workflow run context", () => {
+            const { contextIcon } = withRoute("/workflows/run", { id: "wf-1" });
+            expect(contextIcon.value).toBe(faSitemap);
+        });
+
+        it("returns history notebook icon for history notebook context", () => {
+            const { contextIcon } = withRoute("/histories/h-1/pages/p-1", {}, { historyId: "h-1", pageId: "p-1" });
+            expect(contextIcon.value).toBe(PAGE_LABELS.history.titleIcon);
+        });
+
+        it("returns invocation notebook icon for invocation notebook context", () => {
+            const { contextIcon } = withRoute(
+                "/workflows/invocations/inv-1/reports",
+                { id: "p-1" },
+                { invocationId: "inv-1" },
+            );
+            expect(contextIcon.value).toBe(PAGE_LABELS.invocation.titleIcon);
+        });
+
+        it("returns faMagic for unrecognized routes", () => {
+            const { contextIcon } = withRoute("/some/unknown");
+            expect(contextIcon.value).toBe(faMagic);
         });
     });
 });

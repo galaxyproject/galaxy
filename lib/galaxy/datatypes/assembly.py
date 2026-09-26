@@ -184,7 +184,7 @@ class Velvet(Html):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
@@ -233,7 +233,7 @@ class Velvet(Html):
                     opt_text = " (optional)"
                 if composite_file.get("description"):
                     rval.append(
-                        f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                        f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                     )
                 else:
                     rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +13,8 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
@@ -131,28 +133,30 @@ function showRecent() {
 
             <div class="d-flex justify-content-between">
                 <div>
-                    <BButtonGroup v-g-tooltip.hover :title="showRecentTitle">
-                        <BButton
-                            size="sm"
+                    <GButtonGroup v-g-tooltip.hover :title="showRecentTitle">
+                        <GButton
+                            size="small"
                             data-description="show recent histories"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             :disabled="!hasPinnedHistories"
                             @click="showRecent">
                             <FontAwesomeIcon v-if="hasPinnedHistories" :icon="faUndo" />
                             <FontAwesomeIcon v-else :icon="faClock" />
                             <span v-localize>Recent</span>
-                        </BButton>
-                    </BButtonGroup>
-                    <BButton
+                        </GButton>
+                    </GButtonGroup>
+                    <GButton
                         v-g-tooltip.hover
                         :title="localize('Open modal to select/deselect histories')"
-                        size="sm"
+                        size="small"
                         data-description="open select histories modal"
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         @click="showSelectModal = true">
                         <FontAwesomeIcon :icon="faCheckSquare" />
                         <span v-localize>Select</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>

@@ -1,10 +1,6 @@
 import logging
 import os.path
 from collections.abc import Sequence
-from typing import (
-    Optional,
-    Union,
-)
 
 from sqlalchemy import (
     false,
@@ -51,7 +47,7 @@ def dereference_to_model(
     sa_session: galaxy_scoped_session,
     user: User,
     history: History,
-    data_request_uri: Union[DataRequestUri, FileRequestUri, CollectionElementDataRequestUri],
+    data_request_uri: DataRequestUri | FileRequestUri | CollectionElementDataRequestUri,
     add_to_history=True,
     visible=True,
 ) -> HistoryDatasetAssociation:
@@ -103,7 +99,7 @@ def derefence_collection_element(
     element: CollectionElementCollectionRequestUri,
     parent_dataset_collection: DatasetCollection,
     element_index: int,
-    rows: Optional[dict[str, SampleSheetRow]] = None,
+    rows: dict[str, SampleSheetRow] | None = None,
 ):
     child_dataset_collection = DatasetCollection(collection_type=element.collection_type)
 
@@ -140,7 +136,7 @@ def dereference_collection_dataset_element(
     element: CollectionElementDataRequestUri,
     parent_dataset_collection: DatasetCollection,
     element_index: int,
-    rows: Optional[dict[str, SampleSheetRow]] = None,
+    rows: dict[str, SampleSheetRow] | None = None,
 ):
     hda = dereference_to_model(sa_session, user, history, element, add_to_history=False, visible=False)
     history.stage_addition(hda)
@@ -235,13 +231,13 @@ def derefence_collection_to_model(
 
 def get_replacement_dataset(
     session: Session,
-    user: Optional[User],
+    user: User | None,
     dataset_sources: list[DatasetSource],
-    dataset_hashes: Sequence[Union[DatasetHash, DatasetSourceHash]],
+    dataset_hashes: Sequence[DatasetHash | DatasetSourceHash],
     extension: str,
     object_store_id: str | None,
-    created_from_basename: Optional[str] = None,
-) -> Optional[HistoryDatasetAssociation]:
+    created_from_basename: str | None = None,
+) -> HistoryDatasetAssociation | None:
     """
     Get a replacement dataset for the given source URI and dataset hash.
     If we already have such a dataset we don't need to create a new one.

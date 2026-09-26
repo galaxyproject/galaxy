@@ -42,9 +42,8 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
     return { items, total: props.tools.length };
 }
 
-// Force ScrollList remount when tools change (e.g. after search),
-// ensuring loadTools is called again to await help data for new results.
-const toolsKey = computed(() => `${props.tools.length}-${props.tools[0]?.id}`);
+// Remount ScrollList when its result set changes so it reloads help data.
+const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id)));
 </script>
 
 <template>
@@ -81,7 +80,8 @@ const toolsKey = computed(() => `${props.tools.length}-${props.tools[0]?.id}`);
                 :form-style="item.form_style"
                 :summary="helpDataCached[item.id]?.summary"
                 :help="helpDataCached[item.id]?.help"
-                :local="item.target === 'galaxy_main'"
+                :help-format="helpDataCached[item.id]?.helpFormat"
+                :local="item.model_class !== 'DataSourceTool'"
                 :link="item.link"
                 :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"

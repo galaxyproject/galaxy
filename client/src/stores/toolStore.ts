@@ -56,8 +56,6 @@ export interface Tool {
     xrefs: string[];
     config_file: string;
     link: string;
-    min_width: number;
-    target: string;
     panel_section_id: string;
     panel_section_name: string | null;
     form_style: string;
@@ -97,7 +95,14 @@ export type ToolPanelItem = Tool | ToolSection | ToolSectionLabel;
 
 export type ToolHelpData = {
     help?: string;
+    helpFormat?: string;
     summary?: string;
+    failed?: boolean;
+};
+
+type ToolHelpResponse = {
+    help?: string;
+    help_format?: string;
 };
 
 const MY_PANEL_VIEW: Panel = {
@@ -108,6 +113,8 @@ const MY_PANEL_VIEW: Panel = {
     view_type: MY_PANEL_VIEW_TYPE,
     searchable: true,
 };
+
+const DEFAULT_PANEL_VIEW_ID = "default";
 
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
@@ -300,7 +307,8 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchHelpForId(toolId: string) {
-        if (helpDataCached.value[toolId]) {
+        const cached = helpDataCached.value[toolId];
+        if (cached && !cached.failed) {
             return;
         }
         const existing = fetchedHelpIds.value.get(toolId);
@@ -313,9 +321,10 @@ export const useToolStore = defineStore("toolStore", () => {
 
                 const { data } = (await axios.get(
                     `${getAppRoot()}api/tools/${encodeURIComponent(toolId)}/build`,
-                )) as AxiosResponse<ToolHelpData>;
+                )) as AxiosResponse<ToolHelpResponse>;
 
                 const help = data.help;
+                toolHelpData.helpFormat = data.help_format;
                 if (help && help !== "\n") {
                     toolHelpData.help = help;
                     toolHelpData.summary = parseHelpForSummary(help);
@@ -326,7 +335,9 @@ export const useToolStore = defineStore("toolStore", () => {
                 Vue.set(helpDataCached.value, toolId, toolHelpData);
             } catch (error) {
                 console.error("Error fetching help:", error);
-                fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
+                // Settle current consumers but allow a later request to retry.
+                Vue.set(helpDataCached.value, toolId, { help: "", failed: true });
+                fetchedHelpIds.value.delete(toolId);
             }
         })();
         fetchedHelpIds.value.set(toolId, promise);
@@ -369,8 +380,16 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setPanel(panelView: string) {
         try {
-            if (panelView === MY_PANEL_VIEW_ID && defaultPanelView.value && panelView !== defaultPanelView.value) {
-                await fetchToolSections(defaultPanelView.value);
+            if (panelView === MY_PANEL_VIEW_ID) {
+                const sectionedPanelView =
+                    defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+                        ? defaultPanelView.value
+                        : panels.value[DEFAULT_PANEL_VIEW_ID]
+                          ? DEFAULT_PANEL_VIEW_ID
+                          : null;
+                if (sectionedPanelView) {
+                    await fetchToolSections(sectionedPanelView);
+                }
             }
             await fetchToolSections(panelView);
             currentPanelView.value = panelView;

@@ -1,72 +1,66 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistoryPageSummary } from "@/api/pages";
+
+import { FAKE_PAGE_SUMMARY, FAKE_PAGE_UNTITLED } from "./testData";
 
 import HistoryPageList from "./HistoryPageList.vue";
 
 const localVue = getLocalVue();
 
-const FAKE_PAGE_SUMMARY: HistoryPageSummary = {
-    id: "page-1",
-    history_id: "history-1",
-    title: "My Analysis",
-    slug: null,
-    source_invocation_id: null,
-    published: false,
-    importable: false,
-    deleted: false,
-    latest_revision_id: "rev-1",
-    revision_ids: ["rev-1"],
-    create_time: "2025-06-15T10:30:00Z",
-    update_time: "2025-06-15T12:45:00Z",
-    username: "test",
-    email_hash: "",
-    author_deleted: false,
-    model_class: "Page",
-    tags: [],
-};
-
-const FAKE_PAGE_UNTITLED: HistoryPageSummary = {
-    ...FAKE_PAGE_SUMMARY,
-    id: "page-2",
-    title: "",
-};
-
 const SELECTORS = {
-    HEADER_TITLE: "h4",
-    NEW_BUTTON: "bbutton-stub",
+    NEW_BUTTON: "[data-description='create page button']",
     EMPTY_STATE: ".empty-state",
     PAGE_ITEMS: ".page-items",
-    PAGE_ITEM: ".page-item",
-    PAGE_TITLE: ".page-title",
-    PAGE_META: ".page-meta",
-    VIEW_BUTTON: "[data-description='page view button']",
+    PAGE_ITEM: "[data-description='page item']",
+    UNOWNED_ALERT: "balert-stub",
 };
 
-async function mountComponent(propsData: { pages: HistoryPageSummary[] }) {
+setupMockHistoryBreadcrumbs();
+
+// Mocks for store methods
+const mockGetHistoryById = vi.fn();
+const mockMatchesCurrentUserId = vi.fn();
+
+vi.mock("@/stores/historyStore", () => ({
+    useHistoryStore: vi.fn(() => ({
+        getHistoryById: mockGetHistoryById,
+    })),
+}));
+
+vi.mock("@/stores/userStore", () => ({
+    useUserStore: vi.fn(() => ({
+        matchesCurrentUserId: mockMatchesCurrentUserId,
+    })),
+}));
+
+async function mountComponent(propsData: { pages: HistoryPageSummary[]; invocationId?: string }) {
     const wrapper = shallowMount(HistoryPageList as object, {
         localVue,
-        propsData,
+        propsData: { ...propsData, historyId: "history-1" },
+        pinia: createTestingPinia({ createSpy: vi.fn }),
     });
     await flushPromises();
     return wrapper;
 }
 
 describe("HistoryPageList", () => {
+    beforeEach(() => {
+        // Default: history is owned by the current user, no alert shown
+        mockGetHistoryById.mockReturnValue({ id: "history-1", name: "Test History", user_id: "user-1" });
+        mockMatchesCurrentUserId.mockReturnValue(true);
+    });
+
     describe("Header", () => {
         let wrapper: Wrapper<Vue>;
 
         beforeEach(async () => {
             wrapper = await mountComponent({ pages: [] });
-        });
-
-        it("always shows 'Galaxy Notebooks' heading", () => {
-            const heading = wrapper.find(SELECTORS.HEADER_TITLE);
-            expect(heading.exists()).toBe(true);
-            expect(heading.text()).toBe("Galaxy Notebooks");
         });
 
         it("always shows 'New Notebook' button", () => {
@@ -108,26 +102,11 @@ describe("HistoryPageList", () => {
             });
         });
 
-        it("renders each page as a clickable item", () => {
+        it("renders each page as a card", () => {
+            expect(wrapper.find(SELECTORS.PAGE_ITEMS).exists()).toBe(true);
+
             const items = wrapper.findAll(SELECTORS.PAGE_ITEM);
             expect(items.length).toBe(2);
-        });
-
-        it("displays page title for each item", () => {
-            const titles = wrapper.findAll(SELECTORS.PAGE_TITLE);
-            expect(titles.at(0).text()).toBe("My Analysis");
-        });
-
-        it("shows 'Untitled Notebook' when title is empty", () => {
-            const titles = wrapper.findAll(SELECTORS.PAGE_TITLE);
-            expect(titles.at(1).text()).toBe("Untitled Notebook");
-        });
-
-        it("displays formatted update_time for each page", () => {
-            const meta = wrapper.findAll(SELECTORS.PAGE_META);
-            const metaText = meta.at(0).text();
-            expect(metaText).toContain("Updated");
-            expect(metaText.replace("Updated", "").trim().length).toBeGreaterThan(0);
         });
 
         it("does NOT show empty state when pages exist", () => {
@@ -135,51 +114,36 @@ describe("HistoryPageList", () => {
         });
     });
 
-    describe("Events", () => {
-        it("emits 'create' when New Page button is clicked", async () => {
+    describe("Unowned history alert", () => {
+        it("does not show alert when current user owns the history", async () => {
             const wrapper = await mountComponent({ pages: [] });
-            const button = wrapper.find(SELECTORS.NEW_BUTTON);
-            await button.trigger("click");
-            expect(wrapper.emitted().create).toBeTruthy();
+            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).exists()).toBe(false);
         });
 
-        it("emits 'select' with page.id when a page item is clicked", async () => {
-            const wrapper = await mountComponent({
-                pages: [FAKE_PAGE_SUMMARY],
-            });
-            const item = wrapper.find(SELECTORS.PAGE_ITEM);
-            await item.trigger("click");
-            expect(wrapper.emitted().select).toBeTruthy();
-            expect(wrapper.emitted().select![0]![0]).toBe("page-1");
-        });
-    });
-
-    describe("View button", () => {
-        it("shows view button on each page item", async () => {
-            const wrapper = await mountComponent({
-                pages: [FAKE_PAGE_SUMMARY],
-            });
-            const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
-            expect(viewButton.exists()).toBe(true);
+        it("shows alert when current user does not own the history", async () => {
+            mockMatchesCurrentUserId.mockReturnValue(false);
+            const wrapper = await mountComponent({ pages: [] });
+            const alert = wrapper.find(SELECTORS.UNOWNED_ALERT);
+            expect(alert.exists()).toBe(true);
+            expect(alert.text()).toContain("You do not own this history");
         });
 
-        it("emits 'view' with page.id when view button clicked", async () => {
-            const wrapper = await mountComponent({
-                pages: [FAKE_PAGE_SUMMARY],
-            });
-            const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
-            await viewButton.trigger("click");
-            expect(wrapper.emitted().view).toBeTruthy();
-            expect(wrapper.emitted().view![0]![0]).toBe("page-1");
+        it("does not show invocation span in alert when no invocationId", async () => {
+            mockMatchesCurrentUserId.mockReturnValue(false);
+            const wrapper = await mountComponent({ pages: [] });
+            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).text()).not.toContain("associated with the invocation");
         });
 
-        it("does not emit 'select' when view button clicked", async () => {
-            const wrapper = await mountComponent({
-                pages: [FAKE_PAGE_SUMMARY],
-            });
-            const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
-            await viewButton.trigger("click");
-            expect(wrapper.emitted().select).toBeFalsy();
+        it("shows invocation qualifier in alert when invocationId is set", async () => {
+            mockMatchesCurrentUserId.mockReturnValue(false);
+            const wrapper = await mountComponent({ pages: [], invocationId: "inv-1" });
+            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).text()).toContain("associated with the invocation");
+        });
+
+        it("does not show alert when history has no user_id field", async () => {
+            mockGetHistoryById.mockReturnValue({ id: "history-1", name: "Test History" });
+            const wrapper = await mountComponent({ pages: [] });
+            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).exists()).toBe(false);
         });
     });
 });

@@ -1,0 +1,42 @@
+<tool id="conditional_name_digit_suffix" name="conditional_name_digit_suffix" version="0.1.0">
+    <description>Regression tool: conditional names ending in _N must not be treated as repeat indices</description>
+    <command>echo done</command>
+    <inputs>
+        <conditional name="outer">
+            <param name="select" type="select">
+                <option value="a">A</option>
+            </param>
+            <when value="a">
+                <!-- Names ending in _1 / _2 are the pattern that looks_like_flattened_repeat_key
+                     would misidentify as "repeat item 1/2 of a repeat named inner_options". -->
+                <conditional name="inner_options_1">
+                    <param name="mode" type="select">
+                        <option value="by_index">By Index</option>
+                        <option value="by_name">By Name</option>
+                    </param>
+                    <when value="by_index">
+                        <param name="col" type="integer" value="1" />
+                    </when>
+                    <when value="by_name">
+                        <param name="label" type="text" value="" />
+                    </when>
+                </conditional>
+                <conditional name="inner_options_2">
+                    <param name="mode" type="select">
+                        <option value="by_index">By Index</option>
+                        <option value="by_name">By Name</option>
+                    </param>
+                    <when value="by_index">
+                        <param name="col" type="integer" value="1" />
+                    </when>
+                    <when value="by_name">
+                        <param name="label" type="text" value="" />
+                    </when>
+                </conditional>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

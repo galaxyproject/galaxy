@@ -6,7 +6,6 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
@@ -86,7 +85,7 @@ class AnvioComposite(Html):
 class AnvioDB(AnvioComposite):
     """Class for AnvioDB database files."""
 
-    _anvio_basename: Optional[str] = None
+    _anvio_basename: str | None = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = "anvio_db"
 

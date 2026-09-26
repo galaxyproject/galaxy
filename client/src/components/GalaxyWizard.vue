@@ -8,6 +8,7 @@ import { GalaxyApi } from "@/api";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "./BaseComponents/GAlert.vue";
 import GButton from "./BaseComponents/GButton.vue";
 import LoadingSpan from "./LoadingSpan.vue";
 
@@ -28,6 +29,7 @@ const errorMessage = ref("");
 const busy = ref(false);
 const feedback = ref<null | "up" | "down">(null);
 const hasError = ref(false);
+const truncationNotice = ref("");
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 /** On submit, query the server and put response in display box **/
@@ -36,6 +38,7 @@ async function submitQuery() {
     hasError.value = false;
     errorMessage.value = "";
     queryResponse.value = "";
+    truncationNotice.value = "";
 
     if (query.value === "") {
         errorMessage.value = "There is no context to provide a response.";
@@ -68,6 +71,16 @@ async function submitQuery() {
         if (metadataError) {
             hasError.value = true;
             errorMessage.value = metadataError;
+        }
+
+        if (data.metadata?.query_truncated) {
+            // original_query_length is untyped over the wire, so narrow before formatting.
+            const length = data.metadata.original_query_length;
+            const amount =
+                typeof length === "number"
+                    ? `This tool recorded at least ${length.toLocaleString()} characters of error output, which is too much to analyze in full.`
+                    : "This tool recorded too much error output to analyze in full.";
+            truncationNotice.value = `${amount} Only the beginning and the end were sent for analysis, so the diagnosis may have missed something in between.`;
         }
     }
 
@@ -109,6 +122,15 @@ async function sendFeedback(value: "up" | "down") {
                 <BSkeleton animation="wave" width="70%" />
             </div>
             <div v-else>
+                <GAlert
+                    v-if="truncationNotice && !hasError"
+                    class="p-2"
+                    variant="warning"
+                    data-description="galaxy wizard truncation notice"
+                    show>
+                    {{ truncationNotice }}
+                </GAlert>
+
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <div
                     class="chatResponse"

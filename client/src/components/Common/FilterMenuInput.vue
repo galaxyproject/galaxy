@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 
 type FilterType = string | boolean | undefined;
@@ -87,9 +88,9 @@ watch(
 
             <!-- append Help Modal for filter if included or/and datepciker if type: Date -->
             <BInputGroupAppend>
-                <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
+                <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
 
                 <BFormDatepicker
                     v-if="props.filter.type == Date"

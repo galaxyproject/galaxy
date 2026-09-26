@@ -4,9 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.exceptions import (
@@ -47,10 +45,10 @@ OMERO_TMPDIR_FALLBACK = os.path.join(tempfile.gettempdir(), "galaxy", "file_sour
 
 
 class OmeroFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    username: Union[str, TemplateExpansion]
-    password: Union[str, TemplateExpansion]
-    host: Union[str, TemplateExpansion]
-    port: Union[int, TemplateExpansion]
+    username: str | TemplateExpansion
+    password: str | TemplateExpansion
+    host: str | TemplateExpansion
+    port: int | TemplateExpansion
 
 
 class OmeroFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -72,7 +70,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
     def __init__(self, template_config: OmeroFileSourceTemplateConfiguration):
         super().__init__(template_config)
-        self._configured_omero_tmpdir: Optional[str] = None
+        self._configured_omero_tmpdir: str | None = None
 
     @property
     def required_package_exception(self) -> Exception:
@@ -159,10 +157,10 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List OMERO objects in a hierarchical structure:
@@ -189,9 +187,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         self,
         omero: BlitzGateway,
         path_parts: list[str],
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> list[AnyRemoteEntry]:
         """List entries based on the path depth."""
         if len(path_parts) == 0:
@@ -202,7 +200,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return self._list_images(omero, path_parts[0], path_parts[1], limit=limit, offset=offset, query=query)
         return []
 
-    def _count_entries_for_path(self, omero: BlitzGateway, path_parts: list[str], query: Optional[str] = None) -> int:
+    def _count_entries_for_path(self, omero: BlitzGateway, path_parts: list[str], query: str | None = None) -> int:
         """Count total entries for pagination without loading all objects."""
         if len(path_parts) == 0:
             return self._count_projects(omero, query=query)
@@ -212,7 +210,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return self._count_images(omero, path_parts[1], query=query)
         return 0
 
-    def _count_projects(self, conn: BlitzGateway, query: Optional[str] = None) -> int:
+    def _count_projects(self, conn: BlitzGateway, query: str | None = None) -> int:
         """Count all projects using efficient HQL query."""
         query_service = conn.getQueryService()
         params = omero.sys.ParametersI()
@@ -223,7 +221,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         result = query_service.projection(hql, params, conn.SERVICE_OPTS)
         return result[0][0].val if result else 0
 
-    def _count_datasets(self, conn: BlitzGateway, project_id_str: str, query: Optional[str] = None) -> int:
+    def _count_datasets(self, conn: BlitzGateway, project_id_str: str, query: str | None = None) -> int:
         """Count datasets in a project using efficient HQL query."""
         if not project_id_str.startswith("project_"):
             return 0
@@ -241,7 +239,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         result = query_service.projection(hql, params, conn.SERVICE_OPTS)
         return result[0][0].val if result else 0
 
-    def _count_images(self, conn: BlitzGateway, dataset_id_str: str, query: Optional[str] = None) -> int:
+    def _count_images(self, conn: BlitzGateway, dataset_id_str: str, query: str | None = None) -> int:
         """Count images in a dataset using efficient HQL query."""
         if not dataset_id_str.startswith("dataset_"):
             return 0
@@ -262,9 +260,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     def _list_projects(
         self,
         conn: BlitzGateway,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> list[AnyRemoteEntry]:
         """List all projects as directories at root level."""
         if query:
@@ -289,8 +287,8 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         self,
         conn: BlitzGateway,
         query: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[AnyRemoteEntry]:
         """List projects matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
@@ -319,9 +317,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         self,
         conn: BlitzGateway,
         project_id_str: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> list[AnyRemoteEntry]:
         """List datasets within a project."""
         if not project_id_str.startswith("project_"):
@@ -358,8 +356,8 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         project_id_str: str,
         project_id: int,
         query: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[AnyRemoteEntry]:
         """List datasets matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
@@ -394,9 +392,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         conn: BlitzGateway,
         project_id_str: str,
         dataset_id_str: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> list[AnyRemoteEntry]:
         """List images within a dataset."""
         if not dataset_id_str.startswith("dataset_"):
@@ -428,8 +426,8 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         dataset_id_str: str,
         dataset_id: int,
         query: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[AnyRemoteEntry]:
         """List images matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
@@ -452,7 +450,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             results.append(self._create_remote_file_for_image(image, image_path))
         return results
 
-    def _build_pagination_opts(self, limit: Optional[int] = None, offset: Optional[int] = None) -> dict[str, int]:
+    def _build_pagination_opts(self, limit: int | None = None, offset: int | None = None) -> dict[str, int]:
         """Build OMERO pagination options dictionary."""
         opts: dict[str, int] = {}
         if limit is not None:

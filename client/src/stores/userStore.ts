@@ -119,6 +119,12 @@ export const useUserStore = defineStore("userStore", () => {
         };
     });
 
+    const matchesCurrentUserId = computed(() => {
+        return (userId?: string) => {
+            return isRegisteredUser(currentUser.value) && "id" in currentUser.value && currentUser.value.id === userId;
+        };
+    });
+
     function setCurrentUser(user: RegisteredUser) {
         currentUser.value = user;
     }
@@ -374,6 +380,7 @@ export const useUserStore = defineStore("userStore", () => {
         refreshUser,
         syncLegacyAppUser,
         matchesCurrentUsername,
+        matchesCurrentUserId,
         setCurrentUser,
         setCurrentTheme,
         setListViewPreference,

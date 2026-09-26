@@ -17,15 +17,18 @@ from galaxy_test.base.populators import (
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
+
+APPLY_RULES_TUTORIAL_DATA_BASE_URL = (
+    "https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules"
+)
 
 
-class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
-    @selenium_only("Not yet migrated to support Playwright backend")
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -34,14 +37,12 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=1)
         self.assert_item_peek_includes(1, "42")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_tool_verify_dataset_details(self):
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)
         self._check_dataset_details_for_inttest_value(1)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_verify_dataset_details_tables(self):
         self._run_environment_test_tool()
@@ -77,7 +78,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         generic_item.find_element(By.CSS_SELECTOR, "[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_drilldown_tool(self):
         self._open_drilldown_test_tool()
@@ -106,6 +106,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
+        # the table renders its header before its body is populated
+        self.wait_for_selector_visible(f"{table_selector} tbody tr")
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         trs = tbody_element.find_elements(By.CSS_SELECTOR, "tr")
         assert trs
@@ -117,7 +119,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         return key_value_pairs
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_repeat_reordering(self):
         self.home()
@@ -154,7 +155,51 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_repeat_cloning(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: list[str]):
+            for index, input_value in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                assert parameter_input.wait_for_value() == input_value
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        # Validate for: order of insertion
+        self.components.tool_form.repeat_clone(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text A", "Text B", "Text B", "Text C"])
+
+        # Validate for: deep copy, not a "shared reference"
+        self.tool_set_value("the_repeat_2|texttest", "Cloned Text B")
+        assert_input_order(["Text A", "Text B", "Cloned Text B", "Text C"])
+
+        # Validate for: deep copy independence holds in both directions
+        self.tool_set_value("the_repeat_1|texttest", "Edited Text B")
+        assert_input_order(["Text A", "Edited Text B", "Cloned Text B", "Text C"])
+
+        # Job parameters are recorded server-side, so this assertion is independent of the live form.
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
+        assert details == [
+            "texttest",
+            "Text A",
+            "texttest",
+            "Edited Text B",
+            "texttest",
+            "Cloned Text B",
+            "texttest",
+            "Text C",
+        ]
+
     @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
@@ -176,7 +221,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_with_non_latest_version(self):
         version = "0.1+galaxy6"
@@ -191,12 +235,11 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
                 return
         raise Exception("Tool version does not match job version")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_deleted_dataset(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.tabular")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         self.tool_open("column_param")
         self.select_set_value("#col", "3")
@@ -236,12 +279,11 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         )
         assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_dataset_collection_element(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
@@ -276,9 +318,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         test_path_decoy = self.get_filename("1.txt")
         # Upload form posts bad data if executed two times in a row like this, so
         # wait between uploads. xref https://github.com/galaxyproject/galaxy/issues/5169
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.perform_upload(test_path_decoy)
+        self.upload_context("local-file").stage_local_file(test_path_decoy).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.home()
@@ -319,6 +361,38 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         ), f"Expected dropdown to render exactly 50 options (default page size), got {len(options)}"
 
     @selenium_test
+    def test_data_options_load_more_appends(self):
+        """Scrolling the dropdown's ``Loading more…`` sentinel into view must
+        fetch the next page and *append* it to the select. Regression test for
+        issue #23135 — the load-more request fired but the fetched options never
+        reached the dropdown because ``FormDisplay`` renders from a clone of
+        ``inputs`` that only re-syncs on array-identity change."""
+        history_id = self.current_history_id()
+        # 60 datasets with a default 50-per-page cap leaves a full second page.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.home()
+        self.tool_open("cat1")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        trigger = select_field.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == 50
+
+        # Scroll the load-more sentinel into view to trigger the intersection
+        # observer, then confirm additional options were appended. Re-query and
+        # re-scroll on each retry: the sentinel disappears once the final page
+        # loads, and the option list re-renders when the new page arrives.
+        @retry_assertion_during_transitions
+        def assert_more_options_loaded():
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(options) > 50, f"Expected the dropdown to append a second page (>50 options), got {len(options)}"
+
+        assert_more_options_loaded()
+
+    @selenium_test
     def test_data_options_pinned_via_rerun(self):
         """A dataset selected as a tool input but living deep in history (past
         the first page window) must still appear in the rerun form's dropdown
@@ -350,7 +424,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         assert_pinned_value_selected()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_bibtex_rendering(self):
         self.home()
@@ -384,6 +457,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
+        # the table renders its header before its body is populated
+        self.components.dataset_details.tool_parameters_row.wait_for_visible()
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
         return tds
@@ -402,17 +477,16 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
 
 
-class TestLoggedInToolForm(SeleniumTestCase):
+class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_dataset_state_filtering(self):
         # upload an ok (HID 1) and a discarded (HID 2) dataset and run a tool
         # normally HID 2 would be selected but since it is discarded - it won't
         # be an option so verify the result was run with HID 1.
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
@@ -433,31 +507,26 @@ class TestLoggedInToolForm(SeleniumTestCase):
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on dataset 1"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_1(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_1)
         self.screenshot("tool_apply_rules_example_1_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_2(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_2)
         self.screenshot("tool_apply_rules_example_2_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_3(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_3)
         self.screenshot("tool_apply_rules_example_3_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_4(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
         self.screenshot("tool_apply_rules_example_4_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_paired_unpaired_flatten(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
@@ -469,13 +538,31 @@ class TestLoggedInToolForm(SeleniumTestCase):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
         self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_flatten_with_indices(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
         self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
+    def _apply_rules_tutorial_table(self) -> str:
+        rows = [
+            ("treated1fb.txt", "treated_single_1"),
+            ("treated2fb.txt", "treated_paired_2"),
+            ("treated3fb.txt", "treated_paired_3"),
+            ("untreated1fb.txt", "untreated_single_4"),
+            ("untreated2fb.txt", "untreated_single_5"),
+            ("untreated3fb.txt", "untreated_paired_6"),
+            ("untreated4fb.txt", "untreated_paired_7"),
+        ]
+        lines = []
+        for name, identifier in rows:
+            url = self.test_http_server.get_url(
+                remote_url=f"{APPLY_RULES_TUTORIAL_DATA_BASE_URL}/{name}",
+                file_path=f"test-data/rules/{name}",
+                content_type="text/plain",
+            )
+            lines.append(f"{url} {identifier}")
+        return "\n".join(lines) + "\n"
+
     @selenium_test
     @managed_history
     @skip_if_github_down
@@ -483,29 +570,19 @@ class TestLoggedInToolForm(SeleniumTestCase):
     @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
-            """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated1fb.txt untreated_single_4
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated2fb.txt untreated_single_5
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated3fb.txt untreated_paired_6
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated4fb.txt untreated_paired_7
-"""
+        self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
+            self._apply_rules_tutorial_table()
         )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.rule_builder_set_mapping("url", "A")
         self.rule_builder_set_mapping("list-identifiers", ["B"])
         self.rule_builder_set_collection_name("flat_count_list")
         self.rule_builder_set_extension("txt")
 
         self.screenshot("rules_apply_rules_example_4_2_input_rules")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(1)
         self.screenshot("rules_apply_rules_example_4_3_input_ready")
         self.history_multi_view_display_collection_contents(1, "list")

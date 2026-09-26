@@ -17,7 +17,6 @@ from collections.abc import (
 from os.path import abspath
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -87,7 +86,7 @@ class MetadataCollection(Mapping):
     def __init__(
         self,
         parent: Union["DatasetInstance", "NoneDataset"],
-        session: Optional[Union["scoped_session", "SessionlessContext"]] = None,
+        session: Union["scoped_session", "SessionlessContext"] | None = None,
     ) -> None:
         self.parent = parent
         self._session = session

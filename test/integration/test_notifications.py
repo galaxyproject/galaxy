@@ -4,7 +4,6 @@ from datetime import (
 )
 from typing import (
     Any,
-    Optional,
 )
 from uuid import uuid4
 
@@ -16,7 +15,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-def notification_test_data(subject: Optional[str] = None, message: Optional[str] = None):
+def notification_test_data(subject: str | None = None, message: str | None = None):
     return {
         "source": "integration_tests",
         "variant": "info",
@@ -29,7 +28,7 @@ def notification_test_data(subject: Optional[str] = None, message: Optional[str]
     }
 
 
-def notification_broadcast_test_data(subject: Optional[str] = None, message: Optional[str] = None):
+def notification_broadcast_test_data(subject: str | None = None, message: str | None = None):
     return {
         "source": "integration_tests",
         "variant": "info",
@@ -378,9 +377,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
         status = status_response.json()
         return status
 
-    def _send_test_notification_to(
-        self, user_ids: list[str], subject: Optional[str] = None, message: Optional[str] = None
-    ):
+    def _send_test_notification_to(self, user_ids: list[str], subject: str | None = None, message: str | None = None):
         request = {
             "recipients": {"user_ids": user_ids},
             "notification": notification_test_data(subject, message),
@@ -392,11 +389,11 @@ class NotificationsIntegrationBase(IntegrationTestCase):
 
     def _send_broadcast_notification(
         self,
-        subject: Optional[str] = None,
-        message: Optional[str] = None,
-        publication_time: Optional[datetime] = None,
-        expiration_time: Optional[datetime] = None,
-        action_links: Optional[list[tuple[str, str]]] = None,
+        subject: str | None = None,
+        message: str | None = None,
+        publication_time: datetime | None = None,
+        expiration_time: datetime | None = None,
+        action_links: list[tuple[str, str]] | None = None,
     ):
         payload = notification_broadcast_test_data()
         if subject is not None:
@@ -428,7 +425,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
         else:
             assert response["total_notifications_sent"] == expected_count
 
-    def _get_notification_id_by_subject(self, subject: str) -> Optional[str]:
+    def _get_notification_id_by_subject(self, subject: str) -> str | None:
         notifications = self._get("notifications").json()
         for notification in notifications:
             if notification["content"]["subject"] == subject:

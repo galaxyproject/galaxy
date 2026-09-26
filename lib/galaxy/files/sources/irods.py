@@ -1,9 +1,5 @@
 import os
 from fnmatch import fnmatch
-from typing import (
-    Optional,
-    Union,
-)
 
 import fs
 import fs.errors
@@ -30,23 +26,23 @@ except ImportError:
 
 
 class IrodsFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    host: Union[str, TemplateExpansion]
-    port: Union[int, TemplateExpansion] = 1247
-    username: Union[str, TemplateExpansion]
-    password: Union[str, TemplateExpansion]
-    zone: Union[str, TemplateExpansion]
-    root: Optional[Union[str, TemplateExpansion]] = None
-    timeout: Union[int, TemplateExpansion] = 30
-    refresh_time: Union[int, TemplateExpansion] = 300
-    client_server_negotiation: Optional[Union[str, TemplateExpansion]] = None
-    client_server_policy: Optional[Union[str, TemplateExpansion]] = None
-    encryption_algorithm: Optional[Union[str, TemplateExpansion]] = None
-    encryption_key_size: Optional[Union[int, TemplateExpansion]] = None
-    encryption_num_hash_rounds: Optional[Union[int, TemplateExpansion]] = None
-    encryption_salt_size: Optional[Union[int, TemplateExpansion]] = None
-    ssl_verify_server: Optional[Union[str, TemplateExpansion]] = None
-    ssl_ca_certificate_file: Optional[Union[str, TemplateExpansion]] = None
-    resource: Optional[Union[str, TemplateExpansion]] = None
+    host: str | TemplateExpansion
+    port: int | TemplateExpansion = 1247
+    username: str | TemplateExpansion
+    password: str | TemplateExpansion
+    zone: str | TemplateExpansion
+    root: str | TemplateExpansion | None = None
+    timeout: int | TemplateExpansion = 30
+    refresh_time: int | TemplateExpansion = 300
+    client_server_negotiation: str | TemplateExpansion | None = None
+    client_server_policy: str | TemplateExpansion | None = None
+    encryption_algorithm: str | TemplateExpansion | None = None
+    encryption_key_size: int | TemplateExpansion | None = None
+    encryption_num_hash_rounds: int | TemplateExpansion | None = None
+    encryption_salt_size: int | TemplateExpansion | None = None
+    ssl_verify_server: str | TemplateExpansion | None = None
+    ssl_ca_certificate_file: str | TemplateExpansion | None = None
+    resource: str | TemplateExpansion | None = None
 
 
 class IrodsFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -55,18 +51,18 @@ class IrodsFileSourceConfiguration(BaseFileSourceConfiguration):
     username: str
     password: str
     zone: str
-    root: Optional[str] = None
+    root: str | None = None
     timeout: int = 30
     refresh_time: int = 300
-    client_server_negotiation: Optional[str] = None
-    client_server_policy: Optional[str] = None
-    encryption_algorithm: Optional[str] = None
-    encryption_key_size: Optional[int] = None
-    encryption_num_hash_rounds: Optional[int] = None
-    encryption_salt_size: Optional[int] = None
-    ssl_verify_server: Optional[str] = None
-    ssl_ca_certificate_file: Optional[str] = None
-    resource: Optional[str] = None
+    client_server_negotiation: str | None = None
+    client_server_policy: str | None = None
+    encryption_algorithm: str | None = None
+    encryption_key_size: int | None = None
+    encryption_num_hash_rounds: int | None = None
+    encryption_salt_size: int | None = None
+    ssl_verify_server: str | None = None
+    ssl_ca_certificate_file: str | None = None
+    resource: str | None = None
 
 
 class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfiguration, IrodsFileSourceConfiguration]):
@@ -77,7 +73,7 @@ class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfigura
     template_config_class = IrodsFileSourceTemplateConfiguration
     resolved_config_class = IrodsFileSourceConfiguration
 
-    def _iter_directory_entries(self, fs_handle, parent_path: str, normalized_query: Optional[str] = None):
+    def _iter_directory_entries(self, fs_handle, parent_path: str, normalized_query: str | None = None):
         for raw_name in fs_handle.listdir(parent_path):
             name = os.path.basename(str(raw_name).rstrip("/"))
             if not name:
@@ -92,17 +88,16 @@ class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfigura
         self,
         fs_handle,
         path: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         normalized_query = query.lower() if query else None
         entries = []
         for _, info in self._iter_directory_entries(fs_handle, path, normalized_query):
             entries.append(self._resource_info_to_dict(path, info))
         count = len(entries)
-        page = self._to_page(limit, offset)
-        if page is not None:
+        if (page := self._to_page(limit, offset)) is not None:
             entries = entries[page[0] : page[1]]
         return entries, count
 
@@ -112,10 +107,10 @@ class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfigura
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         try:
             with self._open_fs(context) as fs_handle:
@@ -150,8 +145,7 @@ class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfigura
             "ssl_verify_server": config.ssl_verify_server,
             "ssl_ca_certificate_file": config.ssl_ca_certificate_file,
         }
-        ssl_context = getattr(config, "ssl_context", None)
-        if ssl_context is not None:
+        if (ssl_context := getattr(config, "ssl_context", None)) is not None:
             session_kwargs["ssl_context"] = ssl_context
 
         session = iRODSSession(**session_kwargs)

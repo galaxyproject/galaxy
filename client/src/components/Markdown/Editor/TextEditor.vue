@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex h-100 w-100">
-        <FlexPanel v-if="!hideToolbox" side="left">
-            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
+        <FlexPanel v-if="!hideToolbox" ref="markdownFlexPanel" side="left">
+            <MarkdownToolBox :steps="steps" @close-panel="onClosePanel" @insert="insertMarkdown" />
         </FlexPanel>
         <textarea
             id="workflow-report-editor"
@@ -43,6 +43,7 @@ const emit = defineEmits<{
 
 const content = ref<string>(props.markdownText);
 const textArea = ref<HTMLTextAreaElement | null>(null);
+const markdownFlexPanel = ref<InstanceType<typeof FlexPanel> | null>(null);
 
 const FENCE = "```";
 
@@ -59,6 +60,12 @@ watch(
         });
     },
 );
+
+function onClosePanel() {
+    if (markdownFlexPanel.value) {
+        markdownFlexPanel.value.show = false;
+    }
+}
 
 function insertMarkdown(markdown: string) {
     markdown = markdown.replace(")(", ", ");

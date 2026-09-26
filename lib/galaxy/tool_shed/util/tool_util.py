@@ -1,6 +1,5 @@
 import os
 import shutil
-from typing import Optional
 
 from galaxy import util
 from galaxy.datatypes.sniff import is_column_based
@@ -35,7 +34,7 @@ def build_tool_panel_section_select_field(app):
     return select_field
 
 
-def copy_sample_file(tool_data_path: str, filename: str, dest_path: Optional[str] = None) -> str:
+def copy_sample_file(tool_data_path: str, filename: str, dest_path: str | None = None) -> str:
     """
     Copies a sample file at `filename` to `the dest_path`
     directory and strips the '.sample' extensions from `filename`.
@@ -63,9 +62,9 @@ def copy_sample_file(tool_data_path: str, filename: str, dest_path: Optional[str
 def copy_sample_files(
     tool_data_path: str,
     sample_files,
-    tool_path: Optional[str] = None,
+    tool_path: str | None = None,
     sample_files_copied=None,
-    dest_path: Optional[str] = None,
+    dest_path: str | None = None,
 ) -> None:
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not
@@ -90,7 +89,7 @@ def generate_message_for_invalid_tools(
     app,
     invalid_file_tups: list,
     repository,
-    metadata_dict: Optional[dict],
+    metadata_dict: dict | None,
     as_html: bool = True,
     displaying_invalid_tool: bool = False,
 ) -> str:

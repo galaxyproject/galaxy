@@ -11,7 +11,6 @@ __all__ = ("ExportToFileSourceHook",)
 
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -153,7 +152,7 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
         export_association.task_uuid = result.id
         self.app.model.context.commit()
 
-    def _get_export_config(self, invocation) -> "Optional[dict[str, Any]]":
+    def _get_export_config(self, invocation) -> "dict[str, Any] | None":
         """
         Extract export configuration from invocation on_complete actions.
 

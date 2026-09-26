@@ -113,14 +113,6 @@ tool\_shed.util.review\_util module
    :undoc-members:
    :show-inheritance:
 
-tool\_shed.util.search\_util module
------------------------------------
-
-.. automodule:: tool_shed.util.search_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.util.shed\_index module
 ----------------------------------
 
@@ -137,26 +129,10 @@ tool\_shed.util.shed\_util\_common module
    :undoc-members:
    :show-inheritance:
 
-tool\_shed.util.tool\_dependency\_util module
----------------------------------------------
-
-.. automodule:: tool_shed.util.tool_dependency_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.util.tool\_util module
 ---------------------------------
 
 .. automodule:: tool_shed.util.tool_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tool\_shed.util.web\_util module
---------------------------------
-
-.. automodule:: tool_shed.util.web_util
    :members:
    :undoc-members:
    :show-inheritance:

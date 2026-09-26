@@ -6,10 +6,10 @@ Uses Streamable HTTP transport with stateless mode for multi-worker compatibilit
 """
 
 import logging
+from collections.abc import Callable
 from contextlib import contextmanager
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -19,9 +19,16 @@ from fastmcp import (
     settings as fastmcp_settings,
 )
 from starlette.datastructures import URL
+from starlette.routing import Route
 
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
+from galaxy.tool_util.deps.mulled.recommend import (
+    biocontainer_tag_built,
+    ContainerRecommendation,
+    PackageSpec,
+    recommend_container,
+)
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -42,8 +49,7 @@ def get_mcp_url_builder(fallback_base_url: str):
 
     from galaxy.webapps.galaxy.api import UrlBuilder
 
-    request = _current_http_request.get(None)
-    if request is not None:
+    if (request := _current_http_request.get(None)) is not None:
         return UrlBuilder(request)
 
     class MCPUrlBuilder:
@@ -110,7 +116,7 @@ class _StaticRequest(GalaxyAbstractRequest):
     def is_secure(self) -> bool:
         return self._parsed.scheme == "https"
 
-    def get_cookie(self, name: str) -> Optional[str]:
+    def get_cookie(self, name: str) -> str | None:
         return None
 
     @property
@@ -132,13 +138,13 @@ class _StaticResponse(GalaxyAbstractResponse):
         self,
         key: str,
         value: str = "",
-        max_age: Optional[int] = None,
-        expires: Optional[int] = None,
+        max_age: int | None = None,
+        expires: int | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
-        samesite: Optional[str] = "lax",
+        samesite: str | None = "lax",
     ) -> None:
         return None
 
@@ -153,6 +159,33 @@ def _mcp_error_handler(operation: str):
     except Exception as e:
         logger.error(f"MCP {operation}: {e}")
         raise ValueError(f"{operation} failed: {e}") from e
+
+
+def _biocontainer_recommendation_payload(
+    packages: list[str],
+    recommend: Callable[[list[PackageSpec]], ContainerRecommendation] = recommend_container,
+    verify: Callable[[str], bool | None] = biocontainer_tag_built,
+) -> dict[str, Any]:
+    """Resolve a verified biocontainer for ``packages`` and shape the MCP response.
+
+    Pure (no Galaxy app / auth): parses each ``"name"`` / ``"name=version"`` entry into a
+    ``PackageSpec``, calls the recommender, and adds a quay.io tag-existence check. ``recommend``
+    and ``verify`` are injectable so the payload shaping can be unit-tested offline.
+    """
+    specs = []
+    for pkg in packages:
+        name, _, version = pkg.partition("=")
+        if name.strip():
+            specs.append(PackageSpec(name.strip(), version.strip() or None))
+    recommendation = recommend(specs)
+    return {
+        "image": recommendation.image,
+        "found": recommendation.found,
+        "match_quality": recommendation.match_quality.value,
+        "source": recommendation.source.value,
+        "notes": list(recommendation.notes),
+        "verified": verify(recommendation.image) if recommendation.image else None,
+    }
 
 
 def get_mcp_app(gx_app):
@@ -968,6 +1001,40 @@ def get_mcp_app(gx_app):
             return ops_manager.create_user_tool(representation)
 
     @mcp.tool()
+    def recommend_biocontainer(packages: list[str], api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """Resolve a verified ``quay.io/biocontainers`` image for a set of conda packages.
+
+        Use this to pick the ``container`` for ``create_user_tool`` instead of guessing an
+        image. The result is verified against quay.io rather than hallucinated, which avoids
+        the common failure of inventing a tag or using a bare image (e.g. ``python:3.12-slim``)
+        that doesn't ship the libraries the tool needs.
+
+        Args:
+            packages: The conda packages the tool wraps, each as ``"name"`` or ``"name=version"``
+                (e.g. ``["samtools=1.17", "bwa"]``). Use the canonical conda package names you
+                would ``conda install`` (e.g. ``pandas``, ``r-ggplot2``, ``samtools``). A single
+                package yields a single-package image; several yield a mulled-v2 image.
+
+        Returns:
+            Dict with:
+            - ``image``: the resolved ``quay.io/biocontainers/...`` reference, or null if none found.
+            - ``found``: whether an image was resolved.
+            - ``match_quality``: ``exact_version`` | ``name_only`` | ``not_found`` (name_only means
+              the package matched but the requested version did not; the newest tag was used).
+            - ``source``, ``notes``: provenance and any explanatory notes.
+            - ``verified``: true if the exact tag is built on quay.io, false if it is positively
+              absent, null if it could not be checked (non-biocontainer ref or transient error).
+
+        NEXT STEPS:
+        - Pass ``image`` as the ``container`` when calling ``create_user_tool``.
+        """
+        with _mcp_error_handler("recommend_biocontainer"):
+            # Authenticate (reject anonymous use -- this makes outbound quay.io requests); the
+            # recommender itself is a pure library call and needs no trans/user.
+            get_operations_manager(api_key, ctx)
+            return _biocontainer_recommendation_payload(packages)
+
+    @mcp.tool()
     def delete_user_tool(uuid: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Deactivate a user-defined tool. Deactivated tools are not loaded into the toolbox.
 
@@ -1180,7 +1247,243 @@ def get_mcp_app(gx_app):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.import_workflow_from_iwc(trs_id)
 
-    mcp_app = mcp.http_app(path="/")
+    # ==================== Pages (notebooks and reports) ====================
+
+    @mcp.tool()
+    def list_pages(
+        api_key: str,
+        ctx: MCPContext,
+        history_id: str | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = False,
+    ) -> dict[str, Any]:
+        """List Galaxy pages (markdown documents) viewable by the user.
+
+        A page attached to a history is a "Galaxy Notebook"; a standalone page is
+        a "Report". Pass history_id to list only that history's notebooks.
+
+        Args:
+            history_id: Encoded history id. When set, returns only notebooks
+                attached to that history.
+            search: Freetext filter over title/content.
+            limit: Max pages to return (default 100).
+            offset: Pagination offset.
+            show_published: Also include pages published by other users (default False).
+            show_shared: Also include pages shared with the user (default False).
+
+        Returns:
+            Dict with `pages` (summaries incl. encoded id, title, history_id,
+            latest_revision_id), `count`, and `total_matches`.
+
+        NEXT STEPS:
+        - Read one: get_page(page_id)
+        - Create a notebook: create_page(history_id=...)
+        """
+        with _mcp_error_handler("list_pages"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_pages(
+                history_id=history_id,
+                search=search,
+                limit=limit,
+                offset=offset,
+                show_published=show_published,
+                show_shared=show_shared,
+            )
+
+    @mcp.tool()
+    def get_page(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        include_rendered: bool = False,
+    ) -> dict[str, Any]:
+        """Get a page and the content of its latest revision.
+
+        Returns `content_editor`: the editable Galaxy-flavored markdown, with
+        ENCODED ids in directives (e.g. `history_dataset_id=f2db41e1fa331b3e`).
+        This is the form to edit and pass back to update_page.
+
+        Args:
+            page_id: Encoded id of the page (from list_pages / create_page).
+            include_rendered: When True, also return `content` -- the
+                embed-expanded render form (inlined dataset previews). Can be
+                large; omit unless you need the rendered output.
+
+        Returns:
+            Page details including `content_editor`, metadata, and `edit_source`
+            of the latest revision.
+
+        NEXT STEPS:
+        - Edit it: update_page(page_id, content=...)
+        - See history: list_page_revisions(page_id)
+        """
+        with _mcp_error_handler("get_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_page(page_id, include_rendered=include_rendered)
+
+    @mcp.tool()
+    def create_page(
+        api_key: str,
+        ctx: MCPContext,
+        history_id: str | None = None,
+        title: str | None = None,
+        content: str | None = None,
+        annotation: str | None = None,
+        slug: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a markdown page (Galaxy Notebook or Report).
+
+        Pass history_id to create a history-attached notebook (title auto-fills
+        from the history if omitted). Omit history_id to create a standalone
+        report -- reports REQUIRE both a title and a unique slug
+        (lowercase/digits/hyphens).
+
+        Content is Galaxy-flavored markdown. To embed a dataset, use a directive
+        with the ENCODED dataset id, e.g.
+        `history_dataset_display(history_dataset_id=f2db41e1fa331b3e)` or
+        `history_dataset_collection_display(history_dataset_collection_id=...)`.
+        Get encoded ids from get_history_contents / get_dataset_details.
+
+        Args:
+            history_id: Encoded history id to attach the page to (notebook).
+            title: Page title.
+            content: Initial markdown content.
+            annotation: Optional annotation attached to the page.
+            slug: URL slug (required for standalone reports).
+
+        Returns:
+            Created page details including encoded id and content_editor.
+
+        NEXT STEPS:
+        - Edit it: update_page(page_id, content=...)
+        """
+        with _mcp_error_handler("create_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.create_page(
+                history_id=history_id,
+                title=title,
+                content=content,
+                annotation=annotation,
+                slug=slug,
+            )
+
+    @mcp.tool()
+    def update_page(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        content: str | None = None,
+        title: str | None = None,
+    ) -> dict[str, Any]:
+        """Update a page, creating a new revision when content changes.
+
+        Content is Galaxy-flavored markdown using ENCODED ids in directives
+        (e.g. `history_dataset_id=f2db41e1fa331b3e`) -- never raw integer ids or
+        HIDs. Get encoded ids from get_history_contents / get_dataset_details.
+        Edits made through this tool are recorded with edit_source="agent".
+
+        Args:
+            page_id: Encoded id of the page.
+            content: New markdown content. Omit to leave content unchanged.
+            title: New title. Omit to leave unchanged.
+
+        Returns:
+            Updated page details including content_editor.
+
+        NEXT STEPS:
+        - Inspect revisions: list_page_revisions(page_id)
+        - Roll back: revert_page_revision(page_id, revision_id)
+        """
+        with _mcp_error_handler("update_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.update_page(page_id, content=content, title=title)
+
+    @mcp.tool()
+    def list_page_revisions(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        sort_desc: bool = False,
+    ) -> dict[str, Any]:
+        """List the revision history of a page.
+
+        Each revision carries an `edit_source` ("user", "agent", or "restore")
+        recording who made the edit.
+
+        Args:
+            page_id: Encoded id of the page.
+            sort_desc: Newest-first when True (default oldest-first).
+
+        Returns:
+            Dict with `revisions` (encoded id, page_id, edit_source, timestamps)
+            and `count`.
+
+        NEXT STEPS:
+        - Read a revision: get_page_revision(page_id, revision_id)
+        - Roll back: revert_page_revision(page_id, revision_id)
+        """
+        with _mcp_error_handler("list_page_revisions"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_page_revisions(page_id, sort_desc=sort_desc)
+
+    @mcp.tool()
+    def get_page_revision(
+        page_id: str,
+        revision_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        include_rendered: bool = False,
+    ) -> dict[str, Any]:
+        """Get the content of a single page revision.
+
+        Mirrors get_page: returns `content_editor` (the editable Galaxy-flavored
+        markdown with ENCODED ids in directives) -- the form to compare against
+        get_page or pass back to update_page.
+
+        Args:
+            page_id: Encoded id of the page.
+            revision_id: Encoded id of the revision (from list_page_revisions).
+            include_rendered: When True, also return `content` -- the
+                embed-expanded render form. Can be large; omit unless needed.
+
+        Returns:
+            Revision details including `content_editor`, `edit_source`, and timestamps.
+        """
+        with _mcp_error_handler("get_page_revision"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_page_revision(page_id, revision_id, include_rendered=include_rendered)
+
+    @mcp.tool()
+    def revert_page_revision(
+        page_id: str,
+        revision_id: str,
+        api_key: str,
+        ctx: MCPContext,
+    ) -> dict[str, Any]:
+        """Roll a page back to an earlier revision.
+
+        Creates a NEW revision from the target revision's content, recorded with
+        edit_source="restore" (the history is append-only -- nothing is deleted).
+
+        Args:
+            page_id: Encoded id of the page.
+            revision_id: Encoded id of the revision to restore.
+
+        Returns:
+            The new restored revision's details.
+        """
+        with _mcp_error_handler("revert_page_revision"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.revert_page_revision(page_id, revision_id)
+
+    mcp_path = gx_app.config.mcp_server_path.rstrip("/") or "/"
+    mcp_app = mcp.http_app(path=mcp_path)
+    if mcp_path != "/":
+        mcp_route = next(route for route in mcp_app.routes if isinstance(route, Route) and route.path == mcp_path)
+        mcp_app.router.routes.append(Route(f"{mcp_path}/", endpoint=mcp_route.endpoint, methods=mcp_route.methods))
     mcp_app.state.mcp_server = mcp
 
     logger.info("MCP server initialized (Streamable HTTP)")

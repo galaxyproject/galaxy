@@ -2,9 +2,6 @@ import logging
 import os
 import re
 from collections.abc import Callable
-from typing import (
-    Optional,
-)
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -13,7 +10,10 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import DatasetProtocol
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -387,7 +387,7 @@ class SDF(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -400,7 +400,7 @@ class SDF(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for SD-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for SD-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -470,7 +470,7 @@ class MOL2(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -483,7 +483,7 @@ class MOL2(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for MOL2-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for MOL2-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -556,7 +556,7 @@ class FPS(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.get_file_name(), invert=True)
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by fingerprint records.
         """
@@ -569,7 +569,7 @@ class FPS(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for MOL2-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for MOL2-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -631,7 +631,7 @@ class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
 
     file_ext = "obfs"
-    composite_type = "basic"
+    composite_type = "auto_primary_file"
 
     MetadataElement(
         name="base_name",
@@ -653,6 +653,33 @@ class OBFS(Binary):
         self.add_composite_file("molecule.inchi", optional=True, is_binary=False, description="Molecule File")
         self.add_composite_file("molecule.mol2", optional=True, is_binary=False, description="Molecule File")
         self.add_composite_file("molecule.cml", optional=True, is_binary=False, description="Molecule File")
+
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
+        rval = ["<html><head><title>OpenBabel Fastsearch Index</title></head><p/>"]
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            description = composite_file.get("description")
+            if description:
+                rval.append(
+                    f'<li><a href="{composite_name}" type="application/binary">{composite_name} ({description})</a></li>'
+                )
+            else:
+                rval.append(f'<li><a href="{composite_name}" type="application/binary">{composite_name}</a></li>')
+        rval.append("</ul></div></html>")
+        return "\n".join(rval)
+
+    def regenerate_primary_file(self, dataset: DatasetProtocol) -> None:
+        efp = dataset.extra_files_path
+        flist = os.listdir(efp)
+        rval = [
+            f"<html><head><title>Files for Composite Dataset {dataset.name}</title></head><body><p/>Composite {dataset.name} contains:<p/><ul>"
+        ]
+        for fname in flist:
+            sfname = os.path.split(fname)[-1]
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
+        rval.append("</ul></body></html>")
+        with open(dataset.get_file_name(), "w") as f:
+            f.write("\n".join(rval))
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
@@ -680,7 +707,7 @@ class OBFS(Binary):
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
@@ -1410,7 +1437,7 @@ class CML(GenericXml):
         return True
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -1423,7 +1450,7 @@ class CML(GenericXml):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for CML-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for CML-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:

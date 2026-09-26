@@ -8,10 +8,7 @@ import os.path
 import shutil
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -45,10 +42,10 @@ CONFIG_VAL_NOT_FOUND = object()
 
 
 def build_dependency_manager(
-    app_config_dict: Optional[Dict[str, Any]] = None,
-    resolution_config_dict: Optional[Dict[str, Any]] = None,
-    conf_file: Optional[str] = None,
-    default_tool_dependency_dir: Optional[str] = None,
+    app_config_dict: dict[str, Any] | None = None,
+    resolution_config_dict: dict[str, Any] | None = None,
+    conf_file: str | None = None,
+    default_tool_dependency_dir: str | None = None,
 ) -> "DependencyManager":
     """Build a DependencyManager object from app and/or resolution config.
 
@@ -101,11 +98,11 @@ def build_dependency_manager(
 
 ContainerType = str
 DestinationId = str
-DestinationParametersType = Dict[str, Any]
+DestinationParametersType = dict[str, Any]
 
 
 class DestinationProtocol(Protocol):
-    id: Optional[DestinationId]
+    id: DestinationId | None
     params: DestinationParametersType
 
 
@@ -121,11 +118,11 @@ class DependencyManager:
     dependency available in the current shell environment.
     """
 
-    _destination_for_container_type: Dict[ContainerType, List[DestinationProtocol]]
+    _destination_for_container_type: dict[ContainerType, list[DestinationProtocol]]
     cached = False
 
     def __init__(
-        self, default_base_path: str, conf_file: Optional[str] = None, app_config: Optional[Dict[str, Any]] = None
+        self, default_base_path: str, conf_file: str | None = None, app_config: dict[str, Any] | None = None
     ) -> None:
         """
         Create a new dependency manager looking for packages under the paths listed
@@ -148,11 +145,11 @@ class DependencyManager:
         else:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
-        self._enabled_container_types: List[str] = []
+        self._enabled_container_types: list[str] = []
         self._destination_for_container_type = {}
 
     def set_enabled_container_types(
-        self, container_types_to_destinations: Dict[ContainerType, List[DestinationProtocol]]
+        self, container_types_to_destinations: dict[ContainerType, list[DestinationProtocol]]
     ):
         """Set the union of all enabled container types."""
         self._enabled_container_types = list(container_types_to_destinations.keys())
@@ -160,8 +157,8 @@ class DependencyManager:
         self._destination_for_container_type = container_types_to_destinations
 
     def get_destination_info_for_container_type(
-        self, container_type: ContainerType, destination_id: Optional[DestinationId] = None
-    ) -> Optional[DestinationParametersType]:
+        self, container_type: ContainerType, destination_id: DestinationId | None = None
+    ) -> DestinationParametersType | None:
         if destination_id is None:
             return next(iter(self._destination_for_container_type[container_type])).params
         else:
@@ -204,7 +201,7 @@ class DependencyManager:
     def precache(self):
         return string_as_bool(self.get_app_option("precache_dependencies", True))
 
-    def dependency_shell_commands(self, requirements: ToolRequirements, **kwds: Any) -> List[str]:
+    def dependency_shell_commands(self, requirements: ToolRequirements, **kwds: Any) -> list[str]:
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
         return [
@@ -334,7 +331,7 @@ class DependencyManager:
     def uses_tool_shed_dependencies(self):
         return any(isinstance(r, ToolShedPackageDependencyResolver) for r in self.dependency_resolvers)
 
-    def find_dep(self, name: str, version: Optional[str] = None, type: str = "package", **kwds):
+    def find_dep(self, name: str, version: str | None = None, type: str = "package", **kwds):
         log.debug(f"Find dependency {name} version {version}")
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
@@ -366,7 +363,7 @@ class DependencyManager:
             ],
         )
 
-    def __parse_resolver_conf_plugins(self, plugin_source: plugin_config.PluginConfigSource) -> List:
+    def __parse_resolver_conf_plugins(self, plugin_source: plugin_config.PluginConfigSource) -> list:
         """ """
         extra_kwds = dict(dependency_manager=self)
         # Use either 'type' from YAML definition or 'resolver_type' from to_dict definition.
@@ -374,7 +371,7 @@ class DependencyManager:
             self.resolver_classes, plugin_source, extra_kwds, plugin_type_keys=["type", "resolver_type"]
         )
 
-    def __resolvers_dict(self) -> Dict[str, Type]:
+    def __resolvers_dict(self) -> dict[str, type]:
         import galaxy.tool_util.deps.resolvers
 
         return plugin_config.plugins_dict(galaxy.tool_util.deps.resolvers, "resolver_type")
@@ -394,7 +391,7 @@ class CachedDependencyManager(DependencyManager):
     cached = True
 
     def __init__(
-        self, default_base_path: str, conf_file: Optional[str] = None, app_config: Optional[Dict[str, Any]] = None
+        self, default_base_path: str, conf_file: str | None = None, app_config: dict[str, Any] | None = None
     ) -> None:
         super().__init__(default_base_path, conf_file, app_config)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(

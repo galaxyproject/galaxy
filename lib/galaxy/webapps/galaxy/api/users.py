@@ -2,15 +2,12 @@
 API operations on User objects.
 """
 
-import copy
 import json
 import logging
 import re
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -29,6 +26,7 @@ from galaxy import (
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import users
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
@@ -65,6 +63,9 @@ from galaxy.schema.schema import (
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
+    UserExtraPreferencesInputs,
+    UserExtraPreferencesPayload,
+    UserExtraPreferencesUpdated,
     UserUpdatePayload,
 )
 from galaxy.security.validate_user_input import (
@@ -72,7 +73,6 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname,
 )
-from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
@@ -85,6 +85,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -96,6 +97,21 @@ from galaxy.webapps.galaxy.services.users import UsersService
 from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
+
+_information_inputs_deprecation_warned = False
+
+
+def _warn_information_inputs_deprecated() -> None:
+    """Log once per process, so a busy instance does not fill its log with this."""
+    global _information_inputs_deprecation_warned
+    if not _information_inputs_deprecation_warned:
+        _information_inputs_deprecation_warned = True
+        log.warning(
+            "/api/users/{id}/information/inputs is deprecated and will be removed in a future release. "
+            "Use /api/users/{user_id} for email, username and display name, and "
+            "/api/users/{user_id}/extra_preferences/inputs for administrator-defined extra preferences."
+        )
+
 
 router = Router(tags=["users"])
 
@@ -150,7 +166,18 @@ CustomBuildCreationBody = Body(
     default=..., title="Add custom build", description="The values to add a new custom build."
 )
 UserCreationBody = Body(default=..., title="Create User", description="The values to add create a user.")
-AnyUserModel = Union[DetailedUserModel, AnonUserModel]
+AnyUserModel = DetailedUserModel | AnonUserModel
+
+# Disable changing these when enable_account_interface is false.
+ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "username"})
+
+
+def ensure_account_modification_allowed(trans: ProvidesUserContext, message: str) -> None:
+    """Reject non-admin account changes when ``enable_account_interface`` is disabled."""
+    # Enforced in the controller rather than UserManager because OIDC profile sync writes these
+    # same fields through the manager precisely when the option is off.
+    if not trans.app.config.enable_account_interface and not trans.user_is_admin:
+        raise exceptions.ConfigDoesNotAllowException(message)
 
 
 @router.cbv
@@ -207,9 +234,9 @@ class FastAPIUsers:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
     ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -337,8 +364,8 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
-    ) -> Optional[UserQuotaUsage]:
-        effective_label: Optional[str] = label
+    ) -> UserQuotaUsage | None:
+        effective_label: str | None = label
         if label == "__null__":
             effective_label = None
         if user := self.service.get_user_full(trans, user_id, False):
@@ -431,6 +458,35 @@ class FastAPIUsers:
         user = self.service.get_user(trans, user_id)
         favorites = self.favorites_manager.add(trans, user, object_type, payload.object_id)
         return FavoriteObjectsSummary.model_validate(favorites)
+
+    @router.get(
+        "/api/users/{user_id}/extra_preferences/inputs",
+        name="get_extra_preferences",
+        summary="Return the administrator-defined extra user preferences as form inputs",
+    )
+    def get_extra_preferences(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> UserExtraPreferencesInputs:
+        user = self.service.get_user(trans, user_id)
+        return UserExtraPreferencesInputs(inputs=self.service.build_extra_preferences_inputs(trans, user))
+
+    @router.put(
+        "/api/users/{user_id}/extra_preferences/inputs",
+        name="set_extra_preferences",
+        summary="Save values for the administrator-defined extra user preferences",
+    )
+    def set_extra_preferences(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: UserExtraPreferencesPayload = Body(default_factory=UserExtraPreferencesPayload),
+    ) -> UserExtraPreferencesUpdated:
+        user = self.service.get_user(trans, user_id)
+        self.service.save_extra_preferences(trans, user, payload.root)
+        trans.sa_session.commit()
+        return UserExtraPreferencesUpdated(message="Extra preferences have been saved.")
 
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
@@ -593,7 +649,7 @@ class FastAPIUsers:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
+        payload: UserCreationPayload | RemoteUserCreationPayload = UserCreationBody,
     ) -> CreatedUserModel:
         if isinstance(payload, UserCreationPayload):
             email = payload.email
@@ -634,13 +690,11 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = UsersDeletedQueryParam,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
-        limit: Optional[int] = Query(
-            default=None, ge=1, title="Limit", description="Maximum number of users to return."
-        ),
-        offset: Optional[int] = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
+        limit: int | None = Query(default=None, ge=1, title="Limit", description="Maximum number of users to return."),
+        offset: int | None = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
     ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(
             trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any, limit=limit, offset=offset
@@ -655,7 +709,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> AnyUserModel:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
@@ -668,12 +722,14 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         payload: UserUpdatePayload = UserUpdateBody,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
         user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
         data = payload.model_dump(exclude_unset=True)
+        if not ACCOUNT_IDENTITY_FIELDS.isdisjoint(data):
+            ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         self.service.user_deserializer.deserialize(user_to_update, data, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
@@ -693,7 +749,7 @@ class FastAPIUsers:
                 description="Whether to definitely remove this user. Only deleted users can be purged.",
             ),
         ] = False,
-        payload: Optional[UserDeletionPayload] = None,
+        payload: UserDeletionPayload | None = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
         assert user_to_update is not None
@@ -706,6 +762,7 @@ class FastAPIUsers:
                 self.service.user_manager.delete(user_to_update)
         else:
             if trans.user == user_to_update:
+                ensure_account_modification_allowed(trans, "Account deletion is not allowed in this Galaxy instance")
                 self.service.user_manager.delete(user_to_update)
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
@@ -746,72 +803,27 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
 
-    def _get_user_full(self, trans, user_id, **kwd):
+    def _get_user_full(self, trans: ProvidesUserContext, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
         return self.service.get_user_full(trans, user_id, deleted)
 
-    def _get_extra_user_preferences(self, trans):
-        """
-        Reads the file user_preferences_extra_conf.yml to display
-        admin defined user informations
-        """
-        return trans.app.config.user_preferences_extra["preferences"]
-
-    def _build_extra_user_pref_inputs(self, trans, preferences, user):
-        """
-        Build extra user preferences inputs list.
-        Add values to the fields if present
-        """
-        if not preferences:
-            return []
-        extra_pref_inputs = []
-        # Build sections for different categories of inputs
-        user_vault = UserVaultWrapper(trans.app.vault, user)
-        for item, value in preferences.items():
-            if value is not None:
-                input_fields = copy.deepcopy(value["inputs"])
-                for input in input_fields:
-                    help = input.get("help", "")
-                    required = "Required" if util.string_as_bool(input.get("required")) else ""
-                    if help:
-                        input["help"] = f"{help} {required}"
-                    else:
-                        input["help"] = required
-                    if input.get("store") == "vault":
-                        field = f"{item}/{input['name']}"
-                        input["value"] = user_vault.read_secret(f"preferences/{field}")
-                    else:
-                        field = f"{item}|{input['name']}"
-                        for data_item in user.extra_preferences:
-                            if field in data_item:
-                                input["value"] = user.extra_preferences[data_item]
-                    # regardless of the store, do not send secret type values to client
-                    if input.get("type") == "secret":
-                        input["value"] = "__SECRET_PLACEHOLDER__"
-                        # let the client treat it as a password field
-                        input["type"] = "password"
-                extra_pref_inputs.append(
-                    {
-                        "type": "section",
-                        "title": value["description"],
-                        "name": item,
-                        "expanded": True,
-                        "inputs": input_fields,
-                    }
-                )
-        return extra_pref_inputs
-
     @expose_api
-    def get_information(self, trans, id, **kwd):
+    def get_information(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
 
+        .. deprecated::
+            Use ``GET /api/users/{user_id}`` for email, username and display name,
+            and ``GET /api/users/{user_id}/extra_preferences/inputs`` for the
+            administrator-defined extra preferences.
+
         :param id: the encoded id of the user
         :type  id: str
         """
+        _warn_information_inputs_deprecated()
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -858,7 +870,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             )
             if info_form_models:
                 info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
-                info_field = {
+                info_field: dict[str, Any] = {
                     "type": "conditional",
                     "name": "info",
                     "cases": [],
@@ -880,11 +892,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
                 inputs.append(info_field)
 
-            if trans.app.config.enable_account_interface:
+            if trans.app.config.enable_account_interface and trans.app.config.enable_user_addresses:
                 address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
                 for field in AddressField.fields():
                     address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
-                address_repeat = {
+                address_repeat: dict[str, Any] = {
                     "title": "Address",
                     "name": "address",
                     "type": "repeat",
@@ -903,8 +915,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
             # Build input sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs(trans, self._get_extra_user_preferences(trans), user)
-            for item in extra_user_pref:
+            for item in self.service.build_extra_preferences_inputs(trans, user):
                 inputs.append(item)
         else:
             if user.active_repositories:
@@ -933,10 +944,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return user_info
 
     @expose_api
-    def set_information(self, trans, id, payload=None, **kwd):
+    def set_information(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
+
+        .. deprecated::
+            Use ``PUT /api/users/{user_id}`` for email, username and display name,
+            and ``PUT /api/users/{user_id}/extra_preferences/inputs`` for the
+            administrator-defined extra preferences.
 
         :param id: the encoded id of the user
         :type  id: str
@@ -944,13 +960,19 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         :param payload: data with new settings
         :type  payload: dict
         """
+        _warn_information_inputs_deprecated()
         payload = payload or {}
         user = self._get_user(trans, id)
+        ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         # Update email
         if "email" in payload:
             email = payload.get("email")
             self.user_manager.update_email(
-                trans, user, email, commit=False, send_activation_email=True  # commit at the end of the handler
+                trans,
+                user,
+                email,
+                commit=False,
+                send_activation_email=True,  # commit at the end of the handler
             )
         # Update public name
         if "username" in payload:
@@ -969,79 +991,50 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.values = form_values
 
         # Update values for extra user preference items
-        extra_user_pref_data = {}
-        extra_pref_keys = self._get_extra_user_preferences(trans)
-        user_vault = UserVaultWrapper(trans.app.vault, user)
-        current_extra_user_pref_data = json.loads(user.preferences.get("extra_user_preferences", "{}"))
-        if extra_pref_keys is not None:
-            for key in extra_pref_keys:
-                key_prefix = f"{key}|"
-                for item in payload:
-                    if item.startswith(key_prefix):
-                        keys = item.split("|")
-                        section = extra_pref_keys[keys[0]]
-                        matching_input = [input for input in section["inputs"] if input["name"] == keys[1]]
-                        if matching_input:
-                            input = matching_input[0]
-                            if input.get("required") and payload[item] == "":
-                                raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                            input_type = input.get("type")
-                            is_secret_value_unchanged = (
-                                input_type == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"
-                            )
-                            is_stored_in_vault = input.get("store") == "vault"
-                            if is_secret_value_unchanged:
-                                if not is_stored_in_vault:
-                                    # If the value is unchanged, keep the current value
-                                    extra_user_pref_data[item] = current_extra_user_pref_data.get(item, "")
-                            else:
-                                if is_stored_in_vault:
-                                    user_vault.write_secret(f"preferences/{keys[0]}/{keys[1]}", str(payload[item]))
-                                else:
-                                    extra_user_pref_data[item] = payload[item]
-                        else:
-                            extra_user_pref_data[item] = payload[item]
-            user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
+        self.service.save_extra_preferences(trans, user, payload)
 
-        # Update user addresses
-        address_dicts = {}
-        address_count = 0
-        for item in payload:
-            match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
-            if match:
-                groups = match.groupdict()
-                index = int(groups["index"])
-                attribute = groups["attribute"]
-                address_dicts[index] = address_dicts.get(index) or {}
-                address_dicts[index][attribute] = payload[item]
-                address_count = max(address_count, index + 1)
-        user.addresses = []
-        for index in range(0, address_count):
-            d = address_dicts[index]
-            if d.get("id"):
-                try:
-                    user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
-                except Exception as e:
-                    raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
-            else:
-                user_address = UserAddress()
-                trans.log_event("User address added")
-            for field in AddressField.fields():
-                if str(field[2]).lower() == "required" and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException(
-                        f"Address {index + 1}: {field[1]} ({field[0]}) required."
-                    )
-                setattr(user_address, field[0], str(d.get(field[0], "")))
-            user_address.user = user
-            user.addresses.append(user_address)
-            trans.sa_session.add(user_address)
+        # Update user addresses. The whole block is gated, not just the parsing:
+        # it rebuilds user.addresses from the payload, so running it while the
+        # feature is off would silently discard whatever is stored.
+        if trans.app.config.enable_user_addresses:
+            address_dicts: dict[int, dict[str, Any]] = {}
+            address_count = 0
+            for item in payload:
+                match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
+                if match:
+                    groups = match.groupdict()
+                    index = int(groups["index"])
+                    attribute = groups["attribute"]
+                    address_dicts[index] = address_dicts.get(index) or {}
+                    address_dicts[index][attribute] = payload[item]
+                    address_count = max(address_count, index + 1)
+            user.addresses = []
+            for index in range(0, address_count):
+                d = address_dicts[index]
+                if d.get("id"):
+                    try:
+                        user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
+                    except Exception as e:
+                        raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
+                else:
+                    user_address = UserAddress()
+                    trans.log_event("User address added")
+                for field in AddressField.fields():
+                    if str(field[2]).lower() == "required" and not d.get(field[0]):
+                        raise exceptions.ObjectAttributeMissingException(
+                            f"Address {index + 1}: {field[1]} ({field[0]}) required."
+                        )
+                    setattr(user_address, field[0], str(d.get(field[0], "")))
+                user_address.user = user
+                user.addresses.append(user_address)
+                trans.sa_session.add(user_address)
         trans.sa_session.add(user)
         trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
 
     @expose_api
-    def get_password(self, trans, id, payload=None, **kwd):
+    def get_password(self, trans: ProvidesAppContext, id, payload=None, **kwd):
         """
         Return available password inputs.
         """
@@ -1055,18 +1048,19 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         }
 
     @expose_api
-    def set_password(self, trans, id, payload=None, **kwd):
+    def set_password(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Allows to the logged-in user to change own password.
         """
         payload = payload or {}
+        ensure_account_modification_allowed(trans, "Password changes are not allowed in this Galaxy instance")
         user, message = self.user_manager.change_password(trans, id=id, **payload)
         if user is None:
             raise exceptions.AuthenticationRequired(message)
         return {"message": "Password has been changed."}
 
     @expose_api
-    def get_permissions(self, trans, id, payload=None, **kwd):
+    def get_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Get the user's default permissions for the new histories
         """
@@ -1101,7 +1095,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"inputs": inputs}
 
     @expose_api
-    def set_permissions(self, trans, id, payload=None, **kwd):
+    def set_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Set the user's default permissions for the new histories
         """
@@ -1109,13 +1103,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         permissions = {}
         for index, action in Dataset.permitted_actions.items():
-            action_id = trans.app.security_agent.get_action(action.action).action
+            security_action = trans.app.security_agent.get_action(action.action)
+            assert security_action is not None
+            action_id = security_action.action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)
         return {"message": "Permissions have been saved."}
 
     @expose_api
-    def get_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def get_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
@@ -1134,14 +1130,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 "label": "In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.",
             }
         ]
-        errors = {}
+        errors: dict[str, str] = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
             self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
         return {"inputs": inputs, "errors": errors}
 
     @expose_api
-    def set_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def set_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call to update toolbox filters data.
         """
@@ -1174,6 +1170,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors[f"{filter_type}|{filter_name}"] = "Filter function not found."
+                continue
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
@@ -1205,14 +1202,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
 
-    def _get_filter_types(self, trans):
+    def _get_filter_types(self, trans: ProvidesAppContext):
         return {
             "toolbox_tool_filters": {"title": "Tools", "config": trans.app.config.user_tool_filters},
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
 
-    def _get_user(self, trans, id):
+    def _get_user(self, trans: ProvidesUserContext, id):
         user = self.get_user(trans, id)
         if not user:
             raise exceptions.RequestParameterInvalidException("Invalid user id specified.")

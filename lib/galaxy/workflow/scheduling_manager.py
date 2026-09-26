@@ -5,11 +5,15 @@ from datetime import (
 )
 from functools import partial
 from typing import (
-    Optional,
+    NamedTuple,
     TYPE_CHECKING,
-    Union,
 )
 
+from sqlalchemy import (
+    case,
+    func,
+    select,
+)
 from sqlalchemy.orm import Session
 
 import galaxy.workflow.schedulers
@@ -20,9 +24,9 @@ from galaxy.model.base import check_database_connection
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
-    InvocationState,
     InvocationUnexpectedFailure,
 )
+from galaxy.schema.states import InvocationState
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     RequestUser,
@@ -37,6 +41,11 @@ from galaxy.util.monitors import Monitors
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
+from galaxy.workflow.modules import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+)
 
 if TYPE_CHECKING:
     from galaxy.structured_app import MinimalManagerApp
@@ -185,7 +194,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         workflow_invocation: model.WorkflowInvocation,
         request_params,
         flush: bool = True,
-        initial_state: Optional[InvocationState] = None,
+        initial_state: InvocationState | None = None,
     ):
         initial_state = initial_state or model.WorkflowInvocation.states.NEW
         workflow_invocation.set_state(initial_state)
@@ -292,7 +301,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info("Tag [%s] handlers: %s", tag, ", ".join(handlers))
         self.__handlers_configured = True
 
-    def __init_plugin(self, plugin_type: str, workflow_scheduler_id: Union[str, None] = None, **kwds) -> None:
+    def __init_plugin(self, plugin_type: str, workflow_scheduler_id: str | None = None, **kwds) -> None:
         workflow_scheduler_id = workflow_scheduler_id or self.default_scheduler_id
 
         if workflow_scheduler_id in self.workflow_schedulers:
@@ -308,8 +317,18 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
-class WorkflowRequestMonitor(Monitors):
+class InvocationUpdateSnapshot(NamedTuple):
+    """State of an invocation as observed by its last scheduling attempt."""
 
+    # Observed before the attempt schedules anything, so that changes committed
+    # while it runs are seen by the next attempt.
+    history_update_time: datetime | None
+    step_update_time: datetime | None
+    schedule_time: datetime
+    pending: SchedulingDependencies | None = None
+
+
+class WorkflowRequestMonitor(Monitors):
     def __init__(self, app: "MinimalManagerApp", workflow_scheduling_manager: WorkflowSchedulingManager) -> None:
         self.app = app
         self.workflow_scheduling_manager = workflow_scheduling_manager
@@ -317,7 +336,7 @@ class WorkflowRequestMonitor(Monitors):
             name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config
         )
         self.invocation_grabber = None
-        self.update_time_tracking_dict: dict[int, datetime] = {}
+        self.update_time_tracking_dict: dict[int, InvocationUpdateSnapshot] = {}
         backfill_seconds = (
             min(app.config.maximum_workflow_invocation_duration, DEFAULT_SCHEDULER_BACKFILL_SECONDS)
             if app.config.maximum_workflow_invocation_duration > 0
@@ -338,28 +357,124 @@ class WorkflowRequestMonitor(Monitors):
                 handler_tags=self_handler_tags,
             )
 
-    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation):
-        # Improve reactivity of scheduling using the history update_time as a heuristic.
-        # If there wasn't a change in the history we're unlikely to be able to make more progress.
-        if invocation.id not in self.update_time_tracking_dict:
+    def invocation_update_snapshot(self, invocation: model.WorkflowInvocation) -> InvocationUpdateSnapshot:
+        return InvocationUpdateSnapshot(
+            history_update_time=invocation.history.update_time,
+            step_update_time=invocation.get_last_workflow_invocation_step_update_time(),
+            schedule_time=now(),
+        )
+
+    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, snapshot: InvocationUpdateSnapshot) -> bool:
+        previous = self.update_time_tracking_dict.get(invocation.id)
+        # Nothing tracked (e.g. after a restart): schedule so dependencies get captured.
+        if previous is None or previous.pending is None:
             return True
-        else:
-            last_schedule_time = self.update_time_tracking_dict[invocation.id]
-            last_history_update_time = invocation.history.update_time
-            do_schedule = last_history_update_time > last_schedule_time
-            if not do_schedule and (
-                invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time()
-            ):
-                do_schedule = invocation_step_update_time > last_schedule_time
-            if not do_schedule and (now() - last_schedule_time) > self.timedelta:
-                # If we haven't scheduled in a while, schedule anyway.
-                log.debug(
-                    "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
-                    invocation.id,
-                    (now() - last_schedule_time).total_seconds(),
+
+        # Always allow scheduling if maximum duration has been exceeded,
+        # so invoke() can fail the invocation with the appropriate state.
+        maximum_duration = self.app.config.maximum_workflow_invocation_duration
+        if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
+            return True
+
+        # Fallback for a dependency that was missed or changed without leaving a trace.
+        since_last_schedule = snapshot.schedule_time - previous.schedule_time
+        if since_last_schedule > self.timedelta:
+            log.debug(
+                "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
+                invocation.id,
+                since_last_schedule.total_seconds(),
+            )
+            return True
+
+        pending = previous.pending
+        if pending.more_work or pending.untracked:
+            return True
+        if pending.tracked and self._any_dependency_satisfied(pending.tracked, invocation):
+            return True
+
+        # Changes not tied to a tracked dependency, e.g. the history being deleted.
+        # The update times are stamped when a transaction flushes but only become
+        # visible when it commits, so compare them against the values the last
+        # attempt observed.
+        return (
+            snapshot.history_update_time != previous.history_update_time
+            or snapshot.step_update_time != previous.step_update_time
+        )
+
+    def _any_dependency_satisfied(
+        self, dependencies: frozenset[SchedulingDependency], invocation: model.WorkflowInvocation
+    ) -> bool:
+        session = Session.object_session(invocation)
+        if session is None:
+            return True
+
+        # Group dependencies by type for batch queries
+        job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
+        hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA}
+        collection_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.DATASET_COLLECTION}
+        step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
+
+        if job_ids:
+            # Mirrors Job.finished, which is what delayed the step.
+            finished_count = session.execute(
+                select(func.count())
+                .select_from(model.Job)
+                .where(
+                    model.Job.id.in_(job_ids),
+                    model.Job.state.in_(model.Job.finished_states),
                 )
-                do_schedule = True
-            return do_schedule
+            ).scalar()
+            if finished_count:
+                return True
+
+        if hda_ids:
+            # HDA.state = HDA._state if set, else Dataset.state
+            ready_count = session.execute(
+                select(func.count())
+                .select_from(model.HistoryDatasetAssociation)
+                .join(model.Dataset)
+                .where(
+                    model.HistoryDatasetAssociation.id.in_(hda_ids),
+                    case(
+                        (
+                            model.HistoryDatasetAssociation._state.isnot(None),
+                            model.HistoryDatasetAssociation._state,
+                        ),
+                        else_=model.Dataset.state,
+                    ).notin_(model.Dataset.non_ready_states),
+                )
+            ).scalar()
+            if ready_count:
+                return True
+
+        if collection_ids:
+            # A collection that failed to populate must be rescheduled too, so the
+            # invocation can fail instead of waiting forever.
+            populated_count = session.execute(
+                select(func.count())
+                .select_from(model.DatasetCollection)
+                .where(
+                    model.DatasetCollection.id.in_(collection_ids),
+                    model.DatasetCollection.populated_state != model.DatasetCollection.populated_states.NEW,
+                )
+            ).scalar()
+            if populated_count:
+                return True
+
+        if step_ids:
+            # Check if any tracked step has had its action set (e.g. pause step reviewed)
+            action_count = session.execute(
+                select(func.count())
+                .select_from(model.WorkflowInvocationStep)
+                .where(
+                    model.WorkflowInvocationStep.id.in_(step_ids),
+                    model.WorkflowInvocationStep.action.isnot(None),
+                )
+            ).scalar()
+            if action_count:
+                return True
+
+        return False
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
@@ -459,9 +574,13 @@ class WorkflowRequestMonitor(Monitors):
                     for i in workflow_invocation.history.workflow_invocations:
                         if i.active and i.id < workflow_invocation.id:
                             return False
-                if self.ready_to_schedule_more(workflow_invocation):
-                    self.update_time_tracking_dict[invocation_id] = now()
-                    workflow_scheduler.schedule(workflow_invocation)
+                # Take the snapshot before scheduling so that anything committed while
+                # scheduling is picked up by the next attempt.
+                snapshot = self.invocation_update_snapshot(workflow_invocation)
+                if self.ready_to_schedule_more(workflow_invocation, snapshot):
+                    pending = workflow_scheduler.schedule(workflow_invocation)
+                    self._log_untracked_delays(invocation_id, pending)
+                    self.update_time_tracking_dict[invocation_id] = snapshot._replace(pending=pending)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
                 self.update_time_tracking_dict.pop(invocation_id, None)
@@ -471,6 +590,18 @@ class WorkflowRequestMonitor(Monitors):
 
         # A workflow was obtained and scheduled...
         return True
+
+    def _log_untracked_delays(self, invocation_id: int, pending: SchedulingDependencies) -> None:
+        if not pending.untracked:
+            return
+        previous = self.update_time_tracking_dict.get(invocation_id)
+        if previous and previous.pending and previous.pending.untracked == pending.untracked:
+            return
+        log.warning(
+            "Workflow invocation [%s] delayed for reasons that cannot be tracked, scheduling every iteration: %s",
+            invocation_id,
+            "; ".join(pending.untracked),
+        )
 
     def __active_invocation_ids(self, scheduler_id):
         handler = self.app.config.server_name

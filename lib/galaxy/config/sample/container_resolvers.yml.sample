@@ -19,6 +19,20 @@
 #- type: cached_explicit_singularity
   # set the cache directory for storing images
   #cache_directory: database/container_cache/singularity/explicit
+  #
+  # When namespace is set, the prefix docker://quay.io/NAMESPACE/ is stripped
+  # from the image identifier before constructing the cache path, yielding a
+  # flat filename (e.g. "bwa:0.7.17--h7132678_9") instead of a nested path.
+  # This is useful when pointing cache_directory at a pre-populated flat cache
+  # such as /cvmfs/singularity.galaxyproject.org/all/.
+  #namespace: biocontainers
+  #
+  # Caching strategy for the directory listing used when namespace is set.
+  # "uncached" (default) re-reads the directory on every resolve.
+  # "dir_mtime" caches the full directory listing and only re-reads it when
+  # the directory mtime changes; recommended for large network-mounted caches
+  # such as CVMFS where repeated directory scans are expensive.
+  #cache_directory_cacher_type: uncached
 
 # Mulled container resolvers
 # ==========================

@@ -2,14 +2,16 @@
 
 from typing import cast
 
+import pytest
+
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
-from galaxy.schema.invocation import (
+from galaxy.schema.states import (
     InvocationState,
     InvocationStepState,
+    JobState,
 )
-from galaxy.schema.schema import JobState
 from galaxy.structured_app import MinimalManagerApp
 
 
@@ -177,6 +179,72 @@ class TestComputeRecursiveJobStateSummary:
 
         summary = invocation.compute_recursive_job_state_summary()
         assert summary == {"ok": 2, "error": 1}
+
+
+class TestNestedWorkflowCompletion:
+    @pytest.fixture
+    def completion_tree(self):
+        app = MockApp()
+        session = app.model.context
+        invocations = []
+        for _ in range(3):
+            workflow = model.Workflow()
+            invocation = model.WorkflowInvocation()
+            invocation.workflow = workflow
+            invocation.state = InvocationState.SCHEDULED.value
+            invocation.handler = "handler_a"
+            session.add(invocation)
+            invocations.append(invocation)
+
+        for parent, child in zip(invocations, invocations[1:]):
+            workflow_step = model.WorkflowStep()
+            workflow_step.order_index = 0
+            workflow_step.type = "subworkflow"
+            workflow_step.subworkflow = child.workflow
+            parent.workflow.steps.append(workflow_step)
+
+            step = model.WorkflowInvocationStep()
+            step.workflow_step = workflow_step
+            step.state = InvocationStepState.SCHEDULED.value
+            parent.steps.append(step)
+
+            association = model.WorkflowInvocationToSubworkflowInvocationAssociation()
+            association.workflow_step = workflow_step
+            association.subworkflow_invocation = child
+            parent.subworkflow_invocations.append(association)
+
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
+        invocations[-1].workflow.steps.append(workflow_step)
+        workflow_step.order_index = 0
+        step = model.WorkflowInvocationStep()
+        step.workflow_step = workflow_step
+        step.job = model.Job()
+        step.job.state = JobState.OK.value
+        invocations[-1].steps.append(step)
+        session.commit()
+        return WorkflowCompletionManager(cast(MinimalManagerApp, app)), invocations
+
+    def test_parent_waits_for_recorded_subworkflow_completion(self, completion_tree):
+        manager, invocations = completion_tree
+        for parent in invocations[:-1]:
+            assert manager.check_and_record_completion(parent.id) is None
+            assert parent.state == InvocationState.SCHEDULED.value
+            assert manager.get_completion(parent.id) is None
+
+        for invocation in reversed(invocations):
+            completion = manager.check_and_record_completion(invocation.id)
+            assert completion is not None
+            assert invocation.state == InvocationState.COMPLETED.value
+            assert completion.job_state_summary == {"ok": 1}
+
+    def test_waiting_parents_do_not_fill_completion_batch(self, completion_tree):
+        manager, invocations = completion_tree
+        for invocation in reversed(invocations):
+            assert manager.poll_pending_completions(limit=1, handler="handler_a") == [invocation.id]
+            assert manager.check_and_record_completion(invocation.id) is not None
+
+        assert manager.poll_pending_completions(limit=1, handler="handler_a") == []
 
 
 class TestWorkflowCompletionManagerHandlerFiltering:

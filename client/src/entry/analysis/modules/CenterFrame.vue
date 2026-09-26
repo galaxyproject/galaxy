@@ -25,7 +25,7 @@ function onLoad(ev: Event) {
     const iframe = ev.currentTarget as HTMLIFrameElement;
     const location = iframe?.contentWindow && iframe.contentWindow.location;
     try {
-        if (location && location.host && location.pathname != "/") {
+        if (location && (location.href.startsWith("blob:") || (location.host && location.pathname != "/"))) {
             emit("load");
         }
     } catch (err) {

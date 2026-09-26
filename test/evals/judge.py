@@ -14,5 +14,8 @@ def build_judge_model(
     api_key: str,
 ) -> OpenAIChatModel:
     """Build an OpenAI-compatible pydantic-ai model for use as an LLMJudge."""
+    # Strip the `provider:` prefix (e.g. `openai:gpt-5-mini`) the same way the
+    # agents under test do; the bare model name is what the API expects.
+    bare_name = model_name.split(":", 1)[1] if ":" in model_name else model_name
     provider = OpenAIProvider(base_url=base_url, api_key=api_key)
-    return OpenAIChatModel(model_name, provider=provider)
+    return OpenAIChatModel(bare_name, provider=provider)

@@ -48,12 +48,14 @@ class VaultClient:
             }
         )
 
-    def wait_ready(self, timeout=30):
+    def wait_ready(self, timeout=60):
         def check():
             try:
-                self.session.get(f"{self.addr}/v1/sys/health", timeout=2).raise_for_status()
+                resp = self.session.get(f"{self.addr}/v1/sys/health", timeout=2)
+                resp.raise_for_status()
                 return True
-            except Exception:
+            except Exception as exc:
+                print(f"Vault not ready yet ({self.addr}/v1/sys/health): {exc}")
                 return None
 
         wait_on(check, "Vault to become ready", timeout)
@@ -78,10 +80,7 @@ def _write_vault_config(vault_addr, vault_token, path_prefix="/galaxy_integratio
     fd, path = tempfile.mkstemp(prefix="vault_hashicorp_integ_", suffix=".yml")
     with os.fdopen(fd, "w") as f:
         f.write(
-            f"type: hashicorp\n"
-            f"path_prefix: {path_prefix}\n"
-            f"vault_address: {vault_addr}\n"
-            f"vault_token: {vault_token}\n"
+            f"type: hashicorp\npath_prefix: {path_prefix}\nvault_address: {vault_addr}\nvault_token: {vault_token}\n"
         )
     return path
 

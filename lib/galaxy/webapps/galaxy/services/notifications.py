@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import (
     NoReturn,
-    Optional,
-    Union,
 )
 
 from galaxy.exceptions import (
@@ -54,7 +52,7 @@ class NotificationService(ServiceBase):
 
     def send_internal_notification(
         self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+    ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Send a system-emitted notification on behalf of internal callers (e.g. share flows).
 
         Unlike :meth:`send_notification`, this skips admin/permission checks because the
@@ -64,7 +62,7 @@ class NotificationService(ServiceBase):
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+    ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
         Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
@@ -95,9 +93,7 @@ class NotificationService(ServiceBase):
             total_notifications_sent=1, notification=NotificationResponse.model_validate(notification)
         )
 
-    def build_status_catchup(
-        self, user_context: ProvidesUserContext, last_event_id: Optional[str]
-    ) -> Optional[SSEEvent]:
+    def build_status_catchup(self, user_context: ProvidesUserContext, last_event_id: str | None) -> SSEEvent | None:
         """Build a ``notification_status`` SSE event covering everything since ``last_event_id``.
 
         Returns ``None`` when catch-up isn't possible (no ``Last-Event-ID``,
@@ -135,7 +131,7 @@ class NotificationService(ServiceBase):
         )
 
     def get_user_notifications(
-        self, user_context: ProvidesUserContext, limit: Optional[int] = None, offset: Optional[int] = None
+        self, user_context: ProvidesUserContext, limit: int | None = None, offset: int | None = None
     ) -> UserNotificationListResponse:
         """Returns all the notifications received by the user that haven't expired yet..
 
@@ -256,7 +252,7 @@ class NotificationService(ServiceBase):
             raise RequestParameterInvalidException("Please specify at least one value to update for notifications.")
 
     def _get_all_broadcasted(
-        self, since: Optional[datetime] = None, active_only: Optional[bool] = True
+        self, since: datetime | None = None, active_only: bool | None = True
     ) -> list[BroadcastNotificationResponse]:
         notifications = self.notification_manager.get_all_broadcasted_notifications(since, active_only)
         broadcasted_notifications = [
@@ -267,9 +263,9 @@ class NotificationService(ServiceBase):
     def _get_user_notifications(
         self,
         user_context: ProvidesUserContext,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        since: Optional[datetime] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        since: datetime | None = None,
     ) -> list[UserNotificationResponse]:
         notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
         user_notifications = [UserNotificationResponse.model_validate(notification) for notification in notifications]

@@ -1192,6 +1192,9 @@ outputs:
     outputSource: subworkflow/inner_output_2
 """
 
+# The location is templated so tests can serve 1.bed from the local test HTTP server.
+DEFAULT_FILE_DATASET_INPUT_LOCATION = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+
 WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
 class: GalaxyWorkflow
 inputs:
@@ -1200,7 +1203,7 @@ inputs:
       class: File
       basename: a file
       format: txt
-      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+      location: {location}
 steps:
   cat1:
     tool_id: cat1
@@ -1219,7 +1222,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {location}
 """
 
 WORKFLOW_FLAT_CROSS_PRODUCT = """

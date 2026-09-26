@@ -941,9 +941,9 @@ class TestDatasetCollectionsApi(ApiTestCase):
             object0 = element0["object"]
             assert object0["state"] == "deferred"
 
-    def test_upload_collection_failed_expansion_url(self, mock_http_server):
+    def test_upload_collection_failed_expansion_url(self, test_http_server):
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            url = mock_http_server.get_url(
+            url = test_http_server.get_url(
                 remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
                 file_path="test-data/4.bed",
             )

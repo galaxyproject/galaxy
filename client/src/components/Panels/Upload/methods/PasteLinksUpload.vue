@@ -84,7 +84,13 @@ function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem
 
 const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
-const showInputArea = ref(true);
+const showInputOverride = ref(false);
+const showInputArea = computed(() => {
+    if (urlItems.value.length > 0) {
+        return showInputOverride.value;
+    }
+    return true;
+});
 const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems, {
     disableStore: props.transient,
 });
@@ -143,16 +149,16 @@ function addUrlsFromText() {
     }
 
     urlText.value = "";
-    showInputArea.value = false;
+    showInputOverride.value = false;
     scrollToBottom();
 }
 
 function showUrlInput() {
-    showInputArea.value = true;
+    showInputOverride.value = true;
 }
 
 function showUrlList() {
-    showInputArea.value = false;
+    showInputOverride.value = false;
 }
 
 function scrollToBottom() {
@@ -168,7 +174,7 @@ function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
 
     if (urlItems.value.length === 0) {
-        showInputArea.value = true;
+        showInputOverride.value = false;
         resetCollection();
     }
 }
@@ -221,7 +227,7 @@ function reset() {
     urlItems.value = [];
     urlText.value = "";
     clearStaging();
-    showInputArea.value = true;
+    showInputOverride.value = false;
     resetCollection();
 }
 
@@ -270,6 +276,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="font-weight-bold">{{ urlItems.length }} URL(s) added</span>
                 </div>
+                <div v-if="hasInvalidUrls" class="text-danger small mt-1" data-test-id="invalid-urls-warning">
+                    One or more URLs are invalid. Fix or remove them to start the upload.
+                </div>
             </div>
 
             <div ref="tableContainerRef" class="url-table-container">
@@ -285,12 +294,13 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </template>
 
                     <!-- URL column -->
-                    <template v-slot:cell(url)="{ item }">
+                    <template v-slot:cell(url)="{ item, index }">
                         <div class="d-flex align-items-center">
                             <BFormInput
                                 v-model="item.url"
                                 v-g-tooltip.hover
                                 size="sm"
+                                :data-test-id="`upload-row-${index + 1}-url`"
                                 :state="isValidUrl(item.url)"
                                 :title="getUrlValidationMessage(item.url)"
                                 class="url-input" />
@@ -432,6 +442,13 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
     :deep(.url-table thead) {
         @include upload-table-header;
+    }
+
+    // Highlight rows with an invalid URL so the problem is visible at a
+    // glance, even on narrow screens where the URL column itself is
+    // scrolled out of view.
+    :deep(.url-table tbody tr:has(.url-input.is-invalid)) {
+        background-color: rgba($brand-danger, 0.08);
     }
 
     :deep(.url-name-cell) {

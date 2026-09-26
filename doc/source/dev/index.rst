@@ -12,7 +12,9 @@ A multi-hour long video playlist covering these slides can be found at
   :maxdepth: 1
 
   schema
+  user_defined_tools_authoring
   api_guidelines
+  type_checking
   database_session_management
   build_a_job_runner
   collection_semantics
@@ -20,6 +22,8 @@ A multi-hour long video playlist covering these slides can be found at
   data_managers
   data_source
   data_types
+  tool_source_storage
+  ga4gh_wes
   faq
   writing_tests
   debugging_tests
@@ -27,3 +31,4 @@ A multi-hour long video playlist covering these slides can be found at
   debugging_galaxy_slurm
   translating
   create_release
+  metadata_image

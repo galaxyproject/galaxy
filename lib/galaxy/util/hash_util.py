@@ -6,16 +6,11 @@ introduced hashlib which replaced sha in Python 2.4 and previous versions.
 import hashlib
 import hmac
 import logging
+from collections.abc import Callable
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Union,
 )
 
 from . import smart_str
@@ -48,22 +43,22 @@ class HashFunctionNameEnum(str, Enum):
 HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
 
 
-HASH_NAME_ALIAS: Dict[str, str] = {
+HASH_NAME_ALIAS: dict[str, str] = {
     "SHA1": "SHA-1",
     "SHA256": "SHA-256",
     "SHA512": "SHA-512",
 }
 
-HASH_NAME_MAP: Dict[HashFunctionNameEnum, HashFunctionT] = {
+HASH_NAME_MAP: dict[HashFunctionNameEnum, HashFunctionT] = {
     HashFunctionNameEnum.md5: md5,
     HashFunctionNameEnum.sha1: sha1,
     HashFunctionNameEnum.sha256: sha256,
     HashFunctionNameEnum.sha512: sha512,
 }
-HASH_NAMES: List[HashFunctionNameEnum] = list(HASH_NAME_MAP.keys())
+HASH_NAMES: list[HashFunctionNameEnum] = list(HASH_NAME_MAP.keys())
 
 
-def as_hash_function_name(hash_name: str) -> Optional[HashFunctionNames]:
+def as_hash_function_name(hash_name: str) -> HashFunctionNames | None:
     """Convert a hash name string to a HashFunctionName.
 
     Considering possible aliases and returning None if the name is not recognized."""
@@ -76,9 +71,9 @@ def as_hash_function_name(hash_name: str) -> Optional[HashFunctionNames]:
 
 
 def memory_bound_hexdigest(
-    hash_func: Optional[HashFunctionT] = None,
-    hash_func_name: Optional[HashFunctionNameEnum] = None,
-    path: Optional[str] = None,
+    hash_func: HashFunctionT | None = None,
+    hash_func_name: HashFunctionNameEnum | None = None,
+    path: str | None = None,
     file=None,
 ):
     if hash_func is None:
@@ -100,7 +95,7 @@ def memory_bound_hexdigest(
         file.close()
 
 
-def md5_hash_file(path: StrPath) -> Optional[str]:
+def md5_hash_file(path: StrPath) -> str | None:
     """
     Return a md5 hashdigest for a file or None if path could not be read.
     """
@@ -124,7 +119,7 @@ def md5_hash_str(s):
     return m.hexdigest()
 
 
-def new_secure_hash_v2(text_type: Union[bytes, str]) -> str:
+def new_secure_hash_v2(text_type: bytes | str) -> str:
     """More modern version of new_secure_hash.
 
     Certain passwords are set via new_insecure_hash (previously new_secure_hash),
@@ -134,7 +129,7 @@ def new_secure_hash_v2(text_type: Union[bytes, str]) -> str:
     return sha512(smart_str(text_type)).hexdigest()
 
 
-def new_insecure_hash(text_type: Union[bytes, str]) -> str:
+def new_insecure_hash(text_type: bytes | str) -> str:
     """Returns the hexdigest of the sha1 hash of the argument `text_type`.
 
     Previously called new_secure_hash, but this should not be considered
@@ -148,7 +143,7 @@ def new_insecure_hash(text_type: Union[bytes, str]) -> str:
     return sha1(smart_str(text_type)).hexdigest()
 
 
-def hmac_new(key: Union[bytes, str], value: Union[bytes, str]) -> str:
+def hmac_new(key: bytes | str, value: bytes | str) -> str:
     return hmac.new(smart_str(key), smart_str(value), sha).hexdigest()
 
 
@@ -160,7 +155,7 @@ def is_hashable(value: Any) -> bool:
     return True
 
 
-def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
+def parse_checksum_hash(checksum: str) -> tuple[HashFunctionNameEnum, str]:
     """Parses checksum strings in the form of `hash_type$hash_value` considering possible aliases."""
     hash_name, hash_value = checksum.split("$", 1)
     hash_name = hash_name.upper()

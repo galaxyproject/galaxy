@@ -4,7 +4,6 @@ import abc
 import threading
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -65,6 +64,7 @@ if TYPE_CHECKING:
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
     from galaxy.tools.error_reports import ErrorReports
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
     from galaxy.visualization.genomes import Genomes
 
 
@@ -93,6 +93,11 @@ class BasicSharedApp(Container):
     def toolbox(self) -> "ToolBox":
         raise NotImplementedError()
 
+    @property
+    def toolbox_or_none(self) -> "ToolBox | None":
+        """The registered toolbox, or None before one has been configured."""
+        raise NotImplementedError()
+
 
 class MinimalToolApp(Protocol):
     is_webapp: bool
@@ -118,11 +123,13 @@ class MinimalApp(BasicSharedApp):
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
     server_starttime: int
+    trace_logger: "FluentTraceLogger | None"
 
 
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
-    amqp_internal_connection_obj: Optional[Connection]
+    amqp_internal_connection_obj: Connection | None
+    vault: Vault
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources
@@ -144,7 +151,7 @@ class MinimalManagerApp(MinimalApp):
     job_metrics: JobMetrics
     dynamic_tool_manager: "DynamicToolManager"
     genomes: "Genomes"
-    error_reports: "ErrorReports"
+    tool_cache: "ToolCache"
     notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
     object_store: BaseObjectStore
     tool_shed_registry: ToolShedRegistry
@@ -153,7 +160,13 @@ class MinimalManagerApp(MinimalApp):
     @abc.abstractmethod
     def is_job_handler(self) -> bool: ...
 
+    @property
+    @abc.abstractmethod
+    def error_reports(self) -> "ErrorReports": ...
+
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
+
+    def reindex_tool_search(self) -> None: ...
 
 
 class StructuredApp(MinimalManagerApp):
@@ -172,15 +185,13 @@ class StructuredApp(MinimalManagerApp):
     dependency_resolvers_view: DependencyResolversView
     installed_repository_manager: "InstalledRepositoryManager"
     container_finder: ContainerFinder
-    tool_dependency_dir: Optional[str]
+    tool_dependency_dir: str | None
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
-    vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
-    tool_cache: "ToolCache"
-    tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
+    tool_shed_repository_cache: ToolShedRepositoryCache | None
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

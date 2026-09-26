@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 
 import { detectMentionTrigger, type EntityType, type MentionTrigger } from "@/composables/useEntityMentions";
 
+import GButton from "../BaseComponents/GButton.vue";
 import MentionDropdown from "./MentionDropdown.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -29,6 +29,37 @@ const emit = defineEmits<{
 const textareaEl = ref<HTMLTextAreaElement | null>(null);
 const dropdownRef = ref<InstanceType<typeof MentionDropdown> | null>(null);
 const mentionTrigger = ref<MentionTrigger | null>(null);
+
+function resize() {
+    const textarea = textareaEl.value;
+    if (!textarea) {
+        return;
+    }
+    if (!textarea.value) {
+        // No content — let CSS min-height govern; don't measure scrollHeight
+        // which would include the placeholder's wrapped height.
+        textarea.style.height = "";
+        return;
+    }
+    // Reset first so the element can shrink, then grow to fit content.
+    // CSS max-height caps growth and overflow-y:auto takes over past the cap.
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+// props.value is the single funnel for every value change -- user typing
+// (round-trips through the parent), programmatic @-mention inserts, and the
+// parent clearing the field after submit. nextTick lets the DOM update first.
+watch(
+    () => props.value,
+    () => nextTick(resize),
+);
+
+onMounted(() => {
+    if (props.value) {
+        resize();
+    }
+});
 
 function onInput(event: Event) {
     const textarea = event.target as HTMLTextAreaElement;
@@ -119,13 +150,14 @@ function closeMention() {
             class="form-control chat-input"
             @input="onInput"
             @keydown="onKeydown" />
-        <button
+        <GButton
             :disabled="busy || disabled || !props.value.trim()"
-            class="btn btn-primary send-button"
+            class="send-button"
+            color="blue"
+            size="large"
             @click="emit('submit')">
-            <FontAwesomeIcon v-if="!busy" :icon="faPaperPlane" fixed-width />
-            <LoadingSpan v-else message="" />
-        </button>
+            <FontAwesomeIcon :icon="!busy ? faPaperPlane : faSpinner" fixed-width :spin="busy" />
+        </GButton>
 
         <MentionDropdown
             ref="dropdownRef"
@@ -144,7 +176,7 @@ function closeMention() {
 .chat-input-container {
     display: flex;
     gap: 0.5rem;
-    align-items: flex-end;
+    align-items: flex-start;
     position: relative;
 
     .chat-input {
@@ -156,6 +188,7 @@ function closeMention() {
         font-size: 0.9rem;
         min-height: 2.5rem;
         max-height: 8rem;
+        overflow-y: auto;
 
         &:focus {
             border-color: $brand-primary;
@@ -165,9 +198,7 @@ function closeMention() {
     }
 
     .send-button {
-        flex-shrink: 0;
-        border-radius: $border-radius-base;
-        padding: 0.5rem 0.875rem;
+        display: block;
     }
 }
 

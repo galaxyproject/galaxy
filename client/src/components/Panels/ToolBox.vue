@@ -5,9 +5,9 @@ import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
@@ -17,6 +17,8 @@ import {
     buildToolEntries,
     buildToolLabel,
     buildToolSection,
+    countUniqueToolsInList,
+    countUniqueToolsInPanel,
     FAVORITES_KEYS,
     filterPanelByToolIds,
     filterTools,
@@ -34,7 +36,7 @@ import MyToolsLanding from "./MyToolsLanding.vue";
 /** Section IDs that are only valid for the workflow editor toolbox, and should be excluded from the regular toolbox. */
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
@@ -179,6 +181,8 @@ const defaultSectionsById = computed<Record<string, ToolPanelItem> | null>(() =>
     return Object.keys(validSections).length > 0 ? validSections : null;
 });
 
+const myToolsDefaultSectionsById = computed(() => defaultSectionsById.value || localSectionsById.value);
+
 // Use composable for favorites and recent tools — we only need the bits that
 // drive the search-results split (favorites get their own section in mixed
 // results). The full My-Tools landing state lives inside `MyToolsLanding.vue`.
@@ -187,7 +191,12 @@ const { favoritesCollapsed, favoriteToolIdSet, recentToolIdsToShowSet } = useToo
 // Use composable for search results filtering
 const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
 
-const toolsCount = computed(() => toolsList.value.length);
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(
+        defaultSectionsById.value || localSectionsById.value,
+        countUniqueToolsInList(toolsList.value),
+    ),
+);
 
 const resultsSet = computed(() => new Set(results.value));
 const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
@@ -317,7 +326,7 @@ function onToolClick(tool: Tool, evt: Event) {
     if (!props.workflow) {
         if (tool.id === "upload1") {
             evt.preventDefault();
-            openGlobalUploadModal();
+            void openUploadModal();
         } else if (tool.form_style === "regular") {
             evt.preventDefault();
             // encode spaces in tool.id
@@ -433,7 +442,7 @@ function onLabelToggle(labelId: string) {
                 <MyToolsLanding
                     v-if="showMyToolsLanding"
                     :local-tools-by-id="localToolsById"
-                    :default-sections-by-id="defaultSectionsById"
+                    :default-sections-by-id="myToolsDefaultSectionsById"
                     :local-sections-by-id="localSectionsById"
                     :tools-count="toolsCount"
                     @onClick="onToolClick"

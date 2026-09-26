@@ -10,7 +10,6 @@ thread instead of silently swallowing them.
 import queue
 import threading
 from collections.abc import Callable
-from typing import Optional
 
 import requests
 
@@ -60,7 +59,7 @@ class SSELineListener:
         self,
         url: str,
         api_key: str,
-        headers: Optional[dict] = None,
+        headers: dict | None = None,
         timeout: int = 30,
     ) -> None:
         self.url = url
@@ -116,7 +115,7 @@ class SSELineListener:
 
         return wait_on(_check, f"SSE {event_type} matching predicate", timeout=timeout)
 
-    def get_events(self, event_type: Optional[str] = None) -> list[dict]:
+    def get_events(self, event_type: str | None = None) -> list[dict]:
         """Return all collected events so far, optionally filtered by type."""
         all_events = parse_sse_events("".join(self._collected))
         if event_type is None:

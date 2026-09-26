@@ -104,7 +104,7 @@ with open("output", "w") as f:
             <param name="test_case" value="1" />
             <param name="text_test" value="foo" />
             <param name="booltest" value="true" />
-            <param name="booltest2" value="booltrue" />
+            <param name="booltest2" value="true" />
             <param name="inttest" value="12456" />
             <param name="floattest" value="6.789" />
             <repeat name="repeat">
@@ -126,13 +126,15 @@ with open("output", "w") as f:
             <param name="test_case" value="2" />
             <param name="text_test" value="bar" />
             <param name="booltest" value="false" />
-            <param name="booltest2" value="boolfalse" />
+            <param name="booltest2" value="false" />
             <param name="data_input" value="simple_line.txt" />
             <param name="optional_select" value="a"/>
             <param name="optional_multiple_select" value="a,b"/>
             <!-- Testing null integers -->
             <!-- <param name="inttest" value="12456" /> -->
-            <param name="r" value="000000" />
+            <repeat name="repeat">
+                <param name="r" value="000000"/>
+            </repeat>
             <conditional name="cond">
                 <param name="cond_test" value="second" />
             </conditional>

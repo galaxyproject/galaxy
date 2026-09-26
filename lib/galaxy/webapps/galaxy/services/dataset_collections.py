@@ -2,9 +2,7 @@ from io import BytesIO
 from logging import getLogger
 from typing import (
     Literal,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from pydantic import (
@@ -88,8 +86,8 @@ class DatasetCollectionAttributesResult(Model):
     # Are the following fields really used/needed?
     extension: str = Field(..., description="The dataset file extension.", examples=["txt"])
     model_class: Literal["HistoryDatasetCollectionAssociation"] = ModelClassField("HistoryDatasetCollectionAssociation")
-    dbkeys: Optional[set[str]]
-    extensions: Optional[set[str]]
+    dbkeys: set[str] | None
+    extensions: set[str] | None
     tags: TagCollection
 
 
@@ -114,7 +112,7 @@ class DatasetCollectionContentElements(RootModel):
 
 class CreateWorkbookForCollectionApi(BaseModel):
     column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
-    prefix_values: Optional[PrefixRowValuesT] = PrefixRowsField
+    prefix_values: PrefixRowValuesT | None = PrefixRowsField
 
 
 class ParseWorkbookForCollectionApi(BaseModel):
@@ -136,7 +134,7 @@ class ParsedWorkbookCollection(BaseModel):
     model_class: Literal["DatasetCollection"] = "DatasetCollection"
 
 
-ParsedWorkbookElementObject = Union[ParsedWorkbookHda, ParsedWorkbookCollection]
+ParsedWorkbookElementObject = ParsedWorkbookHda | ParsedWorkbookCollection
 
 
 class ParsedWorkbookElement(BaseModel):
@@ -260,7 +258,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance: Union[HistoryDatasetCollectionAssociation, LibraryDatasetCollectionAssociation]
+        dataset_collection_instance: HistoryDatasetCollectionAssociation | LibraryDatasetCollectionAssociation
         if instance_type == "history":
             dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", id)
             parent = dataset_collection_instance.history
@@ -280,7 +278,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         return rval
 
     def dce_content(self, trans: ProvidesHistoryContext, dce_id: DecodedDatabaseIdField) -> DCESummary:
-        dce: Optional[DatasetCollectionElement] = trans.model.session.get(DatasetCollectionElement, dce_id)
+        dce: DatasetCollectionElement | None = trans.model.session.get(DatasetCollectionElement, dce_id)
         if not dce:
             raise exceptions.ObjectNotFound("No DatasetCollectionElement found")
         if not trans.user_is_admin:
@@ -296,8 +294,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         hdca_id: DecodedDatabaseIdField,
         parent_id: DecodedDatabaseIdField,
         instance_type: DatasetCollectionInstanceType = "history",
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> DatasetCollectionContentElements:
         """
         Shows direct child contents of indicated dataset collection parent id

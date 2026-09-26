@@ -133,7 +133,33 @@ function openSourceIfNeeded() {
     // tab-close, unlike ``beforeunload``) to close that window.
     if (typeof window !== "undefined") {
         window.addEventListener("pagehide", closeSource);
+        // Background tabs throttle/suspend the timers that both the browser's
+        // native EventSource retry and our ``scheduleReconnect`` backoff rely
+        // on, so a drop while the tab is hidden can sit un-recovered until the
+        // user comes back. Force an immediate reopen when the tab is
+        // refocused or connectivity returns. This only cycles the SSE socket —
+        // it never starts polling — so it stays consistent with the SSE-mode
+        // design decision documented in ``historyStore.ts``. Re-adding the
+        // same function reference is idempotent, so calling this on every
+        // reopen does not stack listeners.
+        window.addEventListener("online", handleWakeReconnect);
     }
+    if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", handleWakeReconnect);
+    }
+}
+
+// Force an immediate reconnect when the tab wakes up (refocus) or the network
+// comes back, but only when we're actually disconnected so we never tear down
+// a healthy stream.
+function handleWakeReconnect() {
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+    }
+    if (sharedConnected.value) {
+        return;
+    }
+    reconnectSSE();
 }
 
 function closeSource() {
@@ -158,6 +184,10 @@ function closeSource() {
     reconnectAttempts = 0;
     if (typeof window !== "undefined") {
         window.removeEventListener("pagehide", closeSource);
+        window.removeEventListener("online", handleWakeReconnect);
+    }
+    if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleWakeReconnect);
     }
 }
 
@@ -210,6 +240,38 @@ function scheduleReconnect() {
             openSourceIfNeeded();
         }
     }, delay);
+}
+
+/**
+ * Force an immediate reconnect, bypassing the backoff schedule. Used by the
+ * "Live updates disconnected. Click to refresh." button and by the
+ * wake/online listeners — situations where the user (or a regained-focus
+ * signal) wants the stream back *now* rather than on the next backed-off
+ * ``setTimeout`` tick, which a backgrounded tab may have suspended.
+ */
+export function reconnectSSE(): void {
+    // Nothing wants events; leave the source closed.
+    let hasSubscribers = false;
+    for (const subs of subscribers.values()) {
+        if (subs.size > 0) {
+            hasSubscribers = true;
+            break;
+        }
+    }
+    if (!hasSubscribers) {
+        return;
+    }
+    // Drop any pending managed reopen and zero the backoff so this reopen
+    // happens immediately and the next failure starts at the base delay.
+    if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    reconnectAttempts = 0;
+    // Cycle the socket while keeping the subscriber map intact — covers both a
+    // source stuck in CONNECTING and one already CLOSED.
+    closeSourceForReconnect();
+    openSourceIfNeeded();
 }
 
 function addSubscriber(onEvent: Handler, eventTypes: readonly SSEEventType[]) {
@@ -298,12 +360,14 @@ export const useNotificationSSE = useSSE;
  * Read-only handle on the shared SSE connection state. ``connected`` flips
  * with the EventSource lifecycle; ``hasEverConnected`` latches true on the
  * first successful open so callers can ignore the initial-connect window
- * when surfacing a "connection lost" warning.
+ * when surfacing a "connection lost" warning. ``reconnect`` forces an
+ * immediate reopen for "click to refresh" affordances.
  */
 export function useSSEConnectionStatus() {
     return {
         connected: readonly(sharedConnected),
         hasEverConnected: readonly(sseEverConnected),
+        reconnect: reconnectSSE,
     };
 }
 

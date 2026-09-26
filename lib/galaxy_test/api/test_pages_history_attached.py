@@ -3,6 +3,7 @@
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_agents,
+    skip_without_tool,
 )
 from .test_pages import BasePagesApiTestCase
 
@@ -273,6 +274,51 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
                 f"pages/{page['id']}", {"content": "# Hacked", "content_format": "markdown"}, json=True
             )
             self._assert_status_code_is(update_response, 403)
+
+    def test_history_page_accessible_history_create(self):
+        # Published (accessible but not owned) history — user should be able to create a page on it.
+        history_id = self.dataset_populator.new_history()
+        self._put(f"histories/{history_id}/publish", json=True)
+        with self._different_user():
+            payload = {"history_id": history_id, "content": "# Shared page", "content_format": "markdown"}
+            create_response = self._post("pages", payload, json=True)
+            self._assert_status_code_is(create_response, 200)
+            assert create_response.json()["history_id"] == history_id
+
+    @skip_without_tool("cat")
+    def test_accessible_invocation_create_page(self):
+        # Invocation whose history is published — another user can create a page via invocation_id.
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            self._put(f"histories/{history_id}/publish", json=True)
+            self._put(f"workflows/{summary.workflow_id}/publish", json=True)
+            with self._different_user():
+                payload = {"invocation_id": invocation_id, "title": "Shared Invocation Page"}
+                create_response = self._post("pages", payload, json=True)
+                self._assert_status_code_is(create_response, 200)
+                assert create_response.json()["history_id"] == history_id
 
     # --- A5: Cross-Type Validation ---
 

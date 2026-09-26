@@ -1,18 +1,32 @@
 import json
 import os
+import tempfile
+from contextlib import contextmanager
 from typing import cast
+
+from sqlalchemy import select
 
 from galaxy import (
     model,
     util,
 )
 from galaxy.app_unittest_utils import tools_support
+from galaxy.model.store.discover import (
+    ExternalOutputPathNotAllowedError,
+    InvalidDiscoveredFilePathError,
+    UntrustedToolProvidedMetadataError,
+)
 from galaxy.objectstore import BaseObjectStore
+from galaxy.objectstore.examples import get_example as get_object_store_example
+from galaxy.objectstore.unittest_utils import (
+    Config as ObjectStoreTestConfig,
+    DISK_TEST_CONFIG,
+)
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
-    BaseToolProvidedMetadata,
     LegacyToolProvidedMetadata,
     NullToolProvidedMetadata,
+    ToolProvidedMetadata,
 )
 from galaxy.util.unittest import TestCase
 
@@ -285,7 +299,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
 
         primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
         assert len(primary_outputs) == 5
-        genomes = dict(samp1="hg19", samp2="lactLact", samp3="hg19", samp4="lactPlan", samp5="fusoNucl")
+        genomes = dict(
+            samp1="hg19",
+            samp2="lactLact",
+            samp3="hg19",
+            samp4="lactPlan",
+            samp5="fusoNucl",
+        )
         for key, hda in primary_outputs.items():
             assert hda.dbkey == genomes[key]
 
@@ -312,7 +332,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
 
         primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
         assert len(primary_outputs) == 5
-        genomes = dict(samp1="hg19", samp2="lactLact", samp3="hg19", samp4="lactPlan", samp5="fusoNucl")
+        genomes = dict(
+            samp1="hg19",
+            samp2="lactLact",
+            samp3="hg19",
+            samp4="lactPlan",
+            samp5="fusoNucl",
+        )
         for key, hda in primary_outputs.items():
             assert hda.dbkey == genomes[key]
 
@@ -339,12 +365,191 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name_and_ext__" directory="../../secrets" />
         </output>""")
-        exception_thrown = False
-        try:
+        with self.assertRaises(InvalidDiscoveredFilePathError):
             self._collect()
-        except Exception:
-            exception_thrown = True
-        assert exception_thrown
+
+    def test_tool_provided_metadata_cannot_read_traversing_filename(self):
+        with self._external_file(parent=os.path.dirname(self.test_directory)) as outside_path:
+            filename = os.path.relpath(outside_path, self.test_directory)
+
+            with self.assertRaises(InvalidDiscoveredFilePathError):
+                self._collect_tool_provided_dataset(filename)
+
+    def test_tool_provided_metadata_cannot_read_absolute_filename(self):
+        with self._external_file() as outside_path:
+            with self.assertRaises(InvalidDiscoveredFilePathError):
+                self._collect_tool_provided_dataset(outside_path)
+
+    def test_tool_provided_metadata_cannot_read_symlinked_filename(self):
+        with self._external_file() as outside_path:
+            filename = "symlinked-output.txt"
+            os.symlink(outside_path, os.path.join(self.test_directory, filename))
+
+            with self.assertRaises(InvalidDiscoveredFilePathError):
+                self._collect_tool_provided_dataset(filename)
+
+    def test_pattern_discovery_cannot_read_symlinked_filename(self):
+        with self._external_file() as outside_path:
+            filename = f"primary_{self.hda.id}_symlink_visible_data"
+            os.symlink(outside_path, os.path.join(self.test_directory, filename))
+
+            with self.assertRaises(InvalidDiscoveredFilePathError):
+                self._collect()
+
+    def test_tool_provided_metadata_cannot_read_external_extra_files(self):
+        with tempfile.TemporaryDirectory() as outside_directory:
+            self._setup_extra_file(filename="sentinel.txt", directory=outside_directory)
+            self._assert_tool_provided_metadata_rejects_extra_files(outside_directory)
+
+    def test_tool_provided_metadata_cannot_read_traversing_extra_files(self):
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(self.test_directory)) as outside_directory:
+            self._setup_extra_file(filename="sentinel.txt", directory=outside_directory)
+            extra_files = os.path.relpath(outside_directory, self.test_directory)
+            self._assert_tool_provided_metadata_rejects_extra_files(extra_files)
+
+    def test_tool_provided_metadata_cannot_read_symlinked_extra_files(self):
+        with tempfile.TemporaryDirectory() as outside_directory:
+            self._setup_extra_file(filename="sentinel.txt", directory=outside_directory)
+            extra_files = "symlinked-extra-files"
+            os.symlink(outside_directory, os.path.join(self.test_directory, extra_files))
+            self._assert_tool_provided_metadata_rejects_extra_files(extra_files)
+
+    def _assert_tool_provided_metadata_rejects_extra_files(self, extra_files):
+        filename = "dataset.txt"
+        self._setup_extra_file(filename=filename)
+        metadata = self._tool_provided_metadata(filename, extra_files=extra_files)
+
+        with self.assertRaises(InvalidDiscoveredFilePathError):
+            self._collect(tool_provided_metadata=metadata)
+
+        object_store = cast("MockObjectStore", self.app.object_store)
+        assert object_store.created_datasets == {}
+
+    def test_tool_provided_metadata_allows_nested_filename(self):
+        filename = os.path.join("nested", "dataset.txt")
+        path = self._setup_extra_file(filename="dataset.txt", subdir="nested")
+
+        dataset = self._collect_tool_provided_dataset(filename)
+
+        assert_created_with_path(self.app.object_store, dataset.dataset, path)
+
+    def test_tool_provided_metadata_allows_in_directory_symlink(self):
+        target_path = self._setup_extra_file(filename="target.txt")
+        filename = "symlinked-output.txt"
+        path = os.path.join(self.test_directory, filename)
+        os.symlink(target_path, path)
+
+        dataset = self._collect_tool_provided_dataset(filename)
+
+        assert_created_with_path(self.app.object_store, dataset.dataset, path)
+
+    def test_installed_tool_can_create_in_working_directory_unnamed_output(self):
+        path = self._setup_extra_file(filename="unnamed.txt")
+        metadata = self._unnamed_outputs_metadata([{"filename": os.path.basename(path), "name": "unnamed"}])
+
+        self._collect(tool_provided_metadata=metadata)
+
+        object_store = cast("MockObjectStore", self.app.object_store)
+        assert os.path.realpath(path) in map(os.path.realpath, object_store.created_datasets.values())
+
+    def test_installed_tool_cannot_link_external_unnamed_output(self):
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata([self._linked_element(outside_path)])
+
+            with self.assertRaises(ExternalOutputPathNotAllowedError):
+                self._collect(tool_provided_metadata=metadata)
+
+    def test_tool_without_unnamed_outputs_capability_is_rejected(self):
+        self.tool.allows_unnamed_outputs = False
+        path = self._setup_extra_file(filename="unnamed.txt")
+        metadata = self._unnamed_outputs_metadata([{"filename": os.path.basename(path), "name": "unnamed"}])
+
+        with self.assertRaises(UntrustedToolProvidedMetadataError):
+            self._collect(tool_provided_metadata=metadata)
+
+        object_store = cast("MockObjectStore", self.app.object_store)
+        assert object_store.created_datasets == {}
+
+    def test_data_fetch_can_link_unnamed_output(self):
+        self._mark_as_data_fetch()
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata([self._linked_element(outside_path)])
+
+            with self._disk_object_store():
+                self._collect(tool_provided_metadata=metadata)
+
+            session = self.app.model.context
+            session.commit()
+            linked_dataset = session.execute(
+                select(model.HistoryDatasetAssociation).where(
+                    model.HistoryDatasetAssociation.history_id == self.history.id,
+                    model.HistoryDatasetAssociation.name == "linked output",
+                )
+            ).scalar_one()
+            assert linked_dataset.get_file_name() == outside_path
+            assert linked_dataset.dataset
+            assert not linked_dataset.dataset.purgable
+
+    def test_data_fetch_can_link_external_collection_element(self):
+        self._mark_as_data_fetch()
+        linked_collection = self._setup_hdca("linked collection")
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata(
+                [self._linked_element(outside_path)],
+                destination=self._hdca_destination(linked_collection),
+                name="linked collection",
+                collection_type="list",
+            )
+
+            with self._disk_object_store():
+                self._collect(tool_provided_metadata=metadata)
+
+            linked_dataset = linked_collection.collection.elements[0].dataset_instance
+            assert linked_dataset
+            assert linked_dataset.get_file_name() == outside_path
+            assert not linked_dataset.dataset.purgable
+
+    def test_dynamic_tool_cannot_spoof_data_fetch_collection_link(self):
+        self._mark_as_data_fetch(dynamic_tool_id=1)
+        linked_collection = self._setup_hdca("linked collection")
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata(
+                [self._linked_element(outside_path)],
+                destination=self._hdca_destination(linked_collection),
+                name="linked collection",
+                collection_type="list",
+            )
+
+            with self.assertRaises(ExternalOutputPathNotAllowedError):
+                self._collect(tool_provided_metadata=metadata)
+
+    def test_data_fetch_collection_allows_deferred_element(self):
+        self._mark_as_data_fetch()
+        deferred_collection = self._setup_hdca("deferred collection")
+        metadata = self._unnamed_outputs_metadata(
+            [
+                {
+                    "state": "deferred",
+                    "name": "deferred output",
+                    "ext": "txt",
+                    "src": "url",
+                    "url": "https://example.org/deferred.txt",
+                }
+            ],
+            destination=self._hdca_destination(deferred_collection),
+            name="deferred collection",
+            collection_type="list",
+        )
+
+        with self._distributed_object_store():
+            self._collect(tool_provided_metadata=metadata)
+
+        deferred_dataset = deferred_collection.collection.elements[0].dataset_instance
+        assert deferred_dataset
+        assert deferred_dataset.state == model.Dataset.states.DEFERRED
+        assert deferred_dataset.dataset
+        assert deferred_dataset.dataset.object_store_id is not None
+        assert deferred_dataset.dataset.extra_files_path_name is not None
 
     def _collect_default_extra(self, **kwargs):
         collected = self._collect(**kwargs)
@@ -353,15 +558,56 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert DEFAULT_EXTRA_NAME in output_files, f"No such key [{DEFAULT_EXTRA_NAME}]"
         return output_files[DEFAULT_EXTRA_NAME]
 
-    def _collect(self, job_working_directory=None):
+    def _collect_tool_provided_dataset(self, filename):
+        metadata = self._tool_provided_metadata(filename)
+        collected = self._collect(tool_provided_metadata=metadata)
+        return collected[DEFAULT_TOOL_OUTPUT]["discovered"]
+
+    def _tool_provided_metadata(self, filename, **dataset_attributes):
+        self._replace_output_collectors("""<output>
+            <discover_datasets discover_via="tool_provided_metadata" />
+        </output>""")
+        dataset = {
+            "filename": filename,
+            "name": "discovered",
+            "designation": "discovered",
+            "ext": "txt",
+            **dataset_attributes,
+        }
+        return self._metadata_from_dict({DEFAULT_TOOL_OUTPUT: {"datasets": [dataset]}})
+
+    def _metadata_from_dict(self, metadata):
+        meta_file = os.path.join(self.test_directory, "tool_provided_metadata.json")
+        with open(meta_file, "w") as f:
+            json.dump(metadata, f)
+        return ToolProvidedMetadata(meta_file)
+
+    def _unnamed_outputs_metadata(self, elements, destination=None, **output_attributes):
+        output = {"destination": destination or {"type": "hdas"}, "elements": elements, **output_attributes}
+        return self._metadata_from_dict({"__unnamed_outputs": [output]})
+
+    def _linked_element(self, path):
+        return {"filename": path, "link_data_only": True, "name": "linked output"}
+
+    def _hdca_destination(self, hdca):
+        return {"type": "hdca", "object_id": hdca.id}
+
+    @contextmanager
+    def _external_file(self, filename="sentinel.txt", parent=None):
+        with tempfile.TemporaryDirectory(dir=parent) as outside_directory:
+            outside_path = os.path.join(outside_directory, filename)
+            self._setup_extra_file(path=outside_path)
+            yield outside_path
+
+    def _collect(self, job_working_directory=None, tool_provided_metadata=None):
         if not job_working_directory:
             job_working_directory = self.test_directory
-        meta_file = os.path.join(self.test_directory, "galaxy.json")
-        tool_provided_metadata: BaseToolProvidedMetadata
-        if not os.path.exists(meta_file):
-            tool_provided_metadata = NullToolProvidedMetadata()
-        else:
-            tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
+        if tool_provided_metadata is None:
+            meta_file = os.path.join(self.test_directory, "galaxy.json")
+            if not os.path.exists(meta_file):
+                tool_provided_metadata = NullToolProvidedMetadata()
+            else:
+                tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
         return self.tool.discover_outputs(
             self.outputs,
@@ -371,6 +617,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             job=self.job,
             input_ext="txt",
             input_dbkey="btau",
+            inp_data={},
         )
 
     def _replace_output_collectors(self, xml_str):
@@ -428,6 +675,41 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self.history = self._new_history(hdas=[self.hda])
         self.job.history = self.history
         self.outputs = {DEFAULT_TOOL_OUTPUT: self.hda}
+
+    def _setup_hdca(self, name):
+        collection = model.DatasetCollection(collection_type="list", populated=False)
+        hdca = model.HistoryDatasetCollectionAssociation(name=name, history=self.history, collection=collection)
+        self.app.model.context.add(hdca)
+        self.app.model.context.commit()
+        return hdca
+
+    def _mark_as_data_fetch(self, dynamic_tool_id=None):
+        self.tool.old_id = "__DATA_FETCH__"
+        self.tool.dynamic_tool_id = dynamic_tool_id
+        self.job.tool_id = "__DATA_FETCH__"
+        self.job.dynamic_tool_id = dynamic_tool_id
+
+    @contextmanager
+    def _disk_object_store(self):
+        with self._real_object_store(DISK_TEST_CONFIG):
+            yield
+
+    @contextmanager
+    def _distributed_object_store(self):
+        with self._real_object_store(get_object_store_example("distributed_disk.xml")):
+            yield
+
+    @contextmanager
+    def _real_object_store(self, config):
+        original_object_store = self.app.object_store
+        with ObjectStoreTestConfig(config, store_by="uuid") as (_directory, object_store):
+            self.app.object_store = object_store
+            model.Dataset.object_store = object_store
+            try:
+                yield
+            finally:
+                self.app.object_store = original_object_store
+                model.Dataset.object_store = original_object_store
 
     def _new_history(self, hdas=None, flush=True):
         hdas = hdas or []

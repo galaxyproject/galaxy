@@ -9,7 +9,6 @@ migrated here so the legacy WSGI controller can be deleted.
 import logging
 import mimetypes
 import os
-from typing import Optional
 
 from fastapi import Form
 from starlette.requests import Request
@@ -176,7 +175,7 @@ class FastAPILegacyInstall:
     def get_required_repo_info_dict(
         self,
         trans: SessionRequestContext = DependsOnTrans,
-        encoded_str: Optional[str] = Form(default=None),
+        encoded_str: str | None = Form(default=None),
     ) -> dict:
         return get_required_repo_info_dict_from_encoded(trans, encoded_str)
 

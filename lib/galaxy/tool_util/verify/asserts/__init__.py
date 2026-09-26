@@ -1,15 +1,11 @@
 import logging
 import sys
+from collections.abc import Callable
 from inspect import (
     getfullargspec,
     getmembers,
 )
 from tempfile import NamedTemporaryFile
-from typing import (
-    Callable,
-    Dict,
-    Tuple,
-)
 
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
@@ -18,7 +14,7 @@ log = logging.getLogger(__name__)
 
 assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size", "image"]
 
-assertion_module_and_functions: Dict[str, Tuple[str, Callable]] = {}
+assertion_module_and_functions: dict[str, tuple[str, Callable]] = {}
 
 for assertion_module_name in assertion_module_names:
     full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
@@ -38,7 +34,7 @@ for assertion_module_name in assertion_module_names:
 # create a new module of assertion functions, create the needed python
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
 # <MODULE_NAME> to the list of assertion module names defined above.
-assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
+assertion_functions: dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
 
 
 def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):

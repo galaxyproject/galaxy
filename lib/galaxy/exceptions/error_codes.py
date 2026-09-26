@@ -4,7 +4,6 @@ See the file error_codes.json for actual error code descriptions.
 """
 
 from json import loads
-from typing import Dict
 
 from galaxy.util.resources import resource_string
 
@@ -44,11 +43,24 @@ def _from_dict(entry):
 
 
 error_codes_json = resource_string(__name__, "error_codes.json")
-error_codes_by_name: Dict[str, ErrorCode] = {}
-error_codes_by_int_code: Dict[int, ErrorCode] = {}
+error_codes_by_name: dict[str, ErrorCode] = {}
+error_codes_by_int_code: dict[int, ErrorCode] = {}
 
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)
     globals()[name] = error_code_obj
     error_codes_by_name[name] = error_code_obj
     error_codes_by_int_code[error_code_obj.code] = error_code_obj
+
+
+def __getattr__(name: str) -> ErrorCode:
+    """Expose the JSON-driven, dynamically-created error codes to static analysis.
+
+    The codes above are assigned via ``globals()[name] = ...``, which mypy cannot
+    see, so attribute access like ``error_codes.ADMIN_REQUIRED`` is otherwise
+    reported as an unknown attribute.
+    """
+    try:
+        return error_codes_by_name[name]
+    except KeyError:
+        raise AttributeError(name)

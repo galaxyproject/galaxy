@@ -8,6 +8,7 @@ import { getGalaxyInstance } from "@/app";
 import svc from "./model/service";
 
 import APIKeyItem from "./APIKeyItem.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -55,16 +56,16 @@ const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "M
             <LoadingSpan message="Loading API keys" />
         </b-alert>
 
-        <b-button
+        <GButton
             v-else-if="!loading && !apiKey"
             :disabled="createLoading"
             class="create-button"
-            variant="primary"
+            color="blue"
             @click.prevent="createNewAPIKey">
             <FontAwesomeIcon v-if="!createLoading" :icon="faPlus" />
             <FontAwesomeIcon v-else :icon="faSpinner" spin />
             <span v-localize>Create a new key</span>
-        </b-button>
+        </GButton>
 
         <div v-else-if="apiKey" class="mx-2">
             <APIKeyItem :item="apiKey" @getAPIKey="getAPIKey" />

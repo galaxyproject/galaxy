@@ -6,7 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
+import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import MountTarget from "./MarkdownGalaxy.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const { server, http } = useServerMock();
 
@@ -65,6 +67,17 @@ function mountComponent(propsData = {}, options = {}) {
         );
     }
 
+    if (options.enableDatasetAsTable) {
+        handlers.push(
+            http.untyped.get("/api/datasets/dataset_id/get_content_as_text", () =>
+                HttpResponse.json({ item_data: "a\tb\n", truncated: false }),
+            ),
+            http.untyped.get("/api/datasets/dataset_id", () =>
+                HttpResponse.json({ metadata_columns: 2, metadata_column_names: ["a", "b"] }),
+            ),
+        );
+    }
+
     server.use(...handlers);
 
     return mount(MountTarget, {
@@ -92,11 +105,11 @@ describe("MarkdownContainer", () => {
         expect(nolink.exists()).toBe(false);
         const collapse = "Click here to expand/collapse";
         await wrapper.setProps({ content: `generate_galaxy_version(collapse="${collapse}")` });
-        const link = wrapper.find("a");
-        expect(link.text()).toBe(collapse);
+        const heading = wrapper.findComponent(Heading);
+        expect(heading.text()).toBe(collapse);
         const container = wrapper.find(".g-collapse");
         expect(container.classes()).not.toContain("g-collapse-open");
-        await link.trigger("click");
+        await heading.vm.$emit("click");
         expect(container.classes()).toContain("g-collapse-open");
     });
 
@@ -239,5 +252,37 @@ describe("MarkdownContainer", () => {
         });
         await flushPromises();
         expect(fetchWorkflowMock).toHaveBeenCalledWith("wf123");
+    });
+
+    it("parses compact and show_column_headers args as booleans, not truthy strings", async () => {
+        const wrapper = mountComponent(
+            {
+                content:
+                    "history_dataset_as_table(history_dataset_id=dataset_id, compact=false, show_column_headers=false)",
+            },
+            { enableDatasetAsTable: true },
+        );
+        await flushPromises();
+        const table = wrapper.findComponent(HistoryDatasetAsTable);
+        expect(table.props("compact")).toBe(false);
+        expect(table.props("showColumnHeaders")).toBe(false);
+
+        await wrapper.setProps({
+            content: "history_dataset_as_table(history_dataset_id=dataset_id, compact=true, show_column_headers=true)",
+        });
+        await flushPromises();
+        expect(table.props("compact")).toBe(true);
+        expect(table.props("showColumnHeaders")).toBe(true);
+    });
+
+    it("defaults compact to false and show_column_headers to true when args are absent", async () => {
+        const wrapper = mountComponent(
+            { content: "history_dataset_as_table(history_dataset_id=dataset_id)" },
+            { enableDatasetAsTable: true },
+        );
+        await flushPromises();
+        const table = wrapper.findComponent(HistoryDatasetAsTable);
+        expect(table.props("compact")).toBe(false);
+        expect(table.props("showColumnHeaders")).toBe(true);
     });
 });

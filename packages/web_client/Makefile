@@ -14,7 +14,7 @@ PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
 DIST=dist
-TESTS?=$(SOURCE_DIR) $(TEST_DIR)
+TESTS?=$(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
 
@@ -80,11 +80,9 @@ _mypy:
 
 mypy: _setup-mypy-venv _mypy
 
-_setup-dev-venv:
-	uv pip install -r dev-requirements.txt
-
-lint-dist: _setup-dev-venv
-	uv run twine check $(DIST)/*
+lint-dist:
+	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
+	uv run --no-project python check_artifacts.py $(DIST)/*
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)

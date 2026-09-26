@@ -16,6 +16,8 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 
 if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+
     from galaxy.config import GalaxyAppConfiguration
     from galaxy.model import User as GalaxyUser
     from galaxy.objectstore import BaseObjectStore
@@ -28,7 +30,7 @@ metadata = mapper_registry.metadata
 class GalaxyModelMapping(SharedModelMapping):
     User: type["GalaxyUser"]
     security_agent: GalaxyRBACAgent
-    thread_local_log: Optional[local]
+    thread_local_log: local | None
 
 
 def init(
@@ -41,7 +43,7 @@ def init(
     trace_logger=None,
     use_pbkdf2=True,
     slow_query_log_threshold=0,
-    thread_local_log: Optional[local] = None,
+    thread_local_log: local | None = None,
     log_query_counts=False,
 ) -> GalaxyModelMapping:
     # Build engine
@@ -68,7 +70,7 @@ def init(
     return configure_model_mapping(file_path, use_pbkdf2, engine, map_install_models, thread_local_log)
 
 
-def create_additional_database_objects(engine):
+def create_additional_database_objects(engine: "Engine") -> None:
     install_timestamp_triggers(engine)
 
 

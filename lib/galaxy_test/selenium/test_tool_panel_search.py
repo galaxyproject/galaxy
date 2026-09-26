@@ -98,10 +98,12 @@ class TestToolPanelSearchPlaywright(SeleniumTestCase):
             "favorite order to persist after drag-and-drop",
         )
         self._wait_on(
-            lambda: self._favorite_top_level_order()[:2]
-            == [
-                ("tags", "Text Manipulation"),
-                ("tools", "cat1"),
-            ],
+            lambda: (
+                self._favorite_top_level_order()[:2]
+                == [
+                    ("tags", "Text Manipulation"),
+                    ("tools", "cat1"),
+                ]
+            ),
             "favorite tool panel order to update after drag-and-drop",
         )

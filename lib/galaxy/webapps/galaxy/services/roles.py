@@ -1,5 +1,3 @@
-from typing import Optional
-
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.roles import RoleManager
 from galaxy.model.db.role import get_private_role_user_emails_dict
@@ -17,7 +15,7 @@ from galaxy.webapps.base.controller import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
-def role_to_model(role, displayed_name: Optional[str] = None):
+def role_to_model(role, displayed_name: str | None = None):
     item = role.to_dict(view="element")
     role_id = Security.security.encode_id(role.id)
     item["url"] = url_for("role", id=role_id)
@@ -29,7 +27,6 @@ def role_to_model(role, displayed_name: Optional[str] = None):
 
 
 class RolesService(ServiceBase):
-
     def __init__(
         self,
         security: IdEncodingHelper,
@@ -41,9 +38,9 @@ class RolesService(ServiceBase):
     def get_index(
         self,
         trans: ProvidesUserContext,
-        search: Optional[str] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = 0,
+        search: str | None = None,
+        limit: int | None = None,
+        offset: int | None = 0,
     ) -> RoleListResponse:
         roles = self.role_manager.list_displayable_roles(trans, search=search, limit=limit, offset=offset or 0)
         role_ids = {r.id for r in roles}

@@ -7,10 +7,6 @@ except ImportError:
     BlobFS = None
     BlobFSV2 = None
 
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -24,17 +20,17 @@ AzureNamespaceType = Literal["hierarchical", "flat"]
 
 
 class AzureFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    account_name: Union[str, TemplateExpansion]
-    container_name: Union[str, TemplateExpansion]
-    account_key: Union[str, TemplateExpansion]
-    namespace_type: Optional[AzureNamespaceType] = "hierarchical"
+    account_name: str | TemplateExpansion
+    container_name: str | TemplateExpansion
+    account_key: str | TemplateExpansion
+    namespace_type: AzureNamespaceType | None = "hierarchical"
 
 
 class AzureFileSourceConfiguration(BaseFileSourceConfiguration):
     account_name: str
     container_name: str
     account_key: str
-    namespace_type: Optional[AzureNamespaceType] = "hierarchical"
+    namespace_type: AzureNamespaceType | None = "hierarchical"
 
 
 class AzureFileSource(PyFilesystem2FilesSource[AzureFileSourceTemplateConfiguration, AzureFileSourceConfiguration]):

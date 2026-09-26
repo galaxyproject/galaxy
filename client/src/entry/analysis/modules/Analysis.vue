@@ -2,7 +2,7 @@
 import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
@@ -35,6 +35,26 @@ watch(
     { immediate: true },
 );
 
+/** A list of paths for which `p-3` should not be applied
+ *
+ * TODO: Maybe we remove this global `p-3` and add it to the individual components that need it instead?
+ */
+const isNoPaddingPath = computed(() => {
+    return (
+        route.path.startsWith("/galaxyai") ||
+        (route.path.startsWith("/histories/") && route.path.includes("/pages/")) ||
+        route.path.startsWith("/pages/editor")
+    );
+});
+
+/**
+ * Every `/galaxyai` route renders one and the same GalaxyAI instance: it rewrites its own route as a
+ * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
+ * those changes through its `exchangeId` prop, so the live conversation stays in place. All other
+ * routes get a fresh component per path.
+ */
+const routerViewKey = computed(() => (route.path.startsWith("/galaxyai") ? "/galaxyai" : route.fullPath));
+
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 
@@ -55,13 +75,6 @@ function onLoad() {
     showCenter.value = true;
 }
 
-function handleUndock() {
-    const chatId = activeChatId.value;
-    chatStore.setLocation("center");
-    chatStore.hideChat();
-    router.push(chatId ? `/galaxyai/${chatId}` : "/galaxyai");
-}
-
 // life cycle
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
@@ -78,10 +91,10 @@ onUnmounted(() => {
     <div id="columns" class="d-flex">
         <ActivityBar v-if="showPanels" />
         <div id="center" class="d-flex flex-column w-100" style="min-width: 0">
-            <div class="flex-grow-1 overflow-auto p-3" style="min-height: 0">
+            <div class="flex-grow-1 overflow-auto" :class="{ 'p-3': !isNoPaddingPath }" style="min-height: 0">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="h-100">
-                    <router-view :key="$route.fullPath" class="h-100" />
+                    <router-view :key="routerViewKey" class="h-100" />
                 </div>
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />
@@ -103,11 +116,7 @@ onUnmounted(() => {
             side="right"
             :reactive-width.sync="chatPanelWidth"
             @close="chatStore.hideChat()">
-            <GalaxyAI
-                :exchange-id="activeChatId || undefined"
-                docked
-                @close="chatStore.hideChat()"
-                @undock="handleUndock" />
+            <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>
         <DragAndDropModal />
     </div>

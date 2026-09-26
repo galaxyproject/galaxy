@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckCircle, faExclamationCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -16,6 +16,7 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -139,13 +140,13 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             v-if="!loading && browserSupportsPushNotifications() && !pushNotificationsGranted"
             class="card-container push-notifications-notice">
             Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
-            <BButton
+            <GButton
                 v-g-tooltip.hover
                 class="mx-2"
                 title="Enable push notifications"
                 @click="onTogglePushNotifications">
                 Enable push notifications
-            </BButton>
+            </GButton>
         </div>
 
         <BAlert

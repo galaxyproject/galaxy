@@ -21,6 +21,10 @@ import yaml
 import galaxy.util
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    ToolLike,
+)
 from galaxy.util import (
     Element,
     RW_R__R__,
@@ -44,7 +48,7 @@ from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
-    from galaxy.tool_util.toolbox.base import AbstractToolBox
+    from galaxy.tool_util.abstract_tool import AbstractTool
     from galaxy.tools import SetMetadataTool
 
 
@@ -85,13 +89,13 @@ class Registry:
         self.datatypes_by_extension: dict[str, Data] = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = {}
+        self.datatype_converters: dict[str, dict[str, AbstractTool]] = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
-        self.converter_tools = set()
+        self.converter_tools: set[AbstractTool] = set()
         self.converter_deps = {}
         self.available_tracks = []
-        self.set_external_metadata_tool = None
+        self.set_external_metadata_tool: SetMetadataTool | None = None
         self.sniff_order: list[Data] = []
         self.upload_file_formats = []
         # Datatype elements defined in local datatypes_conf.xml that contain display applications.
@@ -123,8 +127,8 @@ class Registry:
 
     def load_datatypes(
         self,
-        root_dir: Optional[StrPath] = None,
-        config: Optional[Union[Element, StrPath]] = None,
+        root_dir: StrPath | None = None,
+        config: Element | StrPath | None = None,
         override: bool = True,
         use_converters: bool = True,
         use_display_applications: bool = True,
@@ -218,7 +222,7 @@ class Registry:
                         if override or extension not in self.datatypes_by_extension:
                             can_process_datatype = True
                 if can_process_datatype:
-                    datatype_class: Optional[type[Data]] = None
+                    datatype_class: type[Data] | None = None
                     if dtype is not None:
                         ok = True
                         try:
@@ -541,7 +545,7 @@ class Registry:
         self,
         root: Element,
         override: bool = False,
-        compressed_sniffers: Optional[dict[type["Data"], list["Data"]]] = None,
+        compressed_sniffers: dict[type["Data"], list["Data"]] | None = None,
     ) -> None:
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
@@ -660,6 +664,26 @@ class Registry:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
+    def sniff_directory(self, path: str) -> str:
+        """Detect the datatype of the extra-files directory at ``path``.
+
+        Return the matching extension with the deepest inheritance hierarchy,
+        or ``directory`` if none match.
+        """
+        matches = []
+        for datatype in self.datatypes_by_extension.values():
+            if not isinstance(datatype, data.Directory):
+                continue
+            try:
+                if datatype.sniff_directory(path):
+                    matches.append(datatype)
+            except Exception:
+                self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
+        if not matches:
+            return data.Directory.file_ext
+        best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
+        return best.file_ext
+
     def change_datatype(self, data, ext):
         if data.extension != ext:
             data.extension = ext
@@ -671,7 +695,7 @@ class Registry:
                 data.init_meta(copy_from=data)
         return data
 
-    def load_datatype_converters(self, toolbox: "AbstractToolBox", use_cached: bool = False):
+    def load_datatype_converters(self, toolbox: AbstractToolBox, use_cached: bool = False) -> None:
         """
         Add datatype converters from self.converters to the calling app's toolbox.
         """
@@ -684,16 +708,46 @@ class Registry:
             converter_path = self.converters_path
             try:
                 config_path = os.path.join(converter_path, tool_config)
-                converter = toolbox.load_tool(config_path, use_cached=use_cached)
-                self.converter_tools.add(converter)
+                converter_like: ToolLike = toolbox.load_tool(config_path, use_cached=use_cached)
+                converter = toolbox.materialize_tool(converter_like, reason="execution")
                 toolbox.register_tool(converter)
-                if source_datatype not in self.datatype_converters:
-                    self.datatype_converters[source_datatype] = {}
-                self.datatype_converters[source_datatype][target_datatype] = converter
+                self._register_converter_tool(converter, source_datatype, target_datatype)
                 if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
                     self.log.debug("Loaded converter: %s", converter.id)
             except Exception:
                 self.log.exception(f"Error loading converter ({converter_path})")
+
+    def load_datatype_converters_without_toolbox(self, app) -> None:
+        """Load datatype converters for an app that has no toolbox (e.g. the Celery worker).
+
+        Mirrors ``load_datatype_converters`` but builds each converter directly from its tool
+        source rather than through a toolbox, since the Celery worker's minimal
+        ``GalaxyManagerApplication`` has none. Async tool-request execution runs in the worker
+        and relies on ``datatype_converters`` being populated to apply implicit datatype
+        conversion (e.g. decompressing a ``fasta.gz`` input for a ``fasta`` parameter); without
+        this ``find_conversion_destination`` finds no converter and hands the raw dataset to the
+        tool.
+        """
+        # Imported here to avoid a circular import - galaxy.tools depends on galaxy.datatypes.
+        from galaxy.tool_util.parser import get_tool_source
+        from galaxy.tools import create_tool_from_source
+
+        if not self.converters_path:
+            return
+        for tool_config, source_datatype, target_datatype in self.converters:
+            config_path = os.path.join(self.converters_path, tool_config)
+            try:
+                tool_source = get_tool_source(config_file=config_path)
+                converter = create_tool_from_source(app, tool_source, config_file=config_path)
+                self._register_converter_tool(converter, source_datatype, target_datatype)
+            except Exception:
+                self.log.exception(f"Error loading converter ({config_path})")
+        # Drop any cached (empty) converter lookups computed before registration.
+        self._converters_by_datatype = {}
+
+    def _register_converter_tool(self, converter: "AbstractTool", source_datatype: str, target_datatype: str) -> None:
+        self.converter_tools.add(converter)
+        self.datatype_converters.setdefault(source_datatype, {})[target_datatype] = converter
 
     def load_display_applications(self, app):
         """
@@ -759,14 +813,15 @@ class Registry:
                 failed.append(display_application_id)
         return (reloaded, failed)
 
-    def load_external_metadata_tool(self, toolbox: "AbstractToolBox") -> None:
+    def load_external_metadata_tool(self, toolbox: AbstractToolBox) -> None:
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool(
+        set_meta_tool_like: ToolLike = toolbox.load_hidden_lib_tool(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
         )
+        set_meta_tool = toolbox.materialize_tool(set_meta_tool_like, reason="execution")
         self.set_external_metadata_tool = cast("SetMetadataTool", set_meta_tool)
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
@@ -905,10 +960,10 @@ class Registry:
 
     def find_conversion_destination_for_dataset_by_extensions(
         self,
-        dataset_or_ext: Union[str, DatasetProtocol],
+        dataset_or_ext: str | DatasetProtocol,
         accepted_formats: Iterable[Union[str, "Data"]],
         converter_safe: bool = True,
-    ) -> tuple[bool, Optional[str], Optional[DatasetProtocol]]:
+    ) -> tuple[bool, str | None, DatasetProtocol | None]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -1059,7 +1114,7 @@ class Registry:
         return state
 
 
-def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+def upload_warning(template: Template | None, auto_compressed_type: str | None = None) -> str | None:
     if template is None:
         return None
     template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}

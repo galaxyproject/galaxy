@@ -16,16 +16,26 @@ DataProvider related decorators.
 
 import copy
 import logging
+from collections.abc import Callable
 from functools import wraps
+from typing import (
+    Any,
+    ParamSpec,
+    TypeVar,
+)
 from urllib.parse import unquote
 
 log = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+R = TypeVar("R")
+T = TypeVar("T")
 
 _DATAPROVIDER_CLASS_MAP_KEY = "dataproviders"
 _DATAPROVIDER_METHOD_NAME_KEY = "_dataprovider_name"
 
 
-def has_dataproviders(cls):
+def has_dataproviders(cls: type[T]) -> type[T]:
     """
     Wraps a class (generally a Datatype), finds methods within that have been
     decorated with `@dataprovider` and adds them, by their name, to a map
@@ -77,7 +87,9 @@ def has_dataproviders(cls):
     return cls
 
 
-def dataprovider_factory(name, settings=None):
+def dataprovider_factory(
+    name: str, settings: dict[str, str] | None = None
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Wraps a class method and marks it as a dataprovider factory and creates a
     function to parse query strings to __init__ arguments as the
@@ -100,37 +112,38 @@ def dataprovider_factory(name, settings=None):
     #   callable like:
     # settings_dict = dataproviders[ provider_name ].parse_query_string_settings( query_kwargs )
     # TODO: ugh - overly complicated but the best I could think of
-    def parse_query_string_settings(query_kwargs):
+    def parse_query_string_settings(query_kwargs: dict[str, Any]) -> dict[str, Any]:
         return _parse_query_string_settings(query_kwargs, settings)
 
-    def named_dataprovider_factory(func):
+    def named_dataprovider_factory(func: Callable[P, R]) -> Callable[P, R]:
         setattr(func, _DATAPROVIDER_METHOD_NAME_KEY, name)
 
-        func.parse_query_string_settings = parse_query_string_settings
-        func.settings = settings
+        func.__dict__.update(parse_query_string_settings=parse_query_string_settings, settings=settings)
         # TODO: I want a way to inherit settings from the previous provider( this_name ) instead of defining over and over
 
         @wraps(func)
-        def wrapped_dataprovider_factory(self, *args, **kwargs):
-            return func(self, *args, **kwargs)
+        def wrapped_dataprovider_factory(*args: P.args, **kwargs: P.kwargs) -> R:
+            return func(*args, **kwargs)
 
         return wrapped_dataprovider_factory
 
     return named_dataprovider_factory
 
 
-def _parse_query_string_settings(query_kwargs, settings=None):
+def _parse_query_string_settings(
+    query_kwargs: dict[str, Any], settings: dict[str, str] | None = None
+) -> dict[str, Any]:
     """
     Parse the values in `query_kwargs` from strings to the proper types
     listed in the same key in `settings`.
     """
 
     # TODO: this was a relatively late addition: review and re-think
-    def list_from_query_string(s):
+    def list_from_query_string(s: str) -> list[str]:
         # assume csv
         return s.split(",")
 
-    parsers = {
+    parsers: dict[str, Callable[[str], Any]] = {
         "int": int,
         "float": float,
         "bool": bool,

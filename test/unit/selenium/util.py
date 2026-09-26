@@ -3,7 +3,6 @@
 from collections.abc import Callable
 from typing import (
     TypeVar,
-    Union,
 )
 
 import pytest
@@ -27,7 +26,7 @@ def _identity(func: Callable[P, T]) -> Callable[P, T]:
     return func
 
 
-def skip_unless_selenium_browser() -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_selenium_browser() -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     """
     Skip test if Selenium Chrome browser is not available.
 
@@ -39,7 +38,7 @@ def skip_unless_selenium_browser() -> Union[Callable[[Callable[P, T]], Callable[
     return pytest.mark.skip(SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE)
 
 
-def skip_unless_playwright_browser() -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_playwright_browser() -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     """
     Skip test if Playwright Chromium browser is not available.
 
@@ -51,7 +50,7 @@ def skip_unless_playwright_browser() -> Union[Callable[[Callable[P, T]], Callabl
     return pytest.mark.skip(PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE)
 
 
-def skip_unless_selenium_browser_cached() -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_selenium_browser_cached() -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     """
     Skip test if Selenium Chrome browser is not available (cached check).
 
@@ -66,7 +65,7 @@ def skip_unless_selenium_browser_cached() -> Union[Callable[[Callable[P, T]], Ca
     return pytest.mark.skip(SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE)
 
 
-def skip_unless_playwright_browser_cached() -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_playwright_browser_cached() -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     """
     Skip test if Playwright Chromium browser is not available (cached check).
 

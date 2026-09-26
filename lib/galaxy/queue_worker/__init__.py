@@ -15,7 +15,6 @@ from inspect import ismodule
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
     TypedDict,
 )
@@ -37,6 +36,7 @@ from galaxy.managers.sse import (
 )
 from galaxy.model import User
 from galaxy.tools import ToolBox
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
 
@@ -56,14 +56,14 @@ class NotifyUsersPayload(TypedDict, total=False):
 
     user_ids: list[int]
     payload: str
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class NotifyBroadcastPayload(TypedDict, total=False):
     """Wire contract for the ``notify_broadcast`` control-task kwargs."""
 
     payload: str
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class HistoryUpdatePayload(TypedDict, total=False):
@@ -78,14 +78,14 @@ class HistoryUpdatePayload(TypedDict, total=False):
 
     user_updates: dict[str, list[int]]
     session_updates: dict[str, list[int]]
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class EntryPointUpdatePayload(TypedDict, total=False):
     """Wire contract for the ``entry_point_update`` control-task kwargs."""
 
     user_id: int
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class HistoryViewerSubscriptionPayload(TypedDict, total=False):
@@ -106,7 +106,7 @@ def send_local_control_task(
     app: "StructuredApp",
     task: str,
     get_response: bool = False,
-    kwargs: Optional[dict] = None,
+    kwargs: dict | None = None,
 ) -> Any:
     """
     This sends a message to the process-local control worker, which is useful
@@ -127,9 +127,9 @@ def send_control_task(
     noop_self: bool = False,
     get_response: bool = False,
     routing_key: str = "control.*",
-    kwargs: Optional[dict] = None,
-    expiration: Optional[int] = None,
-    declare_queues: Optional[list[Queue]] = None,
+    kwargs: dict | None = None,
+    expiration: int | None = None,
+    declare_queues: list[Queue] | None = None,
 ) -> Any:
     """
     This sends a control task out to all processes, useful for things like
@@ -179,7 +179,8 @@ class ControlTask:
 
     @property
     def exchange(self):
-        return self.queue_worker.exchange_queue.exchange
+        # Kombu clears Queue.exchange when explicit bindings are used.
+        return galaxy.queues.galaxy_exchange
 
     @property
     def declare_queues(self):
@@ -196,8 +197,8 @@ class ControlTask:
         local: bool = False,
         get_response: bool = False,
         timeout: int = 10,
-        expiration: Optional[int] = None,
-        declare_queues: Optional[list[Queue]] = None,
+        expiration: int | None = None,
+        declare_queues: list[Queue] | None = None,
     ):
         if local:
             declare_queues = self.control_queues
@@ -286,22 +287,40 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
+
+    Serialized under ``app._toolbox_lock`` against ``remove_tool_by_id`` and
+    ``invalidate_index_cache``: a reload queued by an earlier conf write (the
+    install that precedes an uninstall) otherwise interleaves its rebuild —
+    including a potentially long inline index populate — with the removal,
+    and the swapped-in toolbox resurrects the just-removed tool.
     """
     tool_configs = app.config.tool_configs
 
-    new_toolbox = ToolBox(
-        tool_configs,
-        app.config.tool_path,
-        app,
-        save_integrated_tool_panel=save_integrated_tool_panel,
-    )
-    new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
-    app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
-    app.datatypes_registry.load_external_metadata_tool(new_toolbox)
-    load_lib_tools(new_toolbox)
-    for tool in new_toolbox.data_manager_tools.values():
-        new_toolbox.register_tool(tool)
-    app._toolbox = new_toolbox
+    with app._toolbox_lock:
+        new_toolbox: ToolBox
+        if app.config.use_cached_toolbox and app.tool_source_store is not None:
+            new_toolbox = CachedToolBox(
+                config_filenames=tool_configs,
+                tool_root_dir=app.config.tool_path,
+                app=app,
+                tool_source_store=app.tool_source_store,
+                cache_size=app.config.cached_toolbox_cache_size,
+                save_integrated_tool_panel=save_integrated_tool_panel,
+            )
+        else:
+            new_toolbox = ToolBox(
+                tool_configs,
+                app.config.tool_path,
+                app,
+                save_integrated_tool_panel=save_integrated_tool_panel,
+            )
+        new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+        app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
+        app.datatypes_registry.load_external_metadata_tool(new_toolbox)
+        load_lib_tools(new_toolbox)
+        for tool in new_toolbox.data_manager_tools.values():
+            new_toolbox.register_tool(tool)
+        app._toolbox = new_toolbox
 
 
 def reload_data_managers(app, **kwargs):
@@ -352,8 +371,7 @@ def reload_tool_data_tables(app, **kwargs):
 
 def rebuild_toolbox_search_index(app, **kwargs):
     if app.is_webapp and app.database_heartbeat.is_config_watcher:
-        if app.toolbox_search.index_count < app.toolbox._reload_count:
-            app.reindex_tool_search()
+        app.ensure_tool_search_index()
     else:
         log.debug("App is not a webapp, not building a search index")
 
@@ -377,6 +395,28 @@ def reload_tour(app, **kwargs):
     path = kwargs.get("path")
     app.tour_registry.reload_tour(path)
     log.debug("Tour reloaded")
+
+
+def reload_tool_source_cache(app, **kwargs):
+    """
+    Reload the tool source cache/index.
+
+    This is typically triggered by an external process (like populate_store.py --watch)
+    when tool files change on disk.
+    """
+    log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
+
+    # Invalidate the cached toolbox cache if the active toolbox is a CachedToolBox.
+    toolbox = app.toolbox
+    if isinstance(toolbox, CachedToolBox):
+        toolbox.invalidate_index_cache()
+        app.reindex_tool_search()
+        log.info("Tool source index cache invalidated")
+
+    # Invalidate the tool source store cache if it exists
+    if app.tool_source_store is not None:
+        app.tool_source_store.invalidate_index_cache()
+        log.info("Tool source store cache invalidated")
 
 
 def __job_rule_module_names(app: "MinimalManagerApp"):
@@ -555,10 +595,11 @@ control_message_to_task = {
     "entry_point_update": entry_point_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
+    "reload_tool_source_cache": reload_tool_source_cache,
 }
 
 
-class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
+class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):  # type: ignore[misc]  # kombu is untyped
     """
     This is a flexible worker for galaxy's queues.  Each process, web or
     handler, will have one of these used for dispatching so called 'control'
@@ -611,19 +652,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         return galaxy.queues.all_control_queues_for_declare(self.app.application_stack)
 
     def bind_publisher(self):
-        """Set up the queues needed to PUBLISH control tasks (no consumer thread).
+        """Bind producer queues without starting a consumer.
 
-        Safe to call from any process that needs to produce control messages — notably
-        Celery workers, which want to fan out SSE events to web workers but must not
-        start a consumer themselves.
-
-        Always (re)binds. A prefork call in ``GalaxyManagerApplication.__init__`` binds
-        using the parent's ``config.server_name``; under gunicorn with ``--preload``
-        the child's ``set_postfork_server_name`` mutates ``server_name`` to e.g.
-        ``main.1`` after fork. ``bind_and_start`` calls back into this so the
-        consumer's queues match what post-fork producers declare.
+        Rebind after fork: server_name changes, and is_webapp is set only after
+        the initial GalaxyManagerApplication bind.
         """
-        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(
+            self.app.config, app_type=galaxy.queues.WEBAPP_APP_TYPE if self.app.is_webapp else None
+        )
         self.control_queues = [self.exchange_queue, self.direct_queue]
 
     def bind_and_start(self):

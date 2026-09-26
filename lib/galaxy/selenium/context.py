@@ -1,6 +1,5 @@
 import os
 from abc import abstractmethod
-from typing import Optional
 from urllib.parse import urljoin
 
 import yaml
@@ -47,7 +46,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         return target
 
     @abstractmethod
-    def _screenshot_path(self, label: str, extension=".png") -> Optional[str]:
+    def _screenshot_path(self, label: str, extension=".png") -> str | None:
         """Path to store screenshots in."""
 
 
@@ -58,7 +57,7 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
     to then interact with via the Selenium is :class:`galaxy_test.selenium.framework.GalaxySeleniumContextImpl`.
     """
 
-    def __init__(self, from_dict: Optional[dict] = None) -> None:
+    def __init__(self, from_dict: dict | None = None) -> None:
         from_dict = from_dict or {}
         self.configured_driver = ConfiguredDriver(**from_dict.get("driver", {}))
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")

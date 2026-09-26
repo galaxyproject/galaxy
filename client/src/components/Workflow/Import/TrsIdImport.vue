@@ -134,8 +134,6 @@ defineExpose({ triggerImport });
 
 <template>
     <div class="workflow-import-trs-id">
-        <h2 class="h-sm">Import from TRS ID</h2>
-
         <div>
             <b>TRS Server:</b>
 

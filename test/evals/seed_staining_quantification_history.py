@@ -36,7 +36,6 @@ import io
 import sys
 from typing import (
     Any,
-    Optional,
 )
 
 HISTORY_NAME = "Staining quantification (eval fixture)"
@@ -135,7 +134,7 @@ def seed_demo_history(dataset_populator: Any) -> str:
     return history_id
 
 
-def _standalone_main(argv: Optional[list[str]] = None) -> int:
+def _standalone_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--galaxy-url", required=True, help="Base URL of the running Galaxy.")
     parser.add_argument("--galaxy-api-key", required=True, help="API key for the user to seed for.")

@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BModal, type BvModalEvent } from "bootstrap-vue";
 import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+import { useToast } from "@/composables/toast";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
+
+const Toast = useToast();
 
 const props = defineProps({
     userPreferredObjectStoreId: {
@@ -28,15 +31,13 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    showModal: {
+    show: {
         type: Boolean,
-        default: false,
+        required: true,
     },
 });
 
 const { confirm } = useConfirmDialog();
-
-const error = ref();
 
 const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
@@ -62,8 +63,16 @@ const defaultOptionDescription = computed(() => {
     }
 });
 
+/** Computed toggle that handles showing and hiding the modal */
+const localShowToggle = computed({
+    get: () => props.show,
+    set: (value: boolean) => {
+        emit("update:show", value);
+    },
+});
+
 const emit = defineEmits<{
-    (e: "close"): void;
+    (e: "update:show", value: boolean): void;
     (e: "updated", id: string | null): void;
 }>();
 
@@ -85,9 +94,8 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
             if (confirmed) {
                 try {
                     await makePrivate(props.history.id, permissionResponse);
-                } catch {
-                    error.value = "Failed to update default permissions for history.";
-                    throw new Error();
+                } catch (e) {
+                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."));
                 }
             }
         }
@@ -95,13 +103,9 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
 
     const payload = { preferred_object_store_id: preferredObjectStoreId };
     const url = prependPath(`api/histories/${props.history.id}`);
-    try {
-        await axios.put(url, payload);
-        emit("updated", preferredObjectStoreId);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
-        throw new Error();
-    }
+
+    await axios.put(url, payload);
+    emit("updated", preferredObjectStoreId);
 }
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
@@ -122,53 +126,41 @@ function selectionChanged(preferredObjectStoreId: string | null, isPrivate: bool
     currentSelectedStorePrivate.value = isPrivate;
 }
 
-async function modalOk(event: BvModalEvent) {
-    event?.preventDefault();
-
+async function modalOk() {
     try {
         await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
-
         reset();
-        emit("close");
-    } catch (_e) {
-        // pass
+        localShowToggle.value = false;
+    } catch (e) {
+        Toast.error(errorMessageAsString(e), "Failed to update history storage location");
     }
 }
 
 function reset() {
     currentSelectedStoreId.value = props.preferredObjectStoreId;
     currentSelectedStorePrivate.value = false;
-    error.value = null;
 }
 </script>
 
 <template>
-    <BModal
+    <GModal
         id="modal-select-history-storage-location"
-        :visible="props.showModal"
-        centered
-        scrollable
-        size="lg"
+        :show.sync="localShowToggle"
+        size="small"
         :title="storageLocationTitle"
-        title-class="h-sm"
-        title-tag="h3"
-        ok-title="Change Storage Location"
-        cancel-variant="outline-primary"
-        dialog-class="modal-select-history-storage-location"
+        ok-text="Change Storage Location"
+        class="modal-select-history-storage-location"
         :ok-disabled="currentSelectedStoreId === props.preferredObjectStoreId"
-        :no-close-on-backdrop="currentSelectedStoreId !== props.preferredObjectStoreId"
-        :no-close-on-esc="currentSelectedStoreId !== props.preferredObjectStoreId"
+        confirm
+        :close-on-ok="false"
         @cancel="reset"
-        @change="emit('close')"
-        @close="reset"
         @ok="modalOk">
         <SelectObjectStore
             :show-sub-setting="props.showSubSetting"
-            :parent-error="error"
             :for-what="newDatasetsDescription"
             :selected-object-store-id="currentSelectedStoreId"
             :default-option-title="defaultOptionTitle"
             :default-option-description="defaultOptionDescription"
             @onSubmit="selectionChanged" />
-    </BModal>
+    </GModal>
 </template>

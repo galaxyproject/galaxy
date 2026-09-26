@@ -50,17 +50,21 @@ export default defineConfig(({ command }) => ({
     // Use relative base so CSS asset references work with any proxy prefix.
     // The HTML script tags use url_for() which handles the prefix correctly.
     base: "./",
-    resolve:
-        command === "serve"
-            ? {
-                  // In dev, resolve @galaxyproject/* workspace packages directly to
-                  // source so edits trigger HMR without a rebuild. Production builds
-                  // use the packages' published dist/ via their package.json exports.
-                  alias: {
-                      "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts"),
-                  },
-              }
-            : {},
+    resolve: {
+        tsconfigPaths: true,
+        alias: {
+            // galaxy-ui is internal-only (no library build) and always
+            // resolved from source -- the main client consumes the .vue
+            // files directly through @vitejs/plugin-vue2.
+            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // galaxy-api-client has a real tsup dist/ build and production
+            // uses that via package.json exports. During `vite serve` we
+            // resolve to source so edits trigger HMR without a rebuild.
+            ...(command === "serve"
+                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
+                : {}),
+        },
+    },
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -96,10 +100,7 @@ export default defineConfig(({ command }) => ({
         }),
         galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
     ],
-    // Note: resolve.alias and resolve.extensions are set by galaxyLegacyPlugin
-    resolve: {
-        tsconfigPaths: true,
-    },
+    // Note: resolve.extensions are set by galaxyLegacyPlugin
     css: {
         lightningcss: {
             errorRecovery: true,
@@ -157,11 +158,46 @@ export default defineConfig(({ command }) => ({
         port: process.env.VITE_PORT || 5173,
         host: "0.0.0.0",
         proxy: {
-            // Proxy everything except Vite's own routes to Galaxy backend
-            "^/(?!(@|src/|node_modules/|__vite))": {
+            // Proxy everything except Vite's own routes to Galaxy backend.
+            // `packages/` is served by Vite as well: the workspace packages are
+            // aliased to their sources (see `resolve.alias`), so proxying them
+            // to Galaxy would leave `@galaxyproject/galaxy-ui` unresolved and
+            // the client would never boot on the dev server.
+            "^/(?!(@|src/|packages/|node_modules/|__vite))": {
                 target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
-                changeOrigin: !!process.env.CHANGE_ORIGIN,
-                secure: process.env.CHANGE_ORIGIN ? false : true,
+                changeOrigin: true,
+                secure: false,
+                cookieDomainRewrite: "",
+                configure: (proxy) => {
+                    proxy.on("proxyRes", (proxyRes, req) => {
+                        // Strip Secure flag and fix SameSite from upstream HTTPS cookies so
+                        // they are accepted by the browser on http://localhost.
+                        const cookies = proxyRes.headers["set-cookie"];
+                        if (cookies) {
+                            proxyRes.headers["set-cookie"] = cookies.map((cookie) =>
+                                cookie.replace(/;\s*Secure/gi, "").replace(/;\s*SameSite=None/gi, "; SameSite=Lax"),
+                            );
+                        }
+                        // Rewrite Location header to use the dev server origin instead of
+                        // the Galaxy backend. With changeOrigin=true, Galaxy sees the backend
+                        // Host and generates absolute URLs (e.g. in TUS upload responses).
+                        // Without this rewrite, the browser tries to access the backend directly
+                        // which causes CORS failures.
+                        const location = proxyRes.headers["location"];
+                        if (location) {
+                            const targetUrl = new URL(process.env.GALAXY_URL || "http://127.0.0.1:8080");
+                            const locationUrl = new URL(location, targetUrl);
+                            const fallbackDevHost = req.headers.host || `localhost:${process.env.VITE_PORT || 5173}`;
+                            const devOrigin = req.headers.origin || `http://${fallbackDevHost}`;
+
+                            // Only rewrite locations generated for the Galaxy backend.
+                            if (locationUrl.origin === targetUrl.origin) {
+                                proxyRes.headers["location"] =
+                                    `${devOrigin}${locationUrl.pathname}${locationUrl.search}${locationUrl.hash}`;
+                            }
+                        }
+                    });
+                },
             },
         },
         cors: true,

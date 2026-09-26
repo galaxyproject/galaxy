@@ -8,6 +8,9 @@
  *
  * Change strings here to rename across the entire UI.
  */
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faBook, faFileContract } from "@fortawesome/free-solid-svg-icons";
+
 import type { PageEditorMode } from "@/stores/pageEditorStore";
 
 /** Per-mode labels used by the page editor, history page list, chat panel, etc. */
@@ -16,57 +19,59 @@ export const PAGE_LABELS: Record<
     {
         entityName: string;
         entityNamePlural: string;
+        titleIcon: IconDefinition;
         defaultTitle: string;
         editorBackLabel: string;
         newButton: string;
         emptyStateTitle: string;
         emptyStateDescription: string;
+        editButton: string;
         viewButton: string;
         createButton: string;
-        historyCounterTooltip: string;
-        assistantName: string;
-        assistantWelcome: string;
-        chatPlaceholder: string;
-        newConversation: string;
+        historyCounterTooltip?: string;
     }
 > = {
     history: {
         entityName: "Galaxy Notebook",
         entityNamePlural: "Galaxy Notebooks",
+        titleIcon: faBook,
         defaultTitle: "Untitled Notebook",
         editorBackLabel: "This History's Notebooks",
         newButton: "New Notebook",
         emptyStateTitle: "No notebooks yet",
         emptyStateDescription:
             "Create a notebook to document your analysis with rich markdown, embedded datasets, and visualizations.",
-        viewButton: "View notebook",
+        editButton: "Edit Notebook",
+        viewButton: "View Notebook",
         createButton: "Create Notebook",
         historyCounterTooltip: "Galaxy Notebooks",
-        assistantName: "Markdown Assistant",
-        assistantWelcome:
-            "I'm the Markdown Assistant. I can help you edit this notebook — " +
-            "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets.",
-        chatPlaceholder: "Ask about your history or request notebook edits...",
-        newConversation: "Starting a new conversation. How can I help with this notebook?",
     },
     standalone: {
         entityName: "Report",
         entityNamePlural: "Reports",
+        titleIcon: faFileContract,
         defaultTitle: "Untitled Report",
         editorBackLabel: "Back to Reports",
         newButton: "Create Report",
         emptyStateTitle: "No reports yet",
         emptyStateDescription: "Create a report to publish your analysis.",
-        viewButton: "View report",
+        editButton: "Edit Report",
+        viewButton: "View Report",
         createButton: "Create Report",
-        historyCounterTooltip: "",
-        assistantName: "Markdown Assistant",
-        assistantWelcome:
-            "I'm the Markdown Assistant. I can help you edit this report — " +
-            "ask me to rewrite sections, add content, fix formatting, " +
-            "or browse your current history's datasets.",
-        chatPlaceholder: "Ask about your history or request report edits...",
-        newConversation: "Starting a new conversation. How can I help with this report?",
+    },
+    invocation: {
+        entityName: "Invocation Report",
+        entityNamePlural: "Invocation Reports",
+        titleIcon: faFileContract,
+        defaultTitle: "Untitled Invocation Report",
+        editorBackLabel: "This Invocation's Reports",
+        newButton: "New Invocation Report",
+        emptyStateTitle: "No invocation reports yet",
+        emptyStateDescription:
+            "Create a report in the form of a Galaxy Notebook to document this workflow invocation with rich markdown, embedded datasets, and visualizations.",
+        editButton: "Edit Invocation Report",
+        viewButton: "View Invocation Report",
+        createButton: "Create Invocation Report",
     },
 } as const;
 

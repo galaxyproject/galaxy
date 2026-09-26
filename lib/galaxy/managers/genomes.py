@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -13,7 +12,10 @@ from galaxy.exceptions import (
     ReferenceDataError,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import User
 from galaxy.model.database_utils import is_postgres
 from galaxy.structured_app import (
@@ -31,10 +33,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: Optional[User], chrom_info: bool) -> list[list[str]]:
+    def get_dbkeys(self, user: User | None, chrom_info: bool) -> list[list[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: Optional[User]) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: User | None) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:
@@ -42,7 +44,7 @@ class GenomesManager:
         return False
 
     def get_genome(
-        self, trans: ProvidesUserContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
+        self, trans: ProvidesHistoryContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
     ) -> Any:
         if reference:
             region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)

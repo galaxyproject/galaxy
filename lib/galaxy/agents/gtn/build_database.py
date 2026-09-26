@@ -23,8 +23,6 @@ from hashlib import md5
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 # Configure logging
@@ -79,7 +77,7 @@ class Tutorial:
 class GTNDatabaseBuilder:
     """Builds SQLite database from GTN repository."""
 
-    def __init__(self, gtn_path: Path, output_path: Optional[Path] = None):
+    def __init__(self, gtn_path: Path, output_path: Path | None = None):
         self.gtn_path = gtn_path
         self.output_path = output_path or Path("gtn_search.db")
         self.tutorials: list[Tutorial] = []
@@ -164,7 +162,7 @@ class GTNDatabaseBuilder:
                     except (OSError, ValueError, KeyError) as e:
                         log.warning(f"Failed to parse FAQ gtn/{faq_file.name}: {e}")
 
-    def parse_faq(self, faq_file: Path, category: str) -> Optional[FAQ]:
+    def parse_faq(self, faq_file: Path, category: str) -> FAQ | None:
         """Parse a FAQ markdown file, returning None on failure."""
         try:
             with open(faq_file, encoding="utf-8") as f:
@@ -214,7 +212,7 @@ class GTNDatabaseBuilder:
             log.warning(f"Error parsing FAQ {faq_file}: {e}")
             return None
 
-    def parse_tutorial(self, tutorial_file: Path, topic: str, tutorial_name: str) -> Optional[Tutorial]:
+    def parse_tutorial(self, tutorial_file: Path, topic: str, tutorial_name: str) -> Tutorial | None:
         """Parse a tutorial markdown file, returning None on failure."""
         try:
             with open(tutorial_file, encoding="utf-8") as f:
@@ -275,7 +273,7 @@ class GTNDatabaseBuilder:
     def parse_yaml_simple(self, yaml_content: str) -> dict[str, Any]:
         """Simple YAML frontmatter parser (no external dependencies)."""
         result: dict[str, Any] = {}
-        current_list: Optional[list[str]] = None
+        current_list: list[str] | None = None
 
         for line in yaml_content.split("\n"):
             line = line.rstrip()
@@ -308,7 +306,7 @@ class GTNDatabaseBuilder:
                     was_quoted = True
 
                 # Check for boolean values
-                parsed_value: Union[str, bool, list[str]]
+                parsed_value: str | bool | list[str]
                 if str_value.lower() == "true":
                     parsed_value = True
                 elif str_value.lower() == "false":

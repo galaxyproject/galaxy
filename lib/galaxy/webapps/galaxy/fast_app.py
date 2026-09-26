@@ -1,27 +1,28 @@
 import logging
+import math
+import time
 from contextlib import asynccontextmanager
 from typing import (
     Any,
     TYPE_CHECKING,
 )
-from urllib.parse import urljoin
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
     FastAPI,
     Request,
+    Response,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
-from slowapi import (
-    _rate_limit_exceeded_handler,
-    Limiter,
-)
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Route
 from tuspyserver import create_tus_router
 
+from galaxy.exceptions import TooManyRequestsException
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
@@ -30,12 +31,14 @@ from galaxy.webapps.base.api import (
     add_request_id_middleware,
     build_route_name_index,
     GalaxyFileResponse,
+    get_error_response_for_request,
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import (
     _is_embed_request,
     config_allows_origin,
 )
+from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 
@@ -243,17 +246,26 @@ def get_openapi_schema() -> dict[str, Any]:
 
 def include_tus(app: FastAPI, gx_app):
     config = gx_app.config
-    root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    # These prefixes must not include galaxy_url_prefix. When a prefix is configured,
+    # initialize_fast_app mounts this whole app underneath it, so routes registered here
+    # are matched against the prefix-stripped path -- prepending it again never matches,
+    # and the request silently falls through to the legacy WSGI upload hooks endpoint,
+    # which returns 200 with no TUS Location header. tuspyserver reconstructs the external
+    # URL from the request's root_path, so the Location header stays correct either way.
+    upload_files_dir = config.tus_upload_store or config.new_file_path
     upload_tus_router = create_tus_router(
-        prefix=urljoin(root_path, "api/upload/resumable_upload"),
-        files_dir=config.tus_upload_store or config.new_file_path,
+        prefix="api/upload/resumable_upload",
+        files_dir=upload_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured upload TUS router with files_dir=%s", upload_files_dir)
+    job_files_dir = config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path
     job_files_tus_router = create_tus_router(
-        prefix=urljoin(root_path, "api/job_files/resumable_upload"),
-        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        prefix="api/job_files/resumable_upload",
+        files_dir=job_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured job files TUS router with files_dir=%s", job_files_dir)
     app.include_router(upload_tus_router)
     app.include_router(job_files_tus_router)
 
@@ -267,32 +279,46 @@ def get_mcp_lifespan(gx_app):
         return None, None
 
     try:
-        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
-
         mcp_app = get_mcp_app(gx_app)
         return mcp_app, mcp_app.lifespan
-    except ImportError:
-        log.info("MCP server dependencies not installed (fastmcp), skipping")
-        return None, None
     except Exception:
         log.exception("Failed to initialize MCP server")
         return None, None
 
 
 def include_mcp(app: FastAPI, gx_app, mcp_app):
-    """Mount the MCP server if it was initialized."""
+    """Expose the MCP server's HTTP routes if it was initialized."""
     if mcp_app is None:
         return
 
     try:
         mcp_path = gx_app.config.mcp_server_path
-        # Requests served by the mounted sub-app see request.app == mcp_app, so
+        # Requests served by the MCP app see request.app == mcp_app, so
         # share the parent's route name index for UrlBuilder._url_path_for.
         mcp_app.state.route_name_index = app.state.route_name_index
-        app.mount(mcp_path, mcp_app)
-        log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
+        # Exact routes avoid the WSGI catch-all swallowing the mount's slash redirect.
+        # Dispatch through the MCP app to retain its request-context middleware.
+        for route in mcp_app.routes:
+            app.router.routes.append(Route(route.path, endpoint=mcp_app, include_in_schema=False))
+        log.info(f"MCP server (Streamable HTTP) available at {mcp_path}")
     except Exception as e:
-        log.error(f"Failed to mount MCP server: {e}")
+        log.error(f"Failed to register MCP server routes: {e}")
+
+
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    """Report a hit rate limit as a regular Galaxy error response.
+
+    The client only surfaces ``err_msg``, so slowapi's default ``{"error": ...}``
+    body would show as a bare "Request failed". ``Retry-After`` is derived from
+    the limit window the same way slowapi's own header injection does it; that
+    injection is not enabled because it requires every limited route to take a
+    ``Response`` parameter.
+    """
+    error = TooManyRequestsException(f"Rate limit exceeded: {exc.detail}")
+    limit_item, identifiers = request.state.view_rate_limit
+    reset_time, _remaining = request.app.state.limiter.limiter.get_window_stats(limit_item, *identifiers)
+    error.retry_after = max(1, math.ceil(reset_time - time.time()))
+    return get_error_response_for_request(request, error)
 
 
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
@@ -300,6 +326,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
 
+    lifespan = None
     if mcp_lifespan:
 
         @asynccontextmanager
@@ -307,14 +334,14 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
             async with mcp_lifespan(app):
                 yield
 
-        app = get_fastapi_instance(root_path=root_path, lifespan=combined_lifespan)
-    else:
-        app = get_fastapi_instance(root_path=root_path)
+        lifespan = combined_lifespan
+
+    app = get_fastapi_instance(root_path=root_path, lifespan=lifespan)
 
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:
         add_raw_context_middlewares(app)
     else:
@@ -328,7 +355,11 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_mcp(app, gx_app, mcp_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
-        parent_app = FastAPI()
+        # The ASGI server only runs the lifespan of the app it is handed, and
+        # Starlette does not propagate lifespan events to mounted sub-apps, so
+        # the wrapper served here needs the lifespan that starts the MCP
+        # Streamable HTTP session manager.
+        parent_app = FastAPI(lifespan=lifespan)
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
         return parent_app
     return app
@@ -338,8 +369,7 @@ def galaxy_rate_limit_key(request: Request) -> str:
     api_key = request.headers.get("x-api-key") or request.query_params.get("key")
     if api_key:
         return f"api_key:{api_key}"
-    session_key = request.cookies.get("galaxysession")
-    if session_key:
+    if session_key := request.cookies.get("galaxysession"):
         return f"session:{session_key}"
     return get_remote_address(request)
 

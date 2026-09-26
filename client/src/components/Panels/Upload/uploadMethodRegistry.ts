@@ -11,13 +11,14 @@ import {
     faSitemap,
     faTable,
 } from "@fortawesome/free-solid-svg-icons";
+import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, defineAsyncComponent, type Ref } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
+import { useUserStore } from "@/stores/userStore";
 
 import type { UploadMethod, UploadMethodConfig } from "./types";
-import type { UploadModalConfig } from "./uploadModalTypes";
 
 export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
     "local-file": {
@@ -148,6 +149,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faHdd,
         headerAction: "Import History",
         requiresTargetHistory: false,
+        requiresLogin: true,
         showStartButton: false,
         tips: [
             "Import a complete Galaxy history from a previously exported file or URL",
@@ -163,6 +165,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faSitemap,
         headerAction: "Import Workflow",
         requiresTargetHistory: false,
+        requiresLogin: true,
         showStartButton: false,
         tips: [
             "Import workflows from Galaxy Workflow files or public URLs",
@@ -207,25 +210,48 @@ export function useAllUploadMethods(): ComputedRef<UploadMethodConfig[]> {
 }
 
 /**
- * Reactive list of upload methods filtered by modal config and Galaxy config requirements.
+ * Reactive list of upload methods filtered by allowed methods, Galaxy config, and login requirements.
+ *
+ * @param allowedMethods - Optional list of allowed upload method IDs. When `undefined`,
+ * only `requiresLogin`, `requiresConfig`, and `requiresAdvancedMode` filters are applied.
  */
-export function useFilteredUploadMethods(config: Ref<UploadModalConfig>): ComputedRef<UploadMethodConfig[]> {
+export function useFilteredUploadMethods(
+    allowedMethods?: Ref<UploadMethod[] | undefined>,
+): ComputedRef<UploadMethodConfig[]> {
     const allMethods = useAllUploadMethods();
     const { config: galaxyConfig, isConfigLoaded } = useConfig();
+    const { isAnonymous } = storeToRefs(useUserStore());
 
     return computed(() => {
-        const allowedMethods = config.value.allowedMethods;
+        return allMethods.value
+            .map((method) => {
+                let disabled = false;
+                let disabledTitle: string | undefined;
 
-        return allMethods.value.filter((method) => {
-            if (allowedMethods && !allowedMethods.some((allowedMethod) => allowedMethod === method.id)) {
-                return false;
-            }
+                if (method.requiresLogin && isAnonymous.value) {
+                    disabled = true;
+                    disabledTitle = "You must be logged in to use this feature";
+                }
 
-            if (!isConfigLoaded.value || !method.requiresConfig) {
-                return true;
-            }
+                if (disabled) {
+                    return { ...method, disabled, disabledTitle };
+                }
 
-            return method.requiresConfig.every((configKey) => Boolean(galaxyConfig.value[configKey]));
-        });
+                return method;
+            })
+            .filter((method) => {
+                if (
+                    allowedMethods?.value &&
+                    !allowedMethods.value.some((allowedMethod) => allowedMethod === method.id)
+                ) {
+                    return false;
+                }
+
+                if (!isConfigLoaded.value || !method.requiresConfig) {
+                    return true;
+                }
+
+                return method.requiresConfig.every((configKey) => Boolean(galaxyConfig.value[configKey]));
+            });
     });
 }

@@ -6,8 +6,6 @@ import logging
 from typing import (
     Annotated,
     Literal,
-    Optional,
-    Union,
 )
 
 from fsspec import AbstractFileSystem
@@ -49,14 +47,14 @@ MAX_REPO_LIMIT = 1000
 
 class HuggingFaceFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     token: Annotated[
-        Union[str, TemplateExpansion, None],
+        str | TemplateExpansion | None,
         Field(
             description="Hugging Face API token for accessing private model repositories. "
             "If not provided, only public repositories will be accessible.",
         ),
     ] = None
     endpoint: Annotated[
-        Union[str, TemplateExpansion, None],
+        str | TemplateExpansion | None,
         Field(
             description="Custom endpoint for Hugging Face Hub. "
             "If not provided, the default Hugging Face Hub will be used (https://huggingface.co).",
@@ -65,8 +63,8 @@ class HuggingFaceFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateCon
 
 
 class HuggingFaceFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
-    token: Optional[str] = None
-    endpoint: Optional[str] = None
+    token: str | None = None
+    endpoint: str | None = None
 
 
 class HuggingFaceFilesSource(
@@ -102,12 +100,12 @@ class HuggingFaceFilesSource(
         # Remove leading slash for HF compatibility
         return path.lstrip("/")
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> str | None:
         """Extract timestamp from Hugging Face file info to use it in the RemoteFile entry."""
         last_commit: dict = info.get("last_commit") or {}
         return last_commit.get("date")
 
-    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+    def _get_file_hashes(self, info: dict) -> list[RemoteFileHash] | None:
         """Get optional file hashes provided by Hugging Face for the RemoteFile entry."""
         # Files stored in Hugging Face repositories using Git LFS may have SHA-256 hashes.
         lfs = info.get("lfs") or {}
@@ -120,10 +118,10 @@ class HuggingFaceFilesSource(
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         # If we're at the root, list repositories using HfApi
         if path == "/":
@@ -143,9 +141,9 @@ class HuggingFaceFilesSource(
     def _list_repositories(
         self,
         config: HuggingFaceFileSourceConfiguration,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         if HfApi is None:
             raise self.required_package_exception

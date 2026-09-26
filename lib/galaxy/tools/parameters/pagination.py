@@ -8,9 +8,7 @@ from collections.abc import (
 )
 from typing import (
     Any,
-    Optional,
     TypeVar,
-    Union,
 )
 
 DEFAULT_OPTIONS_PAGE_SIZE = 50
@@ -27,7 +25,7 @@ OptionsPaginationT = Mapping[str, ParameterPaginationT]
 T = TypeVar("T")
 
 
-def normalize_pagination(pagination: Optional[ParameterPaginationT], src: str) -> tuple[int, int, Optional[str]]:
+def normalize_pagination(pagination: ParameterPaginationT | None, src: str) -> tuple[int, int, str | None]:
     """Return a clamped ``(offset, limit, search)`` for ``src``.
 
     Falls back to ``(0, DEFAULT_OPTIONS_PAGE_SIZE, None)`` when no spec is
@@ -44,7 +42,7 @@ def normalize_pagination(pagination: Optional[ParameterPaginationT], src: str) -
     limit = int(spec.get("limit", DEFAULT_OPTIONS_PAGE_SIZE))
     limit = min(max(limit, 1), MAX_OPTIONS_PAGE_SIZE)
     raw_search = spec.get("search")
-    search: Optional[str] = None
+    search: str | None = None
     if isinstance(raw_search, str) and raw_search.strip():
         search = raw_search.strip()
     return offset, limit, search
@@ -52,10 +50,10 @@ def normalize_pagination(pagination: Optional[ParameterPaginationT], src: str) -
 
 def accumulate_with_filter(
     query_fn: Callable[..., tuple[list, int]],
-    filter_fn: Callable[[Any], Union[None, T, list[T]]],
+    filter_fn: Callable[[Any], None | T | list[T]],
     post_filter_offset: int,
     limit: int,
-    chunk_size: Optional[int] = None,
+    chunk_size: int | None = None,
 ) -> tuple[list[T], int, bool]:
     """Walk DB chunks via ``query_fn(offset=, limit=)`` and apply ``filter_fn``.
 
@@ -164,8 +162,8 @@ def make_hdca_entry(
     hdca,
     name: str,
     *,
-    keep: Optional[bool] = None,
-    subcollection_type: Optional[str] = None,
+    keep: bool | None = None,
+    subcollection_type: str | None = None,
     include_column_definitions: bool = False,
 ) -> dict[str, Any]:
     """Build an ``options.hdca`` / ``pinned.hdca`` entry.
@@ -234,8 +232,8 @@ class DataOptionsBuilder:
     def __init__(
         self,
         security,
-        pagination: Optional[ParameterPaginationT] = None,
-        sources: Optional[tuple[str, ...]] = None,
+        pagination: ParameterPaginationT | None = None,
+        sources: tuple[str, ...] | None = None,
     ):
         """``sources`` overrides which keys appear in ``options``/``pinned`` —
         ``DataCollectionToolParameter`` historically omits ``ldda``, so its
@@ -247,16 +245,15 @@ class DataOptionsBuilder:
         self.options: dict[str, list[dict[str, Any]]] = {s: [] for s in self._sources}
         self.pinned: dict[str, list[dict[str, Any]]] = {s: [] for s in self._sources}
         self.options_meta: dict[str, dict[str, Any]] = {}
-        self._page_cache: dict[str, tuple[int, int, Optional[str]]] = {}
+        self._page_cache: dict[str, tuple[int, int, str | None]] = {}
 
-    def page(self, src: str) -> tuple[int, int, Optional[str]]:
+    def page(self, src: str) -> tuple[int, int, str | None]:
         """Return the ``(offset, limit, search)`` triple for ``src`` per the
         request's pagination spec (clamped + defaulted). Memoized so callers
         and ``paginate()`` see the same normalized values even if
         ``normalize_pagination`` ever becomes non-pure.
         """
-        cached = self._page_cache.get(src)
-        if cached is not None:
+        if (cached := self._page_cache.get(src)) is not None:
             return cached
         triple = normalize_pagination(self._pagination, src)
         self._page_cache[src] = triple
@@ -267,7 +264,7 @@ class DataOptionsBuilder:
         src: str,
         *,
         query: Callable[..., tuple[list[Any], int]],
-        filter: Callable[[Any], Union[None, T, list[T]]],
+        filter: Callable[[Any], None | T | list[T]],
         chunked: bool = True,
     ) -> tuple[list[T], int, bool]:
         """Run a paginated query+filter for ``src`` and record its

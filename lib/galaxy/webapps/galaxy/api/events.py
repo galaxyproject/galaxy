@@ -6,7 +6,6 @@ history updates, etc.) independent of the notification system configuration.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import (
     Body,
@@ -18,6 +17,7 @@ from pydantic import BaseModel
 from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.services.events import EventsService
 from . import (
     depends,
@@ -50,7 +50,7 @@ class FastAPIEvents:
         self,
         request: Request,
         trans: ProvidesUserContext = DependsOnTrans,
-        last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
+        last_event_id: str | None = Header(None, alias="Last-Event-ID"),
     ) -> StreamingResponse:
         """Opens a Server-Sent Events (SSE) connection that pushes real-time
         updates for notifications, history changes, and other events.
@@ -61,7 +61,7 @@ class FastAPIEvents:
 
         Anonymous users receive only broadcast events.
         """
-        return StreamingResponse(
+        return GalaxyStreamingResponse(
             self.service.open_stream(trans, last_event_id, request.is_disconnected),
             media_type="text/event-stream",
             headers={

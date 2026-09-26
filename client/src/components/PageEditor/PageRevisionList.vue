@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { faSpinner, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 
 import type { PageRevisionSummary } from "@/api/pages";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import SidebarList from "@/components/Common/SidebarList.vue";
 
 const props = defineProps<{
     revisions: PageRevisionSummary[];
     isLoading: boolean;
     isReverting: boolean;
+    selectedRevisionId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -62,18 +63,22 @@ function onSelect(rev: PageRevisionSummary) {
                         <span class="font-weight-bold">{{ formatDate(rev.create_time) }}</span>
                         <span class="text-muted ml-1">({{ sourceLabel(rev.edit_source) }})</span>
                         <span v-if="index === 0" class="badge badge-primary ml-1">Current</span>
+                        <span v-if="rev.id === props.selectedRevisionId" class="badge badge-secondary ml-1">
+                            Viewing
+                        </span>
                     </div>
                 </div>
-                <BButton
+                <GButton
                     v-if="index > 0"
-                    variant="outline-primary"
-                    size="sm"
+                    size="small"
+                    color="blue"
+                    outline
                     data-description="restore revision button"
                     :disabled="props.isReverting"
                     @click.stop="emit('restore', rev.id)">
                     <FontAwesomeIcon :icon="props.isReverting ? faSpinner : faUndo" :spin="props.isReverting" />
                     Restore
-                </BButton>
+                </GButton>
             </template>
         </SidebarList>
     </div>

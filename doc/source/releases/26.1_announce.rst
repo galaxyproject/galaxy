@@ -1,6 +1,276 @@
 
-:orphan:
+===========================================================
+26.1 Galaxy Release (July 2026)
+===========================================================
 
+.. include:: _header.rst
+
+Please see the `26.1 user release notes <26.1_announce_user.html>`__ for a summary of new user features.
+The `GitHub Release Notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.1.0>`__ provide a comprehensive overview of all changes.
+
+Get Galaxy
 ===========================================================
-26.1 Galaxy Release
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_26.1 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_26.1 && git pull --ff-only origin release_26.1
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.sentry_replay
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.agent_model_capabilities_file
+-  mapping.galaxy.mapping.bulk_storage_operation_completed_run_retention_days
+-  mapping.galaxy.mapping.bulk_storage_operation_dataset_minimum_days_to_expiration
+-  mapping.galaxy.mapping.celery_user_concurrency_limit
+-  mapping.galaxy.mapping.enable_mcp_server
+-  mapping.galaxy.mapping.enable_sse_connection_metrics
+-  mapping.galaxy.mapping.enable_sse_updates
+-  mapping.galaxy.mapping.enable_statsd_middleware
+-  mapping.galaxy.mapping.enable_tool_requests
+-  mapping.galaxy.mapping.gtn_database_path
+-  mapping.galaxy.mapping.gtn_database_refresh_interval
+-  mapping.galaxy.mapping.gtn_database_url
+-  mapping.galaxy.mapping.history_audit_monitor_poll_interval
+-  mapping.galaxy.mapping.iwc_manifest_refresh_interval
+-  mapping.galaxy.mapping.kombu_sqla_transport_cleanup_interval
+-  mapping.galaxy.mapping.mcp_server_path
+-  mapping.galaxy.mapping.prune_expired_bulk_storage_operations_interval
+-  mapping.galaxy.mapping.queue_metrics_interval
+-  mapping.galaxy.mapping.recover_stale_bulk_storage_operation_runs_interval
+-  mapping.galaxy.mapping.sentry_client_traces_sample_rate
+-  mapping.galaxy.mapping.tool_tag_mappings_file
+-  mapping.galaxy.mapping.vault_token_renewal_interval
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/file_sources_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'access_token': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}", 'temp_path': '/your/temp/path', 'writable': False}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ascp', 'id': 'ebi_aspera', 'label': 'EBI Aspera Downloads', 'doc': 'High-speed downloads from EBI SRA using Aspera FASP protocol', 'ascp_path': 'ascp', 'user': 'era-fasp', 'host': 'fasp.sra.ebi.ac.uk', 'port': 33001, 'rate_limit': '300m', 'disable_encryption': True, 'max_retries': 3, 'retry_base_delay': 2.0, 'retry_max_delay': 60.0, 'enable_resume': True, 'ssh_key_content': '-----BEGIN RSA PRIVATE KEY-----\n<YOUR ACTUAL SSH PRIVATE KEY CONTENT>\n-----END RSA PRIVATE KEY-----\n', 'ssh_key_passphrase': 'sample_passphrase'}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+    {'type': 'inveniordm', 'id': 'invenio_sandbox', 'doc': 'This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Invenio RDM Sandbox Repository (TESTING ONLY)', 'url': 'https://inveniordm.web.cern.ch/', 'token': "${user.user_vault.read_secret('preferences/invenio_sandbox/token')}", 'public_name': "${user.preferences['invenio_sandbox|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo', 'doc': 'Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.', 'label': 'Zenodo', 'url': 'https://zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo/token')}", 'public_name': "${user.preferences['zenodo|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo_sandbox', 'doc': 'This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Zenodo Sandbox (TESTING ONLY)', 'url': 'https://sandbox.zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}", 'public_name': "${user.preferences['zenodo_sandbox|public_name']}", 'writable': True}
+    {'type': 'dataverse', 'id': 'dataverse', 'doc': 'Dataverse is an open-source data repository platform designed for sharing, preserving, and managing research data, offering tools for data citation, exploration, and collaboration.', 'label': 'Dataverse', 'url': 'https://dataverse.org', 'token': "${user.user_vault.read_secret('preferences/dataverse/token')}", 'public_name': "${user.preferences['dataverse|public_name']}", 'writable': True}
+    {'type': 'dataverse', 'id': 'dataverse_sandbox', 'doc': 'This is the sandbox instance of Dataverse. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Dataverse Sandbox (use only for testing purposes)', 'url': 'https://demo.dataverse.org', 'token': "${user.user_vault.read_secret('preferences/dataverse_sandbox/token')}", 'public_name': "${user.preferences['dataverse_sandbox|public_name']}", 'writable': True}
+    {'type': 'onedata', 'id': 'onedata1', 'label': 'Onedata', 'doc': 'Your Onedata files - configure an access token via user preferences', 'access_token': "${user.preferences['onedata|access_token']}", 'onezone_domain': "${user.preferences['onedata|onezone_domain']}", 'disable_tls_certificate_validation': "${user.preferences['onedata|disable_tls_certificate_validation']}"}
+    {'type': 'elabftw', 'id': 'elabftw', 'label': 'eLabFTW', 'doc': 'Import/export files from an eLabFTW instance.', 'api_key': "${user.user_vault.read_secret('preferences/elabftw/api_key')}", 'writable': True, 'endpoint': "${user.preferences['elabftw|endpoint']}"}
+
+   to
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'access_token': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}", 'temp_path': '/your/temp/path', 'writable': False}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ascp', 'id': 'ebi_aspera', 'label': 'EBI Aspera Downloads', 'doc': 'High-speed downloads from EBI SRA using Aspera FASP protocol', 'ascp_path': 'ascp', 'user': 'era-fasp', 'host': 'fasp.sra.ebi.ac.uk', 'port': 33001, 'rate_limit': '300m', 'disable_encryption': True, 'max_retries': 3, 'retry_base_delay': 2.0, 'retry_max_delay': 60.0, 'enable_resume': True, 'ssh_key_content': '-----BEGIN RSA PRIVATE KEY-----\n<YOUR ACTUAL SSH PRIVATE KEY CONTENT>\n-----END RSA PRIVATE KEY-----\n', 'ssh_key_passphrase': 'sample_passphrase'}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+    {'type': 'inveniordm', 'id': 'invenio_sandbox', 'doc': 'This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Invenio RDM Sandbox Repository (TESTING ONLY)', 'url': 'https://inveniordm.web.cern.ch/', 'token': "${user.user_vault.read_secret('preferences/invenio_sandbox/token')}", 'public_name': "${user.preferences['invenio_sandbox|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo', 'doc': 'Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.', 'label': 'Zenodo', 'url': 'https://zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo/token')}", 'public_name': "${user.preferences['zenodo|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo_sandbox', 'doc': 'This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Zenodo Sandbox (TESTING ONLY)', 'url': 'https://sandbox.zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}", 'public_name': "${user.preferences['zenodo_sandbox|public_name']}", 'writable': True}
+    {'type': 'dataverse', 'id': 'dataverse', 'doc': 'Dataverse is an open-source data repository platform designed for sharing, preserving, and managing research data, offering tools for data citation, exploration, and collaboration.', 'label': 'Dataverse', 'url': 'https://dataverse.org', 'token': "${user.user_vault.read_secret('preferences/dataverse/token')}", 'public_name': "${user.preferences['dataverse|public_name']}", 'writable': True}
+    {'type': 'dataverse', 'id': 'dataverse_sandbox', 'doc': 'This is the sandbox instance of Dataverse. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Dataverse Sandbox (use only for testing purposes)', 'url': 'https://demo.dataverse.org', 'token': "${user.user_vault.read_secret('preferences/dataverse_sandbox/token')}", 'public_name': "${user.preferences['dataverse_sandbox|public_name']}", 'writable': True}
+    {'type': 'onedata', 'id': 'onedata1', 'label': 'Onedata', 'doc': 'Your Onedata files - configure an access token via user preferences', 'access_token': "${user.preferences['onedata|access_token']}", 'onezone_domain': "${user.preferences['onedata|onezone_domain']}", 'disable_tls_certificate_validation': "${user.preferences['onedata|disable_tls_certificate_validation']}"}
+    {'type': 'elabftw', 'id': 'elabftw', 'label': 'eLabFTW', 'doc': 'Import/export files from an eLabFTW instance.', 'api_key': "${user.user_vault.read_secret('preferences/elabftw/api_key')}", 'writable': True, 'endpoint': "${user.preferences['elabftw|endpoint']}"}
+    {'type': 'iiif', 'id': 'iiif-cambridge-scientific-instrument', 'label': 'Cambridge Scientific Instrument Company', 'doc': 'Browse and import canvases from the Cambridge Digital Library', 'manifest_url': 'https://cudl.lib.cam.ac.uk/iiif/collection/csic', 'writable': False}
+
+
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.enable_notification_system.desc has changed from
+
+   ::
+
+    Enables the Notification System integrated in Galaxy.
+    
+    Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
+    
+    The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+    
+    Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+
+   to
+
+   ::
+
+    Enables the Notification System integrated in Galaxy.
+    
+    Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
+    
+    The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+    
+    Delivery is push-based via Server-Sent Events when ``enable_sse_updates``
+    is also true, and falls back to 30-second polling against
+    ``/api/notifications/status`` otherwise.
+    
+    Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+
+
+-  mapping.galaxy.mapping.file_source_webdav_use_temp_files.desc has changed from
+
+   ::
+
+    Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+   to
+
+   ::
+
+    Deprecated. This option is ignored by the fsspec-based WebDAV file source.
+
+
+-  mapping.galaxy.mapping.inference_services.desc has changed from
+
+   ::
+
+    Configuration for AI inference services used by agents and visualization plugins.
+    Supports per-agent or per-plugin model, temperature, and token settings.
+    Valid keys include agent types (e.g. router, error_analysis) and plugin names (e.g. jupyterlite).
+    Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
+    Example: inference_services: { default: { model: gpt-4o-mini }, jupyterlite: { model: gpt-4o } }
+
+   to
+
+   ::
+
+    Configuration for AI inference services used by agents and visualization plugins.
+    Supports per-agent or per-plugin model, temperature, max_tokens, retries, api_key, api_base_url, and enabled settings.
+    Valid keys include agent types (e.g. router, error_analysis) and plugin names (e.g. jupyterlite).
+    Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
+    All agents are enabled by default.
+    Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false }, jupyterlite: { model: gpt-4o } }
+    Set static_responses to a YAML file path to replace all LLM calls with
+    deterministic responses for testing:
+    inference_services: { static_responses: test/integration/static_agents.yml }
+    Per-agent or default-block ``structured_output_override: true|false``
+    beats the model capability table -- see ``agent_model_capabilities_file``
+    for the table's location and contents.
+    Per-agent or default-block ``retries`` sets the pydantic-ai retry budget
+    (tool calls and output validation); it defaults to 3. Raise it if a model
+    intermittently fails to produce conforming output ("Exceeded maximum output
+    retries"). custom_tool's producer keeps a budget of 0 because it runs its
+    own reflection loop; a shared ``default`` block does not change that -- set
+    ``custom_tool.retries`` explicitly to override it.
+    custom_tool also accepts ``quality_critic_enabled`` (default false) to turn on the
+    LLM clarity/idiomaticity critic, and ``container_recommendation_enabled`` (default
+    false) to resolve the produced tool's container to a verified quay.io biocontainer.
+    Container recommendation runs a dedicated container critic that infers the tool's
+    conda packages from its command and config files, independently of
+    ``quality_critic_enabled``; it adds an extra model call plus an outbound network
+    call to quay.io during the agent turn. Example:
+    inference_services: { custom_tool: { quality_critic_enabled: true, container_recommendation_enabled: true } }
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.enable_beta_workflow_modules
+
+
+Release Team
 ===========================================================
+
+Release manager: `Marius van den Beek <https://github.com/mvdbeek>`__, `Aysam Guerler <https://github.com/guerler>`__
+
+Release testing:
+
+* `Amirhossein Nilchi <https://github.com/nilchia>`__
+* `Keith Suderman <https://github.com/ksuderman>`__
+* `Junhao Qiu <https://github.com/qchiujunhao>`__
+
+See: `Release Guardians <https://galaxyproject.org/events/2026-06-01-release-guardians-26-1/>`__
+
+Communications:
+
+* `Natalie Whitaker-Allen <https://github.com/natalie-wa>`__
+* `Scott Cain <https://github.com/scottcain>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
+
+----
+
+.. include:: _thanks.rst

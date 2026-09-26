@@ -14,7 +14,10 @@ import sys
 import threading
 
 from galaxy.celery import get_app_properties
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
+from galaxy.model.database_heartbeat import (
+    DatabaseHeartbeat,
+    SSE_MONITOR,
+)
 
 log = logging.getLogger("galaxy.sse_monitor")
 
@@ -52,8 +55,12 @@ def main() -> int:
     # GalaxyManagerApplication doesn't wire a DatabaseHeartbeat (that lives on
     # UniverseApplication, which pulls in the webapp stack we don't need). We
     # spin up our own and register the audit-monitor callback so election
-    # transitions start/stop the producer cleanly.
-    heartbeat = DatabaseHeartbeat(application_stack=app.application_stack)
+    # transitions start/stop the producer cleanly. We register with the
+    # concrete SSE_MONITOR app_type: that marks the WorkerProcess row purely as
+    # a liveness/election marker so webapps defer the audit-monitor role to us
+    # (and re-elect within one interval if we die), while control-task routing
+    # skips it — this daemon runs no control consumer.
+    heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, app_type=SSE_MONITOR)
 
     monitor = None
     if app.config.enable_sse_updates:

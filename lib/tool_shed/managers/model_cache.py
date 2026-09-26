@@ -2,7 +2,6 @@ import json
 import os
 from typing import (
     Any,
-    Optional,
     TypeVar,
 )
 
@@ -42,7 +41,7 @@ class ModelCache:
         cache_target = os.path.join(self._cache_directory, MODEL_HASHES[model_class], tool_id, tool_version)
         return cache_target
 
-    def get_cache_entry_for(self, model_class: type[M], tool_id: str, tool_version: str) -> Optional[M]:
+    def get_cache_entry_for(self, model_class: type[M], tool_id: str, tool_version: str) -> M | None:
         cache_target = self._cache_target(model_class, tool_id, tool_version)
         if not os.path.exists(cache_target):
             return None

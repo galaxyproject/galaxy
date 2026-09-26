@@ -1,7 +1,8 @@
+import copy
+import json
 from typing import (
-    Optional,
+    Any,
     TYPE_CHECKING,
-    Union,
 )
 
 import galaxy.managers.base as managers_base
@@ -35,6 +36,7 @@ from galaxy.schema.schema import (
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.roles import role_to_model
 
@@ -87,7 +89,7 @@ class UsersService(ServiceBase):
             )
             return None
 
-    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
+    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> APIKeyModel | None:
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
@@ -117,11 +119,109 @@ class UsersService(ServiceBase):
         user = self.user_manager.by_id(user_id)
         return user
 
+    def get_extra_preferences(self, trans: ProvidesUserContext) -> dict[str, Any] | None:
+        """The admin-defined sections from ``user_preferences_extra_conf.yml``.
+
+        None when the file declares a ``preferences`` key with nothing under it,
+        which is why callers guard against it rather than assuming a dict.
+        """
+        return trans.app.config.user_preferences_extra["preferences"]
+
+    def build_extra_preferences_inputs(self, trans: ProvidesUserContext, user: User) -> list[dict[str, Any]]:
+        """
+        Build the form-builder input list for the admin-defined extra preferences,
+        filling in the user's stored values.
+
+        The shape is deliberately untyped form JSON: the sections come from admin
+        authored YAML, so there is no fixed schema to model.
+        """
+        preferences = self.get_extra_preferences(trans)
+        if not preferences:
+            return []
+        extra_pref_inputs = []
+        # Build sections for different categories of inputs
+        user_vault = UserVaultWrapper(trans.app.vault, user)
+        for item, value in preferences.items():
+            if value is not None:
+                input_fields = copy.deepcopy(value["inputs"])
+                for input in input_fields:
+                    help = input.get("help", "")
+                    required = "Required" if util.string_as_bool(input.get("required")) else ""
+                    if help:
+                        input["help"] = f"{help} {required}"
+                    else:
+                        input["help"] = required
+                    if input.get("store") == "vault":
+                        field = f"{item}/{input['name']}"
+                        input["value"] = user_vault.read_secret(f"preferences/{field}")
+                    else:
+                        field = f"{item}|{input['name']}"
+                        for data_item in user.extra_preferences:
+                            if field in data_item:
+                                input["value"] = user.extra_preferences[data_item]
+                    # regardless of the store, do not send secret type values to client
+                    if input.get("type") == "secret":
+                        input["value"] = "__SECRET_PLACEHOLDER__"
+                        # let the client treat it as a password field
+                        input["type"] = "password"
+                extra_pref_inputs.append(
+                    {
+                        "type": "section",
+                        "title": value["description"],
+                        "name": item,
+                        "expanded": True,
+                        "inputs": input_fields,
+                    }
+                )
+        return extra_pref_inputs
+
+    def save_extra_preferences(self, trans: ProvidesUserContext, user: User, payload: dict[str, Any]) -> None:
+        """
+        Store values for the admin-defined extra preferences.
+
+        Payload keys are flat ``<section>|<input>`` pairs, as produced by the
+        generic form. Secrets are either written to the user vault or kept in the
+        user's preferences; a secret that comes back as the placeholder means the
+        client never saw it and the stored value must be left alone.
+        """
+        extra_user_pref_data = {}
+        extra_pref_keys = self.get_extra_preferences(trans)
+        if extra_pref_keys is None:
+            return
+        user_vault = UserVaultWrapper(trans.app.vault, user)
+        current_extra_user_pref_data = json.loads(user.preferences.get("extra_user_preferences", "{}"))
+        for key in extra_pref_keys:
+            key_prefix = f"{key}|"
+            for item in payload:
+                if item.startswith(key_prefix):
+                    keys = item.split("|")
+                    section = extra_pref_keys[keys[0]]
+                    matching_input = [input for input in section["inputs"] if input["name"] == keys[1]]
+                    if matching_input:
+                        input = matching_input[0]
+                        if input.get("required") and payload[item] == "":
+                            raise glx_exceptions.ObjectAttributeMissingException("Please fill the required field")
+                        input_type = input.get("type")
+                        is_secret_value_unchanged = input_type == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"
+                        is_stored_in_vault = input.get("store") == "vault"
+                        if is_secret_value_unchanged:
+                            if not is_stored_in_vault:
+                                # If the value is unchanged, keep the current value
+                                extra_user_pref_data[item] = current_extra_user_pref_data.get(item, "")
+                        else:
+                            if is_stored_in_vault:
+                                user_vault.write_secret(f"preferences/{keys[0]}/{keys[1]}", str(payload[item]))
+                            else:
+                                extra_user_pref_data[item] = payload[item]
+                    else:
+                        extra_user_pref_data[item] = payload[item]
+        user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
+
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            usage: Optional[float] = 0.0
-            percent: Optional[int] = 0
+            usage: float | None = 0.0
+            percent: int | None = 0
         else:
             usage = self.quota_agent.get_usage(trans, history=trans.history)
             percent = self.quota_agent.get_percent(trans=trans, usage=usage)
@@ -148,7 +248,7 @@ class UsersService(ServiceBase):
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Optional[User]:
+    ) -> User | None:
         try:
             # user is requesting data about themselves
             if user_id == "current":
@@ -181,7 +281,7 @@ class UsersService(ServiceBase):
         trans: ProvidesHistoryContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Union[DetailedUserModel, AnonUserModel]:
+    ) -> DetailedUserModel | AnonUserModel:
         user = self.get_user_full(trans=trans, deleted=deleted, user_id=user_id)
         if user is not None:
             return self.user_to_detailed_model(user)
@@ -199,11 +299,11 @@ class UsersService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         deleted: bool,
-        f_email: Optional[str],
-        f_name: Optional[str],
-        f_any: Optional[str],
-        limit: Optional[int] = None,
-        offset: Optional[int] = 0,
+        f_email: str | None,
+        f_name: str | None,
+        f_any: str | None,
+        limit: int | None = None,
+        offset: int | None = 0,
     ) -> list[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
         if not trans.user and not trans.user_is_bootstrap_admin:
@@ -257,7 +357,7 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id):
         user = self.get_user(trans, user_id)
         roles = [ura.role for ura in user.roles]
         return RoleListResponse(root=[role_to_model(r) for r in roles])

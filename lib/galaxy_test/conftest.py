@@ -11,6 +11,7 @@ from galaxy.util import (
 )
 from galaxy.web import statsd_client as statsd
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.test_http_server import test_http_server  # noqa: F401
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 pytest_plugins = ("celery.contrib.pytest",)
@@ -67,7 +68,7 @@ class JsonReportHooks:
     def pytest_json_runtest_metadata(self, item, call):
         if call.when == "setup":
             statsd.CURRENT_TEST = str(uuid.uuid4())
-            statsd.CURRENT_TEST_METRICS = {"timing": {}, "counter": {}}
+            statsd.CURRENT_TEST_METRICS = {"timing": {}, "counter": {}, "gauge": {}}
             return {}
         if call.when == "teardown":
             statsd.CURRENT_TEST = None

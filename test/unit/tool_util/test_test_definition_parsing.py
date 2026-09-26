@@ -3,7 +3,6 @@
 import os
 from typing import (
     Any,
-    List,
 )
 
 from pytest import skip
@@ -177,7 +176,7 @@ class TestTestParsing(TestCase):
         for td in test_dicts:
             assert not td.get("exception"), f"Test failed to parse: {td.get('exception')}"
 
-    def _verify_each(self, target_dict: dict, expectations: List[Any]):
+    def _verify_each(self, target_dict: dict, expectations: list[Any]):
         exception = target_dict.get("exception")
         assert not exception, f"Test failed to generate with exception {exception}"
         dict_verify_each(target_dict, expectations)

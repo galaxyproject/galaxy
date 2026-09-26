@@ -1,0 +1,50 @@
+[
+  {
+    "name": "staining_tutorial_then_workflow",
+    "original_query": "Is there a tutorial for quantifying histological staining?",
+    "assistant_answer": "Yes -- the GTN has a tutorial on quantitative analysis of histological staining using color deconvolution that walks through the full process with example data.",
+    "followup": "What about a workflow for this?",
+    "expected": "tool_recommendation",
+    "followup_kind": "referential"
+  },
+  {
+    "name": "trim_tool_then_tutorial",
+    "original_query": "What tool can I use to trim adapters from my reads?",
+    "assistant_answer": "Trimmomatic and Cutadapt both trim adapter sequences from sequencing reads.",
+    "followup": "Is there a tutorial for that?",
+    "expected": "gtn_training",
+    "followup_kind": "referential"
+  },
+  {
+    "name": "rnaseq_then_workflow",
+    "original_query": "How do I do RNA-seq differential expression in Galaxy?",
+    "assistant_answer": "You align the reads, count features, and run a differential expression test such as DESeq2.",
+    "followup": "Is there a ready-made workflow for it?",
+    "expected": "tool_recommendation",
+    "followup_kind": "referential"
+  },
+  {
+    "name": "variant_tutorial_better_one",
+    "original_query": "Can you recommend a tutorial for variant calling?",
+    "assistant_answer": "The GTN variant calling tutorial walks through mapping, calling, and filtering variants.",
+    "followup": "Is there a better one for bacterial genomes?",
+    "expected": "gtn_training",
+    "followup_kind": "referential"
+  },
+  {
+    "name": "longread_tool_then_workflow",
+    "original_query": "Which tool aligns long reads?",
+    "assistant_answer": "Minimap2 is commonly used to align long reads against a reference.",
+    "followup": "And a full workflow that uses it?",
+    "expected": "tool_recommendation",
+    "followup_kind": "referential"
+  },
+  {
+    "name": "assembly_then_tutorial",
+    "original_query": "What can I use to assemble a bacterial genome?",
+    "assistant_answer": "Unicycler and SPAdes are widely used for bacterial genome assembly.",
+    "followup": "How do I learn the whole process end to end?",
+    "expected": "gtn_training",
+    "followup_kind": "named"
+  }
+]

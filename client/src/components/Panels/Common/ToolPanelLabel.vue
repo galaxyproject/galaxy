@@ -60,25 +60,25 @@ function onKeydown(event: KeyboardEvent) {
 <template>
     <div
         v-g-tooltip.topright.hover
-        :class="['tool-panel-label', 'tool-panel-divider', { 'tool-panel-label-clickable': isCollapsible }]"
+        :class="['tool-panel-label', 'unified-panel-divider', { 'tool-panel-label-clickable': isCollapsible }]"
         :tabindex="isCollapsible ? 0 : undefined"
         :title="description"
         :role="isCollapsible ? 'button' : undefined"
         :aria-expanded="isCollapsible ? (!isCollapsed ? 'true' : 'false') : undefined"
         v-on="isCollapsible ? { click: onToggle, keydown: onKeydown } : {}">
-        <span class="tool-panel-label-divider-text tool-panel-divider-text">
+        <span class="tool-panel-label-divider-text unified-panel-divider-text">
             <FontAwesomeIcon
                 v-if="isCollapsible"
                 :icon="toggleIcon"
-                class="tool-panel-label-toggle tool-panel-divider-toggle" />
+                class="tool-panel-label-toggle unified-panel-divider-toggle" />
             <FontAwesomeIcon
                 v-if="isFavoritesDivider"
                 :icon="faStar"
-                class="tool-panel-label-divider-icon tool-panel-divider-icon" />
+                class="tool-panel-label-divider-icon unified-panel-divider-icon" />
             {{ definition.text }}
             <GButton
                 v-if="isRecentLabel"
-                class="tool-panel-label-divider-action tool-panel-divider-action"
+                class="tool-panel-label-divider-action unified-panel-divider-action"
                 size="small"
                 color="grey"
                 icon-only
@@ -94,9 +94,6 @@ function onKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped lang="scss">
-@import "@/style/scss/theme/blue.scss";
-@import "@/style/scss/tool-panel-divider.scss";
-
 .tool-panel-label {
     &:deep(.tool-panel-links) {
         display: none;

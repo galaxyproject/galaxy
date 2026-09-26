@@ -1,7 +1,4 @@
 import logging
-from typing import (
-    Optional,
-)
 
 from galaxy.managers.base import StorageCleanerManager
 from galaxy.managers.context import ProvidesHistoryContext
@@ -42,9 +39,9 @@ class StorageCleanerService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         stored_item_type: StoredItemType,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        order: Optional[StoredItemOrderBy] = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        order: StoredItemOrderBy | None = None,
     ):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].get_discarded(user, offset, limit, order)
@@ -57,9 +54,9 @@ class StorageCleanerService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         stored_item_type: StoredItemType,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        order: Optional[StoredItemOrderBy] = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        order: StoredItemOrderBy | None = None,
     ):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].get_archived(user, offset, limit, order)

@@ -1,0 +1,54 @@
+name: Prune mypy red list
+on:
+  schedule:
+    - cron: '0 4 * * 1'  # Run every monday at 4 am.
+  workflow_dispatch:
+permissions: {}
+jobs:
+  prune_red_list:
+    name: Remove stale mypy red list entries
+    if: github.repository_owner == 'galaxyproject'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+      - name: Create mypy environments
+        # One per Python version the mypy job in lint.yaml uses
+        env:
+          UV_EXTRA_INDEX_URL: https://wheels.galaxyproject.org/simple
+          UV_INDEX_STRATEGY: unsafe-best-match
+        run: |
+          for version in 3.10 3.14; do
+            uv venv --python "$version" "$RUNNER_TEMP/venv-$version"
+            uv pip install --python "$RUNNER_TEMP/venv-$version" \
+              -r lib/galaxy/dependencies/pinned-typecheck-requirements.txt \
+              -r lib/galaxy/dependencies/pinned-requirements.txt \
+              -r lib/galaxy/dependencies/pinned-test-requirements.txt
+          done
+      - name: Remove stale entries
+        run: |
+          "$RUNNER_TEMP/venv-3.14/bin/python" .ci/check_mypy_legacy_list.py --fix \
+            --python "$RUNNER_TEMP/venv-3.10/bin/python" \
+            --python "$RUNNER_TEMP/venv-3.14/bin/python" \
+            --summary "$RUNNER_TEMP/summary.md"
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          author: galaxybot <galaxybot@users.noreply.github.com>
+          token: ${{ secrets.GALAXYBOT_PAT }}
+          add-paths: mypy.ini
+          commit-message: |
+            Remove stale mypy red list entries
+
+            by running `.ci/check_mypy_legacy_list.py --fix` with Python 3.10 and 3.14.
+          branch: dev_auto_prune_mypy_red_list
+          delete-branch: true
+          push-to-fork: galaxybot/galaxy
+          title: Remove stale mypy red list entries
+          body-path: ${{ runner.temp }}/summary.md
+          labels: |
+            area/testing
+            kind/refactoring

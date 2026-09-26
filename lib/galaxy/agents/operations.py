@@ -7,13 +7,16 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 import logging
 from typing import (
     Any,
-    Optional,
+    Literal,
 )
 
 from sqlalchemy import select
 
 from galaxy.agents import iwc
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.agents.base import (
+    JOB_LOG_EXCERPT_CHARS,
+    truncate_middle,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
@@ -30,13 +33,21 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.invocation import InvocationSerializationParams
 from galaxy.schema.schema import (
     CreateHistoryPayload,
+    CreatePagePayload,
     DatasetSourceType,
     InvocationIndexPayload,
+    PageIndexQueryPayload,
+    UpdatePagePayload,
     WorkflowIndexPayload,
 )
 from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
+    ToolLike,
+)
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -52,25 +63,27 @@ ID_FIELDS = {
     "hdca_id",
     "collection_id",
     "creating_job",
+    "implicit_collection_jobs_id",
 }
 
 
 class AgentOperationsManager:
     """Shared operations for AI agents, delegating to Galaxy's service layer."""
 
-    def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
+    def __init__(self, app: MinimalManagerApp, trans: SessionRequestContext):
         self.app = app
         self.trans = trans
-        self._tools_service: Optional[Any] = None
-        self._histories_service: Optional[Any] = None
-        self._jobs_service: Optional[Any] = None
-        self._datasets_service: Optional[Any] = None
-        self._workflows_service: Optional[Any] = None
-        self._invocations_service: Optional[Any] = None
-        self._hda_manager: Optional[HDAManager] = None
-        self._dataset_collections_service: Optional[Any] = None
-        self._dynamic_tools_manager: Optional[Any] = None
-        self._file_source_instances_manager: Optional[Any] = None
+        self._tools_service: Any | None = None
+        self._histories_service: Any | None = None
+        self._jobs_service: Any | None = None
+        self._datasets_service: Any | None = None
+        self._workflows_service: Any | None = None
+        self._invocations_service: Any | None = None
+        self._hda_manager: HDAManager | None = None
+        self._dataset_collections_service: Any | None = None
+        self._dynamic_tools_manager: Any | None = None
+        self._file_source_instances_manager: Any | None = None
+        self._pages_service: Any | None = None
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
@@ -79,8 +92,12 @@ class AgentOperationsManager:
         panel_view = self.app.config.default_panel_view
         return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)  # type: ignore[attr-defined]
 
-    def _get_toolbox_tool(self, tool_id: str):
+    def _get_toolbox_tool(self, tool_id: str) -> ToolLike | None:
         return self.app.toolbox.get_tool(tool_id)
+
+    def _get_materialized_tool(self, tool_id: str, reason: MaterializationReasonName):
+        tool = self._get_toolbox_tool(tool_id)
+        return self.app.toolbox.materialize_tool(tool, reason=reason) if tool else None
 
     def _encode_ids_in_response(self, data: Any) -> Any:
         if isinstance(data, dict):
@@ -172,6 +189,14 @@ class AgentOperationsManager:
             self._file_source_instances_manager = self.app[FileSourceInstancesManager]
         return self._file_source_instances_manager
 
+    @property
+    def pages_service(self):
+        if self._pages_service is None:
+            from galaxy.webapps.galaxy.services.pages import PagesService
+
+            self._pages_service = self.app[PagesService]
+        return self._pages_service
+
     def connect(self) -> dict[str, Any]:
         config = self.app.config
         user = self.trans.user
@@ -216,7 +241,7 @@ class AgentOperationsManager:
         return {"query": query, "tools": tools, "count": len(tools)}
 
     def get_tool_details(self, tool_id: str, io_details: bool = False) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "detail")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -379,6 +404,33 @@ class AgentOperationsManager:
             },
         }
 
+    def get_history_graph(
+        self,
+        history_id: str,
+        seed_src: str | None = None,
+        seed_id: str | None = None,
+        direction: Literal["backward", "forward", "both"] = "both",
+        depth: int = 5,
+        limit: int = 200,
+        include_deleted: bool = False,
+        seed_scope_src: str | None = None,
+        seed_scope_id: str | None = None,
+    ) -> dict[str, Any]:
+        decoded_history_id = self.trans.security.decode_id(history_id)
+        response = self.histories_service.graph(
+            trans=self.trans,
+            history_id=decoded_history_id,
+            limit=limit,
+            include_deleted=include_deleted,
+            seed_src=seed_src,
+            seed_id=seed_id,
+            direction=direction,
+            depth=depth,
+            seed_scope_src=seed_scope_src,
+            seed_scope_id=seed_scope_id,
+        )
+        return response.model_dump()
+
     def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
         serialization_params = SerializationParams(view="detailed")
@@ -424,9 +476,8 @@ class AgentOperationsManager:
         dbkey: str = "?",
         file_name: str | None = None,
     ) -> dict[str, Any]:
-        decoded_history_id = self.trans.security.decode_id(history_id)
         fetch_payload = FetchDataPayload(
-            history_id=decoded_history_id,
+            history_id=history_id,
             targets=[
                 DataElementsTarget(
                     destination=HdaDestination(type="hdas"),
@@ -604,11 +655,11 @@ class AgentOperationsManager:
         return {"tool_panel": tool_panel, "view": view}
 
     def get_tool_run_examples(self, tool_id: str, tool_version: str | None = None) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "tests")
         if tool and tool_version:
             versioned = self.app.toolbox.get_tool(tool_id, tool_version=tool_version)
             if versioned:
-                tool = versioned
+                tool = self.app.toolbox.materialize_tool(versioned, reason="tests")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -640,7 +691,7 @@ class AgentOperationsManager:
         }
 
     def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "serialization")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -669,7 +720,7 @@ class AgentOperationsManager:
 
     def search_tools_by_keywords(self, keywords: list[str]) -> dict[str, Any]:
         keywords_lower = [k.lower() for k in keywords]
-        matching_tools = []
+        matching_tools: list[dict[str, Any]] = []
         seen_tool_ids = set()
 
         for keyword in keywords:
@@ -777,9 +828,6 @@ class AgentOperationsManager:
                 "error": "No creating job found for this dataset",
             }
 
-        # Truncate large outputs to avoid overwhelming the LLM
-        max_output_length = 4000
-
         stderr = job.stderr or ""
         stdout = job.stdout or ""
         info = job.info or ""
@@ -791,10 +839,16 @@ class AgentOperationsManager:
             "tool_version": job.tool_version,
             "state": job.state,
             "exit_code": job.exit_code,
-            "info": info[:max_output_length] if info else None,
-            "stderr": stderr[:max_output_length] if stderr else None,
-            "stdout": stdout[:max_output_length] if stdout else None,
-            "truncated": len(stderr) > max_output_length or len(stdout) > max_output_length,
+            # Job.info is a TrimmedString(255), but that only trims on the way to the
+            # database -- a live ORM object can still hold a full exception message.
+            "info": truncate_middle(info, JOB_LOG_EXCERPT_CHARS) if info else None,
+            "stderr": truncate_middle(stderr, JOB_LOG_EXCERPT_CHARS) if stderr else None,
+            "stdout": truncate_middle(stdout, JOB_LOG_EXCERPT_CHARS) if stdout else None,
+            "truncated": (
+                len(stderr) > JOB_LOG_EXCERPT_CHARS
+                or len(stdout) > JOB_LOG_EXCERPT_CHARS
+                or len(info) > JOB_LOG_EXCERPT_CHARS
+            ),
         }
 
     def peek_dataset_content(self, dataset_id: str) -> dict[str, Any]:
@@ -927,8 +981,7 @@ class AgentOperationsManager:
         )
 
         missing_tools: list[str] = []
-        latest = stored_workflow.latest_workflow
-        if latest is not None:
+        if (latest := stored_workflow.latest_workflow) is not None:
             toolbox = self.app.toolbox
             seen: set[str] = set()
             for tool in contents_manager.get_all_tools(latest):
@@ -1061,3 +1114,127 @@ class AgentOperationsManager:
             "file_sources": file_sources,
             "count": len(file_sources),
         }
+
+    # ==================== Pages (notebooks and reports) ====================
+
+    def _dump_page(self, model, include_rendered: bool = False) -> dict[str, Any]:
+        """Serialize a page/revision schema, dropping the large rendered form by default.
+
+        content_editor (editable encoded-id markdown) is always kept; content (the
+        embed-expanded render form) is included only when include_rendered is True.
+        """
+        result = model.model_dump(mode="json")
+        if not include_rendered:
+            result.pop("content", None)
+        return result
+
+    def list_pages(
+        self,
+        history_id: str | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = False,
+        deleted: bool = False,
+    ) -> dict[str, Any]:
+        """List pages viewable by the current user.
+
+        When history_id is set, only pages attached to that history (Galaxy
+        Notebooks) are returned. Defaults to the user's own pages; published or
+        shared pages are included only when explicitly requested.
+        """
+        payload = PageIndexQueryPayload(
+            history_id=history_id,
+            search=search,
+            limit=limit,
+            offset=offset,
+            show_own=True,
+            show_published=show_published,
+            show_shared=show_shared,
+            deleted=deleted,
+        )
+        pages, total_matches = self.pages_service.index(self.trans, payload, include_total_count=True)
+        return {
+            "pages": pages.model_dump(mode="json"),
+            "count": len(pages.root),
+            "total_matches": total_matches,
+        }
+
+    def get_page(self, page_id: str, include_rendered: bool = False) -> dict[str, Any]:
+        """Return a page with its latest-revision content.
+
+        content_editor (editable markdown with encoded-id directives) is always
+        returned. The embed-expanded render form (content) can be large and is
+        included only when include_rendered is True.
+        """
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        details = self.pages_service.show(self.trans, decoded_page_id)
+        return self._dump_page(details, include_rendered)
+
+    def create_page(
+        self,
+        history_id: str | None = None,
+        title: str | None = None,
+        content: str | None = None,
+        annotation: str | None = None,
+        slug: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a markdown page. Attach it to a history (notebook) by passing history_id.
+
+        Standalone reports (no history_id) require a unique slug and a title.
+        """
+        payload = CreatePagePayload(
+            history_id=history_id,
+            title=title,
+            content=content,
+            content_format="markdown",
+            annotation=annotation,
+            slug=slug,
+        )
+        details = self.pages_service.create(self.trans, payload)
+        return self._dump_page(details)
+
+    def update_page(
+        self,
+        page_id: str,
+        content: str | None = None,
+        title: str | None = None,
+    ) -> dict[str, Any]:
+        """Update a page. Supplying content creates a new revision tagged edit_source=agent."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        payload = UpdatePagePayload(
+            content=content,
+            title=title,
+            edit_source="agent",
+        )
+        details = self.pages_service.update(self.trans, decoded_page_id, payload)
+        return self._dump_page(details)
+
+    def list_page_revisions(self, page_id: str, sort_desc: bool = False) -> dict[str, Any]:
+        """List the revision history of a page (provenance via edit_source)."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        revisions = self.pages_service.list_revisions(self.trans, decoded_page_id, sort_desc=sort_desc)
+        return {
+            "revisions": revisions.model_dump(mode="json"),
+            "count": len(revisions.root),
+        }
+
+    def get_page_revision(self, page_id: str, revision_id: str, include_rendered: bool = False) -> dict[str, Any]:
+        """Return a single page revision with its content.
+
+        Mirrors get_page: content_editor (editable encoded-id markdown) is always
+        returned; the embed-expanded render form (content) is included only when
+        include_rendered is True.
+        """
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        decoded_revision_id = self.trans.security.decode_id(revision_id)
+        revision = self.pages_service.show_revision(self.trans, decoded_page_id, decoded_revision_id)
+        return self._dump_page(revision, include_rendered)
+
+    def revert_page_revision(self, page_id: str, revision_id: str) -> dict[str, Any]:
+        """Roll a page back to an earlier revision (creates a new 'restore' revision)."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        decoded_revision_id = self.trans.security.decode_id(revision_id)
+        revision = self.pages_service.revert_revision(self.trans, decoded_page_id, decoded_revision_id)
+        return self._dump_page(revision)

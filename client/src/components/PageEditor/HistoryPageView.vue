@@ -1,28 +1,37 @@
 <script setup lang="ts">
-import { faArrowLeft, faEdit, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
+import { useConfirmDialog } from "@/composables/confirmDialog.js";
+import { useToast } from "@/composables/toast";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
+import { useUserStore } from "@/stores/userStore.js";
+import { errorMessageAsString } from "@/utils/simple-error.js";
 
 import HistoryPageList from "./HistoryPageList.vue";
+import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageEditorView from "./PageEditorView.vue";
-import Markdown from "@/components/Markdown/Markdown.vue";
 
 const props = defineProps<{
     historyId: string;
+    invocationId?: string;
     pageId?: string;
     displayOnly?: boolean;
 }>();
 
+const Toast = useToast();
+
+const { confirm } = useConfirmDialog();
 const router = useRouter();
 const { pushToFrameOrPage } = useWindowAwareNavigation();
+const userStore = useUserStore();
 const store = usePageEditorStore();
-const labels = PAGE_LABELS.history;
+const labels = computed(() => (props.invocationId ? PAGE_LABELS.invocation : PAGE_LABELS.history));
 
 const markdownConfig = computed(() => {
     if (!store.currentPage) {
@@ -31,7 +40,7 @@ const markdownConfig = computed(() => {
     const content = props.displayOnly ? (store.currentPage.content ?? store.currentContent) : store.currentContent;
     return {
         id: store.currentPage.id,
-        title: store.currentTitle || labels.defaultTitle,
+        title: store.currentTitle || labels.value.defaultTitle,
         content,
         model_class: "Page",
         update_time: store.currentPage.update_time,
@@ -39,7 +48,7 @@ const markdownConfig = computed(() => {
 });
 
 onMounted(async () => {
-    await store.loadPages(props.historyId);
+    await store.loadPages(props.historyId, props.invocationId);
     if (props.pageId && props.displayOnly) {
         await store.loadPageById(props.pageId);
     }
@@ -52,11 +61,13 @@ onUnmounted(() => {
 });
 
 watch(
-    () => props.historyId,
-    async (newId) => {
-        await store.loadPages(newId);
-        if (props.pageId && props.displayOnly) {
-            await store.loadPageById(props.pageId);
+    () => [props.historyId, props.invocationId],
+    async ([newHistoryId, newInvocationId]) => {
+        if (newHistoryId) {
+            await store.loadPages(newHistoryId, newInvocationId);
+            if (props.pageId && props.displayOnly) {
+                await store.loadPageById(props.pageId);
+            }
         }
     },
 );
@@ -72,36 +83,86 @@ watch(
     },
 );
 
-function handleSelect(pageId: string) {
-    const page = store.pages.find((n) => n.id === pageId);
-    const pageTitle = page?.title || labels.entityName;
-    const inlineUrl = `/histories/${props.historyId}/pages/${pageId}`;
+async function createAPage(isCopy = false) {
+    const entity = labels.value.entityName;
+
+    const modalText = isCopy
+        ? `You are not the owner of this ${entity}. To edit it, a copy with its contents, owned by you, will be created. Do you want to proceed?`
+        : `A new ${entity} will be created and will be added to the list of ${labels.value.entityNamePlural} for this ${props.invocationId ? "invocation" : "history"}. Do you want to proceed?`;
+
+    const modalTitle = isCopy ? `Copy this ${entity}?` : `Create new ${entity}?`;
+    const okText = isCopy ? `Copy ${entity}` : `Create ${entity}`;
+    const okIcon = isCopy ? faCopy : faPlus;
+
+    const confirmed = await confirm(modalText, {
+        title: modalTitle,
+        okText,
+        okIcon,
+    });
+    if (!confirmed) {
+        return;
+    }
+
+    const newPage = await store.createPage({
+        title: isCopy
+            ? store.currentTitle
+                ? `Copy of "${store.currentTitle}"`
+                : labels.value.defaultTitle
+            : undefined,
+        content: isCopy ? store.currentContent : undefined,
+    });
+
+    return newPage;
+}
+
+function handleView(viewingPageId: string) {
+    const page = store.pages.find((n) => n.id === viewingPageId);
+    const pageTitle = page?.title || labels.value.entityName;
+    const inlineUrl = props.invocationId
+        ? `/workflows/invocations/${props.invocationId}/reports?id=${viewingPageId}`
+        : `/histories/${props.historyId}/pages/${viewingPageId}?displayOnly=true`;
+
     pushToFrameOrPage({
-        framedUrl: `${inlineUrl}?displayOnly=true`,
+        framedUrl: `/pages/editor?id=${viewingPageId}&displayOnly=true&hideHeader=true`,
         inlineUrl,
-        title: `${labels.entityName}: ${pageTitle}`,
+        title: `${labels.value.entityName}: ${pageTitle}`,
     });
 }
 
 async function handleCreate() {
-    const page = await store.createPage({ title: labels.defaultTitle });
-    if (page) {
-        router.push(`/histories/${props.historyId}/pages/${page.id}`);
+    try {
+        const createdPage = await createAPage();
+        if (createdPage) {
+            handleEdit(createdPage.id, createdPage.username);
+        }
+    } catch (error) {
+        Toast.error(errorMessageAsString(error), `Failed to create ${labels.value.entityName.toLowerCase()}`);
     }
 }
 
-function handleView(pageId: string) {
-    router.push(`/histories/${props.historyId}/pages/${pageId}?displayOnly=true`);
-}
+async function handleEdit(editingPageId: string, ownerUsername: string) {
+    let routedId: string | undefined = editingPageId;
 
-function handleEdit() {
-    if (props.pageId) {
-        router.push(`/histories/${props.historyId}/pages/${props.pageId}`);
+    if (routedId && ownerUsername && !userStore.matchesCurrentUsername(ownerUsername)) {
+        const copiedPage = await createAPage(true);
+        routedId = copiedPage?.id;
+    }
+
+    if (routedId) {
+        let editUrl = `/histories/${props.historyId}/pages/${routedId}`;
+        if (props.invocationId) {
+            editUrl += `?invocation_id=${props.invocationId}`;
+        }
+        router.push(editUrl);
     }
 }
 
 function handleBack() {
     store.clearCurrentPage();
+    if (props.invocationId) {
+        router.push(`/workflows/invocations/${props.invocationId}/reports`);
+        return;
+    }
     router.push(`/histories/${props.historyId}/pages`);
 }
 </script>
@@ -128,38 +189,27 @@ function handleBack() {
         </BAlert>
 
         <template v-else-if="!pageId">
-            <HistoryPageList :pages="store.pages" @select="handleSelect" @view="handleView" @create="handleCreate" />
+            <HistoryPageList
+                :history-id="props.historyId"
+                :invocation-id="props.invocationId"
+                :pages="store.pages"
+                @view-runtime-report="router.push(`/workflows/invocations/${props.invocationId}/report`)"
+                @edit="handleEdit"
+                @view="handleView"
+                @create="handleCreate" />
         </template>
 
         <!-- Display-only mode: rendered view -->
-        <template v-else-if="store.hasCurrentPage && displayOnly">
-            <div
-                class="page-display-toolbar d-flex align-items-center p-2 border-bottom"
-                data-description="page display toolbar">
-                <BButton variant="link" size="sm" data-description="page manage button" @click="handleBack">
-                    <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ labels.editorBackLabel }}
-                </BButton>
-                <span class="flex-grow-1 text-center font-weight-bold">
-                    {{ store.currentTitle || labels.defaultTitle }}
-                </span>
-                <BButton variant="outline-primary" size="sm" data-description="page edit button" @click="handleEdit">
-                    <FontAwesomeIcon :icon="faEdit" />
-                    Edit
-                </BButton>
-            </div>
-            <div class="page-display-content overflow-auto flex-grow-1" data-description="page rendered view">
-                <Markdown
-                    v-if="markdownConfig"
-                    :markdown-config="markdownConfig"
-                    :read-only="true"
-                    download-endpoint="" />
-            </div>
-        </template>
+        <PageDisplayOnly
+            v-else-if="store.currentPage?.id && store.currentPage.id === props.pageId && displayOnly"
+            :labels="labels"
+            :markdown-config="markdownConfig || undefined"
+            @back="handleBack"
+            @edit="handleEdit(store.currentPage.id, store.currentPage.username)" />
 
         <!-- Edit mode: delegate to unified PageEditorView -->
         <template v-else-if="pageId && !displayOnly">
-            <PageEditorView :page-id="pageId" :history-id="historyId" />
+            <PageEditorView :page-id="pageId" :history-id="historyId" :invocation-id="invocationId" />
         </template>
 
         <BAlert v-else-if="store.isLoadingPage" variant="info" show>
@@ -172,8 +222,5 @@ function handleBack() {
 <style scoped>
 .history-page-view {
     background: var(--body-bg);
-}
-.page-display-toolbar {
-    background: var(--panel-header-bg);
 }
 </style>

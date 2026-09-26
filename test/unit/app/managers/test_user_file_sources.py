@@ -1,11 +1,14 @@
 import os
 from typing import (
     cast,
-    Optional,
 )
-from uuid import uuid4
+from uuid import (
+    UUID,
+    uuid4,
+)
 
 import pytest
+import responses
 from requests.exceptions import HTTPError
 from yaml import safe_load
 
@@ -15,7 +18,12 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
-from galaxy.files import FileSourcesUserContext
+from galaxy.files import (
+    ConfiguredFileSources,
+    FileSourcesUserContext,
+    USER_FILE_SOURCES_SCHEME,
+)
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources import dropbox
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
@@ -24,12 +32,13 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    referenced_user_file_source_ids,
+    TemplateFormDataRequest,
     TestUpdateInstancePayload,
     TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
     UpgradeInstancePayload,
-    USER_FILE_SOURCES_SCHEME,
     UserDefinedFileSourcesConfig,
     UserDefinedFileSourcesImpl,
     UserFileSourceModel,
@@ -53,8 +62,8 @@ SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my file source"
 
 
 class Config:
-    file_source_templates: Optional[list[RawTemplateConfig]] = None
-    file_source_templates_config_file: Optional[str] = None
+    file_source_templates: list[RawTemplateConfig] | None = None
+    file_source_templates_config_file: str | None = None
 
     def __init__(self, templates: list[RawTemplateConfig]):
         self.file_source_templates = templates
@@ -309,7 +318,6 @@ class TestFileSourcesTestCase(BaseTestCase):
         fsspec_fs_init_kwd = {}
 
         class MockDropboxDriveFileSystem:
-
             def __init__(self, **kwd):
                 fsspec_fs_init_kwd.update(kwd)
 
@@ -325,6 +333,97 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.connection
         assert not status.connection.is_not_ok
         assert fsspec_fs_init_kwd["token"] == "my_test_access_token"
+
+    def test_serialization_mints_no_tokens_when_no_sources_referenced(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+            referenced_uris=set(),
+        )
+        assert calls == []
+        assert as_dicts == []
+
+    def test_serialization_mints_only_referenced_source(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        referenced_uuid = uuid4().hex
+        self._create_dropbox_oauth_source(referenced_uuid)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+            referenced_uris={f"gxuserfiles://{referenced_uuid}/some/path"},
+        )
+        assert calls == [f"refresh_token_{referenced_uuid}"]
+        assert len(as_dicts) == 1
+        assert UUID(as_dicts[0]["id"]).hex == referenced_uuid
+        assert as_dicts[0]["access_token"] == "my_test_access_token"
+
+    def test_serialization_without_reference_filter_includes_all_sources(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+        )
+        assert len(calls) == 2
+        assert len(as_dicts) == 2
+
+    def test_configured_file_sources_to_dict_threads_referenced_uris(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        referenced_uuid = uuid4().hex
+        self._create_dropbox_oauth_source(referenced_uuid)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        configured = ConfiguredFileSources(
+            FileSourcePluginsConfig(),
+            user_defined_file_sources=self.file_sources,
+        )
+        as_dict = configured.to_dict(
+            for_serialization=True,
+            user_context=cast(FileSourcesUserContext, self.trans),
+            referenced_uris={f"gxuserfiles://{referenced_uuid}/x"},
+        )
+        ids = [s["id"] for s in as_dict["file_sources"]]
+        assert calls == [f"refresh_token_{referenced_uuid}"]
+        assert len(ids) == 1
+        assert UUID(ids[0]).hex == referenced_uuid
+
+    def _create_dropbox_oauth_source(self, uuid: str) -> None:
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        # Seed a per-source refresh token so a captured mint identifies which source minted.
+        self.trans.user_vault.write_secret(config_secret_key, f"refresh_token_{uuid}")
+        self._create_instance(
+            CreateInstancePayload(
+                name=SIMPLE_FILE_SOURCE_NAME,
+                description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+                template_id="dropbox",
+                template_version=0,
+                variables={},
+                secrets={},
+                uuid=uuid,
+            )
+        )
+
+    def _count_refresh_token_mints(self, monkeypatch) -> list:
+        calls: list = []
+
+        class MockDropboxDriveFileSystem:
+            pass
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            calls.append(refresh_token)
+            return MockResponse({"access_token": "my_test_access_token"})
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        monkeypatch.setattr(dropbox.DropboxFilesSource, "required_module", MockDropboxDriveFileSystem)
+        return calls
 
     def test_onedrive_oauth2_flow(self, tmp_path, monkeypatch):
         json = {
@@ -920,6 +1019,142 @@ class TestFileSourcesTestCase(BaseTestCase):
             self.manager.template_oauth2(self.trans, "dropbox", 0)
         assert "Please contact your administrator" in str(exc_info.value)
 
+    @responses.activate
+    def test_github_list_repositories_rotates_refresh_token(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+
+        refresh_requests = 0
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            nonlocal refresh_requests
+            refresh_requests += 1
+            assert refresh_token == "original_refresh_token"
+            return MockResponse(
+                {"access_token": "my_access_token", "refresh_token": "rotated_refresh_token", "expires_in": 28_800}
+            )
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        self._stub_github_repositories([("galaxyproject", "galaxy"), ("me", "data")])
+
+        form_data = self.manager.template_form_data(
+            self.trans,
+            "github",
+            0,
+            TemplateFormDataRequest(uuid=uuid, variables={"org": "galaxyproject"}),
+        )
+        # The refresh token was exchanged once (the access token is cached) and the minted
+        # access token authenticated the request GitHub actually received.
+        assert refresh_requests == 1
+        assert responses.calls[0].request.headers["Authorization"] == "Bearer my_access_token"
+        # The rotated refresh token is persisted back to the user vault.
+        assert user_vault.read_secret(refresh_key) == "rotated_refresh_token"
+
+        assert form_data.dynamic_options == {
+            "org": [("galaxyproject", "galaxyproject"), ("me", "me")],
+            "repo": [("galaxy", "galaxy")],
+        }
+        assert len(form_data.messages) == 1
+        assert form_data.messages[0].variant == "info"
+
+    def test_github_oauth_redirects_to_authorization(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+
+        summary = next(summary for summary in self.manager.summaries.root if summary.id == "github")
+        assert summary.requires_oauth2_authorization
+
+        authorize_url = self.manager.template_oauth2(self.trans, "github", 0).authorize_url
+        from urllib.parse import (
+            parse_qs,
+            urlparse,
+        )
+
+        parsed_url = urlparse(authorize_url)
+        assert parsed_url.hostname == "github.com"
+        assert parsed_url.path == "/login/oauth/authorize"
+        state = OAuth2State.decode(parse_qs(parsed_url.query)["state"][0])
+        assert state.route == "file_source_instances/github/0"
+
+    @responses.activate
+    def test_github_capability_rejects_unauthorized_repository(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+        self._mock_github_repositories(monkeypatch, [("galaxyproject", "galaxy")])
+
+        authorized_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="github",
+            template_version=0,
+            variables={"org": "galaxyproject", "repo": "galaxy"},
+            secrets={},
+            uuid=uuid,
+        )
+        self.manager._validate_provider_creation(self.trans, authorized_payload)
+
+        # An un-granted repository raises a clear error naming the repository.
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
+            self.manager._validate_provider_creation(
+                self.trans,
+                authorized_payload.model_copy(update={"variables": {"org": "someone", "repo": "private"}}),
+            )
+        assert "someone/private" in str(exc_info.value)
+
+    @responses.activate
+    def test_github_create_rejects_unauthorized_repo(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+        self._mock_github_repositories(monkeypatch, [("galaxyproject", "galaxy")])
+
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="github",
+            template_version=0,
+            variables={"org": "someone", "repo": "private"},
+            secrets={},
+            uuid=uuid,
+        )
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
+            self.manager.create_instance(self.trans, create_payload)
+        assert "someone/private" in str(exc_info.value)
+
+    def _mock_github_repositories(self, monkeypatch, repositories: list[tuple[str, str]]):
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            return MockResponse({"access_token": "my_access_token"})
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        self._stub_github_repositories(repositories)
+
+    def _stub_github_repositories(self, repositories: list[tuple[str, str]]):
+        # Stub the GitHub App installations/repositories endpoints that
+        # ``list_authorized_repositories`` calls, so the real pagination and parsing run.
+        responses.add(
+            responses.GET,
+            "https://api.github.com/user/installations",
+            json={"installations": [{"id": 1}]},
+        )
+        responses.add(
+            responses.GET,
+            "https://api.github.com/user/installations/1/repositories",
+            json={"repositories": [{"full_name": f"{owner}/{repo}"} for owner, repo in repositories]},
+        )
+
+    def _init_github_env(self, tmp_path, monkeypatch):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, safe_load(get_example("production_github.yml")))
+        monkeypatch.setenv("GALAXY_GITHUB_APP_CLIENT_ID", "mock_client_id")
+        monkeypatch.setenv("GALAXY_GITHUB_APP_CLIENT_SECRET", "mock_client_secret")
+
     def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
         version_0 = home_directory_template(tmp_path)
         version_0["version"] = 0
@@ -1042,7 +1277,6 @@ class MockResponse:
 
 
 class MockExceptionResponse:
-
     def __init__(self, exception_msg: str):
         self._exception_msg = exception_msg
 
@@ -1051,7 +1285,6 @@ class MockExceptionResponse:
 
 
 class OneDriveMockResponse:
-
     def __init__(self, status_code=200, json_data=None, text=""):
         self.status_code = status_code
         self._json_data = json_data or {}
@@ -1063,3 +1296,33 @@ class OneDriveMockResponse:
 
     def json(self):
         return self._json_data
+
+
+def test_referenced_user_file_source_ids_selects_only_user_sources():
+    user_uuid = uuid4().hex
+    uris = {
+        f"gxuserfiles://{user_uuid}/some/path",
+        "gxfiles://dropbox/other",
+        "https://example.com/file.txt",
+        "drs://example.org/abc",
+    }
+    assert referenced_user_file_source_ids(uris) == {user_uuid}
+
+
+def test_referenced_user_file_source_ids_normalizes_dashed_uuid():
+    dashed = str(uuid4())
+    assert referenced_user_file_source_ids({f"gxuserfiles://{dashed}/x"}) == {dashed.replace("-", "")}
+
+
+def test_referenced_user_file_source_ids_handles_no_match():
+    uris = {"gxfiles://dropbox/x", "not-a-uri", ""}
+    assert referenced_user_file_source_ids(uris) == set()
+
+
+@pytest.mark.parametrize(
+    "uri",
+    ["gxuserfiles://[invalid-authority/x", "gxuserfiles://not-a-uuid/x", "gxuserfiles:///x"],
+)
+def test_referenced_user_file_source_ids_rejects_invalid_user_source_uri(uri):
+    with pytest.raises(RequestParameterInvalidException, match="Invalid user file source URI"):
+        referenced_user_file_source_ids({uri})

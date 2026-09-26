@@ -259,3 +259,85 @@ def test_cpuinfo_collection(tmpdir):
     job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_PRODUCTION_EXAMPLE_2201)
     properties = plugin.job_properties(1, job_dir)
     assert properties["processor_count"] == 10
+
+
+# Two processors with differing "model name" values, for the unique-dedup
+# fallback case. Trimmed to just the fields the tests care about.
+CPUINFO_HETEROGENEOUS_EXAMPLE = """processor   : 0
+model name  : Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz
+bugs        : spectre_v1 spectre_v2
+processor   : 1
+model name  : Intel(R) Xeon(R) Gold 6242R CPU @ 3.10GHz
+bugs        : spectre_v1 spectre_v2
+"""
+
+
+def test_cpuinfo_verbose_collection(tmpdir):
+    """Verbose mode must actually store per-processor properties."""
+    plugin = CpuInfoPlugin(verbose=True)
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_PRODUCTION_EXAMPLE_2201)
+    properties = plugin.job_properties(1, job_dir)
+    assert properties["processor_count"] == 10
+    assert properties["processor_0_model name"] == "intel(r) xeon(r) cpu e5-2680 v3 @ 2.50ghz"
+    assert properties["processor_9_model name"] == "intel(r) xeon(r) cpu e5-2680 v3 @ 2.50ghz"
+    assert properties["processor_0_vendor_id"] == "genuineintel"
+
+
+def test_cpuinfo_verbose_fields_filter(tmpdir):
+    """`fields` restricts verbose output to the named /proc/cpuinfo fields only."""
+    plugin = CpuInfoPlugin(verbose=True, fields="model name,cpu MHz")
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_PRODUCTION_EXAMPLE_2201)
+    properties = plugin.job_properties(1, job_dir)
+    assert properties["processor_0_model name"] == "intel(r) xeon(r) cpu e5-2680 v3 @ 2.50ghz"
+    assert properties["processor_0_cpu mhz"] == "2494.222"
+    assert "processor_0_vendor_id" not in properties
+    assert "processor_0_bogomips" not in properties
+
+
+def test_cpuinfo_verbose_unique_collapses_identical_values(tmpdir):
+    """`unique` collapses a field to one key when every processor agrees."""
+    plugin = CpuInfoPlugin(verbose=True, fields="model name", unique=True)
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_PRODUCTION_EXAMPLE_2201)
+    properties = plugin.job_properties(1, job_dir)
+    assert properties["model name"] == "intel(r) xeon(r) cpu e5-2680 v3 @ 2.50ghz"
+    assert properties["processor_count"] == 10
+    assert "processor_0_model name" not in properties
+    assert "processor_9_model name" not in properties
+
+
+def test_cpuinfo_verbose_unique_keeps_heterogeneous_values_per_processor(tmpdir):
+    """`unique` falls back to per-processor keys for a field where processors disagree."""
+    plugin = CpuInfoPlugin(verbose=True, fields="model name,bugs", unique=True)
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_HETEROGENEOUS_EXAMPLE)
+    properties = plugin.job_properties(1, job_dir)
+    assert "model name" not in properties
+    assert properties["processor_0_model name"] == "intel(r) xeon(r) gold 6248r cpu @ 3.00ghz"
+    assert properties["processor_1_model name"] == "intel(r) xeon(r) gold 6242r cpu @ 3.10ghz"
+    assert properties["bugs"] == "spectre_v1 spectre_v2"
+
+
+# Two processors where processor 1 does not report "bugs" at all (as opposed
+# to reporting a different value). unique must not collapse a field that
+# not every processor actually reported.
+CPUINFO_MISSING_FIELD_EXAMPLE = """processor   : 0
+model name  : Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz
+bugs        : spectre_v1 spectre_v2
+processor   : 1
+model name  : Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz
+"""
+
+
+def test_cpuinfo_verbose_unique_keeps_per_processor_key_when_field_missing_on_some_processors(tmpdir):
+    """`unique` must not collapse a field that only some processors reported at all."""
+    plugin = CpuInfoPlugin(verbose=True, fields="model name,bugs", unique=True)
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cpuinfo_cpuinfo").write(CPUINFO_MISSING_FIELD_EXAMPLE)
+    properties = plugin.job_properties(1, job_dir)
+    assert properties["model name"] == "intel(r) xeon(r) gold 6248r cpu @ 3.00ghz"
+    assert "bugs" not in properties
+    assert properties["processor_0_bugs"] == "spectre_v1 spectre_v2"
+    assert "processor_1_bugs" not in properties

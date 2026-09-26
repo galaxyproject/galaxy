@@ -6,10 +6,11 @@
  */
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { computeLineDiff, diffStats } from "./sectionDiffUtils";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     original: string;
@@ -38,25 +39,26 @@ const stats = computed(() => diffStats(changes.value));
             <span
                 class="diff-actions"
                 :title="stale ? 'Document has changed and this suggestion no longer applies.' : undefined">
-                <BButton
-                    variant="success"
-                    size="sm"
+                <GButton
+                    color="green"
+                    size="small"
                     :disabled="stale"
                     data-description="accept proposal"
                     @click="emit('accept')">
                     <FontAwesomeIcon :icon="faCheck" />
                     Accept
-                </BButton>
-                <BButton
-                    variant="outline-danger"
-                    size="sm"
+                </GButton>
+                <GButton
+                    color="red"
+                    outline
+                    size="small"
                     class="ml-1"
                     :disabled="stale"
                     data-description="reject proposal"
                     @click="emit('reject')">
                     <FontAwesomeIcon :icon="faTimes" />
                     Reject
-                </BButton>
+                </GButton>
             </span>
         </div>
         <div class="diff-content">

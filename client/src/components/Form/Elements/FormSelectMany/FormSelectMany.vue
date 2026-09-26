@@ -356,7 +356,6 @@ const selectedCount = computed(() => {
                 color="blue"
                 :pressed.sync="caseSensitive"
                 :aria-pressed="`${caseSensitive}`"
-                role="switch"
                 title="case sensitive">
                 Aa
             </GButton>
@@ -366,7 +365,6 @@ const selectedCount = computed(() => {
                 color="blue"
                 :pressed.sync="useRegex"
                 :aria-pressed="`${useRegex}`"
-                role="switch"
                 title="use regex">
                 .*
             </GButton>

@@ -2,7 +2,7 @@
 
 Galaxy has countless ways for users to connect with things that might be considered their "data" - file sources (aka "remote files"), object stores (aka "storage locations"), data libraries, the upload API, visualizations, display applications, custom tools, etc...
 
-This document is going to discuss two of these (file sources and object stores) that are most important Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
+This document is going to discuss two of these (file sources and object stores) that are most important to Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
 
 ```{contents} Table of Contents
 :depth: 4
@@ -17,7 +17,7 @@ Galaxy object stores (called "storage locations" in the UI) store datasets and g
 
 Some of Galaxy's most updated and complete administrator documentation can be found in configuration sample files - this is definitely the case for object stores and file sources. The relevant sample configuration files include [file_sources_conf.yml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/file_sources_conf.yml.sample) and [object_store_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.sample.yml).
 
-File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow the a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
+File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
 
 This document is going to describe Galaxy configuration template libraries that allow the
 administrator to setup templates for file sources and object stores that your users may instantiate
@@ -158,6 +158,47 @@ store configuration).
 
 ![](object_store_azure_configuration.png)
 
+#### `cloud`
+
+Object stores of the type `cloud` connect to Amazon S3, Azure Blob Storage, Google Cloud
+Storage or OpenStack Swift through a single configuration surface - the `provider` option
+selects which one. Galaxy reaches the service through
+[CloudBridge](http://cloudbridge.cloudve.org/), so one template shape covers all four,
+including native Swift access that the S3 compatible object stores cannot offer.
+
+Here is a template for AWS S3 buckets. Pointing it at a different cloud is a matter of
+changing `provider` and the matching `auth` fields.
+
+```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+:language: yaml
+```
+
+Large datasets are transferred as multiple parts in parallel in both directions. The
+optional `transfer` section tunes the size at which that kicks in, the size of each part,
+and how many parts are transferred at once; prefixing any of those options with `upload_`
+or `download_` tunes just one direction.
+
+The providers named by your templates decide which client libraries Galaxy needs, so
+Galaxy's dependency installer installs the matching CloudBridge extras for the providers
+used by your templates and by `object_store_conf.yml`.
+
+What a template may set is deliberately narrower than what the object store itself accepts
+in `object_store_conf.yml`: user defined stores are stored in Galaxy's database and are
+expected to keep working indefinitely, so templates cannot hand out short lived credentials
+(which would expire and leave the user with a broken store) or point Galaxy at credential
+files on the server.
+
+The syntax for the `configuration` section of `cloud` templates looks like this.
+
+![](object_store_cloud_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's object store infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `object_store_conf.yml` (Galaxy's global object
+store configuration).
+
+![](object_store_cloud_configuration.png)
+
 #### `aws_s3` (Legacy)
 
 Object stores of the type `aws_s3` are be used to treat AWS Simple Storage Service (S3) buckets
@@ -262,6 +303,16 @@ and you're comfortable with it storing your user's secrets.
 
 ![Screenshot](user_object_store_form_full_aws_s3.png)
 
+#### Allow Users to Define Cloud Storage Buckets as Object Stores
+
+This template lets users bring their own AWS S3 bucket through Galaxy's multi-cloud
+storage plugin. The same form works for Azure, Google Cloud and OpenStack Swift by
+changing the `provider` and `auth` fields.
+
+```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+:language: yaml
+```
+
 #### Allow Users to Define Google Cloud Provider S3 Interop Storage Buckets as Object Stores
 
 This template includes descriptions of how to generate HMAC keys used by this interoperability
@@ -280,6 +331,12 @@ can be placed `file_source_templates.yml` in Galaxy configuration directory (or 
 pointed to by the configuration option `file_source_templates_config_file` in `galaxy.yml`).
 Alternatively, the configuration can be placed directly into `galaxy.yml` using the
 `file_source_templates` configuration option.
+
+A template can define `form_alerts` to show administrator-authored Markdown alerts while a
+user creates an instance. Each alert has a Bootstrap `variant` and optional `condition`; alerts
+without a condition are always shown. Template capabilities can expose condition names for
+source-specific states, allowing the template to control the message without hard-coding it in
+the form component.
 
 ### File Source Types
 
@@ -708,6 +765,59 @@ This implementation currently uses Microsoft Graph's simple upload endpoint and
 does not yet implement resumable uploads for very large files, server-side pagination,
 or server-side search/sorting.
 
+#### GitHub
+
+Once you have OAuth 2.0 client credentials from GitHub (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configuration can be used to enable
+GitHub repositories for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_github.yml
+:language: yaml
+```
+
+To use this template, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_GITHUB_APP_CLIENT_ID` and
+`GALAXY_GITHUB_APP_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+
+GitHub is a per-repository file source: each instance connects a single repository, and
+the user supplies the repository owner, name, and (optionally) branch when creating the
+instance. To connect several repositories, a user creates several instances of the template.
+
+To configure a GitHub App for this file source:
+
+1. Sign in to GitHub and open
+   [Settings > Developer settings > GitHub Apps](https://github.com/settings/apps),
+   then select `New GitHub App` (for an organization, use its developer settings instead).
+2. Enter a recognizable application name for Galaxy, for example `Galaxy GitHub`, and a
+   homepage URL (your Galaxy instance URL is fine).
+3. Under `Callback URL`, enter your Galaxy callback URL: `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   This must match exactly the URL Galaxy redirects to, which Galaxy derives from the
+   address users browse to. GitHub treats `localhost` and `127.0.0.1` as different hosts,
+   so for local development register the exact host you use (often
+   `http://localhost:8080/oauth2_callback`). GitHub Apps allow multiple callback URLs, so
+   you may add both `localhost` and `127.0.0.1` variants if needed.
+4. Enable `Request user authorization (OAuth) during installation`, and under
+   `Optional features` (or `Identifying and authorizing users`) enable
+   `Expiring user authorization tokens`. This is required: it makes GitHub issue a
+   `refresh_token`, which Galaxy stores to mint short-lived access tokens on the user's
+   behalf. Without it, GitHub returns a non-expiring token with no refresh token and Galaxy
+   cannot complete the flow.
+5. Under `Webhook`, uncheck `Active`. Galaxy does not use GitHub webhooks, and GitHub
+   otherwise requires a webhook URL to create the app.
+6. Under `Permissions > Repository permissions`, set `Contents` to `Read-only` for
+   browse and download, or `Read and write` if users should be able to upload files.
+7. Create the app. On its settings page copy the `Client ID` and expose it to Galaxy as
+   `GALAXY_GITHUB_APP_CLIENT_ID`, then `Generate a new client secret` and expose that value
+   as `GALAXY_GITHUB_APP_CLIENT_SECRET` (GitHub shows the secret only once).
+
+After this setup, users connect their own GitHub accounts through Galaxy's OAuth2 flow.
+The client ID and client secret identify your Galaxy application to GitHub, but file access
+is performed with per-user access and refresh tokens - Galaxy stores only the refresh token
+in its Vault and mints short-lived access tokens on use.
+
 ## Playing Nicer with Ansible
 
 Many large instances of Galaxy are configured with Ansible and much of the existing administrator
@@ -1052,8 +1162,8 @@ user defined data access templates can support OAuth 2.0.
 
 Galaxy keeps track of which plugin `type`s (currently only file source types) require
 OAuth2 to work properly and will take care of authorization redirection, saving refresh tokens,
-etc.. implicitly. One such `type` is `dropbox`. Here is the production Dropbox
-template distributed with Galaxy.
+etc.. implicitly. Such `type`s include `dropbox`, `googledrive`, `onedrive`, and `github`.
+Here is the production Dropbox template distributed with Galaxy.
 
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml

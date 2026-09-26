@@ -16,10 +16,7 @@ from fastapi import (
     Query,
     Request,
 )
-from starlette.responses import (
-    Response,
-    StreamingResponse,
-)
+from starlette.responses import Response
 
 from galaxy.exceptions import (
     GatewayTimeoutException,
@@ -29,6 +26,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from . import (
     DependsOnTrans,
     Router,
@@ -68,7 +66,6 @@ def is_valid_url(url: str) -> bool:
 
 @router.cbv
 class FastAPIProxy:
-
     @router.get("/api/proxy")
     @router.head("/api/proxy")
     async def proxy(self, request: Request, url: str = URLQueryParam, trans: ProvidesUserContext = DependsOnTrans):
@@ -127,7 +124,7 @@ class FastAPIProxy:
 
                 streaming = True
                 # StreamingResponse will handle chunked transfer encoding automatically
-                return StreamingResponse(
+                return GalaxyStreamingResponse(
                     stream_with_cleanup(),
                     status_code=response.status_code,
                     headers=filtered_headers,

@@ -1,10 +1,6 @@
 import abc
 import itertools
 import re
-from typing import (
-    List,
-    Type,
-)
 
 import yaml
 
@@ -29,8 +25,7 @@ def _ensure_rule_contains_keys(rule, keys):
 
 
 def _ensure_key_value_in(rule, key, values):
-    value = rule[key]
-    if value not in values:
+    if (value := rule[key]) not in values:
         raise ValueError(f"Invalid value [{value}] for [{key}] encountered.")
 
 
@@ -654,7 +649,7 @@ class RuleSet:
         return message
 
 
-RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
+RULES_DEFINITION_CLASSES: list[type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,

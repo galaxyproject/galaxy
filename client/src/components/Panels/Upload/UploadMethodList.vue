@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
+// @ts-ignore missing types
+import Vue2Teleport from "vue2-teleport";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
-import { useConfig } from "@/composables/config";
 import { useUploadStagingCounts } from "@/composables/upload/useUploadStaging";
 
 import type { UploadMethodConfig } from "./types";
-import { useAllUploadMethods } from "./uploadMethodRegistry";
+import { useFilteredUploadMethods } from "./uploadMethodRegistry";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -25,28 +26,13 @@ const props = withDefaults(defineProps<Props>(), {
     searchTeleportTarget: undefined,
 });
 
-const { config, isConfigLoaded } = useConfig();
 const router = useRouter();
 const query = ref("");
 
 const searchInputClass = computed(() => (props.searchTeleportTarget ? "my-2" : props.inPanel ? "my-2" : "mb-3"));
 
-const allUploadMethods = useAllUploadMethods();
+const availableMethods = useFilteredUploadMethods();
 const stagedCountsByMode = useUploadStagingCounts();
-
-const availableMethods = computed(() => {
-    if (!isConfigLoaded.value) {
-        return allUploadMethods.value;
-    }
-
-    return allUploadMethods.value.filter((method: UploadMethodConfig) => {
-        // Filter based on config requirements
-        if (method.requiresConfig) {
-            return method.requiresConfig.every((configKey) => config.value[configKey]);
-        }
-        return true;
-    });
-});
 
 const filteredMethods = computed(() => {
     const rawTokens = query.value.trim().split(/\s+/).filter(Boolean);
@@ -88,13 +74,19 @@ function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
 
 <template>
     <div class="upload-method-list-wrapper h-100 d-flex flex-column">
-        <Teleport :to="searchTeleportTarget" :disabled="!searchTeleportTarget">
+        <Vue2Teleport v-if="searchTeleportTarget" :to="searchTeleportTarget">
             <DelayedInput
                 :delay="100"
                 :class="searchInputClass"
                 placeholder="Search import methods..."
                 @change="updateQuery" />
-        </Teleport>
+        </Vue2Teleport>
+        <DelayedInput
+            v-else
+            :delay="100"
+            :class="searchInputClass"
+            placeholder="Search import methods..."
+            @change="updateQuery" />
 
         <div class="flex-grow-1">
             <ScrollList
@@ -117,6 +109,8 @@ function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
                         :title-icon="{ icon: method.icon, class: 'text-primary', size: 'lg' }"
                         :badges="getStagingBadges(method)"
                         :data-method-id="method.id"
+                        :disabled="method.disabled"
+                        :disabled-title="method.disabledTitle"
                         @click="selectUploadMethod(method)" />
                 </template>
             </ScrollList>

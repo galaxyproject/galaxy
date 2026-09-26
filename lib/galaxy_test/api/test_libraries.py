@@ -11,6 +11,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     FILE_URL,
     LibraryPopulator,
+    local_file_url,
     skip_without_asgi,
 )
 from ._framework import ApiTestCase
@@ -288,8 +289,8 @@ class TestLibrariesApi(ApiTestCase):
         assert dataset["file_size"] == 61, dataset
 
     @requires_new_library
-    def test_fetch_single_url_to_folder(self):
-        library, response = self.library_populator.fetch_single_url_to_folder()
+    def test_fetch_single_url_to_folder(self, test_http_server):
+        library, response = self.library_populator.fetch_single_url_to_folder(url=local_file_url(test_http_server))
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
@@ -317,11 +318,11 @@ class TestLibrariesApi(ApiTestCase):
         assert create_response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
     @requires_new_library
-    def test_fetch_failed_validation(self, mock_http_server):
+    def test_fetch_failed_validation(self, test_http_server):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
             file_path="test-data/4.bed",
         )
@@ -355,9 +356,9 @@ class TestLibrariesApi(ApiTestCase):
         assert dataset["state"] == "error", dataset
 
     @requires_new_library
-    def test_fetch_url_archive_to_folder(self, mock_http_server):
+    def test_fetch_url_archive_to_folder(self, test_http_server):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
             file_path="test-data/4.bed.zip",
         )

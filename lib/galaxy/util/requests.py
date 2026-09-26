@@ -1,7 +1,5 @@
-from typing import (
-    Callable,
-    Union,
-)
+import ssl
+from collections.abc import Callable
 
 import requests
 from requests import (  # noqa: F401
@@ -10,6 +8,7 @@ from requests import (  # noqa: F401
     Response as Response,
 )
 from requests.adapters import HTTPAdapter
+from requests.certs import where as requests_ca_bundle_path  # type: ignore[attr-defined]
 from requests.packages.urllib3.util.retry import Retry
 from typing_extensions import ParamSpec
 
@@ -17,6 +16,11 @@ from .user_agent import get_default_headers
 
 DEFAULT_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 0.1
+
+
+def create_ssl_context() -> ssl.SSLContext:
+    """Create an SSL context using the CA bundle trusted by ``requests``."""
+    return ssl.create_default_context(cafile=requests_ca_bundle_path())
 
 
 class Session(requests.Session):
@@ -27,7 +31,7 @@ class Session(requests.Session):
 
 class RetrySession(Session):
     def __init__(
-        self, total: Union[bool, int, None] = DEFAULT_RETRIES, backoff_factor: float = DEFAULT_BACKOFF_FACTOR, **kwargs
+        self, total: bool | int | None = DEFAULT_RETRIES, backoff_factor: float = DEFAULT_BACKOFF_FACTOR, **kwargs
     ) -> None:
         super().__init__()
         retry = Retry(total=total, backoff_factor=backoff_factor, **kwargs)
@@ -54,4 +58,5 @@ patch = _request_decorator(requests.patch)
 post = _request_decorator(requests.post)
 options = _request_decorator(requests.options)
 put = _request_decorator(requests.put)
+request = _request_decorator(requests.request)
 session = Session

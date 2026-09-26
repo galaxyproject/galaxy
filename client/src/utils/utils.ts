@@ -19,16 +19,19 @@ export type AnyObject = Record<string | number | symbol, any>;
  * Call callback on every object in an object recursively
  *
  * @param object object to traverse
- * @param callback ran on every nested child object
+ * @param callback ran on every nested child object; return `false` to skip
+ *                 recursion into that child's own children
  */
 export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
     object: Readonly<O>,
-    callback: (object: V | AnyObject) => void,
+    callback: (object: V | AnyObject) => void | boolean,
 ): void {
     Object.values(object).forEach((value) => {
         if (Boolean(value) && typeof value === "object") {
-            callback(value);
-            deepEach(value, callback);
+            const descend = callback(value);
+            if (descend !== false) {
+                deepEach(value, callback);
+            }
         }
     });
 }

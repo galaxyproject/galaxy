@@ -23,7 +23,6 @@ the routing dataset.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -100,7 +99,7 @@ _PROTO_CASES: list[dict[str, Any]] = [
 
 
 def router_tool_use_dataset(
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, Any, dict[str, Any]]:
     """Build the router_tool_use Dataset.
 

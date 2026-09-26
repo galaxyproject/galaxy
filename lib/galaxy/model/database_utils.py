@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from functools import lru_cache
 from typing import (
     NewType,
-    Optional,
 )
 
 from sqlalchemy import create_engine
@@ -132,7 +131,7 @@ class MySQLDatabaseManager(DatabaseManager):
                 conn.execute(stmt)
 
 
-def is_one_database(db1_url: str, db2_url: Optional[str]):
+def is_one_database(db1_url: str, db2_url: str | None):
     """
     Check if the arguments refer to one database. This will be true
     if only one argument is passed, or if the urls are the same.

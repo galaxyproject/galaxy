@@ -27,7 +27,7 @@ import {
     FAVORITE_TAG_SECTION_PREFIX,
     PANEL_LABEL_IDS,
 } from "./panelViews";
-import { buildToolLabel, buildToolSection } from "./utilities";
+import { buildToolLabel, buildToolSection, getUniqueToolIdsInPanel } from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import ToolItem from "./Common/Tool.vue";
@@ -72,7 +72,10 @@ const {
     favoriteOrder,
     favoriteToolIdsInPanel,
     recentToolIdsToShow,
-} = useToolPanelFavorites(computed(() => props.localToolsById));
+} = useToolPanelFavorites(
+    computed(() => props.localToolsById),
+    computed(() => getUniqueToolIdsInPanel(props.defaultSectionsById || props.localSectionsById)),
+);
 
 const recentToolsLabel = computed(() => buildToolLabel(PANEL_LABEL_IDS.RECENT_TOOLS_LABEL, localize("Recent tools")));
 const favoritesLabel = computed(() => buildToolLabel(PANEL_LABEL_IDS.FAVORITES_LABEL, localize("Favorites")));
@@ -84,15 +87,14 @@ const collapsedLabels = computed(() => ({
 }));
 
 const recentToolsInPanel = computed(() =>
-    recentToolIdsToShow.value
-        .map((toolId) => props.localToolsById[toolId])
-        .filter((tool): tool is Tool => Boolean(tool)),
+    recentToolIdsToShow.value.map((toolId) => props.localToolsById[toolId]).filter((tool) => !!tool),
 );
 
 /**
  * Flatten the parent's panel sections into a single ordered list of tool ids.
  * Used to keep tools inside favorite-tag / favorite-EDAM sections in the same
- * order they appear in the default panel view.
+ * order they appear in the default panel view, while excluding older installed
+ * versions that are present in the all-tools cache but not the panel.
  */
 const orderedToolIds = computed(() => {
     const ordered: string[] = [];
@@ -123,7 +125,6 @@ const orderedToolIds = computed(() => {
         }
     }
 
-    Object.keys(props.localToolsById).forEach(appendToolId);
     return ordered;
 });
 
@@ -432,11 +433,12 @@ function onLabelToggle(labelId: string) {
 <template>
     <div class="toolMenu" data-description="my-tools-landing">
         <ToolPanelLabel
-            v-if="recentToolIdsToShow.length > 0"
+            v-if="recentToolsInPanel.length > 0"
             :definition="recentToolsLabel"
             :collapsed="collapsedLabels[PANEL_LABEL_IDS.RECENT_TOOLS_LABEL]"
             @toggle="onLabelToggle" />
-        <template v-if="recentToolIdsToShow.length > 0 && !recentToolsCollapsed">
+
+        <template v-if="recentToolsInPanel.length > 0 && !recentToolsCollapsed">
             <ToolItem
                 v-for="tool in recentToolsInPanel"
                 :key="`recent-tool-${tool.id}`"

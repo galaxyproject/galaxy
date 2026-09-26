@@ -5,7 +5,7 @@ Uses pydantic-ai output functions to either:
 - Answer general Galaxy questions directly (returns str)
 - Hand off to error_analysis for job debugging
 - Hand off to custom_tool for explicit tool creation requests
-- Hand off to tool_recommendation for tool discovery
+- Hand off to tool_recommendation for tool and IWC workflow discovery
 - Hand off to gtn_training for tutorial and learning requests
 
 Also exposes a small set of @agent.tool fast-path tools for read-only browsing
@@ -15,11 +15,11 @@ router can answer those directly without round-tripping through a specialist.
 
 import json
 import logging
+import re
 from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import anyio
@@ -27,6 +27,7 @@ from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
     RunContext,
+    UnexpectedModelBehavior,
 )
 
 from galaxy.agents.operations import AgentOperationsManager
@@ -47,7 +48,17 @@ class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
-    _handoff_context: Optional[dict[str, Any]] = None
+    _handoff_context: dict[str, Any] | None = None
+
+    # The current message drives routing, plus the most recent conversation turn(s) so an
+    # elliptical follow-up ("what about a workflow for this?", or the answer to a clarifying
+    # question -- "the second one") keeps its referent. Capped at ROUTING_HISTORY_TURNS:
+    # forwarding the whole deep conversation degrades routing -- it biases the model toward
+    # answering directly (the #22791 finding) -- but forwarding the last turn does not. It's
+    # the whole turn, request and reply: a bare user message with no assistant reply reads as
+    # a dangling/compound request and mis-routes. Specialists always receive the full
+    # conversation_history via the handoff context.
+    ROUTING_HISTORY_TURNS = 1
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         model_name = self._get_agent_config("model", "")
@@ -57,6 +68,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
+                retries=self._get_retries(),
             )
 
         error_handoff = self._create_error_analysis_handoff()
@@ -66,6 +78,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         next_step_handoff = self._create_next_step_advisor_handoff()
         orchestrator_handoff = self._create_orchestrator_handoff()
         gtn_handoff = self._create_gtn_training_handoff()
+        clarification_output = self._create_clarification_output()
 
         agent: Agent[GalaxyAgentDependencies, str] = Agent(
             self._get_model(),
@@ -78,9 +91,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 next_step_handoff,
                 orchestrator_handoff,
                 gtn_handoff,
+                clarification_output,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
+            retries=self._get_retries(),
         )
 
         self._register_fast_path_tools(agent)
@@ -222,9 +237,40 @@ class QueryRouterAgent(BaseGalaxyAgent):
             ops = _ops(ctx)
             return await anyio.to_thread.run_sync(ops.list_user_file_sources)
 
+    # Display order for the "what can you do" capability list. Only agents enabled in
+    # this deployment (and that define a capability_blurb) are listed -- so the answer
+    # never advertises a specialist that's turned off and would error on handoff.
+    # ROUTER, PAGE_ASSISTANT, and WORKFLOW_REPORT are intentionally absent: they define
+    # no user-facing capability_blurb (the router isn't a specialist; the others aren't
+    # reachable from this surface), so they never belong in this answer.
+    _CAPABILITY_DISPLAY_ORDER = (
+        AgentType.TOOL_RECOMMENDATION,
+        AgentType.HISTORY,
+        AgentType.GTN_TRAINING,
+        AgentType.ERROR_ANALYSIS,
+        AgentType.ORCHESTRATOR,
+        AgentType.CUSTOM_TOOL,
+    )
+
+    def _capabilities_section(self) -> str:
+        """Render markdown bullets for the specialist capabilities enabled here."""
+        get_blurb = self.deps.get_capability_blurb
+        if get_blurb is None:
+            return ""
+        bullets = []
+        for agent_type in self._CAPABILITY_DISPLAY_ORDER:
+            blurb = get_blurb(agent_type)
+            if blurb:
+                bullets.append(f"- {blurb}")
+        return "\n".join(bullets)
+
     def get_system_prompt(self) -> str:
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
-        return prompt_path.read_text()
+        # Strip any leading whitespace a markdown formatter may have added before the
+        # placeholder (prettier indents it under the preceding list item) so the injected
+        # bullets align at the list's top level. lambda replacement avoids backslash escapes.
+        section = self._capabilities_section()
+        return re.sub(r"[ \t]*\{\{CAPABILITIES\}\}", lambda _m: section, prompt_path.read_text())
 
     def _serialize_handoff(self, response: AgentResponse, target_agent: str) -> str:
         """Wrap a delegated agent's response in JSON to pass through the router's output function."""
@@ -320,13 +366,14 @@ class QueryRouterAgent(BaseGalaxyAgent):
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
         ) -> str:
-            """Route to tool recommendation agent for finding Galaxy tools.
+            """Route to tool recommendation agent for finding Galaxy tools and IWC workflows.
 
             Use this when the user:
             - Asks what tool to use for a task ("what tool aligns reads?")
             - Wants to find tools for a specific analysis type
             - Needs help discovering available tools
             - Asks "is there a tool that does X?"
+            - Asks to import or find a workflow from IWC for an analysis (it searches IWC and surfaces an import action)
 
             Do NOT use for:
             - How to USE a specific tool (answer directly)
@@ -334,7 +381,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             - Job errors (use hand_off_to_error_analysis)
 
             Args:
-                query: The tool discovery question
+                query: The tool or workflow discovery question
             """
             return await self._execute_handoff(ctx, AgentType.TOOL_RECOMMENDATION, query)
 
@@ -439,41 +486,107 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return hand_off_to_gtn_training
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    def _create_clarification_output(self):
+        async def ask_for_clarification(
+            ctx: RunContext[GalaxyAgentDependencies],
+            question: str,
+            options: list[str] | None = None,
+        ) -> str:
+            """Ask the user ONE concise clarifying question when the request is too ambiguous
+            or underspecified to route or answer confidently.
+
+            Use this ONLY when you are genuinely uncertain, e.g.:
+            - The message names no analysis, tool, dataset, or goal ("Can you help with my data?")
+            - A failure is reported with no error text, exit code, or tool name ("It keeps failing")
+            - The intent could plausibly mean several different things -- a tool, a tutorial,
+              usage help, or debugging ("I need help with variant calling")
+            - A follow-up's referent cannot be resolved even from the recent turn provided
+
+            Do NOT use this when the current message is clear enough to route or answer on its
+            own -- a confident route or answer is always better than an unnecessary question.
+
+            Args:
+                question: the single concise clarifying question to ask the user
+                options: optional 2-4 short answers the user can pick from (e.g.
+                    ["Tool recommendation", "Tutorial"]); rendered as quick-reply buttons
+            """
+            return json.dumps({"__clarification__": True, "question": question, "options": options or []})
+
+        return ask_for_clarification
+
+    @staticmethod
+    def _turn_start_indices(full_history: list) -> list[int]:
+        """Indices in ``full_history`` where a new user turn begins (a user-prompt part)."""
+
+        def _is_turn_start(message: Any) -> bool:
+            return any(getattr(part, "part_kind", "") == "user-prompt" for part in getattr(message, "parts", ()))
+
+        return [i for i, message in enumerate(full_history) if _is_turn_start(message)]
+
+    def _routing_history(self, full_history: list | None) -> list | None:
+        """The most recent ``ROUTING_HISTORY_TURNS`` turn(s) of ``full_history``, or None when
+        capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale."""
+        if not full_history or self.ROUTING_HISTORY_TURNS <= 0:
+            return None
+        turn_starts = self._turn_start_indices(full_history)
+        if not turn_starts:
+            return None
+        if len(turn_starts) > self.ROUTING_HISTORY_TURNS:
+            return full_history[turn_starts[-self.ROUTING_HISTORY_TURNS] :]
+        return full_history
+
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
 
         try:
-            message_history = self._extract_message_history(context)
+            full_history = self._extract_message_history(context)
+            # Route on the current message plus the most recent turn(s) (see ROUTING_HISTORY_TURNS).
+            # The responding_to_clarification context flag is intentionally not consulted: forwarding
+            # the last turn handles clarification answers and ordinary follow-ups the same way.
+            message_history = self._routing_history(full_history)
             if message_history:
-                log.info(f"Router: passing {len(message_history)} prior messages as message_history")
+                log.info(f"Router: routing on the current message plus the last turn ({len(message_history)} msgs)")
+            elif full_history:
+                log.info(f"Router: routing on the current message, withholding {len(full_history)} history messages")
             else:
                 log.info("Router: processing query with no conversation history")
 
             previous_handoff_context = self._handoff_context
             self._handoff_context = context.copy() if context else {}
             try:
-                result = await self._run_with_retry(query, message_history=message_history)
+                # Fold the active interface context (the tool/dataset/etc. the user is
+                # viewing) into the prompt for queries the router answers directly --
+                # history rides the separate message_history channel, so strip it here.
+                prompt = self._prepare_prompt(query, self._strip_history_from_context(context or {}))
+                result = await self._run_with_retry(prompt, message_history=message_history)
             finally:
                 self._handoff_context = previous_handoff_context
             content = extract_result_content(result)
 
             try:
-                handoff_data = json.loads(content)
-                if handoff_data.get("__handoff__"):
-                    metadata = handoff_data.get("metadata", {})
-                    if handoff_data.get("handoff_info"):
-                        metadata["handoff_info"] = handoff_data["handoff_info"]
+                parsed = json.loads(content)
+                if parsed.get("__clarification__"):
                     return AgentResponse(
-                        content=handoff_data["content"],
-                        confidence=ConfidenceLevel(handoff_data.get("confidence", "medium")),
-                        agent_type=handoff_data.get("agent_type", self.agent_type),
-                        suggestions=handoff_data.get("suggestions", []),
+                        content=parsed.get("question", content),
+                        confidence=ConfidenceLevel.MEDIUM,
+                        agent_type="clarification",
+                        metadata={"method": "clarification", "options": parsed.get("options", [])},
+                    )
+                if parsed.get("__handoff__"):
+                    metadata = parsed.get("metadata", {})
+                    if parsed.get("handoff_info"):
+                        metadata["handoff_info"] = parsed["handoff_info"]
+                    return AgentResponse(
+                        content=parsed["content"],
+                        confidence=ConfidenceLevel(parsed.get("confidence", "medium")),
+                        agent_type=parsed.get("agent_type", self.agent_type),
+                        suggestions=parsed.get("suggestions", []),
                         metadata=metadata,
                     )
             except (json.JSONDecodeError, TypeError, KeyError, ValidationError) as e:
-                log.debug(f"Router: Response not a handoff (parse failed: {e}), treating as direct response")
+                log.debug(f"Router: Response not a handoff/clarification (parse failed: {e}), treating as direct")
 
             return self._build_response(
                 content=content,
@@ -483,11 +596,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 query=query,
             )
 
-        except (OSError, ValueError) as e:
+        except (UnexpectedModelBehavior, OSError, ValueError) as e:
             log.warning(f"Router agent error, using fallback: {e}")
             return self._handle_fallback(query, context, str(e))
 
-    def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
+    def _handle_fallback(self, query: str, context: dict[str, Any] | None, error_msg: str) -> AgentResponse:
         query_lower = query.lower()
 
         # Citation requests can be answered without AI
@@ -515,23 +628,19 @@ For specific tools, please also cite the individual tool publications.""",
         )
 
     def _get_simple_system_prompt(self) -> str:
+        # Fallback prompt for models that can't do tool calling (e.g. DeepSeek): this
+        # router has no handoffs and no read-only lookup tools, so it can ONLY hold a
+        # conversation. Keep the prompt honest about that -- it must not imply it can
+        # inspect the user's Galaxy or perform actions, since it genuinely cannot.
         return """You are Galaxy's AI assistant. You ONLY answer questions about the Galaxy platform, Galaxy tools, and scientific data analysis (genomics, proteomics, bioinformatics, etc.).
 
-CRITICAL: Never guess or make up information. If you don't know something, say so. Never fabricate tool names, parameters, or scientific claims. It's better to admit uncertainty than provide incorrect information.
+On this connection you can only hold a conversation: you answer questions and guide the user from your own knowledge -- explaining how Galaxy and its tools work, interpreting error messages they paste in, and recommending analysis approaches. You cannot look anything up in their Galaxy (you can't list or read their histories, workflows, datasets, or installed tools), you cannot run tools, jobs, or workflows, you cannot upload data, and you cannot change any settings. When something needs their data or an action, explain how they can do it themselves in Galaxy or point them to the Galaxy Training Network (https://training.galaxyproject.org/).
 
-For general Galaxy questions: Answer directly and helpfully.
+CRITICAL: Never guess or make up information. Never fabricate tool names, parameters, or scientific claims. If you don't know something, say so -- it is better to admit uncertainty than to provide incorrect information.
 
-For job failures or errors: Explain what might have gone wrong and suggest solutions.
+If asked what you can do, describe only this: answering questions about Galaxy, tool usage, and bioinformatics, and guiding the user through how to do things themselves. Do not claim to inspect their data, run anything, or build tools for them.
 
-For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
-
-For history analysis requests: Explain that you can help summarize their analysis, generate methods sections, or describe what was done in a history.
-
-For training/tutorial requests: Search the Galaxy Training Network for relevant tutorials.
-
-For off-topic questions: Politely explain you can only help with Galaxy and scientific analysis.
-
-When uncertain, suggest the user check Galaxy documentation or the Galaxy Training Network (https://training.galaxyproject.org/)."""
+For off-topic questions (general coding, non-scientific topics), politely explain that you can only help with Galaxy and scientific analysis."""
 
     def _get_fallback_content(self) -> str:
         return (

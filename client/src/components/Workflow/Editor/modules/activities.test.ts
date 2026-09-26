@@ -60,53 +60,56 @@ describe("useWorkflowActivities", () => {
 
 describe("useSpecialWorkflowActivities", () => {
     function setUpBestPractices(hasInvalidConnections = false, lintData = makeLintData()) {
-        const { specialWorkflowActivities, exitWorkflowActivity } = useSpecialWorkflowActivities(
+        const { bestPracticesActivity, exitWorkflowActivity } = useSpecialWorkflowActivities(
             shallowRef({ hasInvalidConnections, lintData }),
         );
-        const bestPracticesActivity = specialWorkflowActivities.value.find((a) => a.id === "workflow-best-practices")!;
         return { bestPracticesActivity, exitWorkflowActivity };
     }
 
     describe("Best Practices indicator", () => {
         it("is undefined when there are no issues", () => {
-            expect(setUpBestPractices().bestPracticesActivity.indicator).toBeUndefined();
+            expect(setUpBestPractices().bestPracticesActivity.value.indicator).toBeUndefined();
         });
 
         it("shows remaining critical count when priority issues are unresolved", () => {
-            expect(setUpBestPractices(false, makeLintData(3, 1)).bestPracticesActivity.indicator).toBe(2);
+            expect(setUpBestPractices(false, makeLintData(3, 1)).bestPracticesActivity.value.indicator).toBe(2);
         });
 
         it("shows true when only minor issues remain", () => {
-            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 0)).bestPracticesActivity.indicator).toBe(true);
+            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 0)).bestPracticesActivity.value.indicator).toBe(
+                true,
+            );
         });
 
         it("uses danger variant for numeric indicator and primary for icon indicator", () => {
-            expect(setUpBestPractices(false, makeLintData(1, 0)).bestPracticesActivity.indicatorVariant).toBe("danger");
-            expect(setUpBestPractices(false, makeLintData(0, 0, 1, 0)).bestPracticesActivity.indicatorVariant).toBe(
-                "primary",
+            expect(setUpBestPractices(false, makeLintData(1, 0)).bestPracticesActivity.value.indicatorVariant).toBe(
+                "danger",
             );
+            expect(
+                setUpBestPractices(false, makeLintData(0, 0, 1, 0)).bestPracticesActivity.value.indicatorVariant,
+            ).toBe("primary");
         });
     });
 
     describe("Best Practices tooltip", () => {
         it("shows default tooltip when no issues remain", () => {
-            expect(setUpBestPractices().bestPracticesActivity.tooltip).toBe("Test workflow for best practices");
+            expect(setUpBestPractices().bestPracticesActivity.value.tooltip).toBe("Test workflow for best practices");
         });
 
         it("uses singular wording for exactly 1 critical issue", () => {
-            expect(setUpBestPractices(false, makeLintData(1, 0)).bestPracticesActivity.tooltip).toBe(
+            expect(setUpBestPractices(false, makeLintData(1, 0)).bestPracticesActivity.value.tooltip).toBe(
                 "1 critical best practice issue remains",
             );
         });
 
         it("uses plural wording for multiple critical issues", () => {
-            expect(setUpBestPractices(false, makeLintData(3, 1)).bestPracticesActivity.tooltip).toBe(
+            expect(setUpBestPractices(false, makeLintData(3, 1)).bestPracticesActivity.value.tooltip).toBe(
                 "2 critical best practice issues remain",
             );
         });
 
         it("shows minor issue count when only minor issues remain", () => {
-            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 1)).bestPracticesActivity.tooltip).toBe(
+            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 1)).bestPracticesActivity.value.tooltip).toBe(
                 "1 minor best practice issue remains",
             );
         });

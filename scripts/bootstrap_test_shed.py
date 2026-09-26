@@ -12,7 +12,6 @@ import sys
 import tempfile
 from typing import (
     Any,
-    Optional,
 )
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
@@ -104,8 +103,8 @@ class RemoteToolShedPopulator(ToolShedPopulator):
     for tests.
     """
 
-    _categories_by_name: Optional[dict[str, Category]] = None
-    _users_by_username: Optional[dict[str, dict[str, Any]]] = None
+    _categories_by_name: dict[str, Category] | None = None
+    _users_by_username: dict[str, dict[str, Any]] | None = None
     _populators_by_username: dict[str, "RemoteToolShedPopulator"] = {}
 
     def __init__(self, admin_interactor: ShedApiInteractor, user_interactor: ShedApiInteractor):

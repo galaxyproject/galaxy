@@ -1,5 +1,6 @@
 <template>
     <div id="columns">
+        <LoadingOverlay v-if="props.loading" />
         <div id="center" class="d-flex flex-column h-100 w-100">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -17,9 +18,9 @@
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
-                        <b-button v-g-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
-                        </b-button>
+                        </GButton>
                     </div>
                 </div>
             </div>
@@ -53,15 +54,18 @@ import { computed, ref } from "vue";
 import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
     mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
+    loading?: boolean;
     steps?: Record<string, any>;
     title: string;
     hideToolbox?: boolean;

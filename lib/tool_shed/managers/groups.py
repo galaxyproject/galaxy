@@ -22,6 +22,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from tool_shed.context import ProvidesUserContext
 from tool_shed.webapp.model import Group
 
 log = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ class GroupManager:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get(self, trans, decoded_group_id=None, name=None):
+    def get(self, trans: ProvidesUserContext, decoded_group_id=None, name=None):
         """
         Get the group from the DB based on its ID or name.
 
@@ -61,7 +62,7 @@ class GroupManager:
             raise InternalServerError("Error loading from the database.")
         return group
 
-    def create(self, trans, name, description=""):
+    def create(self, trans: ProvidesUserContext, name, description=""):
         """
         Create a new group.
         """
@@ -76,7 +77,7 @@ class GroupManager:
             trans.sa_session.commit()
             return group
 
-    def update(self, trans, group, name=None, description=None):
+    def update(self, trans: ProvidesUserContext, group, name=None, description=None):
         """
         Update the given group
         """
@@ -96,7 +97,7 @@ class GroupManager:
             trans.sa_session.commit()
         return group
 
-    def delete(self, trans, group, undelete=False):
+    def delete(self, trans: ProvidesUserContext, group, undelete=False):
         """
         Mark given group deleted/undeleted based on the flag.
         """
@@ -110,7 +111,7 @@ class GroupManager:
         trans.sa_session.commit()
         return group
 
-    def list(self, trans, deleted=False):
+    def list(self, trans: ProvidesUserContext, deleted=False):
         """
         Return a list of groups from the DB.
 

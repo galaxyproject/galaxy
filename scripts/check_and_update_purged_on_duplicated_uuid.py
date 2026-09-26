@@ -28,7 +28,6 @@ from galaxy.model.orm.scripts import get_config
 from galaxy.objectstore import ObjectStore
 
 if __name__ == "__main__":
-
     from galaxy.celery import tasks  # noqa: F401
 
     config = get_config(sys.argv)

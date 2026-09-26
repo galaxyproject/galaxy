@@ -2,6 +2,11 @@
   "name": "@galaxyproject/galaxy-api-client",
   "version": "25.0.0-dev.0",
   "description": "A client library for the Galaxy API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/galaxyproject/galaxy.git",
+    "directory": "client/packages/api-client"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

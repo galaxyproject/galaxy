@@ -1,7 +1,6 @@
 import os
 from typing import (
     NamedTuple,
-    Optional,
 )
 
 from galaxy.datatypes import (
@@ -16,11 +15,11 @@ class UploadProblemException(Exception):
 
 
 class HandleUploadResponse(NamedTuple):
-    stdout: Optional[str]
+    stdout: str | None
     ext: str
     datatype: data.Data
     is_binary: bool
-    converted_path: Optional[str]
+    converted_path: str | None
     converted_newlines: bool
     converted_spaces: bool
 
@@ -30,8 +29,8 @@ def handle_upload(
     path: str,  # dataset.path
     requested_ext: str,  # dataset.file_type
     name: str,  # dataset.name,
-    tmp_prefix: Optional[str],
-    tmp_dir: Optional[str],
+    tmp_prefix: str | None,
+    tmp_dir: str | None,
     check_content: bool,
     link_data_only: bool,
     in_place: bool,

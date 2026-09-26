@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faDatabase, faHistory, faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
 import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
@@ -9,6 +10,7 @@ import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty }
 import type { ChatMessage } from "./chatTypes";
 
 import ActionCard from "./ActionCard.vue";
+import ClarificationCard from "./ClarificationCard.vue";
 
 const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
@@ -41,7 +43,11 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "feedback", messageId: string, value: "up" | "down"): void;
     (e: "handle-action", action: ActionSuggestion, agentResponse: AgentResponse): void;
+    (e: "select-clarification-option", option: string): void;
 }>();
+
+const isClarification = computed(() => props.message.agentType === "clarification");
+const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
 </script>
 
 <template>
@@ -84,11 +90,16 @@ const emit = defineEmits<{
                     </span>
                 </div>
                 <div class="response-main">
+                    <ClarificationCard
+                        v-if="isClarification"
+                        :question="props.message.content"
+                        :options="clarificationOptions"
+                        @select-option="(option) => emit('select-clarification-option', option)" />
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div class="response-content" v-html="props.renderMarkdown(props.message.content)" />
+                    <div v-else class="response-content" v-html="props.renderMarkdown(props.message.content)" />
 
                     <ActionCard
-                        v-if="props.message.suggestions?.length"
+                        v-if="!isClarification && props.message.suggestions?.length"
                         :suggestions="props.message.suggestions"
                         :processing-action="props.processingAction"
                         @handle-action="

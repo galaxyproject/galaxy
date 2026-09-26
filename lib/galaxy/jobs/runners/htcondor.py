@@ -364,8 +364,7 @@ class _HTCondorSubprocessClient(_HTCondorClient):
 
     def _helper_failure_message_locked(self, message: str) -> str:
         # Stderr is consumed by the drain thread and buffered in _stderr_lines.
-        recent = "\n".join(list(self._stderr_lines)[-10:]).strip()
-        if recent:
+        if recent := "\n".join(list(self._stderr_lines)[-10:]).strip():
             return f"{message}: {recent}"
         return message
 
@@ -697,11 +696,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                         cjs.close_event_log()
                         self.work_queue.put((self.fail_job, cjs))
                         continue
-                    external_metadata = not asbool(
-                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
-                    )
-                    if external_metadata:
-                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{job_id}) job has completed")
                     cjs.close_event_log()
                     self.work_queue.put((self.finish_job, cjs))
@@ -724,8 +718,7 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                     # generic held_count escalation logic.
                     if hold_reason_code in _HOLD_CODE_MEMORY:
                         log.info(
-                            f"({galaxy_id_tag}/{job_id}) job held for memory limit "
-                            f"(HoldReasonCode={hold_reason_code})"
+                            f"({galaxy_id_tag}/{job_id}) job held for memory limit (HoldReasonCode={hold_reason_code})"
                         )
                         cjs.fail_message = _MEMORY_LIMIT_HOLD_MSG
                         cjs.runner_state = runner_states.MEMORY_LIMIT_REACHED

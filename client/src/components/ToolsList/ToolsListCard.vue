@@ -17,7 +17,6 @@ import { BPopover, BSkeleton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 import { useToast } from "@/composables/toast";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -28,6 +27,7 @@ import { useToolsListCardActions } from "./useToolsListCardActions";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GCard from "../Common/GCard.vue";
+import ToolHelp from "../Tool/ToolHelp.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 
 type OntologyBadge = {
@@ -45,6 +45,7 @@ interface Props {
     description?: string;
     summary?: string;
     help?: string;
+    helpFormat?: string;
     version?: string;
     link?: string;
     workflowCompatible: boolean;
@@ -61,6 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
     description: undefined,
     summary: undefined,
     help: undefined,
+    helpFormat: "restructuredtext",
     version: undefined,
     link: undefined,
     workflowCompatible: false,
@@ -99,15 +101,6 @@ const edamTopicsBadges = computed(() => getOntologyBadges("ontology:edam_topics"
 
 const showHelp = ref(false);
 const showPopover = ref(false);
-
-const formattedToolHelp = computed(() => {
-    if (showHelp.value) {
-        const { formattedContent } = useFormattedToolHelp(props.help);
-        return formattedContent.value;
-    } else {
-        return "";
-    }
-});
 
 /** We add double quotes to the ontology id filter as well since the backend Whoosh search
  * requires it for exact matches, and the `Filtering` class only does single quotes. */
@@ -396,12 +389,9 @@ const {
                     Hide tool help
                 </GLink>
 
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div
-                    v-if="showHelp"
-                    data-description="tools list tool help"
-                    class="mt-2"
-                    v-html="formattedToolHelp"></div>
+                <div v-if="showHelp" data-description="tools list tool help" class="mt-2">
+                    <ToolHelp :content="props.help ?? ''" :format="props.helpFormat" />
+                </div>
             </div>
         </template>
 

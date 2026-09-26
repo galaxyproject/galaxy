@@ -5,10 +5,12 @@
  */
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { applySectionPatches, diffStats, type SectionChange, sectionDiff } from "./sectionDiffUtils";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     original: string;
@@ -81,27 +83,28 @@ function sectionLabel(sc: SectionChange): string {
             <span
                 class="patch-actions"
                 :title="stale ? 'Document has changed and this suggestion no longer applies.' : undefined">
-                <BButton variant="link" size="sm" :disabled="stale" @click="selectAll">All</BButton>
-                <BButton variant="link" size="sm" :disabled="stale" @click="selectNone">None</BButton>
-                <BButton
-                    variant="success"
-                    size="sm"
+                <GButton transparent color="blue" size="small" :disabled="stale" @click="selectAll">All</GButton>
+                <GButton transparent color="blue" size="small" :disabled="stale" @click="selectNone">None</GButton>
+                <GButton
+                    color="green"
+                    size="small"
                     :disabled="stale || acceptedCount === 0"
                     data-description="apply selected patches"
                     @click="applySelected">
                     <FontAwesomeIcon :icon="faCheck" />
                     Apply ({{ acceptedCount }})
-                </BButton>
-                <BButton
-                    variant="outline-danger"
-                    size="sm"
+                </GButton>
+                <GButton
+                    color="red"
+                    outline
+                    size="small"
                     class="ml-1"
                     :disabled="stale"
                     data-description="reject all patches"
                     @click="emit('reject')">
                     <FontAwesomeIcon :icon="faTimes" />
                     Reject
-                </BButton>
+                </GButton>
             </span>
         </div>
         <div class="patch-sections">

@@ -11,7 +11,6 @@ in prose form). Scored two ways:
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -95,8 +94,8 @@ Return a number; no commentary.
 
 
 def error_analysis_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the error_analysis Dataset.
 

@@ -2,7 +2,10 @@ import json
 import logging
 import time
 from typing import TYPE_CHECKING
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import jwt
 from jwt import InvalidTokenError
@@ -13,6 +16,7 @@ from social_core.actions import (
     do_disconnect,
 )
 from social_core.backends.utils import get_backend
+from social_core.pipeline.user import create_user as social_create_user
 from social_core.strategy import BaseStrategy
 from social_core.utils import (
     module_member,
@@ -53,6 +57,7 @@ if TYPE_CHECKING:
     from social_core.strategy import HttpResponseProtocol
 
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +88,7 @@ BACKENDS = {
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
+    "helmholtz": "social_core.backends.helmholtz.HelmholtzOpenIdConnect",
     "oidc": "galaxy.authnz.oidc.GalaxyOpenIdConnect",
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
@@ -100,6 +106,7 @@ BACKENDS_NAME = {
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
+    "helmholtz": "helmholtz",
     "oidc": "oidc",
     "tapis": "tapis",
     "keycloak": "keycloak",
@@ -139,7 +146,7 @@ AUTH_PIPELINE = (
     # redirect to confirmation page instead of creating user immediately.
     "galaxy.authnz.psa_authnz.check_user_creation_confirmation",
     # Create a user account if we haven't found one yet.
-    "social_core.pipeline.user.create_user",
+    "galaxy.authnz.psa_authnz.create_user_and_activate",
     # Create the record that associated the social account with this user.
     "social_core.pipeline.social_auth.associate_user",
     # Populate the extra_data field in the social record with the values
@@ -174,7 +181,7 @@ class PSAAuthnz(IdentityProvider):
         auth_pipeline = app_config.oidc_auth_pipeline or AUTH_PIPELINE
         # Add extra steps to the auth pipeline if configured.
         if app_config.oidc_auth_pipeline_extra:
-            auth_pipeline = auth_pipeline + tuple(app_config.oidc_auth_pipeline_extra)
+            auth_pipeline = tuple(auth_pipeline) + tuple(app_config.oidc_auth_pipeline_extra)
         self.config["SOCIAL_AUTH_PIPELINE"] = auth_pipeline
         self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
         self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
@@ -200,6 +207,17 @@ class PSAAuthnz(IdentityProvider):
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER"]
             if "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
+        elif (
+            "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
+            and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
+        ):
+            # Google secondary AuthZ needs the cloud-platform scope. Request it
+            # via the SCOPE setting (which social-core combines with the backend's
+            # DEFAULT_SCOPE) instead of mutating the shared class-level
+            # DEFAULT_SCOPE, which would accumulate the scope across logins.
+            scope = list(self.config.get(setting_name("SCOPE")) or [])
+            scope.append("https://www.googleapis.com/auth/cloud-platform")
+            self.config[setting_name("SCOPE")] = scope
 
     def _is_oidc_backend(self) -> bool:
         """
@@ -223,11 +241,11 @@ class PSAAuthnz(IdentityProvider):
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")  # Azure/Tapis
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
-        self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
         self.config["LABEL"] = oidc_backend_config.get("label", self.config["provider"].capitalize())
 
         # Galaxy-specific pipeline settings (affect all backends)
         self.config["REQUIRE_CREATE_CONFIRMATION"] = oidc_backend_config.get("require_create_confirmation", False)
+        self.config["REQUIRE_USER_ACTIVATION"] = oidc_backend_config.get("require_user_activation", False)
 
         # Optional generic settings
         if oidc_backend_config.get("prompt") is not None:
@@ -240,6 +258,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
         if oidc_backend_config.get("domain") is not None:
             self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
+        if oidc_backend_config.get("extra_scopes") is not None:
+            self.config[setting_name("SCOPE")] = oidc_backend_config.get("extra_scopes")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():
@@ -257,6 +277,19 @@ class PSAAuthnz(IdentityProvider):
         backends = self._get_helper("AUTHENTICATION_BACKENDS")
         backend = get_backend(backends, BACKENDS_NAME[self.config["provider"]])
         return backend(strategy, redirect_uri)
+
+    def _get_user_id_token(self, user):
+        if user is None:
+            return None
+
+        provider_name = BACKENDS_NAME[self.config["provider"]]
+        for social_auth in user.social_auth:
+            if social_auth.provider != provider_name:
+                continue
+            extra_data = social_auth.extra_data or {}
+            return extra_data.get("id_token")
+
+        return None
 
     def _login_user(self, backend, user, social_user):
         self.config["user"] = user
@@ -279,23 +312,19 @@ class PSAAuthnz(IdentityProvider):
         extra_data["expires"] = int(expires - time.time())
         user_authnz_token.set_extra_data(extra_data)
 
-    def refresh(self, trans, user_authnz_token):
+    def refresh(self, trans: "GalaxyWebTransaction", user_authnz_token):
         if (
             not user_authnz_token
             or not user_authnz_token.extra_data
             or "refresh_token" not in user_authnz_token.extra_data
         ):
             return False
-        # refresh tokens if they reached their half lifetime
-        expires = self._try_to_locate_refresh_token_expiration(user_authnz_token.extra_data)
+        # refresh tokens if they reached their half lifetime or are already expired
+        expires = self._try_to_locate_token_expiration(user_authnz_token.extra_data)
         if not expires:
             log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
             return False
-        if (
-            int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2
-            <= int(time.time())
-            < int(user_authnz_token.extra_data["auth_time"]) + int(expires)
-        ):
+        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)
@@ -305,27 +334,16 @@ class PSAAuthnz(IdentityProvider):
             return True
         return False
 
-    def _try_to_locate_refresh_token_expiration(self, extra_data):
+    def _try_to_locate_token_expiration(self, extra_data):
         return locate_token_expiration(extra_data)
 
-    def authenticate(self, trans, idphint=None) -> "HttpResponseProtocol":
+    def authenticate(self, trans: "GalaxyWebTransaction", idphint=None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        backend.DEFAULT_SCOPE = backend.DEFAULT_SCOPE or []
-        if (
-            backend.name is BACKENDS_NAME["google"]
-            and "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
-            and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
-        ):
-            backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
-
-        if self.config["EXTRA_SCOPES"] is not None:
-            backend.DEFAULT_SCOPE.extend(self.config["EXTRA_SCOPES"])
-
         return do_auth(backend)
 
-    def callback(self, state_token, authz_code, trans, login_redirect_url):
+    def callback(self, state_token, authz_code, trans: "GalaxyWebTransaction", login_redirect_url):
         on_the_fly_config(trans.sa_session)
         # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
         # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
@@ -385,7 +403,9 @@ class PSAAuthnz(IdentityProvider):
 
         return redirect_url, user
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
+    def disconnect(
+        self, provider, trans: "GalaxyWebTransaction", disconnect_redirect_url=None, email=None, association_id=None
+    ):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("DISCONNECT_REDIRECT_URL")] = (
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
@@ -398,7 +418,7 @@ class PSAAuthnz(IdentityProvider):
             return True, "", response_url
         return response.get("success", False), response.get("message", ""), ""
 
-    def logout(self, trans, post_user_logout_href=None):
+    def logout(self, trans: "GalaxyWebTransaction", post_user_logout_href=None):
         """
         Logout from the identity provider.
 
@@ -421,11 +441,19 @@ class PSAAuthnz(IdentityProvider):
                 end_session_endpoint = oidc_config.get("end_session_endpoint")
 
                 if end_session_endpoint:
-                    # Construct logout URL with optional redirect_uri
+                    logout_params = {}
+
+                    # Provide the current ID token so providers such as Keycloak
+                    # can complete RP-initiated logout without showing a confirmation page.
+                    if id_token := self._get_user_id_token(trans.user):
+                        logout_params["id_token_hint"] = id_token
+
                     if post_user_logout_href:
-                        logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
-                    else:
-                        logout_url = end_session_endpoint
+                        logout_params["post_logout_redirect_uri"] = post_user_logout_href
+
+                    logout_url = end_session_endpoint
+                    if logout_params:
+                        logout_url = f"{logout_url}?{urlencode(logout_params)}"
 
                     return logout_url
                 else:
@@ -540,10 +568,8 @@ class PSAAuthnz(IdentityProvider):
                 count += 1
             username = f"{username}{count}"
 
-        # Create the user
-        user = trans.app.user_manager.create(email=email, username=username)
-        if trans.app.config.user_activation_on:
-            trans.app.user_manager.send_activation_email(trans, email, username)
+        # Create the user and apply the activation policy
+        user = create_and_activate_oidc_user(trans, email, username, self.config["REQUIRE_USER_ACTIVATION"])
 
         # Create the UserAuthnzToken record
         user_id = userinfo.get("sub")
@@ -637,6 +663,64 @@ def on_the_fly_config(sa_session):
     PSANonce.sa_session = sa_session
     PSAPartial.sa_session = sa_session
     PSAAssociation.sa_session = sa_session
+
+
+def create_user_and_activate(strategy=None, details=None, backend=None, user=None, *args, **kwargs):
+    """Pipeline step: let PSA create the user, then apply Galaxy's OIDC activation policy.
+
+    Replaces ``social_core.pipeline.user.create_user`` in ``AUTH_PIPELINE``. The
+    deferred (``require_create_confirmation``) path does not go through the pipeline;
+    it calls :func:`create_and_activate_oidc_user` instead. Both funnel the activation
+    decision through :func:`apply_user_activation_policy`.
+    """
+    result = social_create_user(strategy, details, backend, user, *args, **kwargs)
+    if not result or not result.get("is_new"):
+        return result
+
+    # GALAXY_TRANS is set by callback() before the pipeline runs, and PSA always
+    # returns the created user for a new association, so both are invariants here.
+    trans = strategy.config["GALAXY_TRANS"]
+    created_user = result["user"]
+    apply_user_activation_policy(trans, created_user, strategy.config.get("REQUIRE_USER_ACTIVATION", False))
+    return result
+
+
+def create_and_activate_oidc_user(
+    trans: "ProvidesAppContext", email: str, username: str, require_user_activation: bool
+) -> User:
+    """Create a Galaxy user for an OIDC login, routing activation through the user manager.
+
+    Used by the deferred (``require_create_confirmation``) creation path, which builds the
+    user via ``user_manager.create``. Unless the provider requires activation, the
+    IdP-verified email is trusted and the account is activated immediately. The normal
+    login path instead lets ``social_core`` create the user (outside the user manager) and
+    applies :func:`apply_user_activation_policy` to the result.
+    """
+    return trans.app.user_manager.create(
+        email=email,
+        username=username,
+        trans=trans,
+        trusted_email=not require_user_activation,
+        send_activation_email=require_user_activation,
+    )
+
+
+def apply_user_activation_policy(trans: "ProvidesAppContext", user: User, require_user_activation: bool) -> None:
+    """Activation authority for the pipeline path, where ``social_core`` already created the user.
+
+    ``user_manager.create`` handles activation for users it creates (see
+    :func:`create_and_activate_oidc_user`), but the normal login pipeline creates the user
+    through ``social_core``'s storage adapter, so its activation state is set here instead.
+    When the Galaxy instance requires activation (``user_activation_on``) *and* the provider
+    opts in (``require_user_activation``), the user is left inactive and sent an activation
+    email; otherwise the IdP-verified email is trusted and the account is activated immediately.
+    """
+    requires_activation = trans.app.config.user_activation_on and require_user_activation
+    user.active = not requires_activation
+    trans.sa_session.add(user)
+    trans.sa_session.commit()
+    if requires_activation:
+        trans.app.user_manager.send_activation_email(trans, user.email, user.username)
 
 
 def contains_required_data(response=None, is_new=False, backend=None, **kwargs):
@@ -791,7 +875,7 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
         _send_oidc_profile_update_notification(trans, user, updates)
 
 
-def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> None:
+def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, updates: list[str]) -> None:
     if not trans.app.notification_manager.notifications_enabled:
         return
     try:
@@ -1011,7 +1095,7 @@ def check_user_creation_confirmation(
     and this is a new user (no existing Galaxy account), the pipeline is interrupted
     and the user is redirected to a confirmation page with the token stored for later.
 
-    This step should be placed before create_user in the pipeline.
+    This step should be placed before create_user_and_activate in the pipeline.
     """
     require_confirmation = strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False)
 

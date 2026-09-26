@@ -5,8 +5,6 @@ from enum import Enum
 from typing import (
     cast,
     NamedTuple,
-    Optional,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -113,7 +111,7 @@ class NotificationManager:
         self,
         sa_session: galaxy_scoped_session,
         config: GalaxyAppConfiguration,
-        sse_dispatcher: Optional[SSEEventDispatcher] = None,
+        sse_dispatcher: SSEEventDispatcher | None = None,
     ):
         self.sa_session = sa_session
         self.config = config
@@ -169,7 +167,7 @@ class NotificationManager:
     def can_send_notifications_async(self):
         return self.config.enable_celery_tasks
 
-    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> tuple[Optional[Notification], int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> tuple[Notification | None, int]:
         """
         Creates a new notification and associates it with all the recipient users.
 
@@ -197,7 +195,7 @@ class NotificationManager:
         run: DatasetStorageOperationRun,
         execution_result: StorageOperationExecutionResult,
         encode_id: Callable[[int], str],
-    ) -> tuple[Optional[Notification], int]:
+    ) -> tuple[Notification | None, int]:
         """Create and send a storage operation notification to a single user."""
         encoded_history_id = encode_id(run.history_id)
         encoded_run_id = encode_id(run.id)
@@ -244,7 +242,7 @@ class NotificationManager:
 
     def send_notification_internal(
         self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+    ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
         If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
@@ -396,7 +394,7 @@ class NotificationManager:
         self._notify_broadcast_via_sse(notification)
         return notification
 
-    def get_user_notification(self, user: User, notification_id: int, active_only: Optional[bool] = True):
+    def get_user_notification(self, user: User, notification_id: int, active_only: bool | None = True):
         """
         Displays a notification belonging to the user.
         """
@@ -411,9 +409,9 @@ class NotificationManager:
     def get_user_notifications(
         self,
         user: User,
-        limit: Optional[int] = 50,
-        offset: Optional[int] = None,
-        since: Optional[datetime] = None,
+        limit: int | None = 50,
+        offset: int | None = None,
+        since: datetime | None = None,
     ):
         """
         Displays the list of notifications belonging to the user.
@@ -450,7 +448,7 @@ class NotificationManager:
         )
         return self.sa_session.execute(stmt).scalar() or 0
 
-    def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
+    def get_broadcasted_notification(self, notification_id: int, active_only: bool | None = True):
         stmt = (
             select(*self.broadcast_notification_columns)
             .select_from(Notification)
@@ -468,7 +466,7 @@ class NotificationManager:
             raise ObjectNotFound
         return result
 
-    def get_all_broadcasted_notifications(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
+    def get_all_broadcasted_notifications(self, since: datetime | None = None, active_only: bool | None = True):
         stmt = self._broadcasted_notifications_query(since, active_only)
         result = self.sa_session.execute(stmt).fetchall()
         return result
@@ -585,7 +583,7 @@ class NotificationManager:
         return CleanupResultSummary(deleted_notifications_count, deleted_associations_count)
 
     def _create_notification_model(
-        self, payload: NotificationCreateData, galaxy_url: Optional[str] = None
+        self, payload: NotificationCreateData, galaxy_url: str | None = None
     ) -> Notification:
         notification = Notification(
             payload.source,
@@ -601,8 +599,8 @@ class NotificationManager:
     def _user_notifications_query(
         self,
         user: User,
-        since: Optional[datetime] = None,
-        active_only: Optional[bool] = True,
+        since: datetime | None = None,
+        active_only: bool | None = True,
     ):
         stmt = (
             select(*self.user_notification_columns)
@@ -626,7 +624,7 @@ class NotificationManager:
 
         return stmt
 
-    def _broadcasted_notifications_query(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
+    def _broadcasted_notifications_query(self, since: datetime | None = None, active_only: bool | None = True):
         stmt = (
             select(*self.broadcast_notification_columns)
             .select_from(Notification)
@@ -778,7 +776,7 @@ class NotificationContext(BaseModel):
     variant: str
     notification_settings_url: str
     content: AnyNotificationContent
-    galaxy_url: Optional[str] = None
+    galaxy_url: str | None = None
 
 
 class EmailNotificationTemplateBuilder(Protocol):
@@ -858,9 +856,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = NewSharedItemNotificationContent.model_construct(
-            **self.notification.content
-        )  # type: ignore[arg-type]
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
     def get_subject(self) -> str:
@@ -869,7 +865,6 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
 
 
 class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,

@@ -1,5 +1,5 @@
-import { faAws, faDropbox, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
-import { faCloud, faFolderTree, faNetworkWired, type IconDefinition } from "font-awesome-6";
+import { faAws, faDropbox, faGithub, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
+import { faCloud, faFolderTree, faGlobe, faNetworkWired, type IconDefinition } from "font-awesome-6";
 
 import type { components } from "@/api/schema";
 import { contains } from "@/utils/filtering";
@@ -31,6 +31,10 @@ export const templateTypes: FileSourceTypesDetail = {
     googledrive: {
         icon: faGoogleDrive,
         message: "This is a  repository plugin that connects with the commercial Google Drive service.",
+    },
+    mavedb: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with MaveDB score set files.",
     },
     onedrive: {
         icon: faCloud,
@@ -74,18 +78,34 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with a Dataverse.org instance.",
     },
+    cbioportal: {
+        icon: faNetworkWired,
+        message: "This is a read-only file repository plugin that connects with a cBioPortal instance.",
+    },
     huggingface: {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",
+    },
+    github: {
+        icon: faGithub,
+        message: "This is a file repository plugin that connects with a GitHub repository.",
     },
     iiif: {
         icon: faNetworkWired,
         message:
             "This is a read-only file repository plugin that connects to IIIF (International Image Interoperability Framework) sources. IIIF is a framework widely used by museums, libraries, and archives for delivering high-resolution image-based cultural heritage materials.",
     },
+    ipfs: {
+        icon: faNetworkWired,
+        message: "This is a read-only file source for browsing and importing IPFS files.",
+    },
     omero: {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with an OMERO server.",
+    },
+    openbis: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with an openBIS instance.",
     },
     ssh: {
         icon: faNetworkWired,
@@ -94,6 +114,23 @@ export const templateTypes: FileSourceTypesDetail = {
     irods: {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with an iRODS server.",
+    },
+    ckan: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a CKAN instance.",
+    },
+    commoncrawl: {
+        icon: faGlobe,
+        message: "This is a read-only file repository plugin that connects with the Common Crawl archive.",
+    },
+    gitlab: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with a GitLab instance.",
+    },
+    arc: {
+        icon: faNetworkWired,
+        message:
+            "This is a file source that connects with an ARC DataHUB (GitLab) instance. Exported files are submitted as a merge request.",
     },
 };
 

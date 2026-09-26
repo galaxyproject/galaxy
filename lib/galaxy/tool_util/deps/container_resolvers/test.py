@@ -1,5 +1,5 @@
+from collections.abc import Container
 from typing import (
-    Container,
     Optional,
     TYPE_CHECKING,
 )

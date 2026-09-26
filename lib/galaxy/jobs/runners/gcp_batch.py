@@ -43,65 +43,69 @@ log = logging.getLogger(__name__)
 __all__ = ("GoogleCloudBatchJobRunner",)
 
 
+# Runner parameter specifications. The defaults defined here are served lazily by
+# the ParamsWithSpecs defaultdict via __missing__, which is only triggered by
+# subscript access (runner_params[key]) -- not by .get(). See _get_job_params.
+RUNNER_PARAM_SPECS: dict[str, dict[str, Any]] = {
+    "project_id": dict(map=str, default=None),
+    "region": dict(map=str, default="us-central1"),
+    "zone": dict(map=str, default=None),
+    "service_account_file": dict(map=str, default=None),
+    "service_account_email": dict(map=str, default=None),
+    "machine_type": dict(map=str, default="n2-standard-4"),
+    "boot_disk_size_gb": dict(map=int, default=100),
+    "boot_disk_type": dict(map=str, default="pd-standard"),
+    "max_retry_count": dict(map=int, default=3),
+    "max_run_duration": dict(map=str, default=DEFAULT_MAX_RUN_DURATION),
+    "polling_interval": dict(map=int, default=30),
+    # Volume configuration (generic format: "server:/remote_path:/mount_path[:ro],...")
+    "gcp_batch_volumes": dict(map=str, default=None),
+    # Extra docker volume mounts (format: "/host/path:/container/path[:ro],...")
+    "docker_extra_volumes": dict(map=str, default=None),
+    # Network configuration for NFS access
+    "network": dict(map=str, default="default"),
+    "subnet": dict(map=str, default="default"),
+    # Compute resource configuration (defaults - will be overridden by job requirements)
+    "vcpu": dict(map=float, default=1.0),
+    "memory_mib": dict(map=int, default=DEFAULT_MEMORY_MIB),
+    # Job-specific resource requests (same as Kubernetes runner)
+    "requests_cpu": dict(map=str, default=None),
+    "requests_memory": dict(map=str, default=None),
+    "limits_cpu": dict(map=str, default=None),
+    "limits_memory": dict(map=str, default=None),
+    # Container execution settings
+    "use_container": dict(map=bool, default=True),
+    "galaxy_user_id": dict(
+        map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
+    ),
+    "galaxy_group_id": dict(
+        map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
+    ),
+    # Custom VM image (optional)
+    "custom_vm_image": dict(map=str, default=None),
+    # Job cleanup: if true, delete GCP Batch jobs after Galaxy marks them complete
+    "delete_completed_jobs": dict(map=bool, default=True),
+    # Prefix for GCP Batch job IDs (helps identify which Galaxy server submitted a job)
+    "job_id_prefix": dict(map=str, default="galaxy-job"),
+    # Object store fallback (for future use)
+    "use_object_store": dict(map=bool, default=False),
+    "object_store_path": dict(map=str, default=None),
+}
+
+
 class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     """
     Job runner that submits jobs to Google Cloud Batch.
     """
 
     runner_name = "GoogleCloudBatchJobRunner"
+    always_handle_metadata_externally = True
 
     def __init__(self, app, nworkers, **kwargs):
         """Initialize the Google Cloud Batch job runner."""
         log.debug("Starting GoogleCloudBatchJobRunner.__init__")
 
-        # Define runner parameter specifications
-        runner_param_specs = {
-            "project_id": dict(map=str, default=None),
-            "region": dict(map=str, default="us-central1"),
-            "zone": dict(map=str, default=None),
-            "service_account_file": dict(map=str, default=None),
-            "service_account_email": dict(map=str, default=None),
-            "machine_type": dict(map=str, default="n2-standard-4"),
-            "boot_disk_size_gb": dict(map=int, default=100),
-            "boot_disk_type": dict(map=str, default="pd-standard"),
-            "max_retry_count": dict(map=int, default=3),
-            "max_run_duration": dict(map=str, default=DEFAULT_MAX_RUN_DURATION),
-            "polling_interval": dict(map=int, default=30),
-            # Volume configuration (generic format: "server:/remote_path:/mount_path[:ro],...")
-            "gcp_batch_volumes": dict(map=str, default=None),
-            # Extra docker volume mounts (format: "/host/path:/container/path[:ro],...")
-            "docker_extra_volumes": dict(map=str, default=None),
-            # Network configuration for NFS access
-            "network": dict(map=str, default="default"),
-            "subnet": dict(map=str, default="default"),
-            # Compute resource configuration (defaults - will be overridden by job requirements)
-            "vcpu": dict(map=float, default=1.0),
-            "memory_mib": dict(map=int, default=DEFAULT_MEMORY_MIB),
-            # Job-specific resource requests (same as Kubernetes runner)
-            "requests_cpu": dict(map=str, default=None),
-            "requests_memory": dict(map=str, default=None),
-            "limits_cpu": dict(map=str, default=None),
-            "limits_memory": dict(map=str, default=None),
-            # Container execution settings
-            "use_container": dict(map=bool, default=True),
-            "galaxy_user_id": dict(
-                map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
-            ),
-            "galaxy_group_id": dict(
-                map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
-            ),
-            # Custom VM image (optional)
-            "custom_vm_image": dict(map=str, default=None),
-            # Job cleanup: if true, delete GCP Batch jobs after Galaxy marks them complete
-            "delete_completed_jobs": dict(map=bool, default=True),
-            # Prefix for GCP Batch job IDs (helps identify which Galaxy server submitted a job)
-            "job_id_prefix": dict(map=str, default="galaxy-job"),
-            # Object store fallback (for future use)
-            "use_object_store": dict(map=bool, default=False),
-            "object_store_path": dict(map=str, default=None),
-        }
-
-        kwargs.update({"runner_param_specs": runner_param_specs})
+        kwargs.update({"runner_param_specs": RUNNER_PARAM_SPECS})
         super().__init__(app, nworkers, **kwargs)
 
         # Initialize Google Cloud Batch client
@@ -116,8 +120,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     def _init_batch_client(self):
         """Initialize the Google Cloud Batch client."""
         # Set up authentication
-        service_account_file = self.runner_params.get("service_account_file")
-        if service_account_file:
+        if service_account_file := self.runner_params.get("service_account_file"):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = service_account_file
 
         try:
@@ -135,6 +138,18 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
                 raise ValueError("Google Cloud project ID not specified and could not be determined from credentials")
 
         log.info("Google Cloud Batch client initialized successfully")
+
+    @property
+    def monitor_sleep_time(self):
+        """Throttle the monitor loop so it polls the GCP Batch API no more often
+        than the configured ``polling_interval``.
+
+        The base ``AsynchronousJobRunner.monitor()`` loop sleeps this long between
+        sweeps; each runner has its own monitor thread, so this only affects the
+        GCP Batch runner. Item access (not ``.get()``) is used so the spec default
+        of 30 resolves through ``ParamsWithSpecs.__missing__``.
+        """
+        return max(self.app.config.job_runner_monitor_sleep, int(self.runner_params["polling_interval"]))
 
     def queue_job(self, job_wrapper):
         """Queue a job for execution on Google Cloud Batch."""
@@ -201,7 +216,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         params = self._get_job_params(job_destination)
 
         # Generate unique job name
-        prefix = params.get("job_id_prefix", "galaxy-job")
+        prefix = params.get("job_id_prefix") or "galaxy-job"
         job_name = f"{prefix}-{int(time.time())}-{os.urandom(4).hex()}-{job_wrapper.get_id_tag()}"
 
         # Create the batch job specification
@@ -257,7 +272,10 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "service_account_email",
             "job_id_prefix",
         ]:
-            params[key] = job_destination.params.get(key, self.runner_params.get(key))
+            # Subscript access on runner_params (a defaultdict) so unset keys fall
+            # back to the spec defaults defined in runner_param_specs; .get() would
+            # bypass __missing__ and yield None instead of the configured default.
+            params[key] = job_destination.params.get(key, self.runner_params[key])
 
         log.debug("Finished _get_job_params")
         return params
@@ -295,7 +313,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         task_spec = batch_v1.TaskSpec()
         task_spec.runnables = [runnable]
         task_spec.max_retry_count = params["max_retry_count"]
-        task_spec.max_run_duration = max_run_duration
+        # Setting this attribute automatically converts a duration string to the
+        # right Duration type, but the declared type is Duration, not str.
+        task_spec.max_run_duration = max_run_duration  # type: ignore[assignment]
 
         # Set compute resources
         compute_resource = batch_v1.ComputeResource()
@@ -344,16 +364,27 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Configure network for NFS access (required when using NFS volumes)
         if parsed_volumes:
             network_interface = batch_v1.AllocationPolicy.NetworkInterface()
-            network_interface.network = f"global/networks/{params.get('network', 'default')}"
-            network_interface.subnetwork = f"regions/{params['region']}/subnetworks/{params.get('subnet', 'default')}"
+            # Qualify bare names with the project so Batch resolves them in project_id's
+            # VPC, not the (possibly different, e.g. a Terra pet) project the Batch VMs are
+            # provisioned in -- a relative "global/networks/<name>" resolves against the
+            # latter and 404s. A value that is already a full/relative path is passed through.
+            project_id = params["project_id"]
+            network = params.get("network", "default")
+            subnet = params.get("subnet", "default")
+            network_interface.network = (
+                network if "/" in network else f"projects/{project_id}/global/networks/{network}"
+            )
+            network_interface.subnetwork = (
+                subnet if "/" in subnet else f"projects/{project_id}/regions/{params['region']}/subnetworks/{subnet}"
+            )
 
             network_policy = batch_v1.AllocationPolicy.NetworkPolicy()
             network_policy.network_interfaces = [network_interface]
             allocation_policy.network = network_policy
             log.debug(
-                "Configured network for NFS access: %s/%s for job %s",
-                params.get("network", "default"),
-                params.get("subnet", "default"),
+                "Configured network for NFS access: %s / %s for job %s",
+                network_interface.network,
+                network_interface.subnetwork,
                 job_wrapper.get_id_tag(),
             )
 
@@ -390,8 +421,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         allocation_policy.instances = [instance_template]
 
         # Configure service account for job execution
-        service_account_email = params.get("service_account_email")
-        if service_account_email:
+        if service_account_email := params.get("service_account_email"):
             service_account = batch_v1.ServiceAccount()
             service_account.email = service_account_email
             allocation_policy.service_account = service_account
@@ -540,8 +570,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             nfs_mount_path = DEFAULT_NFS_MOUNT_PATH
 
         # Build Docker volume arguments from docker_extra_volumes parameter
-        docker_volumes_param = params.get("docker_extra_volumes")
-        if docker_volumes_param:
+        if docker_volumes_param := params.get("docker_extra_volumes"):
             docker_volume_args = parse_docker_volumes_param(docker_volumes_param)
         else:
             # Default to CVMFS mount if no extra volumes specified
@@ -723,7 +752,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             if job_status == batch_v1.JobStatus.State.SUCCEEDED:
                 log.info("Batch job %s completed successfully", batch_job_name)
                 job_state.running = False
-                job_state.job_wrapper.change_state(model.Job.states.OK)
                 self.mark_as_finished(job_state)
                 log.debug("Finished check_watched_item for job %s (completed successfully)", job_state.job_id)
                 return None  # Remove from monitoring
@@ -771,8 +799,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         job = job_wrapper.get_job()
         log.debug("Starting stop_job for job %s", job.id)
 
-        batch_job_name = job.get_job_runner_external_id()
-        if batch_job_name:
+        if batch_job_name := job.get_job_runner_external_id():
             if not self.runner_params.get("delete_completed_jobs", True):
                 try:
                     job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"

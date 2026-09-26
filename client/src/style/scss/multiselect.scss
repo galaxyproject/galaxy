@@ -47,7 +47,7 @@
         }
 
         &.multiselect__option--highlight {
-            background: darken($brand-secondary, 40%);
+            background: darken($brand-secondary, 10%);
 
             &::after {
                 background: unset;

@@ -3,6 +3,8 @@ import zipfile
 from io import BytesIO
 from urllib.parse import quote
 
+import requests
+
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
@@ -342,6 +344,79 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_download_always_redirects(self, history_id):
+        content = "download-me\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        # Authenticate via the x-api-key header (as bioblend does); it carries across the redirect.
+        download_url = self._api_url(f"datasets/{hda['id']}/download", {"to_ext": "txt"})
+        headers = {"x-api-key": self.galaxy_interactor.api_key}
+        # The /download route always returns a 302 so every client follows redirects uniformly; for a
+        # disk object store (no presigned URL) it points back at the streaming /display route.
+        no_follow = requests.get(download_url, headers=headers, allow_redirects=False)
+        assert no_follow.status_code == 302
+        location = no_follow.headers["location"]
+        assert "display" in location
+        # The to_ext query param is carried through to the streaming route by the redirect.
+        assert "to_ext=txt" in location
+        # The client resends the x-api-key header on this same-origin redirect, so /display
+        # authenticates and serves the data. A 200 here (with only the header, no cookie) is the
+        # proof that auth survived the redirect -- /display would return 401 otherwise.
+        followed = requests.get(download_url, headers=headers)
+        assert followed.status_code == 200
+        assert "download-me" in followed.text
+
+    def test_binary_download_filename(self, history_id):
+        content = self.test_data_resolver.get_filecontent("1.bam")
+        hda = self.dataset_populator.new_dataset_from_test_data(
+            history_id, self.test_data_resolver, "1.bam", "bam", name="Annotated alignment"
+        )
+        expected_filename = (
+            f'filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
+            f"filename*=UTF-8''Galaxy{hda['hid']}-%5BAnnotated%20alignment%5D.bam"
+        )
+
+        for download_url in (hda["download_url"], f"datasets/{hda['id']}/download"):
+            for params in ({}, {"to_ext": "data"}, {"to_ext": "bam"}):
+                response = self._get(download_url, params)
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"attachment; {expected_filename}"
+                assert response.headers["content-type"] == "application/octet-stream"
+                assert response.content == content
+
+                head_response = self._head(download_url, params)
+                self._assert_status_code_is(head_response, 200)
+                assert head_response.headers["Content-Disposition"] == response.headers["Content-Disposition"]
+
+        response = self.dataset_populator.get_history_dataset_content_raw(history_id, dataset=hda)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+        assert response.content == content
+
+        for display_url in (f"datasets/{hda['id']}/display", f"{self.url}datasets/{hda['id']}/display"):
+            response = self._get(display_url)
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+            assert response.content == content
+
+    def test_display_images_inline(self, history_id):
+        for extension, content_type in (("png", "image/png"), ("pdf", "application/pdf")):
+            filename = f"454Score.{extension}"
+            content = self.test_data_resolver.get_filecontent(filename)
+            hda = self.dataset_populator.new_dataset_from_test_data(
+                history_id, self.test_data_resolver, filename, extension
+            )
+            download_response = self._get(hda["download_url"])
+            self._assert_status_code_is(download_response, 200)
+            expected_filename = download_response.headers["Content-Disposition"].removeprefix("attachment; ")
+            for preview in (False, True):
+                response = self.dataset_populator.get_history_dataset_content_raw(
+                    history_id, dataset=hda, preview=preview
+                )
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+                assert response.headers["content-type"] == content_type
+                assert response.content == content
+
     def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
         # When previewing an unknown / binary dataset as text the response must use
@@ -353,7 +428,24 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         content_type = display_response.headers.get("content-type", "")
         assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers["Content-Disposition"].startswith("inline; ")
         assert display_response.text == contents
+
+    def test_display_preview_large_fasta_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22719
+        # A fasta larger than the 100 KB preview limit must still be served as
+        # text/plain so the browser preserves newlines; otherwise the header line
+        # runs into the sequence and the content is rendered as HTML.
+        header = ">seq0 large fasta regression test\n"
+        contents = header + "".join(f"{'ACGT' * 20}\n" for _ in range(2000))
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="fasta", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers.get("x-content-truncated") == "100000"
+        assert display_response.text.startswith(header)
+        assert len(display_response.text) <= 100000
 
     def test_display_extra_paths(self, history_id: str):
         test_data_resolver = TestDataResolver()
@@ -690,6 +782,32 @@ class TestDatasetsApi(ApiTestCase):
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
 
+    def test_update_metadata(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
+        original_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+        assert original_hda["metadata_dbkey"] == "?"
+
+        updated_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"dbkey": "hg38"}}, json=True
+        )
+        self._assert_status_code_is(updated_response, 200)
+        updated_hda = updated_response.json()
+        assert updated_hda["metadata_dbkey"] == "hg38"
+
+        # readonly metadata keys should be silently ignored
+        readonly_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"data_lines": 999}}, json=True
+        )
+        self._assert_status_code_is(readonly_response, 200)
+        assert readonly_response.json().get("metadata_data_lines") != 999
+
+        # unknown metadata keys should be silently ignored
+        unknown_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"nonexistent_key": "value"}}, json=True
+        )
+        self._assert_status_code_is(unknown_response, 200)
+        assert "metadata_nonexistent_key" not in unknown_response.json()
+
     @skip_without_tool("cat_data_and_sleep")
     def test_delete_cancels_job(self, history_id):
         self._run_cancel_job(history_id, use_query_params=False)
@@ -935,8 +1053,8 @@ class TestDatasetsApi(ApiTestCase):
         assert len(sources) == 1
         assert sources[0]["source_uri"] == TEST_SOURCE_URI
 
-    def test_display_application_link(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_display_application_link(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
             file_path="test-data/1.bam",
         )
@@ -967,6 +1085,38 @@ class TestDatasetsApi(ApiTestCase):
         response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
         self._assert_status_code_is(response, 200)
         assert quote(name, safe="") in response.headers["Content-Disposition"]
+
+    @skip_without_tool("markdown_report_from_script")
+    def test_report_for_tool_markdown_dataset(self, history_id):
+        run_response = self.dataset_populator.run_tool(
+            "markdown_report_from_script", inputs={"title": "foobar"}, history_id=history_id
+        )
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+        report_dataset = next(o for o in run_response["outputs"] if o["output_name"] == "output_report")
+        response = self._get(f"datasets/{report_dataset['id']}/report")
+        self._assert_status_code_is(response, 200)
+        report = response.json()
+        assert report["generate_version"]
+        assert report["generate_time"]
+        content = report["content"]
+        assert "# Dynamically Generated Report" in content
+        # the endpoint returns the embed-expanded markdown, so inline directives are resolved
+        assert "${galaxy generate_galaxy_version()}" not in content
+        assert f"Generated by Galaxy {report['generate_version']}." in content
+
+    def test_report_for_tool_markdown_dataset_with_unknown_output_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(output=no_such_output)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_output" in response.json()["err_msg"]
+
+    def test_report_for_tool_markdown_dataset_with_unknown_input_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(input=no_such_input)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_input" in response.json()["err_msg"]
 
     def test_copy_dataset_from_history_with_copied_from_fields(self, history_id):
         original_hda = self.dataset_populator.new_dataset(history_id, content="original data", wait=True)

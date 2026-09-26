@@ -1,0 +1,26 @@
+<tool id="composite_pbed" name="composite_pbed" version="1.0.0">
+    <command><![CDATA[
+cat '$input.extra_files_path/RgeneticsData.bed' > '$out_bed' &&
+cat '$input.extra_files_path/RgeneticsData.bim' > '$out_bim' &&
+cat '$input.extra_files_path/RgeneticsData.fam' > '$out_fam'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="pbed" label="Plink pbed dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_bed" format="txt"/>
+        <data name="out_bim" format="txt"/>
+        <data name="out_fam" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="" ftype="pbed">
+                <composite_data value="rgenetics.bim"/>
+                <composite_data value="rgenetics.bed"/>
+                <composite_data value="rgenetics.fam"/>
+            </param>
+            <output name="out_bim" file="rgenetics.bim" compare="diff"/>
+            <output name="out_fam" file="rgenetics.fam" compare="diff"/>
+        </test>
+    </tests>
+</tool>

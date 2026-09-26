@@ -1,10 +1,10 @@
+import logging
 import mimetypes
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     cast,
     NamedTuple,
-    Optional,
 )
 
 from galaxy.exceptions import (
@@ -46,6 +46,8 @@ from galaxy.tool_util.parameters.state import RequestInternalToolState
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import ready_name_for_url
 
+log = logging.getLogger(__name__)
+
 
 def ensure_celery_tasks_enabled(config):
     if not config.enable_celery_tasks:
@@ -70,7 +72,7 @@ class ServiceBase:
        the required parameters and outputs of each operation.
     """
 
-    def __init__(self, security: Optional[IdEncodingHelper] = None):
+    def __init__(self, security: IdEncodingHelper | None = None):
         self._security = security
 
     @property
@@ -81,11 +83,11 @@ class ServiceBase:
             )
         return self._security
 
-    def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
+    def decode_id(self, id: EncodedDatabaseIdField, kind: str | None = None) -> int:
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id, kind=kind)
 
-    def encode_id(self, id: int, kind: Optional[str] = None) -> EncodedDatabaseIdField:
+    def encode_id(self, id: int, kind: str | None = None) -> EncodedDatabaseIdField:
         """Encodes a raw database ID."""
         return encode_with_security(self.security, id, kind=kind)
 
@@ -103,7 +105,7 @@ class ServiceBase:
         """
         return self.security.encode_all_ids(rval, recursive=recursive)
 
-    def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
+    def build_order_by(self, manager: SortableManager, order_by_query: str | None = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
 
         The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""
@@ -118,7 +120,9 @@ class ServiceBase:
         """
         return get_class(class_name)
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -165,7 +169,7 @@ class ServesExportStores:
 class ConsumesModelStores:
     def create_objects_from_store(
         self,
-        trans,
+        trans: ProvidesUserContext,
         payload,
         history=None,
         for_library=False,
@@ -183,17 +187,29 @@ class ConsumesModelStores:
 
 
 def _encode_tool_request(tool_request: ToolRequest, security: IdEncodingHelper) -> dict[str, Any]:
-    """Encode request IDs using strongly-typed parameter walking."""
+    """Encode request IDs using strongly-typed parameter walking.
+
+    Rows captured outside the async-API path (workflow tool steps) may have
+    a payload that does not satisfy the tool's strict typed model — legacy
+    ``.ga`` workflows store numeric params as strings, for instance. In that
+    case the strict walk would 400 the entire endpoint, blocking consumers
+    (e.g. the History Graph UI) that only need the structural shape. Fall
+    back to the raw payload so the endpoint stays usable.
+    """
     tool_source_model = tool_request.tool_source
     raw_tool_source = cast(str, tool_source_model.source)
-    parsed_tool_source = get_tool_source(
-        tool_source_class=tool_source_model.source_class,
-        raw_tool_source=raw_tool_source,
-    )
-    parameter_bundle = input_models_for_tool_source(parsed_tool_source)
-    internal_state = RequestInternalToolState(tool_request.request)
-    encoded_state = encode_request(internal_state, parameter_bundle, security.encode_id)
-    return encoded_state.input_state
+    try:
+        parsed_tool_source = get_tool_source(
+            tool_source_class=tool_source_model.source_class,
+            raw_tool_source=raw_tool_source,
+        )
+        parameter_bundle = input_models_for_tool_source(parsed_tool_source)
+        internal_state = RequestInternalToolState(tool_request.request)
+        encoded_state = encode_request(internal_state, parameter_bundle, security.encode_id)
+        return encoded_state.input_state
+    except Exception as e:
+        log.debug("Falling back to raw payload for tool_request %d: %s", tool_request.id, e)
+        return tool_request.request if isinstance(tool_request.request, dict) else {}
 
 
 def tool_request_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestModel:

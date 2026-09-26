@@ -21,8 +21,6 @@ import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
-const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
-
 interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
@@ -89,6 +87,7 @@ const {
     hideSourceItems,
     onUpdateHideSourceItems,
     isElementInvalid,
+    reconcileRetainedElements,
     collectionName,
     onUpdateCollectionName,
     onCollectionCreate,
@@ -124,24 +123,7 @@ function _elementsSetUp() {
     }
 
     // for inListElements, reset their values (in order) to datasets from workingElements
-    const inListElementsPrev = inListElements.value;
-    inListElements.value = [];
-    inListElementsPrev.forEach((prevElem) => {
-        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
-
-        if (matchingElem) {
-            const problem = isElementInvalid(matchingElem);
-            if (problem) {
-                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-                Toast.error(invalidMsg, localize("Invalid element"));
-            } else {
-                inListElements.value.push(matchingElem);
-            }
-        } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            Toast.error(invalidMsg, localize("Invalid element"));
-        }
-    });
+    inListElements.value = reconcileRetainedElements(inListElements.value, workingElements.value);
 
     // _ensureElementIds();
     _validateElements();
@@ -318,24 +300,25 @@ watch(
 );
 
 function addUploadedFiles(files: HDASummary[]) {
-    const returnedElements = props.fromSelection ? workingElements : inListElements;
+    const targetElements = props.fromSelection ? workingElements : inListElements;
     files.forEach((f) => {
-        const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
         const problem = isElementInvalid(f);
-        if (file && !returnedElements.value.find((e) => e.id === file.id)) {
-            returnedElements.value.push(file);
-        } else if (problem) {
+        if (problem) {
             invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
                 localize("Uploaded item is invalid"),
             );
-        } else if (!file) {
-            invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
-            Toast.error(
-                localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
-                localize("Uploaded item is invalid"),
-            );
+            return;
+        }
+
+        // Ensure the file is in workingElements (source pool for the dropdown)
+        if (!workingElements.value.find((e) => e.id === f.id)) {
+            workingElements.value.push(f);
+        }
+        // Add to the target list (workingElements for fromSelection, inListElements otherwise)
+        if (!targetElements.value.find((e) => e.id === f.id)) {
+            targetElements.value.push(f);
         }
     });
 }
@@ -701,9 +684,6 @@ function selectionAsHdaSummary(value: any): HDASummary {
 </template>
 
 <style scoped lang="scss">
-@import "@/style/scss/base.scss";
-@import "@/style/scss/theme/blue.scss";
-
 .list-collection-creator {
     .footer {
         margin-top: 8px;

@@ -14,19 +14,18 @@ import unittest
 from functools import wraps
 from typing import (
     Literal,
-    Union,
 )
 
 import pytest
 
-KnownRequirementT = Union[
-    Literal["admin"],
-    Literal["celery"],
-    Literal["new_history"],
-    Literal["new_library"],
-    Literal["new_published_objects"],
-    Literal["new_user"],
-]
+KnownRequirementT = (
+    Literal["admin"]
+    | Literal["celery"]
+    | Literal["new_history"]
+    | Literal["new_library"]
+    | Literal["new_published_objects"]
+    | Literal["new_user"]
+)
 
 
 def has_requirement(method, tag: KnownRequirementT):

@@ -7,7 +7,6 @@ from YAML rules. Swap at the DI container level — no mocks, no pydantic-ai.
 import re
 from typing import (
     Any,
-    Optional,
 )
 
 import yaml
@@ -49,13 +48,13 @@ class StaticAgent(BaseGalaxyAgent):
     def get_system_prompt(self) -> str:
         return ""
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         for rule in self._rules:
             if self._rule_matches(rule.get("match", {}), query, context):
                 return self._make_response(rule["response"])
         return self._make_response(self._fallback)
 
-    def _rule_matches(self, match: dict[str, Any], query: str, context: Optional[dict[str, Any]]) -> bool:
+    def _rule_matches(self, match: dict[str, Any], query: str, context: dict[str, Any] | None) -> bool:
         if "agent_type" in match and match["agent_type"] != self.agent_type:
             return False
         if "query" in match and not re.search(match["query"], query):

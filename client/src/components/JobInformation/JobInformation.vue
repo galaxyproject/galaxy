@@ -7,7 +7,6 @@ import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/provi
 import { rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
-import { getJobDuration } from "./utilities";
 
 import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
@@ -18,13 +17,18 @@ import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const props = defineProps<{
-    jobId: string;
-    /** If `true`, the job's update and create times, as well as time to finish are shown. */
-    includeTimes?: boolean;
-    /** If provided, this component will skip fetching the invocation ID for the job. */
-    invocationId?: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        jobId: string;
+        /** If `true`, the job's update and create times, as well as time to finish are shown. */
+        includeTimes?: boolean;
+        /** If `true`, the title is shown. */
+        includeTitle?: boolean;
+        /** If provided, this component will skip fetching the invocation ID for the job. */
+        invocationId?: string;
+    }>(),
+    { includeTitle: true },
+);
 
 const job = ref<ShowFullJobResponse | null>(null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
@@ -45,7 +49,6 @@ function jobStateIsRunning(jobState: string) {
     return jobState == "running";
 }
 
-const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
 const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
@@ -153,7 +156,7 @@ watch(
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
             @update:result="updateConsoleOutputs" />
-        <div class="d-flex justify-content-between flex-gapx-1">
+        <div v-if="props.includeTitle" class="d-flex justify-content-between flex-gapx-1">
             <Heading id="job-information-heading" class="flex-grow-1" h1 separator inline size="md">
                 Job Information
                 <JobState v-if="job" class="job-information-state-badge" :job="job" />
@@ -194,12 +197,6 @@ watch(
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
-                    </td>
-                </tr>
-                <tr v-if="job && props.includeTimes && jobIsTerminal">
-                    <td>Time To Finish</td>
-                    <td id="runtime">
-                        {{ getJobDuration(job) }}
                     </td>
                 </tr>
                 <CodeRow
