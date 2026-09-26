@@ -5,7 +5,7 @@ from typing import (
     Annotated,
     get_args,
     get_origin,
-    TYPE_CHECKING,
+    Protocol,
     Union,
 )
 
@@ -18,9 +18,6 @@ from pydantic import (
 from pydantic_core import PydanticCustomError
 
 from galaxy.exceptions import MessageException
-
-if TYPE_CHECKING:
-    from galaxy.security.idencoding import IdEncodingHelper
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16
@@ -51,8 +48,20 @@ def decode_id(encoded_id: str) -> int:
     return Security.security.decode_id(encoded_id)
 
 
+class IdEncoder(Protocol):
+    """The part of galaxy.security.idencoding.IdEncodingHelper used here.
+
+    galaxy.security is not a dependency of the galaxy-schema package, so it
+    can't be imported for type checking.
+    """
+
+    def encode_id(self, obj_id: int) -> str: ...
+
+    def decode_id(self, obj_id: str) -> int: ...
+
+
 class Security:
-    security: "IdEncodingHelper"
+    security: IdEncoder
 
 
 def ensure_valid_id(v: str) -> str:
