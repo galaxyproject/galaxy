@@ -254,6 +254,8 @@
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
   <tool file="expect_num_outputs.xml" />
+  <tool file="expect_failure_invalid_inputs.xml" />
+  <tool file="expect_failure_invalid_inputs_y.yml" />
   <tool file="text_repeat.xml" />
   <tool file="integer_default.xml" />
   <tool file="float_default.xml" />
