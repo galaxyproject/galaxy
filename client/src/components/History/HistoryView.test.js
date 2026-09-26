@@ -3,6 +3,7 @@ import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helper
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { HttpResponse } from "msw";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
@@ -14,7 +15,9 @@ import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/se
 import { useUserStore } from "@/stores/userStore";
 
 import ContentItem from "./Content/ContentItem.vue";
+import OperationErrorDialog from "./CurrentHistory/HistoryOperations/OperationErrorDialog.vue";
 import HistoryView from "./HistoryView.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -107,6 +110,57 @@ async function createWrapper(localVue, currentUserId, history) {
 describe("History center panel View", () => {
     beforeEach(() => {
         suppressLucideVue2Deprecation();
+    });
+
+    it.each([false, true])("restores an item after a rate-limited deletion (recursive: %s)", async (recursive) => {
+        const history = create_history("history_1", "user_1");
+        const wrapper = await createWrapper(localVue, "user_1", history);
+        const historyStore = useHistoryStore();
+        const updateStats = vi.spyOn(historyStore, "updateContentStats").mockResolvedValue();
+        const item = wrapper.findComponent(ContentItem).props("item");
+        const errorBody = "<html><head><title>429 Too Many Requests</title></head></html>";
+        let finishDelete;
+        const deleteResponse = new Promise((resolve) => (finishDelete = resolve));
+        const deleteRequest = vi.fn(async ({ request, params }) => {
+            expect(params.id).toBe(item.id);
+            expect(new URL(request.url).searchParams.get("recursive")).toBe(String(recursive));
+            await deleteResponse;
+            return new HttpResponse(errorBody, { status: 429, headers: { "Content-Type": "text/html" } });
+        });
+        server.use(http.delete("/api/histories/{history_id}/contents/{type}s/{id}", deleteRequest));
+
+        wrapper.findComponent(ContentItem).vm.$emit("delete", item, recursive);
+        await flushPromises();
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(true);
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
+
+        finishDelete();
+        await flushPromises();
+
+        expect(deleteRequest).toHaveBeenCalledTimes(1);
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+        expect(updateStats).not.toHaveBeenCalled();
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(10);
+        expect(item.deleted).toBe(false);
+        const dialog = wrapper.findComponent(OperationErrorDialog);
+        expect(dialog.props("operationError").errorMessage.message).toBe(errorBody);
+        dialog.vm.$emit("hide");
+        await flushPromises();
+        expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
+
+        server.use(
+            http.delete(
+                "/api/histories/{history_id}/contents/{type}s/{id}",
+                () => new HttpResponse(null, { status: 204 }),
+            ),
+        );
+        wrapper.findComponent(ContentItem).vm.$emit("delete", item, recursive);
+        await flushPromises();
+        expect(updateStats).toHaveBeenCalledTimes(1);
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
+        expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
+        wrapper.destroy();
     });
 
     function expectCorrectLayout(wrapper) {
