@@ -1257,10 +1257,9 @@ def filesystem_safe_string(
         sanitized_string = "".join(replacement_char if ord(char) < 32 else char for char in sanitized_string)
     if valid_chars is not None:
         sanitized_string = "".join(char if char in valid_chars else replacement_char for char in sanitized_string)
-    if strip_leading_dot:
-        sanitized_string = sanitized_string.lstrip(".")
-    if strip_leading_hyphen:
-        sanitized_string = sanitized_string.lstrip("-")
+    if strip_leading_dot or strip_leading_hyphen:
+        leading_chars = ("." if strip_leading_dot else "") + ("-" if strip_leading_hyphen else "")
+        sanitized_string = sanitized_string.lstrip(leading_chars)
     if portable:
         sanitized_string = sanitized_string.rstrip(". ")
         basename = sanitized_string.partition(".")[0].upper()

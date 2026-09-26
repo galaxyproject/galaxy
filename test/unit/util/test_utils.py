@@ -66,6 +66,8 @@ def test_filesystem_safe_string():
         ("...", "_"),
         ("---", "_"),
         (".-.", "_"),
+        ("-.hidden", "hidden"),
+        (".-hidden", "hidden"),
         ("café", "caf_"),
         ("NUL", "_NUL"),
         ("CON.txt", "_CON.txt"),

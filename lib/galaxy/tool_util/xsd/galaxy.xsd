@@ -4295,8 +4295,10 @@ export datatype extension), and ``safe_element_identifier``.
 component. It keeps ASCII letters, numbers, ``-``, ``_``, and ``.``; replaces
 other characters with ``_``; removes leading ``.`` and ``-`` characters; and
 protects Windows reserved names. For dataset inputs, it also reserves enough
-of the usual 255-character component limit for ``.file_ext``. Shell quoting is
-still required, as in this example:
+of the usual 255-character component limit for ``.file_ext``. Collection
+wrappers without an element name return ``None`` for
+``safe_element_identifier``. Shell quoting is still required, as in this
+example:
 
 ```bash
 ln -s '$interval_file' '${interval_file.safe_element_identifier}.${interval_file.file_ext}'
