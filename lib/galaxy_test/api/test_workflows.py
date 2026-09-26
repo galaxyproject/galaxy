@@ -2875,7 +2875,12 @@ test_data:
             )
             assert unpaused_dataset["state"] == "ok"
             contents = self.dataset_populator.get_history_dataset_content(history_id, hid=7, assert_ok=False)
-            assert contents == "fail\nsuccess\n", contents
+            assert contents.splitlines() == [
+                "identifier fail",
+                "safe_identifier fail",
+                "identifier success",
+                "safe_identifier success",
+            ], contents
             replaced_hda_id = run_dict["outputs"][0]["id"]
             replaced_hda = self.dataset_populator.get_history_dataset_details(
                 history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False
