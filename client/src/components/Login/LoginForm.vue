@@ -110,7 +110,10 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            window.location.href = withPrefix(`/root/login?expired_user=${response.data.expired_user}`);
+            await router.push({
+                path: "/login/start",
+                query: { expired_user: response.data.expired_user },
+            });
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
@@ -138,22 +141,12 @@ function setRedirect(url: string) {
     localStorage.setItem("redirect_url", url);
 }
 
-async function resetLogin() {
-    loading.value = true;
-    try {
-        const response = await axios.post(withPrefix("/user/reset_password"), { email: login.value });
-        messageVariant.value = "info";
-        messageText.value = response.data.message;
-    } catch (e) {
-        messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Password reset failed for an unknown reason.");
-    } finally {
-        loading.value = false;
-    }
-}
-
 function returnToLogin() {
     router.push("/login/start");
+}
+
+function goToResetPassword() {
+    router.push({ path: "/login/reset_password", query: { email: login.value } });
 }
 </script>
 
@@ -214,13 +207,9 @@ function returnToLogin() {
                                         <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
-                                            <a
-                                                v-localize
-                                                href="javascript:void(0)"
-                                                role="button"
-                                                @click.prevent="resetLogin">
-                                                Click here to reset your password.
-                                            </a>
+                                            <GLink id="reset-password-link" @click="goToResetPassword">
+                                                <span v-localize>Click here to reset your password.</span>
+                                            </GLink>
                                         </BFormText>
                                     </BFormGroup>
 

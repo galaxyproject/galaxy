@@ -739,6 +739,13 @@ login:
     submit:
       type: xpath
       selector: "//button[@name='login']"
+    reset_password_link: '#reset-password-link'
+
+reset_password:
+  selectors:
+    email: '#reset-email'
+    submit: '#reset-password'
+    alert: '#reset-password-alert'
 
 registration:
   selectors:

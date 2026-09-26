@@ -2,6 +2,7 @@ import { redirectLoggedIn } from "@/router/guards";
 
 import Login from "@/entry/analysis/modules/Login.vue";
 import Register from "@/entry/analysis/modules/Register.vue";
+import ResetPassword from "@/entry/analysis/modules/ResetPassword.vue";
 
 /**
  * Entry routes for logging in and registering.
@@ -19,6 +20,11 @@ export default [
     {
         path: "/register/start",
         component: Register,
+        beforeEnter: redirectLoggedIn,
+    },
+    {
+        path: "/login/reset_password",
+        component: ResetPassword,
         beforeEnter: redirectLoggedIn,
     },
 ];

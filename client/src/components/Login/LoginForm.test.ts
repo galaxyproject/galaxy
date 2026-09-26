@@ -25,6 +25,7 @@ interface PostRequest {
 }
 
 let postRequests: PostRequest[] = [];
+let loginResponse: Record<string, unknown> = {};
 
 async function mountLoginForm() {
     const wrapper = mount(MountTarget as object, {
@@ -45,6 +46,7 @@ async function mountLoginForm() {
 describe("LoginForm", () => {
     beforeEach(() => {
         postRequests = [];
+        loginResponse = {};
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
@@ -53,7 +55,7 @@ describe("LoginForm", () => {
                 const url = request.url;
                 const data = (await request.json()) as Record<string, unknown>;
                 postRequests.push({ url, data });
-                return HttpResponse.json({});
+                return HttpResponse.json(loginResponse);
             }),
         );
     });
@@ -84,6 +86,48 @@ describe("LoginForm", () => {
         expect(postRequests.length).toBe(1);
         expect(postRequests[0]?.data.login).toBe("test_user");
         expect(postRequests[0]?.data.password).toBe("test_pwd");
+    });
+
+    it("prefills the password reset route with the entered email", async () => {
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
+        const wrapper = mount(MountTarget as object, {
+            propsData: {
+                sessionCsrfToken: "sessionCsrfToken",
+                showResetLink: true,
+            },
+            localVue,
+            router,
+            stubs: {
+                ExternalLogin: true,
+            },
+            pinia: testingPinia,
+        });
+
+        await wrapper.find("#login-form-name").setValue("test@example.com");
+        await wrapper.find("#reset-password-link").trigger("click");
+
+        expect(push).toHaveBeenCalledWith({
+            path: "/login/reset_password",
+            query: { email: "test@example.com" },
+        });
+        push.mockRestore();
+    });
+
+    it("routes expired-password responses to the current-password form", async () => {
+        loginResponse = { expired_user: "expired-user-id" };
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
+        const wrapper = await mountLoginForm();
+
+        await wrapper.find("#login-form-name").setValue("test_user");
+        await wrapper.find("#login-form-password").setValue("test_pwd");
+        await wrapper.find("button[type='submit']").trigger("submit");
+        await flushPromises();
+
+        expect(push).toHaveBeenCalledWith({
+            path: "/login/start",
+            query: { expired_user: "expired-user-id" },
+        });
+        push.mockRestore();
     });
 
     it("props", async () => {

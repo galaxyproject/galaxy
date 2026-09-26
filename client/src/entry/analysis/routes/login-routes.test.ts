@@ -79,4 +79,13 @@ describe("login entry routes", () => {
         expect(router.currentRoute.path).toEqual("/register/start");
         expect(router.currentRoute.matched).toHaveLength(1);
     });
+
+    it("renders the password reset page and preserves the email for anonymous users", async () => {
+        setUser(null);
+        const router = await navigateTo("/login/reset_password?email=test%40example.com");
+
+        expect(router.currentRoute.path).toEqual("/login/reset_password");
+        expect(router.currentRoute.query.email).toEqual("test@example.com");
+        expect(router.currentRoute.matched).toHaveLength(1);
+    });
 });
