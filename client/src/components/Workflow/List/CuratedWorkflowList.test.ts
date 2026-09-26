@@ -9,6 +9,7 @@ import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
+import { curatedHelpHtml } from "@/components/Workflow/List/curatedFilters";
 import { useUserStore } from "@/stores/userStore";
 
 import CuratedWorkflowList from "./CuratedWorkflowList.vue";
@@ -458,5 +459,12 @@ describe("CuratedWorkflowList", () => {
 
         expect(catalogQueries[1]!.get("sort_by")).toBe("update_time");
         expect(catalogQueries[1]!.get("sort_desc")).toBe("false");
+    });
+});
+
+describe("curatedHelpHtml", () => {
+    it("documents the collection filter only for the iwc catalog", () => {
+        expect(curatedHelpHtml(true)).toContain("collection:");
+        expect(curatedHelpHtml(false)).not.toContain("collection");
     });
 });

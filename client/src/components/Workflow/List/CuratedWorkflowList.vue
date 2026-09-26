@@ -248,7 +248,7 @@ onMounted(() => load());
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="curatedHelpHtml()"></div>
+                    <div v-html="curatedHelpHtml(source === 'iwc')"></div>
                 </template>
             </FilterMenu>
 

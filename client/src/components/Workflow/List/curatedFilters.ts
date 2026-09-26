@@ -23,13 +23,24 @@ export function curatedWorkflowFilters() {
     return new Filtering({ ...curatedFilters }, undefined, false);
 }
 
-export function curatedHelpHtml() {
+/** Collections are an IWC grouping, so local mode never advertises them. */
+export function curatedHelpHtml(includeCollections: boolean) {
+    const searchedFields = includeCollections
+        ? "names, descriptions, tags and collections"
+        : "names, descriptions and tags";
+    const collectionFilter = includeCollections
+        ? `
+            <dt><code>collection:____</code></dt>
+            <dd>
+                Shows workflows in the given IWC collection. The collection buttons above
+                the search, or a collection badge on a card, set this for you.
+            </dd>`
+        : "";
     return `<div>
         <p>This menu can be used to filter the curated workflows displayed.</p>
 
         <p>
-            Text entered here will be searched against workflow names, descriptions,
-            tags and collections. Additionally, advanced filtering tags can be used to refine the search
+            Text entered here will be searched against workflow ${searchedFields}. Additionally, advanced filtering tags can be used to refine the search
             more precisely. Filtering tags are of the form
             <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
             <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to search
@@ -50,12 +61,7 @@ export function curatedHelpHtml() {
             <dd>
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
-            </dd>
-            <dt><code>collection:____</code></dt>
-            <dd>
-                Shows workflows in the given IWC collection. The collection buttons above
-                the search, or a collection badge on a card, set this for you.
-            </dd>
+            </dd>${collectionFilter}
         </dl>
     </div>`;
 }
