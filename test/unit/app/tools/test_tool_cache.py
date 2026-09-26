@@ -1,6 +1,9 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event, Lock
+from threading import (
+    Event,
+    Lock,
+)
 from unittest.mock import Mock
 
 import pytest
