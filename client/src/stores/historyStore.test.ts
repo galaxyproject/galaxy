@@ -253,3 +253,57 @@ describe("historyStore — createNewHistory", () => {
         expect(store.currentHistoryId).toBe("named-history");
     });
 });
+
+describe("historyStore — filling the own-history cache beside the paginated list", () => {
+    const summaries = [
+        { id: "h1", name: "one", update_time: "2026-01-02T00:00:00" },
+        { id: "h2", name: "two", update_time: "2026-01-01T00:00:00" },
+    ];
+    let requestedLimits: string[];
+    let releaseCacheFill: () => void;
+    let cacheFillPending: Promise<void>;
+
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        requestedLimits = [];
+        cacheFillPending = new Promise<void>((resolve) => {
+            releaseCacheFill = resolve;
+        });
+        server.use(
+            http.get("/api/histories", async ({ request, response }) => {
+                const limit = new URL(request.url).searchParams.get("limit");
+                requestedLimits.push(String(limit));
+                // the cache fill is held open so the paginated load lands while
+                // it is still running, which is the case the palette creates
+                if (limit === "25") {
+                    await cacheFillPending;
+                }
+                return response(200).json(summaries as never);
+            }),
+            http.get("/api/histories/count", ({ response }) => response(200).json(40)),
+        );
+    });
+
+    it("leaves the scroll list's offset where it was", async () => {
+        const store = useHistoryStore();
+        store.historiesOffset = 10;
+
+        const filling = store.fetchOwnHistories({ limit: 25 });
+        releaseCacheFill();
+        await filling;
+
+        expect(store.historiesOffset).toBe(10);
+        expect(store.histories.map((history) => history.id)).toContain("h1");
+    });
+
+    it("does not swallow a paginated load started while it runs", async () => {
+        const store = useHistoryStore();
+
+        const filling = store.fetchOwnHistories({ limit: 25 });
+        await store.loadHistories(true);
+        releaseCacheFill();
+        await filling;
+
+        expect(requestedLimits).toContain("10");
+    });
+});
