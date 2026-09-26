@@ -315,6 +315,10 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
+        # Config attrs read by ComputeResourceManager.
+        self.enable_compute_resources = False
+        self.compute_resource_relay_url = None
+        self.galaxy_infrastructure_url = ""
         self.config_dict = self.dict()
 
     def __getattr__(self, name):
