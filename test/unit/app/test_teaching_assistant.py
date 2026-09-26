@@ -13,6 +13,7 @@ from galaxy.agents import (
     GalaxyAgentDependencies,
 )
 from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
+from galaxy.agents.gtn.search import TutorialCurriculum
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.teaching_assistant import (
     _render_tutorial_references,
@@ -139,7 +140,7 @@ class TestTeachingAssistantAgent:
         agent.ops.get_job_parameters = mock.Mock(side_effect=ValueError("tool not installed"))
         ctx = mock.Mock()
 
-        result = await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")
+        result = (await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")).return_value
 
         agent.ops.get_job_status.assert_called_once_with("encoded-job", full=True)
         assert "No index found" in result
@@ -171,12 +172,119 @@ class TestTeachingAssistantAgent:
         agent._call_agent_from_tool = mock.AsyncMock(return_value="The condition names a missing column.")
 
         result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
+        result = result.return_value
 
         agent.ops.get_job_parameters.assert_called_once_with("encoded-job")
         assert "- Filter: HID 3: counts.tabular" in result
         assert "- With following condition: c7>100" in result
         assert "- Advanced\n  - Number of header lines to skip: 1" in result
         assert "c7>100" in agent._call_agent_from_tool.call_args.args[1]
+
+    @pytest.mark.parametrize(
+        "tool_id, tool_name, expected",
+        [
+            ("Filter1", "Filter", ["Filter1", "Filter"]),
+            ("toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74", "FastQC", ["fastqc", "FastQC"]),
+            ("Filter1", None, ["Filter1"]),
+        ],
+    )
+    async def test_error_analysis_records_the_failing_tool(self, tool_id, tool_name, expected):
+        agent = TeachingAssistantAgent(self.deps)
+        agent.ops.get_job_status = mock.Mock(return_value={"job": {"tool_id": tool_id, "state": "error"}})
+        agent.ops.get_job_parameters = mock.Mock(side_effect=ValueError("no summary"))
+        if tool_name:
+            agent.ops.get_tool_details = mock.Mock(return_value={"name": tool_name})
+        else:
+            agent.ops.get_tool_details = mock.Mock(side_effect=ValueError("not installed"))
+        agent._call_agent_from_tool = mock.AsyncMock(return_value="")
+
+        result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
+
+        assert result.metadata == {"tutor_job_tools": expected}
+
+    def test_sources_carry_their_stated_curriculum(self):
+        agent = TeachingAssistantAgent(self.deps)
+        result = mock.Mock(difficulty="introductory", topic="sequence-analysis", tutorial="quality-control")
+        result.to_dict.return_value = {"title": "Quality Control", "url": "https://training.galaxyproject.org/qc"}
+        agent.gtn_db = mock.Mock()
+        agent.gtn_db.search.return_value = [result]
+        agent.gtn_db.get_tutorial_curriculum.return_value = TutorialCurriculum(
+            topic="sequence-analysis",
+            tutorial="quality-control",
+            title="Quality Control",
+            url="https://training.galaxyproject.org/qc",
+            objectives=["Assess short reads FASTQ quality using FastQC"],
+        )
+
+        source = agent._search_tutorials("QC", 5).metadata["tutor_sources"][0]
+
+        agent.gtn_db.get_tutorial_curriculum.assert_called_once_with("sequence-analysis", "quality-control")
+        assert "FastQC" in source["about"]
+        assert "Quality Control" in source["about"]
+
+    @pytest.mark.parametrize(
+        "cited, job_tools, allowed",
+        # Source IDs: maxquant, metaquantome, filtering, qc.
+        [
+            # The live-run misses: tutorials that run Filter1 somewhere in a proteomics workflow.
+            ("aaaaaaaaaaa1", ["Filter1", "Filter"], False),
+            ("aaaaaaaaaaa2", ["Filter1", "Filter"], False),
+            ("aaaaaaaaaaa3", ["Filter1", "Filter"], True),
+            ("aaaaaaaaaaa4", ["fastqc", "FastQC"], True),
+            ("aaaaaaaaaaa4", ["trim_galore", "Trim Galore!"], True),
+            ("aaaaaaaaaaa1", None, True),
+        ],
+    )
+    def test_job_failure_answers_cite_only_tutorials_about_the_tool(self, cited, job_tools, allowed):
+        sources = [
+            {
+                "id": "aaaaaaaaaaa1",
+                "title": "MaxQuant and MSstats",
+                "url": "u",
+                "excerpt": "",
+                "about": "MaxQuant and MSstats",
+            },
+            {
+                "id": "aaaaaaaaaaa2",
+                "title": "metaQuantome 1: Data creation",
+                "url": "u",
+                "excerpt": "",
+                "about": "metaQuantome 1",
+            },
+            {
+                "id": "aaaaaaaaaaa3",
+                "title": "Filter tabular data",
+                "url": "u",
+                "excerpt": "",
+                "about": "Filter tabular data",
+            },
+            {
+                "id": "aaaaaaaaaaa4",
+                "title": "Quality Control",
+                "url": "u",
+                "excerpt": "",
+                "about": "Quality Control\nRun FastQC, then Trim Galore!",
+            },
+        ]
+        parts = [
+            SimpleNamespace(
+                part_kind="tool-return", tool_name="search_training_materials", metadata={"tutor_sources": sources}
+            )
+        ]
+        if job_tools:
+            parts.append(
+                SimpleNamespace(
+                    part_kind="tool-return", tool_name="analyze_error", metadata={"tutor_job_tools": job_tools}
+                )
+            )
+        ctx = SimpleNamespace(run_id="current", messages=[SimpleNamespace(run_id="current", parts=parts)])
+        content = f"Here is the fix.\n[[tutorial:{cited}]]"
+
+        if allowed:
+            assert "Here is the fix." in _render_tutorial_references(ctx, content)
+        else:
+            with pytest.raises(pydantic_ai.ModelRetry, match="failing tool"):
+                _render_tutorial_references(ctx, content)
 
     async def test_history_summary_gives_failed_items_a_job_id(self):
         # Without a job ID the tutor could only send the learner off to dig out the error themselves.
