@@ -10,6 +10,7 @@ export {
     type ComponentVariantClassList,
     prefix,
 } from "./components/componentVariants";
+export { dropdownHideKey } from "./components/dropdownContext";
 export { default as GForm } from "./components/Form/GForm.vue";
 export { default as GFormInput } from "./components/Form/GFormInput.vue";
 export { default as GFormLabel } from "./components/Form/GFormLabel.vue";
@@ -17,6 +18,13 @@ export { default as GButton } from "./components/GButton.vue";
 export { default as GButtonGroup } from "./components/GButtonGroup.vue";
 export { default as GCheckbox } from "./components/GCheckbox.vue";
 export { default as GCollapse } from "./components/GCollapse.vue";
+export { default as GDropdown } from "./components/GDropdown.vue";
+export { default as GDropdownDivider } from "./components/GDropdownDivider.vue";
+export { default as GDropdownForm } from "./components/GDropdownForm.vue";
+export { default as GDropdownGroup } from "./components/GDropdownGroup.vue";
+export { default as GDropdownItem } from "./components/GDropdownItem.vue";
+export { default as GDropdownItemButton } from "./components/GDropdownItemButton.vue";
+export { default as GDropdownText } from "./components/GDropdownText.vue";
 export { default as GHeading } from "./components/GHeading.vue";
 export { default as GLink } from "./components/GLink.vue";
 export { default as GModal } from "./components/GModal.vue";

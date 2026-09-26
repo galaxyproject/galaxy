@@ -2,7 +2,6 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
@@ -19,6 +18,8 @@ import type { VariantInterface } from "./variants";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const props = defineProps<{
     variant?: VariantInterface[];
@@ -131,7 +132,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         <!-- three options here - source is a collection that has multiple builders exposed, source is a collection
              that has a single builder exposed, or source is dataset(s). -->
         <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
-            <BDropdown
+            <GDropdown
                 v-g-tooltip.bottom.hover
                 class="d-flex"
                 data-description="upload"
@@ -139,13 +140,13 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 split
                 text="Create"
                 @click="createCollectionType(defaultCollectionBuilderType)">
-                <BDropdownItem
+                <GDropdownItem
                     v-for="colType in availableCollectionBuilders"
                     :key="colType"
                     @click="createCollectionType(colType)">
                     {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
-                </BDropdownItem>
-            </BDropdown>
+                </GDropdownItem>
+            </GDropdown>
             <GButton
                 v-if="props.workflowTab === 'create'"
                 v-g-tooltip.bottom.hover
