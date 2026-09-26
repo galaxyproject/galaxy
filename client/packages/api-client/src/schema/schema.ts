@@ -21581,9 +21581,9 @@ export interface components {
             class: "File";
             /**
              * Creation time
-             * @description The creation time of the file.
+             * @description When the file was created or last modified, in UTC, or null if the file source does not report it.
              */
-            ctime: string;
+            ctime: string | null;
             /**
              * Hashes
              * @description List of precomputed hashes for the file, if available.

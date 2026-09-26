@@ -2,7 +2,6 @@ import os
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -463,15 +462,15 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
     def _create_remote_file_for_image(self, image, image_path: str) -> RemoteFile:
         """Create a RemoteFile entry for an OMERO image."""
+        # BlitzGateway returns a naive datetime in this process's local time.
         ctime = image.getDate()
-        ctime_str = ctime.isoformat() if ctime else datetime.now().isoformat()
 
         estimated_size = self._estimate_image_size(image)
 
         return RemoteFile(
             name=image.getName() or f"Image {image.getId()}",
             size=estimated_size,
-            ctime=ctime_str,
+            ctime=ctime.astimezone() if ctime else None,
             uri=self.uri_from_path(image_path),
             path=image_path,
         )

@@ -66,7 +66,7 @@ class IIIFFilesSource(FsspecFilesSource[IIIFFileSourceTemplateConfiguration, III
             return RemoteDirectory(name=entry_name, uri=uri, path=entry_path)
 
         size = int(info.get("size", 0))
-        ctime = self._get_formatted_timestamp(info)
+        ctime = self._extract_timestamp(info)
         hashes = self._get_file_hashes(info)
         return RemoteFile(name=entry_name, size=size, ctime=ctime, uri=uri, path=entry_path, hashes=hashes)
 

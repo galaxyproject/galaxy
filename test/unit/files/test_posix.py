@@ -1,5 +1,10 @@
 import os
 import tempfile
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from typing import Any
 
 import pytest
@@ -12,6 +17,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
 )
+from galaxy.files.models import RemoteFile
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
@@ -71,6 +77,16 @@ def test_posix():
     assert subdir2
     assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
     assert subdir2.class_ == "Directory"
+
+
+def test_posix_list_ctime_is_utc(non_utc_local_time):
+    file_sources, root = _configured_file_sources_with_root()
+    file_a = find_file_a(list_root(file_sources, "gxfiles://test1", recursive=False))
+    assert isinstance(file_a, RemoteFile)
+    st_ctime = os.stat(os.path.join(root, "a")).st_ctime
+    assert file_a.ctime
+    assert file_a.ctime.utcoffset() == timedelta(0)
+    assert abs(file_a.ctime - datetime.fromtimestamp(st_ctime, tz=timezone.utc)) <= timedelta(microseconds=1)
 
 
 def test_posix_link_security():

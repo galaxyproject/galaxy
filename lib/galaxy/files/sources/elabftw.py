@@ -50,10 +50,6 @@ from collections.abc import (
     AsyncIterator,
     Iterable,
 )
-from datetime import (
-    datetime,
-    timezone,
-)
 from pathlib import Path
 from textwrap import dedent
 from time import time
@@ -689,7 +685,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                         "path": f"/{entity_type}/{entity_id}/{upload['id']}",
                         "class": "File",
                         "size": upload["filesize"],
-                        "ctime": datetime.fromisoformat(upload["created_at"]).astimezone(timezone.utc).isoformat(),
+                        "ctime": upload["created_at"],
                     }
                 ),
                 upload,

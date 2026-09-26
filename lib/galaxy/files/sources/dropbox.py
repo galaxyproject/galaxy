@@ -7,7 +7,6 @@ except ImportError:
 import posixpath
 from typing import (
     Annotated,
-    Optional,
     Union,
 )
 
@@ -22,6 +21,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
+    RemoteFileTimestamp,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from ._fsspec import (
@@ -82,7 +82,7 @@ class DropboxFilesSource(FsspecFilesSource[DropboxFileSourceTemplateConfiguratio
             return "/"
         return filesystem_path if filesystem_path.startswith("/") else f"/{filesystem_path}"
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> RemoteFileTimestamp:
         return info.get("server_modified") or info.get("client_modified") or super()._extract_timestamp(info)
 
     def _write_from(

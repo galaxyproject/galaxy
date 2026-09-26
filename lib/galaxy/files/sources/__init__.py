@@ -1,7 +1,6 @@
 import abc
 import builtins
 import os
-import time
 from datetime import (
     datetime,
     timezone,
@@ -456,14 +455,6 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             exclude_none=True,
             exclude=COMMON_FILE_SOURCE_PROP_NAMES,
         )
-
-    def to_dict_time(self, ctime) -> Optional[str]:
-        if ctime is None:
-            return None
-        elif isinstance(ctime, (int, float)):
-            return time.strftime("%m/%d/%Y %I:%M:%S %p", time.localtime(ctime))
-        else:
-            return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
     def _get_runtime_context(
         self,

@@ -164,7 +164,7 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
             return RemoteFile(
                 name=name,
                 size=file_stat_info.st_size,
-                ctime=self.to_dict_time(file_stat_info.st_ctime),
+                ctime=file_stat_info.st_ctime,
                 uri=uri,
                 path=rel_path,
             )
