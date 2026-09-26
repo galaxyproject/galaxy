@@ -1,7 +1,6 @@
+import logging
 from datetime import datetime
-from typing import (
-    NoReturn,
-)
+from typing import NoReturn
 
 from galaxy.exceptions import (
     AdminRequiredException,
@@ -11,6 +10,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.notification_requests import NotificationRequestManager
 from galaxy.managers.sse import (
     make_event_id,
     parse_event_id,
@@ -39,12 +39,21 @@ from galaxy.schema.notifications import (
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.work.context import SessionRequestContext
+
+log = logging.getLogger(__name__)
 
 
 class NotificationService(ServiceBase):
-    def __init__(self, notification_manager: NotificationManager, sse_manager: SSEConnectionManager):
+    def __init__(
+        self,
+        notification_manager: NotificationManager,
+        sse_manager: SSEConnectionManager,
+        notification_request_manager: NotificationRequestManager,
+    ):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
+        self.notification_request_manager = notification_request_manager
 
     @property
     def notifications_enabled(self) -> bool:
@@ -61,23 +70,38 @@ class NotificationService(ServiceBase):
         return self.notification_manager.send_notification_internal(request, force_sync=force_sync)
 
     def send_notification(
-        self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
+        self, sender_context: SessionRequestContext, payload: NotificationCreateRequestBody
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
+        Admin users may send to arbitrary recipients for categories outside the user-allowed set.
+        For user-allowed categories (e.g. tool installation requests), admin submissions are treated
+        like regular user submissions so that recipients and content are populated server-side.
+
+        Authenticated non-admin users may only use categories in the server-side allow-list,
+        subject to per-category feature-flag checks; their recipients are overridden server-side.
         """
         self.notification_manager.ensure_notifications_enabled()
-        self._ensure_user_can_send_notifications(sender_context)
         galaxy_url = (
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
-        request = NotificationCreateRequest.model_construct(
-            notification=payload.notification,
-            recipients=payload.recipients,
-            galaxy_url=galaxy_url,
-        )
-        return self.notification_manager.send_notification_internal(request)
+        requests = self.notification_request_manager.build_user_sender_requests(sender_context, payload, galaxy_url)
+        # Send each built request. The first (primary) is the admin-facing
+        # notification, so the API response describes the request the admin will
+        # act on -- return that one, not the last iteration's (confirmation) result.
+        response: NotificationCreatedResponse | AsyncTaskResultSummary | None = None
+        for index, request in enumerate(requests):
+            if index == 0:
+                response = self.send_internal_notification(request, force_sync=False)
+                continue
+            # The admin notification is already away, so a failed confirmation must
+            # not fail the request: a retry would notify the admins a second time.
+            try:
+                self.send_internal_notification(request, force_sync=False)
+            except Exception:
+                log.exception("Failed to send the submitter's confirmation copy")
+        assert response is not None
+        return response
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
@@ -221,12 +245,6 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         user = self.get_authenticated_user(user_context)
         return self.notification_manager.update_user_notification_preferences(user, request)
-
-    def _ensure_user_can_send_notifications(self, sender_context: ProvidesUserContext) -> None:
-        """Raises an exception if the user cannot send notifications."""
-        # TODO implement and check permissions for non-admin users?
-        if not sender_context.user_is_admin:
-            raise AdminRequiredException("Only administrators can create and send notifications.")
 
     def _ensure_user_can_broadcast_notifications(self, sender_context: ProvidesUserContext) -> None:
         """Raises an exception if the user cannot broadcast notifications."""

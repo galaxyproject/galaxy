@@ -14,6 +14,7 @@ from fastapi import (
     Response,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
+from limits import parse_many
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -22,7 +23,10 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Route
 from tuspyserver import create_tus_router
 
-from galaxy.exceptions import TooManyRequestsException
+from galaxy.exceptions import (
+    ConfigurationError,
+    TooManyRequestsException,
+)
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
@@ -321,6 +325,16 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
     return get_error_response_for_request(request, error)
 
 
+def validate_rate_limit_options(config) -> None:
+    """Reject a rate limit option slowapi cannot parse at startup rather than on the first request."""
+    value = config.send_notification_rate_limit
+    if value:
+        try:
+            parse_many(value)
+        except ValueError as e:
+            raise ConfigurationError(f"Invalid value for send_notification_rate_limit ({value!r}): {e}") from e
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     """Build the FastAPI app that fronts the Galaxy web server."""
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
@@ -340,6 +354,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
 
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    validate_rate_limit_options(gx_app.config)
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:
