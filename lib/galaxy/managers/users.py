@@ -234,6 +234,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
+            # A token mailed to the previous address must not verify this one.
+            user.activation_token = None
             if send_activation_email:
                 if not self.send_activation_email(trans, user.email, user.username):
                     session.rollback()
