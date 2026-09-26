@@ -13,14 +13,14 @@ Build all recipes discovered in tsv files in a single directory.
 """
 
 import sys
+from collections.abc import (
+    Iterator,
+    Sequence,
+)
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
 )
 
 from galaxy.tool_util.deps.conda_util import CondaTarget
@@ -39,10 +39,10 @@ FALLBACK_FIELD_ORDER = ("targets", "image_build", "name_override", "base_image")
 
 @dataclass
 class Target:
-    targets: List[CondaTarget]
-    image_build: Optional[str]
-    name_override: Optional[str]
-    base_image: Optional[str]
+    targets: list[CondaTarget]
+    image_build: str | None
+    name_override: str | None
+    base_image: str | None
 
 
 def main(argv=None):
@@ -96,7 +96,7 @@ def generate_targets(target_source) -> Iterator[Target]:
                         yield line_to_targets(line, field_order)
 
 
-def field_order_from_header(header: str) -> List[str]:
+def field_order_from_header(header: str) -> list[str]:
     fields = header[1:].split("\t")
     for field in fields:
         assert field in KNOWN_FIELDS, f"'{field}' is not one of {KNOWN_FIELDS}"
@@ -109,7 +109,7 @@ def field_order_from_header(header: str) -> List[str]:
 
 def line_to_targets(line_str: str, field_order: Sequence[str]) -> Target:
     """Parse a line so that some columns can remain unspecified."""
-    line_parts: List[Any] = line_str.split("\t")
+    line_parts: list[Any] = line_str.split("\t")
     n_fields = len(field_order)
     targets_column = field_order.index("targets")
     assert (

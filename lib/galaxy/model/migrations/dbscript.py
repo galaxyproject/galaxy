@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from typing import Optional
 
 from galaxy.model.migrations import verify_databases_via_script
 from galaxy.model.migrations.base import (
@@ -56,7 +55,7 @@ class DbScript(BaseDbScript):
     def _revision_tags(self):
         return {f"release_{k}": v for k, v in REVISION_TAGS.items()} | REVISION_TAGS
 
-    def _set_dburl(self, config_file: Optional[str] = None) -> None:
+    def _set_dburl(self, config_file: str | None = None) -> None:
         gxy_config, tsi_config, _ = get_configuration_from_file(os.getcwd(), config_file)
         self.gxy_url = gxy_config.url
         self.tsi_url = tsi_config.url

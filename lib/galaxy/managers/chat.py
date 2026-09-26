@@ -2,8 +2,6 @@ import json
 import logging
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 log = logging.getLogger(__name__)
@@ -45,7 +43,7 @@ class ChatManager:
     Business logic for chat exchanges.
     """
 
-    def create(self, trans: ProvidesUserContext, job_id: Optional[int], message: str) -> ChatExchange:
+    def create(self, trans: ProvidesUserContext, job_id: int | None, message: str) -> ChatExchange:
         """
         Create a new chat exchange in the DB.  Currently these are *only* job-based chat exchanges, will need to generalize down the road.
         :param  job_id:      id of the job to associate the response with
@@ -68,8 +66,8 @@ class ChatManager:
         return chat_exchange
 
     def resolve_page_from_interface_context(
-        self, trans: ProvidesUserContext, query_context: Optional[dict[str, Any]]
-    ) -> tuple[Optional[int], Optional["Page"]]:
+        self, trans: ProvidesUserContext, query_context: dict[str, Any] | None
+    ) -> tuple[int | None, Page | None]:
         """Extract and validate a page from an interface_context notebook payload.
 
         Swallows only ID-decode failures; access-control errors propagate.
@@ -229,7 +227,7 @@ class ChatManager:
         trans.sa_session.commit()
         return chat_message
 
-    def get(self, trans: ProvidesUserContext, job_id: int) -> Union[ChatExchange, None]:
+    def get(self, trans: ProvidesUserContext, job_id: int) -> ChatExchange | None:
         """
         Returns the chat exchange from the DB based on the given job id.
         :param  job_id:      id of the job to load a response for from the DB
@@ -251,7 +249,7 @@ class ChatManager:
             raise InternalServerError(f"Error loading from the database: {unicodify(e)}")
         return chat_exchange
 
-    def get_exchange_by_id(self, trans: ProvidesUserContext, exchange_id: int) -> Union[ChatExchange, None]:
+    def get_exchange_by_id(self, trans: ProvidesUserContext, exchange_id: int) -> ChatExchange | None:
         """
         Returns the chat exchange from the DB based on the exchange id.
         :param  exchange_id: id of the chat exchange to load from the DB

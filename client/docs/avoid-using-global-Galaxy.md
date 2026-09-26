@@ -23,7 +23,7 @@ ecosystem.
 ## Mount Functions
 
 In what most people think of as a "standard" Vue application there would be only one place that Vue
-is mounted to the HTML environment, and that would be in a main.j or an app.js. Most modern
+is mounted to the HTML environment, and that would be in a main.js or an app.js. Most modern
 single-page applications only have one starting point like that.
 
 However, we are incrementally replacing old Backbone views, so in its current state, Galaxy may have

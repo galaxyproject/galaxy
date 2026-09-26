@@ -113,7 +113,7 @@ describe("ChangesetSummaryTable", () => {
 
             const icons = wrapper.findAll(".q-icon")
             const checkIcon = icons.find(
-                (icon) => icon.text().includes("check") || icon.attributes("name")?.includes("check")
+                (icon) => icon.text().includes("check") || icon.attributes("name")?.includes("check"),
             )
             expect(checkIcon).toBeTruthy()
         })
@@ -124,7 +124,7 @@ describe("ChangesetSummaryTable", () => {
 
             const icons = wrapper.findAll(".q-icon")
             const closeIcon = icons.find(
-                (icon) => icon.text().includes("close") || icon.attributes("name")?.includes("close")
+                (icon) => icon.text().includes("close") || icon.attributes("name")?.includes("close"),
             )
             expect(closeIcon).toBeTruthy()
         })

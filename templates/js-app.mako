@@ -61,7 +61,7 @@
             ${ config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
         %endif
         %if app.config.matomo_server and app.config.matomo_site_id:
-            ${ config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
+            ${ config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id, app.config.matomo_disable_cookies) }
         %endif
     </body>
 </html>
@@ -93,13 +93,16 @@
     %endif
 </%def>
 
-<%def name="config_matomo_analytics(matomo_server, matomo_site_id)">
+<%def name="config_matomo_analytics(matomo_server, matomo_site_id, matomo_disable_cookies=True)">
     <script type="text/javascript">
         console.log("config_matomo_analytics matomo_server:", '${matomo_server}');
         console.log("config_matomo_analytics matomo_site_id:", '${matomo_site_id}')
         %if matomo_server and matomo_site_id:
             var _paq = window._paq = window._paq || [];
             /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            %if matomo_disable_cookies:
+            _paq.push(['disableCookies']);
+            %endif
             _paq.push(['trackPageView']);
             _paq.push(['enableLinkTracking']);
             (function () {

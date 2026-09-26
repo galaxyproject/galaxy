@@ -1,14 +1,9 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Union,
+    Literal,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -28,26 +23,17 @@ AdminBadgeT = Literal[
 ]
 
 # All badges - so AdminBadgeT plus Galaxy specifiable badges.
-BadgeT = Union[
-    AdminBadgeT,
-    Literal[
-        "cloud",
-        "quota",
-        "no_quota",
-        "restricted",
-        "user_defined",
-    ],
-]
+BadgeT = AdminBadgeT | Literal["cloud", "quota", "no_quota", "restricted", "user_defined"]
 
 
 class BadgeSpecDict(TypedDict):
     """Describe badges that can be set by Galaxy admins."""
 
     type: AdminBadgeT
-    conflicts: List[AdminBadgeT]
+    conflicts: list[AdminBadgeT]
 
 
-BADGE_SPECIFICATION: List[BadgeSpecDict] = [
+BADGE_SPECIFICATION: list[BadgeSpecDict] = [
     {"type": "faster", "conflicts": ["slower"]},
     {"type": "slower", "conflicts": ["faster"]},
     {"type": "short_term", "conflicts": []},
@@ -59,26 +45,26 @@ BADGE_SPECIFICATION: List[BadgeSpecDict] = [
     {"type": "less_stable", "conflicts": ["more_stable"]},
 ]
 
-KNOWN_BADGE_TYPES: List[AdminBadgeT] = [s["type"] for s in BADGE_SPECIFICATION]
-BADGE_SPECIFICATION_BY_TYPE: Dict[AdminBadgeT, BadgeSpecDict] = {s["type"]: s for s in BADGE_SPECIFICATION}
+KNOWN_BADGE_TYPES: list[AdminBadgeT] = [s["type"] for s in BADGE_SPECIFICATION]
+BADGE_SPECIFICATION_BY_TYPE: dict[AdminBadgeT, BadgeSpecDict] = {s["type"]: s for s in BADGE_SPECIFICATION}
 
 
 class BadgeDict(TypedDict):
     type: BadgeT
-    message: Optional[str]
+    message: str | None
     source: BadgeSourceT
 
 
 class StoredBadgeDict(TypedDict):
     type: AdminBadgeT
-    message: NotRequired[Optional[str]]
+    message: NotRequired[str | None]
 
 
-def read_badges(config_dict: Dict[str, Any]) -> List[StoredBadgeDict]:
+def read_badges(config_dict: dict[str, Any]) -> list[StoredBadgeDict]:
     raw_badges = config_dict.get("badges") or []
-    badges: List[StoredBadgeDict] = []
-    badge_types: Set[str] = set()
-    badge_conflicts: Dict[str, str] = {}
+    badges: list[StoredBadgeDict] = []
+    badge_types: set[str] = set()
+    badge_conflicts: dict[str, str] = {}
     for badge in raw_badges:
         # when recovering serialized badges, skip ones that are set by Galaxy
         badge_source = badge.get("source")
@@ -104,15 +90,15 @@ def read_badges(config_dict: Dict[str, Any]) -> List[StoredBadgeDict]:
 
 
 def serialize_badges(
-    stored_badges: List[StoredBadgeDict], quota_enabled: bool, private: bool, user_defined: bool, cloud: bool
-) -> List[BadgeDict]:
+    stored_badges: list[StoredBadgeDict], quota_enabled: bool, private: bool, user_defined: bool, cloud: bool
+) -> list[BadgeDict]:
     """Produce blended, unified list of badges for target object store entity.
 
     Combine more free form admin information stored about badges with Galaxy tracked
     information (quota and access restriction information) to produce a unified list
     of badges to be consumed via the API.
     """
-    badge_dicts: List[BadgeDict] = []
+    badge_dicts: list[BadgeDict] = []
     for badge in stored_badges:
         badge_dict: BadgeDict = {
             "source": "admin",

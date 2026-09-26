@@ -4,7 +4,6 @@ import os
 import re
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -124,10 +123,14 @@ def create_repo_info_dict(
     repository_dependencies will be None.
     """
     repo_info_dict = {}
-    repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
+    if repository is None:
+        repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
+        if repository_metadata is None:
+            repository_metadata = repository_metadata_by_changeset_revision(
+                app.model, repository.id, changeset_revision
+            )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -195,7 +198,7 @@ def create_repository(
     description,
     long_description,
     user,
-    category_ids: Optional[list[str]] = None,
+    category_ids: list[str] | None = None,
     remote_repository_url=None,
     homepage_url=None,
 ) -> tuple[model.Repository, str]:
@@ -246,7 +249,7 @@ def create_repository(
 
 
 def generate_sharable_link_for_repository_in_tool_shed(
-    repository: model.Repository, changeset_revision: Optional[str] = None, base_url: Optional[str] = None
+    repository: model.Repository, changeset_revision: str | None = None, base_url: str | None = None
 ) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
     if base_url is None:
@@ -265,11 +268,24 @@ def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
     return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
 
 
-def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+def get_repo_info_dict(
+    trans: "ProvidesRepositoriesContext",
+    repository_id,
+    changeset_revision,
+    repository=None,
+    repository_metadata=None,
+):
+    """Build the repo info dict for a repository revision.
+
+    Callers that have already loaded the repository and the metadata record for
+    changeset_revision can pass them in to avoid re-querying for them.
+    """
     app = trans.app
-    repository = get_repository_in_tool_shed(app, repository_id)
+    if repository is None:
+        repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = generate_clone_url_for(trans, repository)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
+    if repository_metadata is None:
+        repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
@@ -308,8 +324,17 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    # repository_metadata may describe the next installable revision rather than the requested
+    # one, in which case it says nothing about changeset_revision itself.
+    if repository_metadata is not None and repository_metadata.changeset_revision == changeset_revision:
+        metadata_for_changeset = repository_metadata
+    else:
+        metadata_for_changeset = None
+    # Deliberately not read from repository_metadata.numeric_revision: when a push updates
+    # the metadata record in place its changeset_revision advances to the new tip while
+    # numeric_revision keeps pointing at the previous changeset, and Galaxy clones at
+    # whatever ctx_rev we hand it.
+    ctx_rev = str(changeset2rev(repository.hg_repo, changeset_revision))
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,
@@ -318,7 +343,7 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         repository_owner=repository.user.username,
         repository_name=repository.name,
         repository=repository,
-        repository_metadata=repository_metadata,
+        repository_metadata=metadata_for_changeset,
         tool_dependencies=None,
         repository_dependencies=None,
         trans=trans,
@@ -339,7 +364,7 @@ def get_repositories_by_category(
     installable: bool = False,
     sort_order="asc",
     sort_key="name",
-    page: Optional[int] = None,
+    page: int | None = None,
     per_page: int = 25,
 ):
     repositories = []
@@ -432,9 +457,7 @@ def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
         config.write(fh)
 
 
-def update_repository(
-    trans: "ProvidesUserContext", id: str, **kwds
-) -> tuple[Optional[model.Repository], Optional[str]]:
+def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> tuple[model.Repository | None, str | None]:
     """Update an existing ToolShed repository"""
     app = trans.app
     sa_session = app.model.session
@@ -451,7 +474,7 @@ def update_repository(
 
 def update_validated_repository(
     trans: "ProvidesUserContext", repository: model.Repository, **kwds
-) -> tuple[Optional[model.Repository], Optional[str]]:
+) -> tuple[model.Repository | None, str | None]:
     """Update an existing ToolShed repository metadata once permissions have been checked."""
     app = trans.app
     sa_session = app.model.session
@@ -466,7 +489,6 @@ def update_validated_repository(
             flush_needed = True
 
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
-
         # Remove existing category associations
         _delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
 
@@ -546,7 +568,7 @@ def get_repositories(
     installable: bool,
     sort_order,
     sort_key,
-    page: Optional[int],
+    page: int | None,
     per_page: int,
 ):
     stmt = (

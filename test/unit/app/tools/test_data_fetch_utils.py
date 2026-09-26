@@ -1,12 +1,26 @@
+import json
 from datetime import (
     datetime,
     timedelta,
     timezone,
 )
-from typing import cast
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.model import User
-from galaxy.tools.data_fetch_utils import compute_token_expiry_for_provider
+from galaxy.tools.actions.upload import FetchUploadToolAction
+from galaxy.tools.data_fetch_utils import (
+    compute_token_expiry_for_provider,
+    iter_fetch_request_urls,
+    iter_fetch_urls,
+)
+
+
+class ConcreteFetchUploadToolAction(FetchUploadToolAction):
+    def get_output_name(self, *args: Any, **kwargs: Any) -> str:
+        raise NotImplementedError
 
 
 class DummyToken:
@@ -62,3 +76,32 @@ def test_compute_token_expiry_for_provider_returns_none_when_token_missing_auth_
     token.extra_data = {}
     user = DummyUser([token])
     assert compute_token_expiry_for_provider(cast(User, user), "oidc") is None
+
+
+def test_iter_fetch_request_urls_extracts_urls():
+    request = {
+        "targets": [
+            {"elements": [{"src": "url", "url": "gxuserfiles://abc/x"}, {"src": "url", "url": "https://e.com/y"}]}
+        ]
+    }
+    param_dict = {"request_json": json.dumps(request)}
+    assert set(iter_fetch_request_urls(param_dict)) == {"gxuserfiles://abc/x", "https://e.com/y"}
+
+
+def test_iter_fetch_request_urls_empty_without_request_json():
+    assert list(iter_fetch_request_urls({})) == []
+    assert list(iter_fetch_request_urls({"request_json": ""})) == []
+
+
+def test_iter_fetch_request_urls_ignores_non_string_and_empty_urls():
+    request = {"targets": [{"elements": [{"src": "url", "url": None}, {"src": "url", "url": ""}]}]}
+    assert list(iter_fetch_urls(request)) == [None, ""]
+    assert list(iter_fetch_request_urls({"request_json": json.dumps(request)})) == []
+
+
+def test_fetch_upload_action_reports_referenced_file_source_uris():
+    request = {"targets": [{"elements": [{"src": "url", "url": "gxfiles://source/input"}]}]}
+    action = ConcreteFetchUploadToolAction()
+    assert list(action.iter_referenced_file_source_uris({"request_json": json.dumps(request)})) == [
+        "gxfiles://source/input"
+    ]

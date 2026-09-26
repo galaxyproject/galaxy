@@ -29,8 +29,7 @@ def _resolve_config_file(explicit_config_file: str | None) -> str:
             raise RuntimeError(f"Config file does not exist: {config_file}")
         return str(config_file)
 
-    env_config_file = os.environ.get("GALAXY_CONFIG_FILE")
-    if env_config_file:
+    if env_config_file := os.environ.get("GALAXY_CONFIG_FILE"):
         config_file = Path(env_config_file)
         if not config_file.exists():
             raise RuntimeError(f"GALAXY_CONFIG_FILE does not exist: {config_file}")

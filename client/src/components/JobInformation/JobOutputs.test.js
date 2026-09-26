@@ -2,6 +2,7 @@ import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import JobOutputs from "./JobOutputs.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 vi.mock("components/providers/DatasetCollectionProvider");
 
@@ -71,8 +72,10 @@ describe("JobInformation/JobOutputs.vue", () => {
             title: "Job Outputs",
             paginate: true,
         };
+        // Real GButton so the click runs through its handler.
         wrapper = shallowMount(JobOutputs, {
             propsData,
+            stubs: { GButton },
         });
         // ---- Before all remaining outputs are paginated: ----
         // heading should exist and include count (due to pagination)

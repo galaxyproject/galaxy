@@ -3,6 +3,7 @@ import { BFormCheckbox } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
+import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
 
 import { useUploadState } from "./uploadState";
 
@@ -14,28 +15,25 @@ const { hasUploads } = useUploadState();
 const { advancedMode } = useUploadAdvancedMode();
 const router = useRouter();
 
+useUploadDatasetMonitorStore();
+
 function showProgressDetails() {
     router.push("/upload/progress");
 }
 </script>
 
 <template>
-    <ActivityPanel title="Import Data" data-description="beta upload panel">
+    <ActivityPanel title="Import Data" data-description="upload panel">
         <template v-slot:activity-panel-header-top>
             <h2 id="activity-panel-heading" class="activity-panel-heading h-sm d-inline-flex align-items-center">
                 <span>Import Data</span>
-                <span
-                    v-g-tooltip.hover
-                    class="badge badge-warning ml-2"
-                    title="This upload experience is in Beta and is intended to gather user feedback.">
-                    Beta
-                </span>
             </h2>
         </template>
         <template v-slot:header-buttons>
             <BFormCheckbox
                 v-model="advancedMode"
                 v-g-tooltip.hover
+                data-test-id="upload-advanced-mode-toggle"
                 size="sm"
                 switch
                 class="mx-2"

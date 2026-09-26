@@ -1,7 +1,7 @@
 import json
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     cast,
 )
 

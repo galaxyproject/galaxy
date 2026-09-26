@@ -21,7 +21,13 @@ export function useHistoryGraphData(
     const error = ref<string | null>(null);
 
     async function fetchGraph() {
-        loading.value = true;
+        // Only show the loading state when there's nothing to render — on
+        // refetch we keep the existing graph mounted so the consumer's view
+        // (pan, zoom, selection) survives until fresh data lands.
+        const showLoading = graphData.value === null;
+        if (showLoading) {
+            loading.value = true;
+        }
         error.value = null;
 
         try {
@@ -50,7 +56,9 @@ export function useHistoryGraphData(
             error.value = e instanceof Error ? e.message : "Failed to load graph";
             graphData.value = null;
         } finally {
-            loading.value = false;
+            if (showLoading) {
+                loading.value = false;
+            }
         }
     }
 
@@ -63,5 +71,5 @@ export function useHistoryGraphData(
     }
     watch(watchSources, () => fetchGraph(), { immediate: true });
 
-    return { graphData, loading, error };
+    return { graphData, loading, error, refetch: fetchGraph };
 }

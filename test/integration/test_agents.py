@@ -14,6 +14,7 @@ For deterministic tests without LLM, see test_static_agent_backend.py.
 import asyncio
 import logging
 import os
+from typing import cast
 
 import pytest
 from fastmcp import (
@@ -26,6 +27,7 @@ from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+from galaxy.work.context import SessionRequestContext
 from galaxy_test.base.populators import (
     DatasetPopulator,
     TOOL_WITH_SHELL_COMMAND,
@@ -216,7 +218,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
             def user_is_admin(self):
                 return False
 
-        trans = MinimalTrans(self._app)
+        # the double only needs security.encode_id for _encode_ids_in_response
+        trans = cast(SessionRequestContext, MinimalTrans(self._app))
         return AgentOperationsManager(app=self._app, trans=trans)
 
     def test_encode_ids_helper_encodes_nested_ids(self):
@@ -227,6 +230,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
             "name": "test",
             "nested": {"id": 456, "history_id": 789},
             "list_items": [{"id": 111, "dataset_id": 222}, {"id": 333}],
+            "implicit_collection_jobs_id": 444,
+            "unmapped_job": {"implicit_collection_jobs_id": None},
         }
 
         result = ops._encode_ids_in_response(test_data)
@@ -239,6 +244,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         assert isinstance(result["list_items"][0]["id"], str)
         assert isinstance(result["list_items"][0]["dataset_id"], str)
         assert isinstance(result["list_items"][1]["id"], str)
+        assert isinstance(result["implicit_collection_jobs_id"], str)
+        assert result["unmapped_job"]["implicit_collection_jobs_id"] is None
 
     def test_encode_ids_preserves_non_id_fields(self):
         ops = self._make_ops()
@@ -349,6 +356,13 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "search_iwc_workflows",
             "get_iwc_workflow_details",
             "import_workflow_from_iwc",
+            "list_pages",
+            "get_page",
+            "create_page",
+            "update_page",
+            "list_page_revisions",
+            "get_page_revision",
+            "revert_page_revision",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
 
@@ -563,3 +577,87 @@ class TestMCPServerSmoke(IntegrationTestCase):
         data = result.data
         assert "id" in data
         assert data["trsID"] == trs_id
+
+    def test_mcp_page_lifecycle(self):
+        """create_page -> get_page -> update_page -> list_page_revisions round-trip."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                created = await client.call_tool(
+                    "create_page",
+                    {"api_key": api_key, "history_id": history_id, "title": "MCP Notebook", "content": "# Intro\n"},
+                )
+                page_id = created.data["id"]
+                got = await client.call_tool("get_page", {"api_key": api_key, "page_id": page_id})
+                await client.call_tool(
+                    "update_page",
+                    {"api_key": api_key, "page_id": page_id, "content": "# Intro\n\n## Methods\n"},
+                )
+                revisions = await client.call_tool("list_page_revisions", {"api_key": api_key, "page_id": page_id})
+                listed = await client.call_tool("list_pages", {"api_key": api_key, "history_id": history_id})
+                return created, got, revisions, listed
+
+        created, got, revisions, listed = self._run_async(_flow())
+        assert not created.is_error, created
+        assert created.data["history_id"] == history_id
+        # get_page returns the editable content and omits the rendered form by default
+        assert "content_editor" in got.data
+        assert "content" not in got.data
+        # update_page created a second revision tagged with edit_source="agent"
+        assert revisions.data["count"] == 2
+        assert revisions.data["revisions"][-1]["edit_source"] == "agent"
+        # the notebook shows up when listing pages for its history
+        assert created.data["id"] in {p["id"] for p in listed.data["pages"]}
+
+    def test_mcp_page_directive_and_revert(self):
+        """Dataset directives survive in encoded-id space; revert restores prior content."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+        hda_id = populator.new_dataset(history_id)["id"]
+        directive = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={hda_id})\n```\n"
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                created = await client.call_tool(
+                    "create_page",
+                    {"api_key": api_key, "history_id": history_id, "title": "Directive NB", "content": directive},
+                )
+                page_id = created.data["id"]
+                editor = await client.call_tool("get_page", {"api_key": api_key, "page_id": page_id})
+                rendered = await client.call_tool(
+                    "get_page", {"api_key": api_key, "page_id": page_id, "include_rendered": True}
+                )
+                await client.call_tool(
+                    "update_page", {"api_key": api_key, "page_id": page_id, "content": "# Replaced\n"}
+                )
+                revisions = await client.call_tool("list_page_revisions", {"api_key": api_key, "page_id": page_id})
+                first_rev_id = revisions.data["revisions"][0]["id"]
+                old_rev = await client.call_tool(
+                    "get_page_revision",
+                    {"api_key": api_key, "page_id": page_id, "revision_id": first_rev_id},
+                )
+                reverted = await client.call_tool(
+                    "revert_page_revision",
+                    {"api_key": api_key, "page_id": page_id, "revision_id": first_rev_id},
+                )
+                return editor, rendered, old_rev, reverted
+
+        editor, rendered, old_rev, reverted = self._run_async(_flow())
+        # content_editor keeps the directive with the ENCODED dataset id (encoded-id space)
+        assert hda_id in editor.data["content_editor"]
+        assert "content" not in editor.data
+        # include_rendered exposes the expanded render form
+        assert "content" in rendered.data
+        # get_page_revision mirrors get_page: editable content_editor by default, rendered omitted
+        assert hda_id in old_rev.data["content_editor"]
+        assert "content" not in old_rev.data
+        # revert appends a new "restore" revision carrying the original directive content
+        assert reverted.data["edit_source"] == "restore"
+        assert hda_id in reverted.data["content_editor"]
+        assert "content" not in reverted.data

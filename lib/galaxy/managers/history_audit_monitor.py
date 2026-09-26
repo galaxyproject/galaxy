@@ -19,7 +19,6 @@ from collections.abc import Iterator
 from datetime import timedelta
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import select as sa_select
@@ -121,13 +120,13 @@ class HistoryAuditMonitor:
         self.poll_interval: int = config.history_audit_monitor_poll_interval
         self._is_postgres: bool = "postgres" in model.engine.name
         self._exit = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._active = False
         # Bounded LRU cache: history_id -> (user_id, session_ids), refreshed on miss.
         # For registered-owned histories: (user_id, ()); for anonymous histories:
         # (None, (session_id, ...)) — a history can be associated with multiple
         # sessions via GalaxySessionToHistoryAssociation.
-        self._history_owner_cache: OrderedDict[int, tuple[Optional[int], tuple[int, ...]]] = OrderedDict()
+        self._history_owner_cache: OrderedDict[int, tuple[int | None, tuple[int, ...]]] = OrderedDict()
 
     def start(self) -> None:
         if self._active:
@@ -253,8 +252,7 @@ class HistoryAuditMonitor:
         keeping this manager free of presentation concerns.
         """
         # Resolve owners for unknown history_ids
-        unknown = history_ids - self._history_owner_cache.keys()
-        if unknown:
+        if unknown := history_ids - self._history_owner_cache.keys():
             self._refresh_owner_cache(unknown)
 
         user_updates: dict[str, list[int]] = defaultdict(list)

@@ -12,7 +12,6 @@ from collections.abc import (
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 import mako
@@ -29,6 +28,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -70,6 +70,7 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.source_store import ToolSourceStore
 from galaxy.util import (
     galaxy_directory,
     StructuredExecutionTimer,
@@ -112,8 +113,8 @@ def buildMockEnviron(**kwargs):
 class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
-    job_search: Optional[JobSearch] = None
-    _toolbox: ToolBox
+    job_search: JobSearch | None = None
+    _toolbox: ToolBox | None
     tool_cache: ToolCache
     install_model: ModelMapping
     watchers: ConfigWatchers
@@ -122,13 +123,15 @@ class MockApp(di.Container, GalaxyDataTestApp):
     workflow_manager: WorkflowsManager
     history_manager: HistoryManager
     job_metrics: JobMetrics
-    vault: Optional[Vault] = None
+    vault: Vault | None = None
     execution_timer_factory: Any
     stop: bool
     is_webapp: bool = True
+    tool_source_store: ToolSourceStore | None = None
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
+        self._toolbox = None
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
         self.install_model = self.model
@@ -178,11 +181,16 @@ class MockApp(di.Container, GalaxyDataTestApp):
 
     @property
     def toolbox(self) -> ToolBox:
+        assert self._toolbox is not None
         return self._toolbox
 
     @toolbox.setter
     def toolbox(self, toolbox: ToolBox):
         self._toolbox = toolbox
+
+    @property
+    def toolbox_or_none(self) -> ToolBox | None:
+        return self._toolbox
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
@@ -258,6 +266,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # Compliance related config
         self.redact_email_in_job_name = False
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_user_address_during_deletion = False
 
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join("tool-data", "shared", "ucsc", "chrom")
@@ -291,6 +302,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.track_jobs_in_database = False
         self.amqp_internal_connection = None
         self.tool_configs = []
+        self.tool_source_database_connection = f"sqlite:///{os.path.join(self.data_dir, 'tool_sources.sqlite')}"
+        self.tool_source_stores = None
+        self.use_cached_toolbox = False
         self.manage_dependency_relationships = False
         self.enable_tool_shed_check = False
         self.monitor_thread_join_timeout = 1
@@ -298,6 +312,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.vault_config_file = kwargs.get("vault_config_file")
         self.url_headers_config_file = None
         self.max_discovered_files = 10000
+        self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
         self.config_dict = self.dict()
@@ -429,8 +444,7 @@ class MockTrans:
 
 
 class MockVisualizationsRegistry:
-
-    def get_visualizations(self, trans, target):
+    def get_visualizations(self, trans: ProvidesAppContext, target):
         return []
 
 

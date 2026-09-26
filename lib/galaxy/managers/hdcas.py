@@ -6,7 +6,6 @@ history.
 """
 
 import logging
-from typing import Optional
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -20,6 +19,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.schema import OldestCreateTimeByObjectStoreId
 from galaxy.structured_app import (
     MinimalManagerApp,
@@ -30,25 +30,26 @@ from galaxy.util.zipstream import ZipstreamWrapper
 log = logging.getLogger(__name__)
 
 
-def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=False, upstream_gzip=False):
+def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=False, upstream_gzip=False, user=None):
     archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}"
     archive = ZipstreamWrapper(
         archive_name=archive_name,
         upstream_mod_zip=upstream_mod_zip,
         upstream_gzip=upstream_gzip,
     )
-    write_dataset_collection(dataset_collection_instance, archive)
+    write_dataset_collection(dataset_collection_instance, archive, user)
     return archive
 
 
-def write_dataset_collection(dataset_collection_instance, archive):
+def write_dataset_collection(dataset_collection_instance, archive, user):
+    auth = ObjectStoreAuth(user=user) if user else None
     if not dataset_collection_instance.collection.populated_optimized:
         raise RequestParameterInvalidException("Attempt to write dataset collection that has not been populated yet")
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
         if hda.state != hda.states.OK or hda.purged or hda.dataset.purged:
             continue
-        for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
+        for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name, auth=auth):
             archive.write(file_path, relpath)
     return archive
 
@@ -109,7 +110,7 @@ class HDCAManager(
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
     # .... security and permissions
-    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: Optional[model.User], **kwargs) -> bool:
+    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: model.User | None, **kwargs) -> bool:
         """
         Use history to see if current user owns HDCA.
         """

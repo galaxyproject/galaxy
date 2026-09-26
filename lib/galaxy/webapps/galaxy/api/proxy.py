@@ -66,7 +66,6 @@ def is_valid_url(url: str) -> bool:
 
 @router.cbv
 class FastAPIProxy:
-
     @router.get("/api/proxy")
     @router.head("/api/proxy")
     async def proxy(self, request: Request, url: str = URLQueryParam, trans: ProvidesUserContext = DependsOnTrans):

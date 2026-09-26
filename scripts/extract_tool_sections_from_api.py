@@ -16,7 +16,6 @@ import urllib.request
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import yaml
@@ -82,7 +81,7 @@ def represent_quoted_string(dumper: yaml.Dumper, data: str) -> yaml.ScalarNode:
 QuotingDumper.add_representer(QuotedString, represent_quoted_string)
 
 
-def fetch_tools(api_url: Optional[str] = None, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[dict[str, Any]]:
+def fetch_tools(api_url: str | None = None, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[dict[str, Any]]:
     """Fetch tools from a Galaxy `/api/tools` endpoint.
 
     Raises ``RuntimeError`` on transport / HTTP / decoding failures so the caller
@@ -274,7 +273,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     args = _build_arg_parser().parse_args(argv)
 
     global API_URL, OUTPUT_FILE

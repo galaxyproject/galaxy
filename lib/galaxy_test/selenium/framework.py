@@ -14,10 +14,10 @@ from functools import (
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
+import pytest
 import requests
 import yaml
 from requests.models import Response
@@ -70,6 +70,7 @@ from galaxy_test.base.populators import (
     load_data_dict,
     stage_inputs,
 )
+from galaxy_test.base.test_http_server import TestHttpServer
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -419,6 +420,13 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
 
+    test_http_server: TestHttpServer
+
+    @pytest.fixture(autouse=True)
+    def _attach_test_http_server(self, test_http_server: TestHttpServer) -> None:
+        """Expose the session test HTTP server to every Selenium test as ``self.test_http_server``."""
+        self.test_http_server = test_http_server
+
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
         assert_baseline_accessible(axe_results)
@@ -623,7 +631,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def assert_workflow_has_changes_and_save(self):
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_visible()
-        assert not save_button.has_class("disabled")
+        assert not save_button.has_class("g-disabled")
         save_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -975,14 +983,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _parse_repeat_key(key: str):
         import re
 
-        match = re.match(r"^(.+?)_(\d+)\|(.+)$", key)
-        if match:
+        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
             return match.group(1), int(match.group(2)), match.group(3)
         return None
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
         for _ in range(count):
-            self.components.tool_form.repeat_insert.wait_for_and_click()
+            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _expand_collapsed_sections(self):
@@ -1075,20 +1082,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_color_value(self, expanded_id: str, value: str):
         color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(color_input, value)
+        self.set_element_value(color_input, value)
 
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(input_element, value)
-
-    def _set_input_value_via_js(self, element, value):
-        self.execute_script(
-            "arguments[0].value = arguments[1];"
-            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
-            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
-            element,
-            value,
-        )
+        self.set_element_value(input_element, value)
 
     # -- Output verification --
 
@@ -1221,15 +1219,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
             wait=False,
         )
 
-        expected_type = oc_def.get("attributes", {}).get("type")
-        if expected_type:
+        if expected_type := oc_def.get("attributes", {}).get("type"):
             actual_type = data_collection["collection_type"]
             assert (
                 actual_type == expected_type
             ), f"Collection '{oc_def['name']}': expected type '{expected_type}', got '{actual_type}'"
 
-        expected_count = oc_def.get("attributes", {}).get("count")
-        if expected_count is not None:
+        if (expected_count := oc_def.get("attributes", {}).get("count")) is not None:
             actual_count = len(data_collection["elements"])
             assert actual_count == int(
                 expected_count
@@ -1292,16 +1288,31 @@ EXAMPLE_WORKFLOW_URL_1 = (
 
 
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    # Attached by TestWithSeleniumMixin._attach_test_http_server.
+    test_http_server: TestHttpServer
+    _example_workflow_url: str | None = None
+
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
         if (actual_count := len(self.workflow_card_elements())) != n:
             message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
             raise AssertionError(message)
 
+    @property
+    def example_workflow_url(self) -> str:
+        """URL the workflow import tests import from, served locally unless targeting a remote Galaxy."""
+        if self._example_workflow_url is None:
+            self._example_workflow_url = self.test_http_server.get_url(
+                remote_url=EXAMPLE_WORKFLOW_URL_1,
+                file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+                content_type="application/json",
+            )
+        return self._example_workflow_url
+
     @skip_if_github_down
-    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+    def _workflow_import_from_url(self, url: str | None = None):
         self.workflow_index_click_import()
-        self.workflow_import_submit_url(url)
+        self.workflow_import_submit_url(url or self.example_workflow_url)
 
     @retry_assertion_during_transitions
     def assert_wf_annotation_is(self, expected_annotation):
@@ -1340,7 +1351,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
         return name
 
-    def workflow_run_setup_inputs(self, content: Optional[str]) -> tuple[str, dict[str, Any]]:
+    def workflow_run_setup_inputs(self, content: str | None) -> tuple[str, dict[str, Any]]:
         history_id = self.current_history_id()
         if content:
             yaml_content = yaml.safe_load(content)
@@ -1379,9 +1390,9 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
     def workflow_run_and_submit(
         self,
         workflow_content: str,
-        test_data_content: Optional[str] = None,
+        test_data_content: str | None = None,
         landing_screenshot_name=None,
-        inputs_specified_screenshot_name: Optional[str] = None,
+        inputs_specified_screenshot_name: str | None = None,
         ensure_expanded: bool = False,
     ):
         history_id, inputs = self.workflow_run_setup_inputs(test_data_content)

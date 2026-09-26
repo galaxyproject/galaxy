@@ -1,10 +1,7 @@
 from collections import OrderedDict
 from typing import (
-    List,
-    Optional,
-    Tuple,
+    Literal,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -26,6 +23,10 @@ DEFAULT_EPS = 0.01
 DEFAULT_PIN_LABELS = None
 DEFAULT_SORT = False
 DEFAULT_DECOMPRESS = False
+
+# The ToolSourceTestOutputAttributes entries parsed as floats - the only ones that can hold a
+# non-finite value and so need decoding after a JSON round trip.
+FLOAT_OUTPUT_ATTRIBUTES: tuple[Literal["delta_frac"], Literal["eps"]] = ("delta_frac", "eps")
 
 
 def is_dict(item):
@@ -49,9 +50,7 @@ def parse_profile_version(tool_source: "ToolSource") -> float:
     return float(tool_source.parse_profile())
 
 
-def parse_tool_version_with_defaults(
-    id: Optional[str], tool_source: "ToolSource", profile: Optional[Version] = None
-) -> str:
+def parse_tool_version_with_defaults(id: str | None, tool_source: "ToolSource", profile: Version | None = None) -> str:
     if profile is None:
         profile = Version(tool_source.parse_profile())
 
@@ -65,12 +64,16 @@ def parse_tool_version_with_defaults(
     return version
 
 
-def boolean_is_checked(input_source: "InputSource"):
+def boolean_is_checked(input_source: "InputSource", profile: float | str | None = None):
     nullable = input_source.get_bool("optional", False)
-    return input_source.get_bool("checked", None if nullable else False)
+    if nullable and profile and Version(str(profile)) >= Version("26.2"):
+        # An optional boolean starts unset; get_bool would read that as unchecked.
+        # Covered by parameters/gx_boolean_optional_26_2, and gx_boolean_optional below 26.2.
+        return input_source.get_bool_or_none("checked", None)
+    return input_source.get_bool("checked", False)
 
 
-def boolean_true_and_false_values(input_source, profile: Optional[Union[float, str]] = None) -> Tuple[str, str]:
+def boolean_true_and_false_values(input_source, profile: float | str | None = None) -> tuple[str, str]:
     truevalue = input_source.get("truevalue", "true")
     falsevalue = input_source.get("falsevalue", "false")
     if profile and Version(str(profile)) >= Version("23.1"):
@@ -87,9 +90,9 @@ def boolean_true_and_false_values(input_source, profile: Optional[Union[float, s
     return (truevalue, falsevalue)
 
 
-def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
+def text_input_is_optional(input_source: "InputSource") -> tuple[bool, bool]:
     # Optionality not explicitly defined, default to False
-    optional: Optional[bool] = False
+    optional: bool | None = False
     optionality_inferred: bool = False
 
     optional = input_source.get("optional", None)
@@ -108,7 +111,11 @@ def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
     return optional, optionality_inferred
 
 
-class ParameterParseException(Exception):
+class ParseException(Exception):
+    """A tool source could not be parsed into a usable tool."""
+
+
+class ParameterParseException(ParseException):
     message: str
 
     def __init__(self, message):
@@ -116,7 +123,7 @@ class ParameterParseException(Exception):
         self.message = message
 
 
-def multiple_select_value_split(values: Union[str, List[str]]) -> List[str]:
+def multiple_select_value_split(values: str | list[str]) -> list[str]:
     # used to split simple strings into lists from both tool XML and from the API for consistency
     value_list = []
     if not isinstance(values, list):

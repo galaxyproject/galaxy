@@ -6,7 +6,6 @@ import os
 import time
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy import model
@@ -47,7 +46,7 @@ class SlurmJobRunner(DRMAAJobRunner):
     runner_name = "SlurmRunner"
     restrict_job_name_length = False
 
-    def _complete_terminal_job(self, ajs: "DRMAAJobState", drmaa_state: str, **kwargs) -> Union[bool, None]:
+    def _complete_terminal_job(self, ajs: "DRMAAJobState", drmaa_state: str, **kwargs) -> bool | None:
         def _get_slurm_state_with_sacct(job_id, cluster):
             cmd = ["sacct", "-n", "-o", "state%-32"]
             if cluster:

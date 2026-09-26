@@ -3,7 +3,6 @@ import json
 import os
 import time
 from operator import itemgetter
-from typing import Union
 from unittest import SkipTest
 
 import requests
@@ -52,6 +51,21 @@ class TestJobsApi(ApiTestCase, TestsTools):
         job = jobs[0]
         assert job["command_line"]
         assert job["external_id"]
+
+    @requires_new_history
+    def test_show_system_details_admin_only(self, history_id):
+        # handler and job_runner_name were only set for the admin_job_list
+        # view, so an admin reading a single job always got null for both.
+        self.__history_with_new_dataset(history_id)
+        job_id = self.__jobs_index(admin=True)[0]["id"]
+
+        job = self._get(f"jobs/{job_id}", admin=False).json()
+        assert job["handler"] is None
+        assert job["job_runner_name"] is None
+
+        job = self._get(f"jobs/{job_id}", admin=True).json()
+        assert job["handler"] is not None
+        assert job["job_runner_name"] is not None
 
     @requires_new_history
     def test_admin_job_list(self, history_id):
@@ -888,12 +902,51 @@ steps:
             assert_ok=False,
         )
         job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
         icj_id = failed_hdca["implicit_collection_jobs_id"]
         assert icj_id
         index = self.__jobs_index(data=dict(implicit_collection_jobs_id=icj_id))
         assert len(index) == 1
         assert index[0]["id"] == job_id
         assert index[0]["state"] == "error", index
+
+    def test_show_job_exposes_implicit_collection_jobs_id(self, history_id):
+        run_response = self._run_map_over_error(history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        expected_icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(
+            history_id, run_response["implicit_collections"][0]["id"], assert_ok=False
+        )
+        job = self.dataset_populator.get_job_details(job_id).json()
+        assert job["implicit_collection_jobs_id"] == expected_icj_id
+
+    def test_show_job_implicit_collection_jobs_id_null_for_unmapped_job(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = {"input1": {"src": "hda", "id": dataset_id}}
+        run_response = self.dataset_populator.run_tool("cat1", inputs, history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job = self.dataset_populator.get_job_details(job_id).json()
+        assert job["implicit_collection_jobs_id"] is None
+
+    @requires_new_history
+    def test_search_jobs_exposes_implicit_collection_jobs_id(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        unmapped_inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        unmapped_job = self._create_and_search_job(history_id, unmapped_inputs, tool_id="cat1").json()[0]
+        assert unmapped_job["implicit_collection_jobs_id"] is None
+
+        list_id = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
+        mapped_inputs = json.dumps({"input1": {"batch": True, "values": [{"src": "hdca", "id": list_id}]}})
+        mapped_jobs = self._create_and_search_job(history_id, mapped_inputs, tool_id="cat1").json()
+        assert mapped_jobs
+        icj_ids = {job["implicit_collection_jobs_id"] for job in mapped_jobs}
+        assert None not in icj_ids
+        assert len(icj_ids) == 1, mapped_jobs
+        # search and show must agree - they share EncodedJobDetails but not a serializer
+        for job in mapped_jobs:
+            shown = self.dataset_populator.get_job_details(job["id"]).json()
+            assert shown["implicit_collection_jobs_id"] == job["implicit_collection_jobs_id"]
 
     @requires_new_history
     def test_search_with_hdca_list_input(self, history_id):
@@ -1178,7 +1231,7 @@ steps:
         assert len(empty_search_response.json()) == 0
 
     @requires_new_history
-    @transient_failure(issue=21242)
+    @transient_failure(issue=21242, potentially_fixed=True)
     def test_delete_job_with_message(self, history_id):
         # Setup a job that will take a while to run so we can verify our cancelling
         input_dataset_id = self.__history_with_ok_dataset(history_id)
@@ -1205,9 +1258,9 @@ steps:
             # Check the output dataset is deleted and the info field contains the message
             dataset_details = self._get(f"histories/{history_id}/contents/{output_dataset_id}").json()
             if dataset_details["deleted"] is not True:
-                return False
+                return None
             if dataset_details["misc_info"] != expected_message:
-                return False
+                return None
             return True
 
         assert wait_on(check, "dataset to be deleted with message")
@@ -1268,8 +1321,8 @@ steps:
         return tool_response
 
     def _search_payload(
-        self, tool_id: str, inputs: str, state: str = "ok", history_id: Union[str, None] = None
-    ) -> dict[str, Union[str, None]]:
+        self, tool_id: str, inputs: str, state: str = "ok", history_id: str | None = None
+    ) -> dict[str, str | None]:
         search_payload = dict(tool_id=tool_id, inputs=inputs, history_id=history_id, state=state)
         return search_payload
 

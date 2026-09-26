@@ -1,9 +1,8 @@
 """Linter rules covering container references on a tool source."""
 
 import re
+from collections.abc import Iterator
 from typing import (
-    Iterator,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
 lint_tool_types = ["*"]
 
 
-CONTAINER_PREFIXES: Tuple[str, ...] = ("quay.io/biocontainers/", "docker://", "oras://")
+CONTAINER_PREFIXES: tuple[str, ...] = ("quay.io/biocontainers/", "docker://", "oras://")
 DOCKER_IMAGE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*(/[a-zA-Z0-9._-]+)*(:[\w][\w.-]*)?$")
 
 

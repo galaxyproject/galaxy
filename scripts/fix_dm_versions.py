@@ -62,7 +62,7 @@ for guid in guid_mapping:
         tool_version = dm.find("./tool/version")
         tool_version = tool_version.text
 
-        new_guid = f"{guid[:guid.rfind('/')]}/{tool_version}"
+        new_guid = f"{guid[: guid.rfind('/')]}/{tool_version}"
         dm.attrib["guid"] = new_guid
         print(f"changing guid: {guid} -> {new_guid}")
         if "version" in dm.attrib:

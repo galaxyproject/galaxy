@@ -4,10 +4,6 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
-)
 
 from galaxy.tool_util.parameters.case import (
     TestCaseStateValidationResult,
@@ -51,11 +47,11 @@ def arg_parser() -> argparse.ArgumentParser:
 @dataclass
 class ToolTestValidationResults:
     tool_id: str
-    tool_version: Optional[str]
+    tool_version: str | None
     tool_profile: str
     tool_path: str
-    results: List[TestCaseStateValidationResult]
-    load_error: Optional[Exception]
+    results: list[TestCaseStateValidationResult]
+    load_error: Exception | None
 
     def to_dict(self):
         return {
@@ -96,7 +92,7 @@ def validate_tool(tool_path, latest) -> ToolTestValidationResults:
     tool_id = tool_source.parse_id()
     if tool_id is None:
         raise NotValidToolException()
-    load_error: Optional[Exception] = None
+    load_error: Exception | None = None
     try:
         results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=latest)
     except Exception as e:

@@ -1,14 +1,12 @@
 from typing import TYPE_CHECKING
 
-from selenium.webdriver.common.by import By
-
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.selenium.framework import (
     managed_history,
     RunsWorkflows,
-    selenium_only,
     UsesHistoryItemAssertions,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -18,7 +16,9 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 
-class BaseWorkflowRunTargetTestCase(SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions):
+class BaseWorkflowRunTargetTestCase(
+    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions, UsesUploadActivity
+):
     dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
 
@@ -29,26 +29,25 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_on_complete_notification_action(self):
         """Test configuring the send notification completion action."""
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Open the runtime settings panel by clicking the gear button
-        settings_button = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='workflow-run-settings-button']")
+        settings_button = self.find_element_by_selector("[data-test-id='workflow-run-settings-button']")
         settings_button.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_settings_panel_open")
 
         # Find and click the send notification checkbox
         # GCheckbox root element is a clickable label
-        notification_checkbox = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']")
+        notification_checkbox = self.find_element_by_selector("[data-test-id='send-notification-checkbox']")
         notification_checkbox.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_on_complete_notification_enabled")

@@ -11,10 +11,8 @@ left ``TestJob.job`` as ``Dict[str, Any]``.
 """
 
 from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
+    Annotated,
+    Literal,
 )
 
 from pydantic import (
@@ -23,10 +21,6 @@ from pydantic import (
     Field,
     RootModel,
     Tag,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
 )
 
 from ._base import (
@@ -59,33 +53,33 @@ class BaseFile(_StrictJobModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="BaseFile")
     class_: Literal["File"] = Field(alias="class", title="Class")
-    filetype: Annotated[Optional[str], Field(title="File Type")] = None
-    dbkey: Annotated[Optional[str], Field(title="Dbkey")] = None
-    decompress: Annotated[Optional[bool], Field(title="Decompress")] = None
-    to_posix_lines: Annotated[Optional[bool], Field(title="To POSIX Lines")] = None
-    space_to_tab: Annotated[Optional[bool], Field(title="Space To Tab")] = None
-    deferred: Annotated[Optional[bool], Field(title="Deferred")] = None
-    name: Annotated[Optional[str], Field(title="Name")] = None
-    info: Annotated[Optional[str], Field(title="Info")] = None
-    tags: Annotated[Optional[List[str]], Field(title="Tags")] = None
-    hashes: Annotated[Optional[List[HashEntry]], Field(title="Hashes")] = None
-    identifier: Annotated[Optional[str], Field(title="Identifier")] = None
+    filetype: Annotated[str | None, Field(title="File Type")] = None
+    dbkey: Annotated[str | None, Field(title="Dbkey")] = None
+    decompress: Annotated[bool | None, Field(title="Decompress")] = None
+    to_posix_lines: Annotated[bool | None, Field(title="To POSIX Lines")] = None
+    space_to_tab: Annotated[bool | None, Field(title="Space To Tab")] = None
+    deferred: Annotated[bool | None, Field(title="Deferred")] = None
+    name: Annotated[str | None, Field(title="Name")] = None
+    info: Annotated[str | None, Field(title="Info")] = None
+    tags: Annotated[list[str] | None, Field(title="Tags")] = None
+    hashes: Annotated[list[HashEntry] | None, Field(title="Hashes")] = None
+    identifier: Annotated[str | None, Field(title="Identifier")] = None
 
 
 class LocationFile(BaseFile):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="LocationFile")
     location: Annotated[str, Field(title="Location")]
-    path: Annotated[Optional[str], Field(title="Path")] = None
-    contents: Annotated[Optional[str], Field(title="Contents")] = None
-    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
+    path: Annotated[str | None, Field(title="Path")] = None
+    contents: Annotated[str | None, Field(title="Contents")] = None
+    composite_data: Annotated[list[str] | None, Field(title="Composite Data")] = None
 
 
 class PathFile(BaseFile):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="PathFile")
     path: Annotated[str, Field(title="Path")]
-    location: Annotated[Optional[str], Field(title="Location")] = None
-    contents: Annotated[Optional[str], Field(title="Contents")] = None
-    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
+    location: Annotated[str | None, Field(title="Location")] = None
+    contents: Annotated[str | None, Field(title="Contents")] = None
+    composite_data: Annotated[list[str] | None, Field(title="Composite Data")] = None
 
 
 class ContentsFile(BaseFile):
@@ -93,17 +87,17 @@ class ContentsFile(BaseFile):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="ContentsFile")
     contents: Annotated[str, Field(title="Contents")]
-    path: Annotated[Optional[str], Field(title="Path")] = None
-    location: Annotated[Optional[str], Field(title="Location")] = None
-    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
+    path: Annotated[str | None, Field(title="Path")] = None
+    location: Annotated[str | None, Field(title="Location")] = None
+    composite_data: Annotated[list[str] | None, Field(title="Composite Data")] = None
 
 
 class CompositeDataFile(BaseFile):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="CompositeDataFile")
-    composite_data: Annotated[List[str], Field(title="Composite Data")]
-    path: Annotated[Optional[str], Field(title="Path")] = None
-    location: Annotated[Optional[str], Field(title="Location")] = None
-    contents: Annotated[Optional[str], Field(title="Contents")] = None
+    composite_data: Annotated[list[str], Field(title="Composite Data")]
+    path: Annotated[str | None, Field(title="Path")] = None
+    location: Annotated[str | None, Field(title="Location")] = None
+    contents: Annotated[str | None, Field(title="Contents")] = None
 
 
 def _discriminate_file(v):
@@ -129,12 +123,10 @@ def _discriminate_file(v):
 
 
 File = Annotated[
-    Union[
-        Annotated[LocationFile, Tag("location")],
-        Annotated[PathFile, Tag("path")],
-        Annotated[ContentsFile, Tag("contents")],
-        Annotated[CompositeDataFile, Tag("composite_data")],
-    ],
+    Annotated[LocationFile, Tag("location")]
+    | Annotated[PathFile, Tag("path")]
+    | Annotated[ContentsFile, Tag("contents")]
+    | Annotated[CompositeDataFile, Tag("composite_data")],
     Discriminator(_discriminate_file),
 ]
 
@@ -143,14 +135,14 @@ class Collection(_StrictJobModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="Collection")
     class_: Literal["Collection"] = Field(alias="class", title="Class")
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
-    name: Annotated[Optional[str], Field(title="Name")] = None
-    identifier: Annotated[Optional[str], Field(title="Identifier")] = None
-    elements: Annotated[Optional[List["CollectionElement"]], Field(title="Elements")] = None
-    rows: Annotated[Optional[Dict[str, list]], Field(title="Rows")] = None
+    name: Annotated[str | None, Field(title="Name")] = None
+    identifier: Annotated[str | None, Field(title="Identifier")] = None
+    elements: Annotated[list["CollectionElement"] | None, Field(title="Elements")] = None
+    rows: Annotated[dict[str, list] | None, Field(title="Rows")] = None
 
 
 CollectionElement = Annotated[
-    Union[File, Collection],
+    File | Collection,
     Field(discriminator="class_"),
 ]
 
@@ -165,10 +157,10 @@ class Directory(_StrictJobModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="Directory")
     class_: Literal["Directory"] = Field(alias="class", title="Class")
-    path: Annotated[Optional[str], Field(title="Path")] = None
-    location: Annotated[Optional[str], Field(title="Location")] = None
-    filetype: Annotated[Optional[str], Field(title="File Type")] = None
-    name: Annotated[Optional[str], Field(title="Name")] = None
+    path: Annotated[str | None, Field(title="Path")] = None
+    location: Annotated[str | None, Field(title="Location")] = None
+    filetype: Annotated[str | None, Field(title="File Type")] = None
+    name: Annotated[str | None, Field(title="Name")] = None
 
 
 # JobParamValue is non-recursive at the list axis: a job-param list may contain
@@ -176,18 +168,10 @@ class Directory(_StrictJobModel):
 # collections) is recursive via ``CollectionElement``. No observed workflow
 # test value needs a list-of-lists at the job-input level; widen explicitly if
 # that changes rather than defaulting to Any.
-JobParamValue = Union[
-    File,
-    Collection,
-    Directory,
-    str,
-    int,
-    float,
-    bool,
-    None,
-    List[Union[File, str, int, float, bool, None]],
-]
+JobParamValue = (
+    File | Collection | Directory | str | int | float | bool | None | list[File | str | int | float | bool | None]
+)
 
 
-class Job(RootModel[Dict[str, JobParamValue]]):
+class Job(RootModel[dict[str, JobParamValue]]):
     model_config = ConfigDict(title="Job")

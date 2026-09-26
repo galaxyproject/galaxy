@@ -69,8 +69,7 @@ def _create_job_log(submit_description: str) -> str | None:
 
 
 def _mark_job_pending(submit_description: str, cluster_id: int) -> None:
-    log_path = _create_job_log(submit_description)
-    if log_path:
+    if log_path := _create_job_log(submit_description):
         JobEventLog.events_by_log[log_path] = [
             FakeJobEvent(cluster_id, 0, JobEventType.SUBMIT),
             FakeJobEvent(cluster_id, 0, JobEventType.EXECUTE),

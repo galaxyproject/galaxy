@@ -1,12 +1,7 @@
 """Constructors for concrete tool and input source objects."""
 
 import logging
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from collections.abc import Callable
 
 from yaml import safe_load
 
@@ -57,7 +52,7 @@ def build_yaml_tool_source(yaml_string: str) -> YamlToolSource:
     return YamlToolSource(safe_load(yaml_string))
 
 
-TOOL_SOURCE_FACTORIES: Dict[str, Callable[[str], ToolSource]] = {
+TOOL_SOURCE_FACTORIES: dict[str, Callable[[str], ToolSource]] = {
     "XmlToolSource": build_xml_tool_source,
     "YamlToolSource": build_yaml_tool_source,
     "CwlToolSource": build_cwl_tool_source,
@@ -65,13 +60,13 @@ TOOL_SOURCE_FACTORIES: Dict[str, Callable[[str], ToolSource]] = {
 
 
 def get_tool_source(
-    config_file: Optional[StrPath] = None,
-    xml_tree: Optional[ElementTree] = None,
+    config_file: StrPath | None = None,
+    xml_tree: ElementTree | None = None,
     enable_beta_formats: bool = True,
-    tool_location_fetcher: Optional[ToolLocationFetcher] = None,
-    macro_paths: Optional[List[str]] = None,
-    tool_source_class: Optional[str] = None,
-    raw_tool_source: Optional[str] = None,
+    tool_location_fetcher: ToolLocationFetcher | None = None,
+    macro_paths: list[str] | None = None,
+    tool_source_class: str | None = None,
+    raw_tool_source: str | None = None,
 ) -> ToolSource:
     """Return a ToolSource object corresponding to supplied source.
 

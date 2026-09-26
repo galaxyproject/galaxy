@@ -18,7 +18,6 @@ import json
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -34,7 +33,7 @@ def _load_scenarios() -> list[dict[str, Any]]:
 
 
 def routing_ambiguous_dataset(
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the ambiguous-routing Dataset: (vague query, expected="clarification")."""
     cases: list[Case[str, str, dict[str, Any]]] = []

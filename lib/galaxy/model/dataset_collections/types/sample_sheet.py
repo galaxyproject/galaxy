@@ -1,6 +1,5 @@
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy.exceptions import RequestParameterMissingException
@@ -16,7 +15,7 @@ class SampleSheetDatasetCollectionType(BaseDatasetCollectionType):
     collection_type = "sample_sheet"
 
     def generate_elements(self, dataset_instances, **kwds):
-        rows = cast(Optional[dict[str, Optional[SampleSheetRow]]], kwds.get("rows", None))
+        rows = cast(dict[str, SampleSheetRow | None] | None, kwds.get("rows", None))
         column_definitions = kwds.get("column_definitions", None)
         if not column_definitions:
             rows = rows if rows is not None else dict.fromkeys(dataset_instances)

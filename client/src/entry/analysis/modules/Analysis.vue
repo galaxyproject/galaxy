@@ -47,6 +47,14 @@ const isNoPaddingPath = computed(() => {
     );
 });
 
+/**
+ * Every `/galaxyai` route renders one and the same GalaxyAI instance: it rewrites its own route as a
+ * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
+ * those changes through its `exchangeId` prop, so the live conversation stays in place. All other
+ * routes get a fresh component per path.
+ */
+const routerViewKey = computed(() => (route.path.startsWith("/galaxyai") ? "/galaxyai" : route.fullPath));
+
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 
@@ -86,7 +94,7 @@ onUnmounted(() => {
             <div class="flex-grow-1 overflow-auto" :class="{ 'p-3': !isNoPaddingPath }" style="min-height: 0">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="h-100">
-                    <router-view :key="$route.fullPath" class="h-100" />
+                    <router-view :key="routerViewKey" class="h-100" />
                 </div>
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />

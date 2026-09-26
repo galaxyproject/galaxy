@@ -58,7 +58,10 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
-const filteredOptions = useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
+const { filtered: filteredOptions, pending: filterPending } = useFilterObjectArray(() => props.options, filter, [
+    "label",
+    ["value", "tags"],
+]);
 
 // Debounced upward emit so consumers (e.g. ``FormData`` paginating against the
 // backend) can refetch on typing without firing on every keystroke. The local
@@ -180,6 +183,32 @@ const currentValue = computed({
 });
 
 /**
+ * Stable identifier for an option, so an option can be addressed by what it selects
+ * rather than by its position in the list or its rendered label.
+ */
+function optionIdentifier(option: SelectOption): string {
+    if (option.key !== undefined) {
+        return option.key;
+    }
+    if (typeof option.value === "string" || typeof option.value === "number") {
+        return String(option.value);
+    }
+    return option.label;
+}
+
+/**
+ * Identifier of the selected option, exposed on the root element. Only meaningful
+ * for single selects, where exactly one option can be selected.
+ */
+const selectedValueIdentifier = computed(() => {
+    if (props.multiple) {
+        return undefined;
+    }
+    const selected = currentValue.value[0];
+    return selected ? optionIdentifier(selected) : undefined;
+});
+
+/**
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
@@ -236,12 +265,13 @@ function isSelected(item: SelectValue): boolean {
 </script>
 
 <template>
-    <div>
+    <div :data-selected-value="selectedValueIdentifier">
         <Multiselect
             v-if="hasOptions"
             :id="id"
             v-model="currentValue"
-            :allow-empty="optional"
+            :data-filter-pending="filterPending ? 'true' : undefined"
+            :allow-empty="optional || multiple"
             :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"
             :disabled="disabled"
@@ -258,7 +288,11 @@ function isSelected(item: SelectValue): boolean {
             @open="onOpen"
             @close="onClose">
             <template v-slot:option="{ option }">
-                <div class="d-flex align-items-center justify-content-between">
+                <!-- Replace recycled option content when its identity changes. -->
+                <div
+                    :key="`${option.label}:${String(option.value)}`"
+                    class="d-flex align-items-center justify-content-between"
+                    :data-option-value="optionIdentifier(option)">
                     <div>
                         <span>{{ option.label }}</span>
                         <StatelessTags

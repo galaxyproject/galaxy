@@ -7,6 +7,8 @@ from datetime import datetime
 from time import gmtime
 from typing import TYPE_CHECKING
 
+from mercurial import scmutil
+
 from galaxy.tool_shed.util import basic_util
 from galaxy.tool_shed.util.hg_util import (
     clone_repository,
@@ -253,20 +255,20 @@ def init_repository(repo_path: "StrPath"):
         raise Exception(error_message)
 
 
-def changeset2rev(repo_path, changeset_revision):
+def changeset2rev(hg_repo, changeset_revision: str) -> int:
     """
     Return the revision number (as an int) corresponding to a specified changeset revision.
+
+    Resolves the hex node prefix directly rather than going through revsymbol, which would
+    also consult tags and bookmarks and build their caches. Changeset revisions here are
+    always node prefixes, and the repository object is often freshly opened, so that extra
+    machinery is both unnecessary and the source of an occasional long request.
     """
     try:
-        rev = subprocess.check_output(
-            ["hg", "id", "-r", changeset_revision, "-n"], stderr=subprocess.STDOUT, cwd=repo_path
-        )
+        node = scmutil.resolvehexnodeidprefix(hg_repo, changeset_revision.encode())
+        return hg_repo.changelog.rev(node)
     except Exception as e:
-        error_message = f"Error looking for changeset '{changeset_revision}': {unicodify(e)}"
-        if isinstance(e, subprocess.CalledProcessError):
-            error_message += f"\nOutput was:\n{unicodify(e.output)}"
-        raise Exception(error_message)
-    return int(rev.strip())
+        raise Exception(f"Error looking for changeset '{changeset_revision}': {unicodify(e)}")
 
 
 __all__ = (

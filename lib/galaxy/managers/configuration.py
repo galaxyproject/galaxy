@@ -132,6 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
+            "subdomain_switcher": _use_config,
             "terms_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
@@ -175,6 +176,7 @@ class ConfigSerializer(base.ModelSerializer):
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,
             "has_user_tool_filters": _defaults_to(False),
+            "has_user_preferences_extra": _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
@@ -191,7 +193,9 @@ class ConfigSerializer(base.ModelSerializer):
             "aws_estimate": _use_config,
             "carbon_emission_estimates": _defaults_to(True),
             "carbon_intensity": lambda item, key, **context: self.app.carbon_intensity,
-            "geographical_server_location_name": lambda item, key, **context: self.app.geographical_server_location_name,
+            "geographical_server_location_name": lambda item, key, **context: (
+                self.app.geographical_server_location_name
+            ),
             "geographical_server_location_code": _use_config,
             "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
@@ -219,8 +223,12 @@ class ConfigSerializer(base.ModelSerializer):
             "quota_source_labels": lambda item, key, **context: list(
                 object_store.get_quota_source_map().get_quota_source_labels()
             ),
-            "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
-            "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "object_store_allows_id_selection": lambda item, key, **context: (
+                object_store.object_store_allows_id_selection()
+            ),
+            "object_store_ids_allowing_selection": lambda item, key, **context: (
+                object_store.object_store_ids_allowing_selection()
+            ),
             "object_store_always_respect_user_selection": _use_config,
             "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
@@ -248,8 +256,9 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_tool_generated_tours": _use_config,
             "sentry_dsn_public": lambda item, key, **context: item.sentry_dsn_public,
             "sentry_client_traces_sample_rate": _use_config,
-            "enable_webhooks": lambda item, key, **context: hasattr(self.app, "webhooks_registry")
-            and bool(self.app.webhooks_registry.webhooks),
+            "enable_webhooks": lambda item, key, **context: (
+                hasattr(self.app, "webhooks_registry") and bool(self.app.webhooks_registry.webhooks)
+            ),
         }
 
 

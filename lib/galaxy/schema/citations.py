@@ -1,7 +1,6 @@
 from typing import (
     Annotated,
     Literal,
-    Union,
 )
 
 from pydantic import (
@@ -21,4 +20,4 @@ class CitationErrorResponse(BaseModel):
     tool_id: str
 
 
-CitationItem = Annotated[Union[BibtexCitationResponse, CitationErrorResponse], Field(discriminator="format")]
+CitationItem = Annotated[BibtexCitationResponse | CitationErrorResponse, Field(discriminator="format")]

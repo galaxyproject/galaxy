@@ -248,6 +248,7 @@ const tableFields = computed<TableField[]>(() => [
         key: "preview",
         label: "Content Preview",
         sortable: false,
+        width: "120px",
         align: "center",
         class: "preview-column",
     },
@@ -480,6 +481,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             <div class="paste-list-actions mt-2">
                 <GButton
                     v-if="!isSingleMode"
+                    data-test-id="add-another-dataset"
                     color="grey"
                     tooltip
                     tooltip-placement="top"
@@ -529,7 +531,6 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
     }
 
     :deep(.preview-column) {
-        width: 100%;
         max-width: 300px;
         overflow: hidden;
     }
@@ -542,6 +543,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
         height: 100%;
         padding: 0.25rem;
         margin: -0.25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         .preview-text {
             overflow: hidden;

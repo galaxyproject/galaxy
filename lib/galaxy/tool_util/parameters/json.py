@@ -2,12 +2,10 @@ import json
 import re
 from typing import (
     Any,
-    Dict,
-    List,
+    Literal,
 )
 
 from pydantic.json_schema import GenerateJsonSchema
-from typing_extensions import Literal
 
 MODE = Literal["validation", "serialization"]
 DEFAULT_JSON_SCHEMA_MODE: MODE = "validation"
@@ -16,16 +14,15 @@ WHEN_ABSENT_RE = re.compile(r"^When_(.+)___absent$")
 
 
 class CustomGenerateJsonSchema(GenerateJsonSchema):
-
     def generate(self, schema, mode: MODE = DEFAULT_JSON_SCHEMA_MODE):
         json_schema = super().generate(schema, mode=mode)
         json_schema["$schema"] = self.schema_dialect
         return json_schema
 
 
-def _absent_test_params(defs: Dict[str, Any]) -> Dict[str, str]:
+def _absent_test_params(defs: dict[str, Any]) -> dict[str, str]:
     """Map test parameter names to their absent branch def names, longest name first."""
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for def_name in defs:
         m = WHEN_ABSENT_RE.match(def_name)
         if m:
@@ -33,7 +30,7 @@ def _absent_test_params(defs: Dict[str, Any]) -> Dict[str, str]:
     return dict(sorted(result.items(), key=lambda item: len(item[0]), reverse=True))
 
 
-def _match_when_branch(def_name: str, absent_test_params: Dict[str, str]) -> Any:
+def _match_when_branch(def_name: str, absent_test_params: dict[str, str]) -> Any:
     """Return (test_param_name, value_suffix) for an explicit When branch, or None."""
     if not def_name.startswith("When_") or "___absent" in def_name:
         return None
@@ -44,7 +41,7 @@ def _match_when_branch(def_name: str, absent_test_params: Dict[str, str]) -> Any
     return None
 
 
-def _fix_conditional_oneofs(schema: Dict[str, Any]) -> None:
+def _fix_conditional_oneofs(schema: dict[str, Any]) -> None:
     """Make conditional discriminated unions unambiguous for JSON Schema validators.
 
     Pydantic uses a custom callable discriminator for conditionals that doesn't
@@ -69,18 +66,18 @@ def _fix_conditional_oneofs(schema: Dict[str, Any]) -> None:
             _make_field_required(def_schema, match[0])
 
 
-def _make_field_required(def_schema: Dict[str, Any], field_name: str) -> None:
+def _make_field_required(def_schema: dict[str, Any], field_name: str) -> None:
     props = def_schema.get("properties", {})
     if field_name not in props:
         return
-    required: List[str] = def_schema.get("required", [])
+    required: list[str] = def_schema.get("required", [])
     if field_name not in required:
         required.append(field_name)
         def_schema["required"] = required
     props[field_name].pop("default", None)
 
 
-def _discriminator_key(def_schema: Dict[str, Any], test_param_name: str, value_suffix: str) -> str:
+def _discriminator_key(def_schema: dict[str, Any], test_param_name: str, value_suffix: str) -> str:
     """Derive the discriminator mapping key from the branch's const value.
 
     Uses the actual ``const`` value from the schema property so boolean branches
@@ -88,13 +85,12 @@ def _discriminator_key(def_schema: Dict[str, Any], test_param_name: str, value_s
     """
     props = def_schema.get("properties", {})
     test_prop = props.get(test_param_name, {})
-    const = test_prop.get("const")
-    if const is not None:
+    if (const := test_prop.get("const")) is not None:
         return json.dumps(const) if isinstance(const, bool) else str(const)
     return value_suffix
 
 
-def _add_conditional_discriminators(schema: Dict[str, Any]) -> None:
+def _add_conditional_discriminators(schema: dict[str, Any]) -> None:
     """Add OpenAPI 3.1 discriminator objects and human-readable titles to conditional oneOfs."""
     defs = schema.get("$defs", {})
     if not defs:
@@ -124,7 +120,7 @@ def _add_conditional_discriminators(schema: Dict[str, Any]) -> None:
         if test_param_name is None:
             continue
 
-        mapping: Dict[str, str] = {}
+        mapping: dict[str, str] = {}
         for branch in one_of:
             ref = branch.get("$ref", "")
             branch_def_name = ref.rsplit("/", 1)[-1] if "/" in ref else ""
@@ -141,7 +137,7 @@ def _add_conditional_discriminators(schema: Dict[str, Any]) -> None:
             }
 
 
-def _conditional_test_param_for_oneof(one_of: List[Any], absent_test_params: Dict[str, str]) -> Any:
+def _conditional_test_param_for_oneof(one_of: list[Any], absent_test_params: dict[str, str]) -> Any:
     """Return the test parameter name if this oneOf is a conditional discriminated union."""
     for branch in one_of:
         ref = branch.get("$ref", "")
@@ -155,7 +151,7 @@ def _conditional_test_param_for_oneof(one_of: List[Any], absent_test_params: Dic
 COLLECTION_RUNTIME_NESTED_DEFS = frozenset(["DataCollectionNestedListRuntime", "DataCollectionNestedRecordRuntime"])
 
 
-def _fix_collection_runtime_oneofs(schema: Dict[str, Any]) -> None:
+def _fix_collection_runtime_oneofs(schema: dict[str, Any]) -> None:
     """Convert collection runtime oneOf to anyOf to avoid discriminator overlap.
 
     The Pydantic callable discriminator routes by collection_type pattern but
@@ -183,7 +179,7 @@ def _walk_and_fix_collection_oneofs(node: Any) -> None:
         _walk_and_fix_collection_oneofs(value)
 
 
-def _is_collection_runtime_oneof(branches: List[Any]) -> bool:
+def _is_collection_runtime_oneof(branches: list[Any]) -> bool:
     for branch in branches:
         ref = branch.get("$ref", "")
         def_name = ref.rsplit("/", 1)[-1] if "/" in ref else ""
@@ -200,7 +196,7 @@ _ANNOTATED_TYPES_TO_JSON_SCHEMA = {
 }
 
 
-def _normalize_annotated_types_keywords(schema: Dict[str, Any]) -> None:
+def _normalize_annotated_types_keywords(schema: dict[str, Any]) -> None:
     """Convert annotated_types constraint keys to standard JSON Schema keywords.
 
     When annotated_types constraints (Ge, Gt, Le, Lt) are applied to Union types,
@@ -225,7 +221,7 @@ def _walk_and_normalize(node: Any) -> None:
         _walk_and_normalize(value)
 
 
-def to_json_schema(model, mode: MODE = DEFAULT_JSON_SCHEMA_MODE) -> Dict[str, Any]:
+def to_json_schema(model, mode: MODE = DEFAULT_JSON_SCHEMA_MODE) -> dict[str, Any]:
     schema = model.model_json_schema(schema_generator=CustomGenerateJsonSchema, mode=mode)
     _fix_conditional_oneofs(schema)
     _add_conditional_discriminators(schema)

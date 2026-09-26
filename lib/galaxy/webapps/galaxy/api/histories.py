@@ -9,8 +9,6 @@ from typing import (
     Annotated,
     Any,
     Literal,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -99,6 +97,7 @@ from galaxy.webapps.galaxy.api.common import (
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.work.context import SessionRequestContext
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -120,7 +119,7 @@ AllHistoriesQueryParam = Query(
     ),
 )
 
-JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
+JehaIDPathParam: DecodedDatabaseIdField | LatestLiteral = Path(
     title="Job Export History ID",
     description=(
         "The ID of the specific Job Export History Association or "
@@ -129,7 +128,7 @@ JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     examples=["latest"],
 )
 
-SearchQueryParam: Optional[str] = search_query_param(
+SearchQueryParam: str | None = search_query_param(
     model_name="History",
     tags=query_tags,
     free_text_fields=["title", "description", "slug", "tag"],
@@ -143,7 +142,7 @@ ShowSharedQueryParam: bool = Query(
     default=False, title="Include histories shared with authenticated user.", description=""
 )
 
-ShowArchivedQueryParam: Optional[bool] = Query(
+ShowArchivedQueryParam: bool | None = Query(
     default=None,
     title="Show Archived",
     description="Whether to include archived histories.",
@@ -199,10 +198,7 @@ def _index_exports_response_discriminator(value: Any) -> str:
 
 
 IndexExportsResponse = Annotated[
-    Union[
-        Annotated[JobExportHistoryArchiveListResponse, Tag("jobs")],
-        Annotated[ExportTaskListResponse, Tag("tasks")],
-    ],
+    Annotated[JobExportHistoryArchiveListResponse, Tag("jobs")] | Annotated[ExportTaskListResponse, Tag("tasks")],
     Discriminator(_index_exports_response_discriminator),
 ]
 
@@ -220,20 +216,20 @@ class FastAPIHistories:
     def index(
         self,
         response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
+        trans: SessionRequestContext = DependsOnTrans,
+        limit: int | None = LimitQueryParam,
+        offset: int | None = OffsetQueryParam,
         show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
-        show_archived: Optional[bool] = ShowArchivedQueryParam,
+        show_archived: bool | None = ShowArchivedQueryParam,
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        search: str | None = SearchQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        all: Optional[bool] = AllHistoriesQueryParam,
-        deleted: Optional[bool] = Query(  # This is for backward compatibility but looks redundant
+        all: bool | None = AllHistoriesQueryParam,
+        deleted: bool | None = Query(  # This is for backward compatibility but looks redundant
             default=False,
             title="Deleted Only",
             description="Whether to return only deleted items.",
@@ -268,7 +264,7 @@ class FastAPIHistories:
     )
     def count(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> int:
         return self.service.count(trans)
 
@@ -279,10 +275,10 @@ class FastAPIHistories:
     )
     def index_deleted(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        all: Optional[bool] = AllHistoriesQueryParam,
+        all: bool | None = AllHistoriesQueryParam,
     ) -> list[AnyHistoryView]:
         return self.service.index(
             trans, serialization_params, filter_query_params, deleted_only=True, all_histories=all
@@ -371,19 +367,19 @@ class FastAPIHistories:
         history_id: HistoryIDPathParam,
         limit: int = Query(
             default=500,
-            description="Maximum number of nodes. Applied at history scope.",
+            description="Maximum number of nodes. Applied at history scope. Capped at MAX_LIMIT (1000) by the manager.",
             ge=1,
-            le=2000,
+            le=1000,
         ),
         include_deleted: bool = Query(
             default=False,
             description="Include deleted datasets and collections.",
         ),
-        seed_src: Optional[NodeSrc] = Query(
+        seed_src: NodeSrc | None = Query(
             default=None,
             description="Optional: src of the node to focus the subgraph on. Provide with seed_id.",
         ),
-        seed_id: Optional[str] = Query(
+        seed_id: str | None = Query(
             default=None,
             description="Optional: encoded id of the node to focus the subgraph on. Provide with seed_src.",
         ),
@@ -397,11 +393,11 @@ class FastAPIHistories:
             ge=1,
             le=20,
         ),
-        seed_scope_src: Optional[Literal["hda", "hdca"]] = Query(
+        seed_scope_src: Literal["hda", "hdca"] | None = Query(
             default=None,
             description="src of the item to center the selection window on. Required with seed_scope_id.",
         ),
-        seed_scope_id: Optional[str] = Query(
+        seed_scope_id: str | None = Query(
             default=None,
             description="Center the selection window on this encoded id. Provide with seed_scope_src.",
         ),
@@ -481,11 +477,11 @@ class FastAPIHistories:
     )
     def create(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),  # type: ignore[attr-defined]
-        payload_as_json: Optional[Any] = Depends(try_get_request_body_as_json),
+        payload_as_json: Any | None = Depends(try_get_request_body_as_json),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> Union[JobImportHistoryResponse, AnyHistoryView]:
+    ) -> JobImportHistoryResponse | AnyHistoryView:
         """The new history can also be copied form a existing history or imported from an archive or URL."""
         # This action needs to work both with json and x-www-form-urlencoded payloads.
         # The way to support different content types on the same path operation is reading
@@ -508,7 +504,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: bool = Query(default=False),
-        payload: Optional[DeleteHistoryPayload] = Body(default=None),
+        payload: DeleteHistoryPayload | None = Body(default=None),
     ) -> AnyHistoryView:
         if payload:
             purge = payload.purge
@@ -628,8 +624,8 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        offset: int | None = OffsetQueryParam,
         accept: IndexExportsAcceptHeader = "application/json",
     ) -> IndexExportsResponse:
         """
@@ -637,11 +633,9 @@ class FastAPIHistories:
 
         Change the `accept` content type header to return the new task-based history exports.
         """
-        use_tasks = accept == ExportTaskListResponse.__accept_type__
-        exports = self.service.index_exports(trans, history_id, use_tasks, limit, offset)
-        if use_tasks:
-            return ExportTaskListResponse(root=exports)
-        return JobExportHistoryArchiveListResponse(root=exports)
+        if accept == ExportTaskListResponse.__accept_type__:
+            return ExportTaskListResponse(root=self.service.index_task_exports(trans, history_id, limit, offset))
+        return JobExportHistoryArchiveListResponse(root=self.service.index_job_exports(trans, history_id))
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{history_id}/exports",
@@ -661,7 +655,7 @@ class FastAPIHistories:
         response: Response,
         history_id: HistoryIDPathParam,
         trans=DependsOnTrans,
-        payload: Optional[ExportHistoryArchivePayload] = Body(None),
+        payload: ExportHistoryArchivePayload | None = Body(None),
     ) -> HistoryArchiveExportResult:
         """This will start a job to create a history export archive.
 
@@ -697,7 +691,7 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        jeha_id: Union[DecodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
+        jeha_id: DecodedDatabaseIdField | LatestLiteral = JehaIDPathParam,
     ):
         """
         See ``PUT /api/histories/{id}/exports`` to initiate the creation
@@ -736,7 +730,7 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: Optional[ArchiveHistoryRequestPayload] = Body(default=None),
+        payload: ArchiveHistoryRequestPayload | None = Body(default=None),
     ) -> AnyArchivedHistoryView:
         """Marks the given history as 'archived' and returns the history.
 
@@ -764,7 +758,7 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        force: Optional[bool] = Query(
+        force: bool | None = Query(
             default=None,
             description="If true, the history will be un-archived even if it has an associated archive export record and was purged.",
         ),

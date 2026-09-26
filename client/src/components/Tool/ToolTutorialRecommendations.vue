@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, set } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -34,6 +34,10 @@ const tutorialText = computed(() => {
         return "There is 1 tutorial available which uses this tool.";
     }
 });
+
+function toggleCategory(category: string) {
+    set(categoryOpen, category, !categoryOpen[category]);
+}
 </script>
 
 <template>
@@ -49,19 +53,19 @@ const tutorialText = computed(() => {
             </ExternalLink>
         </p>
 
-        <BButton class="ui-link" @click="mainOpen = !mainOpen">
+        <GButton class="ui-link" transparent inline color="blue" @click="mainOpen = !mainOpen">
             <b>
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
             <FontAwesomeIcon :icon="faCaretDown" />
-        </BButton>
+        </GButton>
         <GCollapse v-model="mainOpen">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton class="ui-link ml-3" @click="categoryOpen[category] = !categoryOpen[category]">
+                <GButton class="ui-link ml-3" transparent inline color="blue" @click="toggleCategory(category)">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon :icon="faCaretDown" />
-                </BButton>
+                </GButton>
                 <GCollapse :visible="!!categoryOpen[category]">
                     <ul class="d-flex flex-column my-1">
                         <li v-for="tutorial in tutorialsInCategory(category)" :key="tutorial.title">
@@ -75,3 +79,15 @@ const tutorialText = computed(() => {
         </GCollapse>
     </div>
 </template>
+
+<style scoped lang="scss">
+// Transparent-blue hover repaints the label near-white; keep it a visible link.
+// Extra classes out-rank `.g-button.g-transparent:not(.g-pressed).g-blue:hover`.
+.ui-link.g-button.g-transparent.g-blue:not(.g-pressed) {
+    &:hover,
+    &:focus-visible {
+        color: var(--color-blue-700);
+        text-decoration: underline;
+    }
+}
+</style>

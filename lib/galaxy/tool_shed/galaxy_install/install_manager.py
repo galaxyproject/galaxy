@@ -3,7 +3,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import or_
@@ -29,6 +28,7 @@ from galaxy.tool_shed.util import (
     tool_util,
 )
 from galaxy.tool_util.deps import views
+from galaxy.tool_util.deps.resolvers import DependencyException
 from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
@@ -78,7 +78,7 @@ class InstallRepositoryManager:
     app: InstallationTarget
     tpm: tool_panel_manager.ToolPanelManager
 
-    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
+    def __init__(self, app: InstallationTarget, tpm: tool_panel_manager.ToolPanelManager | None = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)
@@ -644,16 +644,35 @@ class InstallRepositoryManager:
                 tool_shed_repository,
                 self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
             )
-            new_tools = [self.app.toolbox._tools_by_id.get(tool_d["guid"], None) for tool_d in metadata["tools"]]
-            new_requirements = {tool.requirements.packages for tool in new_tools if tool}
-            [self._view.install_dependencies(r) for r in new_requirements]
-            dependency_manager = self.app.toolbox.dependency_manager
-            if dependency_manager.cached:
-                [dependency_manager.build_cache(r) for r in new_requirements]
+            self._install_tool_dependencies(metadata)
 
         self.update_tool_shed_repository_status(
             tool_shed_repository, self.install_model.ToolShedRepository.installation_status.INSTALLED
         )
+
+    def _install_tool_dependencies(self, metadata):
+        requirements_to_tool_ids = {}
+        for tool_dict in metadata["tools"]:
+            tool_id = tool_dict["guid"]
+            tool = self.app.toolbox._tools_by_id.get(tool_id)
+            if tool:
+                requirements_to_tool_ids.setdefault(tool.requirements.packages, []).append(tool_id)
+
+        for requirements in requirements_to_tool_ids:
+            self._view.install_dependencies(requirements)
+
+        dependency_manager = self.app.toolbox.dependency_manager
+        if dependency_manager.cached:
+            for requirements, tool_ids in requirements_to_tool_ids.items():
+                try:
+                    dependency_manager.build_cache(requirements)
+                except DependencyException:
+                    log.exception(
+                        "Failed to build dependency cache for requirements %s used by tools %s; "
+                        "repository installation will continue, but the affected tools may fail to execute",
+                        requirements.to_dict(),
+                        ", ".join(tool_ids),
+                    )
 
     def update_tool_shed_repository(
         self,

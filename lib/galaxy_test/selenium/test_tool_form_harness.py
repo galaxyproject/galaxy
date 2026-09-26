@@ -3,9 +3,13 @@ reusing tool test definitions (XML <tests> blocks) for inputs and output
 verification.
 """
 
+import json
+import os
+
 import pytest
 
 from galaxy.util.unittest_utils import skip_unless_environ
+from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
     managed_history,
     RunsToolTests,
@@ -13,7 +17,7 @@ from .framework import (
     SeleniumTestCase,
 )
 
-TOOL_TESTS = [
+DEFAULT_TOOL_TESTS = [
     ("environment_variables", 0),
     ("gx_int", 0),
     ("gx_float", 0),
@@ -39,6 +43,7 @@ TOOL_TESTS = [
     ("gx_repeat_boolean", 0),
     ("gx_repeat_data", 0),
     ("multi_repeats", 0),
+    ("multi_repeats", 2),
     ("simple_constructs", 0),
     ("multi_output", 0),
     ("output_format", 0),
@@ -95,8 +100,28 @@ TOOL_TESTS = [
 ]
 
 
+def _tool_tests():
+    """The (tool_id, test_index) pairs to drive.
+
+    Defaults to the framework tools above. `GALAXY_TEST_TOOL_FORM_TESTS` overrides that with
+    a JSON list of pairs, or a path to a file containing one, so an external caller can point
+    the harness at its own tools -- shed tools installed elsewhere, for instance -- without
+    editing this file.
+    """
+    spec = os.environ.get("GALAXY_TEST_TOOL_FORM_TESTS")
+    if not spec:
+        return DEFAULT_TOOL_TESTS
+    if os.path.exists(spec):
+        with open(spec) as fh:
+            spec = fh.read()
+    return [(str(tool_id), int(test_index)) for tool_id, test_index in json.loads(spec)]
+
+
+TOOL_TESTS = _tool_tests()
+
+
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormHarness(SeleniumTestCase, RunsToolTests):
+class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
     ensure_registered = True
 
     @selenium_test
@@ -110,3 +135,8 @@ class TestToolFormHarness(SeleniumTestCase, RunsToolTests):
             galaxy_interactor=interactor,
             dataset_populator=self.dataset_populator,
         )
+        called = self.execute_script(
+            "return performance.getEntriesByType('resource')"
+            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
+        )
+        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"

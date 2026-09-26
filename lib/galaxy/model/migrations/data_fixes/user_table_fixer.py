@@ -12,7 +12,6 @@ from galaxy.model import User
 
 
 class UsernameDeduplicator:
-
     def __init__(self, connection):
         self.connection = connection
 
@@ -45,13 +44,15 @@ class UsernameDeduplicator:
 
     def _generate_next_available_username(self, username):
         i = 1
-        while self.connection.execute(select(User).where(User.username == f"{username}-{i}")).first():
+        # Select a single column, not the whole model: this runs inside a migration,
+        # so the mapped model may carry columns that later revisions add and the
+        # schema at this point does not have.
+        while self.connection.execute(select(User.id).where(User.username == f"{username}-{i}")).first():
             i += 1
         return f"{username}-{i}"
 
 
 class EmailDeduplicator:
-
     def __init__(self, connection):
         self.connection = connection
 

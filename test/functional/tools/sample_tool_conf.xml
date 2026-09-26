@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml" />
+  <tool file="export_remote_0.1.0.xml" />
   <tool file="export_remote.xml" />
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
@@ -48,6 +49,7 @@
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_security.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
   <tool file="data_optional.xml" />
@@ -93,6 +95,7 @@
   <tool file="checksum.xml" />
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
+  <tool file="infinity.xml"/>
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml" />
   <tool file="expression_tools/pick_value.xml" />
@@ -124,6 +127,9 @@
   <tool file="async_ambiguous_unqualified_name.xml" />
   <tool file="async_nested_conditional_shared_discriminator.xml" />
   <tool file="async_nested_conditional_shared_discriminator_bare.xml" />
+  <tool file="async_posix_regex_validator.xml" />
+  <tool file="async_min_repeat_unqualified.xml" />
+  <tool file="async_repeat_unqualified_no_min.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />

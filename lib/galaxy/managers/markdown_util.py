@@ -22,7 +22,7 @@ from datetime import datetime
 from re import Match
 from typing import (
     Any,
-    Optional,
+    Literal,
 )
 
 import markdown
@@ -38,7 +38,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ServerNotConfiguredForRequest,
 )
-from galaxy.managers.hdcas import HDCASerializer
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.jobs import (
     JobManager,
     summarize_job_metrics,
@@ -46,6 +50,8 @@ from galaxy.managers.jobs import (
 )
 from galaxy.managers.licenses import LicensesManager
 from galaxy.model import (
+    ImplicitCollectionJobs,
+    IoDicts,
     Job,
 )
 from galaxy.model.item_attrs import get_item_annotation_str
@@ -108,7 +114,7 @@ def process_invocation_ids(f, workflow_markdown: str) -> str:
     return re.sub(VISUALIZATION_FENCED_BLOCK, process_block, workflow_markdown)
 
 
-def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
+def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_markdown):
     """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
 
     _validate(external_galaxy_markdown, internal=False)
@@ -122,7 +128,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         return (line, False)
 
     def _remap_embed_container(match):
-        object_id: Optional[str] = None
+        object_id: str | None = None
 
         whole_match = match.group()
         if id_match := re.search(ENCODED_ID_PATTERN, whole_match):
@@ -139,12 +145,32 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
 
 
 class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
-    def walk(self, trans, internal_galaxy_markdown):
+    def walk(self, trans: ProvidesHistoryContext, internal_galaxy_markdown):
         hda_manager = trans.app.hda_manager
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
-        job_manager = JobManager(trans.app, history_manager)
+        # not trans.app.job_manager, which is the job queue manager of the same name
+        job_manager = trans.app[JobManager]
         collection_manager = trans.app.dataset_collection_manager
+
+        def _job_for_job_directive(object_type, object_id):
+            """Resolve the job a job directive (stdout/stderr/metrics/parameters)
+            refers to, by either a job id or an implicit collection jobs id.
+
+            For a map-over (ICJ) the representative job stands in for the step.
+            There is no ICJ-level access accessor, so access is enforced by
+            running the representative job through ``get_accessible_job``.
+            """
+            if object_id is None:
+                return None
+            if object_type == "job_id":
+                return job_manager.get_accessible_job(trans, object_id)
+            if object_type == "implicit_collection_jobs_id":
+                icj = trans.sa_session.get(ImplicitCollectionJobs, object_id)
+                if icj is None:
+                    raise ObjectNotFound(f"ImplicitCollectionJobs [{object_id}] not found")
+                return job_manager.get_accessible_job(trans, icj.representative_job.id)
+            return None
 
         def _remap(container, line):
             line, object_type, object_id, encoded_id = self._encode_line(trans, line)
@@ -214,20 +240,20 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                     hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
                     rval = self.handle_dataset_collection_display(line, hdca)
             elif container == "tool_stdout":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_job_parameters(line, job)
             elif container == "job_metrics":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_job_metrics(line, job)
             elif container == "generate_galaxy_version":
                 version = trans.app.config.version_major
@@ -249,9 +275,6 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "instance_citation_link":
                 url = trans.app.config.citation_url
                 rval = self.handle_instance_citation_link(line, url)
-            elif container == "instance_citation_bibtex":
-                url = trans.app.config.citation_bibtex
-                rval = self.handle_instance_citation_bibtex(line, url)
             elif container == "instance_terms_link":
                 url = trans.app.config.terms_url
                 rval = self.handle_instance_terms_link(line, url)
@@ -295,8 +318,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
         def _remap_embed_container(match):
             container = match.group("container")
-            object_id: Optional[int] = None
-            encoded_id: Optional[str] = None
+            object_id: int | None = None
+            encoded_id: str | None = None
 
             if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
                 object_id = int(id_match.group(2))
@@ -310,10 +333,12 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
             if container == "history_dataset_type":
                 _check_object(object_id, match.group(0))
+                assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 return hda.extension or "data"
             elif container == "history_dataset_name":
                 _check_object(object_id, match.group(0))
+                assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 return hda.name or ""
             elif container == "workflow_license":
@@ -322,6 +347,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 return _workflow_license_as_simple_markdown(stored_workflow)
             elif container == "invocation_time":
                 _check_object(object_id, match.group(0))
+                assert object_id is not None
                 invocation = workflow_manager.get_invocation(trans, object_id)
                 return _database_time_to_str(invocation.create_time)
             elif container == "generate_time":
@@ -353,6 +379,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 return _link_to_markdown(url, title)
             elif container == "history_dataset_as_image":
                 _check_object(object_id, match.group(0))
+                assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 return f"![{hda.name}](gxdatasetasimage://{encoded_id})"
             else:
@@ -361,7 +388,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         export_markdown_raw_embed = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
 
         def _remap_embed_container_ids(match):
-            object_id: Optional[str] = None
+            object_id: str | None = None
 
             whole_match = match.group()
             if id_match := re.search(UNENCODED_ID_PATTERN, whole_match):
@@ -379,7 +406,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         )
         return export_markdown, export_markdown_embed_expanded
 
-    def _encode_line(self, trans, line):
+    def _encode_line(self, trans: ProvidesAppContext, line):
         object_type = None
         object_id = None
         encoded_id = None
@@ -427,11 +454,11 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     @abc.abstractmethod
@@ -487,10 +514,6 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_instance_citation_bibtex(self, line, url):
-        pass
-
-    @abc.abstractmethod
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -520,65 +543,51 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
 
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
-    def __init__(self, trans, extra_rendering_data=None):
+    def __init__(self, trans: ProvidesHistoryContext, extra_rendering_data=None):
         extra_rendering_data = extra_rendering_data if extra_rendering_data is not None else {}
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
-    def ensure_rendering_data_for(self, object_type, obj):
-        encoded_id = self.trans.security.encode_id(obj.id)
-        if object_type not in self.extra_rendering_data:
-            self.extra_rendering_data[object_type] = {}
-        object_type_data = self.extra_rendering_data[object_type]
-        if encoded_id not in object_type_data:
-            object_type_data[encoded_id] = {}
-        return object_type_data[encoded_id]
-
-    def extend_history_dataset_rendering_data(self, obj, key, val, default_val):
-        self.ensure_rendering_data_for("history_datasets", obj)[key] = val or default_val
-
+    # Object directives are no-ops here. The interactive client resolves every
+    # referenced object live from its own store/API (datasets, collections, jobs,
+    # workflows, histories, invocations), and PDF/HTML export renders inline via
+    # ToBasicMarkdownDirectiveHandler. The export markdown carries the (encoded-id)
+    # directive, so nothing needs to be baked into extra_rendering_data. Handlers
+    # are spelled out rather than defaulted on the base class so a new directive
+    # must still be considered here explicitly.
     def handle_dataset_display(self, line, hda):
-        self.handle_dataset_name(line, hda)
-        self.handle_dataset_type(line, hda)
+        pass
 
     def handle_dataset_embedded(self, line, hda):
-        self.handle_dataset_name(line, hda)
+        pass
 
     def handle_dataset_peek(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "peek", hda.peek, "*No Dataset Peek Available*")
+        pass
 
     def handle_dataset_info(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "info", hda.info, "*No Dataset Info Available*")
+        pass
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
-        self.ensure_rendering_data_for("workflows", stored_workflow)["name"] = stored_workflow.name
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
+        pass
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     def handle_workflow_license(self, line, stored_workflow):
-        self.ensure_rendering_data_for("workflows", stored_workflow)[
-            "license"
-        ] = stored_workflow.latest_workflow.license
+        pass
 
     def handle_dataset_collection_display(self, line, hdca):
-        hdca_serializer = HDCASerializer(self.trans.app)
-        hdca_view = hdca_serializer.serialize_to_view(hdca, user=self.trans.user, trans=self.trans, view="summary")
-        self.ensure_rendering_data_for("history_dataset_collections", hdca).update(hdca_view)
+        pass
 
     def handle_tool_stdout(self, line, job):
-        self.ensure_rendering_data_for("jobs", job)["tool_stdout"] = job.tool_stdout or "*No Standard Output Available*"
+        pass
 
     def handle_tool_stderr(self, line, job):
-        self.ensure_rendering_data_for("jobs", job)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
+        pass
 
     def handle_history_link(self, line, history):
-        self.ensure_rendering_data_for("histories", history)["name"] = history.name
+        pass
 
-    # Following three cases - the client side widgets have everything they need
-    # from the encoded ID. Don't implement a default on the base class though because
-    # it is good to force both Client and PDF/HTML export to deal with each new directive
-    # explicitly.
     def handle_dataset_as_image(self, line, hda):
         pass
 
@@ -612,9 +621,6 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_instance_citation_link(self, line, url):
         pass
 
-    def handle_instance_citation_bibtex(self, line, url):
-        pass
-
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -622,7 +628,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
+        pass
 
     def handle_invocation_inputs(self, line, invocation):
         pass
@@ -634,10 +640,10 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_dataset_type(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
+        pass
 
     def handle_dataset_name(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "*Unknown dataset name*")
+        pass
 
     def handle_error(self, container, line, error):
         if "errors" not in self.extra_rendering_data:
@@ -652,7 +658,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         return (line, False)
 
 
-def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
+def ready_galaxy_markdown_for_export(trans: ProvidesHistoryContext, internal_galaxy_markdown):
     """Fill in details needed to render Galaxy flavored markdown.
 
     Take it from a minimal internal version to an externally render-able version
@@ -674,7 +680,7 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
 
 
 class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
-    def __init__(self, trans):
+    def __init__(self, trans: ProvidesHistoryContext):
         self.trans = trans
 
     def _format_printable_time(self, time):
@@ -756,7 +762,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             content = "*No Dataset Info Available*"
         return (content, True)
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         # simple markdown
         markdown = "---\n"
         markdown += f"**Workflow:** {stored_workflow.name}\n\n"
@@ -776,7 +782,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown = _workflow_license_as_simple_markdown(stored_workflow)
         return (f"\n\n{markdown}\n\n", True)
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         workflow_manager = self.trans.app.workflow_manager
         workflow = stored_workflow.get_internal_version(workflow_version)
         image_data = workflow_manager.get_workflow_svg(self.trans, workflow, for_embed=True)
@@ -801,13 +807,22 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown = f"---\n{markdown_wrapper[0]}\n---\n"
         return (markdown, True)
 
+    def _mapped_job_note(self, job):
+        """When ``job`` stands in for a map-over (ICJ) step, a note that the
+        rendered data is one representative element, not the whole map."""
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is None:
+            return ""
+        count = len(icj_assoc.implicit_collection_jobs.job_list)
+        return f"*Representative job of {count} mapped jobs.*\n\n"
+
     def handle_tool_stdout(self, line, job):
         stdout = job.tool_stdout or "*No Standard Output Available*"
-        return (f"**Standard Output:** {stdout}", True)
+        return (f"{self._mapped_job_note(job)}**Standard Output:** {stdout}", True)
 
     def handle_tool_stderr(self, line, job):
         stderr = job.tool_stderr or "*No Standard Error Available*"
-        return (f"**Standard Error:** {stderr}", True)
+        return (f"{self._mapped_job_note(job)}**Standard Error:** {stderr}", True)
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
@@ -817,7 +832,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             if plugin not in metrics_by_plugin:
                 metrics_by_plugin[plugin] = {}
             metrics_by_plugin[plugin][job_metric["title"]] = job_metric["value"]
-        markdown = ""
+        markdown = self._mapped_job_note(job)
         for metric_plugin, metrics_for_plugin in metrics_by_plugin.items():
             markdown += f"**{metric_plugin}**\n\n"
             markdown += "|   |   |\n|---|--|\n"
@@ -826,7 +841,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (markdown, True)
 
     def handle_job_parameters(self, line, job: Job):
-        markdown = """
+        markdown = self._mapped_job_note(job)
+        markdown += """
 | Input Parameter | Value |
 |-----------------|-------|
 """
@@ -873,9 +889,6 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_instance_citation_link(self, line, url):
         return self._handle_link(url)
 
-    def handle_instance_citation_bibtex(self, line, url):
-        return self._handle_link(url)
-
     def handle_instance_terms_link(self, line, url):
         return self._handle_link(url)
 
@@ -917,7 +930,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (line, False)
 
 
-def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
+def to_basic_markdown(trans: ProvidesHistoryContext, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
     directive_handler = ToBasicMarkdownDirectiveHandler(trans)
     resolved_invocations_markdown = resolve_invocation_markdown(trans, internal_galaxy_markdown)
@@ -931,7 +944,7 @@ def to_html(basic_markdown: str) -> str:
     return html
 
 
-def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> bytes:
+def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None) -> bytes:
     """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
@@ -963,7 +976,9 @@ def _check_can_convert_to_pdf_or_raise():
         raise ServerNotConfiguredForRequest("PDF conversion service not available.")
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown: str, document_type: PdfDocumentType) -> bytes:
+def internal_galaxy_markdown_to_pdf(
+    trans: ProvidesHistoryContext, internal_galaxy_markdown: str, document_type: PdfDocumentType
+) -> bytes:
     _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
@@ -1001,7 +1016,7 @@ def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: 
     return to_pdf_raw(branded_markdown, css_paths=css_paths)
 
 
-def populate_invocation_markdown(trans, invocation, workflow_markdown):
+def populate_invocation_markdown(trans: ProvidesHistoryContext, invocation, workflow_markdown):
     """
     Resolve invocation objects to convert markdown to 'internal' representation.
 
@@ -1073,7 +1088,7 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
     return galaxy_markdown
 
 
-def resolve_invocation_markdown(trans, workflow_markdown):
+def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
     """Resolve invocation objects to convert markdown to 'internal' representation.
 
     Replace references to abstract workflow parts with actual galaxy object IDs corresponding
@@ -1088,7 +1103,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
     Hopefully this list will be expanded to include invocation_qc and step_output.
     """
 
-    def get_invocation(trans, line):
+    def get_invocation(trans: ProvidesUserContext, line):
         workflow_manager = trans.app.workflow_manager
         if invocation_id_match := re.search(INVOCATION_ID_PATTERN, line):
             invocation_id = int(invocation_id_match.group(1))
@@ -1171,8 +1186,8 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 if group:
                     return group
 
-        target_match: Optional[Match]
-        ref_object: Optional[Any]
+        target_match: Match | None
+        ref_object: Any | None
         if output_match:
             target_match = output_match
             name = find_non_empty_group(target_match)
@@ -1214,9 +1229,6 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         if invocation is None:
             return whole_match
 
-        output_match = re.search(OUTPUT_LABEL_PATTERN, whole_match)
-        input_match = re.search(INPUT_LABEL_PATTERN, whole_match)
-
         def find_non_empty_group(match):
             for group in match.groups():
                 if group:
@@ -1226,11 +1238,11 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         target_match = None
         ref_object_type = None
 
-        if output_match:
+        if output_match := re.search(OUTPUT_LABEL_PATTERN, whole_match):
             target_match = output_match
             name = find_non_empty_group(target_match)
             ref_object = invocation.get_output_object(name)
-        elif input_match:
+        elif input_match := re.search(INPUT_LABEL_PATTERN, whole_match):
             target_match = input_match
             name = find_non_empty_group(target_match)
             ref_object = invocation.get_input_object(name)
@@ -1251,7 +1263,25 @@ def resolve_invocation_markdown(trans, workflow_markdown):
     return workflow_markdown
 
 
-def resolve_job_markdown(trans, job, job_markdown):
+def _resolve_job_reference(io_dicts: IoDicts, kind: Literal["output", "input"], name: str):
+    """Resolve an output= or input= label against the datasets a job actually consumed or produced."""
+    if kind == "output":
+        if name in io_dicts.out_data:
+            return io_dicts.out_data[name]
+        if name in io_dicts.out_collections:
+            return io_dicts.out_collections[name]
+        valid_names = sorted({*io_dicts.out_data, *io_dicts.out_collections})
+    else:
+        if name in io_dicts.inp_data:
+            return io_dicts.inp_data[name]
+        valid_names = sorted(io_dicts.inp_data)
+    raise MalformedContents(
+        f"Failed to find job {kind} named [{name}] referenced by this Galaxy Markdown, "
+        f"valid {kind} names are {valid_names}."
+    )
+
+
+def resolve_job_markdown(trans: ProvidesHistoryContext, job, job_markdown):
     """Resolve job objects to convert tool markdown to 'internal' representation.
 
     Replace references to abstract workflow parts with actual galaxy object IDs corresponding
@@ -1281,21 +1311,14 @@ def resolve_job_markdown(trans, job, job_markdown):
                 if group:
                     return group
 
-        target_match: Optional[Match]
-        ref_object: Optional[Any]
+        target_match: Match | None
+        ref_object: Any | None
         if output_match := re.search(OUTPUT_LABEL_PATTERN, line):
             target_match = output_match
-            name = find_non_empty_group(target_match)
-            if name in io_dicts.out_data:
-                ref_object = io_dicts.out_data[name]
-            elif name in io_dicts.out_collections:
-                ref_object = io_dicts.out_collections[name]
-            else:
-                raise Exception("Unknown exception")
+            ref_object = _resolve_job_reference(io_dicts, "output", find_non_empty_group(target_match))
         elif input_match := re.search(INPUT_LABEL_PATTERN, line):
             target_match = input_match
-            name = find_non_empty_group(target_match)
-            ref_object = io_dicts.inp_data[name]
+            ref_object = _resolve_job_reference(io_dicts, "input", find_non_empty_group(target_match))
         else:
             target_match = None
             ref_object = None
@@ -1325,7 +1348,7 @@ def _workflow_license_as_simple_markdown(stored_workflow):
     return markdown
 
 
-def _check_object(object_id: Optional[int], line: str) -> None:
+def _check_object(object_id: int | None, line: str) -> None:
     if object_id is None:
         raise MalformedContents(f"Missing object identifier [{line}].")
 
@@ -1334,7 +1357,7 @@ def _database_time_to_str(database_time: datetime) -> str:
     return database_time.strftime("%Y-%m-%d, %H:%M:%S")
 
 
-def _link_to_markdown(url: Optional[str], title: Optional[str] = None):
+def _link_to_markdown(url: str | None, title: str | None = None):
     if not url:
         content = "*Link not configured, please contact Galaxy admin*"
         return content
@@ -1391,7 +1414,7 @@ def _remap_galaxy_markdown_embedded_containers(func, markdown):
     return new_markdown
 
 
-def _parse_directive_argument_value(arg_name: str, line: str) -> Optional[str]:
+def _parse_directive_argument_value(arg_name: str, line: str) -> str | None:
     arg_pattern = re.compile(rf"{arg_name}=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
     match = re.search(arg_pattern, line)
     if not match:

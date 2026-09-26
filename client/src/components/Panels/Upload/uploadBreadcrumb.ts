@@ -8,7 +8,6 @@ import type { BreadcrumbItem } from "@/components/Common";
 export function getUploadRootBreadcrumb(to?: string): BreadcrumbItem {
     return {
         title: "Import Data",
-        superText: "Beta",
         ...(to ? { to } : {}),
     };
 }

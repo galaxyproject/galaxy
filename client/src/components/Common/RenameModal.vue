@@ -60,6 +60,7 @@ async function onRename(newName: string) {
 
 <template>
     <GModal
+        :id="`rename-modal-${props.itemType}`"
         show
         :ok-text="localize('Rename')"
         :ok-disabled="nameInvalid || renaming"
@@ -70,6 +71,7 @@ async function onRename(newName: string) {
         @close="emit('close')"
         @cancel="emit('close')">
         <GFormInput
+            :id="`${props.itemType}-name-input`"
             v-model="nameModel"
             :data-description="`${props.itemType} name input`"
             class="w-100"

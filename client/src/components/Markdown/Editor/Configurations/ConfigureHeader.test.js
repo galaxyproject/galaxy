@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
-import CellButton from "@/components/Markdown/Editor/CellButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const mockConfirm = vi.fn();
 vi.mock("@/composables/confirmDialog", () => ({
@@ -19,9 +19,6 @@ function mountComponent(props = {}) {
         localVue,
         propsData: { hasChanged: undefined, ...props },
         stubs: {
-            BButton: {
-                template: "<button @click=\"$emit('click')\"><slot /></button>",
-            },
             FontAwesomeIcon: true,
             Heading: {
                 template: "<div><slot /></div>",
@@ -43,7 +40,7 @@ describe("ConfigureHeader.vue", () => {
 
     it("renders Apply Changes and Cancel buttons when hasChanged is defined", () => {
         const wrapper = mountComponent({ hasChanged: false });
-        const buttons = wrapper.findAllComponents(CellButton);
+        const buttons = wrapper.findAllComponents(GButton);
         expect(buttons.length).toBe(2);
         expect(buttons.at(0).props("title")).toBe("Apply Changes");
         expect(buttons.at(1).props("title")).toBe("Cancel");
@@ -51,7 +48,7 @@ describe("ConfigureHeader.vue", () => {
 
     it("always renders Cancel button", () => {
         const wrapper = mountComponent({ hasChanged: undefined });
-        const buttons = wrapper.findAllComponents(CellButton);
+        const buttons = wrapper.findAllComponents(GButton);
         const cancelBtn = buttons.at(buttons.length - 1);
         expect(cancelBtn.exists()).toBe(true);
         expect(cancelBtn.props("title")).toBe("Cancel");
@@ -59,21 +56,21 @@ describe("ConfigureHeader.vue", () => {
 
     it("emits ok when Apply Changes is clicked", async () => {
         const wrapper = mountComponent({ hasChanged: true });
-        const applyBtn = wrapper.findAllComponents(CellButton).at(0);
+        const applyBtn = wrapper.findAllComponents(GButton).at(0);
         await applyBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeTruthy();
     });
 
     it("emits cancel immediately if hasChanged is false", async () => {
         const wrapper = mountComponent({ hasChanged: false });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(GButton).at(1);
         await cancelBtn.trigger("click");
         expect(wrapper.emitted("cancel")).toBeTruthy();
     });
 
     it("shows confirmDialog if hasChanged is true and Cancel is clicked", async () => {
         const wrapper = mountComponent({ hasChanged: true });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(GButton).at(1);
         await cancelBtn.trigger("click");
         expect(mockConfirm).toHaveBeenCalled();
     });
@@ -83,7 +80,7 @@ describe("ConfigureHeader.vue", () => {
         mockConfirm.mockResolvedValue(true);
 
         const wrapper = mountComponent({ hasChanged: true });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(GButton).at(1);
         await cancelBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeTruthy();
         expect(wrapper.emitted("cancel")).toBeFalsy();
@@ -94,7 +91,7 @@ describe("ConfigureHeader.vue", () => {
         mockConfirm.mockResolvedValue(false);
 
         const wrapper = mountComponent({ hasChanged: true });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(GButton).at(1);
         await cancelBtn.trigger("click");
         expect(wrapper.emitted("cancel")).toBeTruthy();
         expect(wrapper.emitted("ok")).toBeFalsy();
@@ -105,7 +102,7 @@ describe("ConfigureHeader.vue", () => {
         mockConfirm.mockResolvedValue(null);
 
         const wrapper = mountComponent({ hasChanged: true });
-        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        const cancelBtn = wrapper.findAllComponents(GButton).at(1);
         await cancelBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeFalsy();
         expect(wrapper.emitted("cancel")).toBeFalsy();

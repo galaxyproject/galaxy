@@ -15,12 +15,12 @@ import zipfile
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
 )
 from functools import partial
 from typing import (
     IO,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -38,7 +38,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -93,13 +97,21 @@ stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
+    file_output_path = os.path.join(extra_files, name)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
     if not is_binary:
         if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
 
-    file_output_path = os.path.join(extra_files, name)
     shutil.move(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
@@ -109,22 +121,22 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
 
 class ConvertResult(NamedTuple):
     line_count: int
-    converted_path: Optional[str]
+    converted_path: str | None
     converted_newlines: bool
     converted_regex: bool
 
 
 class ConvertFunction(Protocol):
     def __call__(
-        self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+        self, fname: str, in_place: bool = True, tmp_dir: str | None = None, tmp_prefix: str | None = "gxupload"
     ) -> ConvertResult: ...
 
 
 def convert_newlines(
     fname: str,
     in_place: bool = True,
-    tmp_dir: Optional[str] = None,
-    tmp_prefix: Optional[str] = "gxupload",
+    tmp_dir: str | None = None,
+    tmp_prefix: str | None = "gxupload",
     block_size: int = 128 * 1024,
     regexp=None,
 ) -> ConvertResult:
@@ -178,8 +190,8 @@ def convert_newlines(
 def convert_sep2tabs(
     fname: str,
     in_place: bool = True,
-    tmp_dir: Optional[str] = None,
-    tmp_prefix: Optional[str] = "gxupload",
+    tmp_dir: str | None = None,
+    tmp_prefix: str | None = "gxupload",
     block_size: int = 128 * 1024,
 ):
     """
@@ -213,7 +225,7 @@ def convert_sep2tabs(
 
 
 def convert_newlines_sep2tabs(
-    fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+    fname: str, in_place: bool = True, tmp_dir: str | None = None, tmp_prefix: str | None = "gxupload"
 ) -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
@@ -223,7 +235,9 @@ def convert_newlines_sep2tabs(
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
-def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+def iter_headers(
+    fname_or_file_prefix: "str | FilePrefix", sep: str | None, count: int = 60, comment_designator: str | None = None
+) -> Iterator[list[str]]:
     idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
         file_iterator = fname_or_file_prefix.line_iterator()
@@ -703,7 +717,7 @@ class FilePrefix:
         return self.contents_header_bytes.startswith(test_bytes)
 
 
-def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix], auto_decompress: bool = True) -> FilePrefix:
+def _get_file_prefix(filename_or_file_prefix: str | FilePrefix, auto_decompress: bool = True) -> FilePrefix:
     if not isinstance(filename_or_file_prefix, FilePrefix):
         return FilePrefix(filename_or_file_prefix, auto_decompress=auto_decompress)
     return filename_or_file_prefix
@@ -797,16 +811,16 @@ class HandleCompressedFileResponse(NamedTuple):
     is_valid: bool
     ext: str
     uncompressed_path: str
-    compressed_type: Optional[str]
-    is_compressed: Optional[bool]
+    compressed_type: str | None
+    is_compressed: bool
 
 
 def handle_compressed_file(
     file_prefix: FilePrefix,
     datatypes_registry,
     ext: str = "auto",
-    tmp_prefix: Optional[str] = "sniff_uncompress_",
-    tmp_dir: Optional[str] = None,
+    tmp_prefix: str | None = "sniff_uncompress_",
+    tmp_dir: str | None = None,
     in_place: bool = False,
     check_content: bool = True,
 ) -> HandleCompressedFileResponse:
@@ -837,6 +851,8 @@ def handle_compressed_file(
     if check_compressed_function:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
         compressed_type = file_prefix.compressed_format
+    if is_compressed and not is_valid:
+        is_valid = _sniffs_as_compressed_html_container(file_prefix, datatypes_registry, ext)
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
@@ -876,6 +892,15 @@ def handle_compressed_file(
     return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type, is_compressed)
 
 
+def _sniffs_as_compressed_html_container(file_prefix: FilePrefix, datatypes_registry, ext: str) -> bool:
+    if ext in AUTO_DETECT_EXTENSIONS:
+        candidates = datatypes_registry.sniff_order
+    else:
+        candidates = [datatypes_registry.get_datatype_by_extension(ext)]
+    candidates = [d for d in candidates if d is not None and d.allow_compressed_html_content]
+    return bool(candidates) and run_sniffers_raw(file_prefix, candidates) is not None
+
+
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     file_prefix = FilePrefix(filename)
@@ -885,7 +910,7 @@ def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
 class HandleUploadedDatasetFileInternalResponse(NamedTuple):
     ext: str
     converted_path: str
-    compressed_type: Optional[str]
+    compressed_type: str | None
     converted_newlines: bool
     converted_spaces: bool
 
@@ -901,18 +926,23 @@ def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertF
     return convert_fxn
 
 
+def should_convert_text(file_prefix: FilePrefix, is_compressed: bool) -> bool:
+    """Newline and space conversion only applies to uncompressed text content."""
+    return not file_prefix.binary and not is_compressed
+
+
 def handle_uploaded_dataset_file_internal(
     file_prefix: FilePrefix,
     datatypes_registry,
     ext: str = "auto",
-    tmp_prefix: Optional[str] = "sniff_upload_",
-    tmp_dir: Optional[str] = None,
+    tmp_prefix: str | None = "sniff_upload_",
+    tmp_dir: str | None = None,
     in_place: bool = False,
     check_content: bool = True,
-    is_binary: Optional[bool] = None,
-    uploaded_file_ext: Optional[str] = None,
-    convert_to_posix_lines: Optional[bool] = None,
-    convert_spaces_to_tabs: Optional[bool] = None,
+    is_binary: bool | None = None,
+    uploaded_file_ext: str | None = None,
+    convert_to_posix_lines: bool | None = None,
+    convert_spaces_to_tabs: bool | None = None,
 ) -> HandleUploadedDatasetFileInternalResponse:
     is_valid, ext, converted_path, compressed_type, is_compressed = handle_compressed_file(
         file_prefix,
@@ -941,7 +971,7 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (convert_to_posix_lines or convert_spaces_to_tabs) and should_convert_text(file_prefix, is_compressed):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(

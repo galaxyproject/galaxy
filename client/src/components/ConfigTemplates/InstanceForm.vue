@@ -28,6 +28,7 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "onSubmit", formData: any): void;
     (e: "onForceSubmit", formData: any): void;
+    (e: "onChange", formData: any): void;
 }>();
 
 let formData: any;
@@ -35,6 +36,7 @@ const hasValidationErrors = ref(false);
 
 function onChange(incoming: any) {
     formData = incoming;
+    emit("onChange", incoming);
 }
 
 function onValidation(validation: any) {

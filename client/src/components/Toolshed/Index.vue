@@ -61,11 +61,6 @@ export default {
             return !this.query || this.query.length < this.queryLength;
         },
     },
-    watch: {
-        tabValue() {
-            this.setQuery("");
-        },
-    },
     methods: {
         clearTimer() {
             if (this.queryTimer) {

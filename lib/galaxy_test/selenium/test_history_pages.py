@@ -5,9 +5,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestHistoryPages(SeleniumTestCase):
+class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -239,13 +240,13 @@ class TestHistoryPages(SeleniumTestCase):
     def test_page_window_with_embedded_dataset(self):
         """Windowed page renders embedded dataset displays."""
         history_id = self.current_history_id()
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
-        # Get the dataset ID for the directive
+        # The directive takes the HDA ID - "dataset_id" is the underlying Dataset
         datasets = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
-        dataset_id = datasets["dataset_id"]
-        content = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={dataset_id})\n```\n"
+        hda_id = datasets["id"]
+        content = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={hda_id})\n```\n"
         self.dataset_populator.new_history_page(history_id, title="Dataset Embed", content=content)
 
         with self.window_manager_active():
@@ -341,14 +342,11 @@ class TestHistoryPages(SeleniumTestCase):
 
     # --- Drag-and-Drop Tests ---
 
-    @selenium_only("seletools drag_and_drop requires Selenium webdriver")
     @selenium_test
     @managed_history
     def test_drag_dataset_to_page_editor(self):
         """Drag a dataset from history panel and drop on page editor."""
-        from seletools.actions import drag_and_drop
-
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.navigate_to_history_pages()
@@ -360,19 +358,19 @@ class TestHistoryPages(SeleniumTestCase):
 
         editor = self.components.pages.history.markdown_editor.wait_for_visible()
 
-        drag_and_drop(self.driver, source=dataset_element, target=editor)
+        self.drag_and_drop(dataset_element, editor)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         value = self.components.pages.history.markdown_editor.wait_for_value()
         assert "history_dataset_display" in value
         self.screenshot("history_page_drag_drop_dataset")
 
-    @selenium_only("seletools drag_and_drop requires Selenium webdriver")
+    @selenium_only("Needs a held-drag gesture - asserts dragover styling mid-drag via action_chains")
     @selenium_test
     @managed_history
     def test_drag_drop_visual_feedback(self):
         """Verify visual feedback during drag over page editor."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.navigate_to_history_pages()
@@ -472,12 +470,12 @@ class TestHistoryPages(SeleniumTestCase):
     def test_display_only_shows_expanded_content(self):
         """DisplayOnly mode renders embedded dataset from directive."""
         history_id = self.current_history_id()
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         datasets = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
-        dataset_id = datasets["dataset_id"]
-        content = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={dataset_id})\n```\n"
+        hda_id = datasets["id"]
+        content = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={hda_id})\n```\n"
         self.dataset_populator.new_history_page(history_id, title="Display Embed", content=content)
 
         self.navigate_to_history_pages()
@@ -530,9 +528,9 @@ class TestHistoryPages(SeleniumTestCase):
         items[-1].click()
         self.components.pages.history.revision_view.wait_for_visible()
 
-        # Oldest: "Compare to Previous" should be hidden, "Compare to Current" visible
-        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
+        # Wait for the newly selected revision before asserting what disappeared.
         self.components.pages.history.revision_compare_current_button.wait_for_visible()
+        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
 
         # Click "Compare to Current"
         self.components.pages.history.revision_compare_current_button.wait_for_and_click()

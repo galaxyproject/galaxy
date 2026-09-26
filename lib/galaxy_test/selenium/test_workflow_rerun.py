@@ -10,6 +10,7 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE = """
 class: GalaxyWorkflow
@@ -25,14 +26,14 @@ steps:
 """
 
 
-class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
+class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
     @managed_history
     def test_workflow_rerun(self):
         # Run a workflow first
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.screenshot("workflow_run_before_rerun_ready")
@@ -157,7 +158,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
         # Upload one HDA so the history isn't empty (the workflow form needs a
         # current history); the optional input is intentionally left unselected.
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
         self.workflow_run_submit()

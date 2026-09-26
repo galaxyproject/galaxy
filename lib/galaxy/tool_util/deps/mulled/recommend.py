@@ -21,6 +21,7 @@ import logging
 import sys
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import (
     dataclass,
     field,
@@ -28,11 +29,6 @@ from dataclasses import (
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
 )
 
 from requests import (
@@ -82,7 +78,7 @@ class PackageSpec:
     """A single required package: a name and an optional pinned version."""
 
     name: str
-    version: Optional[str] = None
+    version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -96,13 +92,13 @@ class ContainerRecommendation:
     ``EXACT_VERSION`` recommendation.
     """
 
-    image: Optional[str]
+    image: str | None
     source: RecommendationSource
     match_quality: MatchQuality
-    packages: Tuple[PackageSpec, ...]
+    packages: tuple[PackageSpec, ...]
     multi_package: bool
-    tag: Optional[str] = None
-    notes: Tuple[str, ...] = field(default_factory=tuple)
+    tag: str | None = None
+    notes: tuple[str, ...] = field(default_factory=tuple)
 
     @property
     def found(self) -> bool:
@@ -133,9 +129,9 @@ class _TTLCache:
     def __init__(self, maxsize: int, ttl: float) -> None:
         self._maxsize = maxsize
         self._ttl = ttl
-        self._entries: Dict[Any, Tuple[float, ContainerRecommendation]] = {}
+        self._entries: dict[Any, tuple[float, ContainerRecommendation]] = {}
 
-    def get(self, key: Any) -> Optional[ContainerRecommendation]:
+    def get(self, key: Any) -> ContainerRecommendation | None:
         entry = self._entries.get(key)
         if entry is None:
             return None
@@ -160,11 +156,11 @@ _cache = _TTLCache(maxsize=128, ttl=RECOMMENDATION_CACHE_EXPIRY)
 _cache_lock = threading.Lock()
 
 
-def _cache_key(packages: Sequence[PackageSpec]) -> Tuple[Tuple[str, str], ...]:
+def _cache_key(packages: Sequence[PackageSpec]) -> tuple[tuple[str, str], ...]:
     return tuple(sorted((p.name, p.version or "") for p in packages))
 
 
-def _normalize(packages: Sequence[PackageSpec]) -> List[PackageSpec]:
+def _normalize(packages: Sequence[PackageSpec]) -> list[PackageSpec]:
     normalized = []
     for p in packages:
         name = p.name.strip().lower()
@@ -176,7 +172,7 @@ def _normalize(packages: Sequence[PackageSpec]) -> List[PackageSpec]:
 def recommend_container(
     packages: Sequence[PackageSpec],
     *,
-    session: Optional[Session] = None,
+    session: Session | None = None,
     use_cache: bool = True,
     resolve_versions: bool = True,
 ) -> ContainerRecommendation:
@@ -225,7 +221,7 @@ def recommend_container(
     return recommendation
 
 
-def biocontainer_tag_built(image: str, *, session: Optional[Session] = None) -> Optional[bool]:
+def biocontainer_tag_built(image: str, *, session: Session | None = None) -> bool | None:
     """Tri-state check of whether a ``quay.io/biocontainers`` image's exact tag is built.
 
     Returns:
@@ -274,7 +270,7 @@ def biocontainer_tag_built(image: str, *, session: Optional[Session] = None) -> 
     return tag in tags
 
 
-def _lookup_exact_or_newest(targets: List[CondaTarget], session: Session) -> Optional[MulledNameMatch]:
+def _lookup_exact_or_newest(targets: list[CondaTarget], session: Session) -> MulledNameMatch | None:
     """find_remote_mulled_name with the recommender's error handling.
 
     A 404 (HTTPError -- repo absent) is treated as "not found" (None); other network
@@ -293,7 +289,7 @@ def _recommend_single(spec: PackageSpec, session: Session) -> ContainerRecommend
     if match is None:
         return _no_recommendation([spec], False, f"no biocontainer found for '{spec.name}'")
     tag = match.name.split(":", 1)[1]
-    notes: Tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
     if spec.version and not match.exact:
         notes = (f"requested version {spec.version} not found; newest available tag is {tag}",)
     return ContainerRecommendation(
@@ -308,7 +304,7 @@ def _recommend_single(spec: PackageSpec, session: Session) -> ContainerRecommend
 
 
 def _recommend_multi(
-    specs: List[PackageSpec], session: Session, resolve_versions: bool = True
+    specs: list[PackageSpec], session: Session, resolve_versions: bool = True
 ) -> ContainerRecommendation:
     versioned = [p for p in specs if p.version]
 
@@ -338,8 +334,8 @@ def _recommend_multi(
     if not tags:
         return _no_recommendation(specs, True, f"no multi-package biocontainer built for {[p.name for p in specs]}")
 
-    notes_list: List[str] = []
-    version_hash: Optional[str] = None
+    notes_list: list[str] = []
+    version_hash: str | None = None
     if resolve_versions:
         resolved, version_hash = _resolve_versions(specs, tags, session)
         if resolved:
@@ -366,13 +362,13 @@ def _recommend_multi(
     )
 
 
-def _candidate_versions(name: str, session: Session, limit: int) -> List[str]:
+def _candidate_versions(name: str, session: Session, limit: int) -> list[str]:
     """Recent biocontainer versions for a single package, newest first."""
     try:
         tags = mulled_tags_for(BIOCONTAINERS_NAMESPACE, name, session=session)
     except (HTTPError, RequestException):
         return []
-    versions: List[str] = []
+    versions: list[str] = []
     for tag in tags:
         version = split_tag(tag)[0]
         if version not in versions:
@@ -383,10 +379,10 @@ def _candidate_versions(name: str, session: Session, limit: int) -> List[str]:
 
 
 def _resolve_versions(
-    specs: List[PackageSpec],
-    existing_tags: List[str],
+    specs: list[PackageSpec],
+    existing_tags: list[str],
     session: Session,
-) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+) -> tuple[dict[str, str] | None, str | None]:
     """Find a version combination whose mulled-v2 image is actually built.
 
     Pinned versions are fixed; unpinned packages contribute their recent
@@ -398,7 +394,7 @@ def _resolve_versions(
     if not existing_hashes:
         return None, None
 
-    candidate_lists: List[List[str]] = []
+    candidate_lists: list[list[str]] = []
     for spec in specs:
         if spec.version:
             candidate_lists.append([spec.version])
@@ -421,7 +417,7 @@ def _resolve_versions(
 # --- CLI --------------------------------------------------------------------
 
 
-def _specs_from_arg(targets_raw: str) -> List[PackageSpec]:
+def _specs_from_arg(targets_raw: str) -> list[PackageSpec]:
     # Lazy import: mulled_build pulls in heavy build tooling. Keeping it out of
     # module scope lets the agent import path stay lightweight; it's only needed
     # for the CLI's spec parsing.
@@ -430,7 +426,7 @@ def _specs_from_arg(targets_raw: str) -> List[PackageSpec]:
     return [PackageSpec(t.package, t.version) for t in target_str_to_targets(targets_raw)]
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     """Main entry-point for the ``mulled-recommend`` CLI tool."""
     parser = argparse.ArgumentParser(
         description="Recommend the best quay.io/biocontainers image for a list of conda packages."

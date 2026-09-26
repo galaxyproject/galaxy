@@ -21,7 +21,6 @@ trans can't satisfy -- those cases fail loudly rather than silently.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -173,8 +172,8 @@ Return a number; no commentary.
 
 
 def bioinformatics_workflows_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the bioinformatics_workflows Dataset.
 

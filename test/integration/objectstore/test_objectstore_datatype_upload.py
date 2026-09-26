@@ -4,7 +4,6 @@ import os
 import string
 import subprocess
 import time
-from typing import Optional
 
 import pytest
 
@@ -114,7 +113,7 @@ def stop_irods(container_name):
 
 
 class BaseObjectstoreUploadIntegrationInstance(UploadTestDatatypeDataIntegrationInstance):
-    object_store_template: Optional[string.Template] = None
+    object_store_template: string.Template | None = None
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

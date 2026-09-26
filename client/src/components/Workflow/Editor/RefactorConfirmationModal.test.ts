@@ -93,7 +93,7 @@ describe("RefactorConfirmationModal.vue", () => {
                 then({
                     action_executions: [
                         {
-                            action_type: TEST_ACTION_TYPE,
+                            action: { action_type: TEST_ACTION_TYPE },
                             messages: [
                                 {
                                     message_type: "connection_drop_forced",

@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.job_metrics import (
@@ -32,6 +31,32 @@ def test_job_metrics_format_core():
         assert_title="Cores Allocated",
         assert_value="4",
     )
+
+
+def test_job_metrics_format_resubmission():
+    _assert_format(
+        "core",
+        "resubmission_count",
+        2,
+        assert_title="Resubmission Count",
+        assert_value="2",
+    )
+
+
+def test_dictifiable_metrics_drops_what_a_formatter_declines_to_display():
+    """A formatter returning None keeps the metric out of the UI without unrecording it."""
+    raw_metrics = [
+        RawMetric("resubmission_count", 0, "core"),
+        RawMetric("resubmission_count", 2, "core"),
+        RawMetric("galaxy_slots", 4, "core"),
+    ]
+
+    dictifiable = TEST_JOBS_METRICS.dictifiable_metrics(raw_metrics, Safety.SAFE)
+
+    assert [(m.name, m.value) for m in dictifiable] == [
+        ("resubmission_count", "2"),
+        ("galaxy_slots", "4"),
+    ]
 
 
 def test_job_metrics_format_cgroup():
@@ -119,10 +144,9 @@ def _assert_metrics_of_type(metric_list, expected_types):
         assert dictifiable_metric.plugin == expected_type
 
 
-def _assert_format(
-    plugin: str, key: str, value: Any, assert_title: Optional[str] = None, assert_value: Optional[str] = None
-):
+def _assert_format(plugin: str, key: str, value: Any, assert_title: str | None = None, assert_value: str | None = None):
     result = TEST_JOBS_METRICS.format(plugin, key, value)
+    assert result is not None
     if assert_title is not None:
         assert result[0] == assert_title
     if assert_value is not None:

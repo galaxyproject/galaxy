@@ -2,6 +2,10 @@
 
 import re
 import typing
+from typing import (
+    Annotated,
+    Literal,
+)
 
 from pydantic import (
     BaseModel,
@@ -12,10 +16,6 @@ from pydantic import (
     RootModel,
     StrictFloat,
     StrictInt,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
 )
 
 BYTES_PATTERN = re.compile(r"^(0|[1-9][0-9]*)([kKMGTPE]i?)?$")
@@ -93,7 +93,7 @@ class base_has_line_model(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -102,16 +102,14 @@ class base_has_line_model(AssertionModel):
         description=has_line_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_line_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -121,7 +119,7 @@ class base_has_line_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -130,7 +128,7 @@ class base_has_line_model(AssertionModel):
         description=has_line_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_line_negate_description,
@@ -149,7 +147,7 @@ class base_has_line_model_relaxed(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -158,16 +156,14 @@ class base_has_line_model_relaxed(AssertionModel):
         description=has_line_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_line_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -177,7 +173,7 @@ class base_has_line_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -186,7 +182,7 @@ class base_has_line_model_relaxed(AssertionModel):
         description=has_line_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_line_negate_description,
@@ -245,7 +241,7 @@ class base_has_line_matching_model(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -254,16 +250,14 @@ class base_has_line_matching_model(AssertionModel):
         description=has_line_matching_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_line_matching_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -273,7 +267,7 @@ class base_has_line_matching_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -282,7 +276,7 @@ class base_has_line_matching_model(AssertionModel):
         description=has_line_matching_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_line_matching_negate_description,
@@ -301,7 +295,7 @@ class base_has_line_matching_model_relaxed(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -310,16 +304,14 @@ class base_has_line_matching_model_relaxed(AssertionModel):
         description=has_line_matching_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_line_matching_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -329,7 +321,7 @@ class base_has_line_matching_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -338,7 +330,7 @@ class base_has_line_matching_model_relaxed(AssertionModel):
         description=has_line_matching_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_line_matching_negate_description,
@@ -389,7 +381,7 @@ class base_has_n_lines_model(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_n_lines_model")
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -398,16 +390,14 @@ class base_has_n_lines_model(AssertionModel):
         description=has_n_lines_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_lines_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -417,7 +407,7 @@ class base_has_n_lines_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -426,7 +416,7 @@ class base_has_n_lines_model(AssertionModel):
         description=has_n_lines_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_lines_negate_description,
@@ -439,7 +429,7 @@ class base_has_n_lines_model_relaxed(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_n_lines_model_relaxed")
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -448,16 +438,14 @@ class base_has_n_lines_model_relaxed(AssertionModel):
         description=has_n_lines_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_lines_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -467,7 +455,7 @@ class base_has_n_lines_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -476,7 +464,7 @@ class base_has_n_lines_model_relaxed(AssertionModel):
         description=has_n_lines_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_lines_negate_description,
@@ -535,7 +523,7 @@ class base_has_text_model(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -544,16 +532,14 @@ class base_has_text_model(AssertionModel):
         description=has_text_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_text_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -563,7 +549,7 @@ class base_has_text_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -572,7 +558,7 @@ class base_has_text_model(AssertionModel):
         description=has_text_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_text_negate_description,
@@ -591,7 +577,7 @@ class base_has_text_model_relaxed(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -600,16 +586,14 @@ class base_has_text_model_relaxed(AssertionModel):
         description=has_text_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_text_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -619,7 +603,7 @@ class base_has_text_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -628,7 +612,7 @@ class base_has_text_model_relaxed(AssertionModel):
         description=has_text_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_text_negate_description,
@@ -687,7 +671,7 @@ class base_has_text_matching_model(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -696,16 +680,14 @@ class base_has_text_matching_model(AssertionModel):
         description=has_text_matching_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_text_matching_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -715,7 +697,7 @@ class base_has_text_matching_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -724,7 +706,7 @@ class base_has_text_matching_model(AssertionModel):
         description=has_text_matching_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_text_matching_negate_description,
@@ -743,7 +725,7 @@ class base_has_text_matching_model_relaxed(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -752,16 +734,14 @@ class base_has_text_matching_model_relaxed(AssertionModel):
         description=has_text_matching_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_text_matching_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -771,7 +751,7 @@ class base_has_text_matching_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -780,7 +760,7 @@ class base_has_text_matching_model_relaxed(AssertionModel):
         description=has_text_matching_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_text_matching_negate_description,
@@ -889,7 +869,7 @@ class base_has_n_columns_model(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_n_columns_model")
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -898,16 +878,14 @@ class base_has_n_columns_model(AssertionModel):
         description=has_n_columns_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_columns_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -917,7 +895,7 @@ class base_has_n_columns_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -938,7 +916,7 @@ class base_has_n_columns_model(AssertionModel):
         description=has_n_columns_comment_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_columns_negate_description,
@@ -951,7 +929,7 @@ class base_has_n_columns_model_relaxed(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_n_columns_model_relaxed")
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -960,16 +938,14 @@ class base_has_n_columns_model_relaxed(AssertionModel):
         description=has_n_columns_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_columns_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -979,7 +955,7 @@ class base_has_n_columns_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1000,7 +976,7 @@ class base_has_n_columns_model_relaxed(AssertionModel):
         description=has_n_columns_comment_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_columns_negate_description,
@@ -1078,7 +1054,7 @@ class base_attribute_is_model(AssertionModel):
         description=attribute_is_text_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=attribute_is_negate_description,
@@ -1108,7 +1084,7 @@ class base_attribute_is_model_relaxed(AssertionModel):
         description=attribute_is_text_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=attribute_is_negate_description,
@@ -1192,7 +1168,7 @@ class base_attribute_matches_model(AssertionModel):
         description=attribute_matches_expression_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=attribute_matches_negate_description,
@@ -1222,7 +1198,7 @@ class base_attribute_matches_model_relaxed(AssertionModel):
         description=attribute_matches_expression_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=attribute_matches_negate_description,
@@ -1288,7 +1264,7 @@ class base_element_text_model(AssertionModel):
         description=element_text_path_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_negate_description,
@@ -1316,7 +1292,7 @@ class base_element_text_model_relaxed(AssertionModel):
         description=element_text_path_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_negate_description,
@@ -1406,7 +1382,7 @@ class base_element_text_is_model(AssertionModel):
         description=element_text_is_text_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_is_negate_description,
@@ -1430,7 +1406,7 @@ class base_element_text_is_model_relaxed(AssertionModel):
         description=element_text_is_text_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_is_negate_description,
@@ -1506,7 +1482,7 @@ class base_element_text_matches_model(AssertionModel):
         description=element_text_matches_expression_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_matches_negate_description,
@@ -1530,7 +1506,7 @@ class base_element_text_matches_model_relaxed(AssertionModel):
         description=element_text_matches_expression_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=element_text_matches_negate_description,
@@ -1598,7 +1574,7 @@ class base_has_element_with_path_model(AssertionModel):
         description=has_element_with_path_path_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_element_with_path_negate_description,
@@ -1616,7 +1592,7 @@ class base_has_element_with_path_model_relaxed(AssertionModel):
         description=has_element_with_path_path_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_element_with_path_negate_description,
@@ -1691,7 +1667,7 @@ class base_has_n_elements_with_path_model(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1700,16 +1676,14 @@ class base_has_n_elements_with_path_model(AssertionModel):
         description=has_n_elements_with_path_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_elements_with_path_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1719,7 +1693,7 @@ class base_has_n_elements_with_path_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1728,7 +1702,7 @@ class base_has_n_elements_with_path_model(AssertionModel):
         description=has_n_elements_with_path_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_elements_with_path_negate_description,
@@ -1747,7 +1721,7 @@ class base_has_n_elements_with_path_model_relaxed(AssertionModel):
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1756,16 +1730,14 @@ class base_has_n_elements_with_path_model_relaxed(AssertionModel):
         description=has_n_elements_with_path_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_n_elements_with_path_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1775,7 +1747,7 @@ class base_has_n_elements_with_path_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1784,7 +1756,7 @@ class base_has_n_elements_with_path_model_relaxed(AssertionModel):
         description=has_n_elements_with_path_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_n_elements_with_path_negate_description,
@@ -1899,20 +1871,20 @@ class base_xml_element_model(AssertionModel):
         description=xml_element_path_description,
     )
 
-    attribute: typing.Optional[typing.Union[str]] = Field(
+    attribute: str | None = Field(
         None,
         title="Attribute",
         description=xml_element_attribute_description,
     )
 
-    all: typing.Union[bool, str] = Field(
+    all: bool | str = Field(
         False,
         title="All",
         description=xml_element_all_description,
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1921,16 +1893,14 @@ class base_xml_element_model(AssertionModel):
         description=xml_element_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=xml_element_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1940,7 +1910,7 @@ class base_xml_element_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1949,7 +1919,7 @@ class base_xml_element_model(AssertionModel):
         description=xml_element_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=xml_element_negate_description,
@@ -1970,20 +1940,20 @@ class base_xml_element_model_relaxed(AssertionModel):
         description=xml_element_path_description,
     )
 
-    attribute: typing.Optional[typing.Union[str]] = Field(
+    attribute: str | None = Field(
         None,
         title="Attribute",
         description=xml_element_attribute_description,
     )
 
-    all: typing.Union[bool, str] = Field(
+    all: bool | str = Field(
         False,
         title="All",
         description=xml_element_all_description,
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -1992,16 +1962,14 @@ class base_xml_element_model_relaxed(AssertionModel):
         description=xml_element_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=xml_element_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2011,7 +1979,7 @@ class base_xml_element_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2020,7 +1988,7 @@ class base_xml_element_model_relaxed(AssertionModel):
         description=xml_element_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=xml_element_negate_description,
@@ -2405,14 +2373,14 @@ class base_has_archive_member_model(AssertionModel):
         description=has_archive_member_path_description,
     )
 
-    all: typing.Union[bool, str] = Field(
+    all: bool | str = Field(
         False,
         title="All",
         description=has_archive_member_all_description,
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2421,16 +2389,14 @@ class base_has_archive_member_model(AssertionModel):
         description=has_archive_member_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_archive_member_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2440,7 +2406,7 @@ class base_has_archive_member_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2449,7 +2415,7 @@ class base_has_archive_member_model(AssertionModel):
         description=has_archive_member_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_archive_member_negate_description,
@@ -2470,14 +2436,14 @@ class base_has_archive_member_model_relaxed(AssertionModel):
         description=has_archive_member_path_description,
     )
 
-    all: typing.Union[bool, str] = Field(
+    all: bool | str = Field(
         False,
         title="All",
         description=has_archive_member_all_description,
     )
 
     n: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2486,16 +2452,14 @@ class base_has_archive_member_model_relaxed(AssertionModel):
         description=has_archive_member_n_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_archive_member_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2505,7 +2469,7 @@ class base_has_archive_member_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2514,7 +2478,7 @@ class base_has_archive_member_model_relaxed(AssertionModel):
         description=has_archive_member_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_archive_member_negate_description,
@@ -2652,7 +2616,7 @@ class base_has_size_model(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_size_model")
 
     value: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2662,7 +2626,7 @@ class base_has_size_model(AssertionModel):
     )
 
     size: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2671,16 +2635,14 @@ class base_has_size_model(AssertionModel):
         description=has_size_size_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_size_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2690,7 +2652,7 @@ class base_has_size_model(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2699,7 +2661,7 @@ class base_has_size_model(AssertionModel):
         description=has_size_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_size_negate_description,
@@ -2712,7 +2674,7 @@ class base_has_size_model_relaxed(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="base_has_size_model_relaxed")
 
     value: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2722,7 +2684,7 @@ class base_has_size_model_relaxed(AssertionModel):
     )
 
     size: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2731,16 +2693,14 @@ class base_has_size_model_relaxed(AssertionModel):
         description=has_size_size_description,
     )
 
-    delta: Annotated[
-        typing.Union[int, str], BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)
-    ] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_bytes), BeforeValidator(check_non_negative_if_int)] = Field(
         0,
         title="Delta",
         description=has_size_delta_description,
     )
 
     min: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2750,7 +2710,7 @@ class base_has_size_model_relaxed(AssertionModel):
     )
 
     max: Annotated[
-        typing.Optional[typing.Union[str, int]],
+        str | int | None,
         BeforeValidator(check_bytes),
         BeforeValidator(check_non_negative_if_int),
     ] = Field(
@@ -2759,7 +2719,7 @@ class base_has_size_model_relaxed(AssertionModel):
         description=has_size_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_size_negate_description,
@@ -2819,25 +2779,25 @@ class base_has_image_center_of_mass_model(AssertionModel):
         description=has_image_center_of_mass_center_of_mass_description,
     )
 
-    channel: typing.Optional[StrictInt] = Field(
+    channel: StrictInt | None = Field(
         None,
         title="Channel",
         description=has_image_center_of_mass_channel_description,
     )
 
-    slice: typing.Optional[StrictInt] = Field(
+    slice: StrictInt | None = Field(
         None,
         title="Slice",
         description=has_image_center_of_mass_slice_description,
     )
 
-    frame: typing.Optional[StrictInt] = Field(
+    frame: StrictInt | None = Field(
         None,
         title="Frame",
         description=has_image_center_of_mass_frame_description,
     )
 
-    eps: Annotated[typing.Union[StrictInt, StrictFloat], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[StrictInt | StrictFloat, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_center_of_mass_eps_description,
@@ -2855,25 +2815,25 @@ class base_has_image_center_of_mass_model_relaxed(AssertionModel):
         description=has_image_center_of_mass_center_of_mass_description,
     )
 
-    channel: typing.Optional[typing.Union[str, int]] = Field(
+    channel: str | int | None = Field(
         None,
         title="Channel",
         description=has_image_center_of_mass_channel_description,
     )
 
-    slice: typing.Optional[typing.Union[str, int]] = Field(
+    slice: str | int | None = Field(
         None,
         title="Slice",
         description=has_image_center_of_mass_slice_description,
     )
 
-    frame: typing.Optional[typing.Union[str, int]] = Field(
+    frame: str | int | None = Field(
         None,
         title="Frame",
         description=has_image_center_of_mass_frame_description,
     )
 
-    eps: Annotated[typing.Union[float, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[float | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_center_of_mass_eps_description,
@@ -2925,7 +2885,7 @@ class base_has_image_channels_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_channels_model")
 
-    channels: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    channels: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Channels",
         description=has_image_channels_channels_description,
@@ -2937,19 +2897,19 @@ class base_has_image_channels_model(AssertionModel):
         description=has_image_channels_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_channels_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_channels_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_channels_negate_description,
@@ -2961,31 +2921,31 @@ class base_has_image_channels_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_channels_model_relaxed")
 
-    channels: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    channels: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Channels",
         description=has_image_channels_channels_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_channels_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_channels_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_channels_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_channels_negate_description,
@@ -3037,7 +2997,7 @@ class base_has_image_depth_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_depth_model")
 
-    depth: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    depth: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Depth",
         description=has_image_depth_depth_description,
@@ -3049,19 +3009,19 @@ class base_has_image_depth_model(AssertionModel):
         description=has_image_depth_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_depth_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_depth_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_depth_negate_description,
@@ -3073,31 +3033,31 @@ class base_has_image_depth_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_depth_model_relaxed")
 
-    depth: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    depth: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Depth",
         description=has_image_depth_depth_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_depth_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_depth_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_depth_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_depth_negate_description,
@@ -3147,7 +3107,7 @@ class base_has_image_frames_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_frames_model")
 
-    frames: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    frames: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Frames",
         description=has_image_frames_frames_description,
@@ -3159,19 +3119,19 @@ class base_has_image_frames_model(AssertionModel):
         description=has_image_frames_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_frames_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_frames_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_frames_negate_description,
@@ -3183,31 +3143,31 @@ class base_has_image_frames_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_frames_model_relaxed")
 
-    frames: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    frames: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Frames",
         description=has_image_frames_frames_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_frames_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_frames_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_frames_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_frames_negate_description,
@@ -3257,7 +3217,7 @@ class base_has_image_height_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_height_model")
 
-    height: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    height: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Height",
         description=has_image_height_height_description,
@@ -3269,19 +3229,19 @@ class base_has_image_height_model(AssertionModel):
         description=has_image_height_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_height_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_height_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_height_negate_description,
@@ -3293,31 +3253,31 @@ class base_has_image_height_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_height_model_relaxed")
 
-    height: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    height: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Height",
         description=has_image_height_height_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_height_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_height_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_height_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_height_negate_description,
@@ -3373,43 +3333,43 @@ class base_has_image_mean_intensity_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_mean_intensity_model")
 
-    channel: typing.Optional[StrictInt] = Field(
+    channel: StrictInt | None = Field(
         None,
         title="Channel",
         description=has_image_mean_intensity_channel_description,
     )
 
-    slice: typing.Optional[StrictInt] = Field(
+    slice: StrictInt | None = Field(
         None,
         title="Slice",
         description=has_image_mean_intensity_slice_description,
     )
 
-    frame: typing.Optional[StrictInt] = Field(
+    frame: StrictInt | None = Field(
         None,
         title="Frame",
         description=has_image_mean_intensity_frame_description,
     )
 
-    mean_intensity: typing.Optional[typing.Union[StrictInt, StrictFloat]] = Field(
+    mean_intensity: StrictInt | StrictFloat | None = Field(
         None,
         title="Mean Intensity",
         description=has_image_mean_intensity_mean_intensity_description,
     )
 
-    eps: Annotated[typing.Union[StrictInt, StrictFloat], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[StrictInt | StrictFloat, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_mean_intensity_eps_description,
     )
 
-    min: typing.Optional[typing.Union[StrictInt, StrictFloat]] = Field(
+    min: StrictInt | StrictFloat | None = Field(
         None,
         title="Min",
         description=has_image_mean_intensity_min_description,
     )
 
-    max: typing.Optional[typing.Union[StrictInt, StrictFloat]] = Field(
+    max: StrictInt | StrictFloat | None = Field(
         None,
         title="Max",
         description=has_image_mean_intensity_max_description,
@@ -3421,43 +3381,43 @@ class base_has_image_mean_intensity_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_mean_intensity_model_relaxed")
 
-    channel: typing.Optional[typing.Union[str, int]] = Field(
+    channel: str | int | None = Field(
         None,
         title="Channel",
         description=has_image_mean_intensity_channel_description,
     )
 
-    slice: typing.Optional[typing.Union[str, int]] = Field(
+    slice: str | int | None = Field(
         None,
         title="Slice",
         description=has_image_mean_intensity_slice_description,
     )
 
-    frame: typing.Optional[typing.Union[str, int]] = Field(
+    frame: str | int | None = Field(
         None,
         title="Frame",
         description=has_image_mean_intensity_frame_description,
     )
 
-    mean_intensity: typing.Optional[typing.Union[float, str]] = Field(
+    mean_intensity: float | str | None = Field(
         None,
         title="Mean Intensity",
         description=has_image_mean_intensity_mean_intensity_description,
     )
 
-    eps: Annotated[typing.Union[float, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[float | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_mean_intensity_eps_description,
     )
 
-    min: typing.Optional[typing.Union[float, str]] = Field(
+    min: float | str | None = Field(
         None,
         title="Min",
         description=has_image_mean_intensity_min_description,
     )
 
-    max: typing.Optional[typing.Union[float, str]] = Field(
+    max: float | str | None = Field(
         None,
         title="Max",
         description=has_image_mean_intensity_max_description,
@@ -3521,61 +3481,55 @@ class base_has_image_mean_object_size_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_mean_object_size_model")
 
-    channel: typing.Optional[StrictInt] = Field(
+    channel: StrictInt | None = Field(
         None,
         title="Channel",
         description=has_image_mean_object_size_channel_description,
     )
 
-    slice: typing.Optional[StrictInt] = Field(
+    slice: StrictInt | None = Field(
         None,
         title="Slice",
         description=has_image_mean_object_size_slice_description,
     )
 
-    frame: typing.Optional[StrictInt] = Field(
+    frame: StrictInt | None = Field(
         None,
         title="Frame",
         description=has_image_mean_object_size_frame_description,
     )
 
-    labels: typing.Optional[typing.List[typing.Union[StrictInt, StrictFloat]]] = Field(
+    labels: list[StrictInt | StrictFloat] | None = Field(
         None,
         title="Labels",
         description=has_image_mean_object_size_labels_description,
     )
 
-    exclude_labels: typing.Optional[typing.List[typing.Union[StrictInt, StrictFloat]]] = Field(
+    exclude_labels: list[StrictInt | StrictFloat] | None = Field(
         None,
         title="Exclude Labels",
         description=has_image_mean_object_size_exclude_labels_description,
     )
 
-    mean_object_size: Annotated[
-        typing.Optional[typing.Union[StrictInt, StrictFloat]], BeforeValidator(check_non_negative_if_set)
-    ] = Field(
+    mean_object_size: Annotated[StrictInt | StrictFloat | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Mean Object Size",
         description=has_image_mean_object_size_mean_object_size_description,
     )
 
-    eps: Annotated[typing.Union[StrictInt, StrictFloat], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[StrictInt | StrictFloat, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_mean_object_size_eps_description,
     )
 
-    min: Annotated[
-        typing.Optional[typing.Union[StrictInt, StrictFloat]], BeforeValidator(check_non_negative_if_set)
-    ] = Field(
+    min: Annotated[StrictInt | StrictFloat | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_mean_object_size_min_description,
     )
 
-    max: Annotated[
-        typing.Optional[typing.Union[StrictInt, StrictFloat]], BeforeValidator(check_non_negative_if_set)
-    ] = Field(
+    max: Annotated[StrictInt | StrictFloat | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_mean_object_size_max_description,
@@ -3587,57 +3541,55 @@ class base_has_image_mean_object_size_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_mean_object_size_model_relaxed")
 
-    channel: typing.Optional[typing.Union[str, int]] = Field(
+    channel: str | int | None = Field(
         None,
         title="Channel",
         description=has_image_mean_object_size_channel_description,
     )
 
-    slice: typing.Optional[typing.Union[str, int]] = Field(
+    slice: str | int | None = Field(
         None,
         title="Slice",
         description=has_image_mean_object_size_slice_description,
     )
 
-    frame: typing.Optional[typing.Union[str, int]] = Field(
+    frame: str | int | None = Field(
         None,
         title="Frame",
         description=has_image_mean_object_size_frame_description,
     )
 
-    labels: typing.Optional[typing.Union[str, typing.List[typing.Union[float, int]]]] = Field(
+    labels: str | list[float | int] | None = Field(
         None,
         title="Labels",
         description=has_image_mean_object_size_labels_description,
     )
 
-    exclude_labels: typing.Optional[typing.Union[str, typing.List[typing.Union[float, int]]]] = Field(
+    exclude_labels: str | list[float | int] | None = Field(
         None,
         title="Exclude Labels",
         description=has_image_mean_object_size_exclude_labels_description,
     )
 
-    mean_object_size: Annotated[
-        typing.Optional[typing.Union[float, str]], BeforeValidator(check_non_negative_if_set)
-    ] = Field(
+    mean_object_size: Annotated[float | str | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Mean Object Size",
         description=has_image_mean_object_size_mean_object_size_description,
     )
 
-    eps: Annotated[typing.Union[float, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    eps: Annotated[float | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0.01,
         title="Eps",
         description=has_image_mean_object_size_eps_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[float, str]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[float | str | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_mean_object_size_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[float, str]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[float | str | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_mean_object_size_max_description,
@@ -3703,37 +3655,37 @@ class base_has_image_n_labels_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_n_labels_model")
 
-    channel: typing.Optional[StrictInt] = Field(
+    channel: StrictInt | None = Field(
         None,
         title="Channel",
         description=has_image_n_labels_channel_description,
     )
 
-    slice: typing.Optional[StrictInt] = Field(
+    slice: StrictInt | None = Field(
         None,
         title="Slice",
         description=has_image_n_labels_slice_description,
     )
 
-    frame: typing.Optional[StrictInt] = Field(
+    frame: StrictInt | None = Field(
         None,
         title="Frame",
         description=has_image_n_labels_frame_description,
     )
 
-    labels: typing.Optional[typing.List[typing.Union[StrictInt, StrictFloat]]] = Field(
+    labels: list[StrictInt | StrictFloat] | None = Field(
         None,
         title="Labels",
         description=has_image_n_labels_labels_description,
     )
 
-    exclude_labels: typing.Optional[typing.List[typing.Union[StrictInt, StrictFloat]]] = Field(
+    exclude_labels: list[StrictInt | StrictFloat] | None = Field(
         None,
         title="Exclude Labels",
         description=has_image_n_labels_exclude_labels_description,
     )
 
-    n: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    n: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="N",
         description=has_image_n_labels_n_description,
@@ -3745,19 +3697,19 @@ class base_has_image_n_labels_model(AssertionModel):
         description=has_image_n_labels_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_n_labels_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_n_labels_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_n_labels_negate_description,
@@ -3769,61 +3721,61 @@ class base_has_image_n_labels_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_n_labels_model_relaxed")
 
-    channel: typing.Optional[typing.Union[str, int]] = Field(
+    channel: str | int | None = Field(
         None,
         title="Channel",
         description=has_image_n_labels_channel_description,
     )
 
-    slice: typing.Optional[typing.Union[str, int]] = Field(
+    slice: str | int | None = Field(
         None,
         title="Slice",
         description=has_image_n_labels_slice_description,
     )
 
-    frame: typing.Optional[typing.Union[str, int]] = Field(
+    frame: str | int | None = Field(
         None,
         title="Frame",
         description=has_image_n_labels_frame_description,
     )
 
-    labels: typing.Optional[typing.Union[str, typing.List[typing.Union[float, int]]]] = Field(
+    labels: str | list[float | int] | None = Field(
         None,
         title="Labels",
         description=has_image_n_labels_labels_description,
     )
 
-    exclude_labels: typing.Optional[typing.Union[str, typing.List[typing.Union[float, int]]]] = Field(
+    exclude_labels: str | list[float | int] | None = Field(
         None,
         title="Exclude Labels",
         description=has_image_n_labels_exclude_labels_description,
     )
 
-    n: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    n: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="N",
         description=has_image_n_labels_n_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_n_labels_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_n_labels_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_n_labels_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_n_labels_negate_description,
@@ -3877,7 +3829,7 @@ class base_has_image_width_model(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_width_model")
 
-    width: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    width: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Width",
         description=has_image_width_width_description,
@@ -3889,19 +3841,19 @@ class base_has_image_width_model(AssertionModel):
         description=has_image_width_delta_description,
     )
 
-    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_width_min_description,
     )
 
-    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[StrictInt | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_width_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_width_negate_description,
@@ -3913,31 +3865,31 @@ class base_has_image_width_model_relaxed(AssertionModel):
 
     model_config = ConfigDict(extra="forbid", title="base_has_image_width_model_relaxed")
 
-    width: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    width: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Width",
         description=has_image_width_width_description,
     )
 
-    delta: Annotated[typing.Union[int, str], BeforeValidator(check_non_negative_if_set)] = Field(
+    delta: Annotated[int | str, BeforeValidator(check_non_negative_if_set)] = Field(
         0,
         title="Delta",
         description=has_image_width_delta_description,
     )
 
-    min: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    min: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Min",
         description=has_image_width_min_description,
     )
 
-    max: Annotated[typing.Optional[typing.Union[str, int]], BeforeValidator(check_non_negative_if_set)] = Field(
+    max: Annotated[str | int | None, BeforeValidator(check_non_negative_if_set)] = Field(
         None,
         title="Max",
         description=has_image_width_max_description,
     )
 
-    negate: typing.Union[bool, str] = Field(
+    negate: bool | str = Field(
         False,
         title="Negate",
         description=has_image_width_negate_description,
@@ -3972,204 +3924,196 @@ class has_image_width_model_relaxed(base_has_image_width_model_relaxed):
 
 
 any_assertion_model_flat = Annotated[
-    typing.Union[
-        has_line_model,
-        has_line_matching_model,
-        has_n_lines_model,
-        has_text_model,
-        has_text_matching_model,
-        not_has_text_model,
-        has_n_columns_model,
-        attribute_is_model,
-        attribute_matches_model,
-        element_text_model,
-        element_text_is_model,
-        element_text_matches_model,
-        has_element_with_path_model,
-        has_n_elements_with_path_model,
-        is_valid_xml_model,
-        xml_element_model,
-        has_json_property_with_text_model,
-        has_json_property_with_value_model,
-        has_h5_attribute_model,
-        has_h5_keys_model,
-        has_archive_member_model,
-        has_size_model,
-        has_image_center_of_mass_model,
-        has_image_channels_model,
-        has_image_depth_model,
-        has_image_frames_model,
-        has_image_height_model,
-        has_image_mean_intensity_model,
-        has_image_mean_object_size_model,
-        has_image_n_labels_model,
-        has_image_width_model,
-    ],
+    has_line_model
+    | has_line_matching_model
+    | has_n_lines_model
+    | has_text_model
+    | has_text_matching_model
+    | not_has_text_model
+    | has_n_columns_model
+    | attribute_is_model
+    | attribute_matches_model
+    | element_text_model
+    | element_text_is_model
+    | element_text_matches_model
+    | has_element_with_path_model
+    | has_n_elements_with_path_model
+    | is_valid_xml_model
+    | xml_element_model
+    | has_json_property_with_text_model
+    | has_json_property_with_value_model
+    | has_h5_attribute_model
+    | has_h5_keys_model
+    | has_archive_member_model
+    | has_size_model
+    | has_image_center_of_mass_model
+    | has_image_channels_model
+    | has_image_depth_model
+    | has_image_frames_model
+    | has_image_height_model
+    | has_image_mean_intensity_model
+    | has_image_mean_object_size_model
+    | has_image_n_labels_model
+    | has_image_width_model,
     Field(discriminator="that"),
 ]
 
-any_assertion_model_nested = typing.Union[
-    has_line_model_nested,
-    has_line_matching_model_nested,
-    has_n_lines_model_nested,
-    has_text_model_nested,
-    has_text_matching_model_nested,
-    not_has_text_model_nested,
-    has_n_columns_model_nested,
-    attribute_is_model_nested,
-    attribute_matches_model_nested,
-    element_text_model_nested,
-    element_text_is_model_nested,
-    element_text_matches_model_nested,
-    has_element_with_path_model_nested,
-    has_n_elements_with_path_model_nested,
-    is_valid_xml_model_nested,
-    xml_element_model_nested,
-    has_json_property_with_text_model_nested,
-    has_json_property_with_value_model_nested,
-    has_h5_attribute_model_nested,
-    has_h5_keys_model_nested,
-    has_archive_member_model_nested,
-    has_size_model_nested,
-    has_image_center_of_mass_model_nested,
-    has_image_channels_model_nested,
-    has_image_depth_model_nested,
-    has_image_frames_model_nested,
-    has_image_height_model_nested,
-    has_image_mean_intensity_model_nested,
-    has_image_mean_object_size_model_nested,
-    has_image_n_labels_model_nested,
-    has_image_width_model_nested,
-]
+any_assertion_model_nested = (
+    has_line_model_nested
+    | has_line_matching_model_nested
+    | has_n_lines_model_nested
+    | has_text_model_nested
+    | has_text_matching_model_nested
+    | not_has_text_model_nested
+    | has_n_columns_model_nested
+    | attribute_is_model_nested
+    | attribute_matches_model_nested
+    | element_text_model_nested
+    | element_text_is_model_nested
+    | element_text_matches_model_nested
+    | has_element_with_path_model_nested
+    | has_n_elements_with_path_model_nested
+    | is_valid_xml_model_nested
+    | xml_element_model_nested
+    | has_json_property_with_text_model_nested
+    | has_json_property_with_value_model_nested
+    | has_h5_attribute_model_nested
+    | has_h5_keys_model_nested
+    | has_archive_member_model_nested
+    | has_size_model_nested
+    | has_image_center_of_mass_model_nested
+    | has_image_channels_model_nested
+    | has_image_depth_model_nested
+    | has_image_frames_model_nested
+    | has_image_height_model_nested
+    | has_image_mean_intensity_model_nested
+    | has_image_mean_object_size_model_nested
+    | has_image_n_labels_model_nested
+    | has_image_width_model_nested
+)
 
 any_assertion_model_flat_relaxed = Annotated[
-    typing.Union[
-        has_line_model_relaxed,
-        has_line_matching_model_relaxed,
-        has_n_lines_model_relaxed,
-        has_text_model_relaxed,
-        has_text_matching_model_relaxed,
-        not_has_text_model_relaxed,
-        has_n_columns_model_relaxed,
-        attribute_is_model_relaxed,
-        attribute_matches_model_relaxed,
-        element_text_model_relaxed,
-        element_text_is_model_relaxed,
-        element_text_matches_model_relaxed,
-        has_element_with_path_model_relaxed,
-        has_n_elements_with_path_model_relaxed,
-        is_valid_xml_model_relaxed,
-        xml_element_model_relaxed,
-        has_json_property_with_text_model_relaxed,
-        has_json_property_with_value_model_relaxed,
-        has_h5_attribute_model_relaxed,
-        has_h5_keys_model_relaxed,
-        has_archive_member_model_relaxed,
-        has_size_model_relaxed,
-        has_image_center_of_mass_model_relaxed,
-        has_image_channels_model_relaxed,
-        has_image_depth_model_relaxed,
-        has_image_frames_model_relaxed,
-        has_image_height_model_relaxed,
-        has_image_mean_intensity_model_relaxed,
-        has_image_mean_object_size_model_relaxed,
-        has_image_n_labels_model_relaxed,
-        has_image_width_model_relaxed,
-    ],
+    has_line_model_relaxed
+    | has_line_matching_model_relaxed
+    | has_n_lines_model_relaxed
+    | has_text_model_relaxed
+    | has_text_matching_model_relaxed
+    | not_has_text_model_relaxed
+    | has_n_columns_model_relaxed
+    | attribute_is_model_relaxed
+    | attribute_matches_model_relaxed
+    | element_text_model_relaxed
+    | element_text_is_model_relaxed
+    | element_text_matches_model_relaxed
+    | has_element_with_path_model_relaxed
+    | has_n_elements_with_path_model_relaxed
+    | is_valid_xml_model_relaxed
+    | xml_element_model_relaxed
+    | has_json_property_with_text_model_relaxed
+    | has_json_property_with_value_model_relaxed
+    | has_h5_attribute_model_relaxed
+    | has_h5_keys_model_relaxed
+    | has_archive_member_model_relaxed
+    | has_size_model_relaxed
+    | has_image_center_of_mass_model_relaxed
+    | has_image_channels_model_relaxed
+    | has_image_depth_model_relaxed
+    | has_image_frames_model_relaxed
+    | has_image_height_model_relaxed
+    | has_image_mean_intensity_model_relaxed
+    | has_image_mean_object_size_model_relaxed
+    | has_image_n_labels_model_relaxed
+    | has_image_width_model_relaxed,
     Field(discriminator="that"),
 ]
 
 
-class assertion_list(RootModel[typing.List[typing.Union[any_assertion_model_flat, any_assertion_model_nested]]]):
+class assertion_list(RootModel[list[any_assertion_model_flat | any_assertion_model_nested]]):
     model_config = ConfigDict(title="assertion_list")
 
 
 # used to model what the XML conversion should look like - not meant to be consumed outside of
 # of Galaxy internals / linting.
-class relaxed_assertion_list(RootModel[typing.List[any_assertion_model_flat_relaxed]]):
+class relaxed_assertion_list(RootModel[list[any_assertion_model_flat_relaxed]]):
     model_config = ConfigDict(title="relaxed_assertion_list")
 
 
 class assertion_dict(AssertionModel):
     model_config = ConfigDict(extra="forbid", title="assertion_dict")
 
-    has_line: typing.Optional[base_has_line_model] = Field(None, title="Assert Has Line")
+    has_line: base_has_line_model | None = Field(None, title="Assert Has Line")
 
-    has_line_matching: typing.Optional[base_has_line_matching_model] = Field(None, title="Assert Has Line Matching")
+    has_line_matching: base_has_line_matching_model | None = Field(None, title="Assert Has Line Matching")
 
-    has_n_lines: typing.Optional[base_has_n_lines_model] = Field(None, title="Assert Has N Lines")
+    has_n_lines: base_has_n_lines_model | None = Field(None, title="Assert Has N Lines")
 
-    has_text: typing.Optional[base_has_text_model] = Field(None, title="Assert Has Text")
+    has_text: base_has_text_model | None = Field(None, title="Assert Has Text")
 
-    has_text_matching: typing.Optional[base_has_text_matching_model] = Field(None, title="Assert Has Text Matching")
+    has_text_matching: base_has_text_matching_model | None = Field(None, title="Assert Has Text Matching")
 
-    not_has_text: typing.Optional[base_not_has_text_model] = Field(None, title="Assert Not Has Text")
+    not_has_text: base_not_has_text_model | None = Field(None, title="Assert Not Has Text")
 
-    has_n_columns: typing.Optional[base_has_n_columns_model] = Field(None, title="Assert Has N Columns")
+    has_n_columns: base_has_n_columns_model | None = Field(None, title="Assert Has N Columns")
 
-    attribute_is: typing.Optional[base_attribute_is_model] = Field(None, title="Assert Attribute Is")
+    attribute_is: base_attribute_is_model | None = Field(None, title="Assert Attribute Is")
 
-    attribute_matches: typing.Optional[base_attribute_matches_model] = Field(None, title="Assert Attribute Matches")
+    attribute_matches: base_attribute_matches_model | None = Field(None, title="Assert Attribute Matches")
 
-    element_text: typing.Optional[base_element_text_model] = Field(None, title="Assert Element Text")
+    element_text: base_element_text_model | None = Field(None, title="Assert Element Text")
 
-    element_text_is: typing.Optional[base_element_text_is_model] = Field(None, title="Assert Element Text Is")
+    element_text_is: base_element_text_is_model | None = Field(None, title="Assert Element Text Is")
 
-    element_text_matches: typing.Optional[base_element_text_matches_model] = Field(
-        None, title="Assert Element Text Matches"
-    )
+    element_text_matches: base_element_text_matches_model | None = Field(None, title="Assert Element Text Matches")
 
-    has_element_with_path: typing.Optional[base_has_element_with_path_model] = Field(
-        None, title="Assert Has Element With Path"
-    )
+    has_element_with_path: base_has_element_with_path_model | None = Field(None, title="Assert Has Element With Path")
 
-    has_n_elements_with_path: typing.Optional[base_has_n_elements_with_path_model] = Field(
+    has_n_elements_with_path: base_has_n_elements_with_path_model | None = Field(
         None, title="Assert Has N Elements With Path"
     )
 
-    is_valid_xml: typing.Optional[base_is_valid_xml_model] = Field(None, title="Assert Is Valid Xml")
+    is_valid_xml: base_is_valid_xml_model | None = Field(None, title="Assert Is Valid Xml")
 
-    xml_element: typing.Optional[base_xml_element_model] = Field(None, title="Assert Xml Element")
+    xml_element: base_xml_element_model | None = Field(None, title="Assert Xml Element")
 
-    has_json_property_with_text: typing.Optional[base_has_json_property_with_text_model] = Field(
+    has_json_property_with_text: base_has_json_property_with_text_model | None = Field(
         None, title="Assert Has Json Property With Text"
     )
 
-    has_json_property_with_value: typing.Optional[base_has_json_property_with_value_model] = Field(
+    has_json_property_with_value: base_has_json_property_with_value_model | None = Field(
         None, title="Assert Has Json Property With Value"
     )
 
-    has_h5_attribute: typing.Optional[base_has_h5_attribute_model] = Field(None, title="Assert Has H5 Attribute")
+    has_h5_attribute: base_has_h5_attribute_model | None = Field(None, title="Assert Has H5 Attribute")
 
-    has_h5_keys: typing.Optional[base_has_h5_keys_model] = Field(None, title="Assert Has H5 Keys")
+    has_h5_keys: base_has_h5_keys_model | None = Field(None, title="Assert Has H5 Keys")
 
-    has_archive_member: typing.Optional[base_has_archive_member_model] = Field(None, title="Assert Has Archive Member")
+    has_archive_member: base_has_archive_member_model | None = Field(None, title="Assert Has Archive Member")
 
-    has_size: typing.Optional[base_has_size_model] = Field(None, title="Assert Has Size")
+    has_size: base_has_size_model | None = Field(None, title="Assert Has Size")
 
-    has_image_center_of_mass: typing.Optional[base_has_image_center_of_mass_model] = Field(
+    has_image_center_of_mass: base_has_image_center_of_mass_model | None = Field(
         None, title="Assert Has Image Center Of Mass"
     )
 
-    has_image_channels: typing.Optional[base_has_image_channels_model] = Field(None, title="Assert Has Image Channels")
+    has_image_channels: base_has_image_channels_model | None = Field(None, title="Assert Has Image Channels")
 
-    has_image_depth: typing.Optional[base_has_image_depth_model] = Field(None, title="Assert Has Image Depth")
+    has_image_depth: base_has_image_depth_model | None = Field(None, title="Assert Has Image Depth")
 
-    has_image_frames: typing.Optional[base_has_image_frames_model] = Field(None, title="Assert Has Image Frames")
+    has_image_frames: base_has_image_frames_model | None = Field(None, title="Assert Has Image Frames")
 
-    has_image_height: typing.Optional[base_has_image_height_model] = Field(None, title="Assert Has Image Height")
+    has_image_height: base_has_image_height_model | None = Field(None, title="Assert Has Image Height")
 
-    has_image_mean_intensity: typing.Optional[base_has_image_mean_intensity_model] = Field(
+    has_image_mean_intensity: base_has_image_mean_intensity_model | None = Field(
         None, title="Assert Has Image Mean Intensity"
     )
 
-    has_image_mean_object_size: typing.Optional[base_has_image_mean_object_size_model] = Field(
+    has_image_mean_object_size: base_has_image_mean_object_size_model | None = Field(
         None, title="Assert Has Image Mean Object Size"
     )
 
-    has_image_n_labels: typing.Optional[base_has_image_n_labels_model] = Field(None, title="Assert Has Image N Labels")
+    has_image_n_labels: base_has_image_n_labels_model | None = Field(None, title="Assert Has Image N Labels")
 
-    has_image_width: typing.Optional[base_has_image_width_model] = Field(None, title="Assert Has Image Width")
+    has_image_width: base_has_image_width_model | None = Field(None, title="Assert Has Image Width")
 
 
-assertions = typing.Union[assertion_list, assertion_dict]
+assertions = assertion_list | assertion_dict

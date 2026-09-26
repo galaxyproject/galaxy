@@ -16,6 +16,7 @@ on:
         description: 'Specify tag to build for'
         required: true
         type: string
+permissions: {}
 jobs:
   check-permissions:
     if: github.event_name == 'workflow_dispatch'
@@ -23,13 +24,13 @@ jobs:
     steps:
       - name: Check if user can create releases
         run: |
-          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission --jq '.permission')
+          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/${GITHUB_ACTOR}/permission --jq '.permission')
           if [[ "$PERMISSION" != "admin" ]]; then
             echo "Error: Only repository admins can manually trigger release artifacts"
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
   build-python-packages:
     if: |
@@ -40,15 +41,15 @@ jobs:
     name: Build Python packages for PyPI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.10'
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: false
+          python-version: '3.10'
       - name: Install script dependencies
         run: uv tool install galaxy-release-util
       - name: Build Python packages
@@ -94,19 +95,20 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
           persist-credentials: false
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat client/.node_version)" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ steps.node-version.outputs.version }}
+          package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: client/package.json
       # TODO(post-26.1): the @galaxyproject/galaxy-client npm publish is now

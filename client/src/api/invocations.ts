@@ -22,6 +22,8 @@ export type StepJobSummary =
     | components["schemas"]["InvocationStepJobsResponseJobModel"]
     | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"];
 
+export type WorkflowJobMetric = components["schemas"]["WorkflowJobMetric"];
+
 export type WorkflowInvocation = components["schemas"]["WorkflowInvocationResponse"];
 
 export function isWorkflowInvocationElementView(

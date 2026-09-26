@@ -566,8 +566,7 @@ class TestGalaxyInstallApis(ShedApiTestCase):
             self._repo_params(repository, first_changeset),
         )
         api_asserts.assert_status_code_is_ok(updated_response)
-        updated_text = updated_response.text.strip()
-        if updated_text:
+        if updated_text := updated_response.text.strip():
             updated_revisions = updated_text.split(",")
             # The next installable should be reachable from the update path
             assert next_rev in updated_revisions

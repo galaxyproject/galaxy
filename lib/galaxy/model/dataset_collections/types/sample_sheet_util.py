@@ -1,8 +1,4 @@
 import re
-from typing import (
-    Optional,
-    Union,
-)
 
 from pydantic import (
     BaseModel,
@@ -25,19 +21,19 @@ from galaxy.tool_util_models.sample_sheet import (
 from galaxy.util import strip_control_characters
 
 SampleSheetRows = dict[str, SampleSheetRow]
-OptionalSampleSheetRows = Optional[SampleSheetRows]
+OptionalSampleSheetRows = SampleSheetRows | None
 
 
 class SampleSheetColumnDefinitionModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     name: str
     type: SampleSheetColumnType
-    description: Optional[str] = None
+    description: str | None = None
     optional: bool
-    validators: Optional[list[AnySafeValidatorModel]] = None
-    restrictions: Optional[list[SampleSheetColumnValueT]] = None
-    suggestions: Optional[list[SampleSheetColumnValueT]] = None
-    default_value: Optional[SampleSheetColumnValueT] = None
+    validators: list[AnySafeValidatorModel] | None = None
+    restrictions: list[SampleSheetColumnValueT] | None = None
+    suggestions: list[SampleSheetColumnValueT] | None = None
+    default_value: SampleSheetColumnValueT | None = None
 
     @model_validator(mode="after")
     def check_nature_of_default(self) -> Self:
@@ -64,7 +60,7 @@ class SampleSheetColumnDefinitionModel(BaseModel):
 
 
 SampleSheetColumnDefinitionsModel = RootModel[list[SampleSheetColumnDefinitionModel]]
-SampleSheetColumnDefinitionDictOrModel = Union[SampleSheetColumnDefinition, SampleSheetColumnDefinitionModel]
+SampleSheetColumnDefinitionDictOrModel = SampleSheetColumnDefinition | SampleSheetColumnDefinitionModel
 
 
 def sample_sheet_column_definition_to_model(
@@ -76,7 +72,7 @@ def sample_sheet_column_definition_to_model(
         return SampleSheetColumnDefinitionModel.model_validate(column_definition)
 
 
-def validate_column_definitions(column_definitions: Optional[SampleSheetColumnDefinitions]):
+def validate_column_definitions(column_definitions: SampleSheetColumnDefinitions | None):
     for column_definition in column_definitions or []:
         _validate_column_definition(column_definition)
 
@@ -95,8 +91,8 @@ def _validate_column_definition(column_definition: SampleSheetColumnDefinition):
 
 
 def validate_row(
-    row: Optional[SampleSheetRow],
-    column_definitions: Optional[SampleSheetColumnDefinitions],
+    row: SampleSheetRow | None,
+    column_definitions: SampleSheetColumnDefinitions | None,
     element_identifiers: list[str],
 ):
     if not column_definitions:
@@ -175,8 +171,8 @@ def validate_column_value(
 
 
 def column_definitions_compatible(
-    collection_columns: Optional[SampleSheetColumnDefinitions],
-    required_columns: Optional[SampleSheetColumnDefinitions],
+    collection_columns: SampleSheetColumnDefinitions | None,
+    required_columns: SampleSheetColumnDefinitions | None,
 ) -> bool:
     """Check if collection's column definitions exactly match required column definitions.
 

@@ -4,8 +4,11 @@ from galaxy.datatypes.images import (
     Dicom,
     Image,
     OMETiff,
+    Pbm,
     Pdf,
+    Pgm,
     Png,
+    Ppm,
     Tiff,
 )
 from galaxy.datatypes.sniff import get_test_fname
@@ -239,3 +242,21 @@ def test_dicom_sniff():
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
     __assert_empty_metadata(metadata)
+
+
+def test_pbm_sniff():
+    fname = get_test_fname("hopper_1bit.pbm")
+    assert Pbm().sniff(fname)
+    assert not Pgm().sniff(fname)
+
+
+def test_pgm_sniff():
+    fname = get_test_fname("16_bit_binary.pgm")
+    assert not Ppm().sniff(fname)
+    assert Pgm().sniff(fname)
+
+
+def test_ppm_sniff():
+    fname = get_test_fname("hopper_8bit.ppm")
+    assert Ppm().sniff(fname)
+    assert not Pgm().sniff(fname)

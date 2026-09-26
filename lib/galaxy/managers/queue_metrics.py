@@ -27,7 +27,6 @@ import logging
 from collections import defaultdict
 from collections.abc import Callable
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -55,7 +54,7 @@ log = logging.getLogger(__name__)
 
 def emit_control_queue_depth(
     statsd_client: "VanillaGalaxyStatsdClient",
-    connection: "Optional[Connection]",
+    connection: "Connection | None",
     application_stack: ApplicationStack,
 ) -> None:
     """Emit ``galaxy.control_queue.depth`` per active webapp/handler queue.
@@ -132,8 +131,8 @@ def _run(name: str, statsd_client: "VanillaGalaxyStatsdClient", fn: Callable[[],
 
 
 def emit_queue_metrics(
-    statsd_client: "Optional[VanillaGalaxyStatsdClient]",
-    connection: "Optional[Connection]",
+    statsd_client: "VanillaGalaxyStatsdClient | None",
+    connection: "Connection | None",
     application_stack: ApplicationStack,
     model: GalaxyModelMapping,
 ) -> None:

@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import (
@@ -45,7 +44,7 @@ def _iwc_search(query: str, limit: int) -> list[dict[str, Any]]:
     return iwc.search_workflows(workflows, query, limit=limit)
 
 
-def _iwc_details(trs_id: str) -> Optional[dict[str, Any]]:
+def _iwc_details(trs_id: str) -> dict[str, Any] | None:
     workflows = iwc.all_workflows(iwc.fetch_manifest())
     for wf in workflows:
         if wf.get("trsID") == trs_id:
@@ -59,7 +58,7 @@ class SimplifiedToolRecommendationResult(BaseModel):
     primary_tools: list[dict[str, Any]] = []
     alternative_tools: list[dict[str, Any]] = []
     recommended_workflows: list[dict[str, Any]] = []
-    workflow_suggestion: Optional[str] = None
+    workflow_suggestion: str | None = None
     parameter_guidance: dict[str, Any] = {}
     confidence: ConfidenceLiteral
     reasoning: str
@@ -95,7 +94,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         super().__init__(deps)
         self._tool_calls = 0
 
-    def _charge_tool_budget(self) -> Optional[str]:
+    def _charge_tool_budget(self) -> str | None:
         """Count a data-gathering tool call; once over budget return a stop
         message instead of more data so the model recommends from what it has."""
         self._tool_calls += 1
@@ -247,7 +246,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         try:
             panel_view = self.deps.config.default_panel_view or "default"
-            toolbox_search = self.deps.trans.app.toolbox_search  # type: ignore[attr-defined]
+            toolbox_search = self.deps.trans.app.toolbox_search
             tool_ids = toolbox_search.search(query, panel_view, self.deps.config)
 
             tools = []
@@ -277,6 +276,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             tool = self.deps.toolbox.get_tool(tool_id)
             if not tool:
                 return {"id": tool_id, "error": "Tool not found"}
+            tool = self.deps.toolbox.materialize_tool(tool, reason="detail")
 
             details: dict[str, Any] = {
                 "id": tool.id,
@@ -323,7 +323,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"IWC search failed for query={query!r}: {e}")
             return []
 
-    async def get_iwc_workflow_details(self, trs_id: str) -> Optional[dict[str, Any]]:
+    async def get_iwc_workflow_details(self, trs_id: str) -> dict[str, Any] | None:
         """Fetch one workflow from the IWC manifest, fully enriched."""
         try:
             return await asyncio.to_thread(_iwc_details, trs_id)
@@ -348,7 +348,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"Error getting tool categories: {e}")
             return []
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
@@ -464,7 +464,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.primary_tools:
             parts.append("**Recommended Tools:**")
             for i, tool in enumerate(recommendation.primary_tools[:3], 1):
-                tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
+                tool_name = self._resolve_tool_name(tool)
                 tool_id = tool.get("id", tool.get("tool_id", "unknown"))
 
                 is_installed = self._verify_tool_exists(tool_id)
@@ -486,13 +486,13 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.alternative_tools:
             parts.append("\n**Alternative Options:**")
             for tool in recommendation.alternative_tools[:2]:
-                tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
+                tool_name = self._resolve_tool_name(tool)
                 parts.append(f"- **{tool_name}**: {tool.get('description', 'No description')}")
 
         if recommendation.recommended_workflows:
             parts.append("\n**Recommended IWC Workflows:**")
             for i, wf in enumerate(recommendation.recommended_workflows[:3], 1):
-                wf_name = wf.get("name", "Unknown workflow")
+                wf_name = wf.get("name") or wf.get("trsID") or wf.get("trs_id") or "IWC workflow"
                 trs_id = wf.get("trsID") or wf.get("trs_id") or ""
                 parts.append(f"\n{i}. **{wf_name}**")
                 if trs_id:
@@ -526,7 +526,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.primary_tools:
             top_tool = recommendation.primary_tools[0]
             log.debug(f"Creating suggestion for top_tool: {top_tool}")
-            tool_name = top_tool.get("name", top_tool.get("tool_name", "Unknown tool"))
+            tool_name = self._resolve_tool_name(top_tool)
             tool_id = top_tool.get("id", top_tool.get("tool_id", ""))
             log.debug(f"Extracted tool_name={tool_name}, tool_id={tool_id}")
 
@@ -546,7 +546,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.recommended_workflows:
             top_wf = recommendation.recommended_workflows[0]
             trs_id = top_wf.get("trsID") or top_wf.get("trs_id")
-            wf_name = top_wf.get("name", "IWC workflow")
+            wf_name = top_wf.get("name") or top_wf.get("trsID") or top_wf.get("trs_id") or "IWC workflow"
             if trs_id:
                 suggestions.append(
                     ActionSuggestion(
@@ -559,6 +559,24 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 )
 
         return suggestions
+
+    def _resolve_tool_name(self, tool: dict) -> str:
+        """Human-readable name for a recommended tool.
+
+        The model's structured recommendation frequently carries only the
+        tool_id (no explicit name). Resolve the name from the toolbox by id,
+        and fall back to the id itself -- never render the literal "Unknown"
+        for a tool that is actually installed.
+        """
+        tool_id = tool.get("id") or tool.get("tool_id") or ""
+        if not (tool.get("name") or tool.get("tool_name")) and tool_id and self.deps.toolbox:
+            try:
+                resolved = self.deps.toolbox.get_tool(tool_id)
+                if resolved is not None:
+                    return resolved.name
+            except (AttributeError, KeyError, TypeError) as e:
+                log.debug(f"Error resolving name for tool {tool_id}: {e}")
+        return tool.get("name") or tool.get("tool_name") or tool_id or "Unknown"
 
     def _verify_tool_exists(self, tool_id: str) -> bool:
         if not self.deps.toolbox:

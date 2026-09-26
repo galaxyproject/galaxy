@@ -1,7 +1,6 @@
 import json
 from typing import (
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -14,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
+from galaxy.selenium.keys import Key
 from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
@@ -31,7 +31,6 @@ from galaxy_test.base.workflow_fixtures import (
 from .framework import (
     retry_assertion_during_transitions,
     RunsWorkflows,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesWorkflowAssertions,
@@ -74,7 +73,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.assert_disabled()
+        assert save_button.has_class("g-disabled")
 
         self.screenshot("workflow_editor_blank")
 
@@ -280,7 +279,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_collection_input_sample_sheet_chipseq_example(self):
         editor = self.components.workflow_editor
@@ -562,7 +560,6 @@ steps:
 
         assert_linting_input_metadata_okay()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_rules_workflow_1(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
@@ -753,9 +750,7 @@ steps:
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
         editor.configure_output(output="out_file1").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "bam")
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_connection_invalid("create_2#out_file1", "checksum#input")
         # Assert save button
@@ -766,9 +761,7 @@ steps:
         self.components.confirm_dialog._.wait_for_absent_or_hidden()
         # Make connection valid again
         editor.configure_output(output="out_file1").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
-        editor.select_datatype(datatype="tabular").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "tabular")
         # Assert connection is valid
         self.assert_connected("create_2#out_file1", "checksum#input")
 
@@ -865,9 +858,7 @@ steps:
         output_label = editor.label_output(output="out_file1")
         self.set_text_element(output_label, "workflow output label")
         self.set_text_element(editor.rename_output, "renamed_output")
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "bam")
         editor.add_tags_button.wait_for_and_click()
         editor.add_tags_input.wait_for_and_send_keys("#crazynewtag" + Keys.ENTER + Keys.ESCAPE)
         editor.remove_tags_button.wait_for_and_click()
@@ -1140,9 +1131,7 @@ steps:
         pick_node.wait_for_and_click()
         # Expand the output card — PJA controls are inside a collapsed FormCard
         editor.configure_output(output="output").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("output", "bam")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
@@ -1331,9 +1320,8 @@ steps:
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("disabled")
+        # assert save_button.has_class("g-disabled")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_conditional_subworkflow_step(self):
         child_workflow_name = self.setup_subworkflow()
@@ -1348,7 +1336,7 @@ steps:
         conditional_node = editor.node._(label=child_workflow_name)
         conditional_node.wait_for_and_click()
         conditional_toggle = editor.step_when.wait_for_present()
-        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        self.move_to_and_click(conditional_toggle)
         conditional_node.input_terminal(name="when").wait_for_present()
         self.workflow_editor_connect("param_input#output", f"{child_workflow_name}#when")
         self.assert_connected("param_input#output", f"{child_workflow_name}#when")
@@ -1397,21 +1385,15 @@ steps:
         self.screenshot("workflow_editor_missing_tool")
         self.workflow_editor_dismiss_state_upgrade_modal()
 
-    def tab_to(self, accessible_name, direction="forward"):
+    def tab_to(self, aria_label, direction="forward"):
+        modifiers = [Key.SHIFT] if direction == "backwards" else []
         for _ in range(100):
-            ac = self.action_chains()
-            if direction == "backwards":
-                ac.key_down(Keys.SHIFT)
-            ac.send_keys(Keys.TAB)
-            if direction == "backwards":
-                ac.key_down(Keys.SHIFT)
-            ac.perform()
-            if accessible_name in self.driver.switch_to.active_element.accessible_name:
-                return self.driver.switch_to.active_element
-        else:
-            raise Exception(f"Could not tab to element containing '{accessible_name}' in aria-label")
+            self.press(Key.TAB, modifiers=modifiers)
+            focused = self.active_element()
+            if aria_label in (focused.get_attribute("aria-label") or ""):
+                return focused
+        raise Exception(f"Could not tab to element containing '{aria_label}' in aria-label")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_aria_connections_menu(self):
         self.open_in_workflow_editor(
@@ -1436,21 +1418,21 @@ steps:
         self.screenshot("workflow_editor_connection_simple")
         self.components.workflow_editor.canvas_body.wait_for_and_click()
         output_connector = self.tab_to("Press space to see a list of available inputs")
-        output_connector.send_keys(Keys.SPACE)
-        assert self.driver.switch_to.active_element.text == "Disconnect from input1 in step 2: first_cat"
-        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.press(Key.SPACE, element=output_connector)
+        assert self.active_element().text == "Disconnect from input1 in step 2: first_cat"
+        self.press(Key.ENTER)
         self.assert_not_connected("input1#output", "first_cat#input1")
-        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        self.hover(self.components.workflow_editor.canvas_body.wait_for_and_click())
         output_connector = self.tab_to("Press space to see a list of available inputs")
-        output_connector.send_keys(Keys.SPACE)
-        assert self.driver.switch_to.active_element.text == "Connect to input1 in step 2: first_cat"
-        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.press(Key.SPACE, element=output_connector)
+        assert self.active_element().text == "Connect to input1 in step 2: first_cat"
+        self.press(Key.ENTER)
         self.assert_connected("input1#output", "first_cat#input1")
-        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        self.hover(self.components.workflow_editor.canvas_body.wait_for_and_click())
         output_connector = self.tab_to("Press space to see a list of available inputs")
         output_connector = self.tab_to("Press space to see a list of available inputs")
-        output_connector.send_keys(Keys.SPACE)
-        assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
+        self.press(Key.SPACE, element=output_connector)
+        assert self.active_element().text == "No compatible input found in workflow"
 
     @selenium_test
     def test_insert_input_handling(self):
@@ -1810,7 +1792,7 @@ steps:
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
 
-    def create_and_wait_for_new_workflow_in_editor(self, annotation: Optional[str] = None) -> str:
+    def create_and_wait_for_new_workflow_in_editor(self, annotation: str | None = None) -> str:
         editor = self.components.workflow_editor
         name = self.workflow_create_new(annotation=annotation)
         editor.canvas_body.wait_for_visible()
@@ -1845,7 +1827,7 @@ steps:
         return (int(width_stripped), int(height_stripped))
 
     @retry_assertion_during_transitions
-    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
+    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: str | None = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)

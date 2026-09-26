@@ -2,14 +2,10 @@
 
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
+    Literal,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -25,45 +21,45 @@ from galaxy.tool_util_models.testing_types import (
 
 # legacy inputs for working with POST /api/tools
 # + inputs that have been processed with parse.py and expanded out
-ExpandedToolInputs = Dict[str, Any]
+ExpandedToolInputs = dict[str, Any]
 # + ExpandedToolInputs where any model objects have been json-ified with to_dict()
-ExpandedToolInputsJsonified = Dict[str, Any]
+ExpandedToolInputsJsonified = dict[str, Any]
 
 # modern inputs for working with POST /api/jobs*
-RawTestToolRequest = Dict[str, Any]
+RawTestToolRequest = dict[str, Any]
 
-ExtraFileInfoDictT = Dict[str, Any]
-RequiredFileTuple = Tuple[str, ExtraFileInfoDictT]
-RequiredFilesT = List[RequiredFileTuple]
-RequiredDataTablesT = List[str]
-RequiredLocFileT = List[str]
+ExtraFileInfoDictT = dict[str, Any]
+RequiredFileTuple = tuple[str, ExtraFileInfoDictT]
+RequiredFilesT = list[RequiredFileTuple]
+RequiredDataTablesT = list[str]
+RequiredLocFileT = list[str]
 ValueStateRepresentationT = Literal["test_case_xml", "test_case_json"]
 
 
 class ToolTestDescriptionDict(TypedDict):
     tool_id: str
-    tool_version: Optional[str]
+    tool_version: str | None
     name: str
     test_index: int
     inputs: ExpandedToolInputsJsonified
-    request: NotRequired[Optional[Dict[str, Any]]]
-    request_schema: NotRequired[Optional[Dict[str, Any]]]
+    request: NotRequired[dict[str, Any] | None]
+    request_schema: NotRequired[dict[str, Any] | None]
     outputs: ToolSourceTestOutputs
-    output_collections: List[TestSourceTestOutputColllection]
-    stdout: Optional[AssertionList]
-    stderr: Optional[AssertionList]
-    expect_exit_code: Optional[int]
+    output_collections: list[TestSourceTestOutputColllection]
+    stdout: AssertionList | None
+    stderr: AssertionList | None
+    expect_exit_code: int | None
     expect_failure: bool
     expect_test_failure: bool
-    num_outputs: Optional[int]
-    command_line: Optional[AssertionList]
-    command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
+    num_outputs: int | None
+    command_line: AssertionList | None
+    command_version: AssertionList | None
+    required_files: list[Any]
+    required_data_tables: list[Any]
+    required_loc_files: list[str]
     error: bool
-    exception: Optional[str]
-    request_unavailable_reason: NotRequired[Optional[str]]
-    maxseconds: NotRequired[Optional[int]]
+    exception: str | None
+    request_unavailable_reason: NotRequired[str | None]
+    maxseconds: NotRequired[int | None]
     value_state_representation: NotRequired[ValueStateRepresentationT]
-    credentials: NotRequired[Optional[List[DirectCredential]]]
+    credentials: NotRequired[list[DirectCredential] | None]

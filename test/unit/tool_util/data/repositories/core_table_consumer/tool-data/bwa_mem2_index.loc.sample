@@ -1,0 +1,10 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of BWA-MEM2 indexed sequences data files. The loc
+#file has this format (white space characters are TAB characters):
+#
+#<unique_build_id>	<dbkey>	<display_name>	<file_path>
+#
+#So, for example, if you had phiX indexed and stored in
+#/depot/data2/galaxy/phiX/base/, the entry would look like this:
+#
+#phiX174	phiX	phiX Pretty	/depot/data2/galaxy/phiX/base/phiX.fa

@@ -1,8 +1,6 @@
 from io import StringIO
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 try:
@@ -28,7 +26,7 @@ from galaxy.files.sources._fsspec import (
 from galaxy.util.config_templates import TemplateExpansion
 
 
-def _parse_private_key(private_key: str, password: Optional[str]):
+def _parse_private_key(private_key: str, password: str | None):
     # Paramiko cannot autodetect the key type, so try the supported key classes.
     for pkey_class in (RSAKey, ECDSAKey, Ed25519Key):
         try:
@@ -41,21 +39,21 @@ def _parse_private_key(private_key: str, password: Optional[str]):
 
 
 class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    host: Union[str, TemplateExpansion]
-    user: Optional[Union[str, TemplateExpansion]] = None
-    passwd: Optional[Union[str, TemplateExpansion]] = None
-    pkey: Optional[Union[str, TemplateExpansion]] = None
-    timeout: Union[int, TemplateExpansion] = 10
-    port: Union[int, TemplateExpansion] = 22
-    compress: Union[bool, TemplateExpansion] = False
-    path: Union[str, TemplateExpansion]
+    host: str | TemplateExpansion
+    user: str | TemplateExpansion | None = None
+    passwd: str | TemplateExpansion | None = None
+    pkey: str | TemplateExpansion | None = None
+    timeout: int | TemplateExpansion = 10
+    port: int | TemplateExpansion = 22
+    compress: bool | TemplateExpansion = False
+    path: str | TemplateExpansion
 
 
 class SshFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     host: str
-    user: Optional[str] = None
-    passwd: Optional[str] = None
-    pkey: Optional[str] = None
+    user: str | None = None
+    passwd: str | None = None
+    pkey: str | None = None
     timeout: int = 10
     port: int = 22
     compress: bool = False

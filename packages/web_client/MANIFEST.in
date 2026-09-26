@@ -1,0 +1,3 @@
+# Generated assets must be included explicitly because they are not tracked by Git.
+include src/galaxy/web_client/client_build_hash.txt
+recursive-include src/galaxy/web_client/dist *

@@ -1,6 +1,8 @@
 import random
 import time
-from typing import Optional
+from urllib.parse import urljoin
+
+from requests import get
 
 from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
@@ -55,12 +57,20 @@ class TestDisplayApplicationsApi(ApiTestCase):
         assert len(failed) == 1
         assert unknown_id in failed
 
+    def test_display_as_malformed_id_returns_400(self):
+        response = get(
+            urljoin(self.url, "display_as"),
+            params={"id": "1display_app=ucscauthz_method=display_at"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert "Invalid dataset id" in response.text
+
     def test_reload_as_non_admin_returns_403(self):
         response = self._post("display_applications/reload")
         self._assert_status_code_is(response, 403)
 
     def test_create_link(self):
-        cases: list[dict[str, Optional[str]]] = [
+        cases: list[dict[str, str | None]] = [
             {"file": "1.interval", "app": "igv_interval_as_bed", "step": "bed_file"},
             {"file": "1.bam", "app": "igv_bam", "step": None},
             {"file": "test.vcf", "app": "igv_vcf", "step": "bgzip_file"},

@@ -1,19 +1,28 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm>=8"]
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "dependencies",
-    "description",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-files"
+version = "26.1.dev0"
+description = "Galaxy file source framework and default plugins"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-util[config-template,template]",
+    "fs",
+    "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
+    "pydantic>=2.7.4",
+    "typing-extensions",
+    "fsspec",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -32,5 +41,23 @@ classifiers = [
 ]
 keywords = ["Galaxy"]
 
+[project.optional-dependencies]
+test = [
+    "galaxy-test-base",
+    "pytest",
+    "gcsfs",
+    "responses",
+    "s3fs>=2023.1.0",
+]
+
 [project.scripts]
 galaxy-file-sources-conf-validation = "galaxy.files.validate.script:main"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

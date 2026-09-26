@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import (
     cast,
     Literal,
-    Optional,
     Protocol,
     TYPE_CHECKING,
     Union,
@@ -102,7 +101,7 @@ WorkbookContentField: Base64StringT = Field(
     title="Workbook Content (Base 64 encoded)",
     description="The workbook content (the contents of the xlsx file) that have been base64 encoded.",
 )
-PrefixRowsField: Optional[PrefixRowValuesT] = Field(
+PrefixRowsField: PrefixRowValuesT | None = Field(
     None,
     title="Prefix sample sheet values",
     description="An area to pre-populate URIs, etc...",
@@ -115,7 +114,7 @@ SampleSheetCollectionType = Literal[
 ParsedRow = dict[str, SampleSheetColumnValueT]
 ParsedRows = list[ParsedRow]
 
-AnyLogMessage = Union[InferredColumnMapping, ContentTypeMessage, CsvDialectInferenceMessage]
+AnyLogMessage = InferredColumnMapping | ContentTypeMessage | CsvDialectInferenceMessage
 
 SampleSheetParseLog = list[AnyLogMessage]
 
@@ -134,7 +133,7 @@ class CreateWorkbookRequest(BaseModel):
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI"] = "URI"
     column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
-    prefix_values: Optional[PrefixRowValuesT] = None
+    prefix_values: PrefixRowValuesT | None = None
 
 
 @dataclass
@@ -149,7 +148,7 @@ class CreateWorkbook(BaseModel):
     collection_type: SampleSheetCollectionType
     prefix_columns_type: Literal["URI", "ModelObjects"] = "URI"
     column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
-    prefix_values: Optional[InternalPrefixRowValuesT] = None
+    prefix_values: InternalPrefixRowValuesT | None = None
 
 
 @dataclass
@@ -173,7 +172,7 @@ class ParseWorkbookForCollection:
     content: str = WorkbookContentField
 
 
-AnyParseWorkbook = Union[ParseWorkbook, ParseWorkbookForCollection]
+AnyParseWorkbook = ParseWorkbook | ParseWorkbookForCollection
 
 
 INSTRUCTIONS = [
@@ -359,7 +358,7 @@ def generate_workbook(payload: CreateWorkbook) -> Workbook:
     freeze_header_row(worksheet)
 
     for index, column_definition in enumerate(column_definitions):
-        validation: Optional[DataValidation] = None
+        validation: DataValidation | None = None
         if column_definition.type == "int":
             validation = DataValidation(type="whole", allow_blank=True)
             # TODO: operator="between", formula1="1", formula2="1000"
@@ -469,7 +468,7 @@ class FetchPrefixColumn:
         return HasHelp(title=self.title, help=self.title)
 
 
-def prefix_columns(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> list[FetchPrefixColumn]:
+def prefix_columns(payload: CreateWorkbook | AnyParseWorkbook) -> list[FetchPrefixColumn]:
     if isinstance(payload, (CreateWorkbook, ParseWorkbook)):
         collection_type = payload.collection_type
         columns_type = payload.prefix_columns_type
@@ -516,7 +515,7 @@ def prefix_columns(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> list[Fet
     return columns
 
 
-def prefix_column_names(payload: Union[CreateWorkbook, AnyParseWorkbook]) -> list[str]:
+def prefix_column_names(payload: CreateWorkbook | AnyParseWorkbook) -> list[str]:
     return [c.title for c in prefix_columns(payload)]
 
 

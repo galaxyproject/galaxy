@@ -17,9 +17,12 @@ See recent changes that would be built with:
 
 """
 
+from __future__ import annotations
+
 import os
 import subprocess
 import time
+from typing import Protocol
 
 from galaxy.util import requests
 from ._cli import arg_parser
@@ -39,7 +42,22 @@ from .util import (
 )
 
 
-def _fetch_repo_data(args):
+class _FetchRepoDataArgs(Protocol):
+    channel: str
+    repo_data: str
+
+
+class _ChannelPackagesArgs(Protocol):
+    recipes_dir: str
+    diff_hours: str
+
+
+class _RunChannelArgs(_FetchRepoDataArgs, _ChannelPackagesArgs, Protocol):
+    force_rebuild: bool
+    namespace: str
+
+
+def _fetch_repo_data(args: _FetchRepoDataArgs) -> str:
     repo_data = args.repo_data
     channel = args.channel
     if not os.path.exists(repo_data):
@@ -57,7 +75,7 @@ def _fetch_repo_data(args):
     return repo_data
 
 
-def _unpublished_versions(quay, conda, platform_suffix=None):
+def _unpublished_versions(quay: list[str], conda: list[str], platform_suffix: str | None = None) -> list[str]:
     """Calculate the versions that are in conda but not on quay.io."""
     squay = set(quay) if quay else set()
     if platform_suffix is None:
@@ -68,7 +86,7 @@ def _unpublished_versions(quay, conda, platform_suffix=None):
     return [v for v in conda if f"{v}{suffix}" not in squay]
 
 
-def run_channel(args, build_last_n_versions: int = 1) -> None:
+def run_channel(args: _RunChannelArgs, build_last_n_versions: int = 1) -> None:
     """Build list of involucro commands (as shell snippet) to run."""
     session = requests.Session()
     for pkg_name, pkg_tests in get_affected_packages(args):
@@ -90,7 +108,7 @@ def run_channel(args, build_last_n_versions: int = 1) -> None:
             mull_targets(targets, test=pkg_tests, **args_to_mull_targets_kwds(args))
 
 
-def get_pkg_names(args):
+def get_pkg_names(args: _ChannelPackagesArgs) -> None:
     """Print package names that would be affected."""
     print("\n".join(pkg_name for pkg_name, pkg_tests in get_affected_packages(args)))
 
@@ -98,10 +116,16 @@ def get_pkg_names(args):
 def add_channel_arguments(parser):
     """Add arguments only used if running mulled over a whole conda channel."""
     parser.add_argument(
+        "--channel",
+        dest="channel",
+        default="bioconda",
+        help="Conda channel to fetch repodata from. Default: bioconda",
+    )
+    parser.add_argument(
         "--repo-data",
         dest="repo_data",
         required=True,
-        help='Published repository data. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"',
+        help="Published repository data. Will be auto-downloaded from --channel if file does not exist.",
     )
     parser.add_argument(
         "--diff-hours",

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Same manager as data_manager_conf.xml but using the nested <tool file="..."/>
+     (shed/guid) form instead of the tool_file attribute. Fixture for parser coverage. -->
+<data_managers>
+    <data_manager id="fetch_genome_all_fasta_dbkeys">
+        <tool file="data_manager/data_manager_fetch_genome_all_fasta_dbkeys.xml" guid="toolshed.example/repos/iuc/fetch/abcdef" />
+        <data_table name="all_fasta">
+            <output>
+                <column name="value" />
+                <column name="dbkey" />
+                <column name="name" />
+                <column name="path" output_ref="out_file" />
+            </output>
+        </data_table>
+    </data_manager>
+</data_managers>

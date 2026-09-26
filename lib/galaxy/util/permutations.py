@@ -10,8 +10,6 @@ with itertools product and permutations. These are open questions.
 import copy
 from typing import (
     Any,
-    Optional,
-    Tuple,
 )
 
 from galaxy.exceptions import MessageException
@@ -158,7 +156,7 @@ def state_get_value(state_dict, key, nested):
             return state_get_value(state_dict[first], rest, nested)
 
 
-def is_in_state(state_dict: Optional[dict], key: str, nested: bool) -> bool:
+def is_in_state(state_dict: dict | None, key: str, nested: bool) -> bool:
     if not state_dict:
         return False
     if "|" not in key or not nested:
@@ -174,7 +172,7 @@ def looks_like_flattened_repeat_key(key: str) -> bool:
     return len(parts) == 2 and parts[1].isdigit()
 
 
-def split_flattened_repeat_key(key: str) -> Tuple[str, int]:
+def split_flattened_repeat_key(key: str) -> tuple[str, int]:
     input_name, _index = key.rsplit("_", 1)
     index = int(_index)
     return input_name, index

@@ -4,12 +4,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, userOwnsHistory } from "@/api";
 import { hasImportable } from "@/api/histories";
 import { getFullAppUrl } from "@/app/utils";
 import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore.js";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -28,10 +29,17 @@ const props = defineProps<{
 
 const modalToggle = ref(false);
 
+const userStore = useUserStore();
+
 // Workflow and History refs
-const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
+const { workflow, loading, error, owned: workflowOwned } = useWorkflowInstance(props.workflowId);
 const historyStore = useHistoryStore();
 const history = computed(() => historyStore.getHistoryById(props.historyId));
+
+/** Whether the current user owns both the workflow and history. */
+const owned = computed(
+    () => workflowOwned.value && history.value && userOwnsHistory(userStore.currentUser, history.value),
+);
 
 /** The link to the invocation. */
 const invocationLink = computed(() => getFullAppUrl(`workflows/invocations/${props.invocationId}`));

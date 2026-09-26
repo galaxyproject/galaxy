@@ -33,7 +33,6 @@ Notes:
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -216,8 +215,8 @@ Return a number; no commentary.
 
 
 def staining_quantification_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the staining_quantification Dataset.

@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -168,8 +167,8 @@ class PageAssistantAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.PAGE_ASSISTANT
 
-    def __init__(self, deps: GalaxyAgentDependencies, history_id: Optional[int] = None, page_content: str = ""):
-        self.history_id: Optional[int] = history_id
+    def __init__(self, deps: GalaxyAgentDependencies, history_id: int | None = None, page_content: str = ""):
+        self.history_id: int | None = history_id
         self.history_is_session: bool = False
         self.page_content: str = page_content
         super().__init__(deps)
@@ -333,7 +332,7 @@ class PageAssistantAgent(BaseGalaxyAgent):
             )
         return prompt
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         """Process a page editing or history question."""
         capability_error = self._validate_model_capabilities()
         if capability_error:

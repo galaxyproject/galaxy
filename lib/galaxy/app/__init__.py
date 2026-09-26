@@ -9,7 +9,6 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
-    Optional,
 )
 
 from beaker.cache import CacheManager
@@ -158,7 +157,10 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
-from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+from galaxy.tool_shed.galaxy_install.client import (
+    INSTALLATION_RELOAD_TIMEOUT,
+    InstallationTarget,
+)
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
     InstalledRepositoryManager,
 )
@@ -173,11 +175,19 @@ from galaxy.tool_util.ontologies.ontology_data import configure_tool_tag_mapping
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.cache import ToolCache
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.evaluation import ToolTemplatingException
-from galaxy.tools.search import ToolBoxSearch
+from galaxy.tools.search import (
+    CachedToolboxSearch,
+    ToolBoxSearch,
+)
+from galaxy.tools.source_store import (
+    build_tool_source_store,
+    ToolSourceStore,
+)
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import (
     build_tours_registry,
@@ -299,13 +309,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
     object_store: BaseObjectStore
-    _tool_data_tables: Optional[BaseToolDataTableManager]
-    _genome_builds: Optional[GenomeBuilds]
+    _tool_data_tables: BaseToolDataTableManager | None
+    _genome_builds: GenomeBuilds | None
+    _toolbox: tools.ToolBox | None
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
         self._genome_builds = None
         self._tool_data_tables = None
+        self._toolbox = None
         self.haltables = [
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
@@ -347,7 +359,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         if self.config.fluent_log:
             from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
-            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
+            self.trace_logger: FluentTraceLogger | None = FluentTraceLogger(
                 "galaxy", self.config.fluent_host, self.config.fluent_port
             )
         else:
@@ -364,29 +376,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         assert self._genome_builds is not None
         return self._genome_builds
 
-    def wait_for_toolbox_reload(self, old_toolbox):
-        timer = ExecutionTimer()
-        log.debug("Waiting for toolbox reload")
-        # Wait till toolbox reload has been triggered (or more than 60 seconds have passed)
-        while timer.elapsed < 60:
-            if self.toolbox.has_reloaded(old_toolbox):
-                log.debug("Finished waiting for toolbox reload %s", timer)
-                break
-            time.sleep(0.1)
-        else:
-            log.warning("Waiting for toolbox reload timed out after 60 seconds")
-
     def _configure_tool_config_files(self):
-        if self.config.shed_tool_config_file not in self.config.tool_configs:
-            self.config.tool_configs.append(self.config.shed_tool_config_file)
-        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
-        # it exists (since this may be an existing deployment where migrations were previously run).
-        if (
-            os.path.exists(self.config.migrated_tools_config)
-            and self.config.migrated_tools_config not in self.config.tool_configs
-        ):
-            self.config.tool_configs.append(self.config.migrated_tools_config)
+        self.config.tool_configs = self.config.all_tool_config_files()
 
     def _configure_toolbox(self):
         self.citations_manager = self._register_singleton(CitationsManager, CitationsManager(self))
@@ -397,9 +388,100 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         # right TOOL_TAG_MAPPING.
         configure_tool_tag_mapping(self.config.tool_tag_mappings_file)
 
+        # Initialize tool source store if configured
+        self._init_tool_source_store()
+
         self.dynamic_tool_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+
+        # Use CachedToolBox if tool source store is available and populated
+        if self._use_cached_toolbox():
+            self._toolbox = self._create_cached_toolbox()
+        else:
+            self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+
+        # Initialize container finder and toolbox search (requires toolbox)
+        self._init_container_finder()
+        self._set_enabled_container_types()
+        index_help = self.config.index_tool_help
+        if self._use_cached_toolbox():
+            # Build search corpora from rendered cached panel views without
+            # materializing their tool stubs.
+            cached_toolbox = self.toolbox
+            assert isinstance(cached_toolbox, CachedToolBox)
+            search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, cached_toolbox)
+        else:
+            search_singleton = ToolBoxSearch(
+                self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
+            )
+        self.toolbox_search = self._register_singleton(ToolBoxSearch, search_singleton)
+
+    def _init_tool_source_store(self) -> None:
+        """Initialize the tool source store for efficient tool loading.
+
+        Default deployments never touch the store: it is only built when the
+        operator opted into ``use_cached_toolbox``. Misconfiguration (bad
+        backend name, missing required setting) raises ``ConfigurationError``
+        from ``build_tool_source_store`` — we let it propagate so the
+        operator sees the failure at startup.
+        """
+        self.tool_source_store: ToolSourceStore | None = None
+        if not self.config.use_cached_toolbox:
+            return
+        self.tool_source_store = self._register_singleton(
+            ToolSourceStore,  # type: ignore[type-abstract,unused-ignore]
+            build_tool_source_store(self.config),
+        )
+        stats = self.tool_source_store.get_stats()
+        tool_count = stats.get("count", 0)
+        log.info(f"Initialized tool source store (backend: {stats.get('backend', 'unknown')}, tools: {tool_count})")
+        # Close cached state before a replacement application boot wires its
+        # own store and toolbox, so no prior ToolIndex survives the handoff.
+        self.haltables.insert(1, ("tool source store", self._shutdown_tool_source_store))
+        self.haltables.insert(2, ("cached toolbox", self._shutdown_cached_toolbox))
+
+    def _shutdown_tool_source_store(self) -> None:
+        if self.tool_source_store is not None:
+            try:
+                self.tool_source_store.close()
+            finally:
+                self.tool_source_store = None
+
+    def _shutdown_cached_toolbox(self) -> None:
+        toolbox = self._toolbox
+        if isinstance(toolbox, CachedToolBox):
+            try:
+                toolbox.close()
+            except Exception as e:
+                log.debug(f"_shutdown_cached_toolbox: {e}")
+
+    def _use_cached_toolbox(self) -> bool:
+        """Determine whether to use CachedToolBox instead of regular ToolBox.
+
+        Opt-in is explicit: only ``use_cached_toolbox: true`` activates the
+        cached toolbox. A populated store on its own (e.g. brought in by a
+        per-conf ``store="..."`` attribute) does *not* flip a default
+        deployment to cached-toolbox mode — that has to be a deliberate choice.
+        """
+        if self.tool_source_store is None:
+            return False
+        return bool(self.config.use_cached_toolbox)
+
+    def _create_cached_toolbox(self) -> "tools.ToolBox":
+        """Create a CachedToolBox instance."""
+        cache_size = self.config.cached_toolbox_cache_size
+        log.info(f"Using CachedToolBox with cache_size={cache_size}")
+
+        return CachedToolBox(
+            config_filenames=self.config.tool_configs,
+            tool_root_dir=self.config.tool_path,
+            app=self,  # type: ignore[arg-type]
+            tool_source_store=self.tool_source_store,
+            cache_size=cache_size,
+        )
+
+    def _init_container_finder(self):
+        """Initialize the container finder for dependency resolution."""
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(self.config.file_path)
         app_info = AppInfo(
@@ -433,25 +515,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 "mulled_resolution"
             )
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
-        self._set_enabled_container_types()
-        index_help = getattr(self.config, "index_tool_help", True)
-        self.toolbox_search = self._register_singleton(
-            ToolBoxSearch,
-            ToolBoxSearch(
-                self.toolbox,
-                index_dir=self.config.tool_search_index_dir,
-                index_help=index_help,
-            ),
-        )
 
     @property
     def toolbox(self) -> tools.ToolBox:
+        assert self._toolbox is not None
         return self._toolbox
 
-    def reindex_tool_search(self) -> None:
-        # Call this when tools are added or removed.
-        self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
-        self.tool_cache.reset_status()
+    @property
+    def toolbox_or_none(self) -> tools.ToolBox | None:
+        return self._toolbox
 
     def _set_enabled_container_types(self):
         container_types_to_destinations = collections.defaultdict(list)
@@ -616,7 +688,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 time.sleep(pause)
 
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
+    def tool_dependency_dir(self) -> str | None:
         return self.toolbox.dependency_manager.default_base_path
 
     def _shutdown_object_store(self):
@@ -630,6 +702,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping
+
+    def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
+        log.debug("Waiting for toolbox reload")
+        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
+            if self.toolbox.has_reloaded(old_toolbox):
+                log.debug("Finished waiting for toolbox reload %s", timer)
+                break
+            time.sleep(0.1)
+        else:
+            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
 
     def __init__(
         self,
@@ -774,6 +857,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
         self._register_celery_galaxy_task_components()
 
+        # Celery manager apps also finish jobs and submit automatic error reports.
+        self._error_reports = self._register_singleton(
+            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
+        )
+        self.tool_cache = self._register_singleton(ToolCache)
+
     def _register_celery_galaxy_task_components(self):
         """
         Register subtype class instances for user rate limiting and concurrency
@@ -837,6 +926,35 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         return (
             self.config.track_jobs_in_database and self.job_config.is_handler
         ) or not self.config.track_jobs_in_database
+
+    @property
+    def error_reports(self) -> ErrorReports:
+        return self._error_reports
+
+    def reindex_tool_search(self) -> None:
+        # Call this when tools are added or removed. Defined here rather than on
+        # MinimalGalaxyApplication so it wins over the MinimalManagerApp
+        # interface stub in the MRO, the same way is_job_handler does.
+        # Celery manager apps intentionally have no toolbox or search index.
+        if self.toolbox_or_none is None:
+            return
+        self.toolbox_search.build_index(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        )
+        self.tool_cache.reset_status()
+
+    def ensure_tool_search_index(self) -> None:
+        """Index the toolbox once per toolbox reload."""
+        if self.toolbox_or_none is None:
+            return
+        if self.toolbox_search.build_index_if_stale(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        ):
+            self.tool_cache.reset_status()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
@@ -902,13 +1020,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Data providers registry.
         self.data_provider_registry = self._register_singleton(DataProviderRegistry)
 
-        # Initialize error report plugins.
-        self.error_reports = self._register_singleton(
-            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
-        )
-
-        # Setup a Tool Cache
-        self.tool_cache = self._register_singleton(ToolCache)
         self.tool_shed_repository_cache = self._register_singleton(ToolShedRepositoryCache)
         # Watch various config files for immediate reload
         self.watchers = self._register_singleton(ConfigWatchers)
@@ -987,13 +1098,15 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.proxy_manager = ProxyManager(self.config)
 
         # Must be initialized after job_config.
-        self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+        self.workflow_scheduling_manager = self._register_singleton(
+            scheduling_manager.WorkflowSchedulingManager, scheduling_manager.WorkflowSchedulingManager(self)
+        )
 
         # Initialize workflow completion monitoring (manager is always available,
         # but monitor only runs on workflow scheduler processes)
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
-        self.workflow_completion_monitor: Optional[WorkflowCompletionMonitor] = None
+        self.workflow_completion_monitor: WorkflowCompletionMonitor | None = None
         if self.workflow_scheduling_manager._is_workflow_handler():
             self.workflow_completion_monitor = WorkflowCompletionMonitor(
                 self,
@@ -1026,6 +1139,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             app_type=WEBAPP if self.is_webapp else None,
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
+        self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1045,7 +1159,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # only when statsd is actually configured (a non-None client) and the
         # shared queue_metrics_interval cadence is enabled. The server_name is
         # read post-fork so each worker tags its own series.
-        self.sse_connection_gauge_emitter: Optional[SSEConnectionGaugeEmitter] = None
+        self.sse_connection_gauge_emitter: SSEConnectionGaugeEmitter | None = None
         statsd_client = self.execution_timer_factory.galaxy_statsd_client
         if (
             statsd_client is not None
@@ -1094,6 +1208,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
     def _shutdown_watcher(self):
         self.watchers.shutdown()
 
+    def _on_config_watcher_change(self, is_config_watcher: bool) -> None:
+        # The election runs on the heartbeat thread and can land after the
+        # postfork ``rebuild_toolbox_search_index`` task has already skipped
+        # this not-yet-elected process, so the new watcher queues its own.
+        if is_config_watcher:
+            send_local_control_task(self, "rebuild_toolbox_search_index")
+
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
 
@@ -1138,7 +1259,7 @@ class ExecutionTimerFactory:
         if statsd_host := getattr(config, "statsd_host", None):
             from galaxy.web.statsd_client import GalaxyStatsdClient
 
-            self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(
+            self.galaxy_statsd_client: GalaxyStatsdClient | None = GalaxyStatsdClient(
                 statsd_host,
                 getattr(config, "statsd_port", 8125),
                 getattr(config, "statsd_prefix", "galaxy"),

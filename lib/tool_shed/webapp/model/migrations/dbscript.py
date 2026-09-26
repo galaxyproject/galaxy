@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from typing import Optional
 
 from galaxy.model.migrations.base import (
     BaseCommand,
@@ -52,7 +51,7 @@ class Command(BaseCommand):
 
 
 class DbScript(BaseDbScript):
-    def _set_dburl(self, config_file: Optional[str] = None) -> None:
+    def _set_dburl(self, config_file: str | None = None) -> None:
         self.url = get_dburl_from_file(os.getcwd(), config_file)
         self.alembic_config.set_main_option("sqlalchemy.url", self.url)
 

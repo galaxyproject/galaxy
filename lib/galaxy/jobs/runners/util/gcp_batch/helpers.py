@@ -2,10 +2,22 @@
 
 import logging
 import re
+from typing import (
+    Any,
+    TypedDict,
+)
 
 from humanfriendly import parse_timespan
 
 log = logging.getLogger(__name__)
+
+
+class VolumeDict(TypedDict):
+    server: str  # NFS server hostname/IP
+    remote_path: str  # path on NFS server
+    mount_path: str  # local mount path
+    read_only: bool
+
 
 # Default values for GCP Batch runner configuration
 DEFAULT_NFS_MOUNT_PATH = "/mnt/nfs"
@@ -28,7 +40,7 @@ DEFAULT_CVMFS_DOCKER_VOLUME = (
 )
 
 
-def parse_volume_spec(volume_spec):
+def parse_volume_spec(volume_spec: str | None) -> VolumeDict | None:
     """
     Parse a volume specification string into a volume dictionary.
 
@@ -37,12 +49,6 @@ def parse_volume_spec(volume_spec):
     Examples:
         "10.0.0.1:/galaxy:/mnt/nfs"
         "nfs-server:/exports/data:/data:r"
-
-    Returns a dict with keys:
-        - server: NFS server hostname/IP
-        - remote_path: path on NFS server
-        - mount_path: local mount path
-        - read_only: boolean
 
     Returns None if the specification is invalid.
     """
@@ -80,7 +86,7 @@ def parse_volume_spec(volume_spec):
     }
 
 
-def parse_volumes_param(volumes_param):
+def parse_volumes_param(volumes_param: str | None) -> list[VolumeDict]:
     """
     Parse the gcp_batch_volumes parameter (comma-separated volume specs).
 
@@ -102,7 +108,7 @@ def parse_volumes_param(volumes_param):
     return volumes
 
 
-def parse_docker_volumes_param(docker_volumes_param):
+def parse_docker_volumes_param(docker_volumes_param: str | None) -> str:
     """
     Parse the docker_extra_volumes parameter for additional docker -v mounts.
 
@@ -122,7 +128,7 @@ def parse_docker_volumes_param(docker_volumes_param):
     return " ".join(volume_args)
 
 
-def convert_cpu_to_milli(cpu_str):
+def convert_cpu_to_milli(cpu_str: str | int | float | None) -> int:
     """
     Convert CPU specification to milli-cores.
     Supports formats like: "1", "1.5", "500m", "0.5"
@@ -149,7 +155,7 @@ def convert_cpu_to_milli(cpu_str):
         return DEFAULT_CPU_MILLI
 
 
-def convert_memory_to_mib(memory_str):
+def convert_memory_to_mib(memory_str: str | int | None) -> int:
     """
     Convert memory specification to MiB.
     Supports formats like: "1Gi", "512Mi", "1024M", "1G", "2048"
@@ -193,7 +199,7 @@ def convert_memory_to_mib(memory_str):
 DEFAULT_MAX_RUN_DURATION = "86400s"
 
 
-def convert_duration_to_seconds(duration_str) -> str:
+def convert_duration_to_seconds(duration_str: str | int | float | None) -> str:
     """
     Convert a duration value to GCP Batch duration format (e.g., '3600s').
 
@@ -214,7 +220,9 @@ def convert_duration_to_seconds(duration_str) -> str:
         return DEFAULT_MAX_RUN_DURATION
 
 
-def resolve_max_run_duration(destination_params, runner_params, resource_params):
+def resolve_max_run_duration(
+    destination_params: dict[str, Any], runner_params: dict[str, Any], resource_params: dict[str, Any]
+) -> str:
     """
     Resolve the maximum run duration from multiple configuration sources.
 
@@ -244,7 +252,7 @@ def resolve_max_run_duration(destination_params, runner_params, resource_params)
     return convert_duration_to_seconds(runner_params.get("max_run_duration", DEFAULT_MAX_RUN_DURATION))
 
 
-def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
+def compute_machine_type(cpu_milli: int, memory_mib: int, machine_type_family: str = "n2") -> str:
     """
     Compute an appropriate GCP machine type based on resource requirements.
 
@@ -335,7 +343,7 @@ def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
     return machine_type
 
 
-def sanitize_label_value(value, max_length=63):
+def sanitize_label_value(value: str | None, max_length: int = 63) -> str:
     """Sanitize a value to be used as a GCP label value."""
     if not value:
         return "unknown"

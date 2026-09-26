@@ -4,7 +4,6 @@ API Controller providing Galaxy Tours
 
 import logging
 
-from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.tours import ToursManager
 from galaxy.schema.schema import GenerateTourResponse
 from galaxy.schema.tours import (
@@ -13,6 +12,7 @@ from galaxy.schema.tours import (
 )
 from galaxy.tours import ToursRegistry
 from galaxy.webapps.galaxy.api import DependsOnTrans
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     Router,
@@ -36,7 +36,11 @@ class FastAPITours:
 
     @router.get("/api/tours/generate", public=True)
     def generate_tour(
-        self, tool_id: str, tool_version: str, performs_upload: bool = True, trans: ProvidesAppContext = DependsOnTrans
+        self,
+        tool_id: str,
+        tool_version: str,
+        performs_upload: bool = True,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GenerateTourResponse:
         """Generate a tour designed for the given tool."""
         return self.manager.generate_tour(tool_id, tool_version, trans, performs_upload=performs_upload)

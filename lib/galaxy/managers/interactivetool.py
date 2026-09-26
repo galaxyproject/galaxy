@@ -6,9 +6,7 @@ from collections.abc import (
 )
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import (
     urlsplit,
@@ -40,6 +38,7 @@ if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.structured_app import MinimalManagerApp
     from galaxy.tools import Tool
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -75,10 +74,10 @@ class InteractiveToolPropagatorSQLAlchemy:
         self,
         key: str,
         key_type: str,
-        token: Union[str, None],
-        host: Union[str, None],
-        port: Union[int, None],
-        info: Union[str, None] = None,
+        token: str | None,
+        host: str | None,
+        port: int | None,
+        info: str | None = None,
     ) -> None:
         """
         Write out a key, key_type, token, value store that is can be used for coordinating with external resources.
@@ -152,7 +151,7 @@ class InteractiveToolManager:
     def __init__(
         self,
         app: "MinimalManagerApp",
-        dispatcher: Optional[SSEEventDispatcher] = None,
+        dispatcher: SSEEventDispatcher | None = None,
     ) -> None:
         self.app = app
         self.security = app.security
@@ -171,7 +170,11 @@ class InteractiveToolManager:
         self.dispatcher = dispatcher if dispatcher is not None else app.resolve_or_none(SSEEventDispatcher)
 
     def create_entry_points(
-        self, job: Job, tool: "Tool", entry_points=Union[Iterable[dict[str, Any]], None], flush: bool = True
+        self,
+        job: Job,
+        tool: "Tool",
+        entry_points: Iterable[dict[str, Any]] | None = None,
+        flush: bool = True,
     ) -> None:
         entry_points = entry_points or tool.ports
         for entry in entry_points:
@@ -254,7 +257,7 @@ class InteractiveToolManager:
             stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
         return trans.sa_session.scalars(stmt)
 
-    def can_access_job(self, trans: "ProvidesUserContext", job: Union[Job, None]) -> bool:
+    def can_access_job(self, trans: "ProvidesUserContext", job: Job | None) -> bool:
         if job:
             if trans.user is None:
                 galaxy_session = trans.galaxy_session
@@ -284,11 +287,7 @@ class InteractiveToolManager:
         job = entry_point.job
         if job and not job.finished:
             log.debug("Stopping Job: %s for InteractiveToolEntryPoint: %s", job, entry_point)
-            job.mark_stopped(trans.app.config.track_jobs_in_database)
-            # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
-            self.job_manager.stop(job)
-            trans.sa_session.add(job)
-            trans.sa_session.commit()
+            self.job_manager.stop_without_failing(job)
 
     def remove_entry_points(self, entry_points: Iterable[InteractiveToolEntryPoint]) -> None:
         if entry_points:
@@ -303,7 +302,7 @@ class InteractiveToolManager:
             self.sa_session.commit()
         self.propagator.remove_entry_point(entry_point)
 
-    def target_if_active(self, trans, entry_point: InteractiveToolEntryPoint) -> Union[str, None]:
+    def target_if_active(self, trans: "GalaxyWebTransaction", entry_point: InteractiveToolEntryPoint) -> str | None:
         if entry_point.active and not entry_point.deleted:
             use_it_proxy_host_cfg = (
                 not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
@@ -356,7 +355,7 @@ class InteractiveToolManager:
             url_path += entry_point.entry_url.lstrip("/")
         return url_path
 
-    def access_entry_point_target(self, trans: "ProvidesUserContext", entry_point_id: int) -> Union[str, None]:
+    def access_entry_point_target(self, trans: "GalaxyWebTransaction", entry_point_id: int) -> str | None:
         entry_point = self.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         assert entry_point
         if self.can_access_entry_point(trans, entry_point):

@@ -8,8 +8,6 @@ from glob import glob
 from subprocess import check_output
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.util import unicodify
@@ -45,12 +43,12 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
 
 
 def singularity_container_test(
-    tests: Dict[str, Dict[str, Any]], installation: str, filepath: StrPath
-) -> Dict[str, List]:
+    tests: dict[str, dict[str, Any]], installation: str, filepath: StrPath
+) -> dict[str, list]:
     """
     Run tests, record if they pass or fail
     """
-    test_results: Dict[str, List] = {"passed": [], "failed": [], "notest": []}
+    test_results: dict[str, list] = {"passed": [], "failed": [], "notest": []}
 
     # create a 'sanitised home' directory in which the containers may be mounted - see http://singularity.lbl.gov/faq#solution-1-specify-the-home-to-mount
     with tempfile.TemporaryDirectory() as tmpdirname:

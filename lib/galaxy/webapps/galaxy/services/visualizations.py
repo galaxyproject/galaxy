@@ -2,8 +2,6 @@ import json
 import logging
 from typing import (
     cast,
-    Optional,
-    Union,
 )
 
 from galaxy import exceptions
@@ -75,7 +73,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: VisualizationIndexQueryPayload,
         include_total_count: bool = False,
-    ) -> tuple[VisualizationSummaryList, Union[int, None]]:
+    ) -> tuple[VisualizationSummaryList, int | None]:
         """Return a list of Visualizations viewable by the user
 
         :rtype:     list
@@ -145,7 +143,7 @@ class VisualizationsService(ServiceBase):
     def create(
         self,
         trans: ProvidesUserContext,
-        import_id: Optional[DecodedDatabaseIdField],
+        import_id: DecodedDatabaseIdField | None,
         payload: VisualizationCreatePayload,
     ) -> VisualizationCreateResponse:
         """Returns a dictionary of the created visualization
@@ -182,7 +180,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
         payload: VisualizationUpdatePayload,
-    ) -> Optional[VisualizationUpdateResponse]:
+    ) -> VisualizationUpdateResponse | None:
         """
         Update a visualization
 
@@ -260,9 +258,9 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         visualization: Visualization,
-        config: Optional[Union[dict, bytes]],
-        title: Optional[str],
-        dbkey: Optional[str],
+        config: dict | bytes | None,
+        title: str | None,
+        dbkey: str | None,
     ) -> VisualizationRevision:
         """
         Adds a new `VisualizationRevision` to the given `visualization` with
@@ -283,10 +281,10 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         type: str,
-        title: Optional[str] = "Untitled Visualization",
-        dbkey: Optional[str] = None,
-        slug: Optional[str] = None,
-        annotation: Optional[str] = None,
+        title: str | None = "Untitled Visualization",
+        dbkey: str | None = None,
+        slug: str | None = None,
+        annotation: str | None = None,
     ) -> Visualization:
         """Create visualization but not first revision. Returns Visualization object."""
         user = trans.get_user()

@@ -7,7 +7,6 @@ from io import BytesIO
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 from uuid import uuid4
 
@@ -131,6 +130,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_index(self):
         tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
+
+    def test_direct_data_fetch_tool_execution_is_blocked(self, history_id):
+        response = self.dataset_populator.run_tool_raw("__DATA_FETCH__", {}, history_id)
+        assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Cannot execute tool [__DATA_FETCH__] directly, must use alternative endpoint."
+        )
 
     @skip_without_tool("cat1")
     def test_search_cat(self):
@@ -553,7 +559,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_id: str,
         history_id: str,
         *,
-        options_pagination: Optional[dict[str, Any]] = None,
+        options_pagination: dict[str, Any] | None = None,
         param_name: str = "f1",
     ) -> dict[str, Any]:
         """POST ``tools/{tool_id}/build`` and return the named input dict."""
@@ -769,10 +775,51 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "--ex1" in option_values
         assert "ex2" in option_values
 
+    @skip_without_tool("gx_int")
+    def test_tool_interop(self):
+        """GET /api/tools/{tool_id}/interop returns ParsedTool JSON."""
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        assert interop["id"] == "gx_int"
+        assert "inputs" in interop
+        assert "outputs" in interop
+        assert len(interop["inputs"]) > 0
+
+    @skip_without_tool("gx_int")
+    def test_tool_interop_versioned(self):
+        """GET /api/tools/{tool_id}/versions/{version}/interop returns same result."""
+        # Get version from the unversioned endpoint first
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        version = interop["version"]
+
+        versioned_response = self._get(f"tools/gx_int/versions/{version}/interop")
+        self._assert_status_code_is(versioned_response, 200)
+        versioned_interop = versioned_response.json()
+        assert versioned_interop["id"] == interop["id"]
+        assert versioned_interop["version"] == version
+        assert len(versioned_interop["inputs"]) == len(interop["inputs"])
+
+    @skip_without_tool("gx_int")
+    def test_versioned_schema_endpoints(self):
+        """Versioned /versions/{v}/parameter_*_schema endpoints mirror unversioned ones."""
+        response = self._get("tools/gx_int/interop")
+        version = response.json()["version"]
+
+        for schema_type in ["request", "landing_request", "test_case_xml"]:
+            unversioned = self._get(f"tools/gx_int/parameter_{schema_type}_schema")
+            self._assert_status_code_is(unversioned, 200)
+
+            versioned = self._get(f"tools/gx_int/versions/{version}/parameter_{schema_type}_schema")
+            self._assert_status_code_is(versioned, 200)
+            assert unversioned.json() == versioned.json()
+
     @skip_without_tool("test_data_source")
-    def test_data_source_ok_request(self, mock_http_server):
+    def test_data_source_ok_request(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = mock_http_server.get_url(
+            url = test_http_server.get_url(
                 remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
                 file_path="test-data/1.bed",
             )
@@ -799,12 +846,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
-    def test_data_source_sniff_fastqsanger(self):
+    def test_data_source_sniff_fastqsanger(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = test_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                file_path="test-data/1.fastqsanger.gz",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                    "URL": url,
                     "URL_method": "get",
                 },
                 history_id=history_id,
@@ -2244,6 +2295,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("validation_empty_dataset", history_id, inputs)
         self._assert_status_code_is(response, 400)
+        error = response.json()
+        assert error["err_msg"] == (
+            "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files."
+        )
+        assert error["param_errors"]["input1"] == {
+            "message": "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files.",
+            "message_suffix": "The selected dataset is empty, this tool expects non-empty files.",
+            "parameter_name": "input1",
+        }
 
     @skip_without_tool("validation_repeat")
     def test_validation_in_repeat(self, history_id):
@@ -4032,7 +4092,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # assert "User does not have permission to use a dataset" in err_message, err_message
 
     @contextlib.contextmanager
-    def _different_user_and_history(self, user_email: Optional[str] = None):
+    def _different_user_and_history(self, user_email: str | None = None):
         with self._different_user(email=user_email):
             with self.dataset_populator.test_history() as other_history_id:
                 yield other_history_id

@@ -3,7 +3,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Union,
 )
 
 from fastapi._compat.v2 import (
@@ -25,7 +24,7 @@ def get_definitions(
     fields: Sequence[ModelField],
     model_name_map: ModelNameMap,
     separate_input_output_schemas: bool = True,
-    schema_generator: Union[GenerateJsonSchema, None] = None,
+    schema_generator: GenerateJsonSchema | None = None,
 ) -> tuple[
     dict[tuple[ModelField, Literal["validation", "serialization"]], JsonSchemaValue],
     dict[str, dict[str, Any]],

@@ -24,7 +24,7 @@ foreach ( split /,/, $ARGV[1] ) {
   }
 }
 
-die "No columns specified, columns are not preceeded with 'c', or commas are not used to separate column numbers: $ARGV[1]\n" if keys %$columns == 0;
+die "No columns specified, columns are not preceded with 'c', or commas are not used to separate column numbers: $ARGV[1]\n" if keys %$columns == 0;
 
 my $column_delimiters_href = {
 	'TAB' => q{\t},
@@ -35,14 +35,14 @@ my $column_delimiters_href = {
 	'DOT' => q{\.},
 	'SPACE' => q{\s+}
 };
-	
+
 $del = $column_delimiters_href->{$ARGV[2]};
 
 open (OUT, ">$ARGV[4]") or die "Cannot create $ARGV[4]:$!\n";
 open (IN,  "<$ARGV[0]") or die "Cannot open $ARGV[0]:$!\n";
 while (<IN>) {
   chop;
-  @in = split /$del/; 
+  @in = split /$del/;
   for ( my $i = 0; $i <= $#in; ++$i) {
 	if (exists $columns->{$i}) {
 		push(@out, $ARGV[3] eq 'up' ? uc($in[$i]) : lc($in[$i]));

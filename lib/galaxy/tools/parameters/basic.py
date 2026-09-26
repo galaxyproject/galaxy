@@ -19,13 +19,13 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
+from galaxy.exceptions import ToolExecutionError
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
@@ -65,6 +65,7 @@ from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
+    DEFAULT_OPTIONS_PAGE_SIZE,
     make_dce_entry,
     make_hda_entry,
     make_hdca_entry,
@@ -85,6 +86,7 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
+from galaxy.util.json import safe_dumps
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -132,7 +134,7 @@ def contains_workflow_parameter(value, search=False):
     return False
 
 
-def is_runtime_context(trans, other_values):
+def is_runtime_context(trans: "ProvidesHistoryContext", other_values):
     if trans.workflow_building_mode:
         return True
     for context_value in other_values.values():
@@ -177,7 +179,13 @@ def assert_throws_param_value_error(message):
 
 
 class ParameterValueError(ValueError):
-    def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
+    def __init__(
+        self,
+        message_suffix: str,
+        parameter_name: str,
+        parameter_value: Any = NO_PARAMETER_VALUE,
+        is_dynamic: bool | None = None,
+    ) -> None:
         message = f"Parameter '{parameter_name}': {message_suffix}"
         super().__init__(message)
         self.message_suffix = message_suffix
@@ -185,12 +193,17 @@ class ParameterValueError(ValueError):
         self.parameter_value = parameter_value
         self.is_dynamic = is_dynamic
 
-    def to_dict(self):
-        as_dict = {"message": unicodify(self)}
+    def to_dict(self) -> dict[str, Any]:
+        as_dict: dict[str, Any] = {"message": unicodify(self)}
         as_dict["message_suffix"] = self.message_suffix
         as_dict["parameter_name"] = self.parameter_name
         if self.parameter_value is not NO_PARAMETER_VALUE:
-            as_dict["parameter_value"] = self.parameter_value
+            try:
+                safe_dumps(self.parameter_value)
+            except (TypeError, ValueError):
+                pass
+            else:
+                as_dict["parameter_value"] = self.parameter_value
         if self.is_dynamic is not None:
             as_dict["is_dynamic"] = self.is_dynamic
         return as_dict
@@ -241,14 +254,14 @@ class ToolParameter(UsesDictVisibleKeys):
         """Return user friendly name for the parameter"""
         return self.label if self.label else self.name
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         """
         Convert a value from an HTML POST into the parameters preferred value
         format.
         """
         return value
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         """
         Return the starting value of the parameter
         """
@@ -346,7 +359,7 @@ class ToolParameter(UsesDictVisibleKeys):
                 value = sanitize_param(value)
         return value
 
-    def validate(self, value, trans=None) -> None:
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None) -> None:
         if value in ["", None] and self.optional:
             return
         for validator in self.validators:
@@ -355,7 +368,7 @@ class ToolParameter(UsesDictVisibleKeys):
             except ValueError as e:
                 raise ParameterValueError(str(e), self.name, value) from None
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
         other_values = other_values or {}
         tool_dict = self._dictify_view_keys()
@@ -402,7 +415,7 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             self.value = ""
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         return self.value
 
 
@@ -436,7 +449,7 @@ class TextToolParameter(SimpleTextToolParameter):
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         search = self.type == "text"
         if not (
             trans
@@ -446,7 +459,7 @@ class TextToolParameter(SimpleTextToolParameter):
             return super().validate(value, trans)
 
     @property
-    def wrapper_default(self) -> Optional[str]:
+    def wrapper_default(self) -> str | None:
         """Handle change in default handling pre and post 23.0 profiles."""
         profile = self.profile
         legacy_behavior = profile is None or Version(str(profile)) < Version("23.0")
@@ -455,7 +468,7 @@ class TextToolParameter(SimpleTextToolParameter):
             default_value = ""
         return default_value
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         d = super().to_dict(trans)
         other_values = other_values or {}
         d["area"] = self.area
@@ -504,7 +517,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         try:
             return int(value)
@@ -530,7 +543,7 @@ class IntegerToolParameter(TextToolParameter):
                 return None
             raise ParameterValueError("an integer is required", self.name, value)
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is not None and self.value != "":
             return int(self.value)
         else:
@@ -577,7 +590,7 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         try:
             return float(value)
@@ -603,7 +616,7 @@ class FloatToolParameter(TextToolParameter):
                 return None
             raise ParameterValueError("a float is required", self.name, value)
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is None:
             return None
         try:
@@ -637,6 +650,13 @@ class BooleanToolParameter(ToolParameter):
     >>> value = p.to_json(True, trans.app, use_security=False)
     >>> assert isinstance(value, bool)
     >>> assert value == True
+    >>> optional_xml = XML('<param name="_name" type="boolean" optional="true" />')
+    >>> legacy = BooleanToolParameter(Bunch(profile="24.0", app=None), optional_xml)
+    >>> assert legacy.get_initial_value(trans, {}) is False
+    >>> current = BooleanToolParameter(Bunch(profile="26.2", app=None), optional_xml)
+    >>> assert current.get_initial_value(trans, {}) is None
+    >>> required = BooleanToolParameter(Bunch(profile="26.2", app=None), XML('<param name="_name" type="boolean" />'))
+    >>> assert required.get_initial_value(trans, {}) is False
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -650,9 +670,9 @@ class BooleanToolParameter(ToolParameter):
         self.truevalue = truevalue
         self.falsevalue = falsevalue
         self.optional = input_source.get_bool("optional", False)
-        self.checked = boolean_is_checked(input_source)
+        self.checked = boolean_is_checked(input_source, profile)
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self.to_python(value)
 
     def to_python(self, value, app=None):
@@ -665,7 +685,7 @@ class BooleanToolParameter(ToolParameter):
     def to_json(self, value, app, use_security):
         return self.to_python(value, app)
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         return self.checked
 
     def to_param_dict_string(self, value, other_values=None):
@@ -674,7 +694,7 @@ class BooleanToolParameter(ToolParameter):
         else:
             return self.falsevalue
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         d = super().to_dict(trans)
         d["truevalue"] = self.truevalue
         d["falsevalue"] = self.falsevalue
@@ -700,7 +720,7 @@ class FileToolParameter(ToolParameter):
     [('argument', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if isinstance(value, FilesPayload):
@@ -724,6 +744,9 @@ class FileToolParameter(ToolParameter):
                 assert local_filename.startswith(
                     upload_store
                 ), f"Filename provided by nginx ({local_filename}) is not in correct directory ({upload_store})."
+            if not os.path.exists(local_filename):
+                log.error("Local file missing for local_filename=%s upload_store=%s", local_filename, upload_store)
+                raise ToolExecutionError("File upload failed, missing local file.")
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -778,7 +801,7 @@ class FTPFileToolParameter(ToolParameter):
         self.optional = input_source.parse_optional(True)
         self.user_ftp_dir = ""
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if trans is not None:
             if trans.user is not None:
                 self.user_ftp_dir = f"{trans.user_ftp_dir}/"
@@ -800,7 +823,7 @@ class FTPFileToolParameter(ToolParameter):
         else:
             return lst[0]
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self.to_python(value, trans.app, validate=True)
 
     def to_json(self, value, app, use_security):
@@ -828,7 +851,7 @@ class FTPFileToolParameter(ToolParameter):
                 raise ValueError("The FTP directory is not configured.")
         return lst
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         d = super().to_dict(trans)
         d["multiple"] = self.multiple
         return d
@@ -852,7 +875,7 @@ class HiddenToolParameter(ToolParameter):
         self.value = input_source.get("value")
         self.hidden = True
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         return self.value
 
     def get_label(self):
@@ -888,7 +911,7 @@ class ColorToolParameter(ToolParameter):
         self.value = get_color_value(input_source)
         self.rgb = input_source.get_bool("rgb", False)
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is not None:
             return self.value.lower()
 
@@ -919,22 +942,25 @@ class BaseURLToolParameter(HiddenToolParameter):
         super().__init__(tool, input_source)
         self.value = input_source.get("value", "")
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
+        if trans is None:
+            return self.value
         return self._get_value(trans)
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self._get_value(trans)
 
-    def _get_value(self, trans):
+    def _get_value(self, trans: "ProvidesHistoryContext"):
         try:
             if not self.value.startswith("/"):
                 raise Exception("baseurl value must start with a /")
+            assert trans.url_builder is not None
             return trans.url_builder(self.value, qualified=True)
         except Exception as e:
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         d = super().to_dict(trans)
         return d
 
@@ -977,6 +1003,17 @@ class SelectToolParameter(ToolParameter):
     [('argument', None), ('display', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
+    >>> one = SelectToolParameter(None, XML(
+    ... '''
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ... </param>
+    ... '''))
+    >>> one.get_initial_value(trans, {})
+    ['y']
+    >>> print(one.to_param_dict_string(["y"]))
+    y
     """
 
     value_label: str
@@ -1001,14 +1038,16 @@ class SelectToolParameter(ToolParameter):
                 self.legal_values.add(value)
         self.is_dynamic = (self.dynamic_options is not None) or (self.options is not None)
 
-    def _get_dynamic_options_call_other_values(self, trans, other_values):
+    def _get_dynamic_options_call_other_values(self, trans: "ProvidesHistoryContext", other_values):
         call_other_values = ExpressionContext({"__trans__": trans})
         if other_values:
             call_other_values.parent = other_values.parent
             call_other_values.update(other_values.dict)
         return call_other_values
 
-    def get_options(self, trans, other_values) -> Sequence[Union[ParameterOption, DrillDownOptionsDict]]:
+    def get_options(
+        self, trans: "ProvidesHistoryContext", other_values
+    ) -> Sequence[ParameterOption | DrillDownOptionsDict]:
         if self.options:
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
@@ -1029,24 +1068,24 @@ class SelectToolParameter(ToolParameter):
         else:
             return [ParameterOption(*o) for o in self.static_options]
 
-    def get_legal_values(self, trans, other_values, value):
+    def get_legal_values(self, trans: "ProvidesHistoryContext", other_values, value):
         """
         determine the set of values of legal options
         """
         options = cast(list[ParameterOption], self.get_options(trans, other_values))
         return {option.dataset or option.value for option in options}
 
-    def get_legal_names(self, trans, other_values):
+    def get_legal_names(self, trans: "ProvidesHistoryContext", other_values):
         """
         determine the set of values of legal options
         """
         options = cast(list[ParameterOption], self.get_options(trans, other_values))
         return {option.name: option.value for option in options}
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self._select_from_json(value, trans, other_values=other_values, require_legal_value=True)
 
-    def _select_from_json(self, value, trans, other_values=None, require_legal_value=True):
+    def _select_from_json(self, value, trans: "ProvidesHistoryContext", other_values=None, require_legal_value=True):
         other_values = other_values or {}
         try:
             legal_values = self.get_legal_values(trans, other_values, value)
@@ -1118,6 +1157,17 @@ class SelectToolParameter(ToolParameter):
                         )
             if is_runtime_value(value):
                 return None
+            if isinstance(value, dict):
+                # A dict is unhashable and can never be a legal value, but
+                # testing membership against the set of legal values would
+                # raise an opaque "unhashable type" TypeError. Treat it as an
+                # invalid option instead.
+                raise ParameterValueError(
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                )
             if value in legal_values:
                 return value
             elif value in fallback_values:
@@ -1164,11 +1214,18 @@ class SelectToolParameter(ToolParameter):
             return history_item_dict_to_python(value, app, self.name)
         return super().to_python(value, app)
 
-    def get_initial_value(self, trans, other_values):
-        try:
-            options = cast(list[ParameterOption], self.get_options(trans, other_values))
-        except ImplicitConversionRequired:
-            return None
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
+        options: list[ParameterOption]
+        if trans is None:
+            # Conditional case inference walks tool state without a transaction
+            # (see galaxy.tools.parameters.visit_input_values); only statically
+            # declared options can be resolved without one.
+            options = [ParameterOption(*o) for o in self.static_options]
+        else:
+            try:
+                options = cast(list[ParameterOption], self.get_options(trans, other_values))
+            except ImplicitConversionRequired:
+                return None
         if not options:
             return None
         value = [option.value for option in options if option.selected]
@@ -1176,10 +1233,10 @@ class SelectToolParameter(ToolParameter):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value2: Optional[Union[str, list[str]]] = options[0].value
+                value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
-        elif len(value) == 1 or not self.multiple:
+        elif not self.multiple:
             value2 = value[0]
         else:
             value2 = value
@@ -1211,7 +1268,7 @@ class SelectToolParameter(ToolParameter):
         else:
             return []
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         d = super().to_dict(trans, other_values)
 
@@ -1223,7 +1280,7 @@ class SelectToolParameter(ToolParameter):
         d["textable"] = is_runtime_context(trans, other_values)
         return d
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         if not value:
             super().validate(value, trans)
         if self.multiple:
@@ -1262,7 +1319,7 @@ class GenomeBuildParameter(SelectToolParameter):
             self.static_options = [(value, key, False) for key, value in self._get_dbkey_names()]
         self.is_dynamic = True
 
-    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
+    def get_options(self, trans: "ProvidesHistoryContext", other_values) -> Sequence[ParameterOption]:
         last_used_build = object()
         if trans.history:
             last_used_build = trans.history.genome_build
@@ -1271,10 +1328,10 @@ class GenomeBuildParameter(SelectToolParameter):
             for dbkey, build_name in self._get_dbkey_names(trans=trans)
         ]
 
-    def get_legal_values(self, trans, other_values, value):
+    def get_legal_values(self, trans: "ProvidesHistoryContext", other_values, value):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict(self, trans)
 
@@ -1288,7 +1345,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
         d.update(
             {
-                "options": serialize_options(trans, options),
+                "options": serialize_options(trans.security, options),
                 "value": value,
                 "display": self.display,
                 "multiple": self.multiple,
@@ -1297,7 +1354,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
         return d
 
-    def _get_dbkey_names(self, trans=None):
+    def _get_dbkey_names(self, trans: "ProvidesHistoryContext | None" = None):
         if not self.tool:
             # Hack for unit tests, since we have no tool
             return read_dbnames(None)
@@ -1327,7 +1384,7 @@ class SelectTagParameter(SelectToolParameter):
             self.default_value = input_source.get("value", None)
         self.is_dynamic = True
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         if self.multiple:
             tag_list = []
@@ -1370,7 +1427,7 @@ class SelectTagParameter(SelectToolParameter):
                         tags.add(tag.user_value)
         return list(tags)
 
-    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
+    def get_options(self, trans: "ProvidesHistoryContext", other_values) -> Sequence[ParameterOption]:
         """
         Show tags
         """
@@ -1379,12 +1436,12 @@ class SelectTagParameter(SelectToolParameter):
             options.append(ParameterOption(f"Tags: {tag}", tag, False))
         return options
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.default_value is not None:
             return self.default_value
         return super().get_initial_value(trans, other_values)
 
-    def get_legal_values(self, trans, other_values, value):
+    def get_legal_values(self, trans: "ProvidesHistoryContext", other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
@@ -1392,7 +1449,7 @@ class SelectTagParameter(SelectToolParameter):
     def get_dependencies(self):
         return [self.data_ref]
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         d = super().to_dict(trans, other_values=other_values)
         d["data_ref"] = self.data_ref
@@ -1453,7 +1510,7 @@ class ColumnListParameter(SelectToolParameter):
             return value.strip()
         return value
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
@@ -1486,7 +1543,7 @@ class ColumnListParameter(SelectToolParameter):
             column = column.lower()[1:]
         return column
 
-    def get_column_list(self, trans, other_values):
+    def get_column_list(self, trans: "ProvidesHistoryContext", other_values):
         """
         Generate a select list containing the columns of the associated
         dataset (if found).
@@ -1531,7 +1588,7 @@ class ColumnListParameter(SelectToolParameter):
                 column_list = [c for c in column_list if c in this_column_list]
         return column_list
 
-    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
+    def get_options(self, trans: "ProvidesHistoryContext", other_values) -> Sequence[ParameterOption]:
         """
         Show column labels rather than c1..cn if use_header_names=True
         """
@@ -1571,12 +1628,12 @@ class ColumnListParameter(SelectToolParameter):
             options = [ParameterOption(f"Column: {col}", col, False) for col in column_list]
         return options
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.default_value is not None:
             return self.default_value
         return super().get_initial_value(trans, other_values)
 
-    def get_legal_values(self, trans, other_values, value):
+    def get_legal_values(self, trans: "ProvidesHistoryContext", other_values, value):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
         legal_values = self.get_column_list(trans, other_values)
@@ -1590,7 +1647,7 @@ class ColumnListParameter(SelectToolParameter):
 
         return set(legal_values)
 
-    def is_file_empty(self, trans, other_values):
+    def is_file_empty(self, trans: "ProvidesHistoryContext", other_values):
         for dataset in util.listify(other_values.get(self.data_ref)):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
@@ -1614,7 +1671,7 @@ class ColumnListParameter(SelectToolParameter):
     def get_dependencies(self):
         return [self.data_ref]
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         d = super().to_dict(trans, other_values=other_values)
         d["data_ref"] = self.data_ref
@@ -1630,7 +1687,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> app = Bunch(config=Bunch(tool_data_path=None))
-    >>> tool = Bunch(app=app)
+    >>> tool = Bunch(app=app, options=Bunch(sanitize=False))
     >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x: x)
     >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
@@ -1667,6 +1724,19 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][0]['options'][2]['options'][1]['value'] == 'option4'
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
+    >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> single = DrillDownSelectToolParameter(tool, XML(
+    ... '''
+    ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
+    ...   <options>
+    ...    <option name="Option 1" value="option1" selected="true"/>
+    ...    <option name="Option 2" value="option2"/>
+    ...   </options>
+    ... </param>
+    ... '''))
+    >>> assert single.from_json(['option1'], trans) == 'option1'
+    >>> assert single.get_initial_value(trans, {}) == 'option1'
+    >>> assert single.to_param_dict_string('option1') == 'option1'
     """
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
@@ -1687,7 +1757,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             self.dynamic_options = None
             self.options = input_source.parse_drill_down_static_options(tool_data_path)
 
-    def _get_options_from_code(self, trans=None, other_values=None):
+    def _get_options_from_code(self, trans: "ProvidesHistoryContext | None" = None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")
         call_other_values = ExpressionContext({"__trans__": trans, "__value__": None})
         if other_values:
@@ -1699,7 +1769,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, other_values=None) -> list[DrillDownOptionsDict]:
+    def get_options(
+        self, trans: "ProvidesHistoryContext | None" = None, other_values=None
+    ) -> list[DrillDownOptionsDict]:
         other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
@@ -1708,7 +1780,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
         return self.options
 
-    def get_legal_values(self, trans, other_values, value):
+    def get_legal_values(self, trans: "ProvidesHistoryContext", other_values, value):
         def recurse_options(legal_values, options: list[DrillDownOptionsDict]):
             for option in options:
                 legal_values.append(option["value"])
@@ -1718,7 +1790,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
@@ -1749,6 +1821,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     val,
                 )
             rval.append(val)
+        if not self.multiple:
+            return rval[0] if rval else None
         return rval
 
     def to_param_dict_string(self, value, other_values=None):
@@ -1779,6 +1853,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
         if value is None:
             return "None"
+        if not isinstance(value, list):
+            value = [value]
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1799,7 +1875,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 rval = sanitize_param(rval)
         return rval
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         def recurse_options(initial_values, options: list[DrillDownOptionsDict]):
             for option in options:
                 if option["selected"]:
@@ -1814,6 +1890,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
             return None
+        if not self.multiple:
+            return initial_values[0]
         return initial_values
 
     def to_text(self, value):
@@ -1851,7 +1929,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     def get_dependencies(self):
         return []
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict(self, trans)
@@ -1886,11 +1964,12 @@ def _paginated_visible_datasets(
     trans: "ProvidesHistoryContext",
     history: "History",
     *,
-    extensions: Optional[set[str]],
-    valid_states: Optional[tuple[str, ...]],
-    search: Optional[str] = None,
+    extensions: set[str] | None,
+    valid_states: tuple[str, ...] | None,
+    tag: str | None = None,
+    search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetAssociation], int]:
     """``history.paginated_active_visible_datasets`` memoized on the request.
 
@@ -1908,6 +1987,7 @@ def _paginated_visible_datasets(
         history.id,
         frozenset(extensions) if extensions is not None else None,
         tuple(valid_states) if valid_states is not None else None,
+        tag or None,
         search or None,
         offset,
         limit,
@@ -1915,7 +1995,7 @@ def _paginated_visible_datasets(
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_visible_datasets(
-            extensions=extensions, valid_states=valid_states, search=search, offset=offset, limit=limit
+            extensions=extensions, valid_states=valid_states, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
@@ -1925,29 +2005,31 @@ def _paginated_dataset_collections(
     history: "History",
     *,
     visible_only: bool,
-    search: Optional[str] = None,
+    tag: str | None = None,
+    search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""
-    key = ("data_param_hdca_page", history.id, bool(visible_only), search or None, offset, limit)
+    key = ("data_param_hdca_page", history.id, bool(visible_only), tag or None, search or None, offset, limit)
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_dataset_collections(
-            visible_only=visible_only, search=search, offset=offset, limit=limit
+            visible_only=visible_only, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
 
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
+    tag: str | None
 
     # Sentinel distinguishing "cache not yet populated" from "cache populated
     # with None" (which is a legitimate return for parameters with no formats).
     _ACCEPTABLE_EXTENSIONS_UNSET: Any = object()
 
-    def __init__(self, tool: Optional["Tool"], input_source, trans):
+    def __init__(self, tool: Optional["Tool"], input_source, trans: "ProvidesHistoryContext | None"):
         super().__init__(tool, input_source)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
@@ -1979,7 +2061,7 @@ class BaseDataToolParameter(ToolParameter):
                 self.tool.app.datatypes_registry
             )  # can be None if self.tool.app is a ValidationContext
 
-    def _parse_formats(self, trans, input_source):
+    def _parse_formats(self, trans: "ProvidesHistoryContext | None", input_source):
         """
         Build list of classes for supported data formats
         """
@@ -2008,7 +2090,7 @@ class BaseDataToolParameter(ToolParameter):
             self.options_filter_attribute = options_elem.get("options_filter_attribute", None)
         self.is_dynamic = self.options is not None
 
-    def _acceptable_extensions(self) -> Optional[set[str]]:
+    def _acceptable_extensions(self) -> set[str] | None:
         """Return a set of HDA extensions that match this parameter's formats
         directly or via implicit conversion. ``None`` means no extension filter
         (the parameter accepts all formats)."""
@@ -2017,11 +2099,10 @@ class BaseDataToolParameter(ToolParameter):
             return cached
         formats = getattr(self, "formats", None)
         if not formats:
-            self._acceptable_extensions_cache: Optional[set[str]] = None
+            self._acceptable_extensions_cache: set[str] | None = None
             return None
         accepted: set[str] = set(getattr(self, "extensions", []))
-        registry = self.datatypes_registry
-        if registry is not None:
+        if (registry := self.datatypes_registry) is not None:
             try:
                 all_exts = list(registry.datatypes_by_extension.keys())
             except AttributeError:
@@ -2045,7 +2126,8 @@ class BaseDataToolParameter(ToolParameter):
             return True
         return False
 
-    def get_initial_value(self, trans, other_values):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
+        assert trans is not None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == "tool_shed":
             return RuntimeValue()
         if self.optional:
@@ -2068,6 +2150,7 @@ class BaseDataToolParameter(ToolParameter):
                         history,
                         extensions=self._acceptable_extensions(),
                         valid_states=dataset_matcher_factory.valid_input_states,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2089,6 +2172,7 @@ class BaseDataToolParameter(ToolParameter):
                         trans,
                         history,
                         visible_only=True,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2144,7 +2228,7 @@ class BaseDataToolParameter(ToolParameter):
         else:
             return app.model.context.get(HistoryDatasetAssociation, int(value))
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         def do_validate(v):
             for validator in self.validators:
                 if (
@@ -2194,18 +2278,14 @@ class BaseDataToolParameter(ToolParameter):
                 raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
-ItemFromSrcAny = Union[
-    DatasetCollectionElement,
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    LibraryDatasetDatasetAssociation,
-    CollectionAdapter,
-]
-ItemFromSrcCollection = Union[
-    DatasetCollectionElement,
-    HistoryDatasetCollectionAssociation,
-    CollectionAdapter,
-]
+ItemFromSrcAny = (
+    DatasetCollectionElement
+    | HistoryDatasetAssociation
+    | HistoryDatasetCollectionAssociation
+    | LibraryDatasetDatasetAssociation
+    | CollectionAdapter
+)
+ItemFromSrcCollection = DatasetCollectionElement | HistoryDatasetCollectionAssociation | CollectionAdapter
 
 
 def _decode_dataset_id(value, security: "IdEncodingHelper", parameter_name: str) -> int:
@@ -2288,7 +2368,7 @@ class DataToolParameter(BaseDataToolParameter):
     security stuff will dramatically alter this anyway.
     """
 
-    def __init__(self, tool: Optional["Tool"], input_source, trans=None):
+    def __init__(self, tool: Optional["Tool"], input_source, trans: "ProvidesHistoryContext | None" = None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
         self.load_contents = int(input_source.get("load_contents", 0))
@@ -2339,7 +2419,7 @@ class DataToolParameter(BaseDataToolParameter):
         allow_uri_if_protocol = input_source.get("allow_uri_if_protocol", None)
         self.allow_uri_if_protocol = allow_uri_if_protocol.split(",") if allow_uri_if_protocol else []
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}
@@ -2349,6 +2429,7 @@ class DataToolParameter(BaseDataToolParameter):
             raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", ""]:
             if self.default_object:
+                assert trans.history is not None
                 return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         batch_wrapper = False
@@ -2358,13 +2439,11 @@ class DataToolParameter(BaseDataToolParameter):
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
         rval: list[
-            Union[
-                DatasetCollectionElement,
-                HistoryDatasetAssociation,
-                HistoryDatasetCollectionAssociation,
-                LibraryDatasetDatasetAssociation,
-                CollectionAdapter,
-            ]
+            DatasetCollectionElement
+            | HistoryDatasetAssociation
+            | HistoryDatasetCollectionAssociation
+            | LibraryDatasetDatasetAssociation
+            | CollectionAdapter
         ] = []
         if isinstance(value, list):
             found_srcs = set()
@@ -2417,13 +2496,13 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
-            value_to_check: Union[
-                DatasetInstance,
-                DatasetCollection,
-                DatasetCollectionElement,
-                HistoryDatasetCollectionAssociation,
-                CollectionAdapter,
-            ] = v
+            value_to_check: (
+                DatasetInstance
+                | DatasetCollection
+                | DatasetCollectionElement
+                | HistoryDatasetCollectionAssociation
+                | CollectionAdapter
+            ) = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
                     value_to_check = hda
@@ -2522,7 +2601,7 @@ class DataToolParameter(BaseDataToolParameter):
         else:
             return []
 
-    def converter_safe(self, other_values, trans):
+    def converter_safe(self, other_values, trans: "ProvidesHistoryContext"):
         if (
             self.tool is None
             or self.tool.has_multiple_pages
@@ -2567,7 +2646,9 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(
+        self, trans: "ProvidesHistoryContext", other_values=None, pagination: ParameterPaginationT | None = None
+    ):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
@@ -2655,6 +2736,7 @@ class DataToolParameter(BaseDataToolParameter):
                 history,
                 extensions=acceptable_extensions,
                 valid_states=valid_states,
+                tag=self.tag,
                 search=hda_search,
                 offset=offset,
                 limit=limit,
@@ -2761,7 +2843,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=True, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=True, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -2786,7 +2868,7 @@ class DataToolParameter(BaseDataToolParameter):
                 make_hdca_entry(builder.security, hdca, name, keep=False, subcollection_type=subcollection_type)
             )
 
-    def _history_query(self, trans):
+    def _history_query(self, trans: "ProvidesHistoryContext"):
         assert self.multiple
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         # If multiple data parameter, treat like a list parameter.
@@ -2796,7 +2878,7 @@ class DataToolParameter(BaseDataToolParameter):
 class DataCollectionToolParameter(BaseDataToolParameter):
     """ """
 
-    def __init__(self, tool: Optional["Tool"], input_source, trans=None):
+    def __init__(self, tool: Optional["Tool"], input_source, trans: "ProvidesHistoryContext | None" = None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
         self._parse_formats(trans, input_source)
@@ -2820,14 +2902,14 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
     @property
-    def collection_types(self) -> Optional[list[str]]:
+    def collection_types(self) -> list[str] | None:
         return self._collection_types
 
-    def _history_query(self, trans):
+    def _history_query(self, trans: "ProvidesHistoryContext"):
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         return query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
 
-    def match_collections(self, trans, history, dataset_collection_matcher):
+    def match_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
         dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(
             history, self._history_query(trans)
         )
@@ -2843,7 +2925,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                     continue
             yield dataset_collection_instance, match.implicit_conversion
 
-    def match_multirun_collections(self, trans, history, dataset_collection_matcher):
+    def match_multirun_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
         for history_dataset_collection in history.active_visible_dataset_collections:
             if not self._history_query(trans).can_map_over(history_dataset_collection):
                 continue
@@ -2852,17 +2934,18 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if match:
                 yield history_dataset_collection, match.implicit_conversion
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}
-        rval: Optional[ItemFromSrcCollection] = None
+        rval: ItemFromSrcCollection | None = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional and not self.default_object:
             raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
             if self.default_object:
+                assert trans.history is not None
                 return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         if isinstance(value, MutableMapping) and "values" in value:
@@ -2926,7 +3009,9 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             display_text = "No dataset collection."
         return display_text
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(
+        self, trans: "ProvidesHistoryContext", other_values=None, pagination: ParameterPaginationT | None = None
+    ):
         other_values = other_values or {}
         d = super().to_dict(trans)
         d["collection_types"] = self.collection_types
@@ -2991,7 +3076,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=False, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=False, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3091,10 +3176,11 @@ class BaseJsonToolParameter(ToolParameter):
 class DirectoryUriToolParameter(SimpleTextToolParameter):
     """galaxy.files URIs for directories."""
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         super().validate(value, trans=trans)
         if not value:
             return  # value is not set yet, do not validate
+        assert trans is not None
         # Skip file source validation in workflow building mode to allow workflows
         # referencing removed file sources to be exported/viewed. Users can then
         # download and edit them. Validation still occurs during tool execution.
@@ -3128,7 +3214,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
         super().__init__(tool, input_source)
         self.data_ref = input_source.get("data_ref", None)
 
-    def to_dict(self, trans, other_values=None):
+    def to_dict(self, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
         if target := other_values.get(self.data_ref):
@@ -3139,7 +3225,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
                 }
         return d
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         super().validate(value, trans=trans)
         if not isinstance(value, MutableMapping):
             raise ValueError("No rules specified for rules parameter.")
@@ -3283,7 +3369,7 @@ def history_item_to_json(value, app, use_security):
     src = None
 
     # unwrap adapter
-    collection_adapter: Optional[CollectionAdapter] = None
+    collection_adapter: CollectionAdapter | None = None
     if isinstance(value, CollectionAdapter):
         collection_adapter = value
         return collection_adapter.to_adapter_model().model_dump()

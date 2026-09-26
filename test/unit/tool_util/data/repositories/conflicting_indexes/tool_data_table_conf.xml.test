@@ -1,0 +1,14 @@
+<tables>
+    <!-- Same table name, same column NAMES, but different index attributes via the
+         explicit <column> form. The raw name tuples are identical, so a name-based
+         conflict check would miss this and the loader's merge would then crash; the
+         columns map (name->index) differs, so the map-based check catches it. -->
+    <table name="idx_tbl" comment_char="#">
+        <column name="value" index="0" />
+        <column name="path" index="1" />
+    </table>
+    <table name="idx_tbl" comment_char="#">
+        <column name="value" index="0" />
+        <column name="path" index="5" />
+    </table>
+</tables>

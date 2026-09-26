@@ -3,12 +3,9 @@ from __future__ import annotations
 from typing import (
     Annotated,
     Literal,
-    Optional,
-    Union,
 )
 from urllib.parse import quote
 
-import requests
 from pydantic import (
     AliasChoices,
     Field,
@@ -29,6 +26,7 @@ from galaxy.files.models import (
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.util import requests
 from galaxy.util.config_templates import TemplateExpansion
 from . import BaseFilesSource
 
@@ -43,9 +41,9 @@ DriveMode = Literal["appfolder", "full"]
 
 
 class OneDriveFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
-    drive_api_base: Union[str, TemplateExpansion] = "https://graph.microsoft.com/v1.0/me/drive"
-    drive_mode: Union[DriveMode, TemplateExpansion] = "appfolder"
+    access_token: Annotated[str | TemplateExpansion, AccessTokenField]
+    drive_api_base: str | TemplateExpansion = "https://graph.microsoft.com/v1.0/me/drive"
+    drive_mode: DriveMode | TemplateExpansion = "appfolder"
 
 
 class OneDriveFilesSourceConfiguration(BaseFileSourceConfiguration):
@@ -79,8 +77,7 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
 
     def _item_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
         root_url = self._root_url(config)
-        encoded_path = self._encoded_path(path)
-        if encoded_path:
+        if encoded_path := self._encoded_path(path):
             return f"{root_url}:/{encoded_path}"
         return root_url
 
@@ -105,7 +102,7 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
     ) -> requests.Response:
         try:
             response = requests.request(method, url, headers=self._headers(context.config), timeout=timeout, **kwargs)
-        except requests.RequestException as exc:
+        except requests.exceptions.RequestException as exc:
             raise MessageException(f"Error connecting to OneDrive. Reason: {exc}") from exc
 
         if response.status_code in {401, 403}:
@@ -153,10 +150,10 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
         path: str = "/",
         recursive: bool = False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         response = self._request("GET", self._children_url(context.config, path), context)
         items = response.json().get("value", [])

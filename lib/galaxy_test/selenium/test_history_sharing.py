@@ -4,12 +4,13 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 # Remove hack when submit_login works more consistently.
 VALID_LOGIN_RETRIES = 3
 
 
-class TestHistorySharing(SeleniumTestCase):
+class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     def test_sharing_valid(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
@@ -100,7 +101,7 @@ class TestHistorySharing(SeleniumTestCase):
 
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         # Can't share an empty history...
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
 
         history_id = self.current_history_id()
@@ -150,7 +151,7 @@ class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
         self.wait_for_selector(".make-accessible")
 
 
-class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase):
+class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase, UsesUploadActivity):
     """Test that sharing private histories requires permission changes.
 
     Includes regression test for PR #20886: When sharing a history containing private datasets
@@ -168,7 +169,7 @@ class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase):
         # Register first user and create a private history with data
         self.register(user1_email)
         self.make_history_private()
-        self.perform_upload_of_pasted_content("hello world")
+        self.upload_context("paste-content").stage_paste_content("hello world").start()
         self.wait_for_history()
 
         # Register second user (must exist to share with)

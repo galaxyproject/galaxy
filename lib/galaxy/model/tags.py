@@ -48,7 +48,7 @@ class TagHandler:
     """
 
     def __init__(
-        self, sa_session: Union[scoped_session, "SessionlessContext"], galaxy_session: Optional[GalaxySession] = None
+        self, sa_session: Union[scoped_session, "SessionlessContext"], galaxy_session: GalaxySession | None = None
     ) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
@@ -65,7 +65,7 @@ class TagHandler:
         self.item_tag_assoc_info: dict[str, ItemTagAssocInfo] = {}
         self.galaxy_session = galaxy_session
 
-    def create_tag_handler_session(self, galaxy_session: Optional[GalaxySession]):
+    def create_tag_handler_session(self, galaxy_session: GalaxySession | None):
         # Creates a transient tag handler that avoids repeated flushes
         if isinstance(self.sa_session, scoped_session):
             return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
@@ -258,7 +258,7 @@ class TagHandler:
         self,
         user: Optional["User"],
         item,
-        tags_str: Optional[str],
+        tags_str: str | None,
         flush=True,
     ):
         """Apply tags to an item."""
@@ -401,7 +401,7 @@ class TagHandler:
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
-    def parse_tags_list(self, tags_list: list[str]) -> list[tuple[str, Optional[str]]]:
+    def parse_tags_list(self, tags_list: list[str]) -> list[tuple[str, str | None]]:
         """
         Return a list of tag tuples (name, value) pairs derived from a list.
         Method scrubs tag names and values as well.
@@ -452,13 +452,13 @@ class TagHandler:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list
 
-    def _get_name_value_pair(self, tag_str) -> list[Optional[str]]:
+    def _get_name_value_pair(self, tag_str) -> list[str | None]:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith("#"):
             tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile(f"[{self.key_value_separators}]")
-        name_value_pair: list[Optional[str]] = list(reg_exp.split(tag_str, 1))
+        name_value_pair: list[str | None] = list(reg_exp.split(tag_str, 1))
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)
@@ -468,7 +468,7 @@ class TagHandler:
 class GalaxyTagHandler(TagHandler):
     _item_tag_assoc_info: dict[str, ItemTagAssocInfo] = {}
 
-    def __init__(self, sa_session: scoped_session, galaxy_session: Optional[GalaxySession] = None):
+    def __init__(self, sa_session: scoped_session, galaxy_session: GalaxySession | None = None):
         super().__init__(sa_session, galaxy_session=galaxy_session)
         if not GalaxyTagHandler._item_tag_assoc_info:
             GalaxyTagHandler.init_tag_associations()
@@ -515,7 +515,7 @@ class GalaxyTagHandler(TagHandler):
 class GalaxyTagHandlerSession(GalaxyTagHandler):
     """Like GalaxyTagHandler, but avoids one flush per created tag."""
 
-    def __init__(self, sa_session: scoped_session, galaxy_session: Optional[GalaxySession]):
+    def __init__(self, sa_session: scoped_session, galaxy_session: GalaxySession | None):
         super().__init__(sa_session, galaxy_session)
         self.created_tags: dict[str, Tag] = {}
 

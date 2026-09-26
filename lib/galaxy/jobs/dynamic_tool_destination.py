@@ -9,9 +9,7 @@ import re
 import sys
 from functools import reduce
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import numpy as np
@@ -78,7 +76,7 @@ class ScannerError(Exception):
     pass
 
 
-def get_keys_from_dict(dl: Union[dict, list], keys_list: list) -> None:
+def get_keys_from_dict(dl: dict | list, keys_list: list) -> None:
     """
     This function builds a list using the keys from nest dictionaries
     """
@@ -1267,10 +1265,10 @@ def map_tool_to_destination(
     job: "Job",
     app: "MinimalManagerApp",
     tool: "Tool",
-    user_email: Optional[str],
+    user_email: str | None,
     test: bool = False,
-    path: Optional[str] = None,
-    job_conf_path: Optional[str] = None,
+    path: str | None = None,
+    job_conf_path: str | None = None,
 ):
     """
     Dynamically allocate resources

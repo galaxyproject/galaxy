@@ -1,9 +1,5 @@
 """Utility functions used to adapt galaxy.util.search to Galaxy model index queries."""
 
-from typing import (
-    Union,
-)
-
 from sqlalchemy import (
     and_,
     or_,
@@ -30,7 +26,7 @@ def text_column_filter(column, term: FilteredTerm):
     return filter
 
 
-RawTextSearchableT = Union[BinaryExpression, InstrumentedAttribute]
+RawTextSearchableT = BinaryExpression | InstrumentedAttribute
 
 
 def raw_text_column_filter(columns: list[RawTextSearchableT], term: RawTextTerm):

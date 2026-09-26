@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    Optional,
-    Type,
 )
 
 from pydantic import (
@@ -23,7 +20,7 @@ from galaxy.tool_util_models.parameters import (
 )
 
 
-def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dict[str, Any]) -> None:
+def validate_against_model(pydantic_model: type[BaseModel], parameter_state: dict[str, Any]) -> None:
     try:
         pydantic_model(**parameter_state)
     except ValidationError as e:
@@ -33,13 +30,12 @@ def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dic
 
 
 class ValidationFunctionT(Protocol):
-
-    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: Optional[str] = None) -> None: ...
+    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: str | None = None) -> None: ...
 
 
 def validate_model_type_factory(state_representation: StateRepresentationT) -> ValidationFunctionT:
 
-    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: Optional[str] = None) -> None:
+    def validate_request(tool: ToolParameterBundle, request: dict[str, Any], name: str | None = None) -> None:
         name = name or DEFAULT_MODEL_NAME
         pydantic_model = create_field_model(tool.parameters, name=name, state_representation=state_representation)
         validate_against_model(pydantic_model, request)

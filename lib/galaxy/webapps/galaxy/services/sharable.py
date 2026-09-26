@@ -1,10 +1,7 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
@@ -38,12 +35,7 @@ from galaxy.webapps.galaxy.services.notifications import NotificationService
 
 log = logging.getLogger(__name__)
 
-SharableItem = Union[
-    History,
-    StoredWorkflow,
-    Visualization,
-    Page,
-]
+SharableItem = History | StoredWorkflow | Visualization | Page
 
 
 class ShareableService:
@@ -67,16 +59,16 @@ class ShareableService:
         self.serializer = serializer
         self.notification_service = notification_service
 
-    def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
+    def set_slug(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
         self.manager.set_slug(item, payload.new_slug, trans.user)
 
-    def sharing(self, trans, id: DecodedDatabaseIdField) -> SharingStatus:
+    def sharing(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> SharingStatus:
         """Gets the current sharing status of the item with the given id."""
         item = self._get_item_by_id(trans, id)
         return self._get_sharing_status(trans, item)
 
-    def enable_link_access(self, trans, id: DecodedDatabaseIdField) -> SharingStatus:
+    def enable_link_access(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> SharingStatus:
         """Makes this item accessible by link.
         If this item contains other elements they will be publicly accessible too.
         """
@@ -85,12 +77,12 @@ class ShareableService:
         self.manager.make_importable(item)
         return self._get_sharing_status(trans, item)
 
-    def disable_link_access(self, trans, id: DecodedDatabaseIdField) -> SharingStatus:
+    def disable_link_access(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> SharingStatus:
         item = self._get_item_by_id(trans, id)
         self.manager.make_non_importable(item)
         return self._get_sharing_status(trans, item)
 
-    def publish(self, trans, id: DecodedDatabaseIdField) -> SharingStatus:
+    def publish(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> SharingStatus:
         """Makes this item publicly accessible.
         If this item contains other elements they will be publicly accessible too.
         """
@@ -99,12 +91,14 @@ class ShareableService:
         self.manager.publish(item)
         return self._get_sharing_status(trans, item)
 
-    def unpublish(self, trans, id: DecodedDatabaseIdField) -> SharingStatus:
+    def unpublish(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> SharingStatus:
         item = self._get_item_by_id(trans, id)
         self.manager.unpublish(item)
         return self._get_sharing_status(trans, item)
 
-    def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
+    def share_with_users(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: ShareWithPayload
+    ) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
         extra, users_to_notify = self._share_with_options(trans, item, users, errors, payload.share_option)
@@ -120,11 +114,11 @@ class ShareableService:
 
     def _share_with_options(
         self,
-        trans,
+        trans: ProvidesUserContext,
         item,
         users: set[User],
         errors: set[str],
-        share_option: Optional[SharingOptions] = None,
+        share_option: SharingOptions | None = None,
     ):
         new_users = None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
@@ -133,19 +127,19 @@ class ShareableService:
             extra = None
         return extra, new_users
 
-    def _get_item_by_id(self, trans, id: DecodedDatabaseIdField):
+    def _get_item_by_id(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField):
         class_name = self.manager.model_class.__name__
         item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         return item
 
-    def _get_sharing_status(self, trans, item):
+    def _get_sharing_status(self, trans: ProvidesUserContext, item):
         status = self.serializer.serialize_to_view(
             item, user=trans.user, trans=trans, default_view="sharing", encode_id=False
         )
         status["users_shared_with"] = [UserEmail(id=a.user.id, email=a.user.email) for a in item.users_shared_with]
         return SharingStatus(**status)
 
-    def _get_users(self, trans, emails_or_ids: list[UserIdentifier]) -> tuple[set[User], set[str]]:
+    def _get_users(self, trans: ProvidesUserContext, emails_or_ids: list[UserIdentifier]) -> tuple[set[User], set[str]]:
         send_to_users: set[User] = set()
         send_to_err: set[str] = set()
         for email_or_id in set(emails_or_ids):
@@ -175,7 +169,7 @@ class ShareableService:
         return send_to_users, send_to_err
 
     def _send_notification_to_users(
-        self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
+        self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: str | None = None
     ):
         if self.notification_service.notifications_enabled and not status.errors and users_to_notify:
             request = SharedItemNotificationFactory.build_notification_request(
@@ -198,7 +192,7 @@ class SharedItemNotificationFactory:
 
     @staticmethod
     def build_notification_request(
-        item: SharableItem, users_to_notify: set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
+        item: SharableItem, users_to_notify: set[User], status: ShareWithStatus, galaxy_url: str | None = None
     ) -> NotificationCreateRequest:
         user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(

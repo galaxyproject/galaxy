@@ -43,11 +43,16 @@ import ServiceCredentialsGroupsList from "@/components/User/Credentials/ServiceC
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Tools Credentials Management" }];
 
 /** Filter configuration for credential groups */
-const credentialsFilterClass = new Filtering({
-    name: { placeholder: "credential group name", type: String, handler: contains("name"), menuItem: true },
-    tool: { placeholder: "tool name", type: String, handler: contains("tool"), menuItem: true },
-    service: { placeholder: "service name", type: String, handler: contains("service"), menuItem: true },
-});
+const credentialsFilterClass = new Filtering(
+    {
+        name: { placeholder: "credential group name", type: String, handler: contains("name"), menuItem: true },
+        tool: { placeholder: "tool name", type: String, handler: contains("tool"), menuItem: true },
+        service: { placeholder: "service name", type: String, handler: contains("service"), menuItem: true },
+    },
+    undefined,
+    true,
+    "name",
+);
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
@@ -186,7 +191,7 @@ function validatedFilterText(): string {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return credentialsFilterClass.getFilterText(validFilters.value, true);
+    return credentialsFilterClass.getFilterText(validFilters.value, true, filterText.value);
 }
 
 /**

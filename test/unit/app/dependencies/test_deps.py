@@ -1,11 +1,16 @@
 import os
+import re
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
 import pytest
+from packaging.requirements import Requirement
 
-from galaxy.dependencies import ConditionalDependencies
+from galaxy.dependencies import (
+    ConditionalDependencies,
+    optional,
+)
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
     blah...
@@ -21,11 +26,64 @@ backends:
    - id: files1
      type: azure_blob
 """
+CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
+    blah...
+</object_store>
+"""
+CLOUD_GOOGLE_TEST_CONFIG_YAML = """
+type: cloud
+provider: google
+other_attributes: blah
+"""
+CLOUD_NO_PROVIDER_TEST_CONFIG_YAML = """
+type: cloud
+other_attributes: blah
+"""
+DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML = """
+type: distributed
+backends:
+   - id: files1
+     type: cloud
+     provider: azure
+   - id: files2
+     type: cloud
+     provider: openstack
+   - id: files3
+     type: cloud
+     provider: azure
+"""
+OBJECT_STORE_TEMPLATES_CONFIG = """
+- id: azure_template
+  name: Azure Storage
+  description: Bring your own Azure container
+  configuration:
+    type: azure_blob
+    auth:
+      account_name: '{{ variables.account_name }}'
+      account_key: '{{ secrets.account_key }}'
+    container:
+      name: '{{ variables.container_name }}'
+- id: swift_template
+  name: Swift Storage
+  description: Bring your own Swift container
+  configuration:
+    type: cloud
+    provider: openstack
+    auth:
+      auth_url: https://keystone.example.org:5000/v3
+      username: '{{ variables.username }}'
+      password: '{{ secrets.password }}'
+      project_name: '{{ variables.project_name }}'
+    bucket:
+      name: '{{ variables.container }}'
+"""
 FILES_SOURCES_CONFIG = """
 - type: webdav
 - type: dropbox
 - type: googledrive
 - type: irods
+- type: gitlab
+- type: arc
 """
 JOB_CONF_YAML = """
 runners:
@@ -39,6 +97,12 @@ runners:
 """
 VAULT_CONF_HASHICORP = """
 type: hashicorp
+"""
+TOOL_SHED_CONFIG = """
+tool_shed:
+  sentry_dsn: https://public@sentry.example.com/1
+  database_connection: postgresql://ts:ts@localhost/toolshed
+  watch_tools: auto
 """
 
 
@@ -78,12 +142,132 @@ def test_azure_objectstore_nested_yaml():
         assert cds.check_azure_storage()
 
 
+def test_default_objectstore_needs_no_cloudbridge():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_cloud_objectstore_xml_installs_provider_extra():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.xml", CLOUD_AWS_TEST_CONFIG)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["aws"]
+
+
+def test_cloud_objectstore_google_provider_uses_gcp_extra():
+    # Galaxy's provider name and cloudbridge's extra differ for Google.
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", CLOUD_GOOGLE_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.extras("cloudbridge") == ["gcp"]
+
+
+def test_cloud_objectstore_nested_yaml_collects_every_provider():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["azure", "openstack"]
+
+
+def test_cloud_objectstore_without_provider_installs_base_cloudbridge():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", CLOUD_NO_PROVIDER_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_non_cloud_objectstore_needs_no_cloudbridge_extras():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", AZURE_BLOB_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert not cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_object_store_templates_install_their_dependencies():
+    # Stores admins offer as templates need their dependencies too, even when
+    # no store of that type is configured in object_store_conf.
+    with _config_context() as cc:
+        templates_config = cc.write_config("object_store_templates.yml", OBJECT_STORE_TEMPLATES_CONFIG)
+        config = {
+            "object_store_templates_config_file": templates_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_azure_storage()
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["openstack"]
+
+
+def test_inline_object_store_templates_install_their_dependencies():
+    with _config_context() as cc:
+        config = {
+            "object_store_templates": [
+                {
+                    "id": "gcs_template",
+                    "name": "Google Storage",
+                    "description": "Bring your own bucket",
+                    "configuration": {
+                        "type": "cloud",
+                        "provider": "google",
+                        "auth": {"credentials_file": "/etc/galaxy/gcp.json"},
+                        "bucket": {"name": "{{ variables.bucket }}"},
+                    },
+                }
+            ],
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["gcp"]
+
+
+def test_object_store_templates_default_needs_no_dependencies():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_cloudbridge()
+        assert not cds.check_azure_storage()
+
+
+def test_optional_requirements_carry_cloudbridge_extras():
+    # The version specifier must survive the extras rewrite - whatever
+    # conditional-requirements.txt currently pins it to.
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
+        galaxy_config = cc.write_config("galaxy.yml", f"galaxy:\n  object_store_config_file: {object_store_config}\n")
+        conditional = ConditionalDependencies(galaxy_config)
+        specifier = next(
+            Requirement(dep.line).specifier for dep in conditional.conditional_reqs if dep.name == "cloudbridge"
+        )
+        requirements = [r for r in optional(galaxy_config) if r.startswith("cloudbridge")]
+        assert requirements == [f"cloudbridge[azure,openstack]{specifier}"]
+
+
 def test_fs_default():
     with _config_context() as cc:
         cds = cc.get_cond_deps()
         assert not cds.check_gdrive_fsspec()
         assert not cds.check_dropboxdrivefs()
         assert not cds.check_webdav4()
+        assert not cds.check_arcfs_fsspec()
 
 
 def test_fs_configured():
@@ -96,6 +280,7 @@ def test_fs_configured():
         assert cds.check_gdrive_fsspec()
         assert cds.check_dropboxdrivefs()
         assert cds.check_webdav4()
+        assert cds.check_arcfs_fsspec()
         assert cds.check_fs_irods()
 
 
@@ -199,6 +384,35 @@ def test_conditional_redis(config, expected):
     with _config_context() as cc:
         cds = cc.get_cond_deps(config=config)
         assert cds.check_redis() is expected
+
+
+def test_tool_shed_config_selects_dependencies():
+    with _config_context() as cc:
+        config_file = cc.write_config("tool_shed.yml", TOOL_SHED_CONFIG)
+        assert "sentry-sdk" in _requirement_names(optional(config_file, app="tool_shed"))
+
+
+def test_tool_shed_config_ignored_when_read_as_galaxy():
+    with _config_context() as cc:
+        config_file = cc.write_config("tool_shed.yml", TOOL_SHED_CONFIG)
+        assert "sentry-sdk" not in _requirement_names(optional(config_file))
+
+
+def test_tool_shed_skips_galaxy_only_dependencies():
+    with _config_context() as cc:
+        config_file = cc.write_config("tool_shed.yml", TOOL_SHED_CONFIG)
+        names = _requirement_names(optional(config_file, app="tool_shed"))
+        assert "psycopg2-binary" in names
+        assert "watchdog" not in names
+
+
+def test_optional_rejects_unknown_app():
+    with pytest.raises(ValueError, match="Unknown app"):
+        optional(app="reports")
+
+
+def _requirement_names(requirements):
+    return {re.split(r"[<>=!~;\[]", requirement, maxsplit=1)[0].strip() for requirement in requirements}
 
 
 @contextmanager

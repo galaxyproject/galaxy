@@ -2,9 +2,6 @@ import abc
 import logging
 import os
 import re
-from typing import (
-    Optional,
-)
 
 import yaml
 from cryptography.fernet import (
@@ -45,7 +42,7 @@ class Vault(abc.ABC):
     use_canonical_keys = True
 
     @abc.abstractmethod
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         """
         Reads a secret from the vault.
 
@@ -89,7 +86,7 @@ class Vault(abc.ABC):
 
 
 class NullVault(Vault):
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         raise InvalidVaultConfigException(
             "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
         )
@@ -142,13 +139,12 @@ class HashicorpVault(Vault):
         renewable = auth_data.get("renewable", False)
         if not renewable:
             log.error(
-                "Hashicorp Vault token is no longer renewable (max TTL likely reached). "
-                "A new token must be configured."
+                "Hashicorp Vault token is no longer renewable (max TTL likely reached). A new token must be configured."
             )
         else:
             log.debug("Hashicorp Vault token renewed successfully (new TTL: %ds).", new_ttl)
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response["data"]["data"].get("value")
@@ -162,7 +158,7 @@ class HashicorpVault(Vault):
             )
             return None
 
-    def _read_legacy_and_migrate(self, key: str) -> Optional[str]:
+    def _read_legacy_and_migrate(self, key: str) -> str | None:
         # Galaxy <= 26.0 emitted a leading slash in Vault paths, which hvac's
         # format_url turned into a double-slash KV v2 key. Vault 1.x accepted
         # it silently; Vault 2.0 rejects it. Fall back to reading the legacy
@@ -207,7 +203,7 @@ class DatabaseVault(Vault):
     def _get_multi_fernet(self) -> MultiFernet:
         return MultiFernet(self.fernet_keys)
 
-    def _update_or_create(self, key: str, value: Optional[str]) -> model.Vault:
+    def _update_or_create(self, key: str, value: str | None) -> model.Vault:
         vault_entry = self._get_vault_value(key)
         if vault_entry:
             if value:
@@ -224,7 +220,7 @@ class DatabaseVault(Vault):
             self.sa_session.commit()
         return vault_entry
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         key_obj = self._get_vault_value(key)
         if key_obj and key_obj.value:
             f = self._get_multi_fernet()
@@ -254,7 +250,7 @@ class UserVaultWrapper(Vault):
         self.vault = vault
         self.user = user
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         if self.user:
             return self.vault.read_secret(f"user/{self.user.id}/{key}")
         else:
@@ -291,7 +287,7 @@ class VaultKeyValidationWrapper(Vault):
             )
         return key
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         key = self.normalize_key(key)
         return self.vault.read_secret(key)
 
@@ -327,7 +323,7 @@ class VaultKeyPrefixWrapper(Vault):
             return f"{self.prefix}/{key}"
         return f"/{self.prefix}/{key}"
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         return self.vault.read_secret(self._prefixed(key))
 
     def write_secret(self, key: str, value: str) -> None:
@@ -339,14 +335,14 @@ class VaultKeyPrefixWrapper(Vault):
 
 class VaultFactory:
     @staticmethod
-    def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
+    def load_vault_config(vault_conf_yml: str) -> dict | None:
         if os.path.exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 return yaml.safe_load(f)
         return None
 
     @staticmethod
-    def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
+    def from_vault_type(app, vault_type: str | None, cfg: dict) -> Vault:
         vault: Vault
         if vault_type == "hashicorp":
             token_renewal_enabled = app.config.vault_token_renewal_interval > 0

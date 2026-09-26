@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useWindowScroll } from "@vueuse/core";
+import { useInfiniteScroll } from "@vueuse/core";
 import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import { parse } from "csv-parse/sync";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import type { HDADetailed } from "@/api";
 import type { TableField } from "@/components/Common/GTable.types";
 import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GTable from "@/components/Common/GTable.vue";
 
@@ -29,9 +31,17 @@ interface TabularChunkedViewProps {
 const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
-const loading = ref(true);
-// TODO: add visual loading indicator
 const atEOF = ref(false);
+const errorMessage = ref("");
+
+// The page layout scrolls in an inner container, not the window, so the
+// component owns its scroll container. Chunks load while the container is
+// within 100px of its bottom or not yet filled.
+const scrollContainer = ref<HTMLElement | null>(null);
+const { isLoading } = useInfiniteScroll(scrollContainer, nextChunk, {
+    distance: 100,
+    canLoadMore: () => !atEOF.value && !errorMessage.value,
+});
 
 const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
@@ -85,19 +95,6 @@ const delimiter = computed(() => {
 
 const chunkUrl = computed(() => {
     return `${getAppRoot()}dataset/display?dataset_id=${props.options.id}`;
-});
-
-// Loading more data on user scroll to (near) bottom.
-const { y } = useWindowScroll();
-
-watch(y, (newY) => {
-    if (
-        atEOF.value !== true &&
-        loading.value === false &&
-        newY > document.body.scrollHeight - window.innerHeight - 100
-    ) {
-        nextChunk();
-    }
 });
 
 function processChunk(chunk: TabularChunk) {
@@ -164,35 +161,29 @@ function processRow(row: string[]) {
     }
 }
 
-function nextChunk() {
+async function nextChunk() {
     // Attempt to fetch next chunk, given the current offset.
-    loading.value = true;
-    axios
-        .get(chunkUrl.value, {
+    try {
+        const response = await axios.get(chunkUrl.value, {
             params: {
                 offset: offset.value,
             },
-        })
-        .then((response) => {
-            if (response.data.ck_data === "") {
-                // Galaxy returns an empty chunk if there's no more.
-                atEOF.value = true;
-            } else {
-                // Otherwise process the chunk.
-                processChunk(response.data);
-            }
-            loading.value = false;
         });
+        if (response.data.ck_data === "") {
+            // Galaxy returns an empty chunk if there's no more.
+            atEOF.value = true;
+        } else {
+            // Otherwise process the chunk.
+            processChunk(response.data);
+        }
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    }
 }
-
-onMounted(() => {
-    // Fetch and render first chunk
-    nextChunk();
-});
 </script>
 
 <template>
-    <div>
+    <div ref="scrollContainer" class="h-100 overflow-auto">
         <!-- TODO loading spinner locked to top right -->
         <GTable
             compact
@@ -202,6 +193,9 @@ onMounted(() => {
             :fields="fields"
             :hide-header="props.options.file_ext === 'tabular'"
             :items="tableRows"
-            :load-more-loading="loading" />
+            :load-more-loading="isLoading" />
+        <BAlert v-if="errorMessage" variant="danger" show>
+            {{ errorMessage }}
+        </BAlert>
     </div>
 </template>

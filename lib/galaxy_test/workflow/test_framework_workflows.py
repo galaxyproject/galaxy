@@ -90,7 +90,9 @@ class TestWorkflow(ApiTestCase):
 
     def _verify_output(self, run_summary: RunJobsSummary, output_name, test_properties: OutputChecks):
         is_collection_test = isinstance(test_properties, dict) and (
-            "elements" in test_properties or test_properties.get("class") == "Collection"
+            "elements" in test_properties
+            or "element_tests" in test_properties
+            or test_properties.get("class") == "Collection"
         )
         item_label = f"Output named {output_name}"
 

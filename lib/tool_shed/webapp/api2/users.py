@@ -1,8 +1,5 @@
 import logging
 import os
-from typing import (
-    Optional,
-)
 
 from fastapi import (
     Body,
@@ -10,7 +7,10 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    field_validator,
+)
 from sqlalchemy import (
     false,
     true,
@@ -32,6 +32,7 @@ from tool_shed.managers.users import (
     api_create_user,
     get_api_user,
     index,
+    send_password_reset_email,
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.fast_app import limiter
@@ -56,15 +57,31 @@ router = Router(tags=["users"])
 
 log = logging.getLogger(__name__)
 
-TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: Optional[str] = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
+TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: str | None = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
 SENSITIVE_API_REQUEST_LIMIT = TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT or "10/minute"
 
+INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
 
-class UiRegisterRequest(BaseModel):
+LOOKS_LIKE_A_BOT = (
+    "You've been flagged as a possible bot. If you are not, please try again and fill the form out carefully."
+)
+
+
+class HasHoneypot(BaseModel):
+    bear_field: str
+
+    @field_validator("bear_field")
+    @classmethod
+    def _honeypot_must_be_empty(cls, bear_field: str) -> str:
+        if bear_field != "":
+            raise RequestParameterInvalidException(LOOKS_LIKE_A_BOT)
+        return bear_field
+
+
+class UiRegisterRequest(HasHoneypot):
     email: str
     username: str
     password: str
-    bear_field: str
 
 
 class HasCsrfToken(BaseModel):
@@ -92,15 +109,23 @@ class UiRegisterResponse(BaseModel):
     email: str
     activation_sent: bool = False
     activation_error: bool = False
-    contact_email: Optional[str] = None
+    contact_email: str | None = None
 
 
 class UiChangePasswordRequest(BaseModel):
-    current: str
     password: str
+    confirm: str
+    current: str | None = None
+    token: str | None = None
 
 
-INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
+class UiResetPasswordRequest(HasHoneypot):
+    email: str
+
+
+class SetPasswordRequest(BaseModel):
+    password: str
+    confirm: str
 
 
 @router.cbv
@@ -192,6 +217,29 @@ class FastAPIUsers:
         self.api_key_manager.delete_api_key(user)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    # JSON PUT requests require a CORS preflight; these password routes disallow cross-origin access.
+    @router.put(
+        "/api/users/{encoded_user_id}/password",
+        summary="Set a user's password, without requiring their current one",
+        operation_id="users__set_password",
+        require_admin=True,
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    @limiter.limit(SENSITIVE_API_REQUEST_LIMIT)
+    def set_password(
+        self,
+        request: Request,
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_user_id: str = UserIdPathParam,
+        password_request: SetPasswordRequest = Body(...),
+    ):
+        user = suc.get_user(trans.app, encoded_user_id)
+        if user is None:
+            raise ObjectNotFound()
+        self.user_manager.set_password(trans, user, password_request.password, password_request.confirm)
+        log.info("Admin %s set the password of user %s.", trans.user and trans.user.id, user.id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     def _get_user(self, trans: SessionRequestContext, encoded_user_id: str):
         if encoded_user_id == "current":
             user = trans.user
@@ -215,11 +263,6 @@ class FastAPIUsers:
         trans: SessionRequestContext = DependsOnTrans,
         register_request: UiRegisterRequest = Body(...),
     ) -> UiRegisterResponse:
-        honeypot_field = register_request.bear_field
-        if honeypot_field != "":
-            message = "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully."
-            raise RequestParameterInvalidException(message)
-
         username = register_request.username
         if username == "repos":
             raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
@@ -252,16 +295,38 @@ class FastAPIUsers:
         change_request: UiChangePasswordRequest = Body(...),
     ):
         password = change_request.password
-        current = change_request.current
-        if trans.user is None:
-            raise InsufficientPermissionsException("Must be logged into use this functionality")
-        user_id = trans.user.id
-        token = None
-        user, message = self.user_manager.change_password(
-            trans, password=password, current=current, token=token, confirm=password, id=user_id
-        )
+        confirm = change_request.confirm
+        token = change_request.token
+        if token:
+            # Redeeming a reset token is how a locked out user gets back in, so this
+            # branch is reachable while logged out.
+            user, message = self.user_manager.change_password(trans, password=password, token=token, confirm=confirm)
+        else:
+            if trans.user is None:
+                raise InsufficientPermissionsException("Must be logged into use this functionality")
+            if not change_request.current:
+                raise RequestParameterInvalidException("Please provide your current password.")
+            user, message = self.user_manager.change_password(
+                trans, password=password, current=change_request.current, confirm=confirm, id=trans.user.id
+            )
         if not user:
             raise RequestParameterInvalidException(message)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api_internal/reset_password",
+        description="email a password reset link to a user",
+        operation_id="users__internal_reset_password",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    @limiter.limit(SENSITIVE_API_REQUEST_LIMIT)
+    def reset_password(
+        self,
+        request: Request,
+        trans: SessionRequestContext = DependsOnTrans,
+        reset_request: UiResetPasswordRequest = Body(...),
+    ):
+        send_password_reset_email(trans, self.user_manager, reset_request.email)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -329,7 +394,7 @@ def handle_user_login(trans: SessionRequestContext, user: SaUser) -> None:
     replace_previous_session(trans, user)
 
 
-def handle_user_logout(trans, logout_all=False):
+def handle_user_logout(trans: SessionRequestContext, logout_all=False):
     """
     Logout the current user:
         - invalidate current session + previous sessions (optional)
@@ -342,13 +407,16 @@ def handle_user_logout(trans, logout_all=False):
     replace_previous_session(trans, None)
 
 
-def replace_previous_session(trans, user):
+def replace_previous_session(trans: SessionRequestContext, user):
     prev_galaxy_session = trans.get_galaxy_session()
     # Invalidate previous session
     if prev_galaxy_session:
         prev_galaxy_session.is_valid = False
     # Create new session
-    new_session = create_new_session(trans, prev_galaxy_session, user)
+    # tool_shed.context.SessionRequestContext structurally satisfies everything
+    # create_new_session uses (.security, .app, .request) but is a distinct
+    # hierarchy from galaxy.webapps.base.webapp.GalaxyWebTransaction.
+    new_session = create_new_session(trans, prev_galaxy_session, user)  # type: ignore[arg-type]
     trans.set_galaxy_session(new_session)
     trans.sa_session.add_all((prev_galaxy_session, new_session))
     trans.sa_session.commit()

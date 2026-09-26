@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class StdIOAbsenceLegacy(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             # Can only lint XML tools at this point.
@@ -36,7 +36,7 @@ class StdIOAbsenceLegacy(Linter):
 
 class StdIOAbsence(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             # Can only lint XML tools at this point.
@@ -58,7 +58,7 @@ class StdIOAbsence(Linter):
 
 class StdIORegex(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             # Can only lint XML tools at this point.

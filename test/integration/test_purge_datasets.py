@@ -1,8 +1,5 @@
 import os
 from collections.abc import Callable
-from typing import (
-    Optional,
-)
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -138,11 +135,11 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         )
         assert details["deleted"]
 
-    def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
+    def _get_underlying_dataset_on_disk(self, hda_id: str) -> str | None:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
         return detailed_response.get("file_name")
 
-    def _file_exists_on_disk(self, filename: Optional[str]) -> bool:
+    def _file_exists_on_disk(self, filename: str | None) -> bool:
         return os.path.isfile(filename) if filename else False
 
 

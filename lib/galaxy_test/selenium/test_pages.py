@@ -8,9 +8,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestPages(SeleniumTestCase):
+class TestPages(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -18,7 +19,7 @@ class TestPages(SeleniumTestCase):
     def test_simple_page_creation_edit_and_view(self):
         # Upload a file to test embedded object stuff
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         self.navigate_to_pages()
         self.screenshot("pages_grid")
@@ -190,9 +191,9 @@ class TestPages(SeleniumTestCase):
         items[-1].click()
         self.components.pages.history.revision_view.wait_for_visible()
 
-        # Oldest: "Compare to Previous" hidden, "Compare to Current" visible
-        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
+        # Wait for the newly selected revision before asserting what disappeared.
         self.components.pages.history.revision_compare_current_button.wait_for_visible()
+        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
 
         # Click "Compare to Current"
         self.components.pages.history.revision_compare_current_button.wait_for_and_click()

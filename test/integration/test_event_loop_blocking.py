@@ -64,8 +64,7 @@ class TestAiocopBlockingDetection(integration_util.IntegrationTestCase):
         response = self._get("debug/ok")
         self._assert_status_code_is(response, 200)
         assert response.json()["status"] == "ok"
-        header = response.headers.get("x-aiocop-violations", "")
-        if header:
+        if header := response.headers.get("x-aiocop-violations", ""):
             fields = dict(p.split("=", 1) for p in header.split(";") if "=" in p)
             assert (
                 int(fields.get("severity", "0")) < 50

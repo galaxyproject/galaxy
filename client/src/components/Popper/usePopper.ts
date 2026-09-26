@@ -23,10 +23,10 @@ export function usePopper(
     const openDelay = useDelayedAction(options.hoverDelay ?? DEFAULT_TOOLTIP_HOVER_DELAY_MS);
     const closeDelay = useDelayedAction(options.interactive ? INTERACTIVE_POPOVER_CLOSE_DELAY_MS : 0);
 
-    const doOpenImmediately = () => {
+    const doToggleImmediately = () => {
         openDelay.clear();
         closeDelay.clear();
-        visible.value = true;
+        visible.value = !visible.value;
     };
     const doOpen = () => {
         closeDelay.clear();
@@ -88,7 +88,7 @@ export function usePopper(
 
         const trigger = options.trigger ?? defaultTrigger;
         if (trigger === "click") {
-            addEventListener(reference.value, "click", doOpenImmediately);
+            addEventListener(reference.value, "click", doToggleImmediately);
             addEventListener(popper.value, "click", doCloseElement);
             addEventListener(document, "click", doCloseDocument);
             addEventListener(document, "keydown", doCloseEscape);

@@ -1,19 +1,29 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm>=8"]
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "dependencies",
-    "description",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-selenium"
+version = "26.1.dev0"
+description = "Galaxy Selenium interaction framework"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-navigation",
+    "galaxy-util",
+    "axe-selenium-python",
+    "PyYAML",
+    "requests",
+    "selenium!=4.11.0,!=4.11.1,!=4.11.2",
+    "playwright",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -32,5 +42,19 @@ classifiers = [
 ]
 keywords = ["Galaxy"]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
 [project.scripts]
 gx-dump-tour = "galaxy.selenium.scripts.dump_tour:main"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

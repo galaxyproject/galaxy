@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.exceptions import error_codes
@@ -221,7 +220,7 @@ class TestRolesApi(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
 
-    def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> dict[str, Any]:
+    def _create_role(self, name: str | None = None, description: str | None = None) -> dict[str, Any]:
         payload = self._build_valid_role_payload(name=name, description=description)
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
@@ -229,7 +228,7 @@ class TestRolesApi(ApiTestCase):
         self.check_role_dict(role)
         return role
 
-    def _build_valid_role_payload(self, name: Optional[str] = None, description: Optional[str] = None):
+    def _build_valid_role_payload(self, name: str | None = None, description: str | None = None):
         name = name or self.dataset_populator.get_random_name()
         description = description or f"A test role with name: {name}."
         payload = {
@@ -240,7 +239,7 @@ class TestRolesApi(ApiTestCase):
         return payload
 
     @staticmethod
-    def check_role_dict(role_dict: dict[str, Any], assert_id: Optional[str] = None) -> None:
+    def check_role_dict(role_dict: dict[str, Any], assert_id: str | None = None) -> None:
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

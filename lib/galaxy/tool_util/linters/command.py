@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class CommandMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -31,7 +31,7 @@ class CommandMissing(Linter):
 
 class CommandEmpty(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -45,7 +45,7 @@ class CommandEmpty(Linter):
 
 class CommandTODO(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -56,7 +56,7 @@ class CommandTODO(Linter):
 
 class CommandInterpreterDeprecated(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -70,15 +70,14 @@ class CommandInterpreterDeprecated(Linter):
 
 class CommandInfo(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
         command = tool_xml.find("./command")
         if command is None:
             return
-        interpreter_type = command.attrib.get("interpreter", None)
         interpreter_info = ""
-        if interpreter_type:
+        if interpreter_type := command.attrib.get("interpreter", None):
             interpreter_info = f" with interpreter of type [{interpreter_type}]"
         lint_ctx.info(f"Tool contains a command{interpreter_info}.", linter=cls.name(), node=command)

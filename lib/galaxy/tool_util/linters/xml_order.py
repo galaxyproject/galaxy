@@ -5,7 +5,6 @@ https://github.com/galaxy-iuc/standards.
 """
 
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -59,7 +58,7 @@ DATASOURCE_TAG_ORDER = [
 
 class XMLOrder(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -70,7 +69,7 @@ class XMLOrder(Linter):
         else:
             tag_ordering = TAG_ORDER
         last_tag = None
-        last_key: Optional[int] = None
+        last_key: int | None = None
         for elem in tool_root:
             tag = elem.tag
             if tag not in tag_ordering:

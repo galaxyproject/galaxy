@@ -13,8 +13,6 @@ from typing import (
     Any,
     Literal,
     NamedTuple,
-    Optional,
-    Union,
 )
 
 import yaml
@@ -44,20 +42,20 @@ class ToolRuntimeFramework(BaseModel):
     tool: str
 
 
-ToolRuntimeTest = Union[ToolRuntimeApi, ToolRuntimeFramework]
+ToolRuntimeTest = ToolRuntimeApi | ToolRuntimeFramework
 
 
 class WorkflowRuntimeTest(BaseModel):
-    api_test: Optional[str] = None
-    framework_test: Optional[str] = None
+    api_test: str | None = None
+    framework_test: str | None = None
 
 
 class ExampleTests(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    tool_runtime: Optional[ToolRuntimeTest] = None
-    workflow_runtime: Optional[WorkflowRuntimeTest] = None
-    workflow_editor: Optional[str] = None
+    tool_runtime: ToolRuntimeTest | None = None
+    workflow_runtime: WorkflowRuntimeTest | None = None
+    workflow_editor: str | None = None
 
 
 class DatasetsDeclaration(BaseModel):
@@ -112,7 +110,7 @@ class CollectionDeclarations(BaseModel):
     collections: dict[str, CollectionDefinition]
 
 
-Expression = Union[str, DatasetsDeclaration, ToolDeclaration, CollectionDeclarations]
+Expression = str | DatasetsDeclaration | ToolDeclaration | CollectionDeclarations
 
 
 # --- Structured Then Expression Models ---
@@ -170,7 +168,7 @@ class DatasetInput(BaseModel):
 class MapOverInput(BaseModel):
     type: Literal["map_over"]
     collection: str
-    sub_collection_type: Optional[str] = None
+    sub_collection_type: str | None = None
 
     def as_latex(self) -> str:
         if self.sub_collection_type:
@@ -195,9 +193,7 @@ class DatasetListInput(BaseModel):
         return "[" + ",".join(self.refs) + "]"
 
 
-InputBinding = Annotated[
-    Union[DatasetInput, MapOverInput, CollectionInput, DatasetListInput], Field(discriminator="type")
-]
+InputBinding = Annotated[DatasetInput | MapOverInput | CollectionInput | DatasetListInput, Field(discriminator="type")]
 
 
 class ToolInvocation(BaseModel):
@@ -239,9 +235,7 @@ class NestedElements(BaseModel):
         return _output_elements_to_latex(self.elements)
 
 
-OutputBinding = Annotated[
-    Union[DatasetOutput, EllipsisMarker, ToolOutputRef, NestedElements], Field(discriminator="type")
-]
+OutputBinding = Annotated[DatasetOutput | EllipsisMarker | ToolOutputRef | NestedElements, Field(discriminator="type")]
 NestedElements.model_rebuild()
 
 
@@ -256,7 +250,7 @@ class CollectionOutput(BaseModel):
         return f"\\text{{collection}}<{ct},{el}>"
 
 
-OutputSpec = Annotated[Union[DatasetOutput, CollectionOutput], Field(discriminator="type")]
+OutputSpec = Annotated[DatasetOutput | CollectionOutput, Field(discriminator="type")]
 
 
 class MapOverThen(BaseModel):
@@ -294,22 +288,22 @@ class InvalidThen(BaseModel):
         return self.invocation.as_latex()
 
 
-ThenExpression = Annotated[Union[MapOverThen, ReductionThen, EquivalenceThen, InvalidThen], Field(discriminator="type")]
+ThenExpression = Annotated[MapOverThen | ReductionThen | EquivalenceThen | InvalidThen, Field(discriminator="type")]
 
 
 class Example(BaseModel):
     label: str
-    assumptions: Optional[list[Expression]] = None
-    then: Optional[ThenExpression] = None
+    assumptions: list[Expression] | None = None
+    then: ThenExpression | None = None
     is_valid: bool = True
-    tests: Optional[ExampleTests] = None
+    tests: ExampleTests | None = None
 
 
 class ExampleEntry(BaseModel):
     example: Example
 
 
-YAMLRootModel = RootModel[list[Union[DocEntry, ExampleEntry]]]
+YAMLRootModel = RootModel[list[DocEntry | ExampleEntry]]
 
 
 WORDS_TO_TEXTIFY = ["list", "forward", "reverse", "mapOver", "collection", "dataset", "inner"]
@@ -346,7 +340,7 @@ def expression_to_latex(expression: str, wrap: bool = True):
 def collect_docs_with_examples(root: YAMLRootModel) -> list[tuple[DocEntry, list[ExampleEntry]]]:
     docs_with_examples = []
 
-    current_doc: Optional[DocEntry] = None
+    current_doc: DocEntry | None = None
     current_examples: list[ExampleEntry] = []
     for entry in root.root:
         if isinstance(entry, DocEntry):
@@ -391,7 +385,7 @@ def check() -> list[str]:
     return errors
 
 
-def _validate_api_test_ref(label: str, ref: str, api_test_dir: str) -> Optional[str]:
+def _validate_api_test_ref(label: str, ref: str, api_test_dir: str) -> str | None:
     parts = ref.split("::")
     filename = parts[0]
     filepath = os.path.join(api_test_dir, filename)
@@ -422,7 +416,7 @@ def _validate_api_test_ref(label: str, ref: str, api_test_dir: str) -> Optional[
     return None
 
 
-def _validate_framework_test_ref(label: str, ref: str, workflow_dir: str) -> Optional[str]:
+def _validate_framework_test_ref(label: str, ref: str, workflow_dir: str) -> str | None:
     """Validate a framework test ref like 'collection_semantics_cat_0'."""
     parts = ref.rsplit("_", 1)
     if len(parts) != 2 or not parts[1].isdigit():
@@ -518,7 +512,6 @@ def generate_docs():
                 markdown_content.write(f"({example_entry.example.label})=\n")
             markdown_content.write("<details><summary>Examples</summary>")
             for example_entry in examples:
-
                 example = example_entry.example
                 markdown_content.write("\n\n")
                 markdown_content.write(f":::{{admonition}} Example: `{example.label}` \n")

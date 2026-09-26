@@ -74,7 +74,6 @@ class BaseModelTestCase(TestCase):
 
 
 class TestMappings(BaseModelTestCase):
-
     def test_dataset_instance_order(self) -> None:
         u = model.User(email=random_email(), password="password")
         h1 = model.History(name="History 1", user=u)

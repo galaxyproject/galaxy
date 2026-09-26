@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from collections.abc import Callable
@@ -5,7 +6,6 @@ from functools import wraps
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 from urllib.parse import urljoin
 
@@ -35,7 +35,7 @@ def get_admin_api_key() -> str:
     return DEFAULT_TOOL_SHED_BOOTSTRAP_ADMIN_API_KEY
 
 
-def get_user_api_key() -> Optional[str]:
+def get_user_api_key() -> str | None:
     """Test user API key to use for functional tests.
 
     If set, this should drive API based testing - if not set an admin API key will
@@ -115,9 +115,7 @@ def create_user(admin_interactor: ShedApiInteractor, user_dict: dict[str, Any], 
     return response.json()
 
 
-def ensure_user_with_email(
-    admin_api_interactor: ShedApiInteractor, email: str, password: Optional[str]
-) -> dict[str, Any]:
+def ensure_user_with_email(admin_api_interactor: ShedApiInteractor, email: str, password: str | None) -> dict[str, Any]:
     all_users_response = admin_api_interactor.get("users")
     try:
         all_users_response.raise_for_status()
@@ -138,3 +136,23 @@ def ensure_user_with_email(
 def email_to_username(email: str) -> str:
     """Pattern used for test user generation - does not use the API."""
     return re.sub(r"[^a-z-\d]", "--", email.lower())
+
+
+def mock_mailbox_path() -> str:
+    email_path = os.environ.get("TOOL_SHED_TEST_EMAIL_PATH")
+    assert email_path, "Tool shed test driver did not configure a mock mailbox"
+    return email_path
+
+
+def reset_password_link(expected_to: str) -> str:
+    with open(mock_mailbox_path()) as f:
+        email = json.load(f)
+    assert email["to"] == expected_to, f"Mailbox holds an email to {email['to']}, expected one to {expected_to}"
+    assert email["subject"] == "Tool Shed Password Reset"
+    match = re.search(r"https?://\S+/user/reset_password\?token=\w+", email["body"])
+    assert match, f"No password reset link found in email body:\n{email['body']}"
+    return match.group(0)
+
+
+def reset_password_token(expected_to: str) -> str:
+    return reset_password_link(expected_to).split("token=")[1]

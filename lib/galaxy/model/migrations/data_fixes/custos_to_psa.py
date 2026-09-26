@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import (
     cast,
-    Optional,
 )
 
 import jwt
@@ -26,7 +25,7 @@ PSA_TABLE = "oidc_user_authnz_tokens"
 CUSTOS_ASSOC_TYPE = "custos_migrated"
 
 
-def _extract_iat_from_token(token: Optional[str]) -> Optional[int]:
+def _extract_iat_from_token(token: str | None) -> int | None:
     """
     Extract the 'iat' (issued at) claim from a JWT token.
     Returns None if the token cannot be decoded or doesn't have an iat claim.
@@ -70,8 +69,8 @@ def get_psa_table(connection: Connection) -> Table:
 
 def migrate_custos_tokens_to_psa(
     connection: Connection,
-    custos_table: Optional[Table] = None,
-    psa_table: Optional[Table] = None,
+    custos_table: Table | None = None,
+    psa_table: Table | None = None,
 ) -> int:
     """
     Transform Custos tokens into PSA tokens and insert them into oidc_user_authnz_tokens.
@@ -151,8 +150,8 @@ def migrate_custos_tokens_to_psa(
 
 def remove_migrated_psa_tokens(
     connection: Connection,
-    custos_table: Optional[Table] = None,
-    psa_table: Optional[Table] = None,
+    custos_table: Table | None = None,
+    psa_table: Table | None = None,
 ) -> int:
     """
     Remove PSA tokens that were created during the Custos migration.
@@ -183,8 +182,8 @@ def remove_migrated_psa_tokens(
 
 def restore_custos_tokens_from_psa(
     connection: Connection,
-    custos_table: Optional[Table] = None,
-    psa_table: Optional[Table] = None,
+    custos_table: Table | None = None,
+    psa_table: Table | None = None,
 ) -> int:
     """
     Restore Custos tokens from PSA rows that originated from the migration.

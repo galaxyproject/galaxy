@@ -150,7 +150,7 @@ To get started with setting up local data, please see [Data Integration](https:/
 * The `galaxy_dist/tool-data/` directory contains a set of sample location (`<data_label>.loc`) files that describe the metadata and path to local data and indexes.
 * Installed tool packages from the [Tool Shed](https://galaxyproject.org/toolshed/) may also include location files.
 * Comments in location files explain the expected format.
-* [Data Integration](https://galaxyproject.org/admin/data-integration/) explain how to obtain, create, or rysnc many common data and indexes. See an individual Tool Shed repository's documentation for more details.
+* [Data Integration](https://galaxyproject.org/admin/data-integration/) explain how to obtain, create, or rsync many common data and indexes. See an individual Tool Shed repository's documentation for more details.
 
 ### Enable upload via FTP
 

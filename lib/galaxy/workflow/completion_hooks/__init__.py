@@ -16,7 +16,6 @@ Hooks are automatically discovered via the plugin_type attribute.
 
 import logging
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -75,7 +74,7 @@ class WorkflowCompletionHookRegistry:
         """
         return list(self.hooks.keys())
 
-    def get_hook(self, name: str) -> Optional[WorkflowCompletionHook]:
+    def get_hook(self, name: str) -> WorkflowCompletionHook | None:
         """
         Get a hook instance by name.
 

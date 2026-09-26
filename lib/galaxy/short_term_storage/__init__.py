@@ -17,8 +17,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 from uuid import (
     UUID,
@@ -53,17 +51,17 @@ class ShortTermStorageConfiguration:
 
 @dataclass
 class ShortTermStorageTargetSecurity:
-    user_id: Optional[int] = None
-    session_id: Optional[int] = None
+    user_id: int | None = None
+    session_id: int | None = None
 
-    def to_dict(self) -> dict[str, Optional[int]]:
+    def to_dict(self) -> dict[str, int | None]:
         return {
             "user_id": self.user_id,
             "session_id": self.session_id,
         }
 
     @classmethod
-    def from_dict(self, as_dict: dict[str, Optional[int]]) -> "ShortTermStorageTargetSecurity":
+    def from_dict(self, as_dict: dict[str, int | None]) -> "ShortTermStorageTargetSecurity":
         return ShortTermStorageTargetSecurity(
             user_id=as_dict.get("user_id"),
             session_id=as_dict.get("session_id"),
@@ -93,7 +91,7 @@ class ShortTermStorageServeCompletedInformation:
 class ShortTermStorageServeCancelledInformation:
     target: ShortTermStorageTarget
     status_code: int
-    exception: Optional[dict[str, Any]]
+    exception: dict[str, Any] | None
 
     @property
     def message_exception(self) -> MessageException:
@@ -107,9 +105,7 @@ class ShortTermStorageServeCancelledInformation:
         return exception_obj
 
 
-ShortTermStorageServeInformation = Union[
-    ShortTermStorageServeCompletedInformation, ShortTermStorageServeCancelledInformation
-]
+ShortTermStorageServeInformation = ShortTermStorageServeCompletedInformation | ShortTermStorageServeCancelledInformation
 
 
 class ShortTermStorageAllocator(metaclass=abc.ABCMeta):
@@ -119,8 +115,8 @@ class ShortTermStorageAllocator(metaclass=abc.ABCMeta):
         self,
         filename: str,
         mime_type: str,
-        duration: Optional[int] = None,
-        security: Optional[ShortTermStorageTargetSecurity] = None,
+        duration: int | None = None,
+        security: ShortTermStorageTargetSecurity | None = None,
     ) -> ShortTermStorageTarget:
         """Return a new ShortTermStorageTarget for this short term file request."""
 
@@ -139,7 +135,7 @@ class ShortTermStorageMonitor(metaclass=abc.ABCMeta):
         """Indicate the file is ready to be served."""
 
     @abc.abstractmethod
-    def cancel(self, target: ShortTermStorageTarget, exception: Optional[MessageException] = None) -> None:
+    def cancel(self, target: ShortTermStorageTarget, exception: MessageException | None = None) -> None:
         """Store metadata for failed task.
 
         Implementation is responsible for indicating target is finalized as well.
@@ -167,7 +163,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         filename: str,
         mime_type: str,
         duration: OptionalNumberT = None,
-        security: Optional[ShortTermStorageTargetSecurity] = None,
+        security: ShortTermStorageTargetSecurity | None = None,
     ) -> ShortTermStorageTarget:
         if security is None:
             security = ShortTermStorageTargetSecurity()
@@ -223,7 +219,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
             )
         return serve_info
 
-    def cancel(self, target: ShortTermStorageTarget, exception: Optional[MessageException] = None):
+    def cancel(self, target: ShortTermStorageTarget, exception: MessageException | None = None):
         """Write metadata for failed task."""
         if exception:
             exception_json = {
@@ -266,7 +262,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         except ObjectNotFound:
             return None
 
-    def _directory(self, target: Union[UUID, ShortTermStorageTarget]) -> Path:
+    def _directory(self, target: UUID | ShortTermStorageTarget) -> Path:
         if isinstance(target, ShortTermStorageTarget):
             request_id = target.request_id
         else:

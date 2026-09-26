@@ -2,7 +2,9 @@ from unittest import mock
 
 import pytest
 
+from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
 from galaxy.agents.operations import AgentOperationsManager
+from galaxy.schema.fields import Security
 from .base import BaseTestCase
 
 
@@ -156,6 +158,61 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["collection"]["elements_truncated"] is True
         assert result["collection"]["total_elements"] == 10
 
+    def test_get_job_errors_keeps_both_ends_of_a_long_log(self):
+        """The failure is at the tail, so a head slice would drop the useful part."""
+        job = mock.MagicMock()
+        job.stderr = "HEAD_MARKER\n" + ("noise\n" * 5000) + "TAIL_MARKER: out of memory"
+        job.stdout = "short stdout"
+        job.info = "short info"
+        job.tool_id = "ngm"
+        job.tool_version = "1.0"
+        job.state = "error"
+        job.exit_code = 137
+        job.id = 42
+
+        hda = mock.MagicMock()
+        hda.creating_job = job
+
+        with (
+            mock.patch.object(self.agent_ops.hda_manager, "get_accessible", return_value=hda),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+            mock.patch.object(self.trans.security, "encode_id", return_value="enc42"),
+        ):
+            result = self.agent_ops.get_job_errors("encoded_dataset_id")
+
+        assert len(result["stderr"]) <= JOB_LOG_EXCERPT_CHARS
+        assert "HEAD_MARKER" in result["stderr"]
+        assert "TAIL_MARKER" in result["stderr"]
+        assert result["truncated"] is True
+        # Streams that fit are passed through untouched.
+        assert result["stdout"] == "short stdout"
+        assert result["info"] == "short info"
+
+    def test_get_job_errors_counts_info_toward_the_truncated_flag(self):
+        """Job.info is a TrimmedString(255), but that only trims on the way to the DB."""
+        job = mock.MagicMock()
+        job.stderr = "short stderr"
+        job.stdout = "short stdout"
+        job.info = "I" * 50000
+        job.tool_id = "ngm"
+        job.tool_version = "1.0"
+        job.state = "error"
+        job.exit_code = 1
+        job.id = 42
+
+        hda = mock.MagicMock()
+        hda.creating_job = job
+
+        with (
+            mock.patch.object(self.agent_ops.hda_manager, "get_accessible", return_value=hda),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+            mock.patch.object(self.trans.security, "encode_id", return_value="enc42"),
+        ):
+            result = self.agent_ops.get_job_errors("encoded_dataset_id")
+
+        assert len(result["info"]) <= JOB_LOG_EXCERPT_CHARS
+        assert result["truncated"] is True
+
     def test_get_workflow_details_with_version(self):
         mock_workflow = mock.MagicMock()
 
@@ -216,6 +273,44 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert "True" in filter_params.qv
         assert "False" in filter_params.qv
 
+    def test_get_history_graph_forwards_args_and_returns_dump(self):
+        fake_response = mock.MagicMock()
+        fake_response.model_dump.return_value = {
+            "nodes": [{"id": "d-abc", "type": "dataset", "hid": 1}],
+            "edges": [],
+            "truncated": {"item_count_capped": False, "scope_type": "recent"},
+        }
+        mock_service = mock.MagicMock()
+        mock_service.graph.return_value = fake_response
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            result = self.agent_ops.get_history_graph(
+                history_id="hist-encoded",
+                seed_src="hda",
+                seed_id="abc",
+                direction="backward",
+                depth=3,
+                limit=100,
+            )
+
+        mock_service.graph.assert_called_once()
+        call_kwargs = mock_service.graph.call_args.kwargs
+        assert call_kwargs["history_id"] == 42
+        assert call_kwargs["seed_src"] == "hda"
+        assert call_kwargs["seed_id"] == "abc"
+        assert call_kwargs["direction"] == "backward"
+        assert call_kwargs["depth"] == 3
+        assert call_kwargs["limit"] == 100
+        assert call_kwargs["include_deleted"] is False
+
+        assert result["truncated"]["item_count_capped"] is False
+        assert result["nodes"][0]["id"] == "d-abc"
+
     def test_get_tool_run_examples_with_version(self):
         mock_tool_v1 = mock.MagicMock()
         mock_tool_v1.id = "cat1"
@@ -230,6 +325,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool_v2.tests = []
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.side_effect = lambda tid, tool_version=None: (
             mock_tool_v2 if tool_version == "2.0" else mock_tool_v1
         )
@@ -247,6 +343,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         self.app.toolbox_search = mock.MagicMock()
         self.app.toolbox_search.search.return_value = ["upload1"]
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.search_tools("upload")
@@ -265,6 +362,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool.help = "Help text"
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.get_tool_details("cat1")
@@ -275,6 +373,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
     def test_get_tool_details_not_found(self):
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = None
 
         with pytest.raises(ValueError, match="not found"):
@@ -381,3 +480,190 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         with pytest.raises(ValueError, match="User must be authenticated"):
             agent_ops.list_user_file_sources()
+
+
+class TestAgentOperationsManagerPages(BaseTestCase):
+    """Page (notebook/report) operations against a mocked PagesService."""
+
+    def set_up_managers(self):
+        super().set_up_managers()
+        # DecodedDatabaseIdField on page payloads decodes via the module-global
+        # Security.security; point it at the same helper trans uses to encode.
+        Security.security = self.trans.security
+        self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+    def _mock_pages_service(self, mock_service):
+        return mock.patch.object(
+            type(self.agent_ops), "pages_service", new_callable=lambda: property(lambda self: mock_service)
+        )
+
+    def test_list_pages_defaults_to_own_only(self):
+        pages = mock.MagicMock()
+        pages.model_dump.return_value = []
+        pages.root = []
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = (pages, 0)
+
+        with self._mock_pages_service(mock_service):
+            result = self.agent_ops.list_pages()
+
+        payload = mock_service.index.call_args.args[1]
+        assert payload.show_own is True
+        assert payload.show_published is False
+        assert payload.show_shared is False
+        assert payload.history_id is None
+        assert result["count"] == 0
+        assert result["total_matches"] == 0
+
+    def test_list_pages_history_filter(self):
+        encoded_history_id = self.trans.security.encode_id(42)
+        pages = mock.MagicMock()
+        pages.model_dump.return_value = []
+        pages.root = []
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = (pages, 5)
+
+        with self._mock_pages_service(mock_service):
+            result = self.agent_ops.list_pages(history_id=encoded_history_id)
+
+        payload = mock_service.index.call_args.args[1]
+        assert payload.history_id == 42
+        assert result["total_matches"] == 5
+
+    def test_get_page_drops_rendered_by_default(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.get_page("encoded_page")
+
+        assert result["content_editor"] == "# Notes"
+        assert "content" not in result
+        mock_service.show.assert_called_once_with(self.trans, 7)
+
+    def test_get_page_includes_rendered_when_requested(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.get_page("encoded_page", include_rendered=True)
+
+        assert result["content"] == "<rendered>"
+
+    def test_create_page_sets_markdown_format(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.create.return_value = details
+
+        with self._mock_pages_service(mock_service):
+            self.agent_ops.create_page(title="Report", content="# Hi", slug="my-report")
+
+        payload = mock_service.create.call_args.args[1]
+        assert payload.content_format == "markdown"
+        assert payload.title == "Report"
+        assert payload.slug == "my-report"
+        assert payload.history_id is None
+
+    def test_create_page_with_history_decodes_id(self):
+        encoded_history_id = self.trans.security.encode_id(99)
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.create.return_value = details
+
+        with self._mock_pages_service(mock_service):
+            self.agent_ops.create_page(history_id=encoded_history_id, content="# Hi")
+
+        payload = mock_service.create.call_args.args[1]
+        assert payload.history_id == 99
+        assert payload.content_format == "markdown"
+
+    def test_update_page_sets_edit_source_agent(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.update.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            self.agent_ops.update_page("encoded_page", content="# New")
+
+        call = mock_service.update.call_args
+        assert call.args[1] == 7
+        payload = call.args[2]
+        assert payload.edit_source == "agent"
+        assert payload.content == "# New"
+
+    def test_list_page_revisions(self):
+        revisions = mock.MagicMock()
+        revisions.model_dump.return_value = [{"id": "r1"}]
+        revisions.root = [{"id": "r1"}]
+        mock_service = mock.MagicMock()
+        mock_service.list_revisions.return_value = revisions
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.list_page_revisions("encoded_page")
+
+        mock_service.list_revisions.assert_called_once_with(self.trans, 7, sort_desc=False)
+        assert result["count"] == 1
+
+    def test_get_page_revision_drops_rendered_by_default(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.get_page_revision("encoded_page", "encoded_rev")
+
+        mock_service.show_revision.assert_called_once_with(self.trans, 7, 3)
+        assert result["content_editor"] == "# Notes"
+        assert "content" not in result
+
+    def test_get_page_revision_includes_rendered_when_requested(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.get_page_revision("encoded_page", "encoded_rev", include_rendered=True)
+
+        assert result["content"] == "<rendered>"
+
+    def test_revert_page_revision_returns_restore(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r2", "edit_source": "restore"}
+        mock_service = mock.MagicMock()
+        mock_service.revert_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.revert_page_revision("encoded_page", "encoded_rev")
+
+        mock_service.revert_revision.assert_called_once_with(self.trans, 7, 3)
+        assert result["edit_source"] == "restore"

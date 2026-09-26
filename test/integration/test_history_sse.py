@@ -4,8 +4,12 @@ import json
 from urllib.parse import urljoin
 from uuid import uuid4
 
+from galaxy.util.wait import wait_on
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.base.sse import SSELineListener
+from galaxy_test.base.sse import (
+    DEFAULT_WAIT_TIMEOUT,
+    SSELineListener,
+)
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -94,27 +98,41 @@ class TestHistorySSEIntegration(IntegrationTestCase):
             )
             self._assert_status_code_is(unsub_resp, 204)
 
-            # Drain previously-collected events so a *new* mutation can be
-            # distinguished. Then mutate B's history again, and prove no
-            # events for it land within the wait window — driven by waiting
-            # for an event for A's *own* history (positive assertion to avoid
-            # sleep-based flakes), then asserting B's id is absent.
+            # The unsubscribe is applied asynchronously by the control queue,
+            # whose single consumer can lag by seconds (e.g. while it runs the
+            # startup toolbox search index rebuild), and B's first upload job
+            # keeps changing B's history, so events for B dispatched before
+            # the DELETE can still reach A after it returns. Control tasks are
+            # consumed in order: once an event for
+            # A's own history mutated after the DELETE arrives, the unsubscribe
+            # has been applied and every earlier event has been delivered.
             user_a_history_id = self.dataset_populator.new_history(name=f"test_history_{uuid4()}")
+
+            def is_user_a_event(e):
+                return user_a_history_id in json.loads(e["data"]).get("history_ids", [])
+
+            self.dataset_populator.new_dataset(user_a_history_id, wait=False)
+            listener.wait_for_event_where("history_update", is_user_a_event)
             baseline_count = len(listener.get_events("history_update"))
+
+            # Mutate B's history again, and prove no events for it land within
+            # the wait window — driven by waiting for a new event for A's *own*
+            # history (positive assertion to avoid sleep-based flakes), then
+            # asserting B's id is absent.
             user_b_populator.new_dataset(user_b_history_id, content="post-unsubscribe", wait=False)
             self.dataset_populator.new_dataset(user_a_history_id, wait=False)
-            listener.wait_for_event_where(
-                "history_update",
-                lambda e: user_a_history_id in json.loads(e["data"]).get("history_ids", []),
-            )
-            after_events = listener.get_events("history_update")[baseline_count:]
+
+            def new_user_a_events():
+                events = listener.get_events("history_update")[baseline_count:]
+                return events if any(is_user_a_event(e) for e in events) else None
+
+            after_events = wait_on(new_user_a_events, "new history_update for User A's history", DEFAULT_WAIT_TIMEOUT)
             seen_b_after_unsub = any(
                 user_b_history_id in json.loads(e["data"]).get("history_ids", []) for e in after_events
             )
-            assert not seen_b_after_unsub, (
-                "User A still received history_update events for User B's history "
-                f"after unsubscribing: {after_events}"
-            )
+            assert (
+                not seen_b_after_unsub
+            ), f"User A still received history_update events for User B's history after unsubscribing: {after_events}"
         finally:
             listener.stop()
 

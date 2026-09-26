@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "@/utils/zoomLevels";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps({
     zoomLevel: { type: Number, default: 1 },
@@ -28,39 +32,44 @@ function onZoomReset() {
 </script>
 
 <template>
-    <span class="zoom-control float-right btn-group-horizontal">
-        <b-button
+    <div class="zoom-control float-right">
+        <GButton
             :disabled="isMinZoom(props.zoomLevel)"
-            role="button"
-            class="fa fa-minus"
             title="Zoom Out"
-            size="sm"
+            size="small"
+            outline
+            icon-only
             aria-label="Zoom Out"
-            @click="onZoomOut" />
-        <b-button
-            v-b-tooltip.hover
-            role="button"
+            @click="onZoomOut">
+            <FontAwesomeIcon :icon="faMinus" fixed-width />
+        </GButton>
+        <GButton
+            tooltip
             class="zoom-reset"
-            variant="light"
+            outline
             title="Reset Zoom Level"
-            size="sm"
+            pill
+            size="small"
             aria-label="Reset Zoom Level"
             @click="onZoomReset">
             {{ zoomPercentage }}%
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             :disabled="isMaxZoom(props.zoomLevel)"
-            role="button"
-            class="fa fa-plus"
             title="Zoom In"
-            size="sm"
+            size="small"
+            outline
+            icon-only
             aria-label="Zoom In"
-            @click="onZoomIn" />
-    </span>
+            @click="onZoomIn">
+            <FontAwesomeIcon :icon="faPlus" fixed-width />
+        </GButton>
+    </div>
 </template>
 
 <style scoped>
 .zoom-reset {
+    display: block;
     width: 4rem;
 }
 .zoom-control {
@@ -69,5 +78,8 @@ function onZoomReset() {
     bottom: 1rem;
     cursor: pointer;
     z-index: 2000;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 </style>

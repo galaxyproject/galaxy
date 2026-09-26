@@ -2,6 +2,7 @@
  * List of built-in activities
  */
 import {
+    faBezierCurve,
     faChartBar,
     faColumns,
     faComments,
@@ -27,29 +28,16 @@ import type { EventData } from "@/stores/eventStore";
 export const defaultActivities = [
     {
         anonymous: true,
-        description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
+        description: "Opens the upload panel for importing data from files, pasted content, or remote sources.",
         icon: faUpload,
         id: "upload",
         mutable: false,
         optional: false,
-        panel: false,
+        panel: true,
         title: "Upload",
         to: null,
-        tooltip: "Download from URL or upload files from disk",
+        tooltip: "Import data",
         visible: true,
-    },
-    {
-        anonymous: true,
-        description: "Opens the new beta upload interface with experimental features.",
-        icon: faUpload,
-        id: "beta-upload",
-        mutable: false,
-        optional: true,
-        panel: true,
-        title: "Beta Upload",
-        to: null,
-        tooltip: "Try the new experimental upload interface",
-        visible: false,
     },
     {
         anonymous: true,
@@ -142,6 +130,19 @@ export const defaultActivities = [
         title: "Histories",
         tooltip: "Show all histories",
         to: "/histories/list",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Lists histories to open in the History Graph view.",
+        icon: faBezierCurve,
+        id: "historygraph",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "History Graphs",
+        tooltip: "Pick a history to view its provenance graph",
+        to: null,
         visible: true,
     },
     {

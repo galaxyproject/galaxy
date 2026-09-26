@@ -3,7 +3,6 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import (
@@ -69,7 +68,7 @@ class DatasetStorageOperationFailureReasonCode(str, Enum):
 class StorageOperationPreviewRequest(Model):
     mode: StorageOperationMode
     target_object_store_id: str
-    items: Optional[list[dict[str, Any]]] = None
+    items: list[dict[str, Any]] | None = None
 
 
 class StorageOperationSelectionCounts(Model):
@@ -103,7 +102,7 @@ class StorageOperationQuotaProjectionSummary(Model):
 class StorageOperationEstimateSummary(Model):
     bytes_to_transfer: int = 0
     quota_delta_transfers: list[StorageOperationQuotaDeltaTransfer] = Field(default_factory=list)
-    quota_projection: Optional[StorageOperationQuotaProjectionSummary] = None
+    quota_projection: StorageOperationQuotaProjectionSummary | None = None
 
 
 class StorageOperationPreviewResponse(Model):
@@ -117,7 +116,7 @@ class StorageOperationPreviewResponse(Model):
 
 class StorageOperationExecutePolicy(Model):
     skip_ineligible: bool = True
-    max_retries: Optional[int] = None
+    max_retries: int | None = None
 
 
 class StorageOperationExecuteRequest(Model):
@@ -138,13 +137,13 @@ class StorageOperationRunSummary(Model):
     failed_count: int
     skipped_count: int
     total_bytes_processed: int
-    task_id: Optional[UUID4] = None
+    task_id: UUID4 | None = None
 
 
 class StorageOperationRunItemStatus(Model):
     dataset_id: EncodedDatabaseIdField
     state: StorageOperationRunItemState
-    reason_code: Optional[DatasetStorageOperationFailureReasonCode] = None
+    reason_code: DatasetStorageOperationFailureReasonCode | None = None
     bytes_processed: int
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField

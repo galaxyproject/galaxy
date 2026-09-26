@@ -3,17 +3,16 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class AgentService:
         self.job_manager = job_manager
         self.registry = registry
 
-    def create_dependencies(self, trans: ProvidesUserContext, user: User) -> GalaxyAgentDependencies:
+    def create_dependencies(self, trans: SessionRequestContext, user: User) -> GalaxyAgentDependencies:
         """Create agent dependencies for dependency injection."""
         toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
         return GalaxyAgentDependencies(
@@ -48,9 +47,9 @@ class AgentService:
         self,
         agent_type: str,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
@@ -97,9 +96,9 @@ class AgentService:
     async def route_and_execute(
         self,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
         """

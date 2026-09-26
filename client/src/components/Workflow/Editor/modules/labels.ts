@@ -1,6 +1,8 @@
 // abstractions for dealing with workflows labels and
 // connecting them to the Markdown editor
 
+import type { Steps } from "@/stores/workflowStepStore";
+
 type WorkflowLabelKind = "input" | "output" | "step";
 
 export interface WorkflowLabel {
@@ -8,19 +10,9 @@ export interface WorkflowLabel {
     type: WorkflowLabelKind;
 }
 
-interface StepOutput {
-    label?: string;
-}
-
-interface Step {
-    label?: string;
-    type: string;
-    workflow_outputs?: StepOutput[];
-}
-
 export type WorkflowLabels = WorkflowLabel[];
 
-export function fromSteps(steps?: Step[]): WorkflowLabels {
+export function fromSteps(steps?: Steps): WorkflowLabels {
     const labels: WorkflowLabels = [];
     if (steps) {
         Object.values(steps).forEach((step) => {

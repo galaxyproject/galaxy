@@ -5,13 +5,11 @@ Provides search over Galaxy Training Network tutorials and FAQs
 using SQLite FTS5 full-text search with BM25 ranking.
 """
 
-import http.client
 import logging
 import os
 import re
 import shutil
 import sqlite3
-import urllib.request
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -22,8 +20,13 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
+from urllib.parse import (
+    unquote,
+    urlparse,
+)
+
+from galaxy.util import requests
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
 GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
@@ -41,7 +44,7 @@ _ONE_SECOND = timedelta(seconds=1)
 log = logging.getLogger(__name__)
 
 
-def _parse_last_modified(header: Optional[str]) -> Optional[datetime]:
+def _parse_last_modified(header: str | None) -> datetime | None:
     """Parse an HTTP Last-Modified header into an aware UTC datetime, or None."""
     if not header:
         return None
@@ -54,12 +57,24 @@ def _parse_last_modified(header: Optional[str]) -> Optional[datetime]:
     return parsed
 
 
+def _file_url_path(url: str) -> Path | None:
+    """Return the local path for a ``file://`` URL, or None for any other scheme."""
+    parsed_url = urlparse(url)
+    if parsed_url.scheme == "file":
+        return Path(unquote(parsed_url.path))
+    return None
+
+
+def _mtime_utc(path: Path) -> datetime:
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+
+
 def _escape_like(value: str) -> str:
     """Escape SQLite LIKE metacharacters so tool names match literally."""
     return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
-def _or_form(fts_query: str) -> Optional[str]:
+def _or_form(fts_query: str) -> str | None:
     """OR-joined fallback for a multi-token FTS5 query, or None.
 
     Returns None for quoted phrases (preserve as-is) and single-token
@@ -178,7 +193,7 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: Optional[str] = None, download_url: Optional[str] = None):
+    def __init__(self, db_path: str | None = None, download_url: str | None = None):
         if db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
@@ -201,7 +216,7 @@ class GTNSearchDB:
             raise RuntimeError(f"Failed to initialize GTN database: {e}") from e
 
     @staticmethod
-    def _read_meta(cursor: sqlite3.Cursor, key: str) -> Optional[str]:
+    def _read_meta(cursor: sqlite3.Cursor, key: str) -> str | None:
         try:
             cursor.execute("SELECT value FROM metadata WHERE key = ?", (key,))
         except sqlite3.Error:
@@ -222,14 +237,12 @@ class GTNSearchDB:
         self._download_database()
 
     @classmethod
-    def refresh_database(cls, db_path: str | Path, download_url: Optional[str] = None) -> dict[str, Any]:
+    def refresh_database(cls, db_path: str | Path, download_url: str | None = None) -> dict[str, Any]:
         """Download, validate, and atomically replace a GTN database without opening the old copy."""
         return cls._download_database_to_path(Path(db_path), download_url or GTN_DATABASE_URL)
 
     @classmethod
-    def refresh_database_if_stale(
-        cls, db_path: str | Path, download_url: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+    def refresh_database_if_stale(cls, db_path: str | Path, download_url: str | None = None) -> dict[str, Any] | None:
         """HEAD the URL and re-download only if its Last-Modified is newer than the local file's mtime.
 
         Returns the new metadata dict when a refresh happened, ``None`` when the
@@ -252,17 +265,24 @@ class GTNSearchDB:
         return cls._download_database_to_path(target, url)
 
     @staticmethod
-    def _remote_last_modified(url: str) -> Optional[datetime]:
+    def _remote_last_modified(url: str) -> datetime | None:
         """HEAD ``url`` and return its parsed Last-Modified, or None on failure."""
+        if (source_path := _file_url_path(url)) is not None:
+            try:
+                return _mtime_utc(source_path)
+            except OSError as e:
+                log.debug(f"GTN freshness check failed for {url}: {e}")
+                return None
         try:
-            req = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(req, timeout=GTN_FRESHNESS_TIMEOUT_SECONDS) as resp:
-                header = resp.headers.get("Last-Modified")
-        except (OSError, ValueError, http.client.HTTPException) as e:
-            # http.client.HTTPException covers malformed responses
-            # (RemoteDisconnected, BadStatusLine) that urllib doesn't wrap
-            # into URLError -- without it the periodic queue would record a
-            # failed run instead of falling through to a full download.
+            with requests.Session() as session:
+                with session.head(
+                    url,
+                    allow_redirects=True,
+                    timeout=GTN_FRESHNESS_TIMEOUT_SECONDS,
+                ) as response:
+                    response.raise_for_status()
+                    header = response.headers.get("Last-Modified")
+        except (ValueError, requests.exceptions.RequestException) as e:
             log.debug(f"GTN freshness HEAD failed for {url}: {e}")
             return None
         return _parse_last_modified(header)
@@ -274,21 +294,33 @@ class GTNSearchDB:
         tmp_path.unlink(missing_ok=True)
         try:
             log.info(f"Downloading GTN database from {download_url} ...")
-            with urllib.request.urlopen(download_url, timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS) as response:
-                last_modified_header = response.headers.get("Last-Modified")
-                with open(tmp_path, "wb") as out:
-                    shutil.copyfileobj(response, out)
+            remote_dt: datetime | None
+            if (source_path := _file_url_path(download_url)) is not None:
+                remote_dt = _mtime_utc(source_path)
+                with source_path.open("rb") as source, open(tmp_path, "wb") as out:
+                    shutil.copyfileobj(source, out)
+            else:
+                with requests.Session() as session:
+                    with session.get(
+                        download_url,
+                        stream=True,
+                        timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS,
+                    ) as response:
+                        response.raise_for_status()
+                        remote_dt = _parse_last_modified(response.headers.get("Last-Modified"))
+                        response.raw.decode_content = True
+                        with open(tmp_path, "wb") as out:
+                            shutil.copyfileobj(response.raw, out)
             metadata = cls._validate_database_file(tmp_path)
             # Stamp the file with depot's Last-Modified so the next stale check
             # compares against the upstream mtime rather than "right now", which
             # would also drift with any local clock skew.
-            remote_dt = _parse_last_modified(last_modified_header)
             if remote_dt is not None:
                 remote_ts = remote_dt.timestamp()
                 os.utime(tmp_path, (remote_ts, remote_ts))
             tmp_path.replace(db_path)
             return metadata
-        except (OSError, sqlite3.Error) as e:
+        except (OSError, sqlite3.Error, requests.exceptions.RequestException) as e:
             tmp_path.unlink(missing_ok=True)
             raise FileNotFoundError(f"GTN database download failed for {db_path}: {e}") from e
 
@@ -325,8 +357,8 @@ class GTNSearchDB:
         self,
         query: str,
         limit: int = 5,
-        topic: Optional[str] = None,
-        difficulty: Optional[str] = None,
+        topic: str | None = None,
+        difficulty: str | None = None,
         hands_on_only: bool = False,
     ) -> list[SearchResult]:
         """Search tutorials using FTS5 full-text search with optional filters."""
@@ -414,8 +446,8 @@ class GTNSearchDB:
         self,
         query: str,
         limit: int = 5,
-        category: Optional[str] = None,
-        area: Optional[str] = None,
+        category: str | None = None,
+        area: str | None = None,
     ) -> list[FAQResult]:
         """Search FAQs using FTS5 full-text search with optional filters."""
         if not query:
@@ -486,7 +518,7 @@ class GTNSearchDB:
             log.warning(f"FAQ search failed for query '{query}': {e}")
             return []
 
-    def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
+    def get_tutorial_content(self, topic: str, tutorial: str, max_length: int | None = None) -> str | None:
         """Retrieve tutorial content, optionally truncated to max_length."""
         try:
             with self._get_connection() as conn:

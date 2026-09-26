@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import pytest
 from requests import (
     ConnectionError as RequestsConnectionError,
@@ -22,10 +20,11 @@ from galaxy.tool_util.deps.mulled.util import (
     build_target,
     v2_image_name,
 )
+from galaxy.util.unittest_utils import skip_if_quay_down
 from ..util import external_dependency_management
 
 
-def _version_hash(*name_versions: Tuple[str, str]) -> str:
+def _version_hash(*name_versions: tuple[str, str]) -> str:
     """The mulled-v2 version-hash for a set of (name, version) pairs.
 
     Computes a *real* hash (not mocked) via the production hashing helpers, so it
@@ -245,6 +244,7 @@ def test_cache_avoids_second_lookup(monkeypatch):
 
 
 @external_dependency_management
+@skip_if_quay_down
 def test_live_single_samtools():
     rec = recommend_container([PackageSpec("samtools", "1.17")], use_cache=False)
     assert rec.image is not None
@@ -253,6 +253,7 @@ def test_live_single_samtools():
 
 
 @external_dependency_management
+@skip_if_quay_down
 def test_live_multi_bamtools_samtools():
     rec = recommend_container([PackageSpec("bamtools", "2.4.0"), PackageSpec("samtools", "1.3.1")], use_cache=False)
     assert rec.image is not None
@@ -261,6 +262,7 @@ def test_live_multi_bamtools_samtools():
 
 
 @external_dependency_management
+@skip_if_quay_down
 def test_live_multi_resolves_unpinned_versions():
     """Two unpinned packages resolve to a real, built mulled-v2 image."""
     rec = recommend_container([PackageSpec("bwa"), PackageSpec("samtools")], use_cache=False)

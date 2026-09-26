@@ -6,7 +6,7 @@ import {
     GalaxyApi,
     type GalaxyApiPaths,
     type HDADetailed,
-    type HDASummary,
+    type HistoryItemSummary,
 } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
@@ -20,9 +20,21 @@ export interface LoadDatasetsOptions {
 }
 
 export interface LoadDatasetsResult {
-    data: HDASummary[];
+    data: HistoryItemSummary[];
     totalMatches: number;
 }
+
+interface CopyDatasetsResult {
+    copiedDatasets: Awaited<ReturnType<typeof copyDataset>>[];
+    failedDatasetIds: string[];
+}
+
+interface CopyHistoryItemsResult {
+    copiedItems: Awaited<ReturnType<typeof copyDataset>>[];
+    failedItemIds: string[];
+}
+
+type CopyableHistoryItem = Pick<HistoryItemSummary, "id" | "history_content_type">;
 
 export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDatasetsResult> {
     const { limit = 24, offset = 0, sortBy = "update_time", sortDesc = true, search = "" } = options;
@@ -49,7 +61,7 @@ export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDa
     }
 
     const totalMatches = parseInt(response.headers.get("total_matches") ?? "0", 10) || 0;
-    const data = datasets as unknown as HDASummary[];
+    const data = datasets as unknown as HistoryItemSummary[];
 
     return { data, totalMatches };
 }
@@ -121,10 +133,11 @@ type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/content
 type CopyDatasetBodyType = components["schemas"]["CreateHistoryContentPayload"];
 
 export async function copyDataset(
-    datasetId: CopyDatasetBodyType["content"],
+    contentId: CopyDatasetBodyType["content"],
     historyId: CopyDatasetParamsType["path"]["history_id"],
     type: CopyDatasetParamsType["path"]["type"] = "dataset",
-    source: CopyDatasetBodyType["source"] = "hda",
+    source: CopyDatasetBodyType["source"] = type === "dataset" ? "hda" : "hdca",
+    signal?: AbortSignal,
 ) {
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
@@ -132,7 +145,7 @@ export async function copyDataset(
         },
         body: {
             source,
-            content: datasetId,
+            content: contentId,
             type,
             copy_elements: true,
             // TODO: Investigate. These should be optional, but the API requires explicit null values?
@@ -140,11 +153,51 @@ export async function copyDataset(
             hide_source_items: null,
             instance_type: null,
         },
+        signal,
     });
     if (error) {
         rethrowSimple(error);
     }
     return data;
+}
+
+export async function copyDatasets(
+    datasetIds: string[],
+    historyId: CopyDatasetParamsType["path"]["history_id"],
+): Promise<CopyDatasetsResult> {
+    const items = datasetIds.map((id) => ({ id, history_content_type: "dataset" as const }));
+    const { copiedItems: copiedDatasets, failedItemIds: failedDatasetIds } = await copyHistoryItems(items, historyId);
+    return { copiedDatasets, failedDatasetIds };
+}
+
+export async function copyHistoryItems(
+    items: CopyableHistoryItem[],
+    historyId: CopyDatasetParamsType["path"]["history_id"],
+): Promise<CopyHistoryItemsResult> {
+    const BATCH_SIZE = 5;
+    const results: PromiseSettledResult<Awaited<ReturnType<typeof copyDataset>>>[] = [];
+
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = items.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(
+            batch.map((item) => copyDataset(item.id, historyId, item.history_content_type)),
+        );
+
+        results.push(...batchResults);
+    }
+
+    const copiedItems = [];
+    const failedItemIds = [];
+
+    for (const [index, result] of results.entries()) {
+        if (result.status === "fulfilled") {
+            copiedItems.push(result.value);
+        } else if (items[index] !== undefined) {
+            failedItemIds.push(items[index].id);
+        }
+    }
+
+    return { copiedItems, failedItemIds };
 }
 
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
@@ -168,6 +221,22 @@ export const NON_TERMINAL_DATASET_STATES = ["new", "upload", "queued", "running"
 
 // Error dataset states (dataset failed processing)
 export const ERROR_DATASET_STATES = ["error", "failed_metadata"];
+
+// States a dataset may be in and still be offered as a tool/workflow input.
+// Mirrors ``Dataset.valid_input_states`` (all states bar error, discarded and
+// failed_metadata), which the server applies when it builds the first page of
+// a data parameter's options.
+export const VALID_INPUT_DATASET_STATES = [
+    "new",
+    "upload",
+    "queued",
+    "running",
+    "setting_metadata",
+    "ok",
+    "empty",
+    "paused",
+    "deferred",
+];
 
 // Terminal dataset states (dataset processing is complete)
 export const TERMINAL_DATASET_STATES = ["ok", "empty", "deferred", "discarded", "paused"].concat(ERROR_DATASET_STATES);

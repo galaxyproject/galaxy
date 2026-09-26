@@ -7,11 +7,7 @@ from abc import (
 from logging import getLogger
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TYPE_CHECKING,
 )
 from uuid import uuid4
@@ -19,10 +15,7 @@ from uuid import uuid4
 from packaging.version import Version
 from typing_extensions import Protocol
 
-from galaxy.util import (
-    asbool,
-    in_directory,
-)
+from galaxy.util import asbool
 from . import (
     docker_util,
     singularity_util,
@@ -101,6 +94,8 @@ class ContainerProtocol(Protocol):
     Helper class to allow typing for the HasDockerLikeVolumes mixin
     """
 
+    destination_info: dict[str, Any]
+
     @property
     def app_info(self) -> "AppInfo": ...
 
@@ -125,10 +120,10 @@ class Container(metaclass=ABCMeta):
         container_id: str,
         app_info: "AppInfo",
         tool_info: "ToolInfo",
-        destination_info: Dict[str, Any],
+        destination_info: dict[str, Any],
         job_info: Optional["JobInfo"],
         container_description: Optional["ContainerDescription"],
-        container_name: Optional[str] = None,
+        container_name: str | None = None,
     ) -> None:
         self.container_id = container_id
         self.app_info = app_info
@@ -137,7 +132,7 @@ class Container(metaclass=ABCMeta):
         self.job_info = job_info
         self.container_description = container_description
         self.container_name = container_name or uuid4().hex
-        self.container_info: Dict[str, Any] = {}
+        self.container_info: dict[str, Any] = {}
 
     def prop(self, name: str, default: Any) -> Any:
         destination_name = f"{self.container_type}_{name}"
@@ -161,6 +156,18 @@ class Container(metaclass=ABCMeta):
             return SOURCE_CONDA_ACTIVATE
         return ""
 
+    @property
+    def image_identifier_is_path(self) -> bool:
+        """Whether ``container_id`` refers to a local filesystem path.
+
+        Most container identifiers are registry references (e.g.
+        ``quay.io/biocontainers/...`` or ``docker://...``) rather than paths.
+        Only when the identifier is a local path does it make sense to rewrite
+        it for a compute node with a different filesystem layout (e.g. a
+        Singularity/Apptainer image cached on CVMFS).
+        """
+        return False
+
     @abstractmethod
     def containerize_command(self, command: str) -> str:
         """
@@ -180,7 +187,7 @@ class Volume:
         self.container_type = container_type
 
     @staticmethod
-    def parse_volume_str(rawstr: str) -> Tuple[str, str, str]:
+    def parse_volume_str(rawstr: str) -> tuple[str, str, str]:
         """
         >>> Volume.parse_volume_str('A:B:rw')
         ('A', 'B', 'rw')
@@ -234,6 +241,9 @@ class Volume:
         source = source.strip()
         target = target.strip()
         mode = mode.strip()
+        if mode == "default_ro":
+            log.warning("container volumes use default_ro mode which is treated as ro")
+            mode = "ro"
 
         return source, target, mode
 
@@ -267,12 +277,8 @@ class Volume:
             return f"{path}:{self.mode}"
 
 
-def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
+def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
-
-    Galaxy allows the mount try "default_ro" which translates to ro for Docker and
-    ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
-    parent directories with rw subdirectories).
 
     Removes volumes that have the same target directory which is not allowed
     (for docker and singularity). Volumes that are specified later in the volumes_raw_str
@@ -286,16 +292,16 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     ['/a/b:ro', '/a/b/c:rw']
     >>> preprocess_volumes("/a/b:/a:ro,/a/b/c:/a/b:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:/a:ro', '/a/b/c:/a/b:rw']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:rw']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:ro']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/a/b', '/a/b/c']
-    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/a/b:ro', '/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/x:/a/b:ro', '/y:/a/b/c:ro']
-    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/x:/a/b', '/y:/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b:ro', '/y:/a/b/c']
     >>> preprocess_volumes("/x:/x,/y:/x", SINGULARITY_CONTAINER_TYPE)
     ['/y:/x']
     """
@@ -305,16 +311,6 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
 
     # filter out empty strings, this happens for tools without tool directories.
     volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",") if v]
-    rw_paths = [v.target for v in volumes if v.mode == "rw"]
-    for volume in volumes:
-        mode = volume.mode
-        if volume.mode == "default_ro":
-            mode = "ro"
-            if container_type == SINGULARITY_CONTAINER_TYPE:
-                for rw_path in rw_paths:
-                    if in_directory(rw_path, volume.target):
-                        mode = "rw"
-        volume.mode = mode
 
     # remove duplicate targets
     target_to_volume = {v.target: str(v) for v in volumes}
@@ -346,19 +342,42 @@ class HasDockerLikeVolumes:
         add_var("job_directory", self.job_info.job_directory)
         add_var("tool_directory", self.job_info.tool_directory)
         add_var("home_directory", self.job_info.home_directory)
-        add_var("galaxy_root", self.app_info.galaxy_root_dir)
+        if self.tool_info.disable_galaxy_root_mount:
+            # TODO: remove the default galaxy_root mount eventually,
+            # this should only be required for very old tools that
+            # import galaxy internals.
+            add_var("galaxy_root", None)
+        else:
+            add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
         add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
+        # Provide storage template variable to both pulsar and galaxy,
+        # but only add it to defaults for galaxy. Only makes sense
+        # if embedded pulsar is used without path rewriting.
+        outputs_to_working_directory = self.app_info.outputs_to_working_directory
+        if "outputs_to_working_directory" in self.destination_info:
+            outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
+        if outputs_to_working_directory and self.job_info.job_type == "tool":
+            # Provide RO access to inputs
+            storage_mount_mode = "ro"
+        else:
+            # Need to write to storage (outputs_to_working_directory: false or containerized metadata)
+            storage_mount_mode = "rw"
+        storage_mounts = None
+        if self.job_info.output_paths:
+            storage_mounts = ",".join([f"{p}:{storage_mount_mode}" for p in self.job_info.output_paths])
+        add_var("storage", storage_mounts)
+
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
-            defaults = "$job_directory:default_ro"
+            defaults = "$job_directory:ro"
             if self.job_info.tool_directory:
-                defaults += ",$tool_directory:default_ro"
+                defaults += ",$tool_directory:ro"
             defaults += ",$job_directory/outputs:rw,$working_directory:rw"
         else:
             if self.job_info.tmp_directory is not None:
@@ -369,30 +388,28 @@ class HasDockerLikeVolumes:
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
                 defaults = "$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
-            defaults += ",$galaxy_root:default_ro"
+            if not self.tool_info.disable_galaxy_root_mount:
+                defaults += ",$galaxy_root:ro"
             if self.job_info.tool_directory:
-                defaults += ",$tool_directory:default_ro"
+                defaults += ",$tool_directory:ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
+                defaults += ",$job_directory:ro,$job_directory/outputs:rw"
                 if Version(str(self.tool_info.profile)) <= Version("19.09"):
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
-            if self.app_info.outputs_to_working_directory:
-                # Should need default_file_path (which is of course an estimate given
-                # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:default_ro"
-            else:
-                defaults += ",$working_directory:rw,$default_file_path:rw"
+            defaults += ",$working_directory:rw"
+            if storage_mounts:
+                defaults += ",$storage"
 
         if self.app_info.library_import_dir:
-            defaults += ",$library_import_dir:default_ro"
+            defaults += ",$library_import_dir:ro"
         if self.app_info.tool_data_path:
-            defaults += ",$tool_data_path:default_ro"
+            defaults += ",$tool_data_path:ro"
         if self.app_info.galaxy_data_manager_data_path:
-            defaults += ",$galaxy_data_manager_data_path:default_ro"
+            defaults += ",$galaxy_data_manager_data_path:ro"
         if self.app_info.shed_tool_data_path:
-            defaults += ",$shed_tool_data_path:default_ro"
+            defaults += ",$shed_tool_data_path:ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
@@ -402,8 +419,7 @@ class HasDockerLikeVolumes:
 
         # Not all tools have a tool_directory - strip this out if supplied by
         # job_conf.
-        tool_directory_index = volumes_str.find("$tool_directory")
-        if tool_directory_index > 0:
+        if (tool_directory_index := volumes_str.find("$tool_directory")) > 0:
             end_index = volumes_str.find(",", tool_directory_index)
             if end_index < 0:
                 end_index = len(volumes_str)
@@ -412,7 +428,7 @@ class HasDockerLikeVolumes:
         return volumes_str
 
 
-def _parse_volumes(volumes_raw: str, container_type: str) -> List[DockerVolume]:
+def _parse_volumes(volumes_raw: str, container_type: str) -> list[DockerVolume]:
     """
     >>> volumes_raw = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:z,$default_file_path:z"
     >>> volumes = _parse_volumes(volumes_raw, "docker")
@@ -428,7 +444,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     container_type = DOCKER_CONTAINER_TYPE
 
     @property
-    def docker_host_props(self) -> Dict[str, Any]:
+    def docker_host_props(self) -> dict[str, Any]:
         docker_host_props = dict(
             docker_cmd=self.prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
             sudo=asbool(self.prop("sudo", docker_util.DEFAULT_SUDO)),
@@ -438,10 +454,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         return docker_host_props
 
     @property
-    def connection_configuration(self) -> Dict[str, Any]:
+    def connection_configuration(self) -> dict[str, Any]:
         return self.docker_host_props
 
-    def build_pull_command(self) -> List[str]:
+    def build_pull_command(self) -> list[str]:
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
     def containerize_command(self, command: str) -> str:
@@ -507,7 +523,7 @@ _on_exit() {{
 {cache_command}
 {run_command}"""
 
-    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
+    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: dict[str, Any]) -> str:
         images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
@@ -515,7 +531,7 @@ _on_exit() {{
             cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd
         )
 
-    def __get_cached_image_file(self) -> Optional[str]:
+    def __get_cached_image_file(self) -> str | None:
         container_id = self.container_id
         cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
         cache_path = docker_cache_path(cache_directory, container_id)
@@ -538,7 +554,15 @@ def docker_cache_path(cache_directory: str, container_id: str) -> str:
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
 
-    def get_singularity_target_kwds(self) -> Dict[str, Any]:
+    @property
+    def image_identifier_is_path(self) -> bool:
+        # A Singularity/Apptainer image identifier is either a local path (e.g.
+        # a ``.sif`` file or a CVMFS-cached image) or a URI with a scheme such
+        # as ``docker://``, ``library://``, ``shub://``, or ``oras://``. Only
+        # absolute paths are read from the (compute-node) filesystem.
+        return os.path.isabs(self.container_id)
+
+    def get_singularity_target_kwds(self) -> dict[str, Any]:
         return dict(
             singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
@@ -546,12 +570,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         )
 
     @property
-    def connection_configuration(self) -> Dict[str, Any]:
+    def connection_configuration(self) -> dict[str, Any]:
         return self.get_singularity_target_kwds()
 
     def build_mulled_singularity_pull_command(
         self, cache_directory: str, namespace: str = "biocontainers"
-    ) -> List[str]:
+    ) -> list[str]:
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
@@ -559,7 +583,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             **self.get_singularity_target_kwds(),
         )
 
-    def build_singularity_pull_command(self, cache_path: str) -> List[str]:
+    def build_singularity_pull_command(self, cache_path: str) -> list[str]:
         return singularity_util.pull_singularity_command(
             image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
         )
@@ -604,7 +628,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         return run_command
 
 
-CONTAINER_CLASSES: Dict[str, Type[Container]] = dict(
+CONTAINER_CLASSES: dict[str, type[Container]] = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )

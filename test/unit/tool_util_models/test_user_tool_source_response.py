@@ -9,7 +9,6 @@ the API doesn't 500. See Sentry GALAXY-TEST-588ZYT7JSX3V0.
 
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.tool_util_models import (
@@ -21,7 +20,7 @@ from galaxy.tool_util_models.tool_outputs import (
     IncomingToolOutputCollection,
 )
 
-LEGACY_DATA_INPUT: Dict[str, Any] = {
+LEGACY_DATA_INPUT: dict[str, Any] = {
     "type": "data",
     "name": "input",
     "format": ["data"],
@@ -32,7 +31,7 @@ LEGACY_DATA_INPUT: Dict[str, Any] = {
     "extensions": ["data"],
 }
 
-LEGACY_TEXT_INPUT: Dict[str, Any] = {
+LEGACY_TEXT_INPUT: dict[str, Any] = {
     "type": "text",
     "name": "msg",
     "value": "hello",
@@ -43,7 +42,7 @@ LEGACY_TEXT_INPUT: Dict[str, Any] = {
     "default_options": [],
 }
 
-BASE_TOOL: Dict[str, Any] = {
+BASE_TOOL: dict[str, Any] = {
     "class": "GalaxyUserTool",
     "id": "legacy-tool",
     "name": "Legacy",
@@ -154,7 +153,7 @@ def test_lift_does_not_mutate_input():
     assert original["inputs"][1] == snapshot["inputs"][1]
 
 
-LEGACY_NESTED_COLLECTION_OUTPUT: Dict[str, Any] = {
+LEGACY_NESTED_COLLECTION_OUTPUT: dict[str, Any] = {
     "type": "collection",
     "name": "outs",
     "label": None,

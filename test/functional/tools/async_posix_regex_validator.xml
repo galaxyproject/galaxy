@@ -1,0 +1,52 @@
+<tool id="async_posix_regex_validator" name="async_posix_regex_validator" version="1.0.0">
+    <description>async regression: POSIX character-class regex validators are skipped by pydantic and deferred to statically_validate</description>
+    <!--
+      Models seurat_plot test 2. The tool declares a text param with a regex
+      validator that uses POSIX character classes:
+
+          <validator type="regex">^[\w[:punct:]]+$</validator>
+
+      Sync validates via the ``regex`` module, which recognises POSIX classes and
+      accepts values like ``X16cell`` and ``midblast.9``.
+
+      Pydantic's ``pattern`` extra compiles through Python's ``re``, which does
+      NOT recognise POSIX classes and instead treats ``[:punct:]`` as a literal
+      character class of ``:``, ``p``, ``u``, ``n``, ``c``, ``t``. The resulting
+      pattern rejects perfectly legitimate values and the async request build
+      fails at pydantic time.
+
+      The framework fix: skip emitting the ``pattern`` extra when the validator
+      contains a POSIX character class, and defer validation to
+      ``statically_validate`` (which uses the ``regex`` module). Both sync and
+      async now accept the same values on this tool.
+    -->
+    <command><![CDATA[
+echo '$cell1' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="cell1" type="text" value="cell 1">
+            <validator type="regex" message="letters, numbers, or punctuation">^[\w[:punct:]]+$</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="cell1" value="X16cell" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="X16cell" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="cell1" value="midblast.9" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="midblast.9" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

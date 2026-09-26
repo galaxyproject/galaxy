@@ -1,19 +1,33 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm>=8"]
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "dependencies",
-    "description",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-web-framework"
+version = "26.1.dev0"
+description = "Galaxy web framework"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-data",
+    "galaxy-util",
+    "babel",
+    "MarkupSafe",
+    "paste",
+    "pydantic>=2.7.4",
+    "requests",
+    "Routes",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "starlette",
+    "WebOb",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -31,3 +45,17 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

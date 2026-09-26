@@ -20,7 +20,6 @@ from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import anyio
@@ -49,7 +48,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
-    _handoff_context: Optional[dict[str, Any]] = None
+    _handoff_context: dict[str, Any] | None = None
 
     # The current message drives routing, plus the most recent conversation turn(s) so an
     # elliptical follow-up ("what about a workflow for this?", or the answer to a clarifying
@@ -491,7 +490,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         async def ask_for_clarification(
             ctx: RunContext[GalaxyAgentDependencies],
             question: str,
-            options: Optional[list[str]] = None,
+            options: list[str] | None = None,
         ) -> str:
             """Ask the user ONE concise clarifying question when the request is too ambiguous
             or underspecified to route or answer confidently.
@@ -524,7 +523,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return [i for i, message in enumerate(full_history) if _is_turn_start(message)]
 
-    def _routing_history(self, full_history: Optional[list]) -> Optional[list]:
+    def _routing_history(self, full_history: list | None) -> list | None:
         """The most recent ``ROUTING_HISTORY_TURNS`` turn(s) of ``full_history``, or None when
         capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale."""
         if not full_history or self.ROUTING_HISTORY_TURNS <= 0:
@@ -536,7 +535,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             return full_history[turn_starts[-self.ROUTING_HISTORY_TURNS] :]
         return full_history
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
@@ -601,7 +600,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             log.warning(f"Router agent error, using fallback: {e}")
             return self._handle_fallback(query, context, str(e))
 
-    def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
+    def _handle_fallback(self, query: str, context: dict[str, Any] | None, error_msg: str) -> AgentResponse:
         query_lower = query.lower()
 
         # Citation requests can be answered without AI

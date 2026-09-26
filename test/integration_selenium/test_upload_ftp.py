@@ -1,12 +1,13 @@
 import os
 
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
 
-class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase):
+class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @classmethod
@@ -23,15 +24,9 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase):
 
     def _upload_all(self, n):
         self.home()
-        self.components.upload.start.wait_for_and_click()
-        self.components.upload.file_dialog.wait_for_and_click()
-        self.components.upload.file_source_selector(path="gxftp://").wait_for_and_click()
-        for i in range(n):
-            self.components.upload.file_source_selector(path=f"gxftp://{i}.txt").wait_for_and_click()
-        self.components.upload.file_dialog_ok.wait_for_and_click()
-        for i in range(n):
-            self.components.upload.row(n=i).wait_for_visible()
-        self.upload_start()
+        context = self.upload_context("remote-files")
+        context.stage_remote_files(source_label="FTP Directory", file_labels=[f"{i}.txt" for i in range(n)])
+        context.start()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_history()
 

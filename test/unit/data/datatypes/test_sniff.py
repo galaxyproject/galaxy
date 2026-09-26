@@ -1,4 +1,5 @@
 import gzip
+import os
 import tempfile
 
 import pytest
@@ -10,6 +11,8 @@ from galaxy.datatypes.sniff import (
     convert_sep2tabs,
     FilePrefix,
     get_test_fname,
+    handle_composite_file,
+    handle_uploaded_dataset_file_internal,
 )
 
 
@@ -125,3 +128,56 @@ def test_file_prefix_detects_mime_type_of_compressed_file(tmp_path):
     assert file_prefix.compressed_encoding == "binary"
     assert file_prefix.mime_type == "text/plain"
     assert file_prefix.encoding == "us-ascii"
+
+
+def test_handle_composite_file_stages_legitimate_name(tmp_path):
+    extra_files = tmp_path / "extra"
+    extra_files.mkdir()
+    src = tmp_path / "source.txt"
+    src.write_text("content\n")
+    handle_composite_file(None, src, extra_files, "composite", True, extra_files, "gxtest_", {})
+    assert (extra_files / "composite").read_text() == "content\n"
+    assert not src.exists()
+
+
+@pytest.mark.parametrize("path_kind", ["relative", "deep_relative", "absolute", "empty"])
+def test_handle_composite_file_rejects_escaping_name(tmp_path, path_kind):
+    depth = 40 if path_kind == "deep_relative" else 2
+    extra_files = tmp_path.joinpath(*(["nested"] * depth))
+    extra_files.mkdir(parents=True)
+    escaped_path = tmp_path / "escaped.txt"
+    if path_kind == "absolute":
+        name = str(escaped_path)
+    elif path_kind == "empty":
+        name = ""
+    else:
+        name = os.path.relpath(escaped_path, extra_files)
+    src = tmp_path / "source.txt"
+    src.write_text("content\n")
+    with pytest.raises(ValueError, match="Invalid composite file name"):
+        handle_composite_file(None, src, extra_files, name, True, extra_files, "gxtest_", {})
+    assert not escaped_path.exists()
+    assert list(extra_files.iterdir()) == []
+    assert src.read_text() == "content\n"
+
+
+@pytest.mark.parametrize(
+    "contents,expected,converted",
+    [
+        (b"a\tb\r\nc\td\r\n", b"a\tb\nc\td\n", True),
+        (b"\x89HDF\r\n\x1a\n\x00\x00\r\x00", b"\x89HDF\r\n\x1a\n\x00\x00\r\x00", False),
+    ],
+)
+def test_upload_converts_newlines_of_text_only(tmp_path, contents, expected, converted):
+    path = tmp_path / "upload"
+    path.write_bytes(contents)
+    response = handle_uploaded_dataset_file_internal(
+        FilePrefix(str(path)),
+        example_datatype_registry_for_sample(),
+        ext="data",
+        tmp_dir=str(tmp_path),
+        convert_to_posix_lines=True,
+    )
+    assert response.converted_newlines is converted
+    with open(response.converted_path, "rb") as f:
+        assert f.read() == expected

@@ -14,7 +14,6 @@ not clearly AWS, while leaving real AWS on botocore's stronger default.
 
 from typing import (
     Literal,
-    Optional,
     TypedDict,
 )
 from urllib.parse import urlparse
@@ -29,7 +28,7 @@ class S3ChecksumConfigKwargs(TypedDict, total=False):
     request_checksum_calculation: ChecksumSetting
 
 
-def is_aws_s3_endpoint(endpoint_url: Optional[str]) -> bool:
+def is_aws_s3_endpoint(endpoint_url: str | None) -> bool:
     """Return True if the endpoint clearly targets AWS S3.
 
     An empty/None endpoint uses botocore's default AWS endpoint, and any host
@@ -42,7 +41,7 @@ def is_aws_s3_endpoint(endpoint_url: Optional[str]) -> bool:
     return host == "amazonaws.com" or host.endswith(".amazonaws.com")
 
 
-def s3_checksum_config_kwargs(endpoint_url: Optional[str]) -> S3ChecksumConfigKwargs:
+def s3_checksum_config_kwargs(endpoint_url: str | None) -> S3ChecksumConfigKwargs:
     """botocore ``Config`` kwargs for S3 flexible-checksum behavior.
 
     Defaults ``request_checksum_calculation`` to ``"when_required"`` for non-AWS

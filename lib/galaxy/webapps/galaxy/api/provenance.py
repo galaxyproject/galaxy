@@ -12,6 +12,8 @@ from paste.httpexceptions import (
 from galaxy import web
 from galaxy.managers.hdas import HDAManager
 from galaxy.util import string_as_bool
+from galaxy.webapps.base.controller import SharableItemSecurityMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -20,28 +22,32 @@ from . import (
 log = logging.getLogger(__name__)
 
 
-class BaseProvenanceController(BaseGalaxyAPIController):
+class BaseProvenanceController(BaseGalaxyAPIController, SharableItemSecurityMixin):
     """ """
 
+    provenance_item_class: str
+    provenance_item_id: str
+    hda_manager: HDAManager
+
     @web.legacy_expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         follow = string_as_bool(kwd.get("follow", False))
         value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
     @web.legacy_expose_api
-    def show(self, trans, elem_name, **kwd):
+    def show(self, trans: GalaxyWebTransaction, elem_name, **kwd):
         raise HTTPNotImplemented()
 
     @web.legacy_expose_api
-    def create(self, trans, tag_name, payload=None, **kwd):
+    def create(self, trans: GalaxyWebTransaction, tag_name, payload=None, **kwd):
         raise HTTPNotImplemented()
 
     @web.legacy_expose_api
-    def delete(self, trans, tag_name, **kwd):
+    def delete(self, trans: GalaxyWebTransaction, tag_name, **kwd):
         raise HTTPBadRequest("Cannot Delete Provenance")
 
-    def _get_provenance(self, trans, item_class_name, item_id, follow=True):
+    def _get_provenance(self, trans: GalaxyWebTransaction, item_class_name, item_id, follow=True):
         provenance_item = self.get_object(
             trans, item_id, item_class_name, check_ownership=False, check_accessible=False
         )
@@ -52,7 +58,7 @@ class BaseProvenanceController(BaseGalaxyAPIController):
         out = self._get_record(trans, provenance_item, follow)
         return out
 
-    def _get_record(self, trans, item, follow):
+    def _get_record(self, trans: GalaxyWebTransaction, item, follow):
         if item is not None:
             if item.copied_from_library_dataset_dataset_association:
                 item = item.copied_from_library_dataset_dataset_association
@@ -74,7 +80,7 @@ class BaseProvenanceController(BaseGalaxyAPIController):
                 }
         return None
 
-    def _get_job_record(self, trans, job, follow):
+    def _get_job_record(self, trans: GalaxyWebTransaction, job, follow):
         out = {}
         for p in job.parameters:
             out[p.name] = p.value

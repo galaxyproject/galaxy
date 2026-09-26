@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import (
     Annotated,
-    Optional,
 )
 
 from fastapi import (
@@ -71,7 +70,7 @@ Base64PrefixValuesQueryParam: str = Query(
     None,
     description="Prefix values for the seeding the workbook, base64 encoded.",
 )
-WorkbookFilenameQueryParam: Optional[str] = Query(
+WorkbookFilenameQueryParam: str | None = Query(
     None,
     description="Filename of the workbook download to generate",
 )
@@ -101,7 +100,7 @@ class FastAPIDatasetCollections:
     def create_workbook(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        filename: Optional[str] = WorkbookFilenameQueryParam,
+        filename: str | None = WorkbookFilenameQueryParam,
         payload: CreateWorkbookRequest = Body(...),
     ):
         output = self.service.create_workbook(payload)
@@ -129,7 +128,7 @@ class FastAPIDatasetCollections:
         self,
         hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        filename: Optional[str] = WorkbookFilenameQueryParam,
+        filename: str | None = WorkbookFilenameQueryParam,
         payload: CreateWorkbookForCollectionApi = Body(...),
     ):
         output = self.service.create_workbook_for_collection(trans, hdca_id, payload)
@@ -216,11 +215,11 @@ class FastAPIDatasetCollections:
         ],
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
-        limit: Optional[int] = Query(
+        limit: int | None = Query(
             default=None,
             description="The maximum number of content elements to return.",
         ),
-        offset: Optional[int] = Query(
+        offset: int | None = Query(
             default=None,
             description="The number of content elements that will be skipped before returning.",
         ),

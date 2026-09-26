@@ -13,7 +13,7 @@ const filter = ref("");
 const filterFields: Array<keyof DetailedDatatypes> = ["extension"];
 
 const { datatypes } = useDetailedDatatypes();
-const filteredDatatypes = useFilterObjectArray(datatypes, filter, filterFields);
+const { filtered: filteredDatatypes } = useFilterObjectArray(datatypes, filter, filterFields);
 
 const fields: TableField[] = [
     {

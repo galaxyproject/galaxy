@@ -15,8 +15,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 import pytest
@@ -30,7 +28,7 @@ from galaxy.tool_util_models import (
 )
 from galaxy.util.resources import resource_string
 
-VALID_TOOL: Dict[str, Any] = {
+VALID_TOOL: dict[str, Any] = {
     "class": "GalaxyUserTool",
     "id": "my-cool-tool",
     "name": "My Cool Tool",
@@ -51,7 +49,7 @@ VALID_TOOL: Dict[str, Any] = {
 }
 
 
-def _load_cases() -> List[Dict[str, Any]]:
+def _load_cases() -> list[dict[str, Any]]:
     try:
         yaml_str = resource_string(__name__, "user_tool_source_validation_cases.yml")
     except AttributeError:
@@ -64,7 +62,7 @@ def _load_cases() -> List[Dict[str, Any]]:
 CASES = _load_cases()
 
 
-def _doc_for(case: Dict[str, Any]) -> Dict[str, Any]:
+def _doc_for(case: dict[str, Any]) -> dict[str, Any]:
     base = deepcopy(VALID_TOOL)
     base.update(case.get("doc") or {})
     return base
@@ -77,7 +75,7 @@ def _flatten_loc(loc: Any) -> str:
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["name"])
-def test_user_tool_source_corpus(case: Dict[str, Any]) -> None:
+def test_user_tool_source_corpus(case: dict[str, Any]) -> None:
     doc = _doc_for(case)
     if case.get("valid"):
         UserToolSource.model_validate(doc)
@@ -104,7 +102,7 @@ def test_user_tool_source_corpus(case: Dict[str, Any]) -> None:
         assert match is not None, f"no error matched {expected!r}; raised={raised!r}"
 
 
-def _tool_without(*fields: str) -> Dict[str, Any]:
+def _tool_without(*fields: str) -> dict[str, Any]:
     doc = deepcopy(VALID_TOOL)
     for field in fields:
         doc.pop(field, None)

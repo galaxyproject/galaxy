@@ -15,7 +15,6 @@ from . import functional_test_tool_path
 
 
 class ParameterBundle(ToolParameterBundle):
-
     def __init__(self, parameter: ToolParameterT):
         self.parameters = [parameter]
 
@@ -32,6 +31,12 @@ def parameter_bundle_for_framework_tool(filename: str) -> ToolParameterBundleMod
 
 def parameter_bundle_for_file(filename: str) -> ToolParameterBundleModel:
     tool_source = parameter_tool_source(filename)
+    return input_models_for_tool_source(tool_source)
+
+
+def parameter_bundle_for_internal_tool(relpath: str) -> ToolParameterBundleModel:
+    path = os.path.join(galaxy_directory(), relpath)
+    tool_source = get_tool_source(path, macro_paths=[])
     return input_models_for_tool_source(tool_source)
 
 

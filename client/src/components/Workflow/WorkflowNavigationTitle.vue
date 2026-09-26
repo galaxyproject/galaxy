@@ -7,6 +7,7 @@ import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
+import { userOwnsHistory } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -22,6 +23,7 @@ import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
+import NavigationTitle from "../Common/NavigationTitle.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 
 const router = useRouter();
@@ -33,6 +35,10 @@ interface Props {
     runWaiting?: boolean;
     success?: boolean;
     validRerun?: boolean;
+    /** Show a collapse/expand toggle in the title bar. */
+    collapsible?: boolean;
+    /** Current collapsed state of the `collapsible` slot. */
+    collapsed?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -41,11 +47,18 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "on-execute"): void;
+    (e: "toggle"): void;
 }>();
 
 const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 
-const { isAnonymous } = storeToRefs(useUserStore());
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
+
+const historyStore = useHistoryStore();
+const history = computed(() =>
+    props.invocation?.history_id ? historyStore.getHistoryById(props.invocation.history_id) : null,
+);
+const historyIsOwned = computed(() => (history.value ? userOwnsHistory(currentUser.value, history.value) : false));
 
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<WorkflowSummary | null>(null);
@@ -103,6 +116,12 @@ async function rerunWorkflow() {
         router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
         return;
     }
+
+    if (!historyIsOwned.value) {
+        console.error("The running user is not the owner of the history with the original inputs for this workflow.");
+        return;
+    }
+
     const confirmed = await confirm(
         localize(
             "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?",
@@ -135,14 +154,21 @@ async function rerunWorkflow() {
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
         <div class="position-relative">
-            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
-                <div class="py-1 align-items-center" data-description="workflow heading">
+            <NavigationTitle
+                v-if="workflow"
+                :icon="faSitemap"
+                heading-description="workflow heading"
+                :collapsible="collapsible"
+                :collapsed="collapsed"
+                @toggle="emit('toggle')">
+                <template v-slot:before-icon>
                     <slot name="before-icon" />
-                    <FontAwesomeIcon class="mr-1" :icon="faSitemap" fixed-width />
+                </template>
+                <template v-slot:title>
                     <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
                     <span>(Version: {{ workflow.version + 1 }})</span>
-                </div>
-                <div class="d-flex flex-gapx-1 align-self-baseline">
+                </template>
+                <template v-slot:actions>
                     <GButtonGroup data-button-group>
                         <GButton
                             v-if="owned && workflow"
@@ -196,6 +222,7 @@ async function rerunWorkflow() {
                             <span v-localize>Run</span>
                         </GButton>
                         <GButton
+                            v-if="historyIsOwned"
                             :title="localize('Rerun Workflow with same inputs')"
                             disabled-title="This workflow has been deleted."
                             data-button-rerun
@@ -208,8 +235,11 @@ async function rerunWorkflow() {
                             <span v-localize>Rerun</span>
                         </GButton>
                     </GButtonGroup>
-                </div>
-            </div>
+                </template>
+                <template v-slot:collapsible>
+                    <slot name="collapsible" />
+                </template>
+            </NavigationTitle>
             <div v-if="props.success" class="donemessagelarge">
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>

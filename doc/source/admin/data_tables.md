@@ -16,7 +16,7 @@ In order to understand the naming and structure of these three components it mig
 to look in the history. Tool data was organized in tabular `loc` that contained metadata and paths
 of the data. Those files were installed with the tool and could be accessed with the
 [`from_file`](https://docs.galaxyproject.org/en/master/dev/schema.html#from-file) mechanism from tools.
-Since each tool version had it's own `loc` file the maintenance was difficult. With tool data tables
+Since each tool version had its own `loc` file the maintenance was difficult. With tool data tables
 an additional abstraction layer was introduced that is used from tools via
 [`from_datatable`](https://docs.galaxyproject.org/en/master/dev/schema.html#from-data-table).
 

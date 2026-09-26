@@ -4,15 +4,17 @@ import os
 import shutil
 from typing import (
     NamedTuple,
-    Optional,
-    Union,
 )
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.sniff import (
     convert_function,
+    FilePrefix,
+    guess_ext,
+    should_convert_text,
     stream_url_to_file,
 )
 from galaxy.exceptions import ObjectAttributeInvalidException
@@ -78,10 +80,11 @@ class DatasetInstanceMaterializer:
     def __init__(
         self,
         attached: bool,
-        object_store_populator: Optional[ObjectStorePopulator] = None,
-        transient_path_mapper: Optional[TransientPathMapper] = None,
-        file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[Session] = None,
+        datatypes_registry: Registry,
+        object_store_populator: ObjectStorePopulator | None = None,
+        transient_path_mapper: TransientPathMapper | None = None,
+        file_sources: ConfiguredFileSources | None = None,
+        sa_session: Session | None = None,
         user_context: OptionalUserContext = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
@@ -93,6 +96,9 @@ class DatasetInstanceMaterializer:
         ``user_context`` is forwarded to file source operations so that access
         controls (``requires_roles`` / ``requires_groups``) are enforced when
         materializing from ``gxfiles://`` URIs.
+
+        ``datatypes_registry`` enables content sniffing for deferred datasets whose
+        extension is ``"auto"``.
         """
         self._attached = attached
         self._transient_path_mapper = transient_path_mapper
@@ -100,12 +106,13 @@ class DatasetInstanceMaterializer:
         self._file_sources = file_sources
         self._sa_session = sa_session
         self._user_context = user_context
+        self._datatypes_registry = datatypes_registry
         self._previously_materialized: dict[int, HistoryDatasetAssociation] = {}
 
     def ensure_materialized(
         self,
-        dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
-        target_history: Optional[History] = None,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+        target_history: History | None = None,
         in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
@@ -153,9 +160,9 @@ class DatasetInstanceMaterializer:
             materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
         transient_paths = None
-        replacement_dataset: Optional[HistoryDatasetAssociation] = None
+        replacement_dataset: HistoryDatasetAssociation | None = None
 
-        exception_materializing: Optional[Exception] = None
+        exception_materializing: Exception | None = None
         history = target_history
         if history is None and isinstance(dataset_instance, HistoryDatasetAssociation):
             try:
@@ -176,7 +183,7 @@ class DatasetInstanceMaterializer:
                 sa_session.add(materialized_dataset)
                 sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
-            user: Optional[User] = None
+            user: User | None = None
             if history:
                 user = history.user
             replacement_dataset = get_replacement_dataset(
@@ -191,6 +198,7 @@ class DatasetInstanceMaterializer:
             if not replacement_dataset:
                 try:
                     path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                    self._sniff_deferred_extension(path, dataset_instance)
                     object_store.update_from_file(materialized_dataset, file_name=path)
                     materialized_dataset.set_size()
                 except Exception as e:
@@ -203,6 +211,7 @@ class DatasetInstanceMaterializer:
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                self._sniff_deferred_extension(path, dataset_instance)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -258,6 +267,23 @@ class DatasetInstanceMaterializer:
         self._previously_materialized[dataset_instance.id] = materialized_dataset_instance
         return materialized_dataset_instance
 
+    def _sniff_deferred_extension(
+        self,
+        path: str,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+    ) -> None:
+        """Resolve ``extension="auto"`` once the deferred source is streamed to ``path``.
+
+        A deferred fetch/upload with no explicit ``ext`` is registered as ``auto`` because
+        the content is not available to sniff at request time. ``path`` is the first point
+        the bytes exist locally, so we sniff here while materializing.
+        """
+        if dataset_instance.extension != "auto":
+            return
+        sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
+        if sniffed and sniffed != "auto":
+            dataset_instance.extension = sniffed
+
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
         source_uri = target_source.source_uri
         if source_uri is None:
@@ -283,16 +309,19 @@ class DatasetInstanceMaterializer:
             else:
                 raise Exception(f"Failed to materialize dataset, unknown transformation action {action} applied.")
         if to_posix_lines or spaces_to_tabs:
-            convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
-            convert_result = convert_fxn(path, False)
-            assert convert_result.converted_path
-            path = convert_result.converted_path
-            if convert_result.converted_newlines:
-                applied_transforms.append({"action": "to_posix_lines"})
-            if convert_result.converted_regex:
-                # TODO: rename this converted_regex nonsense to converted_spaces to match upload
-                # utility used in data_fetch.py.
-                applied_transforms.append({"action": "spaces_to_tabs"})
+            file_prefix = FilePrefix(path)
+            # deferred sources are never decompressed, so compressed content must be left untouched
+            if should_convert_text(file_prefix, is_compressed=bool(file_prefix.compressed_format)):
+                convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
+                convert_result = convert_fxn(path, False)
+                assert convert_result.converted_path
+                path = convert_result.converted_path
+                if convert_result.converted_newlines:
+                    applied_transforms.append({"action": "to_posix_lines"})
+                if convert_result.converted_regex:
+                    # TODO: rename this converted_regex nonsense to converted_spaces to match upload
+                    # utility used in data_fetch.py.
+                    applied_transforms.append({"action": "spaces_to_tabs"})
         if datatype_groom and datatype.dataset_content_needs_grooming(path):
             datatype.groom_dataset_content(path)
             applied_transforms.append(
@@ -327,7 +356,7 @@ class DatasetInstanceMaterializer:
         return best_source
 
 
-CollectionInputT = Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]
+CollectionInputT = HistoryDatasetCollectionAssociation | DatasetCollectionElement
 
 
 def materialize_collection_input(
@@ -370,7 +399,7 @@ def _materialize_collection(
 def _materialize_collection_element(
     element: DatasetCollectionElement, materializer: DatasetInstanceMaterializer
 ) -> DatasetCollectionElement:
-    materialized_object: Union[DatasetCollection, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation]
+    materialized_object: DatasetCollection | HistoryDatasetAssociation | LibraryDatasetDatasetAssociation
     if element.is_collection:
         assert element.child_collection
         materialized_object = _materialize_collection(element.child_collection, materializer)
@@ -389,12 +418,13 @@ def _materialize_collection_element(
 
 def materializer_factory(
     attached: bool,
-    object_store: Optional[ObjectStore] = None,
-    object_store_populator: Optional[ObjectStorePopulator] = None,
-    transient_path_mapper: Optional[TransientPathMapper] = None,
-    transient_directory: Optional[str] = None,
-    file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[Session] = None,
+    datatypes_registry: Registry,
+    object_store: ObjectStore | None = None,
+    object_store_populator: ObjectStorePopulator | None = None,
+    transient_path_mapper: TransientPathMapper | None = None,
+    transient_directory: str | None = None,
+    file_sources: ConfiguredFileSources | None = None,
+    sa_session: Session | None = None,
     user_context: OptionalUserContext = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
@@ -403,6 +433,7 @@ def materializer_factory(
         transient_path_mapper = SimpleTransientPathMapper(transient_directory)
     return DatasetInstanceMaterializer(
         attached,
+        datatypes_registry,
         object_store_populator=object_store_populator,
         transient_path_mapper=transient_path_mapper,
         file_sources=file_sources,
