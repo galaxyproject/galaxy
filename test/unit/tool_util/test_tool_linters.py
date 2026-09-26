@@ -117,6 +117,45 @@ COMMAND_DETECT_ERRORS_INTERPRETER = """
 </tool>
 """
 
+VERSION_COMMAND_MISSING_MODERN_PROFILE = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_LEGACY_PROFILE = """
+<tool id="id" name="name" profile="21.09">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_CONTAINER = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_NO_REQUIREMENTS = """
+<tool id="id" name="name" profile="26.2">
+    <command>echo hello</command>
+</tool>
+"""
+VERSION_COMMAND_PRESENT = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+    <version_command>bwa 2&gt;&amp;1 | grep Version</version_command>
+</tool>
+"""
+
 
 # tests tool xml for general linter
 GENERAL_MISSING_TOOL_ID_NAME_VERSION = """
@@ -1320,7 +1359,10 @@ def test_command_multiple(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MULTIPLE)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["Invalid XML: Element 'command': This element is not expected."]
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1329,7 +1371,9 @@ def test_command_missing(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MISSING)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["No command tag found, must specify a command template to execute."]
-    assert not lint_ctx.info_messages
+    assert lint_ctx.info_messages == [
+        "No version_command found, that should be OK for a tool without package requirements."
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1338,7 +1382,10 @@ def test_command_todo(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_TODO)
     run_lint_module(lint_ctx, command, tool_source)
     assert not lint_ctx.error_messages
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert lint_ctx.warn_messages == ["Command template contains TODO text."]
     assert not lint_ctx.valid_messages
 
@@ -1352,9 +1399,62 @@ def test_command_detect_errors_interpreter(lint_ctx):
         in lint_ctx.error_messages
     )
     assert lint_ctx.warn_messages == ["Command uses deprecated 'interpreter' attribute."]
-    assert lint_ctx.info_messages == ["Tool contains a command with interpreter of type [python]."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command with interpreter of type [python].",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_version_command_missing_modern_profile(lint_ctx):
+    """A tool wrapping packaged software should report its version - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_MODERN_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.warn_messages == [
+        "No version_command found, tools wrapping packaged software should report its version."
+    ]
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_legacy_profile(lint_ctx):
+    """Tools predating the check are grandfathered to info - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_LEGACY_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_container(lint_ctx):
+    """A container is external software worth a version too - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_CONTAINER)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.warn_messages == [
+        "No version_command found, tools wrapping packaged software should report its version."
+    ]
+
+
+def test_version_command_missing_no_requirements(lint_ctx):
+    """Pure Galaxy tools legitimately have no version to report - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_NO_REQUIREMENTS)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, that should be OK for a tool without package requirements." in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_present(lint_ctx):
+    tool_source = get_xml_tool_source(VERSION_COMMAND_PRESENT)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
 
 
 def test_general_missing_tool_id_name_version(lint_ctx):
@@ -2855,8 +2955,8 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    # (157 = 149 tool linters + 8 repository data-table linters registered via list_linters)
-    assert len(linter_names) == 157
+    # (159 = 151 tool linters + 8 repository data-table linters registered via list_linters)
+    assert len(linter_names) == 159
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
@@ -2869,6 +2969,7 @@ def test_list_linters():
         "Outputs",
         "StdIO",
         "Tests",
+        "VersionCommand",
         "XMLOrder",
         "XSD",
     ]:
