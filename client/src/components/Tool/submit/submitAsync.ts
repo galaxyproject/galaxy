@@ -67,10 +67,17 @@ async function buildJobResponse(toolRequestDetail: ToolRequestDetailedModel) {
                                 rethrowSimple(error);
                             }
                             // TODO: The dataset response is not modeled yet in the FastAPI route for /api/datasets/{dataset_id}
-                            const dataset = data as { hid: number; name: string };
+                            const dataset = data as {
+                                hid: number;
+                                name: string;
+                                history_content_type: "dataset";
+                                id: string;
+                            };
                             return {
                                 hid: dataset.hid,
                                 name: dataset.name,
+                                history_content_type: "dataset",
+                                id: dataset.id,
                             };
                         }),
                 );
@@ -85,7 +92,12 @@ async function buildJobResponse(toolRequestDetail: ToolRequestDetailedModel) {
                             if (error) {
                                 rethrowSimple(error);
                             }
-                            return { hid: data.hid as number, name: data.name as string };
+                            return {
+                                hid: data.hid as number,
+                                name: data.name as string,
+                                history_content_type: "dataset_collection",
+                                id: data.id as string,
+                            };
                         }),
                 );
             }
@@ -100,7 +112,7 @@ async function buildJobResponse(toolRequestDetail: ToolRequestDetailedModel) {
     return {
         // TODO: Once/If legacy job submission is typed, we won't need this cast to generic JobResponse
         jobs: jobs as JobResponse["jobs"],
-        outputs,
-        output_collections,
+        outputs: outputs as JobResponse["outputs"],
+        output_collections: output_collections as JobResponse["output_collections"],
     };
 }

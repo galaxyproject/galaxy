@@ -14,6 +14,10 @@ import JobInformation from "./JobInformation.vue";
 
 vi.mock("app");
 
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+}));
+
 const JOB_ID = "test_id";
 
 const localVue = getLocalVue();
@@ -72,13 +76,16 @@ describe("JobInformation/JobInformation.vue", () => {
         // table should exist
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
-        // should contain 10 rows
-        expect(rows.length).toBe(10);
+        // should contain 7 rows
+        expect(rows.length).toBe(7);
+        const codeRows = wrapper.findAll(".code-row");
+        // should contain 3 code rows
+        expect(codeRows.length).toBe(3);
     });
 
     it("stdout and stderr should be rendered", async () => {
         ["stdout", "stderr"].forEach((std) => {
-            const label = jobInfoTable.find("#" + std);
+            const label = wrapper.find("#" + std);
             const value = label.find(".code");
             expect(value.text()).toBe(std);
         });

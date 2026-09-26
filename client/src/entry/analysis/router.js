@@ -469,7 +469,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
-                        props: true,
+                        props: (route) => ({
+                            jobId: route.params.jobId,
+                            showHeader: true,
+                        }),
                     },
                     {
                         path: "object_store_instances/create",

@@ -45,6 +45,8 @@ onMounted(async () => {
         appendScriptStyle(model);
     }
 });
+
+defineExpose({ webhookId });
 </script>
 
 <template>

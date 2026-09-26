@@ -3,7 +3,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -15,6 +15,8 @@ import JobState from "./JobState.vue";
 vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({})),
 }));
+
+vi.useFakeTimers();
 
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
@@ -45,11 +47,17 @@ const SELECTORS = {
 };
 
 function mountJobState(job: JobBaseModel | ShowFullJobResponse, user: RegisteredUser | null = FAKE_USER) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    server.use(
+        http.get("/api/jobs/{job_id}", ({ response }) => {
+            return response(200).json(job as ShowFullJobResponse);
+        }),
+    );
+
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const userStore = useUserStore();
     userStore.currentUser = user;
     return mount(JobState as object, {
-        propsData: { job },
+        propsData: { jobId: job.id },
         localVue,
         pinia,
     });
@@ -62,6 +70,10 @@ describe("JobState.vue", () => {
                 return response(200).json(true);
             }),
         );
+    });
+
+    afterEach(() => {
+        vi.clearAllTimers();
     });
 
     it("renders the job state badge with the job state text", async () => {
@@ -78,7 +90,7 @@ describe("JobState.vue", () => {
 
     it("hides the stop button for terminal states", async () => {
         for (const state of ["ok", "error", "deleted", "failed"] as JobStateType[]) {
-            const wrapper = mountJobState({ ...BASE_JOB, state });
+            const wrapper = mountJobState({ ...BASE_JOB, id: `job-${state}`, state });
             await flushPromises();
             expect(wrapper.find(SELECTORS.STOP_BTN).exists()).toBe(false);
         }

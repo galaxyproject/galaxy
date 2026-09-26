@@ -133,10 +133,8 @@ div.ui-form-help {
 // pre styling
 pre.code {
     white-space: pre-wrap;
-    background: #1d1f21;
+    background: var(--color-blue-700);
     color: white;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
 }
 
 pre.code.preview {

@@ -118,7 +118,7 @@ onUpdated(() => nextTick(checkClamped));
             <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </GButton>
-        <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
+        <FontAwesomeIcon v-if="props.icon" :icon="props.icon" fixed-width />
         <slot />
     </component>
 </template>

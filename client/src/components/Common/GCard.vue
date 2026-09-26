@@ -704,6 +704,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                         [String(pa.class)]: pa.class,
                                                     },
                                                 ]"
+                                                :target="pa.externalLink ? '_blank' : undefined"
                                                 @click.stop="pa.handler">
                                                 <FontAwesomeIcon
                                                     v-if="pa.icon"

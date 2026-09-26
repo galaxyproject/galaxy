@@ -314,6 +314,39 @@ describe("useResourceWatcher", () => {
     });
 
     describe("cleanup and resource management", () => {
+        it("should stop polling and remove its visibilitychange listener when disposed", async () => {
+            const { startWatchingResource, dispose } = useResourceWatcher(mockWatchHandler);
+
+            startWatchingResource();
+            await flushPromises();
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
+            expect(mockRemoveEventListener).not.toHaveBeenCalled();
+
+            dispose();
+
+            expect(mockRemoveEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+
+            // No further polling after disposal.
+            vi.advanceTimersByTime(60000);
+            await flushPromises();
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
+        });
+
+        it("dispose is idempotent and safe to call more than once", async () => {
+            const { startWatchingResource, dispose } = useResourceWatcher(mockWatchHandler);
+
+            startWatchingResource();
+            await flushPromises();
+
+            dispose();
+            expect(mockRemoveEventListener).toHaveBeenCalledTimes(1);
+
+            // A second dispose (e.g. an unmount hook plus an explicit caller both calling it)
+            // must not throw or remove a listener that's already gone.
+            expect(() => dispose()).not.toThrow();
+            expect(mockRemoveEventListener).toHaveBeenCalledTimes(1);
+        });
+
         it("should clear existing timeout when starting watching again", async () => {
             const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
 
