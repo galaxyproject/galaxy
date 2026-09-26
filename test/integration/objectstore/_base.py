@@ -47,6 +47,35 @@ OBJECT_STORE_CONFIG = string.Template("""
     </backends>
 </object_store>
 """)
+CLOUD_OBJECT_STORE_CONFIG = string.Template("""
+type: cloud
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: galaxy
+
+connection:
+  endpoint_url: http://${host}:${port}
+
+transfer:
+  multipart_threshold: 5242880
+  multipart_chunksize: 5242880
+  max_concurrency: 2
+
+cache:
+  path: ${temp_directory}/object_store_cache
+  size: 1000
+  cache_updated_data: ${cache_updated_data}
+
+extra_dirs:
+- type: job_work
+  path: ${temp_directory}/job_working_directory_cloud
+- type: temp
+  path: ${temp_directory}/tmp_cloud
+""")
 RUCIO_OBJECT_STORE_CONFIG = string.Template("""
     type: rucio
     upload_rse_name: ${rucio_rse}
@@ -176,7 +205,16 @@ def files_count(directory):
 
 
 @integration_util.skip_unless_docker()
-class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+class BaseSeaweedFSObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    """A store backed by a disposable SeaweedFS container.
+
+    Subclasses supply the store configuration; everything else -- container
+    lifecycle, temp directories and the metadata settings the object store
+    tests need -- is shared.
+    """
+
+    object_store_config = OBJECT_STORE_CONFIG
+    object_store_config_filename = "object_store_conf.xml"
     object_store_cache_path: str
 
     @classmethod
@@ -196,14 +234,14 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        config_path = os.path.join(temp_directory, cls.object_store_config_filename)
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
             f.write(
-                OBJECT_STORE_CONFIG.safe_substitute(
+                cls.object_store_config.safe_substitute(
                     {
                         "temp_directory": temp_directory,
                         "host": OBJECT_STORE_HOST,
@@ -223,6 +261,22 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     @classmethod
     def updateCacheData(cls):
         return True
+
+
+# The shared default is the S3-style XML configuration the swift tests use.
+BaseSwiftObjectStoreIntegrationTestCase = BaseSeaweedFSObjectStoreIntegrationTestCase
+
+
+@integration_util.skip_unless_docker()
+class BaseCloudObjectStoreIntegrationTestCase(BaseSeaweedFSObjectStoreIntegrationTestCase):
+    """The cloudbridge-based cloud store.
+
+    The transfer block keeps the multipart threshold at the 5 MiB provider
+    minimum so modest test datasets exercise the multipart upload path.
+    """
+
+    object_store_config = CLOUD_OBJECT_STORE_CONFIG
+    object_store_config_filename = "object_store_conf.yml"
 
 
 class BaseAzureObjectStoreIntegrationTestCase(

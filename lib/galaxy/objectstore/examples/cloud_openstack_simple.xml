@@ -1,0 +1,7 @@
+<object_store type="cloud" provider="openstack">
+     <auth username="os_user" password="os_pass" project_name="os_project" auth_url="https://keystone.example.org:5000/v3" region="RegionOne" user_domain_name="Default" project_domain_name="Default" />
+     <bucket name="unique_container_name" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
