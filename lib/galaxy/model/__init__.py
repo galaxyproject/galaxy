@@ -877,6 +877,7 @@ class User(Base, Dictifiable, RepresentById):
     display_name: Mapped[str | None] = mapped_column(TrimmedString(255))
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[datetime | None] = mapped_column(default=now)
+    last_login: Mapped[datetime | None] = mapped_column(nullable=True)
     external: Mapped[bool | None] = mapped_column(default=False)
     form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
     preferred_object_store_id: Mapped[str] = mapped_column(String(255), nullable=True)
@@ -1006,6 +1007,14 @@ class User(Base, Dictifiable, RepresentById):
             except Exception:
                 pass
         return data
+
+    @property
+    def effective_last_login(self):
+        if self.last_login:
+            return self.last_login
+        if self.current_galaxy_session:
+            return self.current_galaxy_session.update_time
+        return None
 
     def set_password_cleartext(self, cleartext):
         """

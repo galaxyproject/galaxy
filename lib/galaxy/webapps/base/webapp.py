@@ -1162,6 +1162,7 @@ def create_new_session(trans: "GalaxyWebTransaction", prev_galaxy_session=None, 
     if user_for_new_session:
         # The new session should be associated with the user
         galaxy_session.user = user_for_new_session
+        user_for_new_session.last_login = utc_now()
         ensure_object_added_to_session(galaxy_session, object_in_session=user_for_new_session)
     return galaxy_session
 

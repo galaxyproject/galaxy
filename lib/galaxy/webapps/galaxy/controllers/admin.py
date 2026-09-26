@@ -61,8 +61,8 @@ class UserListGrid(grids.GridData):
 
     class LastLoginColumn(grids.GridColumn):
         def get_value(self, trans: GalaxyWebTransaction, grid, user):
-            if user.galaxy_sessions:
-                return self.format(user.current_galaxy_session.update_time)
+            if last_login := user.effective_last_login:
+                return self.format(last_login)
             return "never"
 
         def sort(self, trans: GalaxyWebTransaction, query, ascending, column_name=None):
@@ -75,11 +75,12 @@ class UserListGrid(grids.GridData):
                 .subquery()
             )
             query = query.outerjoin(last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id)
+            last_login = func.coalesce(model.User.table.c.last_login, last_login_subquery.c.last_login)
 
             if not ascending:
-                query = query.order_by((last_login_subquery.c.last_login).desc().nullslast())
+                query = query.order_by(last_login.desc().nullslast())
             else:
-                query = query.order_by((last_login_subquery.c.last_login).asc().nullsfirst())
+                query = query.order_by(last_login.asc().nullsfirst())
             return query
 
     class DiskUsageColumn(grids.GridColumn):
