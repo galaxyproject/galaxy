@@ -144,6 +144,10 @@ function setRedirect(url: string) {
 function returnToLogin() {
     router.push("/login/start");
 }
+
+function goToResetPassword() {
+    router.push({ path: "/login/reset_password", query: { email: login.value } });
+}
 </script>
 
 <template>
@@ -203,19 +207,9 @@ function returnToLogin() {
                                         <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
-                                            <a
-                                                id="reset-password-link"
-                                                v-localize
-                                                href="javascript:void(0)"
-                                                role="button"
-                                                @click.prevent="
-                                                    router.push({
-                                                        path: '/login/reset_password',
-                                                        query: { email: login },
-                                                    })
-                                                ">
-                                                Click here to reset your password.
-                                            </a>
+                                            <GLink id="reset-password-link" @click="goToResetPassword">
+                                                <span v-localize>Click here to reset your password.</span>
+                                            </GLink>
                                         </BFormText>
                                     </BFormGroup>
 

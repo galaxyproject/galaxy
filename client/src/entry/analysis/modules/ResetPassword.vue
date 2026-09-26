@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BButton, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BAlert, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const router = useRouter();
 
@@ -44,9 +46,9 @@ async function resetLogin() {
                                 <BFormInput id="reset-email" v-model="email" type="email" name="email" required />
                             </BFormGroup>
 
-                            <BButton id="reset-password" v-localize type="submit" :disabled="loading"
-                                >Send password reset email</BButton
-                            >
+                            <GButton id="reset-password" v-localize type="submit" :disabled="loading">
+                                Send password reset email
+                            </GButton>
                         </BCard>
                     </BForm>
                 </div>
