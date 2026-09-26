@@ -12,7 +12,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
-import { getVersions } from "./modules/services";
+import { getModule, getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
@@ -44,6 +44,8 @@ type IndexComponent = Vue & {
     stateStore: ReturnType<typeof useWorkflowStateStore>;
     datatypesMapper: ReturnType<typeof useDatatypesMapperStore> | null;
     datatypes: Record<string, string[]> | null;
+    onSetData: (stepId: number, data: object) => Promise<void>;
+    stepActions: { updateStep: (stepId: number, data: object) => void };
     onDownload: () => void;
     onChange: () => void;
     saveAsName: string | null;
@@ -115,6 +117,58 @@ describe("Index", () => {
     function setHasChanges(value: boolean) {
         wrapper.vm.stateStore.hasChanges = value;
     }
+
+    it("skips superseded form edits and applies the latest module response", async () => {
+        await flushPromises();
+        vi.useFakeTimers();
+        try {
+            const stepId = 0;
+            const updateStep = vi.spyOn(wrapper.vm.stepActions, "updateStep").mockImplementation(() => {});
+            let resolveFirst!: (data: object) => void;
+            const firstResponse = new Promise((resolve) => {
+                resolveFirst = resolve;
+            });
+            const latestData = {
+                content_id: "cat1",
+                inputs: [],
+                outputs: [],
+                config_form: { inputs: [] },
+                tool_state: { text: "latest" },
+                tool_version: "1.0",
+                errors: null,
+            };
+            const mockGetModule = vi.mocked(getModule);
+            mockGetModule.mockReset();
+            mockGetModule.mockReturnValueOnce(firstResponse).mockResolvedValueOnce(latestData);
+            const onSetData = wrapper.vm.onSetData;
+
+            const first = onSetData(stepId, { text: "first" });
+            const skipped = onSetData(stepId, { text: "intermediate" });
+            const latest = onSetData(stepId, { text: "latest" });
+
+            await expect(skipped).resolves.toBeUndefined();
+            expect(updateStep).not.toHaveBeenCalled();
+            expect(mockGetModule).toHaveBeenCalledTimes(1);
+
+            resolveFirst({ ...latestData, tool_state: { text: "first" } });
+            await first;
+            expect(updateStep).toHaveBeenLastCalledWith(stepId, { ...latestData, tool_state: { text: "first" } });
+            await vi.advanceTimersByTimeAsync(1000);
+            await latest;
+
+            expect(mockGetModule).toHaveBeenCalledTimes(2);
+            expect(mockGetModule).toHaveBeenLastCalledWith(
+                { text: "latest" },
+                stepId,
+                wrapper.vm.stateStore.setLoadingState,
+            );
+            expect(updateStep).toHaveBeenCalledTimes(2);
+            expect(updateStep).toHaveBeenLastCalledWith(stepId, latestData);
+        } finally {
+            vi.useRealTimers();
+            wrapper.destroy();
+        }
+    });
 
     it("resolves datatypes", async () => {
         expect(wrapper.vm.datatypesMapper).not.toBeNull();

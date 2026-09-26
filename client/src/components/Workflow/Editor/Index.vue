@@ -1102,9 +1102,13 @@ export default {
             return true;
         },
         onSetData(stepId, newData) {
-            this.lastQueue
+            return this.lastQueue
                 .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
                 .then((data) => {
+                    // Superseded edits resolve without module data.
+                    if (data === undefined) {
+                        return;
+                    }
                     const partialStep = {
                         content_id: data.content_id,
                         inputs: data.inputs,
