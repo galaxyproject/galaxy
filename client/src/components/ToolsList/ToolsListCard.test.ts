@@ -97,6 +97,12 @@ describe("ToolsListCard", () => {
         expect(help.text()).not.toContain("**Important**");
     });
 
+    it("names the icon-only button that opens the version popover", () => {
+        const { wrapper } = mountCard({ propsData: { version: "1.0.0" } });
+
+        expect(wrapper.find("#tools-list-__FILTER_FAILED_DATASETS__").attributes("aria-label")).toBe("Tool info");
+    });
+
     it("renders tool tags and emits an exact tag filter when a tag is clicked", async () => {
         const { wrapper } = mountCard();
 

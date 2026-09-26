@@ -13,7 +13,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover, BSkeleton } from "bootstrap-vue";
+import { BSkeleton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -29,6 +29,7 @@ import GButton from "../BaseComponents/GButton.vue";
 import GCard from "../Common/GCard.vue";
 import ToolHelp from "../Tool/ToolHelp.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 type OntologyBadge = {
     id: string;
@@ -340,11 +341,12 @@ const {
                 icon-only
                 transparent
                 inline
+                aria-label="Tool info"
                 style="cursor: help"
                 @click="showPopover = !showPopover">
                 <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
             </GButton>
-            <BPopover
+            <GPopover
                 v-if="props.version || !props.workflowCompatible"
                 :show.sync="showPopover"
                 custom-class="tool-info-popover"
@@ -360,7 +362,7 @@ const {
                         Not Workflow compatible
                     </div>
                 </div>
-            </BPopover>
+            </GPopover>
         </template>
 
         <template v-slot:description>
