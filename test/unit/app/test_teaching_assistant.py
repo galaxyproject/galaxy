@@ -223,6 +223,25 @@ class TestTeachingAssistantAgent:
             with pytest.raises(pydantic_ai.ModelRetry):
                 _render_tutorial_references(ctx, misplaced)
 
+    def test_excerpts_are_plain_text_not_gtn_markup(self):
+        agent = TeachingAssistantAgent(self.deps)
+        record = {"title": "Quality Control", "url": "https://training.galaxyproject.org/qc"}
+        marked_up = mock.Mock(difficulty="introductory")
+        marked_up.to_dict.return_value = {
+            **record,
+            "snippet": "...> > 1. {% tool [FastQC](toolshed.g2.bx.psu.edu/repos/devteam/fastqc) %} {% icon tool %} "
+            "on the reads\n> ![plot](../../images/qc.png)\n{: .hands_on}...",
+        }
+        only_markup = mock.Mock(difficulty="introductory", description="Inspect reads before mapping")
+        only_markup.to_dict.return_value = {**record, "snippet": "...{: .details}\n> ![plot](../../images/qc.png)..."}
+        agent.gtn_db = mock.Mock()
+        agent.gtn_db.search.return_value = [marked_up, only_markup]
+
+        sources = agent._search_tutorials("QC", 5).metadata["tutor_sources"]
+
+        assert sources[0]["excerpt"] == "...1. FastQC on the reads..."
+        assert sources[1]["excerpt"] == "Inspect reads before mapping"
+
     @pytest.mark.parametrize("tool_name, run_id", [("recommend_tools", "current"), ("suggest_tutorials", None)])
     def test_only_current_search_records_authorize_references(self, tool_name, run_id):
         part = SimpleNamespace(

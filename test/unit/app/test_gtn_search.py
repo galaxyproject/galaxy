@@ -29,6 +29,7 @@ from galaxy.agents.gtn.build_database import (
 )
 from galaxy.agents.gtn.search import (
     GTN_FAQ_BASE_URL,
+    plain_excerpt,
     sanitize_fts5_query,
 )
 
@@ -118,6 +119,51 @@ def test_sanitize_fts5_query_returns_empty_for_blank_input():
 def test_sanitize_fts5_query_handles_only_operators():
     # All characters strip to whitespace, so the cleaned query is empty.
     assert sanitize_fts5_query("()[],;:+-?!") == ""
+
+
+# Snippets as FTS5 cuts them from the June 2026 GTN build, mid-tag included.
+@pytest.mark.parametrize(
+    "snippet, expected",
+    [
+        (
+            "...Using {% tool [Merge collections](__MERGE_COLLECTION__) %} merge both quality processed reads...",
+            "...Using Merge collections merge both quality processed reads...",
+        ),
+        (
+            "...hands-on-title>Quality control with FastQC</hands-on-title>\n>\n> 1. **FastQC** {% icon tool %}: "
+            "Run the tool **FastQC** on each FASTQ file...",
+            "...Quality control with FastQC 1. FastQC: Run the tool FastQC on each FASTQ file...",
+        ),
+        (
+            "...any column using simple expressions](Filter1) %} with\n> >\n> >    - {% icon param-file %} "
+            '*"Filter"*: **Combined Variant Report**\n> >    - *"With following conidition"*: `c15 == "SRR1"`',
+            '...with - "Filter": Combined Variant Report - "With following conidition": c15 == "SRR1"',
+        ),
+        (
+            "...some short inserts.\n>\n> ![Adapter Content](../../images/quality-control/adapter.png)\n>\n"
+            "{: .details}\n\nWe can run a [trimming tool](https://cutadapt.readthedocs.io) such as Cutadapt...",
+            "...some short inserts. We can run a trimming tool such as Cutadapt...",
+        ),
+        (
+            "...The job has failed. | ![Status: Failed](../../images/status_failed.png...",
+            "...The job has failed....",
+        ),
+        (
+            "...> {: .solution}\n>\n{: .question}\n\n\n## Trim adapters\n\nWe'll trim them using [Cutadapt](https://cutadapt...",
+            "...Trim adapters We'll trim them using Cutadapt...",
+        ),
+        ("...the tool {% tool [FastQC](toolshed.g2.bx.psu.edu/repos/devteam/fastqc...", "...the tool..."),
+        ("...> {: .details}\n>\n> ![plot](../../images/plot.png)...", ""),
+        (
+            "...trim with:\n```bash\ncutadapt -a ADAPTER reads.fq\n```\nThen...",
+            "...trim with: cutadapt -a ADAPTER reads.fq Then...",
+        ),
+        ("...labelling --> <!-- TODO: fix --> The data {{page.zenodo_link}} here...", "...The data here..."),
+        ("Plain description with no markup.", "Plain description with no markup."),
+    ],
+)
+def test_plain_excerpt_strips_gtn_markup(snippet, expected):
+    assert plain_excerpt(snippet) == expected
 
 
 def test_search_returns_tutorial_hit(fixture_db: Path):
