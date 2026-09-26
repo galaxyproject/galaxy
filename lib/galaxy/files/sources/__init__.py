@@ -533,7 +533,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
         resolved_config = self._get_runtime_context(opts, user_context)
         write_intent = opts.write_intent if opts else False
-        return self._list(resolved_config, path, recursive, write_intent, limit, offset, query)
+        return self._list(resolved_config, path, recursive, write_intent, limit, offset, query, sort_by)
 
     def _list(
         self,
