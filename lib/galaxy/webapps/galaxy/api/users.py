@@ -102,20 +102,6 @@ from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
-_information_inputs_deprecation_warned = False
-
-
-def _warn_information_inputs_deprecated() -> None:
-    """Log once per process, so a busy instance does not fill its log with this."""
-    global _information_inputs_deprecation_warned
-    if not _information_inputs_deprecation_warned:
-        _information_inputs_deprecation_warned = True
-        log.warning(
-            "/api/users/{id}/information/inputs is deprecated and will be removed in a future release. "
-            "Use /api/users/{user_id} for email, username and display name, and "
-            "/api/users/{user_id}/extra_preferences/inputs for administrator-defined extra preferences."
-        )
-
 
 router = Router(tags=["users"])
 
@@ -886,7 +872,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         :param id: the encoded id of the user
         :type  id: str
         """
-        _warn_information_inputs_deprecated()
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -1023,7 +1008,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         :param payload: data with new settings
         :type  payload: dict
         """
-        _warn_information_inputs_deprecated()
         payload = payload or {}
         user = self._get_user(trans, id)
         ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
