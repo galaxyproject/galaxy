@@ -422,6 +422,11 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
+    # The deserializer skips keys it does not know, so without this a misspelt
+    # field, or one this route cannot change (`is_admin`, `password`), would
+    # be dropped and the request would still succeed.
+    model_config = ConfigDict(extra="forbid")
+
     active: Annotated[
         OmittableNotNull[bool],
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),

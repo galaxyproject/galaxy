@@ -118,6 +118,12 @@ class TestUsersApi(ApiTestCase):
             self._assert_status_code_is(update_response, 400)
             self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
+            # fields the route does not update are refused, not dropped
+            for data in ({"is_admin": True}, {"password": "new-password"}, {"usrname": "linnaeus"}):
+                update_response = self.__update(user, data=data)
+                self._assert_status_code_is(update_response, 400)
+                self._assert_error_code_is(update_response, INVALID_PARAMETER)
+
             # not them
             update_response = self.__update(not_the_user, data=payload)
             self._assert_status_code_is(update_response, 400)
