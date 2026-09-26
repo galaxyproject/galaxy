@@ -61,7 +61,7 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     });
 
     function mountItem() {
-        wrapper = mount(GenericItem, {
+        wrapper = mount(GenericItem as object, {
             localVue,
             router: new VueRouter(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
