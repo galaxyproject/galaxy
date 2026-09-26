@@ -11496,14 +11496,14 @@ class UserAddress(Base, RepresentById):
         return {
             "id": trans.security.encode_id(self.id),
             "name": sanitize_html(self.name),
-            "desc": sanitize_html(self.desc),
-            "institution": sanitize_html(self.institution),
+            "desc": sanitize_html(self.desc or ""),
+            "institution": sanitize_html(self.institution or ""),
             "address": sanitize_html(self.address),
             "city": sanitize_html(self.city),
             "state": sanitize_html(self.state),
             "postal_code": sanitize_html(self.postal_code),
             "country": sanitize_html(self.country),
-            "phone": sanitize_html(self.phone),
+            "phone": sanitize_html(self.phone or ""),
         }
 
 

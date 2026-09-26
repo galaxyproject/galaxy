@@ -250,8 +250,12 @@ _acceptable_attributes = [
 ]
 
 
-def sanitize_html(htmlSource, allow_data_urls=False):
-    kwd = dict(tags=_acceptable_elements, attributes=_acceptable_attributes, strip=True)
-    if allow_data_urls:
-        kwd["protocols"] = list(bleach.ALLOWED_PROTOCOLS) + ["data"]
-    return bleach.clean(unicodify(htmlSource), **kwd)
+def sanitize_html(htmlSource: str | bytes, allow_data_urls: bool = False) -> str:
+    protocols = [*bleach.ALLOWED_PROTOCOLS, "data"] if allow_data_urls else bleach.ALLOWED_PROTOCOLS
+    return bleach.clean(
+        unicodify(htmlSource),
+        tags=_acceptable_elements,
+        attributes=_acceptable_attributes,
+        protocols=protocols,
+        strip=True,
+    )
