@@ -7,6 +7,7 @@ import pytest
 
 from galaxy.tools import cache as cache_module
 from galaxy.tools.cache import ToolCache
+from galaxy.util.hash_util import md5_hash_file
 
 
 def test_hash_initialization_is_lazy(tmp_path):
@@ -50,16 +51,16 @@ def test_cache_tool_during_hash_initialization(tmp_path, monkeypatch, changed_fi
         def __exit__(self, *args):
             self.lock.release()
 
-    cache._lock = ObservedLock()
-    hash_file = cache_module.md5_hash_file
+    observed_lock = ObservedLock()
+    monkeypatch.setattr(cache, "_lock", observed_lock)
 
     def blocking_hash(path):
         # Iteration and publication of initialization must share the writer's lock.
-        assert cache._lock.lock.locked()
+        assert observed_lock.lock.locked()
         if path == initial:
             hashing_started.set()
             assert finish_hashing.wait(5)
-        return hash_file(path)
+        return md5_hash_file(path)
 
     monkeypatch.setattr(cache_module, "md5_hash_file", blocking_hash)
     tool = Mock(id="tool", all_ids=["tool"], _macro_paths=[macro])
@@ -77,7 +78,7 @@ def test_cache_tool_during_hash_initialization(tmp_path, monkeypatch, changed_fi
 
     assert cache._hashes_initialized
     for path in (initial, config, macro):
-        assert cache._hash_by_tool_paths[str(path)]._tool_hash == hash_file(path)
+        assert cache._hash_by_tool_paths[str(path)]._tool_hash == md5_hash_file(path)
 
     # A tool added while initialization runs must have a baseline for later edits.
     changed_path = tmp_path / changed_file
