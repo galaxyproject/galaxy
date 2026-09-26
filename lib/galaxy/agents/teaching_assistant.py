@@ -40,7 +40,10 @@ from .base import (
     truncate_middle,
 )
 from .gtn import GTNSearchDB
-from .gtn.search import plain_excerpt
+from .gtn.search import (
+    plain_excerpt,
+    TutorialCurriculum,
+)
 from .operations import AgentOperationsManager
 
 log = logging.getLogger(__name__)
@@ -75,6 +78,7 @@ def _plain_markdown(value: str) -> str:
 
 def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], content: str) -> str:
     sources = {}
+    job_tools: list[str] = []
     for message in ctx.messages:
         # Conversation history and failed transport attempts cannot authorize new citations.
         if not ctx.run_id or message.run_id != ctx.run_id:
@@ -87,6 +91,13 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
                 and isinstance(part.metadata, dict)
             ):
                 sources.update((s["id"], s) for s in part.metadata.get("tutor_sources", []))
+            if (
+                part.part_kind == "tool-return"
+                and part.tool_name == "analyze_error"
+                and getattr(part, "outcome", "success") == "success"
+                and isinstance(part.metadata, dict)
+            ):
+                job_tools.extend(part.metadata.get("tutor_job_tools", []))
 
     ids = _REFERENCE.findall(content)
     link_text = unquote(unescape(re.sub(r"\\([\W_])", r"\1", content)))
@@ -116,6 +127,24 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
             "Galaxy renders the references. "
             "Remove authored tutorial URLs, unknown markers, and unsupported tutorial claims. "
             "If no source was retrieved, give useful general guidance and say you cannot verify a specific tutorial."
+        )
+
+    # Search matches body text, so for a failed job it surfaces any tutorial that happens to run the same tool.
+    off_topic = [
+        source_id
+        for source_id in ids
+        if job_tools
+        and not any(
+            re.search(
+                rf"(?<!\w){re.escape(tool)}(?!\w)", sources[source_id].get("about", sources[source_id]["title"]), re.I
+            )
+            for tool in job_tools
+        )
+    ]
+    if off_topic:
+        raise ModelRetry(
+            f"For a failed job, cite only a tutorial whose title or stated objectives name the failing tool "
+            f"({', '.join(job_tools)}). Remove the other tutorial markers; citing none is fine."
         )
 
     def render(match: re.Match) -> str:
@@ -229,7 +258,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return header + ":\n" + "\n".join(summary_lines)
 
         @agent.tool
-        async def analyze_error(ctx, job_id: str) -> str:
+        async def analyze_error(ctx, job_id: str) -> str | ToolReturn:
             """Get error details for a failed job. Returns raw analysis for pedagogical reframing."""
             try:
                 status = teaching_assistant.ops.get_job_status(job_id, full=True)
@@ -261,7 +290,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 log.warning(f"Error analysis delegation failed: {e}")
                 analysis = "Error analysis agent unavailable."
 
-            return (
+            report = (
                 f"Job {job_id} details:\n"
                 f"- Tool: {job_info.get('tool_id', 'unknown')}\n"
                 f"- State: {job_info.get('state', 'unknown')}\n"
@@ -274,6 +303,19 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 )
                 + f"Analysis: {analysis}"
             )
+            tool_id = str(job_info.get("tool_id") or "")
+            if not tool_id:
+                return report
+            # Toolshed IDs end in owner/repo/tool/version; the tool segment is what tutorials name.
+            tools = [tool_id.split("/")[-2] if "/" in tool_id else tool_id]
+            try:
+                name = teaching_assistant.ops.get_tool_details(tool_id).get("name")
+            except Exception as e:
+                log.warning(f"Could not look up failing tool: {e}")
+                name = None
+            if name and name not in tools:
+                tools.append(name)
+            return ToolReturn(return_value=report, metadata={"tutor_job_tools": tools})
 
         @agent.tool
         async def recommend_tools(ctx, task_description: str) -> str:
@@ -370,6 +412,14 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                     or not record.get("title")
                 ):
                     continue
+                about = [record["title"]]
+                try:
+                    curriculum = self.gtn_db.get_tutorial_curriculum(result.topic, result.tutorial)
+                except Exception:
+                    log.debug("No curriculum for tutorial %s", record["title"], exc_info=True)
+                    curriculum = None
+                if isinstance(curriculum, TutorialCurriculum):
+                    about += curriculum.objectives + curriculum.questions + curriculum.key_points
                 sources.append(
                     {
                         "id": uuid4().hex[:12],
@@ -377,6 +427,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                         "url": url,
                         "excerpt": plain_excerpt(record.get("snippet") or "") or result.description,
                         "difficulty": result.difficulty or "unknown",
+                        "about": "\n".join(about),
                     }
                 )
         except Exception:
@@ -391,7 +442,9 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return "Search returned no usable tutorial references. Tutorial availability is unknown."
         # URLs stay in application metadata; the model selects records instead of writing links.
         return ToolReturn(
-            return_value={"sources": [{k: v for k, v in source.items() if k != "url"} for source in sources]},
+            return_value={
+                "sources": [{k: v for k, v in source.items() if k not in ("url", "about")} for source in sources]
+            },
             metadata={"tutor_sources": sources},
         )
 

@@ -100,7 +100,7 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
                 # Specialist model prose is not an authoritative source of tutorial references.
                 if isinstance(call.get("result"), dict):
                     for source in call.get("sources", []):
-                        visible = {k: v for k, v in source.items() if k != "url"}
+                        visible = {k: v for k, v in source.items() if k not in ("url", "about")}
                         if visible in call["result"].get("sources", []) and any(
                             source.get("url") == record.get("url")
                             and source.get("title") == record.get("title")
