@@ -14,9 +14,9 @@ from galaxy.tool_util.cwl.parser import (
 )
 from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tool_util.parser.factory import get_tool_source as _get_tool_source
-from galaxy.util import galaxy_directory
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
 
-CWL_TOOLS_DIRECTORY = os.path.abspath(os.path.join(galaxy_directory(), "test/functional/tools/cwl_tools"))
+CWL_TOOLS_DIRECTORY = os.path.abspath(functional_test_tool_path("cwl_tools"))
 
 
 def get_tool_source(*args, **kwargs):
