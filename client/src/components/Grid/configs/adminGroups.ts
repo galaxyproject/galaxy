@@ -1,4 +1,4 @@
-import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
@@ -56,19 +56,11 @@ const fields: FieldArray = [
         type: "operations",
         operations: [
             {
-                title: "Edit Name",
+                title: "Edit",
                 icon: faEdit,
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: (data: GroupEntry) => {
-                    emit(`/admin/form/rename_group?id=${data.id}`);
-                },
-            },
-            {
-                title: "Edit Permissions",
-                icon: faKey,
-                condition: (data: GroupEntry) => !data.deleted,
-                handler: (data: GroupEntry) => {
-                    emit(`/admin/form/manage_users_and_roles_for_group?id=${data.id}`);
+                    emit(`/admin/form/edit_group?id=${data.id}`);
                 },
             },
             {

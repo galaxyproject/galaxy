@@ -427,6 +427,10 @@ class RemoteUserCreationPayload(Model):
     remote_user_email: str = UserEmailField
 
 
+class UserPasswordResetPayload(Model):
+    password: str = Field(default=..., title="Password", description="The new password of the user.")
+
+
 class UserDeletionPayload(Model):
     purge: bool = Field(
         default=False,
@@ -2936,8 +2940,50 @@ class RoleDefinitionModel(Model):
     role_type: Literal["admin", "user_tool_create", "user_tool_execute"] = "admin"
 
 
+class RoleUpdatePayload(Model):
+    name: RoleNameField | None = None
+    description: RoleDescriptionField | None = None
+    user_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="User IDs",
+        description="Users to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+    group_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="Group IDs",
+        description="Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+
+
 class RoleListResponse(RootModel):
     root: list[RoleModelResponse]
+
+
+class RoleUserResponse(Model):
+    id: EncodedDatabaseIdField
+    email: str = UserEmailField
+
+
+class RoleUserListResponse(RootModel):
+    root: list[RoleUserResponse]
+
+
+class GroupModelListResponse(RootModel):
+    root: list[GroupModel]
+
+
+class UserRolesUpdatePayload(Model):
+    role_ids: list[DecodedDatabaseIdField] = Field(
+        title="Role IDs",
+        description="Roles to associate with the user, replacing the current ones. The user's private role is always kept.",
+    )
+
+
+class UserGroupsUpdatePayload(Model):
+    group_ids: list[DecodedDatabaseIdField] = Field(
+        title="Group IDs",
+        description="Groups the user is a member of, replacing the current ones.",
+    )
 
 
 # The tuple should probably be another proper model instead?

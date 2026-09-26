@@ -57,6 +57,7 @@ from galaxy.schema.schema import (
     FavoriteObjectType,
     FavoriteOrderPayload,
     FlexibleUserIdType,
+    GroupModelListResponse,
     MaybeLimitedUserModel,
     RemoteUserCreationPayload,
     RoleListResponse,
@@ -66,6 +67,9 @@ from galaxy.schema.schema import (
     UserExtraPreferencesInputs,
     UserExtraPreferencesPayload,
     UserExtraPreferencesUpdated,
+    UserGroupsUpdatePayload,
+    UserPasswordResetPayload,
+    UserRolesUpdatePayload,
     UserUpdatePayload,
 )
 from galaxy.security.validate_user_input import (
@@ -797,6 +801,62 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> RoleListResponse:
         return self.service.get_user_roles(trans=trans, user_id=user_id)
+
+    @router.put(
+        "/api/users/{user_id}/roles",
+        name="set user roles",
+        summary="Replace the roles associated with this user. The user's private role is kept.",
+        require_admin=True,
+    )
+    def set_user_roles(
+        self,
+        user_id: UserIdPathParam,
+        payload: UserRolesUpdatePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> RoleListResponse:
+        return self.service.set_user_roles(trans=trans, user_id=user_id, payload=payload)
+
+    @router.put(
+        "/api/users/{user_id}/password",
+        name="reset_user_password",
+        summary="Set a new password for a user.",
+        require_admin=True,
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def reset_password(
+        self,
+        user_id: UserIdPathParam,
+        payload: UserPasswordResetPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> None:
+        self.service.reset_password(trans=trans, user_id=user_id, payload=payload)
+
+    @router.get(
+        "/api/users/{user_id}/groups",
+        name="get user groups",
+        summary="Return the groups this user is a member of.",
+        require_admin=True,
+    )
+    def get_user_groups(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> GroupModelListResponse:
+        return self.service.get_user_groups(trans=trans, user_id=user_id)
+
+    @router.put(
+        "/api/users/{user_id}/groups",
+        name="set user groups",
+        summary="Replace the groups this user is a member of.",
+        require_admin=True,
+    )
+    def set_user_groups(
+        self,
+        user_id: UserIdPathParam,
+        payload: UserGroupsUpdatePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> GroupModelListResponse:
+        return self.service.set_user_groups(trans=trans, user_id=user_id, payload=payload)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

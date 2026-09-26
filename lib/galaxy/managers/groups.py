@@ -92,11 +92,11 @@ class GroupsManager:
         """
         sa_session = trans.sa_session
         group = self._get_group(sa_session, group_id)
-        if name := payload.name:
+        if (name := payload.name) and name != group.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
-            sa_session.commit()
 
+        # Commits the name together with the associations.
         self._app.security_agent.set_group_user_and_role_associations(
             group, user_ids=payload.user_ids, role_ids=payload.role_ids
         )

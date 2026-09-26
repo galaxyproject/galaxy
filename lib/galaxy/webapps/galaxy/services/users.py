@@ -30,10 +30,15 @@ from galaxy.schema.schema import (
     AnonUserModel,
     DetailedUserModel,
     FlexibleUserIdType,
+    GroupModel,
+    GroupModelListResponse,
     LimitedUserModel,
     MaybeLimitedUserModel,
     RoleListResponse,
+    UserGroupsUpdatePayload,
     UserModel,
+    UserPasswordResetPayload,
+    UserRolesUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
@@ -117,6 +122,8 @@ class UsersService(ServiceBase):
         if trans.anonymous or (user and user.id != user_id and not trans.user_is_admin):
             raise glx_exceptions.InsufficientPermissionsException("Access denied.")
         user = self.user_manager.by_id(user_id)
+        if user is None:
+            raise glx_exceptions.ObjectNotFound("User not found.")
         return user
 
     def get_extra_preferences(self, trans: ProvidesUserContext) -> dict[str, Any] | None:
@@ -357,7 +364,26 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans: ProvidesUserContext, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id: int) -> RoleListResponse:
         user = self.get_user(trans, user_id)
-        roles = [ura.role for ura in user.roles]
+        roles = [ura.role for ura in user.roles if not ura.role.deleted]
         return RoleListResponse(root=[role_to_model(r) for r in roles])
+
+    def set_user_roles(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserRolesUpdatePayload
+    ) -> RoleListResponse:
+        self.user_manager.set_roles(self.get_user(trans, user_id), payload.role_ids)
+        return self.get_user_roles(trans, user_id)
+
+    def get_user_groups(self, trans: ProvidesUserContext, user_id: int) -> GroupModelListResponse:
+        groups = self.user_manager.get_groups(self.get_user(trans, user_id))
+        return GroupModelListResponse(root=[GroupModel(id=group_id, name=name) for group_id, name in groups])
+
+    def set_user_groups(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserGroupsUpdatePayload
+    ) -> GroupModelListResponse:
+        self.user_manager.set_groups(self.get_user(trans, user_id), payload.group_ids)
+        return self.get_user_groups(trans, user_id)
+
+    def reset_password(self, trans: ProvidesUserContext, user_id: int, payload: UserPasswordResetPayload) -> None:
+        self.user_manager.set_password(trans, self.get_user(trans, user_id), payload.password)
