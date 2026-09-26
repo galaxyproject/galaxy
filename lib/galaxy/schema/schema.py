@@ -16,6 +16,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AfterValidator,
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
@@ -36,6 +37,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.schema.agents import AgentResponse
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -46,6 +48,7 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
     literal_to_value,
     ModelClassField,
+    validation_message_wrapper,
 )
 from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
@@ -69,6 +72,11 @@ from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    DISPLAY_NAME_MAX_LEN,
+    validate_display_name_str,
+)
 
 MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
@@ -259,8 +267,29 @@ UserDisplayNameField = Field(
     description=(
         "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
     ),
-    max_length=255,
 )
+
+
+def _canonicalize_display_name_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str | None schema to reject.
+    return canonicalize_display_name(value) if isinstance(value, str) else value
+
+
+def _check_display_name(display_name: str | None) -> str | None:
+    if message := validate_display_name_str(display_name):
+        raise RequestParameterInvalidException(message)
+    return display_name
+
+
+# A display name as a client may submit it. The length limit applies to the
+# canonical form, so padding a name does not push it over, and a blank name
+# arrives as None, which clears the field.
+DisplayName = Annotated[
+    Annotated[str, Field(max_length=DISPLAY_NAME_MAX_LEN)] | None,
+    BeforeValidator(_canonicalize_display_name_input),
+    AfterValidator(validation_message_wrapper(_check_display_name)),
+]
+
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -372,7 +401,7 @@ class UserUpdatePayload(Model):
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
-    display_name: Annotated[str | None, UserDisplayNameField] = None
+    display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
     # deactivation, not on a stale activation. UserDeserializer only lets an

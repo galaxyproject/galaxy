@@ -5,6 +5,7 @@ from urllib.parse import (
 
 import requests
 
+from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.api_util import baseauth_headers
@@ -29,6 +30,7 @@ TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
 TEST_USER_EMAIL_ROLES_AND_GROUPS = "user_for_roles_and_groups_test@bx.psu.edu"
+INVALID_PARAMETER = error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
 
 
 class TestUsersApi(ApiTestCase):
@@ -142,10 +144,20 @@ class TestUsersApi(ApiTestCase):
             # text-direction characters would let the name render as other text
             update_response = self.__update(user, data={"display_name": "Carl\u202evon Linné"})
             self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
             # over the column length
             update_response = self.__update(user, data={"display_name": "N" * 256})
             self._assert_status_code_is(update_response, 400)
+
+            # the length limit applies once surrounding whitespace is stripped
+            update_response = self.__update(user, data={"display_name": " " + "N" * 255 + " "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "N" * 255
+
+            update_response = self.__update(user, data={"display_name": " " * 256})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] is None
 
     @requires_admin
     @requires_new_user

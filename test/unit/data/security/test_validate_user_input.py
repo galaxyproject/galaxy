@@ -3,13 +3,15 @@ import pytest
 from galaxy import config
 from galaxy.security import validate_user_input
 from galaxy.security.validate_user_input import (
-    canonicalize_display_name,
     extract_domain,
     is_email_banned,
-    validate_display_name_str,
     validate_email_domain_name,
     validate_email_str,
     validate_publicname_str,
+)
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    validate_display_name_str,
 )
 
 

@@ -57,10 +57,8 @@ from galaxy.model.db.user import (
     get_user_groups,
 )
 from galaxy.security.validate_user_input import (
-    canonicalize_display_name,
     UserValidationContext,
     VALID_EMAIL_RE,
-    validate_display_name_str,
     validate_email,
     validate_password,
     validate_preferred_object_store_id,
@@ -72,6 +70,10 @@ from galaxy.structured_app import (
 )
 from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    validate_display_name_str,
+)
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
