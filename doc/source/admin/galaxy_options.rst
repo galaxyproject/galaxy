@@ -2095,6 +2095,21 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_user_addresses``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to store postal addresses on their account, through
+    the deprecated /api/users/{id}/information/inputs endpoint.
+    This feature is deprecated and the user_address table will be
+    removed in a future release. Galaxy's own interface no longer
+    offers these addresses, so this option only affects that endpoint;
+    set it to false to stop accepting them ahead of the removal.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
