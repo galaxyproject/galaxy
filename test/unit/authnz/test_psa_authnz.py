@@ -675,7 +675,7 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_called_once_with(
-        trans, user, "new@example.com", commit=False, send_activation_email=False
+        trans, user, "new@example.com", commit=False, send_activation_email=False, asserted_by_identity_provider=True
     )
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
     assert session.commit.call_count == 1

@@ -197,22 +197,31 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def update_email(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         user: User,
         new_email: str,
         *,
         commit: bool = True,
         send_activation_email: bool = True,
+        asserted_by_identity_provider: bool = False,
     ) -> None:
         """
         Update a user's email address, keeping the private role in sync and honoring activation settings.
         Raises RequestParameterInvalidException on validation errors.
+
+        Non-admins are held to the address policy below, unless the address comes from an external identity
+        provider (``asserted_by_identity_provider``) rather than from the user.
         """
         new_email = canonicalize_email(new_email)
         if message := validate_email(trans, new_email, user):
             raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:
             return
+        if not asserted_by_identity_provider and not trans.user_is_admin:
+            if trans.app.config.use_remote_user or trans.app.config.disable_local_accounts:
+                # Remote user and OIDC logins resolve accounts by email, so a self-chosen address would claim
+                # the account that someone else's first login lands in.
+                raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
         private_role = trans.app.security_agent.get_private_user_role(user)
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
@@ -920,7 +929,7 @@ class UserDeserializer(base.ModelDeserializer):
             raise exceptions.AdminRequiredException("Only an administrator can change whether a user is active.")
         return self.deserialize_bool(item, key, active, **context)
 
-    def deserialize_email(self, item, key, email, trans: ProvidesAppContext | None = None, **context):
+    def deserialize_email(self, item, key, email, trans: ProvidesUserContext | None = None, **context):
         if trans is None:
             raise base.ModelDeserializingError("Email addresses cannot be changed in this context.")
         # update_email keeps the private role in sync and honours user_activation_on.

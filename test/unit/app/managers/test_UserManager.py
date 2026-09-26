@@ -382,6 +382,38 @@ class TestUserManager(BaseTestCase):
         self.user_manager.update_email(self.trans, user, "  updated@example.com  ", send_activation_email=False)
         assert user.email == "updated@example.com"
 
+    def test_update_email_is_refused_for_non_admins_when_the_identity_is_external(self):
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        for option in ("use_remote_user", "disable_local_accounts"):
+            setattr(self.app.config, option, True)
+            with pytest.raises(exceptions.ConfigDoesNotAllowException):
+                self.user_manager.update_email(self.trans, user, "changed@example.com")
+            setattr(self.app.config, option, False)
+        assert user.email == user2_data["email"]
+
+    def test_update_email_by_admins_or_identity_providers_when_the_identity_is_external(self):
+        self.app.config.use_remote_user = True
+        self.app.config.disable_local_accounts = True
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        self.user_manager.update_email(self.trans, user, "from-idp@example.com", asserted_by_identity_provider=True)
+        assert user.email == "from-idp@example.com"
+
+        self.trans.set_user(self.admin_user)
+        self.mock_trans.user_is_admin = True
+        self.user_manager.update_email(self.trans, user, "from-admin@example.com")
+        assert user.email == "from-admin@example.com"
+
+    def test_update_email_for_non_admins_with_local_accounts(self):
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        self.user_manager.update_email(self.trans, user, "changed@example.com")
+        assert user.email == "changed@example.com"
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")

@@ -173,7 +173,10 @@ UserCreationBody = Body(default=..., title="Create User", description="The value
 AnyUserModel = DetailedUserModel | AnonUserModel
 
 # Disable changing these when enable_account_interface is false.
-ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "username"})
+ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "display_name", "email", "username"})
+# The UserUpdatePayload fields that stay writable when enable_account_interface is false. They are
+# operational preferences rather than account data. Every payload field belongs to exactly one set.
+ACCOUNT_INTERFACE_EXEMPT_FIELDS = frozenset({"preferred_object_store_id"})
 
 
 def ensure_account_modification_allowed(trans: ProvidesUserContext, message: str) -> None:
