@@ -46,7 +46,7 @@ keywords = ["Galaxy"]
 
 [project.optional-dependencies]
 cwl = [
-    "cwl-utils",
+    "cwl-utils!=0.44",  # configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
     "cwltool>=3.1.20230624081518",
 ]
 mulled = [
