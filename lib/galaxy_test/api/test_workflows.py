@@ -1941,6 +1941,31 @@ steps:
             response = self._get("workflows?show_shared=true&search=is:shared_with_me")
             self._assert_status_code_is(response, 400)
 
+    def test_curated_disabled_by_default(self):
+        # The API test suite runs with curated_workflows_source="off", so this smoke-tests
+        # route registration without any chance of a catalog download. A 400 here instead of
+        # a 403 would mean /api/workflows/{workflow_id} shadowed the route and Galaxy tried
+        # to decode the literal "curated" as an encoded id. Behaviour with the feature on is
+        # covered by test/integration/test_curated_workflows.py.
+        response = self._get("workflows/curated")
+        self._assert_status_code_is(response, 403)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+
+    def test_curated_rejects_out_of_range_limit(self):
+        # Rejected during request validation, before the handler and independently of
+        # whether the feature is enabled -- so this pins the route's own parameter contract.
+        response = self._get("workflows/curated", data={"limit": 0})
+        self._assert_status_code_is(response, 400)
+        assert "limit" in response.json()["err_msg"]
+
+    def test_curated_anonymous_reaches_the_endpoint(self):
+        # Discovery for logged-out users is the point of the tab, so the route must not be
+        # gated on authentication -- it fails on config, not on a missing API key.
+        with self._different_user(anon=True):
+            response = self._get("workflows/curated")
+            self._assert_status_code_is(response, 403)
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+
     def test_import_published(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)
         with self._different_user():
