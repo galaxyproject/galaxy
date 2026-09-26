@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { Toast } from "@/composables/toast";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 // Temporary set to any until schema model is defined
 export type GalaxyConfiguration = any;
@@ -18,7 +20,7 @@ export const useConfigStore = defineStore("configurationStore", () => {
                 const { data, error } = await GalaxyApi().GET("/api/configuration");
 
                 if (error) {
-                    console.error("Error loading Galaxy configuration", error);
+                    throw new Error(errorMessageAsString(error));
                 }
 
                 config.value = data;
@@ -26,6 +28,8 @@ export const useConfigStore = defineStore("configurationStore", () => {
                     // an important debug message at runtime but not needed in testing
                     console.debug("Galaxy configuration loaded", config.value);
                 }
+            } catch (error) {
+                Toast.error(errorMessageAsString(error), "Unable to load Galaxy configuration");
             } finally {
                 isLoading.value = false;
             }

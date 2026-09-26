@@ -14,6 +14,7 @@ import {
 } from "@/components/Upload/utils";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { buildLegacyPayload } from "@/utils/upload";
 
 import CompositeBox from "./CompositeBox.vue";
@@ -77,6 +78,7 @@ const props = defineProps({
 });
 
 const currentTab = ref(0);
+const loadingError = ref("");
 const extensionsSet = ref(false);
 const datatypesMapper = ref(null);
 const datatypesMapperReady = ref(false);
@@ -179,10 +181,12 @@ function progress(newPercentage, newStatus = null) {
     }
 }
 
-onMounted(() => {
-    loadExtensions();
-    loadDbKeys();
-    loadMappers();
+onMounted(async () => {
+    try {
+        await Promise.all([loadExtensions(), loadDbKeys(), loadMappers()]);
+    } catch (error) {
+        loadingError.value = errorMessageAsString(error);
+    }
 });
 
 defineExpose({
@@ -194,7 +198,8 @@ defineExpose({
 </script>
 
 <template>
-    <BAlert v-if="!canUploadToHistory" variant="warning" show>
+    <BAlert v-if="loadingError" variant="danger" show> Unable to load upload options: {{ loadingError }} </BAlert>
+    <BAlert v-else-if="!canUploadToHistory" variant="warning" show>
         <span v-localize>
             The current history is immutable and you cannot upload data to it. Please select a different history or
             create a new one.
