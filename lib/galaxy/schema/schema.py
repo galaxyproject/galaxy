@@ -2680,6 +2680,7 @@ class Thing(Model):
 
 class Creator(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
+    name: str | None = Field(None, title="Name", description="The name of the creator.")
 
 
 class CreatorOrganization(Creator):
