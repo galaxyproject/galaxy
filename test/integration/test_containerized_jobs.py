@@ -7,6 +7,7 @@ import unittest
 from typing import Any
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
+from galaxy.util import galaxy_directory
 from galaxy.util.commands import which
 from galaxy.version import VERSION
 from galaxy_test.base.populators import (
@@ -15,7 +16,6 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
-from galaxy_test.driver.driver_util import galaxy_root
 from galaxy_test.driver.integration_util import (
     ConfiguresDatabaseVault,
     IntegrationTestCase,
@@ -42,6 +42,7 @@ CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "
 
 
 def build_metadata_container():
+    galaxy_root = galaxy_directory()
     subprocess.check_output(
         [
             "docker",
