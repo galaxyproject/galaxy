@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { http as mswHttp } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -209,13 +210,13 @@ describe("history loading failures during user initialization", () => {
         let countRequests = 0;
         const listRequest = vi.fn();
         server.use(
-            http.get("/api/histories/count", ({ response }) => {
+            mswHttp.get("/api/histories/count", () => {
                 countRequests++;
-                return countRequests === failedRequest ? HttpResponse.error() : response(200).json(1);
+                return countRequests === failedRequest ? HttpResponse.error() : HttpResponse.json(1);
             }),
             http.get("/api/histories", () => {
                 listRequest();
-                return HttpResponse.json([{ id: "history-1", name: "Test history" }]);
+                return HttpResponse.json([{ id: "history-1", name: "Test history", genome_build: "?" }]);
             }),
         );
         const userStore = useUserStore();
@@ -240,7 +241,7 @@ describe("history loading failures during user initialization", () => {
     });
 
     it("allows user-only initialization after history loading fails", async () => {
-        server.use(http.get("/api/histories/count", () => HttpResponse.error()));
+        server.use(mswHttp.get("/api/histories/count", () => HttpResponse.error()));
         const userStore = useUserStore();
         await expect(userStore.loadUser()).rejects.toThrow();
         await expect(userStore.loadUser(false)).resolves.toBeUndefined();
