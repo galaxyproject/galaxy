@@ -56,7 +56,8 @@ describe("adminExtensionsStore", () => {
         const store = useAdminExtensionsStore();
         await store.loadExtensions();
 
-        expect(store.getItem("anvil", "monitor")?.url).toBe("/monitor");
+        const item = store.getItem("anvil", "monitor");
+        expect(item?.type === "link" && item.url).toBe("/monitor");
         expect(store.getItem("anvil", "missing")).toBeUndefined();
         expect(store.getItem("missing", "monitor")).toBeUndefined();
     });

@@ -24,6 +24,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/extensions/{extension_id}/items/{item_id}/form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Describe a form item with its current values
+         * @description Return a form item's inputs and current values in the shape the generic form component renders.
+         */
+        get: operations["show_form_api_admin_extensions__extension_id__items__item_id__form_get"];
+        /**
+         * Save a form item's values
+         * @description Validate and save submitted values, then return the form with the values as saved.
+         */
+        put: operations["update_form_api_admin_extensions__extension_id__items__item_id__form_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/agents": {
         parameters: {
             query?: never;
@@ -7907,12 +7931,120 @@ export interface components {
              * Items
              * @description Items shown under the section.
              */
-            items: components["schemas"]["AdminExtensionLinkItem"][];
+            items: (
+                | components["schemas"]["AdminExtensionLinkItem"]
+                | components["schemas"]["AdminExtensionFormItem"]
+            )[];
             /**
              * Section
              * @description Section title shown in the Admin panel.
              */
             section: string;
+        };
+        /**
+         * AdminExtensionFormInput
+         * @description One field of a form item, bound to a settings key.
+         *
+         *     The code that reads a setting owns its key and documents it (for example a job
+         *     runner documents ``gcp_batch.pool_ttl_seconds``). An input names that key
+         *     explicitly so any extension can offer a form for it; without ``key`` the input
+         *     gets one built from the extension, item and input ids at load time.
+         */
+        AdminExtensionFormInput: {
+            /**
+             * Default
+             * @description Value used when nothing has been saved.
+             */
+            default?: boolean | number | string | null;
+            /**
+             * Help
+             * @description Help text shown under the input.
+             */
+            help?: string | null;
+            /**
+             * Key
+             * @description Settings key this input reads and writes. Defaults to <extension>.<item>.<name>.
+             */
+            key?: string | null;
+            /**
+             * Label
+             * @description Label shown next to the input.
+             */
+            label: string;
+            /**
+             * Max
+             * @description Upper bound for integer and float inputs.
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Lower bound for integer and float inputs.
+             */
+            min?: number | null;
+            /**
+             * Name
+             * @description Identifier of the input, unique within its form.
+             */
+            name: string;
+            /**
+             * Options
+             * @description Choices for a select input.
+             */
+            options?: string[] | null;
+            /**
+             * Type
+             * @description Input type.
+             * @enum {string}
+             */
+            type: "boolean" | "integer" | "float" | "text" | "select";
+        };
+        /**
+         * AdminExtensionFormItem
+         * @description A panel entry that shows a settings form rendered from the declared inputs.
+         */
+        AdminExtensionFormItem: {
+            /**
+             * Description
+             * @description Text shown above the form.
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Identifier of the item, unique within its extension.
+             */
+            id: string;
+            /**
+             * Inputs
+             * @description Fields of the form.
+             */
+            inputs: components["schemas"]["AdminExtensionFormInput"][];
+            /**
+             * Title
+             * @description Text shown in the Admin panel.
+             */
+            title: string;
+            /**
+             * @description Item type. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "form";
+        };
+        /**
+         * AdminExtensionFormResponse
+         * @description A form item rendered for the client's generic form component.
+         */
+        AdminExtensionFormResponse: {
+            /**
+             * Inputs
+             * @description Galaxy form input definitions with current values.
+             */
+            inputs: {
+                [key: string]: unknown;
+            }[];
+            /** Message */
+            message?: string | null;
+            /** Title */
+            title: string;
         };
         /**
          * AdminExtensionLinkItem
@@ -7937,10 +8069,8 @@ export interface components {
              */
             title: string;
             /**
-             * Type
-             * @description Item type.
-             * @default link
-             * @constant
+             * @description Item type. (enum property replaced by openapi-typescript)
+             * @enum {string}
              */
             type: "link";
             /**
@@ -33489,6 +33619,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminExtension"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_form_api_admin_extensions__extension_id__items__item_id__form_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Identifier of the admin extension. */
+                extension_id: string;
+                /** @description Identifier of the item within the extension. */
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExtensionFormResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_form_api_admin_extensions__extension_id__items__item_id__form_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Identifier of the admin extension. */
+                extension_id: string;
+                /** @description Identifier of the item within the extension. */
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: boolean | number | string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExtensionFormResponse"];
                 };
             };
             /** @description Request Error */

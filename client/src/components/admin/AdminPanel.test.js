@@ -83,6 +83,7 @@ describe("AdminPanel", () => {
                 items: [
                     { id: "monitor", type: "link", title: "Cluster Monitor", url: "/monitor", target: "iframe" },
                     { id: "docs", type: "link", title: "Docs", url: "https://example.org", target: "new_tab" },
+                    { id: "batch", type: "form", title: "GCP Batch", inputs: [] },
                 ],
             },
         ];
@@ -101,5 +102,9 @@ describe("AdminPanel", () => {
         expect(external.attributes("href")).toBe("https://example.org");
         expect(external.attributes("target")).toBe("_blank");
         expect(external.text()).toBe("Docs");
+
+        const form = wrapper.find("#admin-link-ext-anvil-batch");
+        expect(form.exists()).toBe(true);
+        expect(form.attributes("to")).toBe("/admin/extensions/anvil/batch");
     });
 });

@@ -42,7 +42,7 @@ const extensionSections = computed<PanelSection[]>(() => {
         title: extension.section,
         items: extension.items.map((item) => {
             const id = `admin-link-ext-${extension.id}-${item.id}`;
-            if (item.target === "new_tab") {
+            if (item.type === "link" && item.target === "new_tab") {
                 return { id, title: item.title, href: item.url };
             }
             return { id, title: item.title, route: `/admin/extensions/${extension.id}/${item.id}` };

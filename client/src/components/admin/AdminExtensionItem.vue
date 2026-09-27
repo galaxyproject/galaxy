@@ -4,6 +4,7 @@ import { computed, onMounted } from "vue";
 
 import { useAdminExtensionsStore } from "@/stores/adminExtensionsStore";
 
+import FormGeneric from "@/components/Form/FormGeneric.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
@@ -20,7 +21,8 @@ onMounted(() => {
 });
 
 const item = computed(() => adminExtensionsStore.getItem(props.extensionId, props.itemId));
-const frameId = computed(() => `admin-extension-${props.extensionId}-${props.itemId}`);
+const elementId = computed(() => `admin-extension-${props.extensionId}-${props.itemId}`);
+const formUrl = computed(() => `/api/admin/extensions/${props.extensionId}/items/${props.itemId}/form`);
 </script>
 
 <template>
@@ -30,6 +32,7 @@ const frameId = computed(() => `admin-extension-${props.extensionId}-${props.ite
         <div v-else-if="!item" class="alert alert-warning" role="alert">
             No admin extension item "{{ props.itemId }}" found in extension "{{ props.extensionId }}".
         </div>
-        <CenterFrame v-else :id="frameId" :src="item.url" />
+        <FormGeneric v-else-if="item.type === 'form'" :id="elementId" :url="formUrl" submit-title="Save" />
+        <CenterFrame v-else :id="elementId" :src="item.url" />
     </div>
 </template>
