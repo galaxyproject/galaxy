@@ -22015,6 +22015,11 @@ export interface components {
         RefactorResponse: {
             /** Action Executions */
             action_executions: components["schemas"]["RefactorActionExecution"][];
+            /**
+             * Changed
+             * @description Whether the actions changed the workflow. If false and not a dry run, no new version was saved.
+             */
+            changed: boolean;
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
