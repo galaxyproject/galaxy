@@ -179,10 +179,10 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     if (variant === "my") {
         if (historyStore.histories.length === 0) {
             // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
+            await fetchOrFail(() => historyStore.fetchOwnHistories({ limit: LIST_PAGE_SIZE }));
             markListRefreshed(key);
         } else {
-            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
+            refreshListWhenStale(key, () => historyStore.fetchOwnHistories({ limit: LIST_PAGE_SIZE }));
         }
         return;
     }
@@ -199,7 +199,7 @@ async function searchBackend(variant: HistoryVariant, query: string): Promise<vo
     const historyStore = useHistoryStore();
     if (variant === "my") {
         await fetchQuietly(() =>
-            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), LIST_PAGE_SIZE),
+            historyStore.fetchOwnHistories({ search: HistoriesFilters.getQueryString(query), limit: LIST_PAGE_SIZE }),
         );
         return;
     }
