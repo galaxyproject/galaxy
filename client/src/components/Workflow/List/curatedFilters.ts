@@ -5,7 +5,8 @@ import Filtering, { contains, expandNameTag } from "@/utils/filtering";
  * honours name, tag and collection, and `hasInvalidFilters` correctly rejects
  * anything else.
  */
-export function curatedWorkflowFilters() {
+/** `collection:` stays valid in local mode, where it matches nothing, but is only offered in the menu for IWC. */
+export function curatedWorkflowFilters(includeCollections: boolean) {
     const curatedFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
@@ -16,7 +17,12 @@ export function curatedWorkflowFilters() {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
-        collection: { placeholder: "collection", type: String, handler: contains("collection"), menuItem: true },
+        collection: {
+            placeholder: "collection",
+            type: String,
+            handler: contains("collection"),
+            menuItem: includeCollections,
+        },
         c: { handler: contains("c"), menuItem: false },
     } as const;
 

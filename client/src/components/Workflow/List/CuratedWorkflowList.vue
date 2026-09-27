@@ -55,17 +55,20 @@ const workflows = ref<CuratedWorkflow[]>([]);
 const collections = ref<CuratedWorkflowCollection[]>([]);
 const totalWorkflows = ref(0);
 const source = ref<CuratedWorkflowSource | null>(null);
+const isIwcCatalog = computed(() => config.value?.curated_workflows_source === "iwc");
 const message = ref<string | null>(null);
 const loadError = ref<string | null>(null);
 // Plain counter, not a ref: it guards which response may write state and must
 // never itself be reactive.
 let loadGeneration = 0;
 
-const workflowFilters = curatedWorkflowFilters();
+const workflowFilters = computed(() => curatedWorkflowFilters(isIwcCatalog.value));
 
-const rawFilters = computed(() => Object.fromEntries(workflowFilters.getFiltersForText(filterText.value, true, false)));
-const validFilters = computed(() => workflowFilters.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => workflowFilters.getValidFilters(rawFilters.value, true).invalidFilters);
+const rawFilters = computed(() =>
+    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false)),
+);
+const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
+const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
@@ -75,16 +78,14 @@ const COLLECTION_TERM = /(^|\s)(?:collection|c):(?:'[^']*'|"[^"]*"|\S+)/gi;
 /** The collection the filter text narrows to, if any, without quotes and case-folded for comparison. */
 const activeCollection = computed(() => {
     const value =
-        workflowFilters.getFilterValue(filterText.value, "collection") ??
-        workflowFilters.getFilterValue(filterText.value, "c");
+        workflowFilters.value.getFilterValue(filterText.value, "collection") ??
+        workflowFilters.value.getFilterValue(filterText.value, "c");
     return typeof value === "string" ? value.replace(/^(['"])(.*)\1$/, "$2").toLowerCase() : null;
 });
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
-const defaultSortOption = computed(() =>
-    config.value?.curated_workflows_source === "iwc" ? RECOMMENDED_SORT : undefined,
-);
+const defaultSortOption = computed(() => (isIwcCatalog.value ? RECOMMENDED_SORT : undefined));
 // Null until the user picks a sort, and again once they pick "Recommended".
 // Only an unsorted request gets the server's default order, which in iwc mode
 // puts workflows that run here first. ListHeader keeps no persisted sort
@@ -170,11 +171,11 @@ function validatedFilterText() {
     } else if (Object.keys(rawFilters.value).length === 0) {
         return filterText.value;
     }
-    return workflowFilters.getFilterText(validFilters.value, true);
+    return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
 function updateFilterValue(filterKey: string, newValue: any) {
-    filterText.value = workflowFilters.setFilterValue(filterText.value, filterKey, newValue);
+    filterText.value = workflowFilters.value.setFilterValue(filterText.value, filterKey, newValue);
 }
 
 /** One collection at a time, as on iwc.galaxyproject.org: picking the active one again clears it.
@@ -248,7 +249,7 @@ onMounted(() => load());
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="curatedHelpHtml(source === 'iwc')"></div>
+                    <div v-html="curatedHelpHtml(isIwcCatalog)"></div>
                 </template>
             </FilterMenu>
 
