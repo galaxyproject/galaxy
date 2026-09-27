@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { BDropdown, BDropdownItem, BFormInput, BInputGroup } from "bootstrap-vue";
+import { BFormInput, BInputGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { COMMON_FILTERS } from "@/components/Collections/pairing";
+
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 interface Props {
     forwardFilter: string;
@@ -46,17 +49,17 @@ watch(currentReverseFilter, resync);
 <template>
     <BInputGroup size="lg">
         <template v-slot:prepend>
-            <BDropdown text="Filters" variant="info">
-                <BDropdownItem
+            <GDropdown text="Filters" variant="info">
+                <GDropdownItem
                     v-for="([forward, reverse], index) of COMMON_FILTERS"
                     :key="index"
                     @click="update(forward, reverse)">
                     {{ forward }} / {{ reverse }}
-                </BDropdownItem>
-                <BDropdownItem @click="update('', '')">
+                </GDropdownItem>
+                <GDropdownItem @click="update('', '')">
                     <i>Clear All Filtering</i>
-                </BDropdownItem>
-            </BDropdown>
+                </GDropdownItem>
+            </GDropdown>
         </template>
 
         <BFormInput v-model="currentForwardFilter"></BFormInput>
