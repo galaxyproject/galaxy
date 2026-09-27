@@ -42,7 +42,7 @@ Deleting old galaxy_session records
 
 Each time Galaxy is accessed, a galaxy_session record is created, even when the user is annonymous. Over time, Galaxy accumulates such records. Deleting such records will declutter the database and free up space. 
 
-To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determinded by the value of its ``update_time`` field). 
+To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determinded by the value of its ``update_time`` field). Each user's most recent galaxy_session record is never deleted, however old: it keeps that user's browser logged in, determines which history is opened on their next login, and is the source of the last-login time in the admin users list.
 
 .. code-block:: console
 
