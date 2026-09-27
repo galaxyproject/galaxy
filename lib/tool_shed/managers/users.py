@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
 from sqlalchemy import select
@@ -23,6 +24,13 @@ from tool_shed_client.schema import (
     CreateUserRequest,
     UserV2 as ApiUser,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+    from sqlalchemy.orm import (
+        scoped_session,
+        Session,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +113,8 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
     return message
 
 
-def get_users_by_deleted(session, user_model, deleted):
+def get_users_by_deleted(
+    session: "scoped_session[Session]", user_model: type[User], deleted: bool
+) -> "ScalarResult[User]":
     stmt = select(user_model).where(user_model.deleted == deleted).order_by(user_model.username)
     return session.scalars(stmt)
