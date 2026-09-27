@@ -1,6 +1,5 @@
 import os
 import os.path
-import re
 import shutil
 import tempfile
 from collections.abc import Sequence
@@ -48,10 +47,7 @@ TOOL_XML_1 = """
     <funding>
         <grant
             name="EuroScienceGateway"
-            description="EuroScienceGateway will leverage a distributed computing network across
-             13 European countries, accessible via 6 national, user-friendly web portals,
-             facilitating access to compute and storage infrastructures across Europe as well as to data,
-             tools, workflows and services that can be customized to suit researchers' needs."
+            description="A distributed computing network across 13 European countries."
             identifier="101057388"
             url="https://cordis.europa.eu/project/id/101057388" />
     </funding>
@@ -237,18 +233,17 @@ tests:
          lines_diff: 4
          compare: sim_size
 creator:
-    - person:
-        givenName: Björn
-        familyName: Grüning
-        identifier: http://orcid.org/0000-0002-3079-6586
-    - organization:
-        name: Galaxy IUC
-        url: https://galaxyproject.org/iuc/
+    - class: Person
+      givenName: Björn
+      familyName: Grüning
+      identifier: http://orcid.org/0000-0002-3079-6586
+    - class: Organization
+      name: Galaxy IUC
+      url: https://galaxyproject.org/iuc/
 funding:
-    - grant:
-        name: EuroScienceGateway
-        identifier: '101057388'
-        url: https://cordis.europa.eu/project/id/101057388
+    - name: EuroScienceGateway
+      identifier: '101057388'
+      url: https://cordis.europa.eu/project/id/101057388
 """
 
 TOOL_EXPRESSION_XML_1 = """
@@ -548,17 +543,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert grant["name"] == "EuroScienceGateway"
         assert grant["identifier"] == "101057388"
         assert grant["url"] == "https://cordis.europa.eu/project/id/101057388"
-
-        expected_description = """EuroScienceGateway will leverage a distributed computing network across
-              13 European countries, accessible via 6 national, user-friendly web portals,
-              facilitating access to compute and storage infrastructures across Europe as well as to data,
-              tools, workflows and services that can be customized to suit researchers' needs."""
-
-        print(grant["description"])
-        expected_description = re.sub(r"[\n\t]*", "", expected_description)
-        print(expected_description)
-
-        assert grant["description"] == expected_description
+        assert grant["description"] == "A distributed computing network across 13 European countries."
 
 
 class TestYamlLoader(BaseLoaderTestCase):
@@ -721,25 +706,22 @@ class TestYamlLoader(BaseLoaderTestCase):
         creators = self._tool_source.parse_creator()
         assert len(creators) == 2
         assert creators[0] == {
-            "person": {
-                "givenName": "Björn",
-                "familyName": "Grüning",
-                "identifier": "http://orcid.org/0000-0002-3079-6586",
-            }
+            "class": "Person",
+            "givenName": "Björn",
+            "familyName": "Grüning",
+            "identifier": "http://orcid.org/0000-0002-3079-6586",
         }
-
-        assert creators[1] == {"organization": {"name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}}
+        assert creators[1] == {"class": "Organization", "name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}
 
     def test_parse_funding(self):
         funding = self._tool_source.parse_funding()
         assert len(funding) == 1
 
         assert funding[0] == {
-            "grant": {
-                "name": "EuroScienceGateway",
-                "identifier": "101057388",
-                "url": "https://cordis.europa.eu/project/id/101057388",
-            }
+            "class": "Grant",
+            "name": "EuroScienceGateway",
+            "identifier": "101057388",
+            "url": "https://cordis.europa.eu/project/id/101057388",
         }
 
 

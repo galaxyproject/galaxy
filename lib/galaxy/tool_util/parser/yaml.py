@@ -118,13 +118,11 @@ class YamlToolSource(ToolSource):
         xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
 
-    def parse_creator(self) -> list[dict[str, dict[str, str]]]:
-        creator = self.root_dict.get("creator")
-        return creator if creator else []
+    def parse_creator(self) -> list[dict[str, Any]]:
+        return self.root_dict.get("creator") or []
 
-    def parse_funding(self) -> list[dict[str, dict[str, str]]]:
-        funding = self.root_dict.get("funding")
-        return funding if funding else []
+    def parse_funding(self) -> list[dict[str, Any]]:
+        return [{"class": "Grant", **grant} for grant in self.root_dict.get("funding") or []]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)

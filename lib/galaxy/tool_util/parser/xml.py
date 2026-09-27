@@ -799,7 +799,7 @@ class XmlToolSource(ToolSource):
                 config_files.append(FileSourceConfigFile(name=name, filename=filename, content={"type": "files"}))
         return config_files
 
-    def parse_creator(self):
+    def parse_creator(self) -> list[dict[str, Any]]:
         creators_el = self.root.find("creator")
         if creators_el is None:
             return []
@@ -818,12 +818,7 @@ class XmlToolSource(ToolSource):
             creators.append(creator_as_dict)
         return creators
 
-    def parse_funding(self) -> list[dict[str, str]]:
-        """Parse the funding information from the XML tool file.
-
-        Returns:
-            funding: dict with array of grants holding the funding information
-        """
+    def parse_funding(self) -> list[dict[str, Any]]:
         funding_el = self.root.find("funding")
         if funding_el is None:
             return []
