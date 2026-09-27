@@ -1,12 +1,17 @@
 from datetime import (
+    date,
     datetime,
     timedelta,
 )
 
+import pytest
 from sqlalchemy import select
 
 from galaxy import model as m
-from galaxy.model.scripts.delete_galaxy_sessions import run
+from galaxy.model.scripts.delete_galaxy_sessions import (
+    _get_default_max_update_time,
+    run,
+)
 
 CUTOFF = datetime(2026, 1, 15)
 OLD = CUTOFF - timedelta(days=60)
@@ -44,3 +49,14 @@ def test_run_keeps_each_users_current_session(session, engine, make_user, make_g
     assert not remaining & deleted
     for user in users:
         assert user.current_galaxy_session.id == current_before[user.id]
+
+
+@pytest.mark.parametrize(
+    "today, expected",
+    [
+        (date(2026, 1, 15), date(2025, 12, 16)),
+        (date(2026, 3, 31), date(2026, 3, 1)),
+    ],
+)
+def test_default_max_update_time(today, expected):
+    assert _get_default_max_update_time(today) == expected

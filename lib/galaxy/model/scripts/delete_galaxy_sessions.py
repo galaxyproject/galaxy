@@ -58,10 +58,10 @@ def run(engine, max_update_time=None):
         conn.execute(DELETE_STMT, {"update_time": max_update_time})
 
 
-def _get_default_max_update_time():
+def _get_default_max_update_time(today=None):
     """By default, do not delete galaxy_sessions updated less than a month ago."""
-    today = datetime.date.today()
-    return today.replace(month=today.month - 1)
+    today = today or datetime.date.today()
+    return today - datetime.timedelta(days=30)
 
 
 if __name__ == "__main__":
