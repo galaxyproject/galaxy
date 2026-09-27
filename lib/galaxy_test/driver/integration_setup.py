@@ -4,8 +4,20 @@ Test classes that should be shared between test scenarios.
 
 import os
 import shutil
+from time import (
+    monotonic,
+    sleep,
+)
 from typing import ClassVar
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
+from galaxy.workflow import (
+    curated,
+    iwc_manifest,
+)
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 REQUIRED_ROLE_EXPRESSION = "user@bx.psu.edu"
@@ -111,3 +123,58 @@ class PosixFileSourceSetup:
             f.write("b\n")
 
         return root
+
+
+class CuratedWorkflowsNetworkGuard:
+    """Keeps curated workflow tests offline.
+
+    The feature's one outbound request is the IWC manifest download. Both it and
+    the refresh that would trigger it are replaced with functions that raise, and
+    every test asserts the download was never attempted.
+    """
+
+    download_mock: MagicMock
+    refresh_mock: MagicMock
+
+    def setUp(self):
+        super().setUp()  # type: ignore[misc]
+        curated.clear_caches()
+
+        self._download_patch = patch.object(
+            iwc_manifest,
+            "download_manifest",
+            side_effect=AssertionError("curated workflow tests must never contact iwc.galaxyproject.org"),
+        )
+        self.download_mock = self._download_patch.start()
+
+        self._refresh_patch = patch.object(
+            curated,
+            "refresh_projection",
+            side_effect=RuntimeError("curated catalog refresh is disabled in tests"),
+        )
+        self.refresh_mock = self._refresh_patch.start()
+
+    def tearDown(self):
+        try:
+            # Drain any background refresh thread before the patches come off --
+            # a thread that outlived the test would otherwise reach the real
+            # fetcher. The network assertion runs last, once every thread the
+            # test could have started is known to have finished.
+            self._wait_for_refresh_to_settle()
+            self._refresh_patch.stop()
+            self._download_patch.stop()
+            self._assert_no_network_access()
+        finally:
+            super().tearDown()  # type: ignore[misc]
+
+    def _assert_no_network_access(self) -> None:
+        self.download_mock.assert_not_called()
+
+    @staticmethod
+    def _wait_for_refresh_to_settle(timeout: float = 30.0) -> None:
+        # Reads private module state on purpose: the flag flips to False only
+        # after the background thread has finished with ``refresh_projection``,
+        # which is precisely the condition that makes unpatching safe.
+        deadline = monotonic() + timeout
+        while curated._refresh_in_flight and monotonic() < deadline:
+            sleep(0.05)

@@ -2,7 +2,7 @@
 
 Every case in this module is network-free, and deliberately so: the feature's
 one outbound request (the IWC manifest download) must never fire from a test.
-Two things guarantee that. The base class replaces both
+Two things guarantee that. ``CuratedWorkflowsNetworkGuard`` replaces both
 ``galaxy.workflow.curated.refresh_projection`` and
 ``galaxy.workflow.iwc_manifest.download_manifest`` with functions that raise, so any code
 path that tries to fetch fails loudly instead of reaching the internet, and
@@ -14,15 +14,11 @@ Galaxy starts, which is exactly what the celery task would have produced.
 import json
 import os
 import shutil
-from time import (
-    monotonic,
-    sleep,
-)
+from time import monotonic
 from typing import (
     Any,
     ClassVar,
 )
-from unittest.mock import patch
 from uuid import uuid4
 
 from galaxy.exceptions import error_codes
@@ -32,13 +28,11 @@ from galaxy.webapps.galaxy.services.workflows import (
     PREPARING_MESSAGE,
     UNAVAILABLE_MESSAGE,
 )
-from galaxy.workflow import (
-    curated,
-    iwc_manifest,
-)
+from galaxy.workflow import curated
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.integration_setup import CuratedWorkflowsNetworkGuard
 
 # ``GalaxyInteractor.ensure_user_with_email`` derives the username from the
 # email by replacing every character outside ``[a-z0-9-]`` with ``--``. The
@@ -77,52 +71,12 @@ CATALOG_IDS = [i for i in NEWEST_FIRST_IDS if i in RUNNABLE_IDS] + [
 ]
 
 
-class _CuratedWorkflowsTestCase(integration_util.IntegrationTestCase):
-    """Shared scaffolding, including the no-network guarantee."""
+class _CuratedWorkflowsTestCase(CuratedWorkflowsNetworkGuard, integration_util.IntegrationTestCase):
+    """Shared scaffolding; the guard supplies the no-network guarantee."""
 
     def setUp(self):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-        curated.clear_caches()
-
-        self._download_patch = patch.object(
-            iwc_manifest,
-            "download_manifest",
-            side_effect=AssertionError("curated workflow tests must never contact iwc.galaxyproject.org"),
-        )
-        self.download_mock = self._download_patch.start()
-
-        self._refresh_patch = patch.object(
-            curated,
-            "refresh_projection",
-            side_effect=RuntimeError("curated catalog refresh is disabled in tests"),
-        )
-        self.refresh_mock = self._refresh_patch.start()
-
-    def tearDown(self):
-        try:
-            # Drain any background refresh thread before the patches come off --
-            # a thread that outlived the test would otherwise reach the real
-            # fetcher. The network assertion runs last, once every thread the
-            # test could have started is known to have finished.
-            self._wait_for_refresh_to_settle()
-            self._refresh_patch.stop()
-            self._download_patch.stop()
-            self._assert_no_network_access()
-        finally:
-            super().tearDown()
-
-    def _assert_no_network_access(self) -> None:
-        self.download_mock.assert_not_called()
-
-    @staticmethod
-    def _wait_for_refresh_to_settle(timeout: float = 30.0) -> None:
-        # Reads private module state on purpose: the flag flips to False only
-        # after the background thread has finished with ``refresh_projection``,
-        # which is precisely the condition that makes unpatching safe.
-        deadline = monotonic() + timeout
-        while curated._refresh_in_flight and monotonic() < deadline:
-            sleep(0.05)
 
     def _curated_response(self, anon: bool = False, **params: Any):
         return self._get("workflows/curated", data=params or None, anon=anon)
