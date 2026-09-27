@@ -14,10 +14,12 @@ from typing import (
 )
 from uuid import uuid4
 
-from galaxy.model import StoredWorkflow
-from galaxy.model.item_attrs import add_item_annotation
+from galaxy.selenium.smart_components import SmartTarget
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.driver.integration_setup import CuratedWorkflowsNetworkGuard
+from galaxy_test.driver.integration_setup import (
+    CuratedWorkflowsNetworkGuard,
+    store_raw_annotation,
+)
 from galaxy_test.selenium.framework import retry_assertion_during_transitions
 from .framework import (
     selenium_test,
@@ -55,8 +57,19 @@ class _CuratedWorkflowsSeleniumTestCase(CuratedWorkflowsNetworkGuard, SeleniumIn
         self.components.workflows.advanced_search_toggle.wait_for_and_click()
         self.components.workflows.curated_advanced_search_name_input.wait_for_visible()
 
+    def _run_advanced_search(self, field: SmartTarget, value: str) -> None:
+        """Fill one field of the advanced menu and run the search.
+
+        The curated tab uses FilterMenu's compact view, which renders no apply
+        button; each field submits the whole menu on enter instead.
+        """
+        field.wait_for_and_send_keys(value)
+        field.wait_for_and_send_enter()
+
 
 class TestCuratedWorkflowsIwcSelenium(_CuratedWorkflowsSeleniumTestCase):
+    """``curated_workflows_source: iwc``: the tab lists the catalog fixture."""
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -100,13 +113,19 @@ class TestCuratedWorkflowsIwcSelenium(_CuratedWorkflowsSeleniumTestCase):
         self.navigate_to_curated_workflows()
         self._open_advanced_search()
         self.screenshot("curated_workflows_iwc_advanced_search")
-        workflows = self.components.workflows
-        workflows.curated_advanced_search_collection_input.wait_for_and_send_keys(ASSEMBLY_COLLECTION)
-        workflows.curated_advanced_search_submit.wait_for_and_click()
+        self._run_advanced_search(
+            self.components.workflows.curated_advanced_search_collection_input, ASSEMBLY_COLLECTION
+        )
         self._assert_curated_titles(ASSEMBLY_NAMES)
+        # Unquoted: the curated filters are built with `quoteStrings` off, so a value
+        # runs to the next `key:` token. The chips write the quoted form instead; both
+        # reach the same workflows, which is what the assertion above covers.
+        assert self.workflow_index_get_current_filter() == f"collection:{ASSEMBLY_COLLECTION}"
 
 
 class TestCuratedWorkflowsLocalSelenium(_CuratedWorkflowsSeleniumTestCase):
+    """``curated_workflows_source: local``: the tab lists the owners' published workflows."""
+
     published_names: ClassVar[list[str]] = []
     unpublished_name: ClassVar[str] = ""
     annotation_term: ClassVar[str] = ""
@@ -138,14 +157,7 @@ class TestCuratedWorkflowsLocalSelenium(_CuratedWorkflowsSeleniumTestCase):
 
         # A term found only in the first workflow's annotation, never in a name or tag.
         fixtures.annotation_term = f"annotationonly{token}"
-        self._annotate(published_ids[0], f"Describes {fixtures.annotation_term} data")
-
-    def _annotate(self, workflow_id: str, annotation: str) -> None:
-        sa_session = self._app.model.session
-        stored_workflow = sa_session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
-        assert stored_workflow is not None
-        add_item_annotation(sa_session, stored_workflow.user, stored_workflow, annotation)
-        sa_session.commit()
+        store_raw_annotation(self._app, published_ids[0], f"Describes {fixtures.annotation_term} data")
 
     @selenium_test
     def test_lists_owner_published_workflows(self):

@@ -844,7 +844,6 @@ workflows:
     curated_collection_chip: '.curated-workflow-collection[data-collection="${name}"]'
     curated_advanced_search_name_input: '#curated-workflows-advanced-filter-name'
     curated_advanced_search_collection_input: '#curated-workflows-advanced-filter-collection'
-    curated_advanced_search_submit: '#curated-workflows-advanced-filter-submit'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
