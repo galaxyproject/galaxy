@@ -14,6 +14,9 @@ from unittest.mock import (
     patch,
 )
 
+from galaxy.app import UniverseApplication
+from galaxy.model import StoredWorkflow
+from galaxy.model.item_attrs import add_item_annotation
 from galaxy.workflow import (
     curated,
     iwc_manifest,
@@ -178,3 +181,16 @@ class CuratedWorkflowsNetworkGuard:
         deadline = monotonic() + timeout
         while curated._refresh_in_flight and monotonic() < deadline:
             sleep(0.05)
+
+
+def store_raw_annotation(app: UniverseApplication, workflow_id: str, annotation: str) -> None:
+    """Annotate a stored workflow straight in the database.
+
+    Bypasses the API write path on purpose, so a test can store exactly the
+    text it means to - including text a write would sanitize.
+    """
+    sa_session = app.model.session
+    stored_workflow = sa_session.get(StoredWorkflow, app.security.decode_id(workflow_id))
+    assert stored_workflow is not None
+    add_item_annotation(sa_session, stored_workflow.user, stored_workflow, annotation)
+    sa_session.commit()

@@ -22,8 +22,6 @@ from typing import (
 from uuid import uuid4
 
 from galaxy.exceptions import error_codes
-from galaxy.model import StoredWorkflow
-from galaxy.model.item_attrs import add_item_annotation
 from galaxy.webapps.galaxy.services.workflows import (
     PREPARING_MESSAGE,
     UNAVAILABLE_MESSAGE,
@@ -32,7 +30,10 @@ from galaxy.workflow import curated
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.driver import integration_util
-from galaxy_test.driver.integration_setup import CuratedWorkflowsNetworkGuard
+from galaxy_test.driver.integration_setup import (
+    CuratedWorkflowsNetworkGuard,
+    store_raw_annotation,
+)
 
 # ``GalaxyInteractor.ensure_user_with_email`` derives the username from the
 # email by replacing every character outside ``[a-z0-9-]`` with ``--``. The
@@ -128,7 +129,8 @@ class TestCuratedWorkflowsLocal(_CuratedWorkflowsTestCase):
             self.workflow_populator.set_tags(fixtures.published_ids[0], [f"curatedtag{token}"])
             self.workflow_populator.set_tags(fixtures.published_ids[1], [f"curatedtag{token}longer"])
             fixtures.unpublished_id = self.workflow_populator.simple_workflow(f"dcurated {token}")
-        self._store_raw_annotation(fixtures.published_ids[2], MALICIOUS_ANNOTATION)
+        # raw, so this exercises the read-side sanitization independent of any write path
+        store_raw_annotation(self._app, fixtures.published_ids[2], MALICIOUS_ANNOTATION)
 
         mirror, _ = self._setup_user_get_key(MIRROR_OWNER_EMAIL)
         mirror_detail = self._get(f"users/{mirror['id']}", admin=True).json()
@@ -139,15 +141,6 @@ class TestCuratedWorkflowsLocal(_CuratedWorkflowsTestCase):
         )
         with self._different_user(MIRROR_OWNER_EMAIL):
             fixtures.mirror_id = self.workflow_populator.simple_workflow(f"mcurated {token}", publish=True)
-
-    def _store_raw_annotation(self, workflow_id: str, annotation: str) -> None:
-        # Straight into the database so this exercises the read-side
-        # sanitization on its own, independent of any write path.
-        sa_session = self._app.model.session
-        stored_workflow = sa_session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
-        assert stored_workflow is not None
-        add_item_annotation(sa_session, stored_workflow.user, stored_workflow, annotation)
-        sa_session.commit()
 
     def test_local_description_is_sanitized(self):
         index = self._curated_index(anon=True, limit=10)
