@@ -1,3 +1,4 @@
+import inspect
 import logging
 from types import SimpleNamespace
 
@@ -124,7 +125,7 @@ def test_iwc_refresh_task_writes_no_projection_outside_iwc_mode(tmp_path, monkey
         curated_workflows_source=source,
         inference_services=None,
     )
-    tasks.refresh_iwc_manifest.run.__wrapped__(config)
+    inspect.unwrap(tasks.refresh_iwc_manifest.run)(config)
 
 
 def test_iwc_refresh_task_reports_a_skip_when_another_process_is_refreshing(tmp_path, monkeypatch, caplog):
@@ -138,7 +139,7 @@ def test_iwc_refresh_task_reports_a_skip_when_another_process_is_refreshing(tmp_
         inference_services=None,
     )
     # The undecorated body: the celery wrapper needs a running Galaxy app to inject config.
-    task_body = tasks.refresh_iwc_manifest.run.__wrapped__
+    task_body = inspect.unwrap(tasks.refresh_iwc_manifest.run)
     with caplog.at_level(logging.INFO, logger=tasks.log.name):
         task_body(config)
 

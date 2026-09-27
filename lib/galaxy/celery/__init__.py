@@ -205,6 +205,7 @@ class GalaxyTaskFunction(Protocol):
     """
 
     name: str
+    run: Callable[..., Any]
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
