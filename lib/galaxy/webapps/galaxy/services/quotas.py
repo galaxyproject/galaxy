@@ -88,7 +88,8 @@ class QuotasService(ServiceBase):
         self.validate_in_users_and_groups(trans, payload)
 
         params = UpdateQuotaParams(**payload)
-        # FIXME: Doing it this way makes the update non-atomic if a method fails after an earlier one has succeeded.
+        # Each step below commits on its own, so validate the whole update first.
+        self.quota_manager.check_update(quota, params, manage_associations)
         methods = []
         if params.name or params.description:
             methods.append(self.quota_manager.rename_quota)

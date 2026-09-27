@@ -1,7 +1,13 @@
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urljoin,
+)
+
+import requests
 
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.api_util import baseauth_headers
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -22,6 +28,7 @@ TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
+TEST_USER_EMAIL_ROLES_AND_GROUPS = "user_for_roles_and_groups_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
@@ -584,3 +591,137 @@ class TestUsersApi(ApiTestCase):
         user_roles = response.json()
         assert len(user_roles) == 1
         assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE
+
+    @requires_admin
+    @requires_new_user
+    def test_user_roles_leave_out_deleted_roles(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        deleted_role_id = populator.create_role([user["id"]])["id"]
+        self._assert_status_code_is(self._delete(f"roles/{deleted_role_id}", admin=True), 200)
+
+        response = self._get(f"users/{user['id']}/roles", admin=True)
+        self._assert_status_code_is(response, 200)
+        assert deleted_role_id not in [role["id"] for role in response.json()]
+
+    @requires_admin
+    def test_user_roles_404_for_unknown_user(self):
+        unknown_user_id = self._unknown_user_id()
+        self._assert_status_code_is(self._get(f"users/{unknown_user_id}/roles", admin=True), 404)
+
+    @requires_admin
+    @requires_new_user
+    def test_set_user_roles_keeps_private_role(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        role_id = DatasetPopulator(self.galaxy_interactor).create_role([])["id"]
+
+        response = self._put(f"users/{user['id']}/roles", {"role_ids": [role_id]}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        types_by_id = {role["id"]: role["type"] for role in response.json()}
+        assert len(types_by_id) == 2
+        assert types_by_id[role_id] == "admin"
+        assert PRIVATE_ROLE_TYPE in types_by_id.values()
+
+        response = self._put(f"users/{user['id']}/roles", {"role_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert [role["type"] for role in response.json()] == [PRIVATE_ROLE_TYPE]
+        assert [role["type"] for role in self._get(f"users/{user['id']}/roles", admin=True).json()] == [
+            PRIVATE_ROLE_TYPE
+        ]
+
+    @requires_admin
+    @requires_new_user
+    def test_user_groups(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        group_id = DatasetPopulator(self.galaxy_interactor).create_group()["id"]
+
+        response = self._put(f"users/{user['id']}/groups", {"group_ids": [group_id]}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert [group["id"] for group in response.json()] == [group_id]
+        assert [group["id"] for group in self._get(f"users/{user['id']}/groups", admin=True).json()] == [group_id]
+        group_users = self._get(f"groups/{group_id}/users", admin=True).json()
+        assert [group_user["id"] for group_user in group_users] == [user["id"]]
+
+        response = self._put(f"users/{user['id']}/groups", {"group_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json() == []
+
+    @requires_admin
+    @requires_new_user
+    def test_user_groups_leave_out_deleted_groups(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        kept_group_id = populator.create_group(user_ids=[user["id"]])["id"]
+        deleted_group_id = populator.create_group(user_ids=[user["id"]])["id"]
+        self._assert_status_code_is(self._delete(f"groups/{deleted_group_id}", admin=True), 200)
+
+        response = self._get(f"users/{user['id']}/groups", admin=True)
+        self._assert_status_code_is(response, 200)
+        assert [group["id"] for group in response.json()] == [kept_group_id]
+
+    @requires_admin
+    def test_set_user_roles_and_groups_404_for_unknown_user(self):
+        unknown_user_id = self._unknown_user_id()
+        self._assert_status_code_is(self._get(f"users/{unknown_user_id}/groups", admin=True), 404)
+        roles_response = self._put(f"users/{unknown_user_id}/roles", {"role_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(roles_response, 404)
+        groups_response = self._put(f"users/{unknown_user_id}/groups", {"group_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(groups_response, 404)
+
+    @requires_admin
+    @requires_new_user
+    def test_reset_password(self):
+        email = f"{DatasetPopulator(self.galaxy_interactor).get_random_name()}@bx.psu.edu"
+        user = self._setup_user(email, password="oldpassword1")
+        baseauth_url = self._api_url("authenticate/baseauth", use_key=False)
+        self._assert_status_code_is(requests.get(baseauth_url, headers=baseauth_headers(email, "oldpassword1")), 200)
+
+        with requests.Session() as browser_session:
+            self._login_browser_session(browser_session, email, "oldpassword1")
+            current_user_response = browser_session.get(urljoin(self.url, "api/users/current"))
+            self._assert_status_code_is(current_user_response, 200)
+            assert current_user_response.json()["email"] == email
+
+            response = self._put(f"users/{user['id']}/password", {"password": "newpassword1"}, admin=True, json=True)
+            self._assert_status_code_is(response, 204)
+
+            # The reset logged the browser session out, so it now gets the anonymous user.
+            current_user_response = browser_session.get(urljoin(self.url, "api/users/current"))
+            self._assert_status_code_is(current_user_response, 200)
+            current_user = current_user_response.json()
+            assert "id" not in current_user
+            assert "email" not in current_user
+
+        new_auth = requests.get(baseauth_url, headers=baseauth_headers(email, "newpassword1"))
+        self._assert_status_code_is(new_auth, 200)
+        old_auth = requests.get(baseauth_url, headers=baseauth_headers(email, "oldpassword1"))
+        self._assert_status_code_is(old_auth, 401)
+
+    @requires_admin
+    @requires_new_user
+    def test_reset_password_rejects_invalid_password(self):
+        user = self._setup_user(f"{DatasetPopulator(self.galaxy_interactor).get_random_name()}@bx.psu.edu")
+        response = self._put(f"users/{user['id']}/password", {"password": "short"}, admin=True, json=True)
+        self._assert_status_code_is(response, 400)
+
+    @requires_admin
+    def test_reset_password_404_for_unknown_user(self):
+        payload = {"password": "newpassword1"}
+        response = self._put(f"users/{self._unknown_user_id()}/password", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 404)
+
+    @requires_new_user
+    def test_reset_password_only_admin(self):
+        user_id = DatasetPopulator(self.galaxy_interactor).user_id()
+        response = self._put(f"users/{user_id}/password", {"password": "newpassword1"}, json=True)
+        self._assert_status_code_is(response, 403)
+
+    @requires_new_user
+    def test_user_roles_and_groups_only_admin(self):
+        user_id = DatasetPopulator(self.galaxy_interactor).user_id()
+        self._assert_status_code_is(self._put(f"users/{user_id}/roles", {"role_ids": []}, json=True), 403)
+        self._assert_status_code_is(self._get(f"users/{user_id}/groups"), 403)
+        self._assert_status_code_is(self._put(f"users/{user_id}/groups", {"group_ids": []}, json=True), 403)
+
+    def _unknown_user_id(self) -> str:
+        return self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
