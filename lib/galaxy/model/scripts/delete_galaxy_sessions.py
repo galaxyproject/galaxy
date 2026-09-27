@@ -42,7 +42,7 @@ DELETE_STMT = text("""
     WHERE update_time < :update_time
     AND id NOT IN (
         SELECT id FROM (
-            SELECT id, row_number() OVER (PARTITION BY user_id ORDER BY update_time DESC, id DESC) AS rn
+            SELECT id, row_number() OVER (PARTITION BY user_id ORDER BY update_time DESC NULLS LAST, id DESC) AS rn
             FROM galaxy_session
             WHERE user_id IS NOT NULL
         ) AS ranked

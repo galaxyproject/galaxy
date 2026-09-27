@@ -13394,7 +13394,10 @@ User.preferences = association_proxy("_preferences", "value", creator=UserPrefer
 session_partition = select(
     GalaxySession,
     func.row_number()
-    .over(order_by=(GalaxySession.update_time.desc(), GalaxySession.id.desc()), partition_by=GalaxySession.user_id)
+    .over(
+        order_by=(GalaxySession.update_time.desc().nulls_last(), GalaxySession.id.desc()),
+        partition_by=GalaxySession.user_id,
+    )
     .label("index"),
 ).alias()
 partitioned_session = aliased(GalaxySession, session_partition)
