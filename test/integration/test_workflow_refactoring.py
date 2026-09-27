@@ -689,6 +689,7 @@ steps:
         self._app.model.session.expire_all()
         stored_workflow = self._most_recent_stored_workflow
         assert len(stored_workflow.workflows) == 2
+        # upgrade used to also rewrite the source version's steps in place
         assert stored_workflow.get_internal_version(0).step_by_label("the_step").tool_version == "0.1"
         assert stored_workflow.get_internal_version(1).step_by_label("the_step").tool_version == "0.2"
 
@@ -795,6 +796,7 @@ steps:
         stored_workflow = self._most_recent_stored_workflow
         assert len(stored_workflow.workflows) == 2
         source_step = stored_workflow.get_internal_version(0).step_by_label("nested_workflow")
+        # upgrade used to also rewrite the source version's steps in place
         assert source_step.subworkflow.id == original_nested_workflow_id
         upgraded_step = stored_workflow.get_internal_version(1).step_by_label("nested_workflow")
         assert upgraded_step.subworkflow.id != original_nested_workflow_id

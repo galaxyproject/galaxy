@@ -1217,6 +1217,7 @@ steps:
         refactor_response.raise_for_status()
 
         previous_version = self.workflow_populator.download_workflow(workflow_id, version=0)
+        # upgrade used to also rewrite the source version's steps in place
         assert previous_version["steps"]["0"]["tool_version"] == "0.1"
         latest_version = self.workflow_populator.download_workflow(workflow_id, version=1)
         assert latest_version["steps"]["0"]["tool_version"] == "0.2"
