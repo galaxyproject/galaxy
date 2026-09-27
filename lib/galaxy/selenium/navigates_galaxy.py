@@ -9,6 +9,7 @@ import random
 import string
 import time
 from abc import abstractmethod
+from collections.abc import Callable
 from dataclasses import (
     dataclass,
     field,
@@ -24,11 +25,13 @@ from typing import (
     NamedTuple,
     Protocol,
     TYPE_CHECKING,
+    TypeVar,
 )
 
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from typing_extensions import ParamSpec
 
 from .keys import Key
 from .selenium_keys import (
@@ -44,6 +47,7 @@ if TYPE_CHECKING:
 from galaxy.navigation.components import (
     Component,
     HasText,
+    Target,
 )
 from galaxy.navigation.data import load_root_component
 from galaxy.util import (
@@ -63,6 +67,10 @@ from .has_driver import (
 from .has_driver_proxy import HasDriverProxy
 from .smart_components import SmartComponent
 from .web_element_protocol import WebElementProtocol
+
+P = ParamSpec("P")
+T = TypeVar("T")
+ExceptionCheck = Callable[[Exception], bool]
 
 # Test case data
 DEFAULT_PASSWORD = "123456"
@@ -138,7 +146,7 @@ def _exception_indicates_playwright_timeout(e):
         return False
 
 
-def exception_seems_to_indicate_transition(e):
+def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
     Galaxy features many different transition effects that change the page state over time.
@@ -162,11 +170,11 @@ def exception_seems_to_indicate_transition(e):
 
 
 def retry_call_during_transitions(
-    f,
-    attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
-    sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
-    exception_check=exception_seems_to_indicate_transition,
-):
+    f: Callable[[], T],
+    attempts: int = RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
+    sleep: float = RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
+    exception_check: ExceptionCheck = exception_seems_to_indicate_transition,
+) -> T:
     previous_attempts = 0
     while True:
         try:
@@ -183,13 +191,13 @@ def retry_call_during_transitions(
 
 
 def retry_during_transitions(
-    f,
-    attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
-    sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
-    exception_check=exception_seems_to_indicate_transition,
-):
+    f: Callable[P, T],
+    attempts: int = RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
+    sleep: float = RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
+    exception_check: ExceptionCheck = exception_seems_to_indicate_transition,
+) -> Callable[P, T]:
     @wraps(f)
-    def _retry(*args, **kwds):
+    def _retry(*args: P.args, **kwds: P.kwargs) -> T:
         return retry_call_during_transitions(
             partial(f, *args, **kwds), attempts=attempts, sleep=sleep, exception_check=exception_check
         )
@@ -2829,12 +2837,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.assert_selector_absent_or_hidden(selector)
 
     @retry_during_transitions
-    def assert_absent_or_hidden_after_transitions(self, selector):
+    def assert_absent_or_hidden_after_transitions(self, selector_template: Target, **kwds: Any) -> None:
         """Variant of assert_absent_or_hidden that retries during transitions.
 
         See details above for more information about this.
         """
-        return super().assert_absent_or_hidden_after_transitions(selector)
+        super().assert_absent_or_hidden_after_transitions(selector_template, **kwds)
 
     def assert_tooltip_text(self, element, expected: str | HasText, sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
@@ -2932,12 +2940,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return element
 
     @retry_during_transitions
-    def wait_for_and_click(self, selector_template):
-        return super().wait_for_and_click(selector_template)
+    def wait_for_and_click(self, selector_template: Target, **kwds: Any) -> Any:
+        return super().wait_for_and_click(selector_template, **kwds)
 
     @retry_during_transitions
-    def wait_for_and_double_click(self, selector_template):
-        return super().wait_for_and_double_click(selector_template)
+    def wait_for_and_double_click(self, selector_template: Target, **kwds: Any) -> Any:
+        return super().wait_for_and_double_click(selector_template, **kwds)
 
     def set_history_annotation(self, annotation, clear_text=False):
         toggle = self.history_element("editor toggle")
