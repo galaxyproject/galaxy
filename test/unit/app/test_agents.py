@@ -1853,7 +1853,7 @@ class TestAgentUnitMocked:
 
         iwc.clear_manifest_cache()
         try:
-            with patch("galaxy.agents.iwc.requests.get") as mock_get:
+            with patch("galaxy.workflow.iwc_manifest.requests.get") as mock_get:
                 mock_get.return_value.json.return_value = fake_manifest
                 mock_get.return_value.raise_for_status.return_value = None
 

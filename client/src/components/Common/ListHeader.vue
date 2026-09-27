@@ -21,6 +21,12 @@ interface SortOption {
     label: string;
 }
 
+/** The order the list's server applies when asked for none. It has no direction to toggle. */
+interface DefaultSortOption {
+    label: string;
+    title: string;
+}
+
 interface Props {
     listId: string;
     allSelected?: boolean;
@@ -32,6 +38,8 @@ interface Props {
     columnOptions?: ColumnOption[];
     visibleColumns?: string[];
     sortOptions?: SortOption[];
+    /** Offer the server's own ordering as a sort button, selected initially. */
+    defaultSortOption?: DefaultSortOption;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +58,7 @@ const emit = defineEmits<{
     (e: "select-all"): void;
     (e: "toggle-column", key: string): void;
     (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
+    (e: "sort-default"): void;
     (e: "reset-columns"): void;
 }>();
 
@@ -66,8 +75,13 @@ const defaultSortOptions: SortOption[] = [
 // Use provided sortOptions or fall back to defaults
 const effectiveSortOptions = computed(() => (props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions));
 
-const sortBy = ref<SortBy>(
-    props.sortOptions.length > 0 ? (effectiveSortOptions.value[0]?.value ?? "update_time") : "update_time",
+// Null only while defaultSortOption is selected.
+const sortBy = ref<SortBy | null>(
+    props.defaultSortOption
+        ? null
+        : props.sortOptions.length > 0
+          ? (effectiveSortOptions.value[0]?.value ?? "update_time")
+          : "update_time",
 );
 const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
@@ -83,6 +97,15 @@ function onSort(newSortBy: SortBy) {
         sortDesc.value = true; // Reset to descending when changing sort field
     }
     emit("sort-changed", sortBy.value, sortDesc.value);
+}
+
+function onSortDefault() {
+    if (sortBy.value === null) {
+        return;
+    }
+    sortBy.value = null;
+    sortDesc.value = true;
+    emit("sort-default");
 }
 
 function onResetColumns() {
@@ -128,6 +151,18 @@ defineExpose({
             <div v-if="showSortOptions">
                 Sort by:
                 <GButtonGroup>
+                    <GButton
+                        v-if="defaultSortOption"
+                        id="sortby-default"
+                        tooltip
+                        size="small"
+                        :title="defaultSortOption.title"
+                        :pressed="sortBy === null"
+                        color="blue"
+                        outline
+                        @click="onSortDefault">
+                        {{ defaultSortOption.label }}
+                    </GButton>
                     <GButton
                         v-for="option in effectiveSortOptions"
                         :id="`sortby-${option.value}`"

@@ -223,6 +223,9 @@ def setup_galaxy_config(
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job=cleanup_job,
+        # Tests that want the curated workflows tab pick a source explicitly; leaving it on
+        # iwc by default would let any request to /api/workflows/curated fetch the catalog.
+        curated_workflows_source="off",
         retry_metadata_internally=False,
         data_dir=tmpdir,
         data_manager_config_file=data_manager_config_file,
