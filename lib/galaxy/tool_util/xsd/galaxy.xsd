@@ -478,6 +478,18 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
         <xs:documentation xml:lang="en">[schema.org/image](https://schema.org/image)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="alternateName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/description](https://schema.org/description)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="PersonOrOrganizationContact">
     <xs:attribute name="address" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/address](https://schema.org/address)</xs:documentation>
@@ -498,16 +510,6 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
         <xs:documentation xml:lang="en">[schema.org/faxNumber](https://schema.org/faxNumber)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="alternateName" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="description" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">[schema.org/description](https://schema.org/description)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
   </xs:attributeGroup>
   <xs:complexType name="Person">
     <xs:annotation>
@@ -516,6 +518,7 @@ Describes a person. Tries to stay close to [schema.org/Person](https://schema.or
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
+    <xs:attributeGroup ref="PersonOrOrganizationContact"/>
     <xs:attribute name="givenName" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/givenName](https://schema.org/givenName)</xs:documentation>
@@ -549,6 +552,7 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
+    <xs:attributeGroup ref="PersonOrOrganizationContact"/>
   </xs:complexType>
   <xs:group name="PersonOrOrganization">
     <xs:choice>
@@ -577,7 +581,7 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
   <xs:complexType name="Funding">
     <xs:annotation>
       <xs:documentation xml:lang="en">
-        A Grant that directly or indirectly provide funding or sponsorship for this item. See [schema.org/funding](https://schema.org/funding).
+        Grants that directly or indirectly provide funding or sponsorship for this item. See [schema.org/funding](https://schema.org/funding).
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
