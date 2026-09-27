@@ -709,6 +709,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # TODO: might be better as '/:username/login', '/:username/logout'
                 url_for("/login"),
                 url_for(controller="login", action="start"),
+                url_for("/login/reset_password"),
                 # mako app routes
                 url_for(controller="user", action="login"),
                 url_for(controller="user", action="logout"),
