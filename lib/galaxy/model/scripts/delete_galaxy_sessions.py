@@ -34,13 +34,28 @@ def _get_parser():
     return parser
 
 
+# Each user's newest session is kept regardless of age: it holds the browser cookie
+# and the history reopened on the next login. The ranking must match the ordering
+# of `User.current_galaxy_session`.
+DELETE_STMT = text("""
+    DELETE FROM galaxy_session
+    WHERE update_time < :update_time
+    AND id NOT IN (
+        SELECT id FROM (
+            SELECT id, row_number() OVER (PARTITION BY user_id ORDER BY update_time DESC, id DESC) AS rn
+            FROM galaxy_session
+            WHERE user_id IS NOT NULL
+        ) AS ranked
+        WHERE rn = 1
+    )
+    """)
+
+
 def run(engine, max_update_time=None):
+    """Delete galaxy_session records updated prior to `max_update_time`, except each user's newest session."""
     max_update_time = max_update_time or _get_default_max_update_time()
-    """ Delete galaxy_session records which were updated prior to `max_update_time`."""
-    stmt = text("DELETE FROM galaxy_session WHERE update_time < :update_time")
-    params = {"update_time": max_update_time}
     with engine.begin() as conn:
-        conn.execute(stmt, params)
+        conn.execute(DELETE_STMT, {"update_time": max_update_time})
 
 
 def _get_default_max_update_time():
