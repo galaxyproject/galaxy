@@ -21,6 +21,7 @@ export { default as GHeading } from "./components/GHeading.vue";
 export { default as GLink } from "./components/GLink.vue";
 export { default as GModal } from "./components/GModal.vue";
 export { default as GOverlay } from "./components/GOverlay.vue";
+export { default as GPopover } from "./components/GPopover.vue";
 export { default as GTab } from "./components/GTab.vue";
 export { default as GTabs } from "./components/GTabs.vue";
 export { default as GTip } from "./components/GTip.vue";
