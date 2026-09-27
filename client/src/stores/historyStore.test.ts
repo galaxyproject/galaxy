@@ -239,7 +239,7 @@ describe("historyStore — createNewHistory", () => {
         expect(store.totalHistoryCount).toBe(4);
     });
 
-    it("selects a named history even while another switch is in flight", async () => {
+    it.each([undefined, "RNA run"])("queues creation (%s) behind an in-flight switch", async (name) => {
         let releaseSwitch = () => {};
         const switchPending = new Promise<void>((resolve) => {
             releaseSwitch = resolve;
@@ -253,16 +253,62 @@ describe("historyStore — createNewHistory", () => {
             }),
         );
         const store = useHistoryStore();
-
         const switching = store.setCurrentHistory("other-history");
         await flushPromises();
-        // the in-flight switch holds the store's guard, which the create must not need
-        await store.createNewHistory("RNA run");
+        const creating = store.createNewHistory(name);
+        await flushPromises();
+        const beforeRelease = [...requested];
+        releaseSwitch();
+        await Promise.all([switching, creating]);
+
+        expect(beforeRelease).toEqual(["select other-history"]);
+        expect(requested).toEqual(["select other-history", `create ${name ?? "default"}`]);
+        expect(store.currentHistoryId).toBe(name ? "named-history" : "default-history");
+        expect(store.changingCurrentHistory).toBe(false);
+    });
+
+    it.each([undefined, "RNA run"])("queues a switch behind creation (%s)", async (name) => {
+        let releaseCreate = () => {};
+        const createPending = new Promise<void>((resolve) => {
+            releaseCreate = resolve;
+        });
+        server.use(
+            rawHttp.get("/history/create_new_current", async () => {
+                requested.push("create");
+                await createPending;
+                return HttpResponse.json({ id: "new-history", name: name ?? "Unnamed history" });
+            }),
+        );
+        const store = useHistoryStore();
+        const creating = store.createNewHistory(name);
+        await flushPromises();
+        const switching = store.setCurrentHistory("other-history");
+        await flushPromises();
+        const beforeRelease = [...requested];
+        releaseCreate();
+        await Promise.all([creating, switching]);
+
+        expect(beforeRelease).toEqual(["create"]);
+        expect(requested).toEqual(["create", "select other-history"]);
+        expect(store.currentHistoryId).toBe("other-history");
+        expect(store.changingCurrentHistory).toBe(false);
+    });
+
+    it("continues with creation after a queued switch fails", async () => {
+        server.use(
+            rawHttp.get("/history/set_as_current", () =>
+                HttpResponse.json({ err_msg: "switch failed" }, { status: 500 }),
+            ),
+        );
+        const store = useHistoryStore();
+        const switching = store.setCurrentHistory("other-history");
+        const rejected = expect(switching).rejects.toThrow("switch failed");
+        const creating = store.createNewHistory("RNA run");
+        await rejected;
+        await creating;
 
         expect(store.currentHistoryId).toBe("named-history");
-
-        releaseSwitch();
-        await switching;
+        expect(store.changingCurrentHistory).toBe(false);
     });
 
     it("still switches to a named history when the count refresh fails", async () => {

@@ -988,6 +988,41 @@ describe("CommandPalette", () => {
         );
     });
 
+    it("reports a rejected Set as current secondary action", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+        const store = useHistoryStore();
+        vi.mocked(store.setCurrentHistory).mockRejectedValue(new Error("history is unavailable"));
+        store.storedHistories = {
+            current: { id: "current", name: "Current history" },
+            target: { id: "target", name: "Target history" },
+        } as never;
+        vi.mocked(Toast.error).mockClear();
+        await type("h: target");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Target history");
+        await press("Enter", { shiftKey: true });
+        expect(store.setCurrentHistory).toHaveBeenCalledWith("target");
+        expect(Toast.error).toHaveBeenCalledWith(
+            expect.stringContaining("history is unavailable"),
+            expect.stringContaining("Set as current"),
+        );
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("reports a synchronous action failure", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+        vi.mocked(useHistoryStore().createNewHistory).mockImplementation(() => {
+            throw new Error("cannot start creation");
+        });
+        vi.mocked(Toast.error).mockClear();
+        await type("> new history");
+        await press("Enter");
+        expect(Toast.error).toHaveBeenCalledWith(
+            expect.stringContaining("cannot start creation"),
+            expect.stringContaining("Create new history"),
+        );
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
     it("ignores plain 'k' without the platform modifier", () => {
         useCommandPalette().closePalette();
 

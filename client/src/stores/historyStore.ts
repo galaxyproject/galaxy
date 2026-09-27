@@ -111,6 +111,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
     const historyLoadErrors = ref<{ [key: string]: Error }>({});
     const changingCurrentHistory = ref(false);
+    let pendingHistoryChange: Promise<void> | undefined;
     const knownHistorySizes = new Map<string, number>();
     /** Summaries of every listed history, keyed by id, shared by all variants. */
     const listedHistories = ref<{ [key: string]: AnyHistoryEntry }>({});
@@ -224,19 +225,33 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return (variant: HistoryListVariant) => listedHistoriesTotal.value[variant];
     });
 
-    async function setCurrentHistory(historyId: string) {
-        if (!changingCurrentHistory.value) {
+    /** Serialize server-side selection changes so responses cannot undo a newer selection. */
+    function queueHistoryChange(change: () => Promise<void>): Promise<void> {
+        changingCurrentHistory.value = true;
+        const pending = (pendingHistoryChange ?? Promise.resolve())
+            // A failed change is reported to its caller but must not block later changes.
+            .catch(() => undefined)
+            .then(change)
+            .finally(() => {
+                if (pendingHistoryChange === pending) {
+                    pendingHistoryChange = undefined;
+                    changingCurrentHistory.value = false;
+                }
+            });
+        pendingHistoryChange = pending;
+        return pending;
+    }
+
+    function setCurrentHistory(historyId: string): Promise<void> {
+        return queueHistoryChange(async () => {
             try {
-                changingCurrentHistory.value = true;
                 const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
                 selectHistory(currentHistory);
                 setFilterText(historyId, "");
             } catch (error) {
                 rethrowSimple(error);
-            } finally {
-                changingCurrentHistory.value = false;
             }
-        }
+        });
     }
 
     function setCurrentHistoryId(historyId: string) {
@@ -338,22 +353,18 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    /**
-     * Creates a history, named when `name` is given, and makes it current.
-     *
-     * One request creates and selects it, so the selection does not go through
-     * `setCurrentHistory` - that one gives way to a switch already in flight,
-     * which would leave the new history created but unselected.
-     */
-    async function createNewHistory(name?: string) {
-        const newHistory = (await createAndSelectNewHistory(name)) as HistoryDevDetailed;
-        selectHistory(newHistory);
-        // the history exists, so a failed count refresh must not read as a failed creation
-        try {
-            await handleTotalCountChange(1);
-        } catch (error) {
-            console.debug("Could not refresh the history count", error);
-        }
+    /** Creates and selects a history after any earlier selection changes finish. */
+    function createNewHistory(name?: string): Promise<void> {
+        return queueHistoryChange(async () => {
+            const newHistory = (await createAndSelectNewHistory(name)) as HistoryDevDetailed;
+            selectHistory(newHistory);
+            // The history exists, so a failed count refresh must not read as a failed creation.
+            try {
+                await handleTotalCountChange(1);
+            } catch (error) {
+                console.debug("Could not refresh the history count", error);
+            }
+        });
     }
 
     function getNextAvailableHistoryId(excludedIds: string[]) {

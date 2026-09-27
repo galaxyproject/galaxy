@@ -209,8 +209,7 @@ describe("historiesProvider", () => {
         setCurrentHistoryOnServer.mockResolvedValue({ id: "h2", name: "Variant calling", model_class: "History" });
         const [item] = (await scopedSections(OWN_SCOPE)).at(-1)?.items ?? [];
 
-        item?.secondaryAction?.run?.(makeCtx());
-        await Promise.resolve();
+        await item?.secondaryAction?.run?.(makeCtx());
 
         expect(setCurrentHistoryOnServer).toHaveBeenCalledWith("h2");
     });
