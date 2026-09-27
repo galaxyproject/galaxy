@@ -13,7 +13,6 @@ import {
 } from "@/api";
 import {
     type AnyHistoryEntry,
-    createNewHistory as createHistoryOnServer,
     getArchivedHistories,
     getPublishedHistories,
     getSharedHistories,
@@ -339,22 +338,22 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    /** Creates a history, named when `name` is given, and makes it current */
+    /**
+     * Creates a history, named when `name` is given, and makes it current.
+     *
+     * One request creates and selects it, so the selection does not go through
+     * `setCurrentHistory` - that one gives way to a switch already in flight,
+     * which would leave the new history created but unselected.
+     */
     async function createNewHistory(name?: string) {
-        if (name) {
-            const namedHistory = await createHistoryOnServer(name);
-            await setCurrentHistory(namedHistory.id);
-            // the history exists, so a failed count refresh must not read as a failed creation
-            try {
-                await handleTotalCountChange(1);
-            } catch (error) {
-                console.debug("Could not refresh the history count", error);
-            }
-            return;
+        const newHistory = (await createAndSelectNewHistory(name)) as HistoryDevDetailed;
+        selectHistory(newHistory);
+        // the history exists, so a failed count refresh must not read as a failed creation
+        try {
+            await handleTotalCountChange(1);
+        } catch (error) {
+            console.debug("Could not refresh the history count", error);
         }
-        const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
-        await handleTotalCountChange(1);
-        return selectHistory(newHistory);
     }
 
     function getNextAvailableHistoryId(excludedIds: string[]) {

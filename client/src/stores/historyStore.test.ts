@@ -201,15 +201,15 @@ describe("historyStore — createNewHistory", () => {
         setActivePinia(createPinia());
         requested = [];
         server.use(
-            http.post("/api/histories", async ({ request, response }) => {
-                const { name } = (await request.json()) as { name?: string };
-                requested.push(`create ${name}`);
-                return response(200).json({ id: "named-history", name } as never);
-            }),
             http.get("/api/histories/count", ({ response }) => response(200).json(4)),
-            rawHttp.get("/history/create_new_current", () => {
-                requested.push("create default");
-                return HttpResponse.json({ id: "default-history", name: "Unnamed history" });
+            // the one request that both creates and selects; POSTing /api/histories
+            // instead would go unhandled here, which is the point
+            rawHttp.get("/history/create_new_current", ({ request }) => {
+                const name = new URL(request.url).searchParams.get("name");
+                requested.push(`create ${name ?? "default"}`);
+                return name
+                    ? HttpResponse.json({ id: "named-history", name })
+                    : HttpResponse.json({ id: "default-history", name: "Unnamed history" });
             }),
             rawHttp.get("/history/set_as_current", ({ request }) => {
                 const id = new URL(request.url).searchParams.get("id");
@@ -234,9 +234,35 @@ describe("historyStore — createNewHistory", () => {
 
         await store.createNewHistory("RNA run");
 
-        expect(requested).toEqual(["create RNA run", "select named-history"]);
+        expect(requested).toEqual(["create RNA run"]);
         expect(store.currentHistoryId).toBe("named-history");
         expect(store.totalHistoryCount).toBe(4);
+    });
+
+    it("selects a named history even while another switch is in flight", async () => {
+        let releaseSwitch = () => {};
+        const switchPending = new Promise<void>((resolve) => {
+            releaseSwitch = resolve;
+        });
+        server.use(
+            rawHttp.get("/history/set_as_current", async ({ request }) => {
+                const id = new URL(request.url).searchParams.get("id");
+                requested.push(`select ${id}`);
+                await switchPending;
+                return HttpResponse.json({ id, name: "other" });
+            }),
+        );
+        const store = useHistoryStore();
+
+        const switching = store.setCurrentHistory("other-history");
+        await flushPromises();
+        // the in-flight switch holds the store's guard, which the create must not need
+        await store.createNewHistory("RNA run");
+
+        expect(store.currentHistoryId).toBe("named-history");
+
+        releaseSwitch();
+        await switching;
     });
 
     it("still switches to a named history when the count refresh fails", async () => {
@@ -249,7 +275,7 @@ describe("historyStore — createNewHistory", () => {
 
         await expect(store.createNewHistory("RNA run")).resolves.toBeUndefined();
 
-        expect(requested).toEqual(["create RNA run", "select named-history"]);
+        expect(requested).toEqual(["create RNA run"]);
         expect(store.currentHistoryId).toBe("named-history");
     });
 });
