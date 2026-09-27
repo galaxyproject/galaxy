@@ -41,9 +41,11 @@ const extendedHistoryParams = {
  * Create a new history, select it as the current history, and return it if successful.
  * @return the new history or throws an error if new history creation fails
  */
-export async function createAndSelectNewHistory() {
+export async function createAndSelectNewHistory(name?: string) {
     const url = "history/create_new_current";
-    const response = await axios.get(prependPath(url));
+    // the legacy controller creates the history and makes it current in one
+    // request, naming it when asked
+    const response = await axios.get(prependPath(url), { params: name ? { name } : undefined });
     const newHistoryId = response?.data?.id || null;
     if (!newHistoryId) {
         throw new Error("failed to create and select new history");

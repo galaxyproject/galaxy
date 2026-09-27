@@ -37,6 +37,9 @@ export interface PaletteContext {
     uploadMethods?: UploadMethodConfig[];
 }
 
+/** Imperative action a row runs; the palette reports a rejection */
+export type PaletteItemRun = (ctx: PaletteContext) => void | Promise<unknown>;
+
 /**
  * One result row in the command palette. Exactly one of `to` or `handler`
  * should be set: `to` navigates (and supports open-in-new-tab), `handler`
@@ -57,8 +60,8 @@ export interface PaletteItem {
         label?: string;
         placeholder: string;
     };
-    /** Imperative action to run on selection */
-    handler?: (ctx: PaletteContext) => void;
+    /** Imperative action to run on selection; a rejection is reported by the palette */
+    handler?: PaletteItemRun;
     /** Icon shown in front of the title */
     icon?: IconDefinition;
     /** Extra search corpus, never displayed */
@@ -77,7 +80,7 @@ export interface PaletteItem {
     /** Alternative run triggered with shift+enter */
     secondaryAction?: {
         label: string;
-        run?: (ctx: PaletteContext) => void;
+        run?: PaletteItemRun;
         to?: string;
     };
     /** Key hint rendered right-aligned on the row (help panel rows) */

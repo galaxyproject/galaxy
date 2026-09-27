@@ -129,9 +129,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
             ? {
                   secondaryAction: {
                       label: "Set as current",
-                      run: () => {
-                          void historyStore.setCurrentHistory(history.id);
-                      },
+                      run: () => historyStore.setCurrentHistory(history.id),
                   },
               }
             : {}),

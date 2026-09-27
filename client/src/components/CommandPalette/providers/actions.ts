@@ -174,9 +174,7 @@ const ACTIONS: ActionDefinition[] = [
         keywords: "analysis start fresh",
         subtitle: "Create a new history and switch to it",
         title: "Create new history",
-        handler: () => {
-            void useHistoryStore().createNewHistory();
-        },
+        handler: () => useHistoryStore().createNewHistory(),
         argumentMode: {
             getItems: (argQuery: string) => namedHistoryItems(argQuery),
             label: "name it",
