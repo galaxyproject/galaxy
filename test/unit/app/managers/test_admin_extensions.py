@@ -118,3 +118,62 @@ def test_manager_get_item(manager: AdminExtensionsManager):
         manager.get_item("anvil", "missing")
     with pytest.raises(ObjectNotFound):
         manager.get_item("missing", "monitor")
+
+
+FORM_CONFIG = """
+id: forms
+section: Forms
+items:
+  - id: settings
+    type: form
+    title: Settings
+    inputs:
+      - name: ttl
+        key: shared.ttl
+        type: integer
+        label: TTL
+        default: 5
+"""
+
+
+def test_load_extensions_reads_form_items(tmp_path: Path):
+    write_extension(tmp_path, "forms", FORM_CONFIG)
+    extension = load_extensions(str(tmp_path))[0]
+    item = extension.items[0]
+    assert item.type == "form"
+    assert item.inputs[0].key == "shared.ttl"
+
+
+def test_load_extensions_builds_default_keys_from_ids(tmp_path: Path):
+    write_extension(
+        tmp_path, "forms", FORM_CONFIG.replace("        key: shared.ttl\n", "").replace("id: forms", "id: my-ext")
+    )
+    extension = load_extensions(str(tmp_path))[0]
+    assert extension.items[0].inputs[0].key == "my_ext.settings.ttl"
+
+
+def test_load_extensions_skips_extension_redeclaring_key_with_other_type(tmp_path: Path):
+    write_extension(tmp_path, "a_first", FORM_CONFIG.replace("id: forms", "id: a"))
+    write_extension(
+        tmp_path,
+        "b_conflict",
+        FORM_CONFIG.replace("id: forms", "id: b")
+        .replace("type: integer", "type: text")
+        .replace("default: 5", "default: five"),
+    )
+    write_extension(tmp_path, "c_same", FORM_CONFIG.replace("id: forms", "id: c"))
+
+    assert [e.id for e in load_extensions(str(tmp_path))] == ["a", "c"]
+
+
+def test_load_extensions_rejects_invalid_form_items(tmp_path: Path):
+    write_extension(
+        tmp_path,
+        "dup_inputs",
+        FORM_CONFIG.replace("id: forms", "id: d") + "      - name: ttl\n        type: text\n        label: Again\n",
+    )
+    write_extension(
+        tmp_path, "bad_default", FORM_CONFIG.replace("id: forms", "id: e").replace("default: 5", "default: five")
+    )
+    write_extension(tmp_path, "dup_items", VALID_CONFIG.replace("id: docs", "id: monitor"))
+    assert load_extensions(str(tmp_path)) == []

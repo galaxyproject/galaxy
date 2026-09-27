@@ -52,6 +52,7 @@ from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.admin_extensions import AdminExtensionsManager
+from galaxy.managers.admin_settings import AdminSettingsManager
 from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
@@ -1057,6 +1058,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         self._register_singleton(AdminExtensionsManager)
+        self._register_singleton(AdminSettingsManager)
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
