@@ -63,6 +63,11 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         import_button = self.wait_for_selector_clickable(".wizard-actions .go-next-btn.btn-primary:not([disabled])")
         import_button.click()
 
+    def _wait_for_import_redirect(self):
+        # The client redirects to the workflow list only once the import request returns,
+        # which includes the server fetching the workflow from the remote TRS server.
+        self.components.workflows.workflows_list.wait_for_visible(wait_type=self.wait_types.SHED_SEARCH)
+
     def assert_workflow_imported(self, name):
         # surround name with quotes to consider case where name contains colons
         self.workflow_index_search_for(f'"{name}"')
@@ -82,7 +87,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.driver.get(full_url)
         self.components.workflows.workflow_trs_import.wait_for_visible()
         self._click_wizard_import_button()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -93,7 +98,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
             workflow_name="galaxy-workflow-dockstore-example-1"
         ).wait_for_and_click()
         self._click_wizard_import_button(wait_for_validation=True)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
 
@@ -105,7 +110,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         version_select = self.components.trs_search.version_select.wait_for_visible()
         Select(version_select).select_by_visible_text("v0.4")
         self._click_wizard_import_button(wait_for_validation=True)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
         self.components.workflows.trs_icon.wait_for_visible()
@@ -119,7 +124,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
         self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
         self._click_wizard_import_button(wait_for_validation=True)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -155,7 +160,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         version_select = self.components.trs_import.version_select.wait_for_visible()
         Select(version_select).select_by_visible_text("v0.4")
         self._click_wizard_import_button(wait_for_validation=True)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -163,6 +168,6 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.go_to_trs_by_url()
         self.components.trs_import.url_input.wait_for_and_send_keys(trs_url)
         self._click_wizard_import_button(wait_for_validation=True)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
