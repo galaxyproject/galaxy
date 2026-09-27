@@ -1,3 +1,4 @@
+import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -173,6 +174,31 @@ describe("historiesProvider", () => {
         resetListRefreshTracking();
         mockHistoriesApi();
         signIn();
+    });
+
+    it.each(["", "zebrafish"])("preserves pagination while hydrating and searching for '%s'", async (query) => {
+        const store = useHistoryStore();
+        store.historiesOffset = 30;
+        store.totalHistoryCount = 100;
+        let release = () => {};
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        getHistoryList.mockImplementationOnce(async () => {
+            await pending;
+            return [RNA, VARIANTS];
+        });
+        const searching = scopedSections(OWN_SCOPE, query);
+        await flushPromises();
+        const duringFetch = { offset: store.historiesOffset, loading: store.historiesLoading };
+        release();
+        const sections = await searching;
+
+        expect(duringFetch).toEqual({ offset: 30, loading: false });
+        expect(store.historiesOffset).toBe(30);
+        expect(store.historiesLoading).toBe(false);
+        expect(sections.flatMap((section) => section.items).length).toBeGreaterThan(0);
+        expect(getHistoryList).toHaveBeenCalledTimes(query ? 2 : 1);
     });
 
     it("shows recent and latest sections for an empty `h:` query", async () => {

@@ -306,4 +306,32 @@ describe("historyStore — filling the own-history cache beside the paginated li
 
         expect(requestedLimits).toContain("10");
     });
+    it("shares identical concurrent cache fills", async () => {
+        const store = useHistoryStore();
+        const first = store.fetchOwnHistories({ limit: 25 });
+        const second = store.fetchOwnHistories({ limit: 25 });
+        releaseCacheFill();
+        await Promise.all([first, second]);
+
+        expect(requestedLimits).toEqual(["25"]);
+        expect(store.histories.map((history) => history.id)).toEqual(["h1", "h2"]);
+    });
+
+    it("retries an identical cache fill after rejection", async () => {
+        let attempts = 0;
+        server.use(
+            http.get("/api/histories", ({ response }) => {
+                if (++attempts === 1) {
+                    return response("5XX").json({ err_msg: "listing failed", err_code: 500 }, { status: 500 });
+                }
+                return response(200).json(summaries as never);
+            }),
+        );
+        const store = useHistoryStore();
+        await expect(store.fetchOwnHistories({ limit: 25 })).rejects.toThrow("listing failed");
+        await store.fetchOwnHistories({ limit: 25 });
+
+        expect(attempts).toBe(2);
+        expect(store.histories.map((history) => history.id)).toEqual(["h1", "h2"]);
+    });
 });

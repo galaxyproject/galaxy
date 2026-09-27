@@ -492,9 +492,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
      */
-    async function fetchHistories(paginate: boolean, queryString?: string, requestedLimit?: number) {
+    async function fetchHistories(paginate: boolean, queryString?: string) {
         setHistoriesLoading(true);
-        let limit: number | null = requestedLimit ?? null;
+        let limit: number | null = null;
         if (!queryString || queryString == "") {
             if (paginate) {
                 await loadTotalHistoryCount();
@@ -535,11 +535,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
      *
      * @param paginate whether to page through the list with the store's offset
      * @param queryString backend filter, e.g. built by `HistoriesFilters`
-     * @param limit caps an unpaginated load, for consumers that only render a
-     * handful of rows; leave it unset to load the whole list
      */
-    function loadHistories(paginate = true, queryString?: string, limit?: number): Promise<void> {
-        const key = `${paginate}|${queryString ?? ""}|${limit ?? ""}`;
+    function loadHistories(paginate = true, queryString?: string): Promise<void> {
+        const key = `${paginate}|${queryString ?? ""}`;
         const inFlight = loadHistoriesPromises.get(key);
         if (inFlight) {
             return inFlight;
@@ -547,7 +545,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         if (historiesLoading.value) {
             return Promise.resolve();
         }
-        const promise = fetchHistories(paginate, queryString, limit).finally(() => {
+        const promise = fetchHistories(paginate, queryString).finally(() => {
             loadHistoriesPromises.delete(key);
         });
         loadHistoriesPromises.set(key, promise);
@@ -558,11 +556,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * Fetches own histories into the shared cache without joining the paginated
      * listing -- the own-history counterpart of {@link fetchHistoryList}.
      *
-     * `loadHistories` rewinds `historiesOffset` to 0 on an unpaginated load and
-     * holds `historiesLoading` for the whole request, which makes a
-     * `HistoryScrollList.loadMore` landing meanwhile return without fetching.
-     * A consumer that only wants the summaries cached would therefore send the
-     * user's scroll position back to the top, so it fetches here instead.
+     * Preserves the list's pagination offset and loading state, allowing a
+     * cache fill and a paginated load to run independently.
      */
     function fetchOwnHistories(options: FetchOwnHistoriesOptions = {}): Promise<void> {
         const { search, limit = HISTORY_LIST_LIMIT } = options;
