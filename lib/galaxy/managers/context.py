@@ -126,12 +126,15 @@ class ProvidesAppContext:
             self.sa_session.add(action)
             self.sa_session.commit()
 
-    def log_event(self, message, tool_id=None, **kwargs):
+    def log_event(self, message: str, tool_id: str | None = None, **kwargs: Any) -> None:
         """
         Application level logging. Still needs fleshing out (log levels and such)
         Logging events is a config setting - if False, do not log.
         """
         if self.app.config.log_events:
+            # History, user and session are only available on some subclasses,
+            # so look them up best-effort.
+            context: Any = self
             event = Event()
             event.tool_id = tool_id
             try:
@@ -139,19 +142,19 @@ class ProvidesAppContext:
             except Exception:
                 event.message = message
             try:
-                event.history = self.get_history()
+                event.history = context.get_history()
             except Exception:
                 event.history = None
             try:
-                event.history_id = self.history.id
+                event.history_id = context.history.id
             except Exception:
                 event.history_id = None
             try:
-                event.user = self.user
+                event.user = context.user
             except Exception:
                 event.user = None
             try:
-                event.session_id = self.galaxy_session.id
+                event.session_id = context.galaxy_session.id
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)

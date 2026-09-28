@@ -12,6 +12,8 @@ from collections.abc import (
     Callable,
     Iterable,
 )
+from dataclasses import dataclass
+from enum import Enum
 from typing import (
     Any,
     cast,
@@ -38,7 +40,9 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.managers.tool_source import get_or_create_tool_source
 from galaxy.model import (
+    DatasetCollection,
     DatasetInstance,
+    DynamicTool,
     HistoryDatasetCollectionAssociation,
     Job,
     PostJobAction,
@@ -306,7 +310,9 @@ def to_cwl(
         if step:
             if not value.dataset.in_ready_state():
                 why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-                raise DelayedWorkflowEvaluation(why=why)
+                raise DelayedWorkflowEvaluation(
+                    why=why, dependencies=[SchedulingDependency(DependencyType.HDA, value.id)]
+                )
             if not value.is_ok:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureDatasetFailed(
@@ -942,6 +948,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
+        progress.record_subworkflow_delays(subworkflow_progress)
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
@@ -1980,7 +1987,10 @@ class PauseModule(WorkflowModule):
                     )
                 )
         delayed_why = "workflow paused at this step waiting for review"
-        raise DelayedWorkflowEvaluation(why=delayed_why)
+        dependencies = []
+        if invocation_step:
+            dependencies.append(SchedulingDependency(DependencyType.WORKFLOW_INVOCATION_STEP, invocation_step.id))
+        raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=dependencies)
 
     def do_invocation_step_action(self, step, action):
         """Update or set the workflow invocation state action - generic
@@ -2102,19 +2112,18 @@ class PickValueModule(WorkflowModule):
         return state
 
     @staticmethod
-    def _is_null_or_skipped(value) -> bool:
+    def _is_null_or_skipped(value, step: WorkflowStep) -> bool:
         """Check if a replacement value represents a skipped/null output."""
         if value is NO_REPLACEMENT:
             return True
         if isinstance(value, model.HistoryDatasetAssociation):
-            if value.extension == "expression.json" and value.blurb == "skipped":
-                return True
+            return value.is_null_expression(read_value=lambda dataset: read_expression_json(dataset, step=step))
         return False
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
         """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
-        non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
+        non_null = [r for r in replacements if not self._is_null_or_skipped(r, step)]
 
         if mode == "first_non_null":
             if not non_null:
@@ -2158,6 +2167,8 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
+        self._ensure_inputs_ready(trans, progress, step, mode, all_inputs)
+
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
@@ -2174,6 +2185,29 @@ class PickValueModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, {"output": output})
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
+
+    def _ensure_inputs_ready(
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        step: WorkflowStep,
+        mode: str,
+        all_inputs: list[InputDescription],
+    ) -> None:
+        """Delay until the inputs that could be picked are produced.
+
+        Picking reads the inputs, and the output aliases the picked dataset (so post job
+        actions would mutate it). first_* modes stop at the first ready non-null dataset.
+        """
+        stops_at_first_value = mode in ("first_non_null", "first_or_skip")
+        for input_dict in all_inputs:
+            replacement = progress.replacement_for_input(trans, step, input_dict, require_ready=True)
+            if (
+                stops_at_first_value
+                and isinstance(replacement, model.HistoryDatasetAssociation)
+                and not self._is_null_or_skipped(replacement, step)
+            ):
+                return
 
     def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
@@ -2303,7 +2337,7 @@ class PickValueModule(WorkflowModule):
         Uses execute_on_mapped_over which operates on step_outputs dict
         rather than requiring a Job object. Skipped outputs are left untouched.
         """
-        if self._is_null_or_skipped(output):
+        if self._is_null_or_skipped(output, step):
             return
         step_outputs = {"output": output}
         step_inputs: dict[str, Any] = {}
@@ -2567,31 +2601,44 @@ class ToolModule(WorkflowModule):
             if tool_id:
                 tool_id = remove_version_from_guid(tool_id) or tool_id
             kwds = dict(kwds, exact_tools=False)
-        if tool_id is None and tool_uuid is None:
-            tool_representation = d.get("tool_representation")
-            if tool_representation:
-                if tool_representation.get("class") == "GalaxyUserTool":
-                    # User-defined tool embedded in the workflow: create it as a
-                    # private UDT owned by the importing user. Requires
-                    # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-                    # InsufficientPermissionsException otherwise.
-                    if trans.user is None:
-                        raise exceptions.InsufficientPermissionsException(
-                            "User is not allowed to run unprivileged tools"
-                        )
-                    unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(
-                        trans.user, unprivileged_request
-                    )
-                else:
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
-                    create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+        tool_representation = d.get("tool_representation")
+        if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
+            # User-defined tool embedded in the workflow. A referenced tool the
+            # importing user owns is reused; otherwise (an export by another
+            # user or from another Galaxy) the embedded definition becomes a
+            # private UDT owned by the importing user. Requires
+            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
+            # InsufficientPermissionsException otherwise.
+            if trans.user is None:
+                raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
+            if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
+                unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
+                dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(trans.user, unprivileged_request)
                 tool_uuid = dynamic_tool.uuid
+        elif tool_representation and tool_id is None and tool_uuid is None:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
+            create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
+            dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+            tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        # Steps that embed ``tool_representation`` are exported workflows, which may carry any
+        # tool_id, and still import. A step that references a user-defined tool only by uuid
+        # must name it consistently.
+        if (
+            tool_id is not None
+            and tool_uuid is not None
+            and not d.get("tool_representation")
+            and module.tool
+            and module.tool.is_unprivileged_tool
+            and tool_id != module.tool.id
+        ):
+            raise exceptions.RequestParameterInvalidException(
+                f"tool_id '{tool_id}' does not match user-defined tool {tool_uuid} (id '{module.tool.id}'); "
+                f"omit tool_id or pass '{module.tool.id}' when referencing a tool by tool_uuid"
+            )
         module.post_job_actions = d.get("post_job_actions", {})
         module.workflow_outputs = d.get("workflow_outputs", [])
         if module.tool:
@@ -2607,11 +2654,12 @@ class ToolModule(WorkflowModule):
 
     @classmethod
     def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
+        tool_id = step.effective_tool_id
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
         module = super().from_workflow_step(
-            trans, step, tool_id=step.tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
+            trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
         )
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
@@ -2619,13 +2667,10 @@ class ToolModule(WorkflowModule):
             module.post_job_actions[pja.action_type] = pja
         if module.tool:
             message = ""
-            if (
-                step.tool_id
-                and step.tool_id != module.tool.id
-                or step.tool_version
-                and step.tool_version != module.tool.version
+            if tool_id and (
+                tool_id != module.tool.id or step.tool_version and step.tool_version != module.tool.version
             ):  # This means the exact version of the tool is not installed. We inform the user.
-                old_tool_shed = step.tool_id.split("/repos/")[0]
+                old_tool_shed = tool_id.split("/repos/")[0]
                 if (
                     old_tool_shed not in module.tool.id
                 ):  # Only display the following warning if the tool comes from a different tool shed
@@ -2642,12 +2687,12 @@ class ToolModule(WorkflowModule):
             if step.tool_version and (
                 step.tool_version != module.tool.version and not get_safe_version(module.tool, step.tool_version)
             ):
-                message += f"<span title=\"tool id '{step.tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
+                message += f"<span title=\"tool id '{tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
         else:
-            log.warning(f"The tool '{step.tool_id}' is missing. Cannot build workflow module.")
+            log.warning(f"The tool '{tool_id}' is missing. Cannot build workflow module.")
         return module
 
     # ---- Saving in various forms ------------------------------------------
@@ -2664,7 +2709,12 @@ class ToolModule(WorkflowModule):
             if tool:
                 tool = self.trans.app.toolbox.materialize_tool(tool, reason="serialization")
                 if tool.dynamic_tool:
-                    step.dynamic_tool_id = tool.dynamic_tool.id
+                    # Set the relationship, not just the foreign key, so unsaved steps (refactor
+                    # dry runs) can resolve the tool through it.
+                    step.dynamic_tool = self.trans.sa_session.get(DynamicTool, tool.dynamic_tool_id)
+                    if tool.is_unprivileged_tool:
+                        # Identified by ``dynamic_tool``, see ``WorkflowStep.effective_tool_id``.
+                        step.tool_id = None
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
@@ -2987,13 +3037,12 @@ class ToolModule(WorkflowModule):
     ) -> bool | None:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
+        tool_id = step.effective_tool_id
         tool = trans.app.toolbox.get_tool(
-            step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+            tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
         )
         if tool is None:
-            raise ToolMissingException(
-                f"Tool {step.tool_id} missing. Cannot execute workflow step.", tool_id=step.tool_id
-            )
+            raise ToolMissingException(f"Tool {tool_id} missing. Cannot execute workflow step.", tool_id=tool_id)
         tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?
@@ -3408,9 +3457,51 @@ module_types = dict(
 module_factory = WorkflowModuleFactory(module_types)
 
 
+class DependencyType(str, Enum):
+    JOB = "job"
+    HDA = "hda"
+    DATASET_COLLECTION = "dataset_collection"
+    WORKFLOW_INVOCATION_STEP = "workflow_invocation_step"
+
+
+@dataclass(frozen=True)
+class SchedulingDependency:
+    dependency_type: DependencyType
+    id: int
+
+
+@dataclass(frozen=True)
+class SchedulingDependencies:
+    """What the next scheduling attempt of an invocation waits on."""
+
+    tracked: frozenset[SchedulingDependency]
+    # Why steps were delayed without a tracked dependency. The invocation is
+    # scheduled again on the next iteration and the reasons are logged.
+    untracked: tuple[str, ...]
+    # The iteration stopped before scheduling everything it could.
+    more_work: bool
+
+
+def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[SchedulingDependency]:
+    return [
+        SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)
+        for collection_id in collection.unpopulated_collection_ids()
+    ]
+
+
 class DelayedWorkflowEvaluation(Exception):
-    def __init__(self, why=None):
+    def __init__(
+        self,
+        why=None,
+        dependencies: Iterable[SchedulingDependency] = (),
+        *,
+        inherited: bool = False,
+    ):
         self.why = why
+        self.dependencies = list(dependencies)
+        # The step is delayed because another step of the invocation is delayed;
+        # that step's dependency covers this one.
+        self.inherited = inherited
 
 
 class CancelWorkflowEvaluation(Exception):

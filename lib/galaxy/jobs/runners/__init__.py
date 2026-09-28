@@ -80,7 +80,7 @@ if TYPE_CHECKING:
         JobWrapper,
         MinimalJobWrapper,
     )
-    from galaxy.schema.schema import JobState as JobStateEnum
+    from galaxy.schema.states import JobState as JobStateEnum
 
 log = get_logger(__name__)
 

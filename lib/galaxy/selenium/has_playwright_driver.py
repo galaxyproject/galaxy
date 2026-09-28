@@ -873,18 +873,37 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         Internal implementation of drag and drop.
 
-        Creates a real DataTransfer via evaluate_handle so setData/getData
-        work across the full drag event sequence (unlike synthetic DragEvents
-        where Chrome restricts getData to return empty).
+        Fires dragenter and dragover, which a real drag does and which drop zones
+        use to reveal themselves. A zone that swaps its contents in response
+        detaches the element the caller grabbed, so drop goes to the nearest
+        ancestor still in the document - the zone itself, which is where the
+        handler lives - rather than to a node nothing can hear any more.
+
+        Uses a real DataTransfer so setData/getData work across the sequence,
+        unlike synthetic DragEvents where Chrome restricts getData to return empty.
         """
-        dt = self.page.evaluate_handle("() => new DataTransfer()")
-        source.dispatch_event("pointerdown")
-        source.dispatch_event("dragstart", {"dataTransfer": dt})
-        target.dispatch_event("dragenter", {"dataTransfer": dt})
-        target.dispatch_event("dragover", {"dataTransfer": dt})
-        target.dispatch_event("drop", {"dataTransfer": dt})
-        source.dispatch_event("dragend", {"dataTransfer": dt})
-        source.dispatch_event("pointerup")
+        self._frame_or_page.evaluate(
+            """([source, target]) => {
+                const dataTransfer = new DataTransfer();
+                const drag = (element, type) =>
+                    element.dispatchEvent(
+                        new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer })
+                    );
+                const ancestors = [];
+                for (let node = target; node; node = node.parentElement) {
+                    ancestors.push(node);
+                }
+
+                source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+                drag(source, "dragstart");
+                drag(target, "dragenter");
+                drag(target, "dragover");
+                drag(ancestors.find((node) => node.isConnected) || target, "drop");
+                drag(source, "dragend");
+                source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+            }""",
+            [source, target],
+        )
 
     def action_chains(self):
         """

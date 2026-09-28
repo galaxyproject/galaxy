@@ -160,6 +160,7 @@ class GalaxyAppConfigurationAttributes:
     inactivity_box_content: str
     password_expiration_period: timedelta
     enable_account_interface: bool
+    enable_user_addresses: bool
     session_duration: int
     ga_code: str | None
     plausible_server: str | None
@@ -356,6 +357,9 @@ class GalaxyAppConfigurationAttributes:
     ga4gh_service_id: str | None
     ga4gh_service_environment: str | None
     enable_tool_tags: bool
+    curated_workflows_source: str
+    curated_workflow_owners: list[str]
+    curated_workflows_path: str
     enable_unique_workflow_defaults: bool
     simplified_workflow_run_ui: str
     simplified_workflow_run_ui_target_history: str

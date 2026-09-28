@@ -19,10 +19,10 @@ from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
     EncodedJobParameterHistoryItem,
-    JobState,
     JobSummary,
     Model,
 )
+from galaxy.schema.states import JobState
 
 
 class JobInputSummary(Model):

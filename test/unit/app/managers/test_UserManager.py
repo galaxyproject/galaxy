@@ -10,6 +10,7 @@ from typing import (
 )
 from unittest.mock import patch
 
+import pytest
 from sqlalchemy import (
     desc,
     select,
@@ -38,6 +39,10 @@ user2_data = dict(email="user2@user2.user2", username="user2", password=default_
 user3_data = dict(email="user3@user3.user3", username="user3", password=default_password)
 user4_data = dict(email="user4@user4.user4", username="user4", password=default_password)
 uppercase_email_user = dict(email="USER5@USER5.USER5", username="USER5", password=default_password)
+
+
+def assert_user_display_name_is(user: model.User, display_name: str | None) -> None:
+    assert user.display_name == display_name
 
 
 # =============================================================================
@@ -191,6 +196,95 @@ class TestUserManager(BaseTestCase):
         )
         assert message == "Invalid or expired password reset token, please request a new one."
 
+    def test_set_password_invalidates_sessions_of_a_caller_without_one(self):
+        user = self.user_manager.create(**user2_data)
+        session = model.GalaxySession(user=user, is_valid=True)
+        self.trans.sa_session.add(session)
+        self.trans.sa_session.commit()
+        assert self.trans.galaxy_session is None
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        assert check_password(changed_password, user.password)
+        assert not session.is_valid
+
+    def test_set_password_keeps_the_caller_session(self):
+        user = self.user_manager.create(**user2_data)
+        caller_session = model.GalaxySession(user=user, is_valid=True)
+        other_session = model.GalaxySession(user=user, is_valid=True)
+        self.trans.sa_session.add_all((caller_session, other_session))
+        self.trans.sa_session.commit()
+        self.mock_trans.galaxy_session = caller_session
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        assert caller_session.is_valid
+        assert not other_session.is_valid
+
+    def test_set_password_rejects_mismatched_confirmation(self):
+        user = self.user_manager.create(**user2_data)
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.set_password(self.trans, user, changed_password, default_password)
+        assert check_password(default_password, user.password)
+
+    def test_set_password_expires_outstanding_reset_tokens(self):
+        user = self.user_manager.create(**user2_data)
+        _, prt = self.user_manager.get_reset_token(self.trans, user.email)
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=prt.token, password=default_password, confirm=default_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+        assert check_password(changed_password, user.password)
+
+    def test_requesting_a_token_expires_the_earlier_ones(self):
+        user = self.user_manager.create(**user2_data)
+        _, first = self.user_manager.get_reset_token(self.trans, user.email)
+        _, second = self.user_manager.get_reset_token(self.trans, user.email)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=first.token, password=changed_password, confirm=changed_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=second.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+
+    def test_redeeming_a_token_expires_the_others(self):
+        user = self.user_manager.create(**user2_data)
+        first = model.PasswordResetToken(user)
+        second = model.PasswordResetToken(user)
+        self.trans.sa_session.add_all((first, second))
+        self.trans.sa_session.commit()
+
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=second.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=first.token, password=default_password, confirm=default_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+
+    def test_mismatched_confirmation_leaves_the_token_redeemable(self):
+        user = self.user_manager.create(**user2_data)
+        _, prt = self.user_manager.get_reset_token(self.trans, user.email)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=prt.token, password=changed_password, confirm=default_password
+        )
+        assert message == "Passwords do not match."
+
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=prt.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+        assert check_password(changed_password, user.password)
+
     def test_login(self):
         self.log("should be able to validate user credentials")
         user2 = self.user_manager.create(**user2_data)
@@ -292,16 +386,29 @@ class TestUserManager(BaseTestCase):
             assert to == "user@nopassword.com"
             assert subject == "Galaxy Password Reset"
             assert "reset your Galaxy password" in body
-            assert "{'token': 'reset_token'}" in body
+            assert "{'token': 'reset_token', 'qualified': True}" in body
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
-            with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
+            with patch("galaxy.model.secrets.token_hex", return_value="reset_token") as mock_token_hex:
                 result = self.user_manager.send_reset_email(
                     cast("GalaxyWebTransaction", self.trans), dict(email="user@nopassword.com")
                 )
                 mock_send_mail.assert_called_once()
-                mock_unique_id.assert_called_once()
+                mock_token_hex.assert_called_once()
         assert result is None
+
+    def test_failed_password_reset_delivery_expires_the_token(self):
+        user = self.user_manager.create(email="user@nopassword.com", username="nopassword")
+
+        with patch("galaxy.util.send_mail", side_effect=OSError("smtp down")):
+            self.user_manager.request_password_reset(
+                self.trans, user.email, reset_url_for=lambda token: f"https://reset/{token}"
+            )
+
+        (prt,) = self.trans.sa_session.scalars(
+            select(model.PasswordResetToken).where(model.PasswordResetToken.user_id == user.id)
+        )
+        assert prt.expiration_time <= now()
 
     def test_reset_email_user_deleted(self):
         self.trans.app.config.allow_user_deletion = True
@@ -312,6 +419,50 @@ class TestUserManager(BaseTestCase):
         assert user.deleted is True
         message = self.user_manager.send_reset_email(cast("GalaxyWebTransaction", self.trans), {"email": user_email})
         assert message is None
+
+    def test_update_display_name(self):
+        user = self.user_manager.create(**user2_data)
+        assert_user_display_name_is(user, None)
+
+        self.log("display names should be updatable")
+        self.user_manager.update_display_name(user, "Ada Lovelace")
+        assert_user_display_name_is(user, "Ada Lovelace")
+
+        self.log("surrounding whitespace should be stripped rather than rejected")
+        self.user_manager.update_display_name(user, "  Ada Lovelace  ")
+        assert_user_display_name_is(user, "Ada Lovelace")
+
+        self.log("an empty display name should clear the field")
+        self.user_manager.update_display_name(user, "")
+        assert_user_display_name_is(user, None)
+        self.user_manager.update_display_name(user, "Ada Lovelace")
+        self.user_manager.update_display_name(user, "   ")
+        assert_user_display_name_is(user, None)
+        self.user_manager.update_display_name(user, "Ada Lovelace")
+        self.user_manager.update_display_name(user, None)
+        assert_user_display_name_is(user, None)
+
+    def test_update_display_name_validation(self):
+        user = self.user_manager.create(**user2_data)
+
+        self.log("display names cannot contain text-direction characters")
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_display_name(user, "Ada\u202eLovelace")
+
+        self.log("display names have a maximum length")
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_display_name(user, "N" * 256)
+
+        assert_user_display_name_is(user, None)
+
+    def test_display_names_need_not_be_unique(self):
+        self.log("unlike usernames, two users may share a display name")
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        self.user_manager.update_display_name(user2, "Ada Lovelace")
+        self.user_manager.update_display_name(user3, "Ada Lovelace")
+        assert_user_display_name_is(user2, "Ada Lovelace")
+        assert_user_display_name_is(user3, "Ada Lovelace")
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
@@ -478,6 +629,38 @@ class TestUserDeserializer(BaseTestCase):
         new_user = self.user_manager.by_id(user.id)
         assert new_user is not None
         assert new_user.username == new_name
+
+    def test_display_name_validation(self):
+        user = self.user_manager.create(**user2_data)
+
+        self.log("display names reject text-direction characters")
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.deserializer.deserialize(user, {"display_name": "Ada\u202eLovelace"}, trans=self.trans)
+
+        self.log("display names should be updatable and trimmed")
+        self.deserializer.deserialize(user, {"display_name": "  Ada Lovelace  "}, trans=self.trans)
+        new_user = self.user_manager.by_id(user.id)
+        assert new_user is not None
+        assert new_user.display_name == "Ada Lovelace"
+
+        self.log("an empty display name clears the field")
+        self.deserializer.deserialize(user, {"display_name": ""}, trans=self.trans)
+        assert user.display_name is None
+
+    def test_active_requires_admin(self):
+        user = self.user_manager.create(**user2_data)
+        user.active = False
+
+        self.log("a non-admin cannot re-activate an account")
+        self.mock_trans.user_is_admin = False
+        with self.assertRaises(exceptions.AdminRequiredException):
+            self.deserializer.deserialize(user, {"active": True}, trans=self.trans)
+        assert user.active is False
+
+        self.log("an admin can")
+        self.mock_trans.user_is_admin = True
+        self.deserializer.deserialize(user, {"active": True}, trans=self.trans)
+        assert user.active is True
 
 
 # =============================================================================

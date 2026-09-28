@@ -15,6 +15,7 @@ import zipfile
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
 )
 from functools import partial
 from typing import (
@@ -95,7 +96,9 @@ def sniff_with_cls(cls, fname):
 stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
-def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+def handle_composite_file(
+    datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts, purge_source=True
+):
     # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
     # ``force_composite`` upload), so it must never resolve outside of the
     # dataset's extra files directory.
@@ -105,13 +108,19 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
             f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
         )
 
+    converted_path = None
     if not is_binary:
-        if upload_opts.get("space_to_tab"):
-            convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
-        else:
-            convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+        convert = convert_newlines_sep2tabs if upload_opts.get("space_to_tab") else convert_newlines
+        # ``purge_source`` is false for a source Galaxy does not own, which must neither be
+        # rewritten in place nor moved out of the caller's directory.
+        converted_path = convert(src_path, in_place=purge_source, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix).converted_path
 
-    shutil.move(src_path, file_output_path)
+    if converted_path is not None:
+        shutil.move(converted_path, file_output_path)
+    elif purge_source:
+        shutil.move(src_path, file_output_path)
+    else:
+        shutil.copy(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
     if datatype and datatype.dataset_content_needs_grooming(file_output_path):
@@ -234,7 +243,9 @@ def convert_newlines_sep2tabs(
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
-def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+def iter_headers(
+    fname_or_file_prefix: "str | FilePrefix", sep: str | None, count: int = 60, comment_designator: str | None = None
+) -> Iterator[list[str]]:
     idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
         file_iterator = fname_or_file_prefix.line_iterator()
@@ -809,7 +820,7 @@ class HandleCompressedFileResponse(NamedTuple):
     ext: str
     uncompressed_path: str
     compressed_type: str | None
-    is_compressed: bool | None
+    is_compressed: bool
 
 
 def handle_compressed_file(
@@ -923,6 +934,11 @@ def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertF
     return convert_fxn
 
 
+def should_convert_text(file_prefix: FilePrefix, is_compressed: bool) -> bool:
+    """Newline and space conversion only applies to uncompressed text content."""
+    return not file_prefix.binary and not is_compressed
+
+
 def handle_uploaded_dataset_file_internal(
     file_prefix: FilePrefix,
     datatypes_registry,
@@ -963,7 +979,7 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (convert_to_posix_lines or convert_spaces_to_tabs) and should_convert_text(file_prefix, is_compressed):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(

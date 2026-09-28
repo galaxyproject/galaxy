@@ -16,7 +16,7 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.model.store.discover import InvalidDiscoveredFilePathError
-from galaxy.schema.schema import JobState
+from galaxy.schema.states import JobState
 from galaxy.tool_util.parser.output_collection_def import (
     FilePatternDatasetCollectionDescription,
     ToolProvidedMetadataDatasetCollection,

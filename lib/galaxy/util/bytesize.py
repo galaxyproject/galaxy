@@ -44,7 +44,7 @@ class ByteSize:
         return f"{new_value}{unit}"
 
 
-def parse_bytesize(value):
+def parse_bytesize(value: int | float | str) -> int | float:
     if isinstance(value, int) or isinstance(value, float):
         # Assume bytes
         return value

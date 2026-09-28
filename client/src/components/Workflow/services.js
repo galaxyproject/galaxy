@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { getGalaxyInstance } from "@/app";
 import { withPrefix } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 import { toSimple } from "./Editor/modules/model";
 
@@ -134,7 +134,7 @@ export class Services {
             const response = await axios.post(url, data);
             return response.data;
         } catch (e) {
-            rethrowSimple(e);
+            rethrowSimpleWithStatus(e, e.response);
         }
     }
 }

@@ -17,7 +17,7 @@ from galaxy.model import (
     WorkflowInvocationCompletion,
     WorkflowInvocationToSubworkflowInvocationAssociation,
 )
-from galaxy.schema.invocation import InvocationState
+from galaxy.schema.states import InvocationState
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)

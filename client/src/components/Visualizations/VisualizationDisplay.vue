@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import { storeToRefs } from "pinia";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import type { NavigationGuard } from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, isRegisteredUser } from "@/api";
+import { useUserStore } from "@/stores/userStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
@@ -20,66 +23,49 @@ const emit = defineEmits<{
     (e: "load"): void;
 }>();
 
+const { currentUser } = storeToRefs(useUserStore());
+
 const errorMessage = ref<string>("");
-const iframeRef = ref<HTMLIFrameElement | null>(null);
 const isLoading = ref<boolean>(true);
 const hasUnsavedChanges = ref<boolean>(false);
 const visualizationConfig = ref();
+const visualizationTitle = ref<string | undefined>();
+// Only an owner can save in place; for anyone else the plugin creates their own copy.
+const ownedVisualizationId = ref<string | undefined>();
+
+// Remount the iframe when its visualization identity changes.
+const frameKey = computed(() => `${props.visualization}:${props.visualizationId ?? props.datasetId}`);
 
 function handleLoad() {
     isLoading.value = false;
     emit("load");
-    setupChangeDetection();
 }
 
-function setupChangeDetection() {
-    const iframe = iframeRef.value;
-    if (!iframe?.contentWindow) {
-        return;
+function handleSaved(saved: boolean) {
+    hasUnsavedChanges.value = !saved;
+}
+
+function onUnload(e: BeforeUnloadEvent) {
+    if (hasUnsavedChanges.value) {
+        e.preventDefault();
+        e.returnValue = "";
     }
-
-    setTimeout(() => {
-        try {
-            const iframeDoc = iframe.contentDocument;
-            if (!iframeDoc) {
-                return;
-            }
-
-            const markAsChanged = () => {
-                if (!hasUnsavedChanges.value) {
-                    hasUnsavedChanges.value = true;
-                }
-            };
-
-            // Monitor DOM changes (skip initial load)
-            setTimeout(() => {
-                const observer = new MutationObserver(() => markAsChanged());
-                observer.observe(iframeDoc.body, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true,
-                });
-            }, 2000);
-
-            // Monitor user input
-            ["input", "change", "keyup", "paste"].forEach((type) => {
-                iframeDoc.addEventListener(type, markAsChanged, true);
-            });
-        } catch (e) {
-            console.warn("Cannot monitor iframe for changes:", e);
-        }
-    }, 1000);
 }
 
-onBeforeRouteLeave((to, from, next) => {
+const confirmDiscard: NavigationGuard = (to, from, next) => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
         next(false);
     } else {
         next();
     }
-});
+};
+
+onBeforeRouteLeave(confirmDiscard);
+// Switching tab or dataset keeps the same route record, so it arrives as an update.
+onBeforeRouteUpdate(confirmDiscard);
 
 onMounted(async () => {
+    window.addEventListener("beforeunload", onUnload);
     if (props.visualizationId) {
         const { data, error } = await GalaxyApi().GET("/api/visualizations/{id}", {
             params: { path: { id: props.visualizationId } },
@@ -88,21 +74,18 @@ onMounted(async () => {
             errorMessage.value = error.err_msg;
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
-            errorMessage.value = "";
+            visualizationTitle.value = data.title;
+            const owner = isRegisteredUser(currentUser.value) && data.user_id === currentUser.value.id;
+            ownedVisualizationId.value = owner ? props.visualizationId : undefined;
         } else {
             errorMessage.value = "Failed to access visualization details.";
         }
     } else {
         visualizationConfig.value = { dataset_id: props.datasetId };
     }
-
-    window.addEventListener("beforeunload", (e) => {
-        if (hasUnsavedChanges.value) {
-            e.preventDefault();
-            e.returnValue = "";
-        }
-    });
 });
+
+onBeforeUnmount(() => window.removeEventListener("beforeunload", onUnload));
 </script>
 
 <template>
@@ -116,8 +99,12 @@ onMounted(async () => {
 
         <VisualizationFrame
             v-if="visualizationConfig"
+            :key="frameKey"
             :config="visualizationConfig"
             :name="props.visualization"
+            :title="visualizationTitle"
+            :visualization-id="ownedVisualizationId"
+            @saved="handleSaved"
             @load="handleLoad" />
     </div>
 </template>

@@ -44,7 +44,7 @@ class ToolVersionMissing(Linter):
     """
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml, tool_node = _tool_xml_and_root(tool_source)
         version = tool_source.parse_version() or ""
         if not version:
@@ -57,7 +57,7 @@ class ToolVersionPEP404(Linter):
     """
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml, tool_node = _tool_xml_and_root(tool_source)
         version = tool_source.parse_version() or ""
         parsed_version = parse_version(version)
@@ -67,7 +67,7 @@ class ToolVersionPEP404(Linter):
 
 class ToolVersionWhitespace(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml, tool_node = _tool_xml_and_root(tool_source)
         version = tool_source.parse_version() or ""
         if version != version.strip():
@@ -80,7 +80,7 @@ class ToolVersionWhitespace(Linter):
 
 class ToolVersionValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml, tool_node = _tool_xml_and_root(tool_source)
         version = tool_source.parse_version() or ""
         parsed_version = parse_version(version)
@@ -90,7 +90,7 @@ class ToolVersionValid(Linter):
 
 class ToolNameMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         name = tool_source.parse_name()
         if not name:
@@ -99,7 +99,7 @@ class ToolNameMissing(Linter):
 
 class ToolNameWhitespace(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         name = tool_source.parse_name()
         if name and name != name.strip():
@@ -112,7 +112,7 @@ class ToolNameWhitespace(Linter):
 
 class ToolNameValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         name = tool_source.parse_name()
         if name and name == name.strip():
@@ -121,7 +121,7 @@ class ToolNameValid(Linter):
 
 class ToolIDMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         tool_id = tool_source.parse_id()
         if not tool_id:
@@ -130,7 +130,7 @@ class ToolIDMissing(Linter):
 
 class ToolIDWhitespace(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         tool_id = tool_source.parse_id()
         if tool_id and re.search(r"\s", tool_id):
@@ -141,7 +141,7 @@ class ToolIDWhitespace(Linter):
 
 class ToolIDValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         tool_id = tool_source.parse_id()
         if tool_id and not re.search(r"\s", tool_id):
@@ -150,7 +150,7 @@ class ToolIDValid(Linter):
 
 class ToolProfileInvalid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         profile = tool_source.parse_profile()
         profile_valid = PROFILE_PATTERN.match(profile) is not None
@@ -160,7 +160,7 @@ class ToolProfileInvalid(Linter):
 
 class ToolProfileLegacy(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         profile = tool_source.parse_profile()
         profile_valid = PROFILE_PATTERN.match(profile) is not None
@@ -170,7 +170,7 @@ class ToolProfileLegacy(Linter):
 
 class ToolProfileValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         profile = tool_source.parse_profile()
         profile_valid = PROFILE_PATTERN.match(profile) is not None
@@ -180,7 +180,7 @@ class ToolProfileValid(Linter):
 
 class RequirementNameMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
@@ -192,7 +192,7 @@ class RequirementNameMissing(Linter):
 
 class RequirementVersionMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
@@ -204,7 +204,7 @@ class RequirementVersionMissing(Linter):
 
 class RequirementVersionWhitespace(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
@@ -220,7 +220,7 @@ class RequirementVersionWhitespace(Linter):
 
 class ResourceRequirementExpression(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         requirements, containers, resource_requirements, *_ = tool_source.parse_requirements()
         for rr in resource_requirements:
@@ -232,7 +232,7 @@ class ResourceRequirementExpression(Linter):
 
 class BioToolsValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         xrefs = tool_source.parse_xrefs()
         for xref in xrefs:
@@ -245,7 +245,7 @@ class BioToolsValid(Linter):
 
 class EDAMTermsValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, tool_node = _tool_xml_and_root(tool_source)
         edam = load_edam_tree(None, "operation_", "topic_")
         terms = tool_source.parse_edam_operations() + tool_source.parse_edam_topics()

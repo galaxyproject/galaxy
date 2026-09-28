@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDADetailed } from "@/api";
@@ -9,6 +8,8 @@ import { prependPath } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 interface Props {
     item: HDADetailed;
@@ -44,12 +45,11 @@ function onDownload(resource: string, extension = "") {
 </script>
 
 <template>
-    <BDropdown
+    <GDropdown
         v-if="hasMetaFiles"
         v-g-tooltip.hover
         dropup
         no-caret
-        no-flip
         size="sm"
         variant="link"
         toggle-class="text-decoration-none"
@@ -60,19 +60,19 @@ function onDownload(resource: string, extension = "") {
             <FontAwesomeIcon :icon="faSave" />
         </template>
 
-        <BDropdownItem v-localize :href="downloadUrl" @click.prevent.stop="onDownload(downloadUrl)">
+        <GDropdownItem v-localize :href="downloadUrl" @click.prevent.stop="onDownload(downloadUrl)">
             Download Dataset
-        </BDropdownItem>
+        </GDropdownItem>
 
-        <BDropdownItem
+        <GDropdownItem
             v-for="(metaFile, index) of metaFiles"
             :key="index"
             :data-description="`download ${metaFile.file_type}`"
             :href="metaDownloadUrl + metaFile.file_type"
             @click.prevent.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
             Download {{ metaFile.file_type }}
-        </BDropdownItem>
-    </BDropdown>
+        </GDropdownItem>
+    </GDropdown>
 
     <GButton
         v-else

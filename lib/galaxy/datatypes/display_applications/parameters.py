@@ -9,7 +9,7 @@ from urllib.parse import quote_plus
 
 from galaxy.datatypes.data import Data
 from galaxy.model import DatasetInstance
-from galaxy.schema.schema import DatasetState
+from galaxy.schema.states import DatasetState
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
 

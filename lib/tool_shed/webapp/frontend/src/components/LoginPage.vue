@@ -12,6 +12,9 @@ import LoginForm from "@/components/LoginForm.vue"
             <p class="text-grey-6">
                 Not registered? <router-link to="/register" class="register-link">Create an account</router-link>.
             </p>
+            <p class="text-grey-6">
+                <router-link to="/user/forgot_password" class="forgot-password-link">Forgot your password?</router-link>
+            </p>
         </q-card-section>
     </ModalForm>
 </template>

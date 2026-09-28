@@ -99,6 +99,7 @@ import VisualizationPublished from "@/components/Visualizations/VisualizationPub
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 import InvocationReport from "@/components/Workflow/InvocationReport.vue";
+import CuratedWorkflowList from "@/components/Workflow/List/CuratedWorkflowList.vue";
 import WorkflowList from "@/components/Workflow/List/WorkflowList.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
@@ -611,6 +612,8 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             exchangeId: route.params.exchangeId || undefined,
                             compact: route.query.compact === "true",
+                            // `?q=` seeds a fresh conversation, e.g. from the command palette
+                            initialQuestion: typeof route.query.q === "string" ? route.query.q : undefined,
                         }),
                     },
                     {
@@ -850,6 +853,10 @@ export function getRouter(Galaxy) {
                             isFullPage: true,
                             success: Boolean(route.query.success),
                         }),
+                    },
+                    {
+                        path: "workflows/list_curated",
+                        component: CuratedWorkflowList,
                     },
                     {
                         path: "workflows/list",

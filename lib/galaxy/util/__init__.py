@@ -65,7 +65,7 @@ from typing_extensions import (
 )
 
 
-def now():
+def now() -> datetime:
     """
     Return the current time in UTC without any timezone information.
     """
@@ -1065,7 +1065,7 @@ truthy = frozenset({"true", "yes", "on", "y", "t", "1"})
 falsy = frozenset({"false", "no", "off", "n", "f", "0"})
 
 
-def asbool(obj):
+def asbool(obj: Any) -> bool:
     if isinstance(obj, str):
         obj = obj.strip().lower()
         if obj in truthy:
@@ -1244,7 +1244,27 @@ def filesystem_safe_string(
     return sanitized_string
 
 
-def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict"):
+@overload
+def smart_str(
+    s: bytearray, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray: ...
+
+
+@overload
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: Literal[False] = False, errors: str = "strict"
+) -> bytes: ...
+
+
+@overload
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray | int | None: ...
+
+
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray | int | None:
     """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 

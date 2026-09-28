@@ -14,6 +14,7 @@ from galaxy import (
     web,
 )
 from galaxy.util import (
+    asbool,
     is_safe_local_redirect,
     url_get,
 )
@@ -218,24 +219,26 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def logout(self, trans: "GalaxyWebTransaction", provider, **kwargs):
+    def logout(self, trans: "GalaxyWebTransaction", provider, logout_all=False, **kwargs):
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
-        trans.handle_user_logout()
+        trans.handle_user_logout(logout_all=asbool(logout_all))
         if success:
             return {"redirect_uri": redirect_uri}
         else:
             return {"message": message}
 
     @web.expose
-    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, **kwargs):
+    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, logout_all=False, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
+            return trans.response.send_redirect(
+                url_for(controller="authnz", action="logout", provider=idp_provider, logout_all=logout_all)
+            )
 
     @web.expose
     @web.json

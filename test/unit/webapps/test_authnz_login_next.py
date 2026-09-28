@@ -71,3 +71,27 @@ def test_callback_refuses_to_send_the_user_off_site(hostile):
 @pytest.mark.parametrize("empty", [None, "", "None"])
 def test_callback_falls_back_to_root_without_a_destination(empty):
     assert chosen_redirect_for(empty) == "/"
+
+
+def test_logout_all_survives_oidc_provider_resolution(monkeypatch):
+    redirect_arguments = {}
+
+    def capture_url_for(**kwargs):
+        redirect_arguments.update(kwargs)
+        return "/provider-logout"
+
+    monkeypatch.setattr(authnz_module, "url_for", capture_url_for)
+    trans = Bunch(
+        get_cookie=lambda name: "keycloak",
+        response=Bunch(send_redirect=lambda url: url),
+    )
+
+    redirect = OIDC.get_logout_url(None, trans, logout_all="true")
+
+    assert redirect == "/provider-logout"
+    assert redirect_arguments == {
+        "controller": "authnz",
+        "action": "logout",
+        "provider": "keycloak",
+        "logout_all": "true",
+    }

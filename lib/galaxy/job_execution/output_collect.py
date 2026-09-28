@@ -75,7 +75,7 @@ if TYPE_CHECKING:
         BaseDirectoryImportModelStore,
         DirectoryModelExportStore,
     )
-    from galaxy.schema.schema import JobState
+    from galaxy.schema.states import JobState
 
 DATASET_ID_TOKEN = "DATASET_ID"
 

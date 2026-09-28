@@ -97,7 +97,7 @@ steps:
           grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "Dataset information"
-      element: "div.content-item .content-title"
+      element: "#current-history-panel div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
 

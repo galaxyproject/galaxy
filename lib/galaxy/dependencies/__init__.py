@@ -2,17 +2,24 @@
 Determine what optional dependencies are needed.
 """
 
+import logging
 import os
 import re
 import sys
+from collections.abc import Mapping
 from os.path import (
     dirname,
     exists,
     join,
 )
+from typing import (
+    Any,
+    cast,
+)
 
 import yaml
 from dparse import parse
+from packaging.requirements import Requirement
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import (
@@ -26,6 +33,18 @@ from galaxy.util.properties import (
     find_config_file,
     load_app_properties,
 )
+
+log = logging.getLogger(__name__)
+
+# The cloud object store's provider SDKs are cloudbridge extras, so only the
+# ones backing a configured provider need installing. Galaxy's provider name
+# matches the extra except for Google.
+CLOUDBRIDGE_EXTRAS = {
+    "aws": "aws",
+    "azure": "azure",
+    "google": "gcp",
+    "openstack": "openstack",
+}
 
 
 class BaseConditionalDependencies:
@@ -67,6 +86,12 @@ class BaseConditionalDependencies:
         except Exception:
             return False
 
+    def extras(self, name: str) -> list[str]:
+        """Extras of the named package that this configuration requires."""
+        name = name.replace("-", "_").replace(".", "_")
+        hook = getattr(self, f"extras_{name}", None)
+        return hook() if hook else []
+
     def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
 
@@ -89,6 +114,7 @@ class ConditionalDependencies(BaseConditionalDependencies):
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
+        self.cloud_object_store_providers = []
         self.file_sources = []
         self.container_interface_types = []
         self.job_rule_modules = []
@@ -147,7 +173,8 @@ class ConditionalDependencies(BaseConditionalDependencies):
             if ".xml" in object_store_conf_path:
                 for store in parse_xml(object_store_conf_path).iter("object_store"):
                     if "type" in store.attrib:
-                        self.object_stores.append(store.attrib["type"])
+                        # lxml's _Attrib is str-keyed in practice but not typed as a Mapping.
+                        self.collect_object_store(cast(Mapping[str, Any], store.attrib))
             else:
                 with open(object_store_conf_path) as f:
                     job_conf_dict = yaml.safe_load(f)
@@ -157,7 +184,7 @@ class ConditionalDependencies(BaseConditionalDependencies):
                         return
 
                     if "type" in from_dict:
-                        self.object_stores.append(from_dict["type"])
+                        self.collect_object_store(from_dict)
 
                     for value in from_dict.values():
                         if isinstance(value, list):
@@ -168,6 +195,22 @@ class ConditionalDependencies(BaseConditionalDependencies):
 
                 collect_types(job_conf_dict)
 
+        except OSError:
+            pass
+
+        # Parse object store templates config. Stores offered as templates need
+        # their dependencies as much as ones configured in object_store_conf.
+        try:
+            object_store_templates_conf = self.config.get("object_store_templates")
+            if object_store_templates_conf is None:
+                object_store_templates_conf_yml = self.config_object.object_store_templates_config_file
+                if object_store_templates_conf_yml and exists(object_store_templates_conf_yml):
+                    with open(object_store_templates_conf_yml) as f:
+                        object_store_templates_conf = yaml.safe_load(f)
+            for object_store_template in apply_syntactic_sugar(object_store_templates_conf or []):
+                configuration = object_store_template.get("configuration") or {}
+                if "type" in configuration:
+                    self.collect_object_store(configuration)
         except OSError:
             pass
 
@@ -226,6 +269,18 @@ class ConditionalDependencies(BaseConditionalDependencies):
             vault_conf = {}
         self.vault_type = vault_conf.get("type", "").lower()
 
+    def collect_object_store(self, store: Mapping[str, Any]) -> None:
+        """Record a configured object store, given its XML attributes or config dict."""
+        self.object_stores.append(store["type"])
+        if store["type"] == "cloud" and store.get("provider"):
+            provider = str(store["provider"]).lower()
+            if provider not in CLOUDBRIDGE_EXTRAS:
+                log.warning(
+                    "Unknown cloud object store provider '%s'; no cloudbridge extra will be installed for it.",
+                    provider,
+                )
+            self.cloud_object_store_providers.append(provider)
+
     def check_drmaa(self):
         return (
             "galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
@@ -280,6 +335,15 @@ class ConditionalDependencies(BaseConditionalDependencies):
 
     def check_cloudbridge(self):
         return "cloud" in self.object_stores
+
+    def extras_cloudbridge(self) -> list[str]:
+        return sorted(
+            {
+                CLOUDBRIDGE_EXTRAS[provider]
+                for provider in self.cloud_object_store_providers
+                if provider in CLOUDBRIDGE_EXTRAS
+            }
+        )
 
     def check_kamaki(self):
         return "pithos" in self.object_stores
@@ -434,5 +498,11 @@ def optional(config_file=None, app=GALAXY_APP):
     conditional = dependencies_class(config_file)
     for dependency in conditional.conditional_reqs:
         if conditional.check(dependency.name):
-            rval.append(strip_comment(dependency.line))
+            line = strip_comment(dependency.line)
+            extras = conditional.extras(dependency.name)
+            if extras:
+                requirement = Requirement(line)
+                requirement.extras |= set(extras)
+                line = str(requirement)
+            rval.append(line)
     return rval

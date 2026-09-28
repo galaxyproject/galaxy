@@ -1,7 +1,10 @@
 import string
 import time
 
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on_assertion,
+)
 from galaxy_test.driver.integration_util import IntegrationTestCase
 from .objectstore._base import BaseObjectStoreIntegrationTestCase
 from .objectstore.test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
@@ -48,10 +51,13 @@ class RecalculateDiskUsage:
 
         self.dataset_populator.delete_dataset(history_id, hda_id, purge=True, wait_for_purge=True)
 
-        # Purging that dataset should result in usage dropping back
-        # down to zero.
-        current_usage = self.dataset_populator.get_usage_for(None)
-        assert current_usage["total_disk_usage"] == 0
+        # The purge task commits the purged flag before updating the user's quota.
+        # Wait for the quota update as well before checking recalculation.
+        def assert_usage_cleared():
+            current_usage = self.dataset_populator.get_usage_for(None)
+            assert current_usage["total_disk_usage"] == 0
+
+        wait_on_assertion(assert_usage_cleared, "disk usage to drop to zero after purging")
 
         self.recalculate_disk_usage()
         # The disk usage should be 0 again

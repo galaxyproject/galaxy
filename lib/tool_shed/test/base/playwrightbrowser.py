@@ -17,6 +17,8 @@ class Locators:
     toolbar_logout = ".toolbar-logout"
     login_submit_button = '[name="login_button"]'
     register_link = ".register-link"
+    forgot_password_link = ".forgot-password-link"
+    reset_password_sent = ".reset-password-sent"
 
 
 class PlaywrightShedBrowser(ShedBrowser):

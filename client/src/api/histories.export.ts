@@ -1,7 +1,9 @@
-import { GalaxyApi, type ModelStoreFormat, type ObjectExportTaskResponse } from "@/api";
+import { type components, GalaxyApi, type ModelStoreFormat, type ObjectExportTaskResponse } from "@/api";
 import { type ExportRecord, ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import { rethrowSimple } from "@/utils/simple-error";
+
+export type JobExportHistoryArchiveModel = components["schemas"]["JobExportHistoryArchiveModel"];
 
 /**
  * A list of objects with the available export formats IDs and display names.

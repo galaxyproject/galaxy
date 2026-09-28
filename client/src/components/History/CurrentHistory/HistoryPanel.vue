@@ -292,6 +292,9 @@ async function onDelete(item: HistoryItemSummary, recursive = false) {
     try {
         await deleteContent(item, { recursive: recursive });
         updateContentStats();
+    } catch (error) {
+        VueSet(invisibleHistoryItems.value, item.hid, false);
+        onOperationError({ errorMessage: error });
     } finally {
         isLoading.value = false;
     }

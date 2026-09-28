@@ -739,6 +739,13 @@ login:
     submit:
       type: xpath
       selector: "//button[@name='login']"
+    reset_password_link: '#reset-password-link'
+
+reset_password:
+  selectors:
+    email: '#reset-email'
+    submit: '#reset-password'
+    alert: '#reset-password-alert'
 
 registration:
   selectors:
@@ -802,6 +809,7 @@ tool_form:
 workflows:
   selectors:
     activity: '#activity-workflows'
+    curated_tab: '#curated a'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'
@@ -817,6 +825,7 @@ workflows:
     workflow_not_found_message: '#no-workflow-found'
     workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
+    curated_workflow_card: '.g-card.curated-workflow-card'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
@@ -1344,6 +1353,60 @@ admin:
         selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-quota-submit'
 
+  role:
+    selectors:
+      form: '#admin-role-form'
+      users: '#role-users .multiselect'
+      users_input: '#role-users input.multiselect__input'
+      user_option:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__option')]/span[text()='${email}']"
+      selected_user:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
+      remove_selected_user:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      groups: '#role-groups .multiselect'
+      groups_input: '#role-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_group:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_group:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#role-submit'
+
+  user_roles_groups:
+    selectors:
+      form: '#admin-user-roles-groups-form'
+      roles: '#admin-user-roles .multiselect'
+      roles_input: '#admin-user-roles input.multiselect__input'
+      role_option:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_role:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_role:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      groups: '#admin-user-groups .multiselect'
+      groups_input: '#admin-user-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_group:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_group:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#admin-user-roles-groups-submit'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
@@ -1413,7 +1476,7 @@ libraries:
     selectors:
       add_items_button: '.add-library-items-datasets'
       add_items_menu: '.add-library-items-datasets .dropdown-menu'
-      add_items_options: '.add-library-items-datasets .dropdown-menu div a'
+      add_items_options: '.add-library-items-datasets .dropdown-menu a.dropdown-item'
       add_folder: '.add-library-items-folder'
       add_to_history: '.add-to-history'
       add_to_history_datasets: '.add-to-history-datasets'
@@ -1461,6 +1524,9 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '[data-description="toast message"]'
+      toast_msg_with_text:
+        type: xpath
+        selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
       alert_not_exists_user_import_dir:
         type: xpath
         selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]

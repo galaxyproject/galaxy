@@ -13,7 +13,7 @@ class RequiredFilesExist(Linter):
     """Check that required_files include patterns match existing files."""
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         if not tool_source.source_path:
             return
         tool_dir = os.path.dirname(tool_source.source_path)

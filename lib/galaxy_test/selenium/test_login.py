@@ -13,6 +13,26 @@ class TestLogin(SeleniumTestCase):
         login.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
 
     @selenium_test
+    def test_reset_password_link(self):
+        email = self._get_random_email()
+        self.home()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
+        login = self.components.login
+        self.fill(login.form.wait_for_visible(), {"login": email})
+        login.reset_password_link.wait_for_and_click()
+        reset_password = self.components.reset_password
+        assert reset_password.email.wait_for_visible().get_attribute("value") == email
+        reset_password.submit.wait_for_and_click()
+        # Test servers usually lack SMTP, so either response proves the request round-tripped.
+        alert_text = reset_password.alert.wait_for_visible().text
+        assert "confirmation email" in alert_text or "Mail is not configured" in alert_text
+
+    @selenium_test
+    def test_reset_password_direct_load(self):
+        self.get("login/reset_password")
+        self.components.reset_password.email.wait_for_visible()
+
+    @selenium_test
     def test_logging_in(self):
         email = self._get_random_email()
         self.register(email)

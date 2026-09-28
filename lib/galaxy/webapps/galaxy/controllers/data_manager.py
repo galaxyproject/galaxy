@@ -110,10 +110,9 @@ class DataManager(BaseUIController):
             )
         message = kwd.get("message", "")
         status = kwd.get("status", "info")
-        job_id = kwd.get("id", None)
+        job_id = kwd.get("id", "")
         try:
-            job_id = trans.security.decode_id(job_id)
-            job = trans.sa_session.query(Job).get(job_id)
+            job = trans.sa_session.query(Job).get(trans.security.decode_id(job_id))
         except Exception as e:
             job = None
             log.error(f"Bad job id ({job_id}) passed to job_info: {e}")
@@ -149,7 +148,7 @@ class DataManager(BaseUIController):
                 values.append((key, value))
             data_manager_output.append(values)
         return {
-            "jobId": job_id,
+            "jobId": job.id,
             "exitCode": job.exit_code,
             "runUrl": web.url_for(controller="tool_runner", action="rerun", job_id=trans.security.encode_id(job.id)),
             "commandLine": job.command_line,

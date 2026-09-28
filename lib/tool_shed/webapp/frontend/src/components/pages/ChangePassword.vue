@@ -18,10 +18,11 @@ async function onChange() {
             body: {
                 current: current.value,
                 password: password.value,
+                confirm: confirm.value,
             },
         })
         .then(() => {
-            router.push("/user/password_change_success")
+            router.push("/user/change_password_success")
         })
         .catch((e) => {
             error.value = errorMessageAsString(e)

@@ -1,7 +1,13 @@
 import MockDate from "timezone-mock";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { formatGalaxyPrettyDateString, galaxyTimeToDate, localizeUTCPretty } from "./dates";
+import {
+    formatGalaxyPrettyDateString,
+    galaxyTimeToDate,
+    localizeUTCPretty,
+    relativeUpdatedLabel,
+    shortDateLabel,
+} from "./dates";
 
 describe("dates.ts", () => {
     beforeEach(() => {
@@ -47,6 +53,34 @@ describe("dates.ts", () => {
             const galaxyTime = "2023-10-01T12:00:00";
             const formatted = formatGalaxyPrettyDateString(galaxyTime);
             expect(formatted).toBe("Sunday Oct 1st 8:00:00 2023 GMT-4");
+        });
+    });
+
+    describe("relativeUpdatedLabel", () => {
+        it("should describe the time relative to now", () => {
+            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "");
+            expect(relativeUpdatedLabel(threeDaysAgo)).toBe("updated 3 days ago");
+        });
+
+        it("should return undefined for a missing or malformed time", () => {
+            expect(relativeUpdatedLabel(undefined)).toBeUndefined();
+            expect(relativeUpdatedLabel(null)).toBeUndefined();
+            expect(relativeUpdatedLabel("")).toBeUndefined();
+            expect(relativeUpdatedLabel("invalid-date-string")).toBeUndefined();
+        });
+    });
+
+    describe("shortDateLabel", () => {
+        it("should format the time as a short date in the user's time zone", () => {
+            expect(shortDateLabel("2023-10-01T12:00:00")).toBe("Oct 1, 2023");
+            expect(shortDateLabel("2023-10-01T02:00:00")).toBe("Sep 30, 2023");
+        });
+
+        it("should return undefined for a missing or malformed time", () => {
+            expect(shortDateLabel(undefined)).toBeUndefined();
+            expect(shortDateLabel(null)).toBeUndefined();
+            expect(shortDateLabel("")).toBeUndefined();
+            expect(shortDateLabel("invalid-date-string")).toBeUndefined();
         });
     });
 });

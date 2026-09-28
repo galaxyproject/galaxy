@@ -7,11 +7,11 @@ import pytest
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
-from galaxy.schema.invocation import (
+from galaxy.schema.states import (
     InvocationState,
     InvocationStepState,
+    JobState,
 )
-from galaxy.schema.schema import JobState
 from galaxy.structured_app import MinimalManagerApp
 
 

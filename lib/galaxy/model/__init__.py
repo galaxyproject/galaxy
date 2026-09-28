@@ -15,9 +15,13 @@ import operator
 import os
 import pwd
 import random
+import secrets
 import string
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -176,19 +180,19 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
-from galaxy.schema.invocation import (
-    InvocationCancellationUserRequest,
-    InvocationState,
-    InvocationStepState,
-)
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
+    InvocationsStateCounts,
+    MAX_ANNOTATION_SIZE,
+)
+from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
     DatasetSourceTransformActionTypeLiteral,
     DatasetState,
     DatasetValidatedState,
-    InvocationsStateCounts,
+    InvocationState,
+    InvocationStepState,
     JobState,
-    MAX_ANNOTATION_SIZE,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -208,7 +212,6 @@ from galaxy.util import (
     now,
     ready_name_for_url,
     unicodify,
-    unique_id,
 )
 from galaxy.util.config_templates import (
     EnvironmentDict,
@@ -872,6 +875,9 @@ class User(Base, Dictifiable, RepresentById):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     username: Mapped[str | None] = mapped_column(TrimmedString(255), index=True, unique=True)
+    # Free-form name shown in place of the username. Deliberately not unique and
+    # not indexed: nothing resolves a user by it, and it never appears in a URL.
+    display_name: Mapped[str | None] = mapped_column(TrimmedString(255))
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[datetime | None] = mapped_column(default=now)
     external: Mapped[bool | None] = mapped_column(default=False)
@@ -957,7 +963,7 @@ class User(Base, Dictifiable, RepresentById):
         "preferred_object_store_id",
     ]
 
-    def __init__(self, email=None, password=None, username=None):
+    def __init__(self, email=None, password=None, username=None, display_name=None):
         self.email = email
         self.password = password
         self.external = False
@@ -965,6 +971,7 @@ class User(Base, Dictifiable, RepresentById):
         self.purged = False
         self.active = False
         self.username = username
+        self.display_name = display_name
 
     def get_user_data_tables(self, data_table: str):
         session = required_object_session(self)
@@ -1428,7 +1435,7 @@ class PasswordResetToken(Base):
         if token:
             self.token = token
         else:
-            self.token = unique_id()
+            self.token = secrets.token_hex(16)
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)
 
@@ -2465,17 +2472,27 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        # TODO: migrate to where-in subqueries?
+        sa_session = required_object_session(self)
+        update_time = now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        params = {"job_id": self.id, "update_time": update_time}
+        # Update workflow_invocation_step for direct job_id
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
-        sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        params = {"job_id": self.id, "update_time": update_time}
         sa_session.execute(statement, params)
+        # Also update via implicit_collection_jobs link
+        statement_icj = text("""
+            UPDATE workflow_invocation_step
+            SET update_time = :update_time
+            WHERE implicit_collection_jobs_id IN (
+                SELECT implicit_collection_jobs_id FROM implicit_collection_jobs_job_association
+                WHERE job_id = :job_id
+            );
+        """)
+        sa_session.execute(statement_icj, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -5345,7 +5362,8 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[str | None] = mapped_column(TEXT)
     extra_files_path: Mapped[str | None] = mapped_column(TEXT)
-    # actions actually applied to this source when creating the dataset.
+    # actions actually applied to this source when creating the dataset. An empty list means the
+    # source was processed and stored unmodified, None that it has not been processed (or predates tracking).
     transform: Mapped[TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
     # actions that may be applied to this source when creating the dataset
     requested_transform: Mapped[REQUESTED_TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
@@ -6008,6 +6026,22 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             self.states.RUNNING,
             self.states.SETTING_METADATA,
         )
+
+    @property
+    def is_pending_or_paused(self):
+        """Pending, or paused and resumable by the user."""
+        return self.is_pending or self.state == self.states.PAUSED
+
+    def is_null_expression(self, read_value: Callable[["DatasetInstance"], Any] | None = None) -> bool:
+        """True for an ok ``expression.json`` dataset holding ``null``, including skipped outputs."""
+        if self.extension != "expression.json" or not self.is_ok:
+            return False
+        if self.blurb == "skipped" or self.peek == "null":
+            return True
+        if read_value is not None:
+            return read_value(self) is None
+        with open(self.get_file_name()) as fh:
+            return fh.read(5) == "null"
 
     @property
     def source_library_dataset(self):
@@ -7731,64 +7765,50 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
         return self._has_deferred_data
 
+    def _subcollection_ids_stmt(self, *where):
+        """Select the ids of the collections nested in this one that match ``where``.
+
+        Each nesting level is looked up from the ids of the level above, so empty
+        sub-collections are included. The leaf-DCE walk in
+        _build_nested_collection_attributes_stmt only reaches branches that
+        contain datasets.
+        """
+        session = required_object_session(self)
+        is_postgres = session.bind and session.bind.dialect.name == "postgresql"
+
+        def in_ids(column, ids):
+            if is_postgres:
+                # Evaluating each level into an array forces index scans, see
+                # _build_nested_collection_attributes_stmt.
+                return column == any_(func.array(ids.scalar_subquery()))
+            return column.in_(ids)
+
+        dce_table = DatasetCollectionElement.__table__
+        dc_table = DatasetCollection.__table__
+        level_conditions = []
+        level_ids = None
+        for _ in range(self.collection_type.count(":")):
+            dce = alias(dce_table)
+            if level_ids is None:
+                parent_condition = dce.c.dataset_collection_id == self.id
+            else:
+                parent_condition = in_ids(dce.c.dataset_collection_id, level_ids)
+            level_ids = select(dce.c.child_collection_id).where(parent_condition)
+            level_conditions.append(in_ids(dc_table.c.id, level_ids))
+        return select(dc_table.c.id).where(or_(*level_conditions), *where)
+
     @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
             if not self.id:
                 return self.populated
-            _populated_optimized = True
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                session = required_object_session(self)
-                is_postgres = session.bind and session.bind.dialect.name == "postgresql"
-                if is_postgres:
-                    # Query intermediate collection IDs directly using the
-                    # ARRAY walk pattern, then check their populated_state.
-                    # Unlike the leaf-DCE ARRAY walk in
-                    # _build_nested_collection_attributes_stmt, this
-                    # correctly handles empty sub-collections (which have
-                    # no leaf DCEs but may still have non-OK state, e.g.
-                    # from skipped conditional workflow steps).
-                    dce_table = DatasetCollectionElement.__table__
-                    dc_table = DatasetCollection.__table__
-                    n_intermediates = self.collection_type.count(":")
-
-                    inner_dce = alias(dce_table)
-                    child_ids_array = func.array(
-                        select(inner_dce.c.child_collection_id)
-                        .where(inner_dce.c.dataset_collection_id == self.id)
-                        .scalar_subquery()
-                    )
-                    level_conditions = [dc_table.c.id == any_(child_ids_array)]
-
-                    for _ in range(n_intermediates - 1):
-                        next_dce = alias(dce_table)
-                        child_ids_array = func.array(
-                            select(next_dce.c.child_collection_id)
-                            .where(next_dce.c.dataset_collection_id == any_(child_ids_array))
-                            .scalar_subquery()
-                        )
-                        level_conditions.append(dc_table.c.id == any_(child_ids_array))
-
-                    stmt = (
-                        select(literal(1))
-                        .select_from(dc_table)
-                        .where(
-                            or_(*level_conditions),
-                            dc_table.c.populated_state != DatasetCollection.populated_states.OK,
-                        )
-                        .limit(1)
-                    )
-                    _populated_optimized = session.execute(stmt).first() is None
-                else:
-                    stmt = self._build_nested_collection_attributes_stmt(
-                        collection_attributes=("populated_state",),
-                    )
-                    for row in session.execute(stmt):
-                        if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
-                            _populated_optimized = False
-                            break
+                stmt = self._subcollection_ids_stmt(
+                    DatasetCollection.__table__.c.populated_state != DatasetCollection.populated_states.OK
+                ).limit(1)
+                _populated_optimized = required_object_session(self).execute(stmt).first() is None
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
@@ -7858,10 +7878,18 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     @property
     def waiting_for_elements(self):
-        top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
-        if not top_level_waiting and self.has_subcollections:
-            return any(e.child_collection.waiting_for_elements for e in self.elements)
-        return top_level_waiting
+        return bool(self.unpopulated_collection_ids())
+
+    def unpopulated_collection_ids(self) -> list[int]:
+        """The ids of the collections in this tree that are still waiting for elements."""
+        if self.populated_state == DatasetCollection.populated_states.NEW:
+            return [self.id]
+        if not self.has_subcollections:
+            return []
+        stmt = self._subcollection_ids_stmt(
+            DatasetCollection.__table__.c.populated_state == DatasetCollection.populated_states.NEW
+        )
+        return list(required_object_session(self).scalars(stmt))
 
     def mark_as_populated(self):
         self.populated_state = DatasetCollection.populated_states.OK
@@ -9370,6 +9398,20 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
     @property
+    def user_defined_tool(self) -> Optional["DynamicTool"]:
+        dynamic_tool = self.dynamic_tool
+        return dynamic_tool if dynamic_tool is not None and not dynamic_tool.public else None
+
+    @property
+    def effective_tool_id(self) -> str | None:
+        # A step using a user-defined tool is identified by ``dynamic_tool``: the step's
+        # own ``tool_id`` column is ignored and the id comes from the tool definition.
+        # That id is neither unique nor in the toolbox, so lookups also pass ``tool_uuid``.
+        if (user_defined_tool := self.user_defined_tool) is not None:
+            return user_defined_tool.tool_id
+        return self.tool_id
+
+    @property
     def is_input_type(self) -> bool:
         return bool(self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE)
 
@@ -9489,7 +9531,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     def content_id(self):
         content_id = None
         if self.type == "tool":
-            content_id = self.tool_id
+            content_id = self.effective_tool_id
         elif self.type == "subworkflow":
             content_id = self.subworkflow.id
         else:
@@ -9536,6 +9578,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
+        copied_step.dynamic_tool = self.dynamic_tool
         copied_step.tool_version = self.tool_version
         copied_step.tool_inputs = self.tool_inputs
         copied_step.tool_errors = self.tool_errors
@@ -11487,14 +11530,14 @@ class UserAddress(Base, RepresentById):
         return {
             "id": trans.security.encode_id(self.id),
             "name": sanitize_html(self.name),
-            "desc": sanitize_html(self.desc),
-            "institution": sanitize_html(self.institution),
+            "desc": sanitize_html(self.desc or ""),
+            "institution": sanitize_html(self.institution or ""),
             "address": sanitize_html(self.address),
             "city": sanitize_html(self.city),
             "state": sanitize_html(self.state),
             "postal_code": sanitize_html(self.postal_code),
             "country": sanitize_html(self.country),
-            "phone": sanitize_html(self.phone),
+            "phone": sanitize_html(self.phone or ""),
         }
 
 
@@ -13461,7 +13504,10 @@ User.preferences = association_proxy("_preferences", "value", creator=UserPrefer
 session_partition = select(
     GalaxySession,
     func.row_number()
-    .over(order_by=GalaxySession.update_time.desc(), partition_by=GalaxySession.user_id)
+    .over(
+        order_by=(GalaxySession.update_time.desc().nulls_last(), GalaxySession.id.desc()),
+        partition_by=GalaxySession.user_id,
+    )
     .label("index"),
 ).alias()
 partitioned_session = aliased(GalaxySession, session_partition)

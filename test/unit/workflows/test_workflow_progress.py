@@ -1,7 +1,10 @@
 from typing import cast
 
+import pytest
+
 from galaxy import model
 from galaxy.util.unittest import TestCase
+from galaxy.workflow import modules
 from galaxy.workflow.run import (
     ModuleInjector,
     WorkflowProgress,
@@ -179,9 +182,69 @@ class TestWorkflowProgress(TestCase):
         assert replacement is hda3
 
     # TODO: Replace multiple true HDA with HDCA
-    # TODO: Test explicit delay
     # TODO: Test cancel on collection invalid
     # TODO: Test delay on collection waiting for population
+
+    def _connection_to_step_2_output(self):
+        conn = model.WorkflowStepConnection()
+        conn.output_name = "out1"
+        conn.output_step = self._step(2)
+        return conn
+
+    def test_pending_dataset_delays_with_tracked_dependency(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        dataset = model.Dataset()
+        dataset.state = model.Dataset.states.QUEUED
+        hda = model.HistoryDatasetAssociation(dataset=dataset)
+        hda.id = 7
+        progress = self._new_workflow_progress()
+        progress.set_step_outputs(self._invocation_step(2), {"out1": hda})
+
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
+            progress.replacement_for_connection(self._connection_to_step_2_output(), is_data=False)
+        progress.record_delay(delayed.value)
+
+        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+            tracked=frozenset({modules.SchedulingDependency(modules.DependencyType.HDA, 7)}),
+            untracked=(),
+            more_work=False,
+        )
+
+    def test_nested_collection_depends_on_unpopulated_subcollections(self):
+        collection = model.DatasetCollection(collection_type="list:list")
+        populated_child = model.DatasetCollection(collection_type="list")
+        unpopulated_child = model.DatasetCollection(collection_type="list", populated=False)
+        for identifier, child in (("a", populated_child), ("b", unpopulated_child)):
+            model.DatasetCollectionElement(collection=collection, element=child, element_identifier=identifier)
+        session = self.app.model.session
+        session.add(collection)
+        session.commit()
+
+        assert modules.unpopulated_collection_dependencies(collection) == [
+            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, unpopulated_child.id)
+        ]
+
+    def test_delay_inherited_from_delayed_step_is_not_untracked(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        progress.mark_step_outputs_delayed(self._step(2), why="waiting on something tracked elsewhere")
+
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
+            progress.replacement_for_connection(self._connection_to_step_2_output())
+        assert delayed.value.inherited
+        progress.record_delay(delayed.value)
+
+        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+            tracked=frozenset(), untracked=(), more_work=False
+        )
+
+    def test_delay_without_dependency_is_untracked(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        progress.record_delay(modules.DelayedWorkflowEvaluation(why="tool inputs are not ready"))
+        progress.record_delay(modules.DelayedWorkflowEvaluation())
+
+        assert progress.scheduling_dependencies().untracked == ("tool inputs are not ready", "no reason given")
 
     def test_subworkflow_progress(self):
         self._setup_workflow(TEST_SUBWORKFLOW_YAML)
