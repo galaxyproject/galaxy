@@ -15,12 +15,12 @@ import logging
 from urllib.parse import urlparse
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import (
     listify,
     string_as_bool,
     unicodify,
 )
+from galaxy.util.user_input import transform_publicname
 from . import AuthProvider
 
 try:

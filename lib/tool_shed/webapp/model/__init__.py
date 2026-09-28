@@ -51,11 +51,11 @@ from galaxy.model.custom_types import (
     TrimmedString,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.user_input import validate_password_str
 from tool_shed.util import hg_util
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
