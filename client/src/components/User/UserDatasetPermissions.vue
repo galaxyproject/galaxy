@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { withPrefix } from "@/utils/redirect";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
@@ -13,8 +14,6 @@ interface UserDatasetPermissionsProps {
     userId: string;
 }
 const props = defineProps<UserDatasetPermissionsProps>();
-
-const loading = ref(true);
 
 const {
     managePermissionsOptions,
@@ -32,7 +31,6 @@ const inputsUrl = computed(() => {
 async function init() {
     const { data } = await axios.get(withPrefix(inputsUrl.value));
     updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
-    loading.value = false;
 }
 
 const title = "Set Dataset Permissions for New Histories";
@@ -65,14 +63,16 @@ async function change(value: unknown) {
     axios.put(withPrefix(inputsUrl.value), formValue).then(onSuccess).catch(onError);
 }
 
-const { onSuccess, onError } = useCallbacks(init);
+const { loading, loadError, onSuccess, onError } = useCallbacks(init);
 </script>
 
 <template>
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <DatasetPermissionsForm
+            v-else
             :loading="loading"
             :simple-permissions="simplePermissions"
             :title="title"

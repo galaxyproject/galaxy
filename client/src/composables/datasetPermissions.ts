@@ -72,6 +72,8 @@ export function updateRefs(
 
 export function useCallbacks(init: () => Promise<void>) {
     const toast = useToast();
+    const loading = ref(true);
+    const loadError = ref("");
 
     async function onError(e: unknown) {
         toast.error(errorMessageAsString(e));
@@ -83,14 +85,17 @@ export function useCallbacks(init: () => Promise<void>) {
     }
 
     async function load() {
+        loadError.value = "";
         try {
             await init();
         } catch (e) {
-            await onError(e);
+            loadError.value = errorMessageAsString(e);
+        } finally {
+            loading.value = false;
         }
     }
 
     void load();
 
-    return { onSuccess, onError };
+    return { loading, loadError, onSuccess, onError };
 }
