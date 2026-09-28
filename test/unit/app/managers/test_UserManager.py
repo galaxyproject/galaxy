@@ -387,7 +387,7 @@ class TestUserManager(BaseTestCase):
         taken = self.user_manager.create(**user3_data)
         self.trans.set_user(user)
         self.mock_trans.user_is_admin = False
-        for option in ("use_remote_user", "disable_local_accounts"):
+        for option in ("use_remote_user", "disable_local_accounts", "fixed_delegated_auth"):
             setattr(self.app.config, option, True)
             for new_email in ("changed@example.com", taken.email):
                 with pytest.raises(exceptions.ConfigDoesNotAllowException):

@@ -886,7 +886,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             and not trans.app.config.use_remote_user
             and not trans.app.config.disable_local_accounts
         )
-        if allow_profile_edit or not is_galaxy_app:
+        if not is_galaxy_app or (allow_profile_edit and not self.user_manager.logins_resolve_accounts_by_email()):
             inputs.append(
                 {
                     "id": "email_input",

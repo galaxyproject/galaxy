@@ -231,6 +231,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.schema = self.MockSchema()
         self.use_remote_user = kwargs.get("use_remote_user", False)
         self.disable_local_accounts = kwargs.get("disable_local_accounts", False)
+        self.fixed_delegated_auth = kwargs.get("fixed_delegated_auth", False)
         self.enable_celery_tasks = False
         self.tool_data_path = os.path.join(self.root, "tool-data")
         self.galaxy_data_manager_data_path = self.tool_data_path

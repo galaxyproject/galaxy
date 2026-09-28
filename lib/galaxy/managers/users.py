@@ -216,10 +216,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user.email == new_email:
             return
         user_chosen = not asserted_by_identity_provider and not trans.user_is_admin
-        if user_chosen and (trans.app.config.use_remote_user or trans.app.config.disable_local_accounts):
-            # Remote user and OIDC logins resolve accounts by email, so a self-chosen address would claim
-            # the account that someone else's first login lands in. This is refused before validation, so
-            # that the error does not reveal whether the address is registered.
+        if user_chosen and self.logins_resolve_accounts_by_email():
+            # Refused before validation, so that the error does not reveal whether the address is registered.
             raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
         if message := validate_email(trans, new_email, user):
             raise exceptions.RequestParameterInvalidException(message)
@@ -468,6 +466,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # return True.
             return bool(trans and trans.user_is_admin)
         return self.app.config.is_admin_user(user)
+
+    def logins_resolve_accounts_by_email(self) -> bool:
+        """
+        Whether a login can land in an existing account by its email address alone, so that a self-chosen
+        address would claim the account that someone else's first login lands in. Remote user logins look
+        accounts up by email, accounts come only from external logins when local accounts are disabled, and
+        with a single OIDC provider and no other authenticators (``fixed_delegated_auth``) a first OIDC login
+        is associated with the account that has its email.
+        """
+        config = self.app.config
+        return config.use_remote_user or config.disable_local_accounts or config.fixed_delegated_auth
 
     def _is_admin_email(self, email: str) -> bool:
         return email.lower() in (admin_email.lower() for admin_email in self.app.config.admin_users_list)
