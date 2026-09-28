@@ -226,7 +226,9 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         return dynamic_tool
 
     def list_tools(self, active=True):
-        stmt = select(DynamicTool).where(DynamicTool.active == active)
+        # This backs the public /api/dynamic_tools index, so private user-defined
+        # tools (public=False) must never be listed here, only admin-installed ones.
+        stmt = select(DynamicTool).where(DynamicTool.active == active, DynamicTool.public == true())
         return self.session().scalars(stmt)
 
     def list_unprivileged_tools(self, user: model.User, active=True):
