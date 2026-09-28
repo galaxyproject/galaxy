@@ -16,7 +16,7 @@
                     color="blue"
                     class="text-decoration-none"
                     title="Use simplified run form instead"
-                    @click="$emit('showSimple')">
+                    @click="emit('showSimple')">
                     <span class="fas fa-arrow-left" /> Simple Form
                 </GButton>
                 <ButtonSpinner
@@ -92,10 +92,14 @@
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { mapState } from "pinia";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
+import type { WorkflowInvocation } from "@/api/invocations";
+import type { ServiceCredentialsDefinition } from "@/api/userCredentials";
+import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -114,239 +118,251 @@ import FormElement from "@/components/Form/FormElement.vue";
 import OnCompleteActions from "@/components/Workflow/Run/OnCompleteActions.vue";
 import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
-export default {
-    components: {
-        BAlert,
-        GButton,
-        ButtonSpinner,
-        FormDisplay,
-        FormCard,
-        FormElement,
-        OnCompleteActions,
-        WorkflowCredentials,
-        WorkflowRunDefaultStep,
-        WorkflowRunInputStep,
-    },
-    props: {
-        model: {
-            type: Object,
-            required: true,
+type ValidationScrollTo = [string, string] | [];
+
+interface CredentialStep {
+    id: string;
+    version: string;
+    step_type: string;
+    credentials?: ServiceCredentialsDefinition[];
+}
+
+interface Props {
+    /**
+     * Whether the current history accepts new datasets
+     */
+    canMutateCurrentHistory: boolean;
+    /**
+     * Parsed run data, a ``WorkflowRunModel``
+     */
+    model: Record<string, any>;
+    /**
+     * Hide the button that switches to the simple run form
+     * @default false
+     */
+    disableSimpleForm?: boolean;
+    /**
+     * Why the simple run form is unavailable, if it is
+     * @default undefined
+     */
+    disableSimpleFormReason?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    disableSimpleForm: false,
+    disableSimpleFormReason: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "showSimple"): void;
+    (e: "submissionSuccess", invocations: WorkflowInvocation[]): void;
+    (e: "submissionError", error: any): void;
+}>();
+
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+const showExecuting = ref(false);
+const stepScrollTo = ref<{ stepId?: string; stepError?: ValidationScrollTo }>({});
+const wpData = ref<FormData>({});
+const historyData = ref<FormData>({});
+const useCachedJobs = ref(false);
+const onCompleteActions = ref<Record<string, unknown>[]>([]);
+// Plain objects: step updates must not re-render the form, as with the untracked keys before.
+const stepData: Record<string, FormData> = {};
+const stepValidations: Record<string, [string, string] | null> = {};
+const inputs: Record<string, unknown> = {};
+let resourceData: FormData | undefined;
+
+const historyInputs = [
+    {
+        type: "conditional",
+        name: "new_history",
+        test_param: {
+            name: "check",
+            label: "Send results to a new history",
+            type: "boolean",
+            value: "false",
+            help: "",
         },
-        canMutateCurrentHistory: {
-            type: Boolean,
-            required: true,
-        },
-        disableSimpleForm: {
-            type: Boolean,
-            default: false,
-        },
-        disableSimpleFormReason: {
-            type: String,
-            default: undefined,
-        },
-    },
-    data() {
-        return {
-            showExecuting: false,
-            stepData: {},
-            stepValidations: {},
-            stepScrollTo: {},
-            wpData: {},
-            inputs: {},
-            historyData: {},
-            useCachedJobs: false,
-            onCompleteActions: [],
-            historyInputs: [
-                {
-                    type: "conditional",
-                    name: "new_history",
-                    test_param: {
-                        name: "check",
-                        label: "Send results to a new history",
-                        type: "boolean",
-                        value: "false",
-                        help: "",
+        cases: [
+            {
+                value: "true",
+                inputs: [
+                    {
+                        name: "name",
+                        label: "History name",
+                        type: "text",
+                        value: props.model.name,
                     },
-                    cases: [
-                        {
-                            value: "true",
-                            inputs: [
-                                {
-                                    name: "name",
-                                    label: "History name",
-                                    type: "text",
-                                    value: this.model.name,
-                                },
-                            ],
-                        },
-                        {
-                            value: "false",
-                            inputs: [],
-                        },
-                    ],
-                },
-            ],
-        };
+                ],
+            },
+            {
+                value: "false",
+                inputs: [],
+            },
+        ],
     },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
-        credentialTools() {
-            return this.model.steps
-                .filter((step) => step.step_type === "tool" && step.credentials?.length)
-                .map((step) => {
-                    const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
-                    setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+];
 
-                    return {
-                        toolId: step.id,
-                        toolVersion: step.version,
-                    };
-                });
-        },
-        resourceInputsAvailable() {
-            return this.resourceInputs.length > 0;
-        },
-        resourceInputs() {
-            return this.toArray(this.model.workflowResourceParameters);
-        },
-        wpInputsAvailable() {
-            return this.wpInputs.length > 0;
-        },
-        wpInputs() {
-            return this.toArray(this.model.wpInputs);
-        },
-        shouldRunOnNewHistory() {
-            return Boolean(this.historyData["new_history|name"]);
-        },
-        canRunOnHistory() {
-            return this.shouldRunOnNewHistory || this.canMutateCurrentHistory;
-        },
-        hasCredentialErrors() {
-            if (this.credentialTools.length) {
-                const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
-                    this.credentialTools,
-                );
-                return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
-            }
-            return false;
-        },
-        runButtonTooltip() {
-            if (this.hasCredentialErrors) {
-                return "Please provide all required credentials before running the workflow.";
-            }
-            return "Run workflow";
-        },
-    },
-    methods: {
-        getReplaceParams(inputs) {
-            return getReplacements(inputs, this.stepData, this.wpData);
-        },
-        getValidationScrollTo(stepId) {
-            if (this.stepScrollTo.stepId == stepId) {
-                return this.stepScrollTo.stepError;
-            }
-            return [];
-        },
-        onDefaultStepInputs(stepId, data) {
-            this.inputs[stepId] = data.input;
-        },
-        onToolStepInputs(stepId, data) {
-            this.stepData[stepId] = data;
-        },
-        onHistoryInputs(data) {
-            this.historyData = data;
-        },
-        onResourceInputs(data) {
-            this.resourceData = data;
-        },
-        onWpInputs(data) {
-            this.wpData = data;
-        },
-        onValidation(stepId, validation) {
-            this.stepValidations[stepId] = validation;
-        },
-        onExecute() {
-            for (const [stepId, stepValidation] of Object.entries(this.stepValidations)) {
-                if (stepValidation) {
-                    this.stepScrollTo = {
-                        stepId: stepId,
-                        stepError: stepValidation.slice(),
-                    };
-                    return;
-                }
-            }
+const credentialTools = computed(() => {
+    return props.model.steps
+        .filter((step: CredentialStep) => step.step_type === "tool" && step.credentials?.length)
+        .map((step: CredentialStep) => {
+            const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials!);
 
-            const parameters = {};
-            Object.entries(this.stepData).forEach(([stepId, stepData]) => {
-                const stepDataFiltered = {};
-                Object.entries(stepData).forEach(([inputName, inputValue]) => {
-                    if (!this.model.isConnected(stepId, inputName)) {
-                        stepDataFiltered[inputName] = inputValue;
-                    }
-                });
-                parameters[stepId] = stepDataFiltered;
-            });
-
-            const jobDef = {
-                new_history_name: this.historyData["new_history|name"] ? this.historyData["new_history|name"] : null,
-                history_id: !this.historyData["new_history|name"] ? this.model.historyId : null,
-                resource_params: this.resourceData,
-                replacement_params: this.wpData,
-                use_cached_job: this.useCachedJobs,
-                inputs: this.inputs,
-                parameters: parameters,
-                // Tool form will submit flat maps for each parameter
-                // (e.g. "repeat_0|cond|param": "foo" instead of nested
-                // data structures).
-                parameters_normalized: true,
-                // Tool form always wants a list of invocations back
-                // so that inputs can be batched.
-                batch: true,
-                // the user is already warned if tool versions are wrong,
-                // they can still choose to invoke the workflow anyway.
-                require_exact_tool_versions: false,
-                version: this.model.runData.version,
-                // Completion actions to run when workflow finishes
-                on_complete: this.onCompleteActions.length > 0 ? this.onCompleteActions : null,
+            return {
+                toolId: step.id,
+                toolVersion: step.version,
             };
+        });
+});
 
-            console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);
-            this.showExecuting = true;
-            invokeWorkflow(this.model.workflowId, jobDef)
-                .then((invocations) => {
-                    console.debug("WorkflowRunForm::onExecute()", "Submission successful.", invocations);
-                    this.showExecuting = false;
-                    this.$emit("submissionSuccess", invocations);
-                })
-                .catch((e) => {
-                    console.debug("WorkflowRunForm::onExecute()", "Submission failed.", e);
-                    this.showExecuting = false;
-                    const errorData = e && e.response && e.response.data && e.response.data.err_data;
-                    if (errorData) {
-                        try {
-                            const errorEntries = Object.entries(errorData);
-                            this.stepScrollTo = {
-                                stepId: errorEntries[0][0],
-                                stepError: Object.entries(errorEntries[0][1])[0],
-                            };
-                        } catch (errorFormatting) {
-                            console.debug(
-                                errorFormatting,
-                                "WorkflowRunForm::onExecute()",
-                                "Invalid server error response format.",
-                                errorData,
-                            );
-                            this.$emit("submissionError", e);
-                        }
-                    } else {
-                        this.$emit("submissionError", e);
-                    }
-                });
-        },
-        toArray(obj) {
-            return obj ? Object.keys(obj).map((k) => obj[k]) : [];
-        },
-    },
-};
+const resourceInputs = computed(() => toArray(props.model.workflowResourceParameters));
+
+const resourceInputsAvailable = computed(() => resourceInputs.value.length > 0);
+
+const wpInputs = computed(() => toArray(props.model.wpInputs));
+
+const wpInputsAvailable = computed(() => wpInputs.value.length > 0);
+
+const shouldRunOnNewHistory = computed(() => Boolean(historyData.value["new_history|name"]));
+
+const canRunOnHistory = computed(() => shouldRunOnNewHistory.value || props.canMutateCurrentHistory);
+
+const hasCredentialErrors = computed(() => {
+    if (credentialTools.value.length) {
+        const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+            credentialTools.value,
+        );
+        return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+    }
+    return false;
+});
+
+const runButtonTooltip = computed(() => {
+    if (hasCredentialErrors.value) {
+        return "Please provide all required credentials before running the workflow.";
+    }
+    return "Run workflow";
+});
+
+function getReplaceParams(stepInputs: FormInputNode[]) {
+    return getReplacements(stepInputs, stepData, wpData.value) as Record<string, unknown>;
+}
+
+function getValidationScrollTo(stepId: string): ValidationScrollTo {
+    if (stepScrollTo.value.stepId == stepId) {
+        return stepScrollTo.value.stepError ?? [];
+    }
+    return [];
+}
+
+function onDefaultStepInputs(stepId: string, data: FormData) {
+    inputs[stepId] = data.input;
+}
+
+function onToolStepInputs(stepId: string, data: FormData) {
+    stepData[stepId] = data;
+}
+
+function onHistoryInputs(data: FormData) {
+    historyData.value = data;
+}
+
+function onResourceInputs(data: FormData) {
+    resourceData = data;
+}
+
+function onWpInputs(data: FormData) {
+    wpData.value = data;
+}
+
+function onValidation(stepId: string, validation: [string, string] | null) {
+    stepValidations[stepId] = validation;
+}
+
+function onExecute() {
+    for (const [stepId, stepValidation] of Object.entries(stepValidations)) {
+        if (stepValidation) {
+            stepScrollTo.value = {
+                stepId: stepId,
+                stepError: stepValidation.slice() as [string, string],
+            };
+            return;
+        }
+    }
+
+    const parameters: Record<string, FormData> = {};
+    Object.entries(stepData).forEach(([stepId, stepValues]) => {
+        const stepDataFiltered: FormData = {};
+        Object.entries(stepValues).forEach(([inputName, inputValue]) => {
+            if (!props.model.isConnected(stepId, inputName)) {
+                stepDataFiltered[inputName] = inputValue;
+            }
+        });
+        parameters[stepId] = stepDataFiltered;
+    });
+
+    const jobDef = {
+        new_history_name: historyData.value["new_history|name"] ? historyData.value["new_history|name"] : null,
+        history_id: !historyData.value["new_history|name"] ? props.model.historyId : null,
+        resource_params: resourceData,
+        replacement_params: wpData.value,
+        use_cached_job: useCachedJobs.value,
+        inputs: inputs,
+        parameters: parameters,
+        // Tool form will submit flat maps for each parameter
+        // (e.g. "repeat_0|cond|param": "foo" instead of nested
+        // data structures).
+        parameters_normalized: true,
+        // Tool form always wants a list of invocations back
+        // so that inputs can be batched.
+        batch: true,
+        // the user is already warned if tool versions are wrong,
+        // they can still choose to invoke the workflow anyway.
+        require_exact_tool_versions: false,
+        version: props.model.runData.version,
+        // Completion actions to run when workflow finishes
+        on_complete: onCompleteActions.value.length > 0 ? onCompleteActions.value : null,
+    };
+
+    console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);
+    showExecuting.value = true;
+    invokeWorkflow(props.model.workflowId, jobDef)
+        .then((invocations) => {
+            console.debug("WorkflowRunForm::onExecute()", "Submission successful.", invocations);
+            showExecuting.value = false;
+            emit("submissionSuccess", invocations);
+        })
+        .catch((e) => {
+            console.debug("WorkflowRunForm::onExecute()", "Submission failed.", e);
+            showExecuting.value = false;
+            const errorData = e && e.response && e.response.data && e.response.data.err_data;
+            if (errorData) {
+                try {
+                    const errorEntries = Object.entries(errorData);
+                    stepScrollTo.value = {
+                        stepId: errorEntries[0]![0],
+                        stepError: Object.entries(errorEntries[0]![1] as object)[0] as [string, string],
+                    };
+                } catch (errorFormatting) {
+                    console.debug(
+                        errorFormatting,
+                        "WorkflowRunForm::onExecute()",
+                        "Invalid server error response format.",
+                        errorData,
+                    );
+                    emit("submissionError", e);
+                }
+            } else {
+                emit("submissionError", e);
+            }
+        });
+}
+
+function toArray(obj: Record<string, FormInputNode> | undefined): FormInputNode[] {
+    return obj ? Object.values(obj) : [];
+}
 </script>
