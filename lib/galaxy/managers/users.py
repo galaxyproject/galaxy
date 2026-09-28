@@ -10,6 +10,7 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -19,6 +20,7 @@ from sqlalchemy import (
     exc,
     select,
     true,
+    update,
 )
 from sqlalchemy.exc import NoResultFound
 
@@ -52,8 +54,10 @@ from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
     get_user_by_email,
     get_user_by_username,
+    get_user_groups,
 )
 from galaxy.security.validate_user_input import (
+    UserValidationContext,
     VALID_EMAIL_RE,
     validate_display_name_str,
     validate_email,
@@ -86,6 +90,15 @@ can also copy and paste it into your browser.
 """
 TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.txt"
 HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.html"
+
+
+class PasswordChangeContext(UserValidationContext, Protocol):
+    """What setting a password needs from a transaction, in Galaxy or the tool shed."""
+
+    @property
+    def galaxy_session(self) -> Any: ...
+
+    def log_event(self, message: str) -> None: ...
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -553,41 +566,48 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
-    def set_password(self, trans, user, password, confirm=None) -> None:
-        """Set a password for an authorized caller; raise RequestParameterInvalidException if invalid."""
-        if message := self.__set_password(trans, user, password, confirm):
-            raise exceptions.RequestParameterInvalidException(message)
-
     def __set_password(self, trans: ProvidesUserContext, user, password, confirm):
         if not password:
             return "Please provide a new password."
         if user:
-            # Validate the new password
-            message = validate_password(trans, password, confirm)
-            if message:
-                return message
-            else:
-                # Save new password
-                user.set_password_cleartext(password)
-                # Preserve the caller's session, if any.
-                stmt = select(self.app.model.GalaxySession).where(
-                    and_(
-                        self.app.model.GalaxySession.user_id == user.id,
-                        self.app.model.GalaxySession.is_valid == true(),
-                    )
-                )
-                if trans.galaxy_session:
-                    stmt = stmt.where(self.app.model.GalaxySession.id != trans.galaxy_session.id)
-                for other_galaxy_session in trans.sa_session.scalars(stmt):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
-                self.expire_reset_tokens(trans, user)
-                trans.sa_session.add(user)
-                trans.sa_session.commit()
-                trans.log_event("User change password")
-                log.info("Password changed for user %s.", user.id)
+            try:
+                self.set_password(trans, user, password, confirm=confirm)
+            except exceptions.RequestParameterInvalidException as e:
+                return e.err_msg
         else:
             return "Failed to determine user, access denied."
+
+    def set_password(self, trans: PasswordChangeContext, user: User, password: str, confirm: str | None = None) -> None:
+        """Validate and set a new password, and log the user out of every other session."""
+        if message := validate_password(trans, password, password if confirm is None else confirm):
+            raise exceptions.RequestParameterInvalidException(message)
+        user.set_password_cleartext(password)
+        # The tool shed maps its own GalaxySession, so take the class from the app's model.
+        GalaxySession = self.app.model.GalaxySession
+        stmt = update(GalaxySession).where(GalaxySession.user_id == user.id, GalaxySession.is_valid == true())
+        if trans.galaxy_session:
+            stmt = stmt.where(GalaxySession.id != trans.galaxy_session.id)
+        trans.sa_session.execute(stmt.values(is_valid=False))
+        self.expire_reset_tokens(trans, user)
+        trans.sa_session.add(user)
+        trans.sa_session.commit()
+        trans.log_event("User change password")
+        log.info("Password changed for user %s.", user.id)
+
+    def set_roles(self, user: User, role_ids: list[int]) -> None:
+        """Replace the user's role associations; the private role is kept."""
+        self.app.security_agent.set_user_group_and_role_associations(user, role_ids=role_ids)
+        # The associations are written with bulk statements, so the loaded collection is stale.
+        self.session().refresh(user)
+
+    def set_groups(self, user: User, group_ids: list[int]) -> None:
+        """Replace the groups the user is a member of."""
+        self.app.security_agent.set_user_group_and_role_associations(user, group_ids=group_ids)
+        self.session().refresh(user)
+
+    def get_groups(self, user: User) -> list[tuple[int, str]]:
+        """Return (id, name) of the non-deleted groups the user is a member of."""
+        return get_user_groups(self.session(), user.id)
 
     def impersonate(self, trans: "GalaxyWebTransaction", user):
         if not trans.app.config.allow_user_impersonation:
@@ -705,7 +725,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return str(e)
         return None
 
-    def expire_reset_tokens(self, trans: ProvidesAppContext, user) -> None:
+    def expire_reset_tokens(self, trans: UserValidationContext, user) -> None:
         stmt = select(self.app.model.PasswordResetToken).where(
             and_(
                 self.app.model.PasswordResetToken.user_id == user.id,

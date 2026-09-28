@@ -9,19 +9,12 @@ from typing_extensions import TypedDict
 
 from galaxy import (
     model,
-    util,
     web,
 )
-from galaxy.exceptions import (
-    ActionInputError,
-    RequestParameterInvalidException,
-)
-from galaxy.managers.quotas import QuotaManager
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
 )
-from galaxy.structured_app import StructuredApp
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,
@@ -365,10 +358,6 @@ class AdminGalaxy(controller.BaseUIController):
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
 
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.quota_manager: QuotaManager = QuotaManager(app)
-
     @web.expose
     @web.json
     @web.require_admin
@@ -417,88 +406,6 @@ class AdminGalaxy(controller.BaseUIController):
     def quotas_list(self, trans: GalaxyWebTransaction, payload=None, **kwargs):
         return self.quota_list_grid(trans, **kwargs)
 
-    @web.legacy_expose_api
-    @web.require_admin
-    def rename_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change quota name and description for '{quota.name}'",
-                "inputs": [
-                    {"name": "name", "label": "Name", "value": quota.name},
-                    {"name": "description", "label": "Description", "value": quota.description},
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.rename_quota(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def edit_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Edit quota size for '{quota.name}'",
-                "inputs": [
-                    {
-                        "name": "amount",
-                        "label": "Amount",
-                        "value": quota.display_amount,
-                        "help": 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"',
-                    },
-                    {
-                        "name": "operation",
-                        "label": "Assign, increase by amount, or decrease by amount?",
-                        "options": [("=", "="), ("+", "+"), ("-", "-")],
-                        "value": quota.operation,
-                    },
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.edit_quota(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def set_quota_default(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            default_value = quota.default[0].type if quota.default else "no"
-            default_options = [("No", "no")]
-            for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
-                default_options.append((f"Yes, {typ}", typ))
-            return {
-                "title": f"Set quota default for '{quota.name}'",
-                "inputs": [
-                    {
-                        "name": "default",
-                        "label": "Is this quota a default for a class of users (if yes, what type)?",
-                        "options": default_options,
-                        "value": default_value,
-                        "help": "Warning: Any users or groups associated with this quota will be disassociated.",
-                    }
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.set_quota_default(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
     @web.expose
     @web.require_admin
     def impersonate(self, trans: GalaxyWebTransaction, **kwd):
@@ -529,258 +436,10 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def rename_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No role id received for renaming.")
-        role = get_role(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change role name and description for '{role.name}'",
-                "inputs": [
-                    {"name": "name", "label": "Name", "value": role.name},
-                    {"name": "description", "label": "Description", "value": role.description},
-                ],
-            }
-        else:
-            old_name = role.name
-            new_name = util.restore_text(payload.get("name"))
-            new_description = util.restore_text(payload.get("description"))
-            if not new_name:
-                return self.message_exception(trans, "Enter a valid role name.")
-            else:
-                existing_role = (
-                    trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == new_name).first()
-                )
-                if existing_role and existing_role.id != role.id:
-                    return self.message_exception(trans, "A role with that name already exists.")
-                else:
-                    if not (role.name == new_name and role.description == new_description):
-                        role.name = new_name
-                        role.description = new_description
-                        trans.sa_session.add(role)
-                        trans.sa_session.commit()
-            return {"message": f"Role '{old_name}' has been renamed to '{new_name}'."}
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def manage_users_and_groups_for_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        role_id = kwd.get("id")
-        if not role_id:
-            return self.message_exception(trans, f"Invalid role id ({str(role_id)}) received")
-        role = get_role(trans, role_id)
-        if trans.request.method == "GET":
-            in_users = []
-            all_users = []
-            in_groups = []
-            all_groups = []
-            for user in (
-                trans.sa_session.query(trans.app.model.User)
-                .filter(trans.app.model.User.table.c.deleted == false())
-                .order_by(trans.app.model.User.table.c.email)
-            ):
-                if user in [x.user for x in role.users]:
-                    in_users.append(trans.security.encode_id(user.id))
-                all_users.append((user.email, trans.security.encode_id(user.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                if group in [x.group for x in role.groups]:
-                    in_groups.append(trans.security.encode_id(group.id))
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": f"Role '{role.name}'",
-                "message": f"Role '{role.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
-                "status": "info",
-                "inputs": [
-                    build_select_input("in_groups", "Groups", all_groups, in_groups),
-                    build_select_input("in_users", "Users", all_users, in_users),
-                ],
-            }
-        else:
-            user_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_users"))]
-            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
-            try:
-                trans.app.security_agent.set_role_user_and_group_associations(
-                    role, user_ids=user_ids, group_ids=group_ids
-                )
-                return {
-                    "message": f"Role '{role.name}' has been updated with {len(user_ids)} associated users and {len(group_ids)} associated groups."
-                }
-            except RequestParameterInvalidException:
-                return self.message_exception(trans, "One or more invalid user/group id has been provided.")
-
-    @web.legacy_expose_api
-    @web.require_admin
     def groups_list(self, trans: GalaxyWebTransaction, **kwargs):
         return self.group_list_grid(trans, **kwargs)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def rename_group(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No group id received for renaming.")
-        group = get_group(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change group name for '{group.name}'",
-                "inputs": [{"name": "name", "label": "Name", "value": group.name}],
-            }
-        else:
-            old_name = group.name
-            new_name = util.restore_text(payload.get("name"))
-            if not new_name:
-                return self.message_exception(trans, "Enter a valid group name.")
-            else:
-                existing_group = (
-                    trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == new_name).first()
-                )
-                if existing_group and existing_group.id != group.id:
-                    return self.message_exception(trans, "A group with that name already exists.")
-                else:
-                    if not (group.name == new_name):
-                        group.name = new_name
-                        trans.sa_session.add(group)
-                        trans.sa_session.commit()
-            return {"message": f"Group '{old_name}' has been renamed to '{new_name}'."}
 
     @web.expose
     @web.require_admin
     def create_new_user(self, trans: GalaxyWebTransaction, **kwd):
         return trans.response.send_redirect(web.url_for(controller="user", action="create", cntrller="admin"))
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def reset_user_password(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        users = {user_id: get_user(trans, user_id) for user_id in util.listify(kwd.get("id"))}
-        if users:
-            if trans.request.method == "GET":
-                return {
-                    "message": f"Changes password(s) for: {', '.join(user.email for user in users.values())}.",
-                    "status": "info",
-                    "inputs": [
-                        {"name": "password", "label": "New password", "type": "password"},
-                        {"name": "confirm", "label": "Confirm password", "type": "password"},
-                    ],
-                }
-            else:
-                password = payload.get("password")
-                confirm = payload.get("confirm")
-                try:
-                    for user in users.values():
-                        self.user_manager.set_password(trans, user, password, confirm)
-                except RequestParameterInvalidException as e:
-                    return self.message_exception(trans, str(e))
-                return {"message": f"Passwords reset for {len(users)} user(s)."}
-        else:
-            return self.message_exception(trans, "Please specify user ids.")
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def manage_roles_and_groups_for_user(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        user_id = kwd.get("id")
-        if not user_id:
-            return self.message_exception(trans, f"Invalid user id ({str(user_id)}) received")
-        user = get_user(trans, user_id)
-        if trans.request.method == "GET":
-            in_roles = []
-            all_roles = []
-            in_groups = []
-            all_groups = []
-            for role in (
-                trans.sa_session.query(trans.app.model.Role)
-                .filter(trans.app.model.Role.deleted == false())
-                .order_by(trans.app.model.Role.name)
-            ):
-                if role in [x.role for x in user.roles]:
-                    in_roles.append(trans.security.encode_id(role.id))
-                if role.type != trans.app.model.Role.types.PRIVATE:
-                    # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
-                    # not be listed in the roles form fields, except for the currently selected user's private
-                    # role, which should always be in in_roles.  The check above is added as an additional
-                    # precaution, since for a period of time we were including private roles in the form fields.
-                    all_roles.append((role.name, trans.security.encode_id(role.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                if group in [x.group for x in user.groups]:
-                    in_groups.append(trans.security.encode_id(group.id))
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": f"Roles and groups for '{user.email}'",
-                "message": f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).",
-                "status": "info",
-                "inputs": [
-                    build_select_input("in_roles", "Roles", all_roles, in_roles),
-                    build_select_input("in_groups", "Groups", all_groups, in_groups),
-                ],
-            }
-        else:
-            role_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_roles"))]
-            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
-            try:
-                trans.app.security_agent.set_user_group_and_role_associations(
-                    user, group_ids=group_ids, role_ids=role_ids
-                )
-                return {
-                    "message": f"User '{user.email}' has been updated with {len(role_ids)} associated roles and {len(group_ids)} associated groups (private roles are not displayed)."
-                }
-            except RequestParameterInvalidException:
-                return self.message_exception(trans, "One or more invalid role/group id has been provided.")
-
-
-# ---- Utility methods -------------------------------------------------------
-
-
-def build_select_input(name, label, options, value):
-    return {
-        "type": "select",
-        "multiple": True,
-        "optional": True,
-        "individual": True,
-        "name": name,
-        "label": label,
-        "options": options,
-        "value": value,
-    }
-
-
-def get_user(trans: GalaxyWebTransaction, user_id):
-    """Get a User from the database by id."""
-    user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-    if not user:
-        return trans.show_error_message(f"User not found for id ({str(user_id)})")
-    return user
-
-
-def get_role(trans: GalaxyWebTransaction, id):
-    """Get a Role from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    role = trans.sa_session.query(trans.model.Role).get(id)
-    if not role:
-        return trans.show_error_message(f"Role not found for id ({str(id)})")
-    return role
-
-
-def get_group(trans: GalaxyWebTransaction, id):
-    """Get a Group from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    group = trans.sa_session.query(trans.model.Group).get(id)
-    if not group:
-        return trans.show_error_message(f"Group not found for id ({str(id)})")
-    return group
-
-
-def get_quota(trans: GalaxyWebTransaction, id):
-    """Get a Quota from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    quota = trans.sa_session.query(trans.model.Quota).get(id)
-    return quota

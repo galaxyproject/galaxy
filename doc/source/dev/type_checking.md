@@ -31,6 +31,8 @@ This list should only get shorter:
 - Don't add entries for new modules; annotate the new code instead.
 - When you finish typing a module, remove its flags (or its whole section) from the list, and check with `make mypy` that it still passes.
 
+mypy doesn't report red list entries that are no longer needed, so they can outlive the code that needed them. `tox -e mypy_legacy` finds these by running mypy with the red list removed and listing the entries whose module no longer fails that flag; `tox -e mypy_legacy -- --fix` also removes them from `mypy.ini`. This takes as long as a full mypy run. It checks with the Python version of the tox environment; to check several versions, pass `--python <interpreter>` once per version, each pointing at an environment with the typecheck requirements installed. A weekly GitHub workflow runs it on `dev` and opens a pull request removing stale entries, so you don't need to run it for your pull requests.
+
 ## Test code
 
 Test code is generally exempt from the strict defaults: `galaxy_test`, `tool_shed.test` and the packages under `test/` (which are seen as `tests.*` in the per-package runs). The exemptions appear between the general `[mypy]` section and the green list. Test modules already on the green list explicitly retain the strict flags. Annotating other tests is still welcome.

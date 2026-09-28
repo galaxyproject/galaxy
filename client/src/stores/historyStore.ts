@@ -85,6 +85,14 @@ export interface FetchHistoryListOptions {
     record?: boolean;
 }
 
+/** Options of a cache fill, the own-history subset of {@link FetchHistoryListOptions}. */
+export interface FetchOwnHistoriesOptions {
+    /** Optional backend filter, e.g. built by `HistoriesFilters`. */
+    search?: string;
+    /** Maximum number of entries to fetch. Defaults to `HISTORY_LIST_LIMIT`. */
+    limit?: number;
+}
+
 function emptyHistoryListIds(): Record<HistoryListVariant, string[]> {
     return { shared: [], published: [], archived: [] };
 }
@@ -111,6 +119,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
     const historyLoadErrors = ref<{ [key: string]: Error }>({});
     const changingCurrentHistory = ref(false);
+    let pendingHistoryChange: Promise<void> | undefined;
     const knownHistorySizes = new Map<string, number>();
     /** Summaries of every listed history, keyed by id, shared by all variants. */
     const listedHistories = ref<{ [key: string]: AnyHistoryEntry }>({});
@@ -123,6 +132,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const loadHistoriesPromises = new Map<string, Promise<void>>();
     /** In-flight listing fetches, keyed by request (see `fetchHistoryList`). */
     const listPromises = new Map<string, Promise<AnyHistoryEntry[]>>();
+    /** In-flight cache fills, keyed by request (see `fetchOwnHistories`). */
+    const ownHistoryPromises = new Map<string, Promise<void>>();
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -224,19 +235,33 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return (variant: HistoryListVariant) => listedHistoriesTotal.value[variant];
     });
 
-    async function setCurrentHistory(historyId: string) {
-        if (!changingCurrentHistory.value) {
+    /** Serialize server-side selection changes so responses cannot undo a newer selection. */
+    function queueHistoryChange(change: () => Promise<void>): Promise<void> {
+        changingCurrentHistory.value = true;
+        const pending = (pendingHistoryChange ?? Promise.resolve())
+            // A failed change is reported to its caller but must not block later changes.
+            .catch(() => undefined)
+            .then(change)
+            .finally(() => {
+                if (pendingHistoryChange === pending) {
+                    pendingHistoryChange = undefined;
+                    changingCurrentHistory.value = false;
+                }
+            });
+        pendingHistoryChange = pending;
+        return pending;
+    }
+
+    function setCurrentHistory(historyId: string): Promise<void> {
+        return queueHistoryChange(async () => {
             try {
-                changingCurrentHistory.value = true;
                 const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
                 selectHistory(currentHistory);
                 setFilterText(historyId, "");
             } catch (error) {
                 rethrowSimple(error);
-            } finally {
-                changingCurrentHistory.value = false;
             }
-        }
+        });
     }
 
     function setCurrentHistoryId(historyId: string) {
@@ -338,10 +363,18 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    async function createNewHistory() {
-        const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
-        await handleTotalCountChange(1);
-        return selectHistory(newHistory);
+    /** Creates and selects a history after any earlier selection changes finish. */
+    function createNewHistory(name?: string): Promise<void> {
+        return queueHistoryChange(async () => {
+            const newHistory = (await createAndSelectNewHistory(name)) as HistoryDevDetailed;
+            selectHistory(newHistory);
+            // The history exists, so a failed count refresh must not read as a failed creation.
+            try {
+                await handleTotalCountChange(1);
+            } catch (error) {
+                console.debug("Could not refresh the history count", error);
+            }
+        });
     }
 
     function getNextAvailableHistoryId(excludedIds: string[]) {
@@ -501,11 +534,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
     /**
      * Loads the current user's histories into `storedHistories`.
      *
+     * Owns `historiesOffset` and `historiesLoading` on behalf of
+     * `HistoryScrollList`, so this is for consumers that page through the list.
+     * A consumer that only needs the summaries cached wants
+     * {@link fetchOwnHistories} instead.
+     *
      * Identical calls made while a load is still running share that request and
-     * resolve with it, so a consumer which starts searching while the first
-     * fetch is in flight (the command palette) sees the filled cache instead of
-     * an empty one. A *different* load started meanwhile is still skipped: the
-     * store fetches one own-history list at a time.
+     * resolve with it. A *different* load started meanwhile is still skipped:
+     * the store pages through one own-history list at a time.
+     *
+     * @param paginate whether to page through the list with the store's offset
+     * @param queryString backend filter, e.g. built by `HistoriesFilters`
      */
     function loadHistories(paginate = true, queryString?: string): Promise<void> {
         const key = `${paginate}|${queryString ?? ""}`;
@@ -521,6 +560,38 @@ export const useHistoryStore = defineStore("historyStore", () => {
         });
         loadHistoriesPromises.set(key, promise);
         return promise;
+    }
+
+    /**
+     * Fetches own histories into the shared cache without joining the paginated
+     * listing -- the own-history counterpart of {@link fetchHistoryList}.
+     *
+     * Preserves the list's pagination offset and loading state, allowing a
+     * cache fill and a paginated load to run independently.
+     */
+    function fetchOwnHistories(options: FetchOwnHistoriesOptions = {}): Promise<void> {
+        const { search, limit = HISTORY_LIST_LIMIT } = options;
+        const key = `${search ?? ""}|${limit}`;
+        const pending = ownHistoryPromises.get(key);
+        if (pending) {
+            return pending;
+        }
+        const promise = requestOwnHistories(search, limit).finally(() => {
+            ownHistoryPromises.delete(key);
+        });
+        ownHistoryPromises.set(key, promise);
+        return promise;
+    }
+
+    /** Runs one cache fill; `fetchOwnHistories` owns the deduplication. */
+    async function requestOwnHistories(search: string | undefined, limit: number): Promise<void> {
+        try {
+            const histories = (await getHistoryList(0, limit, search)) as HistorySummary[];
+            // merges by id, so a page fetched here never drops what is cached
+            setHistories(histories);
+        } catch (error) {
+            rethrowSimple(error);
+        }
     }
 
     /** Merges fetched entries into the shared summary map without changing a variant listing. */
@@ -942,6 +1013,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         getHistoryListTotal,
         setListedHistories,
         fetchHistoryList,
+        fetchOwnHistories,
         ensureHistoryListLoaded,
         clearHistoryList,
         secureHistory,

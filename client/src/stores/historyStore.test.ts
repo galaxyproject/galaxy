@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { http as rawHttp, HttpResponse } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -190,5 +191,219 @@ describe("historyStore — config-driven SSE vs polling", () => {
             const deltaAfterSecond = mockWatchHistory.mock.calls.length - pollsAfterFirst;
             expect(deltaAfterSecond).toBe(1);
         });
+    });
+});
+
+describe("historyStore — createNewHistory", () => {
+    let requested: string[];
+
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        requested = [];
+        server.use(
+            http.get("/api/histories/count", ({ response }) => response(200).json(4)),
+            // the one request that both creates and selects; POSTing /api/histories
+            // instead would go unhandled here, which is the point
+            rawHttp.get("/history/create_new_current", ({ request }) => {
+                const name = new URL(request.url).searchParams.get("name");
+                requested.push(`create ${name ?? "default"}`);
+                return name
+                    ? HttpResponse.json({ id: "named-history", name })
+                    : HttpResponse.json({ id: "default-history", name: "Unnamed history" });
+            }),
+            rawHttp.get("/history/set_as_current", ({ request }) => {
+                const id = new URL(request.url).searchParams.get("id");
+                requested.push(`select ${id}`);
+                return HttpResponse.json({ id, name: "RNA run" });
+            }),
+        );
+    });
+
+    it("creates a history with the server's default name", async () => {
+        const store = useHistoryStore();
+
+        await store.createNewHistory();
+
+        expect(requested).toEqual(["create default"]);
+        expect(store.currentHistoryId).toBe("default-history");
+        expect(store.totalHistoryCount).toBe(4);
+    });
+
+    it("creates a named history and switches to it", async () => {
+        const store = useHistoryStore();
+
+        await store.createNewHistory("RNA run");
+
+        expect(requested).toEqual(["create RNA run"]);
+        expect(store.currentHistoryId).toBe("named-history");
+        expect(store.totalHistoryCount).toBe(4);
+    });
+
+    it.each([undefined, "RNA run"])("queues creation (%s) behind an in-flight switch", async (name) => {
+        let releaseSwitch = () => {};
+        const switchPending = new Promise<void>((resolve) => {
+            releaseSwitch = resolve;
+        });
+        server.use(
+            rawHttp.get("/history/set_as_current", async ({ request }) => {
+                const id = new URL(request.url).searchParams.get("id");
+                requested.push(`select ${id}`);
+                await switchPending;
+                return HttpResponse.json({ id, name: "other" });
+            }),
+        );
+        const store = useHistoryStore();
+        const switching = store.setCurrentHistory("other-history");
+        await flushPromises();
+        const creating = store.createNewHistory(name);
+        await flushPromises();
+        const beforeRelease = [...requested];
+        releaseSwitch();
+        await Promise.all([switching, creating]);
+
+        expect(beforeRelease).toEqual(["select other-history"]);
+        expect(requested).toEqual(["select other-history", `create ${name ?? "default"}`]);
+        expect(store.currentHistoryId).toBe(name ? "named-history" : "default-history");
+        expect(store.changingCurrentHistory).toBe(false);
+    });
+
+    it.each([undefined, "RNA run"])("queues a switch behind creation (%s)", async (name) => {
+        let releaseCreate = () => {};
+        const createPending = new Promise<void>((resolve) => {
+            releaseCreate = resolve;
+        });
+        server.use(
+            rawHttp.get("/history/create_new_current", async () => {
+                requested.push("create");
+                await createPending;
+                return HttpResponse.json({ id: "new-history", name: name ?? "Unnamed history" });
+            }),
+        );
+        const store = useHistoryStore();
+        const creating = store.createNewHistory(name);
+        await flushPromises();
+        const switching = store.setCurrentHistory("other-history");
+        await flushPromises();
+        const beforeRelease = [...requested];
+        releaseCreate();
+        await Promise.all([creating, switching]);
+
+        expect(beforeRelease).toEqual(["create"]);
+        expect(requested).toEqual(["create", "select other-history"]);
+        expect(store.currentHistoryId).toBe("other-history");
+        expect(store.changingCurrentHistory).toBe(false);
+    });
+
+    it("continues with creation after a queued switch fails", async () => {
+        server.use(
+            rawHttp.get("/history/set_as_current", () =>
+                HttpResponse.json({ err_msg: "switch failed" }, { status: 500 }),
+            ),
+        );
+        const store = useHistoryStore();
+        const switching = store.setCurrentHistory("other-history");
+        const rejected = expect(switching).rejects.toThrow("switch failed");
+        const creating = store.createNewHistory("RNA run");
+        await rejected;
+        await creating;
+
+        expect(store.currentHistoryId).toBe("named-history");
+        expect(store.changingCurrentHistory).toBe(false);
+    });
+
+    it("still switches to a named history when the count refresh fails", async () => {
+        server.use(
+            http.get("/api/histories/count", ({ response }) =>
+                response("5XX").json({ err_msg: "count is down", err_code: 500 }, { status: 500 }),
+            ),
+        );
+        const store = useHistoryStore();
+
+        await expect(store.createNewHistory("RNA run")).resolves.toBeUndefined();
+
+        expect(requested).toEqual(["create RNA run"]);
+        expect(store.currentHistoryId).toBe("named-history");
+    });
+});
+
+describe("historyStore — filling the own-history cache beside the paginated list", () => {
+    const summaries = [
+        { id: "h1", name: "one", update_time: "2026-01-02T00:00:00" },
+        { id: "h2", name: "two", update_time: "2026-01-01T00:00:00" },
+    ];
+    let requestedLimits: string[];
+    let releaseCacheFill: () => void;
+    let cacheFillPending: Promise<void>;
+
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        requestedLimits = [];
+        cacheFillPending = new Promise<void>((resolve) => {
+            releaseCacheFill = resolve;
+        });
+        server.use(
+            http.get("/api/histories", async ({ request, response }) => {
+                const limit = new URL(request.url).searchParams.get("limit");
+                requestedLimits.push(String(limit));
+                // the cache fill is held open so the paginated load lands while
+                // it is still running, which is the case the palette creates
+                if (limit === "25") {
+                    await cacheFillPending;
+                }
+                return response(200).json(summaries as never);
+            }),
+            http.get("/api/histories/count", ({ response }) => response(200).json(40)),
+        );
+    });
+
+    it("leaves the scroll list's offset where it was", async () => {
+        const store = useHistoryStore();
+        store.historiesOffset = 10;
+
+        const filling = store.fetchOwnHistories({ limit: 25 });
+        releaseCacheFill();
+        await filling;
+
+        expect(store.historiesOffset).toBe(10);
+        expect(store.histories.map((history) => history.id)).toContain("h1");
+    });
+
+    it("does not swallow a paginated load started while it runs", async () => {
+        const store = useHistoryStore();
+
+        const filling = store.fetchOwnHistories({ limit: 25 });
+        await store.loadHistories(true);
+        releaseCacheFill();
+        await filling;
+
+        expect(requestedLimits).toContain("10");
+    });
+    it("shares identical concurrent cache fills", async () => {
+        const store = useHistoryStore();
+        const first = store.fetchOwnHistories({ limit: 25 });
+        const second = store.fetchOwnHistories({ limit: 25 });
+        releaseCacheFill();
+        await Promise.all([first, second]);
+
+        expect(requestedLimits).toEqual(["25"]);
+        expect(store.histories.map((history) => history.id)).toEqual(["h1", "h2"]);
+    });
+
+    it("retries an identical cache fill after rejection", async () => {
+        let attempts = 0;
+        server.use(
+            http.get("/api/histories", ({ response }) => {
+                if (++attempts === 1) {
+                    return response("5XX").json({ err_msg: "listing failed", err_code: 500 }, { status: 500 });
+                }
+                return response(200).json(summaries as never);
+            }),
+        );
+        const store = useHistoryStore();
+        await expect(store.fetchOwnHistories({ limit: 25 })).rejects.toThrow("listing failed");
+        await store.fetchOwnHistories({ limit: 25 });
+
+        expect(attempts).toBe(2);
+        expect(store.histories.map((history) => history.id)).toEqual(["h1", "h2"]);
     });
 });

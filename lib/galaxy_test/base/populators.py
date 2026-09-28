@@ -1694,6 +1694,19 @@ class BaseDatasetPopulator(BasePopulator):
         assert role_response.status_code == 200
         return role_response.json()
 
+    def create_group(
+        self, name: str | None = None, user_ids: list[str] | None = None, role_ids: list[str] | None = None
+    ) -> dict:
+        using_requirement("admin")
+        payload = {
+            "name": name or self.get_random_name(prefix="testpop"),
+            "user_ids": user_ids or [],
+            "role_ids": role_ids or [],
+        }
+        group_response = self._post("groups", data=payload, admin=True, json=True)
+        api_asserts.assert_status_code_is_ok(group_response)
+        return group_response.json()[0]
+
     @contextlib.contextmanager
     def user_tool_execute_permissions(self):
         role = self.create_role([self.user_id()], role_type="user_tool_execute")

@@ -26,9 +26,9 @@ table_name = "galaxy_user"
 column_name = "display_name"
 
 
-def upgrade():
+def upgrade() -> None:
     add_column(table_name, Column(column_name, TrimmedString(255), nullable=True))
 
 
-def downgrade():
+def downgrade() -> None:
     drop_column(table_name, column_name)

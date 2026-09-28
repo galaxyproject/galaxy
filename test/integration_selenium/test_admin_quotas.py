@@ -29,7 +29,8 @@ class TestAdminQuotasSeleniumIntegration(SeleniumIntegrationTestCase):
             data={
                 "name": self._get_random_name(prefix="managedquota"),
                 "description": "quota with managed users and groups",
-                "amount": "10MB",
+                # Displayed rounded as "1.2 GB"; saving other changes must not store that rounded value.
+                "amount": "1234567890",
                 "operation": "=",
                 "default": "no",
                 "in_users": [kept_email, removed_email],
@@ -42,7 +43,7 @@ class TestAdminQuotasSeleniumIntegration(SeleniumIntegrationTestCase):
         quota_id = quota_response.json()["id"]
 
         self.admin_login()
-        self.get(f"admin/form/manage_users_and_groups_for_quota?id={quota_id}")
+        self.get(f"admin/form/edit_quota?id={quota_id}")
         quota_component = self.components.admin.quota
         quota_component.form.wait_for_visible()
         quota_component.selected_user(email=kept_email).wait_for_visible()
@@ -59,3 +60,4 @@ class TestAdminQuotasSeleniumIntegration(SeleniumIntegrationTestCase):
         quota = show_response.json()
         assert sorted(a["user"]["email"] for a in quota["users"]) == sorted([kept_email, added_email])
         assert [a["group"]["name"] for a in quota["groups"]] == [group_name]
+        assert quota["bytes"] == 1234567890

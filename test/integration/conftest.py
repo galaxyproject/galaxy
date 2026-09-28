@@ -9,6 +9,10 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.celery import (
+    celery_app,
+    CELERY_APP_DEFAULTS,
+)
 from galaxy.tool_util.deps.mulled.util import NAMESPACE_HAS_REPO_NAME_KEY
 from galaxy_test import shard
 from galaxy_test.base.test_http_server import test_http_server  # noqa: F401
@@ -77,6 +81,36 @@ def seed_mulled_resolution_cache():
 @pytest.fixture(scope="session")
 def celery_includes():
     return ["galaxy.celery.tasks"]
+
+
+# UsesCeleryTasks' autouse fixtures never attach to the module-level tool tests
+# that integration_tool_runner generates, so such a test only worked when a
+# class-based test happened to run earlier in the same session.
+@pytest.fixture(autouse=True, scope="session")
+def request_celery_app(celery_session_app, celery_config):
+    try:
+        yield
+    finally:
+        if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
+            celery_app.fork_pool.stop()
+            celery_app.fork_pool.join(timeout=5)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def request_celery_worker(celery_session_worker):
+    yield
+
+
+@pytest.fixture(scope="session")
+def celery_worker_parameters():
+    return {
+        "queues": ("galaxy.internal", "galaxy.external"),
+    }
+
+
+@pytest.fixture(scope="session")
+def celery_parameters():
+    return CELERY_APP_DEFAULTS
 
 
 @pytest.fixture
