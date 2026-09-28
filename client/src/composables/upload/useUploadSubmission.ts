@@ -149,9 +149,20 @@ export function useUploadSubmission() {
         datasets: UploadedDataset[],
         batchId?: string,
     ): Promise<void> {
-        for (const tracked of libraryUploads) {
+        for (const [index, tracked] of libraryUploads.entries()) {
             uploadState.updateProgress(tracked.id, 50);
-            const copied = await copyDataset(tracked.item.lddaId, historyId, "dataset", "library");
+            let copied;
+            try {
+                copied = await copyDataset(tracked.item.lddaId, historyId, "dataset", "library");
+            } catch (err) {
+                // Copies after this one never start, so they fail with it.
+                const errorMessage = errorMessageAsString(err);
+                markTrackedError(uploadState, libraryUploads.slice(index), errorMessage);
+                if (batchId) {
+                    uploadState.setBatchError(batchId, errorMessage);
+                }
+                throw err;
+            }
             if (copied && "id" in copied && copied.id) {
                 const copiedName =
                     "name" in copied && typeof copied.name === "string" ? copied.name : tracked.item.name;

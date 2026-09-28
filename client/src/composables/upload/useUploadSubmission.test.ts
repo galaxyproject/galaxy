@@ -149,6 +149,35 @@ describe("useUploadSubmission", () => {
         }
     });
 
+    it("marks the failed and remaining library copies as errored when a copy request fails", async () => {
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+            ),
+        );
+
+        const wrapper = mountHarness({
+            apiItems: [],
+            uploadItems: [
+                makeLibraryItem({ name: "first.txt", lddaId: "ldda_1" }),
+                makeLibraryItem({ name: "second.txt", lddaId: "ldda_2" }),
+            ],
+        });
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("Action requires account activation.");
+
+        const state = useUploadState();
+        expect(state.activeItems.value).toHaveLength(2);
+        for (const item of state.activeItems.value) {
+            expect(item.status).toBe("error");
+            expect(item.error).toBe("Action requires account activation.");
+        }
+    });
+
     it("falls back to the staged library item name when the copy response omits metadata", async () => {
         server.use(
             http.post("/api/histories/hist_1/contents/datasets", async ({ request }) => {
@@ -249,6 +278,27 @@ describe("useUploadSubmission", () => {
         expect(batch?.status).toBe("completed");
         expect(batch?.collectionId).toBe("hdca_lib_1");
         expect(batch?.datasetIds).toEqual(["hda_lib_1"]);
+    });
+
+    it("fails the collection batch when a library copy fails", async () => {
+        suppressExpectedErrorMessages(["Action requires account activation."]);
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+            ),
+        );
+
+        const prepared = buildPreparedUpload([makeLibraryItem()], makeSubmissionCollectionConfig());
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        const batch = useUploadState().activeBatches.value[0];
+        expect(batch?.status).toBe("error");
+        expect(batch?.error).toBe("Action requires account activation.");
+        expect(batch?.collectionId).toBeUndefined();
     });
 
     it("creates a two-step collection for mixed api and library uploads", async () => {
