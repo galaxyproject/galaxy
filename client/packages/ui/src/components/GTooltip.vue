@@ -5,20 +5,12 @@
  * Will set "aria-describedby" property on linked element.
  */
 
-import {
-    arrow,
-    autoUpdate,
-    computePosition,
-    type ComputePositionConfig,
-    flip,
-    offset,
-    type Placement,
-    shift,
-} from "@floating-ui/dom";
+import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift } from "@floating-ui/dom";
 import { watchImmediate } from "@vueuse/core";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 import { useAccessibleHover } from "../composables/accessibleHover";
+import { useFloatingPosition } from "../composables/floatingPosition";
 import { useUid } from "../composables/uid";
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "../utils/tooltipTiming";
 
@@ -70,62 +62,42 @@ function hide() {
 
 type CSSTransform = `transform: translate(${number}px, ${number}px);`;
 
-const tooltipPositionStyle = ref<CSSTransform>();
-const tooltipArrowPositionStyle = ref<CSSTransform>();
-
-function getComputePositionConfig(arrowElement: HTMLDivElement): Partial<ComputePositionConfig> {
+function getComputePositionConfig(): Partial<ComputePositionConfig> {
+    const middleware = [
+        offset(8),
+        flip({
+            altBoundary: true,
+        }),
+        shift({
+            altBoundary: true,
+        }),
+    ];
+    if (tooltipArrow.value) {
+        middleware.push(
+            arrow({
+                element: tooltipArrow.value,
+            }),
+        );
+    }
     return {
         placement: props.placement ?? "top",
-        middleware: [
-            offset(8),
-            flip({
-                altBoundary: true,
-            }),
-            shift({
-                altBoundary: true,
-            }),
-            arrow({
-                element: arrowElement,
-            }),
-        ],
+        middleware,
     };
 }
 
-const finalPlacement = ref<Placement>("bottom");
+const {
+    x,
+    y,
+    placement: finalPlacement,
+    middlewareData,
+} = useFloatingPosition(() => props.reference, tooltip, isShowing, getComputePositionConfig);
 
-async function updateTooltipPosition() {
-    if (!props.reference || !tooltip.value || !tooltipArrow.value) {
-        return;
-    }
+const tooltipPositionStyle = computed<CSSTransform>(() => `transform: translate(${x.value}px, ${y.value}px);`);
 
-    const { x, y, middlewareData, placement } = await computePosition(
-        props.reference,
-        tooltip.value,
-        getComputePositionConfig(tooltipArrow.value),
-    );
-
-    tooltipPositionStyle.value = `transform: translate(${x}px, ${y}px);`;
-
-    if (middlewareData.arrow) {
-        const { x, y } = middlewareData.arrow;
-        tooltipArrowPositionStyle.value = `transform: translate(${x ?? 0}px, ${y ?? 0}px);`;
-    }
-
-    finalPlacement.value = placement;
-}
-
-let cleanupFunction: ReturnType<typeof autoUpdate> | null = null;
-
-watch(
-    () => isShowing.value,
-    () => {
-        cleanupFunction?.();
-
-        if (isShowing.value && props.reference && tooltip.value) {
-            cleanupFunction = autoUpdate(props.reference, tooltip.value, updateTooltipPosition);
-        }
-    },
-);
+const tooltipArrowPositionStyle = computed<CSSTransform | undefined>(() => {
+    const arrowData = middlewareData.value.arrow;
+    return arrowData ? `transform: translate(${arrowData.x ?? 0}px, ${arrowData.y ?? 0}px);` : undefined;
+});
 
 useAccessibleHover(() => props.reference, show, hide, {
     showDelayMs: DEFAULT_TOOLTIP_HOVER_DELAY_MS,

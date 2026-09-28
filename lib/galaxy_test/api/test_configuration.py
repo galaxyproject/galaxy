@@ -7,6 +7,7 @@ from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [
+    "curated_workflows_source",
     "enable_unique_workflow_defaults",
     "ftp_upload_site",
     "wiki_url",

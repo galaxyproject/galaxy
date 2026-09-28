@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSitemap, faTimes, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BDropdownText, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -12,6 +12,11 @@ import { types_to_icons } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 
 const props = defineProps<{
     /** The `Filtering` class (ToolFilters). */
@@ -76,14 +81,12 @@ function searchWithinSections(sections: ToolSection[], query: string) {
     <div class="d-flex flex-column flex-gapy-1">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex flex-gapx-1">
-                <BDropdown
+                <GDropdown
                     block
                     :disabled="props.disabled"
                     variant="link"
                     class="tool-section-dropdown"
                     toggle-class="text-decoration-none"
-                    role="menu"
-                    aria-label="Select a tool ontology to filter by"
                     size="sm">
                     <template v-slot:button-content>
                         <span class="sr-only">Select a tool ontology to filter by</span>
@@ -94,20 +97,22 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                         <i v-else> Select an ontology to filter by </i>
                     </template>
 
-                    <BDropdownGroup
+                    <GDropdownGroup
                         id="searchable-sections"
                         class="sections-select-list"
-                        header-classes="search-header">
+                        header-classes="search-header"
+                        aria-label="Ontologies">
                         <template v-slot:header>
-                            <BDropdownText>
+                            <GDropdownText>
                                 <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
-                            </BDropdownText>
+                            </GDropdownText>
                         </template>
 
-                        <BDropdownGroup
+                        <GDropdownGroup
                             v-if="Object.keys(edamOperations).length"
                             id="edam-operations"
-                            class="unselectable">
+                            class="unselectable"
+                            :aria-label="panels['ontology:edam_operations']?.name">
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_operations')"
@@ -116,19 +121,23 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                                     size="sm" />
                                 <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
                             </template>
-                            <BDropdownItem
+                            <GDropdownItem
                                 v-for="ont in edamOperations"
                                 :key="ont.id"
                                 :title="ont.description"
                                 :active="selectedOntology?.id === ont.id"
                                 @click="applyQuotedFilter('ontology', ont.id)">
                                 <span v-localize>{{ ont.name }}</span>
-                            </BDropdownItem>
-                        </BDropdownGroup>
+                            </GDropdownItem>
+                        </GDropdownGroup>
 
-                        <BDropdownDivider />
+                        <GDropdownDivider />
 
-                        <BDropdownGroup v-if="Object.keys(edamTopics).length" id="edam-topics" class="unselectable">
+                        <GDropdownGroup
+                            v-if="Object.keys(edamTopics).length"
+                            id="edam-topics"
+                            class="unselectable"
+                            :aria-label="panels['ontology:edam_topics']?.name">
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_topics')"
@@ -137,17 +146,17 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                                     size="sm" />
                                 <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
                             </template>
-                            <BDropdownItem
+                            <GDropdownItem
                                 v-for="ont in edamTopics"
                                 :key="ont.id"
                                 :title="ont.description"
                                 :active="selectedOntology?.id === ont.id"
                                 @click="applyQuotedFilter('ontology', ont.id)">
                                 <span v-localize>{{ ont.name }}</span>
-                            </BDropdownItem>
-                        </BDropdownGroup>
-                    </BDropdownGroup>
-                </BDropdown>
+                            </GDropdownItem>
+                        </GDropdownGroup>
+                    </GDropdownGroup>
+                </GDropdown>
 
                 <GButton
                     v-if="selectedOntology"

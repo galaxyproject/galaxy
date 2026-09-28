@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink, BPopover } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
 
@@ -11,6 +11,7 @@ import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface Props {
     historyId: string;
@@ -76,7 +77,7 @@ function onDoNotShowAgain() {
             </GButton>
         </GButtonGroup>
 
-        <BPopover
+        <GPopover
             :show.sync="isStorageHelperVisible"
             :target="storageOperationsButtonId"
             triggers="manual hover"
@@ -86,6 +87,6 @@ function onDoNotShowAgain() {
                 <span>{{ localize("Background operations are running. Click this spinner to open status.") }}</span>
                 <BLink @click="onDoNotShowAgain">{{ localize("Do not show this again") }}</BLink>
             </div>
-        </BPopover>
+        </GPopover>
     </div>
 </template>

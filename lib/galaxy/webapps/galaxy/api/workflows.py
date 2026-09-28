@@ -71,6 +71,8 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     ClaimLandingPayload,
     CreateWorkflowLandingRequestPayload,
+    CuratedWorkflowsIndexResponse,
+    CuratedWorkflowsQueryPayload,
     InvocationIndexPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
@@ -97,6 +99,7 @@ from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.web import (
     expose_api,
+    expose_api_anonymous,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -574,24 +577,21 @@ class WorkflowsAPIController(
             step_dict["tool_version"] = module.get_version()
         return step_dict
 
-    @expose_api
+    @expose_api_anonymous
     def get_tool_predictions(self, trans: ProvidesHistoryContext, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         :type   payload: dict
         :param  payload:
-            a dictionary containing two parameters
             'tool_sequence' - comma separated sequence of tool ids
-            'remote_model_url' - (optional) path to the deep learning model
         """
-        remote_model_url = payload.get("remote_model_url", trans.app.config.tool_recommendation_model_path)
+        # Model downloads must use administrator configuration, never request-supplied URLs.
+        model_url = trans.app.config.tool_recommendation_model_path
         tool_sequence = payload.get("tool_sequence", "")
-        if "tool_sequence" not in payload or remote_model_url is None:
+        if "tool_sequence" not in payload or model_url is None:
             return
-        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
-            trans, tool_sequence, remote_model_url
-        )
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(trans, tool_sequence, model_url)
         return {"current_tool": tool_sequence, "predicted_data": recommended_tools}
 
     #
@@ -905,6 +905,43 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+# The curated endpoint understands only name, tag and collection; the stored-workflow tags
+# above would advertise filters it silently drops into free text.
+curated_query_tags = [
+    IndexQueryTag("name", "The curated workflow's name.", "n"),
+    IndexQueryTag("tag", "A tag on the curated workflow.", "t"),
+    IndexQueryTag("collection", "An IWC collection the curated workflow belongs to.", "c"),
+]
+
+CuratedSearchQueryParam: str | None = search_query_param(
+    model_name="Curated Workflow",
+    tags=curated_query_tags,
+    free_text_fields=["name", "description", "tag", "collection"],
+)
+
+CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
+    default=None,
+    title="Sort By",
+    description=(
+        "Sort curated workflows by this attribute. Without it, most recently updated first -- and "
+        "in IWC catalog mode, workflows whose tools are all available here come before the rest."
+    ),
+)
+
+CuratedLimitQueryParam: int = Query(
+    default=24,
+    ge=1,
+    le=100,
+    title="Limit",
+    description="Maximum number of curated workflows to return.",
+)
+
+CuratedOffsetQueryParam: int = Query(
+    default=0,
+    ge=0,
+    title="Number of curated workflows to skip in sorted query (to enable pagination).",
+)
+
 InvokeWorkflowBody = Annotated[
     InvokeWorkflowPayload,
     Body(
@@ -967,6 +1004,29 @@ class FastAPIWorkflows:
         workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return workflows
+
+    # Declared before any /api/workflows/{workflow_id} route so FastAPI does not
+    # try to decode the literal "curated" as an encoded StoredWorkflow id.
+    @router.get(
+        "/api/workflows/curated",
+        public=True,
+        summary="Lists curated workflows for discovery.",
+        response_description="Curated workflows plus the source they were drawn from.",
+    )
+    def curated(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        search: str | None = CuratedSearchQueryParam,
+        sort_by: WorkflowSortByEnum | None = CuratedSortByQueryParam,
+        sort_desc: bool | None = SortDescQueryParam,
+        limit: int = CuratedLimitQueryParam,
+        offset: int = CuratedOffsetQueryParam,
+    ) -> CuratedWorkflowsIndexResponse:
+        """Lists workflows curated for this Galaxy, or the public IWC catalog."""
+        payload = CuratedWorkflowsQueryPayload(
+            search=search, sort_by=sort_by, sort_desc=sort_desc, limit=limit, offset=offset
+        )
+        return self.service.index_curated(trans, payload)
 
     @router.get(
         "/api/workflows/{workflow_id}/sharing",

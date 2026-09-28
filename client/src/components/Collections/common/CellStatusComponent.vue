@@ -4,12 +4,13 @@
 import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ICellRendererParams } from "ag-grid-community";
-import { BPopover } from "bootstrap-vue";
 import { defineComponent } from "vue";
+
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 export default defineComponent({
     components: {
-        BPopover,
+        GPopover,
         FontAwesomeIcon,
     },
     data() {
@@ -59,7 +60,7 @@ export default defineComponent({
 <template>
     <div :class="statusClass">
         <FontAwesomeIcon :id="id" size="2x" :icon="icon" />
-        <BPopover :target="id" title="Status" triggers="hover focus" :content="popoverContent"></BPopover>
+        <GPopover :target="id" title="Status" triggers="hover focus" :content="popoverContent"></GPopover>
     </div>
 </template>
 

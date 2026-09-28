@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections import namedtuple
+from typing import Any
 
 from galaxy import exceptions
 from galaxy.exceptions import (
@@ -29,13 +29,16 @@ from tool_shed.context import (
 )
 from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.webapp.model import RepositoryMetadata
-from tool_shed.webapp.search.tool_search import ToolSearch
+from tool_shed.webapp.search.tool_search import (
+    ToolBoosts,
+    ToolSearch,
+)
 from tool_shed_client.schema import ShedParsedTool
 from .repositories import get_repository_revision_metadata_model
 from .trs import trs_tool_id_to_repository_metadata
 
 
-def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
+def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict[str, Any]:
     """
     Perform the search over TS tools index.
     Note that search works over the Whoosh index which you have
@@ -59,10 +62,7 @@ def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int =
 
     tool_search = ToolSearch()
 
-    Boosts = namedtuple(
-        "Boosts", ["tool_name_boost", "tool_description_boost", "tool_help_boost", "tool_repo_owner_username_boost"]
-    )
-    boosts = Boosts(
+    boosts = ToolBoosts(
         float(conf.get("tool_name_boost", 1.2)),
         float(conf.get("tool_description_boost", 0.6)),
         float(conf.get("tool_help_boost", 0.4)),

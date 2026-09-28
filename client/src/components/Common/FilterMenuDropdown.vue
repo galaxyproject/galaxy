@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { QuotaUsage } from "@/api/users";
@@ -11,6 +11,8 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type FilterValue = QuotaUsage | string | boolean | undefined;
@@ -131,37 +133,36 @@ function setValue(val: FilterValue) {
     <div v-if="datalist || hasMultipleQuotaSources">
         <small>Filter by {{ props.filter.placeholder }}:</small>
         <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`" class="flex-nowrap">
-            <BDropdown
+            <GDropdown
                 :text="dropDownText"
                 block
                 class="w-100"
                 menu-class="w-100"
                 size="sm"
-                boundary="window"
                 :disabled="props.disabled"
                 :toggle-class="props.error ? 'text-danger' : ''">
-                <BDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></BDropdownItem>
+                <GDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></GDropdownItem>
 
                 <span v-if="stringDatalist.length > 0">
-                    <BDropdownItem
+                    <GDropdownItem
                         v-for="listItem in stringDatalist"
                         :key="listItem"
                         href="#"
                         @click="setValue(listItem)">
                         {{ listItem }}
-                    </BDropdownItem>
+                    </GDropdownItem>
                 </span>
                 <span v-else-if="objectDatalist.length > 0">
-                    <BDropdownItem
+                    <GDropdownItem
                         v-for="listItem in objectDatalist"
                         :key="listItem.value"
                         href="#"
                         @click="setValue(listItem.value)">
                         {{ listItem.text }}
-                    </BDropdownItem>
+                    </GDropdownItem>
                 </span>
                 <span v-else-if="props.type === 'QuotaSource'">
-                    <BDropdownItem
+                    <GDropdownItem
                         v-for="quotaUsage in quotaUsages"
                         :key="quotaUsage.sourceLabel"
                         href="#"
@@ -172,9 +173,9 @@ function setValue(val: FilterValue) {
                             class="quota-usage-bar"
                             :compact="true"
                             :embedded="true" />
-                    </BDropdownItem>
+                    </GDropdownItem>
                 </span>
-            </BDropdown>
+            </GDropdown>
             <BInputGroupAppend>
                 <!-- append Help Modal toggle for filter if included -->
                 <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">

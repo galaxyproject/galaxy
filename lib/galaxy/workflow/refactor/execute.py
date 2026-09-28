@@ -457,6 +457,11 @@ class WorkflowRefactorExecutor:
 
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecution):
         step_def = self._find_step(action.step)
+        step = self.workflow.steps[step_def["id"]]
+        if step.user_defined_tool is not None:
+            raise RequestParameterInvalidException(
+                f"Step {step.order_index + 1} uses a user-defined tool, which has a single version and cannot be upgraded."
+            )
         tool_id = step_def["content_id"]
         trans = self.module_injector.trans
         tool_version = action.tool_version
@@ -464,7 +469,6 @@ class WorkflowRefactorExecutor:
             latest_tool = trans.app.toolbox.get_tool(tool_id, get_all_versions=True)[-1]
             tool_version = latest_tool.version
             tool_id = latest_tool.id
-        step = self.workflow.steps[step_def["id"]]
         step.tool_id = tool_id
         step.tool_version = tool_version
         self._inject_for_updated_step(step, execution)
@@ -483,7 +487,7 @@ class WorkflowRefactorExecutor:
                     action_type="upgrade_subworkflow", step={"order_index": step_order_index}
                 )
                 self._apply_upgrade_subworkflow(step_action_s, execution)
-            elif step.get("type") == "tool":
+            elif step.get("type") == "tool" and self.workflow.steps[step["id"]].user_defined_tool is None:
                 step_action_t = UpgradeToolAction(action_type="upgrade_tool", step={"order_index": step_order_index})
                 self._apply_upgrade_tool(step_action_t, execution)
 

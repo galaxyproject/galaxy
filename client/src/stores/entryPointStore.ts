@@ -26,6 +26,13 @@ interface EntryPoint {
 
 export const useEntryPointStore = defineStore("entryPointStore", () => {
     const entryPoints = ref<EntryPoint[]>([]);
+    /**
+     * Whether the running entry points have been fetched at least once. An empty
+     * result counts as loaded, so consumers can tell "nothing is running" from
+     * "not fetched yet" instead of requesting the list again on every read.
+     */
+    const hasLoadedEntryPoints = ref(false);
+    let entryPointsPromise: Promise<void> | null = null;
 
     async function fetchEntryPoints() {
         const url = `${getAppRoot()}api/entry_points`;
@@ -33,9 +40,27 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         try {
             const response = await axios.get(url, { params: params });
             updateEntryPoints(response.data);
+            hasLoadedEntryPoints.value = true;
         } catch (e) {
             rethrowSimple(e);
         }
+    }
+
+    /**
+     * Fetches the running entry points once; concurrent callers share the
+     * in-flight request and later ones read the cache. The list is kept current
+     * by the app-wide SSE/polling watcher afterwards.
+     */
+    async function ensureEntryPointsLoaded() {
+        if (hasLoadedEntryPoints.value) {
+            return;
+        }
+        if (!entryPointsPromise) {
+            entryPointsPromise = fetchEntryPoints().finally(() => {
+                entryPointsPromise = null;
+            });
+        }
+        await entryPointsPromise;
     }
 
     // SSE-driven path: on each entry_point_update signal, refetch the canonical
@@ -166,7 +191,9 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         entryPoints,
         entryPointsForJob,
         entryPointsForHda,
+        ensureEntryPointsLoaded,
         fetchEntryPoints,
+        hasLoadedEntryPoints,
         updateEntryPoints,
         removeEntryPoint,
         startWatchingEntryPoints,

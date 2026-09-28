@@ -4981,10 +4981,28 @@ export interface paths {
         };
         /** Show */
         get: operations["show_api_roles__id__get"];
-        put?: never;
+        /** Update a role's name, description, users and groups */
+        put: operations["update_api_roles__id__put"];
         post?: never;
         /** Delete */
         delete: operations["delete_api_roles__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the groups associated with a role */
+        get: operations["groups_api_roles__id__groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5018,6 +5036,23 @@ export interface paths {
         put?: never;
         /** Undelete */
         post: operations["undelete_api_roles__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the users associated with a role */
+        get: operations["users_api_roles__id__users_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6289,6 +6324,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return the groups this user is a member of. */
+        get: operations["get_user_groups_api_users__user_id__groups_get"];
+        /** Replace the groups this user is a member of. */
+        put: operations["set_user_groups_api_users__user_id__groups_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/objectstore_usage": {
         parameters: {
             query?: never;
@@ -6299,6 +6352,23 @@ export interface paths {
         /** Return the user's object store usage summary broken down by object store ID */
         get: operations["get_user_objectstore_usage_api_users__user_id__objectstore_usage_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a new password for a user. */
+        put: operations["reset_user_password_api_users__user_id__password_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6335,7 +6405,8 @@ export interface paths {
          * @description Return a list of roles associated with this user. Only admins can see user roles.
          */
         get: operations["get_user_roles_api_users__user_id__roles_get"];
-        put?: never;
+        /** Replace the roles associated with this user. The user's private role is kept. */
+        put: operations["set_user_roles_api_users__user_id__roles_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6697,6 +6768,26 @@ export interface paths {
          * @description Lists stored workflows viewable by the user.
          */
         get: operations["index_api_workflows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/curated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists curated workflows for discovery.
+         * @description Lists workflows curated for this Galaxy, or the public IWC catalog.
+         */
+        get: operations["curated_api_workflows_curated_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10322,6 +10413,132 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** CuratedWorkflow */
+        CuratedWorkflow: {
+            /**
+             * Collections
+             * @description Names of the curated collections this workflow belongs to.
+             */
+            collections?: string[];
+            /**
+             * Description
+             * @description Short annotation describing the workflow.
+             * @default
+             */
+            description: string;
+            /**
+             * DOI
+             * @description The DOI of the workflow, if it has one.
+             */
+            doi?: string | null;
+            /**
+             * External URL
+             * @description Link to the workflow on the external catalog that published it.
+             */
+            external_url?: string | null;
+            /**
+             * ID
+             * @description Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is served from this Galaxy, otherwise the identifier of the workflow in the public catalog.
+             */
+            id: string;
+            /**
+             * Missing Tools
+             * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
+             */
+            missing_tools?: string[] | null;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Number of Steps
+             * @description The number of steps in the workflow.
+             */
+            number_of_steps?: number | null;
+            /**
+             * Owner
+             * @description Username of the account owning the workflow on this Galaxy, if it is hosted here.
+             */
+            owner?: string | null;
+            /**
+             * Release
+             * @description The release version of the workflow, if published with one.
+             */
+            release?: string | null;
+            /**
+             * Stored Workflow ID
+             * @description Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which case it can be run directly.
+             */
+            stored_workflow_id?: string | null;
+            /**
+             * Tags
+             * @description Tags associated with the workflow.
+             */
+            tags?: string[];
+            /**
+             * TRS Fallback URL
+             * @description TRS URL of the workflow's development branch, to import when the TRS server has not yet published the release that trs_url pins.
+             */
+            trs_fallback_url?: string | null;
+            /**
+             * TRS URL
+             * @description Full TRS URL of the workflow version to import, pinned to its release when it has one.
+             */
+            trs_url?: string | null;
+            /**
+             * Update Time
+             * @description The last time the workflow was updated.
+             */
+            update_time?: string | null;
+        };
+        /** CuratedWorkflowCollection */
+        CuratedWorkflowCollection: {
+            /**
+             * Count
+             * @description How many curated workflows belong to the collection.
+             */
+            count: number;
+            /**
+             * Name
+             * @description The collection's name.
+             */
+            name: string;
+        };
+        /**
+         * CuratedWorkflowSourceEnum
+         * @description Where the curated workflow listing was drawn from.
+         * @enum {string}
+         */
+        CuratedWorkflowSourceEnum: "iwc" | "local" | "preparing" | "unavailable";
+        /** CuratedWorkflowsIndexResponse */
+        CuratedWorkflowsIndexResponse: {
+            /**
+             * Collections
+             * @description Every collection in the catalog with its size, largest first, regardless of the search. Empty when the listing has no collections, as for workflows curated on this Galaxy.
+             */
+            collections?: components["schemas"]["CuratedWorkflowCollection"][];
+            /**
+             * Message
+             * @description Human readable explanation shown when no workflows could be listed.
+             */
+            message?: string | null;
+            /**
+             * Source
+             * @description Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state indicating the catalog is being prepared or could not be reached.
+             */
+            source: components["schemas"]["CuratedWorkflowSourceEnum"];
+            /**
+             * Total Matches
+             * @description Total number of curated workflows matching the query, ignoring limit and offset.
+             */
+            total_matches: number;
+            /**
+             * Workflows
+             * @description The requested page of curated workflows.
+             */
+            workflows?: components["schemas"]["CuratedWorkflow"][];
+        };
         /**
          * CustomArchivedHistoryView
          * @description Archived History Response with all optional fields.
@@ -13900,6 +14117,8 @@ export interface components {
              */
             name: string;
         };
+        /** GroupModelListResponse */
+        GroupModelListResponse: components["schemas"]["GroupModel"][];
         /** GroupQuota */
         GroupQuota: {
             /**
@@ -22266,6 +22485,38 @@ export interface components {
              */
             url: string;
         };
+        /** RoleUpdatePayload */
+        RoleUpdatePayload: {
+            /** Description */
+            description?: string | null;
+            /**
+             * Group IDs
+             * @description Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            group_ids?: string[] | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * User IDs
+             * @description Users to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            user_ids?: string[] | null;
+        };
+        /** RoleUserListResponse */
+        RoleUserListResponse: components["schemas"]["RoleUserResponse"][];
+        /** RoleUserResponse */
+        RoleUserResponse: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
         /** RootModel[dict[str, int]] */
         RootModel_dict_str__int__: {
             [key: string]: number;
@@ -26556,6 +26807,14 @@ export interface components {
                 [key: string]: string | boolean | number;
             } | null;
         };
+        /** UserGroupsUpdatePayload */
+        UserGroupsUpdatePayload: {
+            /**
+             * Group IDs
+             * @description Groups the user is a member of, replacing the current ones.
+             */
+            group_ids: string[];
+        };
         /**
          * UserModel
          * @description User in a transaction context.
@@ -26746,6 +27005,14 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
+        /** UserPasswordResetPayload */
+        UserPasswordResetPayload: {
+            /**
+             * Password
+             * @description The new password of the user.
+             */
+            password: string;
+        };
         /** UserQuota */
         UserQuota: {
             /**
@@ -26772,6 +27039,14 @@ export interface components {
             quota_source_label?: string | null;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserRolesUpdatePayload */
+        UserRolesUpdatePayload: {
+            /**
+             * Role IDs
+             * @description Roles to associate with the user, replacing the current ones. The user's private role is always kept.
+             */
+            role_ids: string[];
         };
         /** UserServiceCredentialsListResponse */
         UserServiceCredentialsListResponse: components["schemas"]["UserServiceCredentialsResponse"][];
@@ -27162,7 +27437,7 @@ export interface components {
              * Active
              * @description Whether the account is active. Only an administrator can change this.
              */
-            active?: boolean | null;
+            active?: boolean;
             /**
              * Display name
              * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
@@ -27172,7 +27447,7 @@ export interface components {
              * Email
              * @description New email address. When `user_activation_on` is set, changing the email deactivates the account and sends an activation link to the new address.
              */
-            email?: string | null;
+            email?: string;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -27182,7 +27457,7 @@ export interface components {
              * Username
              * @description The name of the user.
              */
-            username?: string | null;
+            username?: string;
         };
         /** VariableResponse */
         VariableResponse: {
@@ -48531,6 +48806,8 @@ export interface operations {
                 limit?: number | null;
                 /** @description Number of roles to skip. */
                 offset?: number | null;
+                /** @description Leave out the private role of each user. */
+                exclude_private?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -48659,6 +48936,54 @@ export interface operations {
             };
         };
     };
+    update_api_roles__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     delete_api_roles__id__delete: {
         parameters: {
             query?: never;
@@ -48681,6 +49006,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    groups_api_roles__id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
                 };
             };
             /** @description Request Error */
@@ -48769,6 +49138,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    users_api_roles__id__users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleUserListResponse"];
                 };
             };
             /** @description Request Error */
@@ -52651,6 +53064,98 @@ export interface operations {
             };
         };
     };
+    get_user_groups_api_users__user_id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_groups_api_users__user_id__groups_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserGroupsUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
         parameters: {
             query?: never;
@@ -52674,6 +53179,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    reset_user_password_api_users__user_id__password_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPasswordResetPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -52760,6 +53311,54 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_roles_api_users__user_id__roles_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRolesUpdatePayload"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -53822,6 +54421,89 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    curated_api_workflows_curated_get: {
+        parameters: {
+            query?: {
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 *     ## Query Structure
+                 *
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
+                 *
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
+                 *
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
+                 *
+                 *     ## GitHub-style Tags Available
+                 *
+                 *     `name`
+                 *     : The curated workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     `tag`
+                 *     : A tag on the curated workflow. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     `collection`
+                 *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     ## Free Text
+                 *
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Curated Workflows: `name`, `description`, `tag`, `collection`.
+                 */
+                search?: string | null;
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
+                sort_by?: ("create_time" | "update_time" | "name") | null;
+                /** @description Sort in descending order? */
+                sort_desc?: boolean | null;
+                /** @description Maximum number of curated workflows to return. */
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Curated workflows plus the source they were drawn from. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedWorkflowsIndexResponse"];
                 };
             };
             /** @description Request Error */

@@ -19,6 +19,7 @@ from galaxy.tools.parameters.basic import (
     ToolParameter,
 )
 from galaxy.tools.wrappers import (
+    DatasetCollectionWrapper,
     DatasetFilenameWrapper,
     InputValueWrapper,
     RawObjectWrapper,
@@ -210,6 +211,37 @@ def test_dataset_wrapper():
     assert wrapper.ext == MOCK_DATASET_EXT
 
 
+@pytest.mark.parametrize(
+    ("identifier", "expected"),
+    [
+        ("Plain HDA", "Plain_HDA"),
+        ("../sample", "_sample"),
+        (".sample", "sample"),
+        ("---", "_"),
+        ("CON.txt", "_CON.txt"),
+    ],
+)
+def test_dataset_wrapper_safe_element_identifier(identifier, expected):
+    dataset = cast(DatasetInstance, MockDataset())
+    wrapper = DatasetFilenameWrapper(dataset, identifier=identifier)
+    assert wrapper.safe_element_identifier == expected
+
+
+def test_dataset_wrapper_safe_element_identifier_reserves_extension_length():
+    dataset = cast(DatasetInstance, MockDataset())
+    wrapper = DatasetFilenameWrapper(dataset, identifier="a" * 255)
+    filename = f"{wrapper.safe_element_identifier}.{wrapper.file_ext}"
+    assert len(filename) == 255
+
+
+def test_collection_wrapper_safe_element_identifier():
+    wrapper = object.__new__(DatasetCollectionWrapper)
+    wrapper.name = ".sample"
+    assert wrapper.safe_element_identifier == "sample"
+    wrapper.name = None
+    assert wrapper.safe_element_identifier is None
+
+
 def test_dataset_wrapper_false_path():
     dataset = cast(DatasetInstance, MockDataset())
     new_path = "/new/path/dataset_123.dat"
@@ -303,6 +335,8 @@ class MockDataset:
         self.metadata = MetadataSpecCollection({})
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
+        self.extension = MOCK_DATASET_EXT
+        self.datatype = Mock(file_ext_export_alias=MOCK_DATASET_EXT)
         self.tags = []
         self.has_deferred_data = False
 

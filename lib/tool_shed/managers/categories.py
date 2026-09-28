@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -18,13 +19,22 @@ from tool_shed_client.schema import (
     CreateCategoryRequest,
 )
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+    from sqlalchemy.orm import (
+        scoped_session,
+        Session,
+    )
+
 
 class CategoryManager:
     def __init__(self, app: ToolShedApp):
         self.app = app
 
     def get(self, encoded_category_id: str) -> Category:
-        return suc.get_category(self.app, encoded_category_id)
+        category = suc.get_category(self.app, encoded_category_id)
+        assert category is not None
+        return category
 
     def create(self, trans: ProvidesUserContext, category_request: CreateCategoryRequest) -> Category:
         name = category_request.name
@@ -72,11 +82,10 @@ class CategoryManager:
         )
 
 
-def get_value_mapper(app: ToolShedApp) -> dict[str, Callable]:
-    value_mapper = {"id": app.security.encode_id}
-    return value_mapper
+def get_value_mapper(app: ToolShedApp) -> dict[str, Callable[[int | str], str]]:
+    return {"id": app.security.encode_id}
 
 
-def get_categories_by_deleted(session, deleted):
+def get_categories_by_deleted(session: "scoped_session[Session]", deleted: bool) -> "ScalarResult[Category]":
     stmt = select(Category).where(Category.deleted == deleted).order_by(Category.name)
     return session.scalars(stmt)

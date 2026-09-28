@@ -16,6 +16,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AfterValidator,
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
@@ -36,6 +37,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.schema.agents import AgentResponse
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -46,6 +48,7 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
     literal_to_value,
     ModelClassField,
+    validation_message_wrapper,
 )
 from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
@@ -58,6 +61,7 @@ from galaxy.schema.states import (
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
+    OmittableNotNull,
     RelativeUrl,
 )
 from galaxy.tool_util_models.sample_sheet import (
@@ -69,6 +73,14 @@ from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    canonicalize_email,
+    DISPLAY_NAME_MAX_LEN,
+    EMAIL_MAX_LEN,
+    validate_display_name_str,
+    validate_email_str,
+)
 
 MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
@@ -251,6 +263,28 @@ ContentsUrlField = Annotated[
 
 UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
+
+
+def _canonicalize_email_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str schema to reject.
+    return canonicalize_email(value) if isinstance(value, str) else value
+
+
+def _check_email(email: str) -> str:
+    if message := validate_email_str(email):
+        raise RequestParameterInvalidException(message)
+    return email
+
+
+# An email address as a client may submit it, checked for format only. Whether
+# it is taken, banned or on an allowed domain depends on the server's
+# configuration and database, so the managers check that.
+EmailAddress = Annotated[
+    Annotated[str, Field(max_length=EMAIL_MAX_LEN)],
+    BeforeValidator(_canonicalize_email_input),
+    AfterValidator(validation_message_wrapper(_check_email)),
+]
+
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
 UserDisplayNameField = Field(
@@ -259,8 +293,29 @@ UserDisplayNameField = Field(
     description=(
         "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
     ),
-    max_length=255,
 )
+
+
+def _canonicalize_display_name_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str | None schema to reject.
+    return canonicalize_display_name(value) if isinstance(value, str) else value
+
+
+def _check_display_name(display_name: str | None) -> str | None:
+    if message := validate_display_name_str(display_name):
+        raise RequestParameterInvalidException(message)
+    return display_name
+
+
+# A display name as a client may submit it. The length limit applies to the
+# canonical form, so padding a name does not push it over, and a blank name
+# arrives as None, which clears the field.
+DisplayName = Annotated[
+    Annotated[str, Field(max_length=DISPLAY_NAME_MAX_LEN)] | None,
+    BeforeValidator(_canonicalize_display_name_input),
+    AfterValidator(validation_message_wrapper(_check_display_name)),
+]
+
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -367,18 +422,23 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
+    # The deserializer skips keys it does not know, so without this a misspelt
+    # field, or one this route cannot change (`is_admin`, `password`), would
+    # be dropped and the request would still succeed.
+    model_config = ConfigDict(extra="forbid")
+
     active: Annotated[
-        bool | None,
+        OmittableNotNull[bool],
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
-    username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
-    display_name: Annotated[str | None, UserDisplayNameField] = None
+    username: Annotated[OmittableNotNull[str], Field(title="Username", description="The name of the user.")] = None
+    display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
     # deactivation, not on a stale activation. UserDeserializer only lets an
     # administrator set `active`, so this ordering is belt and braces.
     email: Annotated[
-        str | None,
+        OmittableNotNull[EmailAddress],
         Field(
             title="Email",
             description=(
@@ -419,12 +479,16 @@ class UserExtraPreferencesUpdated(Model):
 
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
-    email: str = UserEmailField
+    email: Annotated[EmailAddress, UserEmailField]
     username: str = UserNameField
 
 
 class RemoteUserCreationPayload(Model):
-    remote_user_email: str = UserEmailField
+    remote_user_email: Annotated[EmailAddress, UserEmailField]
+
+
+class UserPasswordResetPayload(Model):
+    password: str = Field(default=..., title="Password", description="The new password of the user.")
 
 
 class UserDeletionPayload(Model):
@@ -1685,6 +1749,132 @@ class WorkflowIndexPayload(WorkflowIndexQueryPayload):
     missing_tools: bool = False
 
 
+class CuratedWorkflowSourceEnum(str, Enum):
+    """Where the curated workflow listing was drawn from."""
+
+    iwc = "iwc"
+    local = "local"
+    preparing = "preparing"
+    unavailable = "unavailable"
+
+
+class CuratedWorkflowsQueryPayload(Model):
+    search: str | None = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: WorkflowSortByEnum | None = Field(
+        None, title="Sort By", description="Sort curated workflows by this attribute"
+    )
+    sort_desc: bool | None = Field(
+        None, title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
+    limit: int = Field(default=24, title="Limit", description="Maximum number of curated workflows to return.")
+    offset: int = Field(default=0, title="Offset", description="Number of curated workflows to skip.")
+
+
+class CuratedWorkflow(Model):
+    id: str = Field(
+        ...,
+        title="ID",
+        description=(
+            "Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is "
+            "served from this Galaxy, otherwise the identifier of the workflow in the public catalog."
+        ),
+    )
+    name: str = Field(..., title="Name", description="The name of the workflow.")
+    description: str = Field(default="", title="Description", description="Short annotation describing the workflow.")
+    tags: list[str] = Field(default_factory=list, title="Tags", description="Tags associated with the workflow.")
+    collections: list[str] = Field(
+        default_factory=list,
+        title="Collections",
+        description="Names of the curated collections this workflow belongs to.",
+    )
+    number_of_steps: int | None = Field(
+        default=None, title="Number of Steps", description="The number of steps in the workflow."
+    )
+    update_time: datetime | None = Field(
+        default=None, title="Update Time", description="The last time the workflow was updated."
+    )
+    release: str | None = Field(
+        default=None, title="Release", description="The release version of the workflow, if published with one."
+    )
+    doi: str | None = Field(default=None, title="DOI", description="The DOI of the workflow, if it has one.")
+    external_url: str | None = Field(
+        default=None,
+        title="External URL",
+        description="Link to the workflow on the external catalog that published it.",
+    )
+    owner: str | None = Field(
+        default=None,
+        title="Owner",
+        description="Username of the account owning the workflow on this Galaxy, if it is hosted here.",
+    )
+    stored_workflow_id: str | None = Field(
+        default=None,
+        title="Stored Workflow ID",
+        description=(
+            "Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which "
+            "case it can be run directly."
+        ),
+    )
+    trs_url: str | None = Field(
+        default=None,
+        title="TRS URL",
+        description="Full TRS URL of the workflow version to import, pinned to its release when it has one.",
+    )
+    trs_fallback_url: str | None = Field(
+        default=None,
+        title="TRS Fallback URL",
+        description=(
+            "TRS URL of the workflow's development branch, to import when the TRS server has not yet published "
+            "the release that trs_url pins."
+        ),
+    )
+    missing_tools: list[str] | None = Field(
+        default=None,
+        title="Missing Tools",
+        description=(
+            "Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when "
+            "the workflow will run here after import; null when this Galaxy did not check."
+        ),
+    )
+
+
+class CuratedWorkflowCollection(Model):
+    name: str = Field(..., title="Name", description="The collection's name.")
+    count: int = Field(..., title="Count", description="How many curated workflows belong to the collection.")
+
+
+class CuratedWorkflowsIndexResponse(Model):
+    source: CuratedWorkflowSourceEnum = Field(
+        ...,
+        title="Source",
+        description=(
+            "Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state "
+            "indicating the catalog is being prepared or could not be reached."
+        ),
+    )
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description="Total number of curated workflows matching the query, ignoring limit and offset.",
+    )
+    workflows: list[CuratedWorkflow] = Field(
+        default_factory=list, title="Workflows", description="The requested page of curated workflows."
+    )
+    message: str | None = Field(
+        default=None,
+        title="Message",
+        description="Human readable explanation shown when no workflows could be listed.",
+    )
+    collections: list[CuratedWorkflowCollection] = Field(
+        default_factory=list,
+        title="Collections",
+        description=(
+            "Every collection in the catalog with its size, largest first, regardless of the search. Empty when "
+            "the listing has no collections, as for workflows curated on this Galaxy."
+        ),
+    )
+
+
 class JobIndexSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
@@ -2936,8 +3126,50 @@ class RoleDefinitionModel(Model):
     role_type: Literal["admin", "user_tool_create", "user_tool_execute"] = "admin"
 
 
+class RoleUpdatePayload(Model):
+    name: RoleNameField | None = None
+    description: RoleDescriptionField | None = None
+    user_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="User IDs",
+        description="Users to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+    group_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="Group IDs",
+        description="Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+
+
 class RoleListResponse(RootModel):
     root: list[RoleModelResponse]
+
+
+class RoleUserResponse(Model):
+    id: EncodedDatabaseIdField
+    email: str = UserEmailField
+
+
+class RoleUserListResponse(RootModel):
+    root: list[RoleUserResponse]
+
+
+class GroupModelListResponse(RootModel):
+    root: list[GroupModel]
+
+
+class UserRolesUpdatePayload(Model):
+    role_ids: list[DecodedDatabaseIdField] = Field(
+        title="Role IDs",
+        description="Roles to associate with the user, replacing the current ones. The user's private role is always kept.",
+    )
+
+
+class UserGroupsUpdatePayload(Model):
+    group_ids: list[DecodedDatabaseIdField] = Field(
+        title="Group IDs",
+        description="Groups the user is a member of, replacing the current ones.",
+    )
 
 
 # The tuple should probably be another proper model instead?

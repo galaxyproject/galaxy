@@ -14,8 +14,10 @@ from sqlalchemy import (
 )
 
 from galaxy.model import (
+    Group,
     Role,
     User,
+    UserGroupAssociation,
 )
 
 if TYPE_CHECKING:
@@ -25,6 +27,17 @@ if TYPE_CHECKING:
 def get_users_by_ids(session: "scoped_session", user_ids: Iterable[int]) -> Sequence[User]:
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
+
+
+def get_user_groups(session: "scoped_session", user_id: int) -> list[tuple[int, str]]:
+    """Return (id, name) of the non-deleted groups a user is a member of, ordered by name."""
+    stmt = (
+        select(Group.id, Group.name)
+        .join(UserGroupAssociation, UserGroupAssociation.group_id == Group.id)
+        .where(UserGroupAssociation.user_id == user_id, Group.deleted == false())
+        .order_by(Group.name)
+    )
+    return [(group_id, name) for group_id, name in session.execute(stmt)]
 
 
 # The get_user_by_email and get_user_by_username functions may be called from

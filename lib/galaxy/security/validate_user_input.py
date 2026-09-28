@@ -22,6 +22,7 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
+from galaxy.util.user_input import validate_email_str
 
 if TYPE_CHECKING:
     from galaxy.model import User
@@ -45,53 +46,14 @@ class UserValidationContext(Protocol):
 
 log = logging.getLogger(__name__)
 
-# Email validity parameters
-#
-# Many words (and regexes) have been written about validating email addresses and there is no perfect answer on how it
-# should be done. We choose to use the HTML5 spec (and corresponding regex) that engages in a "willful violation" of RFC
-# 5322 to provide a reasonably good validation. Additionally, we allow Unicode characters in both the user and domain
-# parts of the email by using re's '\w' character. Note that \w includes "word" characters but appears to exclude emoji
-# characters, which should in fact be valid.
-#
-# https://html.spec.whatwg.org/multipage/input.html#e-mail-state-(type%3Demail)
-VALID_EMAIL_RE = re.compile(r"^[\w.!#$%&'*+\/=?^_`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)*$")
-EMAIL_MAX_LEN = 255
-
 # Public name validity parameters
 PUBLICNAME_MAX_LEN = 255
 VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
 FILL_CHAR = "-"
 
-# Display name validity parameters
-#
-# Display names are free-form and may contain any script, so the rule is a
-# denylist rather than an allowlist. It covers C0/C1 control characters, the
-# zero-width characters, and the bidirectional formatting characters. The bidi
-# overrides are the reason this check exists: U+202E and friends let a name
-# render as text entirely unrelated to what is stored, which makes a display
-# name a viable impersonation vector wherever it is shown.
-DISPLAY_NAME_MAX_LEN = 255
-INVALID_DISPLAY_NAME_RE = re.compile("[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]")
-
 # Password validity parameters
 PASSWORD_MIN_LEN = 6
-
-
-def is_valid_email_str(email):
-    """Validates a string containing an email address and returns a boolean result."""
-    return validate_email_str(email) == ""
-
-
-def validate_email_str(email):
-    """Validates a string containing an email address."""
-    if not email:
-        return "No email address was provided."
-    if not (VALID_EMAIL_RE.match(email)):
-        return "The format of the email address is not correct."
-    elif len(email) > EMAIL_MAX_LEN:
-        return f"Email address cannot be more than {EMAIL_MAX_LEN} characters in length."
-    return ""
 
 
 def validate_password_str(password):
@@ -108,22 +70,6 @@ def validate_publicname_str(publicname):
         return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
     if not (VALID_PUBLICNAME_RE.match(publicname)):
         return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
-    return ""
-
-
-def validate_display_name_str(display_name):
-    """Validates a string containing a user's display name.
-
-    Callers are expected to have stripped the value already; an empty display
-    name means "unset" and is accepted here so that clearing the field is not
-    an error.
-    """
-    if not display_name:
-        return ""
-    if len(display_name) > DISPLAY_NAME_MAX_LEN:
-        return f"Display name cannot be more than {DISPLAY_NAME_MAX_LEN} characters in length."
-    if INVALID_DISPLAY_NAME_RE.search(display_name):
-        return "Display name cannot contain control or text-direction characters."
     return ""
 
 

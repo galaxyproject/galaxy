@@ -9,14 +9,6 @@ tool\_shed.managers package
 Submodules
 ----------
 
-tool\_shed.managers.groups module
----------------------------------
-
-.. automodule:: tool_shed.managers.groups
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.managers.repositories module
 ---------------------------------------
 
