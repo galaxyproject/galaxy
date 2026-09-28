@@ -683,6 +683,7 @@ interface Rootlibrariesfolder extends Component {
     download_button: SelectorTemplate;
     delete_btn: SelectorTemplate;
     toast_msg: SelectorTemplate;
+    toast_msg_with_text: SelectorTemplate;
     toast_warning: SelectorTemplate;
     select_import_dir_item: SelectorTemplate;
     import_dir_btn: SelectorTemplate;
