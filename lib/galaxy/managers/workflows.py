@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -708,31 +709,6 @@ def _step_pja_dict(step):
             action_type=pja.action_type, output_name=pja.output_name, action_arguments=pja.action_arguments
         )
     return pja_dict
-
-
-def _export_dicts_differ(source: dict[str, Any], refactored: dict[str, Any]) -> bool:
-    def decode(value: Any) -> Any:
-        # Re-injected steps get the legacy tool state encoding (each value JSON-encoded
-        # again), exports get the nested one - decode both fully to compare values.
-        while isinstance(value, str):
-            try:
-                value = json.loads(value)
-            except ValueError:
-                break
-        if isinstance(value, dict):
-            return {k: decode(v) for k, v in value.items()}
-        if isinstance(value, list):
-            return [decode(v) for v in value]
-        return value
-
-    def normalize(as_dict: dict[str, Any]) -> dict[str, Any]:
-        normalized = dict(as_dict)
-        normalized["steps"] = {}
-        for key, step in as_dict.get("steps", {}).items():
-            normalized["steps"][str(key)] = {**step, "tool_state": decode(step.get("tool_state"))}
-        return normalized
-
-    return bool(normalize(source) != normalize(refactored))
 
 
 class WorkflowStateResolutionOptions(BaseModel):
@@ -2440,11 +2416,14 @@ class WorkflowContentsManager(UsesAnnotations):
         # Get the workflow version to refactor (latest or specific version)
         workflow = stored_workflow.get_internal_version(refactor_request.version)
 
-        # Exported before the executor runs because it edits the source version's steps.
         # Without allow_upgrade, so pending load-time tool substitutions count as changes.
-        source_dict = self._workflow_to_dict_export(trans, workflow=workflow, stored=stored_workflow, internal=True)
-        as_dict = self._workflow_to_dict_export(
-            trans, workflow=workflow, stored=stored_workflow, internal=True, allow_upgrade=True
+        source_dict = self._refactor_comparison_dict(trans, workflow, stored_workflow)
+        # A copy, so the executor's in-place edits don't reach the source version's
+        # steps through shared JSON columns (e.g. position).
+        as_dict = copy.deepcopy(
+            self._workflow_to_dict_export(
+                trans, workflow=workflow, stored=stored_workflow, internal=True, allow_upgrade=True
+            )
         )
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
         workflow_update_options = WorkflowUpdateOptions(
@@ -2456,9 +2435,30 @@ class WorkflowContentsManager(UsesAnnotations):
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections=True)
         refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
         action_executions = refactor_executor.refactor(refactor_request)
-        changed = _export_dicts_differ(source_dict, raw_workflow_description.as_dict)
+
+        # Build without saving and export it like the source, so both sides of the
+        # comparison come from the same code. From a copy, since built steps share JSON
+        # values (e.g. position) with their description.
+        new_in_session = set(trans.sa_session.new)
+        dry_run_workflow, _ = self.update_workflow_from_raw_description(
+            trans,
+            stored_workflow,
+            RawWorkflowDescription(
+                copy.deepcopy(raw_workflow_description.as_dict), raw_workflow_description.workflow_path
+            ),
+            workflow_update_options.model_copy(update={"dry_run": True}),
+        )
+        changed = (
+            self._refactor_comparison_dict(trans, dry_run_workflow, dry_run_workflow.stored_workflow) != source_dict
+        )
+        if refactor_request.dry_run:
+            return dry_run_workflow, action_executions, changed
+        # The dry run build can attach objects to the session (e.g. workflow outputs of
+        # upgraded steps) - keep them out of the commit below.
+        for obj in set(trans.sa_session.new) - new_in_session:
+            trans.sa_session.expunge(obj)
         # Refactoring an older version always saves, making it the latest version again.
-        if not changed and not refactor_request.dry_run and workflow == stored_workflow.latest_workflow:
+        if not changed and workflow == stored_workflow.latest_workflow:
             return workflow, action_executions, changed
         refactored_workflow, errors = self.update_workflow_from_raw_description(
             trans,
@@ -2473,6 +2473,16 @@ class WorkflowContentsManager(UsesAnnotations):
         #   it is used also. These same messages will appear in the dictified version we
         #   we send back anyway
         return refactored_workflow, action_executions, changed
+
+    def _refactor_comparison_dict(
+        self, trans: ProvidesHistoryContext, workflow: Workflow, stored: StoredWorkflow
+    ) -> dict[str, Any]:
+        as_dict = self._workflow_to_dict_export(trans, workflow=workflow, stored=stored, internal=True)
+        # tags belong to the stored workflow - refactoring doesn't change them and a dry
+        # run build's detached stored workflow doesn't export them; each build gets a new uuid
+        as_dict.pop("tags", None)
+        as_dict.pop("uuid", None)
+        return copy.deepcopy(as_dict)
 
     def refactor(
         self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest

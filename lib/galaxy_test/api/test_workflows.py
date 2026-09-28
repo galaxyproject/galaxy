@@ -1269,6 +1269,39 @@ steps:
         assert len(self._workflow_versions(workflow_id)) == 3
         assert self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["label"] == "input1"
 
+    def test_refactor_noop_with_connections_and_subworkflow(self):
+        for workflow_yaml in [WORKFLOW_SIMPLE_CAT_TWICE, WORKFLOW_NESTED_SIMPLE]:
+            workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+            name = self.workflow_populator.download_workflow(workflow_id)["name"]
+            noop = [{"action_type": "update_name", "name": name}]
+            upgrade = [{"action_type": "upgrade_all_steps"}]
+            # the first upgrade re-injects steps and saves the connected inputs that were
+            # stored as runtime values at upload - after that, no-ops don't save
+            self.workflow_populator.refactor_workflow(workflow_id, upgrade).raise_for_status()
+            num_versions = len(self._workflow_versions(workflow_id))
+            for actions in [upgrade, noop]:
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+                refactor_response.raise_for_status()
+                assert refactor_response.json()["changed"] is False, (workflow_yaml, actions)
+            assert len(self._workflow_versions(workflow_id)) == num_versions
+
+    def test_refactor_step_position_creates_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+
+        def left_offset(workflow_dict):
+            return workflow_dict["steps"]["1"]["position"]["left"] - workflow_dict["steps"]["0"]["position"]["left"]
+
+        offset = left_offset(self.workflow_populator.download_workflow(workflow_id))
+        actions = [
+            {"action_type": "update_step_position", "step": {"order_index": 0}, "position_shift": {"left": 3, "top": 5}}
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id, version=0)) == offset
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id)) == offset - 3
+
     def test_refactor_noop_saves_pending_tool_substitution(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
         name = self.workflow_populator.download_workflow(workflow_id)["name"]
