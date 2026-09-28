@@ -6,7 +6,10 @@ from typing import (
     cast,
 )
 
-from sqlalchemy import select
+from sqlalchemy import (
+    func,
+    select,
+)
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
@@ -668,6 +671,39 @@ steps:
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
+
+    def test_refactor_saves_only_the_new_version(self):
+        # the comparison dry run build must not be committed alongside the real save
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        sa_session = self._app.model.session
+        sa_session.commit()
+
+        def last_ids():
+            classes = (StoredWorkflow, Workflow, WorkflowStep, WorkflowOutput)
+            return [sa_session.scalar(select(func.max(clazz.id))) for clazz in classes]
+
+        stored_workflow_last_id, workflow_last_id, step_last_id, output_last_id = last_ids()
+        # drops the outer workflow output, since the new subworkflow no longer has it
+        response = self._refactor([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+        sa_session.commit()
+        new_workflow = self._latest_workflow
+        num_outputs = sum(len(step.workflow_outputs) for step in new_workflow.steps)
+        assert last_ids() == [
+            stored_workflow_last_id,
+            workflow_last_id + 1,
+            step_last_id + len(new_workflow.steps),
+            output_last_id + num_outputs,
+        ]
 
     def test_tool_version_upgrade_keeps_when_expression(self):
         self.workflow_populator.upload_yaml_workflow("""
