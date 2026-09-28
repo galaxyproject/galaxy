@@ -1,6 +1,11 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+        <FormCard
+            :title="model.fixed_title"
+            :icon="icon"
+            :collapsible="true"
+            :expanded="expanded"
+            @update:expanded="expanded = $event">
             <template v-slot:body>
                 <FormDisplay
                     v-if="hasInputs"
