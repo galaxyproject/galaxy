@@ -2184,8 +2184,12 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "when" in step_dict:
             step.when_expression = step_dict["when"]
-        if dry_run and step in trans.sa_session:
-            trans.sa_session.expunge(step)
+        if dry_run:
+            # expunging doesn't cascade to the step's children, which may have followed it
+            # into the session (e.g. a subworkflow step's workflow outputs)
+            for obj in [step, *step.workflow_outputs, *step.inputs, *step.post_job_actions]:
+                if obj in trans.sa_session:
+                    trans.sa_session.expunge(obj)
 
         return module, step
 
@@ -2439,7 +2443,6 @@ class WorkflowContentsManager(UsesAnnotations):
         # Build without saving and export it like the source, so both sides of the
         # comparison come from the same code. From a copy, since built steps share JSON
         # values (e.g. position) with their description.
-        new_in_session = set(trans.sa_session.new)
         dry_run_workflow, _ = self.update_workflow_from_raw_description(
             trans,
             stored_workflow,
@@ -2453,10 +2456,6 @@ class WorkflowContentsManager(UsesAnnotations):
         )
         if refactor_request.dry_run:
             return dry_run_workflow, action_executions, changed
-        # The dry run build can attach objects to the session (e.g. workflow outputs of
-        # upgraded steps) - keep them out of the commit below.
-        for obj in set(trans.sa_session.new) - new_in_session:
-            trans.sa_session.expunge(obj)
         # Refactoring an older version always saves, making it the latest version again.
         if not changed and workflow == stored_workflow.latest_workflow:
             return workflow, action_executions, changed
