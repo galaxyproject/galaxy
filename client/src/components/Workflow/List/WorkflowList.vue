@@ -201,8 +201,8 @@ async function load(overlayLoading = false, silent = false) {
         let filteredWorkflows = data;
 
         if (props.activeList === "my") {
-            // Wait for the shared user load.
-            await userStore.loadUser(false);
+            // Wait for the shared user load; App.vue already reports failures, so ignore them here.
+            await userStore.loadUser(false).catch(() => {});
             filteredWorkflows = filteredWorkflows.filter((w: any) => userStore.matchesCurrentUsername(w.owner));
         }
 
