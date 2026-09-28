@@ -6301,7 +6301,11 @@ discovered data sets on Galaxy versions prior to 24.0 and should be specified us
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+For collections (Galaxy 26.1 and later) this is the default format for discovered elements; a ``format`` on
+``<discover_datasets>`` or an extension captured from the filename takes precedence.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
