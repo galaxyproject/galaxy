@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { BoxSelect, Workflow } from "lucide-vue";
+import { BoxSelect, Workflow } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
