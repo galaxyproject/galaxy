@@ -14,6 +14,7 @@ spectroscopy (XPS, also known as ESCA). Two related formats are provided:
 """
 
 import logging
+from typing import Any
 
 import h5py
 
@@ -77,7 +78,7 @@ class Vamas(Text):
 
     file_ext = "vamas"
 
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd: Any) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
@@ -131,7 +132,7 @@ class NXxps(H5):
             return False
         return _nxxps_definition_matches(filename, expected="NXxps")
 
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd: Any) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NeXus NXxps XPS data"
             dataset.blurb = nice_size(dataset.get_size())
@@ -141,9 +142,12 @@ class NXxps(H5):
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
-            return dataset.peek
+            peek = dataset.peek
         except Exception:
-            return f"NeXus NXxps XPS data ({nice_size(dataset.get_size())})"
+            peek = None
+        if isinstance(peek, str):
+            return peek
+        return f"NeXus NXxps XPS data ({nice_size(dataset.get_size())})"
 
 
 def _read_definition(group: h5py.Group) -> str | None:
@@ -164,7 +168,8 @@ def _read_definition(group: h5py.Group) -> str | None:
         raw = raw[0] if len(raw) == 1 else None
     if raw is None:
         return None
-    return unicodify(raw).strip()
+    definition: str = unicodify(raw)
+    return definition.strip()
 
 
 def _nxxps_definition_matches(filename: str, expected: str) -> bool:
