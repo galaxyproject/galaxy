@@ -22,7 +22,7 @@
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
-                    :validation-scroll-to="validationScrollTo"
+                    :validation-scroll-to="formValidationScrollTo"
                     collapsed-enable-text="Edit"
                     :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
@@ -109,6 +109,10 @@ export default {
         },
         historyStatusKey() {
             return `${this.historyId}_${this.lastUpdateTime}`;
+        },
+        // FormDisplay takes null rather than an empty array.
+        formValidationScrollTo() {
+            return this.validationScrollTo.length === 2 ? this.validationScrollTo : null;
         },
     },
     watch: {
