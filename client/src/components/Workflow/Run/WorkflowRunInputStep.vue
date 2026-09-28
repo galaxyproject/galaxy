@@ -10,7 +10,7 @@
                 <FormDisplay
                     v-if="hasInputs"
                     :inputs="inputs"
-                    :validation-scroll-to="validationScrollTo"
+                    :validation-scroll-to="formValidationScrollTo"
                     @onChange="onChange"
                     @onValidation="onValidation"
                     @load-more="onLoadMore"
@@ -79,6 +79,10 @@ export default {
         },
         hasInputs() {
             return this.inputs.length > 0;
+        },
+        // FormDisplay takes null rather than an empty array.
+        formValidationScrollTo() {
+            return this.validationScrollTo.length === 2 ? this.validationScrollTo : null;
         },
     },
     watch: {
