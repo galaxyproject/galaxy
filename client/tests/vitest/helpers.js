@@ -9,7 +9,6 @@ import VueRouter from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
 import _short from "@/components/plugins/short";
-import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
 import _l from "@/utils/localization";
 
 function testLocalize(text) {
@@ -32,7 +31,6 @@ export function getLocalVue(instrumentLocalization = false) {
     localVue.use(BootstrapVue);
     const l = instrumentLocalization ? testLocalize : _l;
     localVue.use(localizationPlugin, l);
-    localVue.use(vueRxShortcutPlugin);
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("g-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
