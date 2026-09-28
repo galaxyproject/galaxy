@@ -967,6 +967,11 @@ execution:
        # interest, this is not optional when using message
        # queues.
        jobs_directory: /path/to/remote/pulsar/files/staging/
+       # With jobs_directory set Galaxy never learns the remote Pulsar's
+       # version and assumes a current one. Declare it (quoted) so Galaxy's
+       # version checks apply - required for Pulsar older than 0.15.13,
+       # which would otherwise silently drop discovered outputs.
+       #remote_pulsar_version: "0.15.16"
        # Otherwise MQ and Legacy pulsar destinations can be supplied
        # all the same destination parameters as the RESTful client documented
        # above (though url and private_token are ignored when using a MQ).

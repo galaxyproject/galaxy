@@ -1092,6 +1092,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     @staticmethod
     def check_job_config(remote_job_config, check_features=None):
         check_features = check_features or {}
+        if remote_job_config.get("pulsar_version_source") == "client":
+            # Job config built without asking Pulsar, so pulsar_version is just
+            # Galaxy's own client library - the remote is assumed current.
+            log.debug("remote Pulsar version not declared; skipping minimum version check")
+            return
         # 0.6.0 was newest Pulsar version that did not report it's version.
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         needed_version = Version("0.0.0")

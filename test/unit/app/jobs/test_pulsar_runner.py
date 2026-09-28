@@ -9,7 +9,10 @@ from typing import (
 import pytest
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.jobs.runners.pulsar import PulsarJobRunner
+from galaxy.jobs.runners.pulsar import (
+    PulsarJobRunner,
+    UnsupportedPulsarException,
+)
 
 
 def _container(container_id, image_identifier_is_path=True):
@@ -65,6 +68,25 @@ def test_rewrite_container_noop_without_container():
     # Should not raise when there is no resolved container.
     compute_environment = _ComputeEnvironment({IMAGE: REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(None, compute_environment)
+
+
+def test_check_job_config_rejects_old_remote_pulsar():
+    with pytest.raises(UnsupportedPulsarException):
+        PulsarJobRunner.check_job_config({"pulsar_version": "0.6.0"})
+
+
+def test_check_job_config_skips_client_reported_version():
+    # A jobs_directory destination never asked Pulsar, so the version is Galaxy's own client library.
+    job_config = {"pulsar_version": "0.6.0", "pulsar_version_source": "client"}
+    PulsarJobRunner.check_job_config(job_config, check_features={"remote_metadata": True})
+
+
+@pytest.mark.parametrize("pulsar_version_source", ["destination", "container_image", "remote"])
+def test_check_job_config_uses_known_version(pulsar_version_source):
+    job_config = {"pulsar_version": "0.7.5", "pulsar_version_source": pulsar_version_source}
+    PulsarJobRunner.check_job_config(job_config)
+    with pytest.raises(UnsupportedPulsarException):
+        PulsarJobRunner.check_job_config(job_config, check_features={"remote_metadata": True})
 
 
 class RecordingClient:
