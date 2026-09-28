@@ -113,6 +113,16 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"username": ""})
             self._assert_status_code_is(update_response, 400)
 
+            # the username rule applies to a new username
+            update_response = self.__update(user, data={"username": "Carl Linnaeus"})
+            self._assert_status_code_is(update_response, 400)
+
+            # the current username may be sent back alongside other changes
+            data = {"username": payload["username"], "display_name": "Carl Linnaeus"}
+            update_response = self.__update(user, data=data)
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["username"] == payload["username"]
+
             # the field may be left out, but null is not a username
             update_response = self.__update(user, data={"username": None})
             self._assert_status_code_is(update_response, 400)
@@ -204,6 +214,14 @@ class TestUsersApi(ApiTestCase):
         assert create_response.json()["email"] == email
 
         payload = {"email": "not-an-email", "username": "malformed-email", "password": "testpass"}
+        create_response = self._post("users", data=payload, admin=True, json=True)
+        self._assert_status_code_is(create_response, 400)
+        self._assert_error_code_is(create_response, INVALID_PARAMETER)
+
+    @requires_admin
+    @requires_new_user
+    def test_create_username_invalid(self):
+        payload = {"email": "user_for_create_bad_username@bx.psu.edu", "username": "Not Valid", "password": "testpass"}
         create_response = self._post("users", data=payload, admin=True, json=True)
         self._assert_status_code_is(create_response, 400)
         self._assert_error_code_is(create_response, INVALID_PARAMETER)

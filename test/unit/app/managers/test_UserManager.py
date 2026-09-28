@@ -25,6 +25,7 @@ from galaxy.managers import (
     histories,
     users,
 )
+from galaxy.schema.schema import UserUpdatePayload
 from galaxy.security.passwords import check_password
 from galaxy.util import now
 from .base import BaseTestCase
@@ -638,6 +639,23 @@ class TestUserDeserializer(BaseTestCase):
         new_user = self.user_manager.by_id(user.id)
         assert new_user is not None
         assert new_user.username == new_name
+
+    def test_legacy_username_update(self):
+        user = self.user_manager.create(email="legacy@example.com", username="Legacy User")
+
+        self.log("a username from before the current rule can be sent back unchanged with other updates")
+        payload = UserUpdatePayload.model_validate({"username": "Legacy User", "email": "renamed@example.com"})
+        self.deserializer.deserialize(user, payload.model_dump(exclude_unset=True), trans=self.trans)
+        assert user.username == "Legacy User"
+        assert user.email == "renamed@example.com"
+
+        self.log("but the rule applies to any new username")
+        payload = UserUpdatePayload.model_validate({"username": "Other User"})
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(user, payload.model_dump(exclude_unset=True), trans=self.trans)
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_username(self.trans, user, "Other User")
+        assert user.username == "Legacy User"
 
     def test_display_name_validation(self):
         user = self.user_manager.create(**user2_data)

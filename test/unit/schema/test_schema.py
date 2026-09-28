@@ -128,3 +128,20 @@ def test_user_email_fields(model, field, other_fields):
 
     with pytest.raises(ValidationError):
         model.model_validate({field: "a" * 250 + "@b.org", **other_fields})
+
+
+def test_user_username_fields():
+    legacy = "Legacy User"
+    assert UserUpdatePayload.model_validate({"username": legacy}).username == legacy
+
+    creation = {"email": "ada@localhost", "password": "testpass"}
+    assert UserCreationPayload.model_validate({"username": "ada", **creation}).username == "ada"
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreationPayload.model_validate({"username": legacy, **creation})
+    exception = validation_error_to_message_exception(exc_info.value)
+    assert isinstance(exception, RequestParameterInvalidException)
+    assert exception.err_msg == "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
+
+    for model, fields in ((UserUpdatePayload, {}), (UserCreationPayload, creation)):
+        with pytest.raises(ValidationError):
+            model.model_validate({"username": "a" * 256, **fields})

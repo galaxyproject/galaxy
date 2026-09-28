@@ -78,8 +78,10 @@ from galaxy.util.user_input import (
     canonicalize_email,
     DISPLAY_NAME_MAX_LEN,
     EMAIL_MAX_LEN,
+    PUBLICNAME_MAX_LEN,
     validate_display_name_str,
     validate_email_str,
+    validate_publicname_str,
 )
 
 MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
@@ -316,6 +318,25 @@ DisplayName = Annotated[
     AfterValidator(validation_message_wrapper(_check_display_name)),
 ]
 
+
+def _check_username(username: str) -> str:
+    if message := validate_publicname_str(username):
+        raise RequestParameterInvalidException(message)
+    return username
+
+
+# A username for a new account, checked for format only. Whether it is taken
+# depends on the database, so the managers check that.
+NewUsername = Annotated[
+    Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)],
+    AfterValidator(validation_message_wrapper(_check_username)),
+]
+
+# A username as an update may carry it. Accounts created under older rules can
+# hold names the format check would refuse, and must be able to send them back
+# unchanged, so the managers check the format only when the name changes.
+Username = Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)]
+
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -431,7 +452,16 @@ class UserUpdatePayload(Model):
         OmittableNotNull[bool],
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
-    username: Annotated[OmittableNotNull[str], Field(title="Username", description="The name of the user.")] = None
+    username: Annotated[
+        OmittableNotNull[Username],
+        Field(
+            title="Username",
+            description=(
+                "The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; "
+                "the current name is accepted as stored."
+            ),
+        ),
+    ] = None
     display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
@@ -480,7 +510,7 @@ class UserExtraPreferencesUpdated(Model):
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
     email: Annotated[EmailAddress, UserEmailField]
-    username: str = UserNameField
+    username: Annotated[NewUsername, UserNameField]
 
 
 class RemoteUserCreationPayload(Model):

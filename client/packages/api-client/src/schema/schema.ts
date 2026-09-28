@@ -27455,7 +27455,7 @@ export interface components {
             preferred_object_store_id?: string | null;
             /**
              * Username
-             * @description The name of the user.
+             * @description The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; the current name is accepted as stored.
              */
             username?: string;
         };
