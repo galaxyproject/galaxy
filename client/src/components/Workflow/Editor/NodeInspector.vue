@@ -3,7 +3,7 @@ import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
+import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue-next";
 import { computed } from "vue";
 
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";

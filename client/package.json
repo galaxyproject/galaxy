@@ -123,7 +123,7 @@
     "linkifyjs": "^4.1.1",
     "lodash": "^4.17.21",
     "lodash.isequal": "^4.5.0",
-    "lucide-vue": "^0.344.0",
+    "lucide-vue-next": "^0.344.0",
     "markdown-it": "^14.1.1",
     "markdown-it-regexp": "^0.4.0",
     "mitt": "^3.0.1",
