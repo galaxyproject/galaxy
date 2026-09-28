@@ -3,7 +3,7 @@ import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import { usePanels } from "@/composables/usePanels";
 import { useChatStore } from "@/stores/chatStore";
@@ -24,7 +24,6 @@ const { isRightPanelOpen, isBottomPanelOpen, activeChatId } = storeToRefs(chatSt
 const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
 
 const route = useRoute();
-const router = useRouter();
 
 watch(
     () => route.path,
@@ -113,9 +112,9 @@ onUnmounted(() => {
         </FlexPanel>
         <FlexPanel
             v-if="showPanels && isRightPanelOpen"
+            v-model:reactive-width="chatPanelWidth"
             panel-id="chat-panel"
             side="right"
-            v-model:reactive-width="chatPanelWidth"
             @close="chatStore.hideChat()">
             <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>

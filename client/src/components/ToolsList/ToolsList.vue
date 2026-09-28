@@ -2,7 +2,7 @@
 import { faBars, faGripVertical, faSitemap, faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
@@ -371,17 +371,17 @@ function onToggleView(newView: ListViewMode) {
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
                 <FilterMenu
                     ref="toolFilterMenu"
+                    v-model:filter-text="filterText"
+                    v-model:show-advanced="showAdvanced"
                     class="w-100"
                     name="Tools"
                     placeholder="search tools"
                     :debounce-delay="400"
-                    v-model:filter-text="filterText"
                     :filter-class="ToolFilters"
                     :autocomplete-values="tagAutocompleteValues"
                     autocomplete-prefix="tag:"
                     has-help
-                    :loading="loading"
-                    v-model:show-advanced="showAdvanced">
+                    :loading="loading">
                     <template v-slot:menu-help-text>
                         <div>
                             <p>

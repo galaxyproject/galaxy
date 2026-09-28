@@ -9,7 +9,7 @@ const baseRules = {
 
     "vue/valid-v-slot": "error",
     "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
-    
+
     // Vue 3 specific rules
     "vue/no-deprecated-dollar-listeners-api": "error",
     "vue/no-deprecated-dollar-scopedslots-api": "error",
@@ -191,6 +191,14 @@ module.exports = {
                 project: true,
             },
             plugins: [...basePlugins, "@typescript-eslint"],
+        },
+        {
+            // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
+            // components keep `.native` for vue-router 3's RouterLink roots.
+            files: ["packages/ui/src/**/*.vue"],
+            rules: {
+                "vue/no-deprecated-v-on-native-modifier": "off",
+            },
         },
     ],
 };

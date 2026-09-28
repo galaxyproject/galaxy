@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-// @ts-ignore missing types
 
+// @ts-ignore missing types
 import type { CardBadge } from "@/components/Common/GCard.types";
 import { useUploadStagingCounts } from "@/composables/upload/useUploadStaging";
 

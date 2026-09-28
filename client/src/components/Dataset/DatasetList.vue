@@ -430,9 +430,9 @@ onMounted(() => {
         </div>
 
         <SelectorModal
+            v-model:show-modal="showBulkCopyModal"
             :histories="histories"
             hide-deleted
-            v-model:show-modal="showBulkCopyModal"
             title="Copy selected datasets to history"
             selection-instruction="Click a history to copy selected datasets"
             @selectHistory="onBulkCopy" />

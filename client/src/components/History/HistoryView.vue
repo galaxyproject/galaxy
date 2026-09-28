@@ -38,7 +38,7 @@
             @view-collection="onViewCollection" />
         <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
-        <CopyModal :history="history" v-model:show-modal="showCopyModal" @ok="copyOkay" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 

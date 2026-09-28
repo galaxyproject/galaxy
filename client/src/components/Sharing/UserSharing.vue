@@ -227,9 +227,9 @@ defineExpose({
         </div>
 
         <GModal
+            v-model:show="showPermissionsModal"
             class="user-sharing-modal"
             confirm
-            v-model:show="showPermissionsModal"
             size="medium"
             title="Permissions Change Required"
             fixed-height

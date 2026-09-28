@@ -145,8 +145,8 @@ function onSelectCredentials(): void {
 
 <template>
     <GModal
-        confirm
         v-model:show="localShowToggle"
+        confirm
         size="small"
         title="Manage & Select Credentials Groups for This Workflow"
         :ok-text="okTitle"

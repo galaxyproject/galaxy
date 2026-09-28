@@ -1317,11 +1317,11 @@ initializeWorkflowEditor();
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
 
         <RefactorConfirmationModal
+            v-model:loading="loadingWorkflow"
             :workflow-id="id"
             :version="version ?? undefined"
             :versions="versions"
             :refactor-actions="refactorActions"
-            v-model:loading="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
             @onRefactor="onRefactor"
             @onShow="hideErrorModal" />
@@ -1336,9 +1336,9 @@ initializeWorkflowEditor();
         </GModal>
 
         <SaveChangesModal
+            v-model:show-modal="showSaveChangesModal"
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            v-model:show-modal="showSaveChangesModal"
             @on-proceed="onNavigate" />
 
         <GModal
@@ -1350,7 +1350,7 @@ initializeWorkflowEditor();
             ok-text="Save"
             @ok="doSaveAs"
             @cancel="resetSaveAs">
-            <GForm @submit.native.prevent="doSaveAs">
+            <GForm @submit.prevent="doSaveAs">
                 <GFormLabel title="Name">
                     <GFormInput v-model="saveAsName" />
                 </GFormLabel>
@@ -1409,8 +1409,9 @@ initializeWorkflowEditor();
                 <WorkflowAttributes
                     v-else-if="isActive('workflow-editor-attributes')"
                     :id="id"
-                    :tags="tags"
                     v-model:highlight="highlightAttribute"
+                    v-model:readme-active="readmeActive"
+                    :tags="tags"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -1421,7 +1422,6 @@ initializeWorkflowEditor();
                     :doi="doi || undefined"
                     :logo-url="logoUrl"
                     :help="help"
-                    v-model:readme-active="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"

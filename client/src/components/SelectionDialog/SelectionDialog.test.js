@@ -1,6 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { BTable } from "bootstrap-vue";
 import { beforeEach, describe, expect, it } from "vitest";
 import { nextTick } from "vue";
 

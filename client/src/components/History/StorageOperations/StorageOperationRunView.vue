@@ -252,14 +252,14 @@ onBeforeUnmount(() => {
                 <Heading h3 size="sm">{{ localize("Failed or Skipped Items") }}</Heading>
 
                 <FilterMenu
+                    v-model:filter-text="filterText"
+                    v-model:show-advanced="showAdvanced"
                     class="run-item-filter mb-2"
                     name="Storage Run Items"
                     view="compact"
                     placeholder="search failed/skipped items"
                     :filter-class="runItemFilterClass"
-                    v-model:filter-text="filterText"
-                    :loading="isLoadingItems"
-                    v-model:show-advanced="showAdvanced" />
+                    :loading="isLoadingItems" />
 
                 <LoadingSpan v-if="isLoadingItems" class="mb-2" :message="localize('Loading failed/skipped items')" />
 

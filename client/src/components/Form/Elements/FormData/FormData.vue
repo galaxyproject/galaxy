@@ -1225,9 +1225,9 @@ const noOptionsWarningMessage = computed(() => {
         <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
             <FormDataExtensions
                 v-if="restrictsExtensions"
+                v-model:formats-visible="formatsVisible"
                 :extensions="props.extensions"
-                :formats-button-id="formatsButtonId"
-                v-model:formats-visible="formatsVisible" />
+                :formats-button-id="formatsButtonId" />
 
             <FormSelectionPreference
                 v-if="showSelectionPreference"

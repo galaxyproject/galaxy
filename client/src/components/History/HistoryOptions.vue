@@ -271,7 +271,7 @@ watch(
             </GDropdownItem>
         </GDropdown>
 
-        <CopyModal :history="history" v-model:show-modal="showCopyModal" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" />
 
         <GModal
             v-model:show="showDeleteModal"

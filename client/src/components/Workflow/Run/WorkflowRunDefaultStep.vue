@@ -1,6 +1,6 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" v-model:expanded="expanded">
+        <FormCard v-model:expanded="expanded" :title="model.fixed_title" :icon="icon" :collapsible="true">
             <template v-slot:title>
                 <span v-if="credentialInfo?.toolId" v-g-tooltip.hover title="Uses credentials">
                     <FontAwesomeIcon :icon="faKey" fixed-width />
@@ -121,7 +121,7 @@ export default {
         // dropdown search box coalesces into a single backend round trip.
         this.onSearchChange = debounce(this.onSearchChange, 400);
     },
-    beforeDestroy() {
+    beforeUnmount() {
         this.onSearchChange.cancel?.();
     },
     methods: {

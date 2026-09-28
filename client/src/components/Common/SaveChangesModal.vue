@@ -11,8 +11,7 @@
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, onUnmounted, ref } from "vue";
-import { isNavigationFailure } from "vue-router";
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
+import { isNavigationFailure, onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
 
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";

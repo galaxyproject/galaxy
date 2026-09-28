@@ -239,14 +239,14 @@ onMounted(() => load());
 
             <FilterMenu
                 id="curated-workflow-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="curated workflows"
                 :filter-class="workflowFilters"
-                v-model:filter-text="filterText"
                 :loading="loading || overlay"
                 has-help
                 view="compact"
-                :placeholder="localize('Search curated workflows by query or use the advanced filtering options')"
-                v-model:show-advanced="showAdvanced">
+                :placeholder="localize('Search curated workflows by query or use the advanced filtering options')">
                 <template v-slot:menu-help-text>
                     <div v-sanitize-html="curatedHelpHtml(isIwcCatalog)"></div>
                 </template>
