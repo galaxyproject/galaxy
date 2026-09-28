@@ -1,8 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { computed, type Ref, ref } from "vue";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import type { JobBaseModel } from "@/api/jobs";
 import { statePlaceholders } from "@/composables/useInvocationGraph";
 
@@ -12,6 +14,28 @@ import TEST_JOBS_JSON from "./test/json/jobs.json";
 import JobStep from "./JobStep.vue";
 
 const TEST_INVOCATION_ID = "test-invocation-id";
+
+const mockedJobsById = ref<Record<string, JobBaseModel>>({});
+
+function mockJobs(jobs: JobBaseModel[]) {
+    mockedJobsById.value = Object.fromEntries(jobs.map((job) => [job.id, job]));
+}
+
+// Since `JobState` fetches its job via `useJobDetails`, we need to mock that composable to return
+// jobs reactively, as the table changes values as the states change.
+vi.mock("@/composables/jobDetails", () => ({
+    useJobDetails: (jobId: Ref<string | undefined>) => ({
+        job: computed(() => (jobId.value ? (mockedJobsById.value[jobId.value] ?? null) : null)),
+        error: computed(() => null),
+        loading: computed(() => false),
+    }),
+}));
+
+const { server, http } = useServerMock();
+
+beforeEach(() => {
+    server.use(http.get("/api/invocations/{invocation_id}/metrics", ({ response }) => response(200).json([])));
+});
 
 const SELECTORS = {
     JOB_STATE_BUTTON_NAV: "nav",
@@ -23,6 +47,8 @@ const SELECTORS = {
 
 describe("Job Step", () => {
     it("shows jobs grouped by state in tables when multiple jobs", async () => {
+        mockJobs(TEST_JOBS_JSON as JobBaseModel[]);
+
         const wrapper = mount(JobStep as object, {
             propsData: {
                 jobs: TEST_JOBS_JSON,
@@ -72,6 +98,8 @@ describe("Job Step", () => {
     });
 
     it("reacts to job states changing when multiple jobs", async () => {
+        mockJobs(TEST_JOBS_JSON as JobBaseModel[]);
+
         const wrapper = mount(JobStep as object, {
             propsData: {
                 jobs: TEST_JOBS_JSON,
@@ -101,7 +129,8 @@ describe("Job Step", () => {
         expect(buttons.at(1).text()).toBe("1 job running");
 
         // we trigger the state change by updating the first job's state from 'new' to 'running'
-        const updatedJob = { ...TEST_JOBS_JSON[0], state: "running" };
+        const updatedJob = { ...TEST_JOBS_JSON[0], state: "running" } as JobBaseModel;
+        mockJobs([updatedJob, ...(TEST_JOBS_JSON.slice(1) as JobBaseModel[])]);
         await wrapper.setProps({ jobs: [updatedJob, ...TEST_JOBS_JSON.slice(1)] });
         await flushPromises();
 
