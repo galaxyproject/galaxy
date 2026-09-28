@@ -55,7 +55,9 @@ class JobManager:
     def _message_callback(self, job):
         return JobHandlerMessage(task="setup", job_id=job.id)
 
-    def enqueue(self, job: "Job", tool: Union["Tool", None] = None, flush: bool = True) -> str:
+    def enqueue(
+        self, job: "Job", tool: Union["Tool", None] = None, flush: bool = True, handler: str | None = None
+    ) -> str:
         """Queue a job for execution.
 
         Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
@@ -70,10 +72,9 @@ class JobManager:
         :raises ToolExecutionError: if a handler was unable to be assigned.
         :returns: str or None -- Handler ID, tag, or pool assigned to the job.
         """
-        tool_id = None
-        configured_handler = None
-        if tool:
-            tool_id = tool.id
+        tool_id = tool.id if tool else None
+        configured_handler = handler
+        if tool and configured_handler is None:
             configured_handler = tool.get_configured_job_handler()
             if configured_handler is not None:
                 log.debug(
