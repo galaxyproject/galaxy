@@ -18,7 +18,7 @@ Vue.use(BootstrapVue);
 // Custom tooltip directive
 Vue.directive("g-tooltip", vGTooltip);
 
-// localization filters and directives
+// localization directive and mixin
 Vue.use(localizationPlugin);
 
 // rxjs utilities
