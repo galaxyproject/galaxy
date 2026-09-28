@@ -82,4 +82,21 @@ describe("useFloatingPosition", () => {
 
         expect(floatingUi.stopTracking).toHaveBeenCalledTimes(1);
     });
+
+    it("settles whenPositioned only once the pending position is applied", async () => {
+        let resolve: (value: unknown) => void = () => {};
+        floatingUi.pending = new Promise((r) => (resolve = r));
+        const { active, position } = setup(false);
+        active.value = true;
+        await nextTick();
+
+        const positioned = vi.fn();
+        position.whenPositioned().then(positioned);
+        await new Promise((settled) => setTimeout(settled));
+        expect(positioned).not.toHaveBeenCalled();
+
+        resolve(floatingUi.position);
+        await vi.waitFor(() => expect(positioned).toHaveBeenCalled());
+        expect(position.x.value).toBe(12);
+    });
 });

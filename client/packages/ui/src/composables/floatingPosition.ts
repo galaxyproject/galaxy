@@ -26,8 +26,19 @@ export function useFloatingPosition(
     let cleanup: (() => void) | null = null;
     // Bumped by stop(), so a computePosition still in flight when tracking stops is discarded.
     let generation = 0;
+    let latestUpdate: Promise<void> = Promise.resolve();
 
-    async function update() {
+    function update() {
+        latestUpdate = computeAndApply();
+        return latestUpdate;
+    }
+
+    /** Settles once the latest position update is applied, or discarded because tracking stopped. */
+    function whenPositioned() {
+        return latestUpdate;
+    }
+
+    async function computeAndApply() {
         const referenceElement = toValue(reference);
         const floatingElement = toValue(floating);
         if (!referenceElement || !floatingElement) {
@@ -65,5 +76,5 @@ export function useFloatingPosition(
 
     onScopeDispose(stop);
 
-    return { x, y, placement, middlewareData, update };
+    return { x, y, placement, middlewareData, update, whenPositioned };
 }

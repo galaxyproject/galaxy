@@ -7,9 +7,10 @@
  * Keyboard support follows the WAI-ARIA APG menu button pattern.
  */
 
-import { autoUpdate, computePosition, flip, offset, type Placement, shift } from "@floating-ui/dom";
+import { flip, offset, type Placement, shift } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from "vue";
 
+import { useFloatingPosition } from "../composables/floatingPosition";
 import { useUid } from "../composables/uid";
 import { dropdownHideKey } from "./dropdownContext";
 
@@ -75,9 +76,6 @@ const toggleEl = ref<HTMLButtonElement>();
 const menuEl = ref<HTMLDivElement>();
 const hasBeenOpened = ref(false);
 let unmounted = false;
-let stopAutoUpdate: (() => void) | undefined;
-/** Settles once the opened menu has its first position */
-let menuPositioned: Promise<void> = Promise.resolve();
 
 const uid = useUid("g-dropdown-");
 const splitButtonId = computed(() => `${uid.value}-button`);
@@ -121,12 +119,11 @@ function show() {
     isOpen.value = true;
     hasBeenOpened.value = true;
     emit("show");
-    menuPositioned = nextTick().then(() => {
+    nextTick(() => {
         // An unmount before this tick has already removed the listeners
         if (isOpen.value && !unmounted) {
             document.addEventListener("click", onOutsideEvent, true);
             document.addEventListener("focusin", onOutsideEvent, true);
-            return startPositioning();
         }
     });
 }
@@ -136,39 +133,20 @@ function getMenuReference() {
     return props.split || (props.dropup && props.right) ? dropdownEl.value : toggleEl.value;
 }
 
-async function positionMenu() {
-    const reference = getMenuReference();
-    const menu = menuEl.value;
-    if (!reference || !menu) {
-        return;
-    }
+const { x, y, whenPositioned } = useFloatingPosition(getMenuReference, menuEl, isOpen, () => ({
+    placement: menuPlacement.value,
     // Flip and shift keep the menu inside its scroll container and the viewport, with Popper's 5px padding
-    const { x, y } = await computePosition(reference, menu, {
-        placement: menuPlacement.value,
-        middleware: [offset(2), flip({ padding: 5 }), shift({ padding: 5 })],
-    });
-    // Replaces Bootstrap's static offsets and its 2px spacer margin, which offset() stands in for
-    Object.assign(menu.style, { top: `${y}px`, left: `${x}px`, right: "auto", bottom: "auto", margin: "0" });
-}
+    middleware: [offset(2), flip({ padding: 5 }), shift({ padding: 5 })],
+}));
 
-function startPositioning() {
-    // show(), hide() and show() in one tick start twice
-    stopPositioning();
-    const reference = getMenuReference();
-    const menu = menuEl.value;
-    if (!reference || !menu) {
-        return;
-    }
-    // Resolves on the first update, which autoUpdate runs right away
-    return new Promise<void>((resolve) => {
-        stopAutoUpdate = autoUpdate(reference, menu, () => positionMenu().then(resolve));
-    });
-}
-
-function stopPositioning() {
-    stopAutoUpdate?.();
-    stopAutoUpdate = undefined;
-}
+// Replaces Bootstrap's static offsets and its 2px spacer margin, which offset() stands in for
+const menuStyle = computed(() => ({
+    top: `${y.value}px`,
+    left: `${x.value}px`,
+    right: "auto",
+    bottom: "auto",
+    margin: "0",
+}));
 
 function removeOutsideListeners() {
     document.removeEventListener("click", onOutsideEvent, true);
@@ -184,7 +162,6 @@ function hide(restoreFocus = true) {
     isOpen.value = false;
     emit("hide");
     removeOutsideListeners();
-    stopPositioning();
     if (restoreFocus && focusInMenu) {
         toggleEl.value?.focus();
     }
@@ -216,8 +193,10 @@ function focusMenuItem(index: number) {
 
 async function openAndFocusMenuItem(index: number) {
     show();
-    // Focus scrolls to the item, so it waits for the menu to be placed and possibly flipped
-    await menuPositioned;
+    // Focus scrolls to the item, so it waits for the menu to be placed and possibly flipped;
+    // the tick lets the post-flush watcher start tracking the newly opened menu
+    await nextTick();
+    await whenPositioned();
     if (isOpen.value) {
         focusMenuItem(index);
     }
@@ -339,7 +318,6 @@ watch(
 onBeforeUnmount(() => {
     unmounted = true;
     removeOutsideListeners();
-    stopPositioning();
 });
 
 defineExpose({
@@ -392,6 +370,7 @@ defineExpose({
             tabindex="-1"
             role="menu"
             :class="menuClasses"
+            :style="menuStyle"
             :aria-labelledby="split ? splitButtonId : toggleId"
             @keydown="onKeydown">
             <slot />

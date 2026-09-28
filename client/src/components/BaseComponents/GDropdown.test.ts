@@ -235,23 +235,23 @@ describe("GDropdown.vue", () => {
             expect(focusedText()).toBe("One");
         });
 
-        it("stops tracking the first open when shown, hidden and shown again in one tick", async () => {
-            const [stopFirst, stopSecond] = [vi.fn(), vi.fn()];
-            vi.mocked(autoUpdate)
-                .mockImplementationOnce(() => stopFirst)
-                .mockImplementationOnce(() => stopSecond);
+        it("tracks once when shown, hidden and shown again in one tick", async () => {
             wrapper = mount(GDropdown as object, { localVue, propsData: { text: "Menu" }, attachTo: document.body });
             const dropdown = wrapper.vm as unknown as { show: () => void; hide: () => void };
+            const stopTracking = vi.fn();
+            vi.mocked(autoUpdate)
+                .mockClear()
+                .mockImplementationOnce(() => stopTracking);
 
             dropdown.show();
             dropdown.hide();
             dropdown.show();
             await flushPromises();
-            expect(stopFirst).toHaveBeenCalledOnce();
-            expect(stopSecond).not.toHaveBeenCalled();
+            expect(autoUpdate).toHaveBeenCalledOnce();
 
             dropdown.hide();
-            expect(stopSecond).toHaveBeenCalledOnce();
+            await flushPromises();
+            expect(stopTracking).toHaveBeenCalledOnce();
         });
 
         it("stops tracking when unmounted while open", async () => {
