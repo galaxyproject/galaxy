@@ -48,6 +48,8 @@ async function mountWorkflowList() {
 
     const userStore = useUserStore();
     userStore.currentUser = FAKE_USER;
+    // createTestingPinia stubs actions to return undefined by default; WorkflowList awaits this one.
+    vi.mocked(userStore.loadUser).mockResolvedValue(undefined);
 
     await flushPromises();
 
@@ -88,6 +90,31 @@ describe("WorkflowList", () => {
 
         const nonDeletedWorkflows = FAKE_WORKFLOWS.filter((w) => !w.deleted);
         expect(wrapper.findAll(".workflow-card")).toHaveLength(nonDeletedWorkflows.length);
+    });
+
+    it("render own workflows when the user loads after the workflow list", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 3 });
+
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+        setActivePinia(pinia);
+        const userStore = useUserStore();
+        let resolveUser!: () => void;
+        vi.mocked(userStore.loadUser).mockReturnValue(
+            new Promise<void>((resolve) => {
+                resolveUser = resolve;
+            }),
+        );
+
+        const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
+        await flushPromises();
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
+
+        userStore.currentUser = FAKE_USER;
+        resolveUser();
+        await flushPromises();
+
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
     });
 
     it("toggle show deleted workflows", async () => {
