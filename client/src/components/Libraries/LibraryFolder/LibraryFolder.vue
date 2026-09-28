@@ -315,9 +315,8 @@ export default {
         LoadingSpan,
         UtcDate,
     },
-    beforeRouteUpdate(to, from, next) {
+    beforeRouteUpdate(to) {
         this.getFolder(to.params.folder_id, to.params.page);
-        next();
     },
     props: {
         folder_id: {
