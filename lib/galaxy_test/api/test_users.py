@@ -5,6 +5,7 @@ from urllib.parse import (
 
 import requests
 
+from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.api_util import baseauth_headers
@@ -29,6 +30,7 @@ TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
 TEST_USER_EMAIL_ROLES_AND_GROUPS = "user_for_roles_and_groups_test@bx.psu.edu"
+INVALID_PARAMETER = error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
 
 
 class TestUsersApi(ApiTestCase):
@@ -111,6 +113,17 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"username": ""})
             self._assert_status_code_is(update_response, 400)
 
+            # the field may be left out, but null is not a username
+            update_response = self.__update(user, data={"username": None})
+            self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
+
+            # fields the route does not update are refused, not dropped
+            for data in ({"is_admin": True}, {"password": "new-password"}, {"usrname": "linnaeus"}):
+                update_response = self.__update(user, data=data)
+                self._assert_status_code_is(update_response, 400)
+                self._assert_error_code_is(update_response, INVALID_PARAMETER)
+
             # not them
             update_response = self.__update(not_the_user, data=payload)
             self._assert_status_code_is(update_response, 400)
@@ -142,10 +155,20 @@ class TestUsersApi(ApiTestCase):
             # text-direction characters would let the name render as other text
             update_response = self.__update(user, data={"display_name": "Carl\u202evon Linné"})
             self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
             # over the column length
             update_response = self.__update(user, data={"display_name": "N" * 256})
             self._assert_status_code_is(update_response, 400)
+
+            # the length limit applies once surrounding whitespace is stripped
+            update_response = self.__update(user, data={"display_name": " " + "N" * 255 + " "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "N" * 255
+
+            update_response = self.__update(user, data={"display_name": " " * 256})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] is None
 
     @requires_admin
     @requires_new_user
@@ -166,6 +189,25 @@ class TestUsersApi(ApiTestCase):
             self._assert_status_code_is(update_response, 200)
             assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATED
 
+            # surrounding whitespace is stripped rather than rejected
+            update_response = self.__update(user, data={"email": f"  {TEST_USER_EMAIL_UPDATE}  "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATE
+
+    @requires_admin
+    @requires_new_user
+    def test_create_email(self):
+        email = "user_for_create_padded_email_test@bx.psu.edu"
+        payload = {"email": f"  {email}  ", "username": "padded-email", "password": "testpass"}
+        create_response = self._post("users", data=payload, admin=True, json=True)
+        self._assert_status_code_is(create_response, 200)
+        assert create_response.json()["email"] == email
+
+        payload = {"email": "not-an-email", "username": "malformed-email", "password": "testpass"}
+        create_response = self._post("users", data=payload, admin=True, json=True)
+        self._assert_status_code_is(create_response, 400)
+        self._assert_error_code_is(create_response, INVALID_PARAMETER)
+
     @requires_new_user
     def test_update_email_invalid(self):
         user = self._setup_user(TEST_USER_EMAIL)
@@ -179,9 +221,10 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"email": other_user["email"]})
             self._assert_status_code_is(update_response, 400)
 
-            # null passes the schema because the field is optional
+            # null is not an email address
             update_response = self.__update(user, data={"email": None})
             self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
     @requires_admin
     @requires_new_user
@@ -204,6 +247,7 @@ class TestUsersApi(ApiTestCase):
         # null is not a bool; reject it before it reaches the NOT NULL column
         update_response = self._put(update_url, data={"active": None}, admin=True, json=True)
         self._assert_status_code_is(update_response, 400)
+        self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
     @requires_new_user
     def test_extra_preferences_inputs(self):
@@ -313,7 +357,8 @@ class TestUsersApi(ApiTestCase):
         response = self._get(url).json()
         assert response["username"] == "newname"
         assert response["email"] == "new@email.email"
-        payload = {"username": user["username"], "email": TEST_USER_EMAIL}
+        # surrounding whitespace is stripped here too, not only on PUT /api/users/{id}
+        payload = {"username": user["username"], "email": f"  {TEST_USER_EMAIL}  "}
         self._put(url, data=payload, json=True)
         response = self._get(url).json()
         assert response["username"] == user["username"]

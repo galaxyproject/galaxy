@@ -377,6 +377,11 @@ class TestUserManager(BaseTestCase):
         assert refreshed.activation_token is not None
         assert refreshed.active is False
 
+    def test_update_email_strips_whitespace(self):
+        user = self.user_manager.create(email="original@example.com", username="updater")
+        self.user_manager.update_email(self.trans, user, "  updated@example.com  ", send_activation_email=False)
+        assert user.email == "updated@example.com"
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
@@ -431,6 +436,10 @@ class TestUserManager(BaseTestCase):
         self.log("surrounding whitespace should be stripped rather than rejected")
         self.user_manager.update_display_name(user, "  Ada Lovelace  ")
         assert_user_display_name_is(user, "Ada Lovelace")
+
+        self.log("composed and decomposed spellings should be stored alike")
+        self.user_manager.update_display_name(user, "Zoe\u0308 Mu\u0308ller")
+        assert_user_display_name_is(user, "Zo\u00eb M\u00fcller")
 
         self.log("an empty display name should clear the field")
         self.user_manager.update_display_name(user, "")

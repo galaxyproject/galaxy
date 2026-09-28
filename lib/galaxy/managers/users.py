@@ -58,8 +58,6 @@ from galaxy.model.db.user import (
 )
 from galaxy.security.validate_user_input import (
     UserValidationContext,
-    VALID_EMAIL_RE,
-    validate_display_name_str,
     validate_email,
     validate_password,
     validate_preferred_object_store_id,
@@ -71,6 +69,12 @@ from galaxy.structured_app import (
 )
 from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    canonicalize_email,
+    VALID_EMAIL_RE,
+    validate_display_name_str,
+)
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -204,6 +208,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's email address, keeping the private role in sync and honoring activation settings.
         Raises RequestParameterInvalidException on validation errors.
         """
+        new_email = canonicalize_email(new_email)
         if message := validate_email(trans, new_email, user):
             raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:
@@ -245,10 +250,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's display name after validating it. Raises RequestParameterInvalidException on validation errors.
 
         Unlike the username this needs no transaction: display names are not unique, so there is nothing to look up.
-        Surrounding whitespace is stripped rather than rejected, and a name that is empty once stripped clears the
-        field - an invisible difference is a poor reason to fail a save.
+        The name is stored in the form ``canonicalize_display_name`` returns, so a blank name clears the field.
         """
-        normalized = (new_display_name or "").strip() or None
+        normalized = canonicalize_display_name(new_display_name)
         if message := validate_display_name_str(normalized):
             raise exceptions.RequestParameterInvalidException(message)
         if user.display_name == normalized:
