@@ -384,12 +384,14 @@ class TestUserManager(BaseTestCase):
 
     def test_update_email_is_refused_for_non_admins_when_the_identity_is_external(self):
         user = self.user_manager.create(**user2_data)
+        taken = self.user_manager.create(**user3_data)
         self.trans.set_user(user)
         self.mock_trans.user_is_admin = False
         for option in ("use_remote_user", "disable_local_accounts"):
             setattr(self.app.config, option, True)
-            with pytest.raises(exceptions.ConfigDoesNotAllowException):
-                self.user_manager.update_email(self.trans, user, "changed@example.com")
+            for new_email in ("changed@example.com", taken.email):
+                with pytest.raises(exceptions.ConfigDoesNotAllowException):
+                    self.user_manager.update_email(self.trans, user, new_email)
             setattr(self.app.config, option, False)
         assert user.email == user2_data["email"]
 

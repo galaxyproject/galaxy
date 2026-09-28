@@ -213,19 +213,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         provider (``asserted_by_identity_provider``) rather than from the user.
         """
         new_email = canonicalize_email(new_email)
-        if message := validate_email(trans, new_email, user):
-            raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:
             return
-        if not asserted_by_identity_provider and not trans.user_is_admin:
-            if trans.app.config.use_remote_user or trans.app.config.disable_local_accounts:
-                # Remote user and OIDC logins resolve accounts by email, so a self-chosen address would claim
-                # the account that someone else's first login lands in.
-                raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
-            if self._is_admin_email(new_email):
-                # admin_users grants administrator rights by address alone. The message is the one for a
-                # taken address, so that it does not reveal which addresses belong to administrators.
-                raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
+        user_chosen = not asserted_by_identity_provider and not trans.user_is_admin
+        if user_chosen and (trans.app.config.use_remote_user or trans.app.config.disable_local_accounts):
+            # Remote user and OIDC logins resolve accounts by email, so a self-chosen address would claim
+            # the account that someone else's first login lands in. This is refused before validation, so
+            # that the error does not reveal whether the address is registered.
+            raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
+        if message := validate_email(trans, new_email, user):
+            raise exceptions.RequestParameterInvalidException(message)
+        if user_chosen and self._is_admin_email(new_email):
+            # admin_users grants administrator rights by address alone. The message is the one for a
+            # taken address, so that it does not reveal which addresses belong to administrators.
+            raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
         private_role = trans.app.security_agent.get_private_user_role(user)
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
