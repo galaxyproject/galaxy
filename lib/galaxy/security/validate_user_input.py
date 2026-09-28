@@ -21,7 +21,7 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
-from galaxy.util.user_input import (  # noqa: F401 - re-exported, these rules lived here before
+from galaxy.util.user_input import (
     DISPLAY_NAME_MAX_LEN,
     EMAIL_MAX_LEN,
     FILL_CHAR,
@@ -229,3 +229,30 @@ class EmailAddressNormalizer:
                 email_localpart = email_localpart[: email_localpart.index(delim)]
 
         return email_localpart
+
+
+__all__ = (
+    "DISPLAY_NAME_MAX_LEN",
+    "EMAIL_MAX_LEN",
+    "EmailAddressNormalizer",
+    "extract_domain",
+    "FILL_CHAR",
+    "is_email_banned",
+    "is_valid_email_str",
+    "PASSWORD_MIN_LEN",
+    "PUBLICNAME_MAX_LEN",
+    "transform_publicname",
+    "UserValidationContext",
+    "VALID_EMAIL_RE",
+    "VALID_PUBLICNAME_RE",
+    "VALID_PUBLICNAME_SUB",
+    "validate_display_name_str",
+    "validate_email",
+    "validate_email_domain_name",
+    "validate_email_str",
+    "validate_password",
+    "validate_password_str",
+    "validate_preferred_object_store_id",
+    "validate_publicname",
+    "validate_publicname_str",
+)
