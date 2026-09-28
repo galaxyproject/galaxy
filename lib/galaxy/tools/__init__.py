@@ -3490,6 +3490,15 @@ class UserDefinedTool(Tool):
             tool_dict["representation_errors"] = list(self.dropped_representation_fields)
         return tool_dict
 
+    def to_json(self, *args, **kwargs):
+        tool_model = super().to_json(*args, **kwargs)
+        if self.dropped_representation_fields and not tool_model["message"]:
+            tool_model["message"] = (
+                "Parts of this tool's stored definition are not supported by this Galaxy version and were ignored: "
+                f"{'; '.join(self.dropped_representation_fields)}. Edit the tool and save it again to remove them."
+            )
+        return tool_model
+
 
 class ExpressionTool(Tool):
     requires_js_runtime = True
