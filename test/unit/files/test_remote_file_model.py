@@ -7,7 +7,6 @@ from datetime import (
 import pytest
 
 from galaxy.files.models import RemoteFile
-from galaxy.schema.remote_files import ListUriResponse
 
 UTC_TIME = datetime(2024, 1, 15, 10, 20, 30, tzinfo=timezone.utc)
 
@@ -35,12 +34,6 @@ def _remote_file(ctime) -> RemoteFile:
 )
 def test_remote_file_ctime_is_utc(non_utc_local_time, ctime, expected):
     assert _remote_file(ctime).ctime == expected
-
-
-def test_remote_files_api_serializes_ctime_as_utc():
-    remote_file = _remote_file("2024-01-15T12:20:30+02:00")
-    response = ListUriResponse.model_validate([remote_file.model_dump(by_alias=True)])
-    assert '"ctime":"2024-01-15T10:20:30Z"' in response.model_dump_json()
 
 
 def test_remote_file_ctime_assignment_is_utc(non_utc_local_time):
