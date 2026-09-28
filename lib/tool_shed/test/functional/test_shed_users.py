@@ -95,5 +95,30 @@ class TestShedUsersApi(ShedApiTestCase):
         assert new_api_key != another_new_api_key
         assert new_api_key != api_key
 
+    def test_register(self):
+        email = "testregister@bx.psu.edu"
+        password = "mycoolpassword123"
+        response = self._register(email=email, username=email_to_username(email), password=password)
+        api_asserts.assert_status_code_is_ok(response)
+        self._verify_username_password(email, password)
+
+    def test_register_rejects_invalid_username(self):
+        response = self._register(email="testregisterbadname@bx.psu.edu", username="Not Valid")
+        api_asserts.assert_status_code_is(response, 400)
+
+    def test_register_rejects_taken_username(self):
+        email = "testregistertaken@bx.psu.edu"
+        ensure_user_with_email(self.admin_api_interactor, email, "mycoolpassword123")
+        response = self._register(email="testregistertakenother@bx.psu.edu", username=email_to_username(email))
+        api_asserts.assert_status_code_is(response, 400)
+
+    def test_register_rejects_invalid_email(self):
+        response = self._register(email="not an email", username="testregisterbademail")
+        api_asserts.assert_status_code_is(response, 400)
+
+    def _register(self, email: str, username: str, password: str = "mycoolpassword123"):
+        url = urljoin(self.url, "api_internal/register")
+        return post(url, json={"email": email, "username": username, "password": password, "bear_field": ""})
+
     def _verify_username_password(self, email: str, password: str) -> str:
         return self.api_interactor.create_api_key(email, password)
