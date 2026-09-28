@@ -37,7 +37,6 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.schema.agents import AgentResponse
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -47,8 +46,8 @@ from galaxy.schema.fields import (
     is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
+    message_rule_validator,
     ModelClassField,
-    validation_message_wrapper,
 )
 from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
@@ -272,19 +271,13 @@ def _canonicalize_email_input(value: Any) -> Any:
     return canonicalize_email(value) if isinstance(value, str) else value
 
 
-def _check_email(email: str) -> str:
-    if message := validate_email_str(email):
-        raise RequestParameterInvalidException(message)
-    return email
-
-
 # An email address as a client may submit it, checked for format only. Whether
 # it is taken, banned or on an allowed domain depends on the server's
 # configuration and database, so the managers check that.
 EmailAddress = Annotated[
     Annotated[str, Field(max_length=EMAIL_MAX_LEN)],
     BeforeValidator(_canonicalize_email_input),
-    AfterValidator(validation_message_wrapper(_check_email)),
+    AfterValidator(message_rule_validator(validate_email_str)),
 ]
 
 UserDescriptionField = Field(title="Description", description="Description of the user")
@@ -303,39 +296,27 @@ def _canonicalize_display_name_input(value: Any) -> Any:
     return canonicalize_display_name(value) if isinstance(value, str) else value
 
 
-def _check_display_name(display_name: str | None) -> str | None:
-    if message := validate_display_name_str(display_name):
-        raise RequestParameterInvalidException(message)
-    return display_name
-
-
 # A display name as a client may submit it. The length limit applies to the
 # canonical form, so padding a name does not push it over, and a blank name
 # arrives as None, which clears the field.
 DisplayName = Annotated[
     Annotated[str, Field(max_length=DISPLAY_NAME_MAX_LEN)] | None,
     BeforeValidator(_canonicalize_display_name_input),
-    AfterValidator(validation_message_wrapper(_check_display_name)),
+    AfterValidator(message_rule_validator(validate_display_name_str)),
 ]
-
-
-def _check_username(username: str) -> str:
-    if message := validate_publicname_str(username):
-        raise RequestParameterInvalidException(message)
-    return username
 
 
 # A username for a new account, checked for format only. Whether it is taken
 # depends on the database, so the managers check that.
 NewUsername = Annotated[
     Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)],
-    AfterValidator(validation_message_wrapper(_check_username)),
+    AfterValidator(message_rule_validator(validate_publicname_str)),
 ]
 
 # A username as an update may carry it. Accounts created under older rules can
 # hold names the format check would refuse, and must be able to send them back
 # unchanged, so the managers check the format only when the name changes.
-Username = Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)]
+StoredUsername = Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)]
 
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
@@ -453,7 +434,7 @@ class UserUpdatePayload(Model):
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
     username: Annotated[
-        OmittableNotNull[Username],
+        OmittableNotNull[StoredUsername],
         Field(
             title="Username",
             description=(

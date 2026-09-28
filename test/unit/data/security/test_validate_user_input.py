@@ -36,7 +36,6 @@ def test_validate_email_domain_name():
 @pytest.mark.parametrize(
     "name",
     [
-        "DISPLAY_NAME_MAX_LEN",
         "EMAIL_MAX_LEN",
         "FILL_CHAR",
         "is_valid_email_str",
@@ -46,7 +45,6 @@ def test_validate_email_domain_name():
         "VALID_EMAIL_RE",
         "VALID_PUBLICNAME_RE",
         "VALID_PUBLICNAME_SUB",
-        "validate_display_name_str",
         "validate_email_str",
         "validate_password_str",
         "validate_publicname_str",

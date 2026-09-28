@@ -22,7 +22,6 @@ from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
 from galaxy.util.user_input import (
-    DISPLAY_NAME_MAX_LEN,
     EMAIL_MAX_LEN,
     FILL_CHAR,
     is_valid_email_str,
@@ -32,7 +31,6 @@ from galaxy.util.user_input import (
     VALID_EMAIL_RE,
     VALID_PUBLICNAME_RE,
     VALID_PUBLICNAME_SUB,
-    validate_display_name_str,
     validate_email_str,
     validate_password_str,
     validate_publicname_str,
@@ -232,7 +230,6 @@ class EmailAddressNormalizer:
 
 
 __all__ = (
-    "DISPLAY_NAME_MAX_LEN",
     "EMAIL_MAX_LEN",
     "EmailAddressNormalizer",
     "extract_domain",
@@ -246,7 +243,6 @@ __all__ = (
     "VALID_EMAIL_RE",
     "VALID_PUBLICNAME_RE",
     "VALID_PUBLICNAME_SUB",
-    "validate_display_name_str",
     "validate_email",
     "validate_email_domain_name",
     "validate_email_str",
