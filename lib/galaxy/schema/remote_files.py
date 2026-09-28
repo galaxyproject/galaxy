@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import (
     Annotated,
@@ -142,7 +143,11 @@ class RemoteFileHash(Model):
 class RemoteFile(RemoteEntry):
     class_: Literal["File"] = Field(..., alias="class")
     size: int = Field(..., title="Size", description="The size of the file in bytes.")
-    ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
+    ctime: Optional[datetime] = Field(
+        ...,
+        title="Creation time",
+        description="When the file was created or last modified, in UTC, or null if the file source does not report it.",
+    )
     hashes: Optional[list[RemoteFileHash]] = Field(
         None, title="Hashes", description="List of precomputed hashes for the file, if available."
     )

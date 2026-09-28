@@ -1,5 +1,6 @@
 """Pytest fixtures for the files unit test suite."""
 
+import time
 from collections.abc import Generator
 
 import pytest
@@ -18,3 +19,12 @@ def mock_http_server() -> Generator[MockHttpServer, None, None]:
         yield MockHttpServer(base_url=base_url, handler_class=MockHTTPRequestHandler, is_remote=False)
     finally:
         server.shutdown()
+
+
+@pytest.fixture
+def non_utc_local_time(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    with monkeypatch.context() as patch:
+        patch.setenv("TZ", "Asia/Tokyo")
+        time.tzset()
+        yield
+    time.tzset()
