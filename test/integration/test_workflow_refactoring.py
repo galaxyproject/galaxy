@@ -705,6 +705,20 @@ steps:
             output_last_id + num_outputs,
         ]
 
+    def test_subworkflow_upgrade_dry_run_writes_nothing(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        response = self._dry_run([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+
     def test_tool_version_upgrade_keeps_when_expression(self):
         self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
