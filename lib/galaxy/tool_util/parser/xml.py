@@ -814,7 +814,7 @@ class XmlToolSource(ToolSource):
             else:
                 continue
             creator_as_dict["class"] = clazz
-            creator_as_dict.update(creator_el.attrib)
+            creator_as_dict.update(_element_to_dict(creator_el))
             creators.append(creator_as_dict)
         return creators
 
