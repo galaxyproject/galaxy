@@ -140,6 +140,10 @@ from galaxy.tool_util.version import (
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+from galaxy.tool_util_models import (
+    lift_user_tool_source,
+    UserToolSource,
+)
 from galaxy.tool_util_models.parameters import (
     MaybeToolParameterBundle,
     ToolParameterBundleModel,
@@ -506,6 +510,28 @@ class PersistentToolTagManager(AbstractToolTagManager):
                         self.sa_session.commit()
 
 
+def _lift_stored_user_tool(dynamic_tool: "DynamicTool", representation: dict) -> tuple[dict, list[str]]:
+    """Validate a stored user-defined tool against the current schema before it is parsed.
+
+    Stored rows are not revalidated on upgrade and the YAML parser accepts more
+    than the schema does, so the tool is built from the validated model. Fields
+    the schema no longer accepts are dropped and returned; a row that cannot be
+    recovered that way is refused.
+    """
+    status, lifted, errors = lift_user_tool_source(representation)
+    if status == "invalid":
+        raise exceptions.ToolMissingException(
+            f"User-defined tool '{dynamic_tool.tool_id}' can no longer be loaded because its stored definition is "
+            f"not valid for this Galaxy version: {'; '.join(errors)}. Open it in the tool editor, correct these "
+            "fields and save it as a new tool.",
+            tool_id=dynamic_tool.tool_id,
+        )
+    assert isinstance(lifted, UserToolSource)
+    if status == "lifted":
+        log.warning("Dropped unsupported fields from user-defined tool %s: %s", dynamic_tool.uuid, ", ".join(errors))
+    return lifted.model_dump(by_alias=True), errors
+
+
 class ToolBox(AbstractToolBox):
     """
     A derivative of AbstractToolBox with Galaxy tooling-specific functionality
@@ -660,11 +686,16 @@ class ToolBox(AbstractToolBox):
         if "name" not in tool_representation:
             tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
         tool_format = dynamic_tool.tool_format
+        dropped_fields: list[str] = []
+        if tool_format == "GalaxyUserTool":
+            tool_representation, dropped_fields = _lift_stored_user_tool(dynamic_tool, tool_representation)
         if tool_format in ("GalaxyTool", "GalaxyUserTool"):
             tool_source = YamlToolSource(tool_representation)
         else:
             raise Exception(f"Unknown tool representation format [{tool_format}].")
         tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
+        if isinstance(tool, UserDefinedTool):
+            tool.dropped_representation_fields = dropped_fields
         tool.dynamic_tool = dynamic_tool
         # Snapshot while the ORM row is session-attached; later reads would raise
         # DetachedInstanceError.
@@ -683,14 +714,20 @@ class ToolBox(AbstractToolBox):
         tool_version: Optional[str] = None,
     ) -> Optional["Tool"]:
         if (dynamic_tool := job.dynamic_tool) is not None:
-            if check_access and not dynamic_tool.public:
-                if user is None or dynamic_tool.uuid is None:
-                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
-                tool = self.get_unprivileged_tool(user, tool_uuid=dynamic_tool.uuid)
-                if tool is None:
-                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
-                return tool
-            return self.dynamic_tool_to_tool(dynamic_tool)
+            try:
+                if check_access and not dynamic_tool.public:
+                    if user is None or dynamic_tool.uuid is None:
+                        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                    tool = self.get_unprivileged_tool(user, tool_uuid=dynamic_tool.uuid)
+                    if tool is None:
+                        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                    return tool
+                return self.dynamic_tool_to_tool(dynamic_tool)
+            except exceptions.ToolMissingException as e:
+                # Callers treat None as a tool that is no longer installed; the job
+                # handler fails the job instead of preparing it.
+                log.info("Tool for job %s cannot be loaded: %s", job.id, e)
+                return None
         return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
@@ -3441,6 +3478,17 @@ class OutputParameterJSONTool(Tool):
 class UserDefinedTool(Tool):
     tool_type = "user_defined"
     requires_js_runtime = True
+    # Stored fields that the current schema no longer accepts and that were
+    # dropped when the tool was loaded; reported with the same keys the
+    # unprivileged tools API uses.
+    dropped_representation_fields: Sequence[str] = ()
+
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+        tool_dict = super().to_dict(trans, link_details=link_details, io_details=io_details, tool_help=tool_help)
+        if self.dropped_representation_fields:
+            tool_dict["representation_status"] = "lifted"
+            tool_dict["representation_errors"] = list(self.dropped_representation_fields)
+        return tool_dict
 
 
 class ExpressionTool(Tool):
