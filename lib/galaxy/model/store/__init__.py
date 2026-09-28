@@ -268,8 +268,25 @@ def replace_metadata_file(
 ) -> dict[str, Any]:
     def remap_objects(p, k, obj):
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-            metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
-            sa_session.add(metadata_file)
+            metadata_file = None
+            if not isinstance(sa_session, SessionlessContext):
+                # Setting metadata on a dataset that already has metadata files (e.g. a set metadata job)
+                # updates those files in place and exports them with their existing uuid. Metadata files
+                # are looked up by uuid, so reuse the dataset's own row instead of inserting a duplicate.
+                metadata_file = sa_session.scalars(
+                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id).limit(1)
+                ).first()
+                if metadata_file is not None and dataset_instance not in (
+                    metadata_file.history_dataset,
+                    metadata_file.library_dataset,
+                ):
+                    # Reusing another dataset's row would make make_copy copy it, which drops the file for
+                    # a new dataset that has no data yet. Insert a row for this dataset instead; uuid lookups
+                    # still resolve to the oldest row.
+                    metadata_file = None
+            if metadata_file is None:
+                metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
+                sa_session.add(metadata_file)
             return (k, metadata_file)
         return (k, obj)
 
@@ -2900,7 +2917,7 @@ class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExpo
                                 )
                                 output_subdomain_items.append(output)
                 step_index = workflow_step.order_index
-                step_name = workflow_step.label or workflow_step.tool_id
+                step_name = workflow_step.label or workflow_step.effective_tool_id
                 pipeline_step = PipelineStep(
                     step_number=step_index,
                     name=step_name,

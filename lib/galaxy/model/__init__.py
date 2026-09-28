@@ -9379,6 +9379,20 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
     @property
+    def user_defined_tool(self) -> Optional["DynamicTool"]:
+        dynamic_tool = self.dynamic_tool
+        return dynamic_tool if dynamic_tool is not None and not dynamic_tool.public else None
+
+    @property
+    def effective_tool_id(self) -> str | None:
+        # A step using a user-defined tool is identified by ``dynamic_tool``: the step's
+        # own ``tool_id`` column is ignored and the id comes from the tool definition.
+        # That id is neither unique nor in the toolbox, so lookups also pass ``tool_uuid``.
+        if (user_defined_tool := self.user_defined_tool) is not None:
+            return user_defined_tool.tool_id
+        return self.tool_id
+
+    @property
     def is_input_type(self) -> bool:
         return bool(self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE)
 
@@ -9498,7 +9512,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     def content_id(self):
         content_id = None
         if self.type == "tool":
-            content_id = self.tool_id
+            content_id = self.effective_tool_id
         elif self.type == "subworkflow":
             content_id = self.subworkflow.id
         else:
@@ -9545,6 +9559,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
+        copied_step.dynamic_tool = self.dynamic_tool
         copied_step.tool_version = self.tool_version
         copied_step.tool_inputs = self.tool_inputs
         copied_step.tool_errors = self.tool_errors
@@ -13470,7 +13485,10 @@ User.preferences = association_proxy("_preferences", "value", creator=UserPrefer
 session_partition = select(
     GalaxySession,
     func.row_number()
-    .over(order_by=GalaxySession.update_time.desc(), partition_by=GalaxySession.user_id)
+    .over(
+        order_by=(GalaxySession.update_time.desc().nulls_last(), GalaxySession.id.desc()),
+        partition_by=GalaxySession.user_id,
+    )
     .label("index"),
 ).alias()
 partitioned_session = aliased(GalaxySession, session_partition)

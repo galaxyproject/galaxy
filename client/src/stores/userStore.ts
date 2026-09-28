@@ -171,26 +171,21 @@ export const useUserStore = defineStore("userStore", () => {
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
-            loadPromise = new Promise<void>((resolve, reject) => {
-                (async () => {
-                    try {
-                        const user = await getCurrentUser();
-                        setUserState(user);
-                        if (includeHistories) {
-                            const historyStore = useHistoryStore();
-                            await historyStore.loadHistories();
-                        }
-                        resolve(); // Resolve the promise after successful load
-                    } catch (e) {
-                        console.error("Failed to load user", e);
-                        reject(e); // Reject the promise on error
-                    } finally {
-                        //Don't clear the loadPromise, we still want multiple callers to await.
-                        //Instead we must clear it upon $reset
-                        // loadPromise = null;
-                    }
-                })();
+            const promise = (async () => {
+                const user = await getCurrentUser();
+                setUserState(user);
+                if (includeHistories) {
+                    await useHistoryStore().loadHistories();
+                }
+            })().catch((e) => {
+                // A failed load must be retryable without resetting the user state.
+                // An older request must not clear a newer refresh's cached promise.
+                if (loadPromise === promise) {
+                    loadPromise = null;
+                }
+                throw e;
             });
+            loadPromise = promise;
         }
         return loadPromise; // Return the shared promise
     }

@@ -11,6 +11,7 @@ from galaxy.objectstore.irods import (
     IRODSObjectStore,
     parse_config_xml,
 )
+from galaxy.objectstore.unittest_utils import Config
 from galaxy.util import parse_xml
 
 
@@ -206,3 +207,28 @@ def test_push_to_storage_retries_on_transient_connection_error(tmp_path):
         is True
     )
     assert calls["n"] == 2
+
+
+class FakeSessionPool:
+    idle: set = set()
+
+
+class FakeSession:
+    pool = FakeSessionPool()
+    cleaned_up = False
+
+    def cleanup(self):
+        self.cleaned_up = True
+
+
+def test_soft_shutdown_stops_monitor_and_keeps_session_open():
+    pytest.importorskip("irods")
+    with open(CONFIG_FILE) as f:
+        config_xml = f.read()
+    with Config(config_xml) as (_, object_store):
+        object_store.session = FakeSession()
+        object_store.start()
+        object_store.soft_shutdown()
+        object_store.connection_pool_monitor_thread.join(5)
+        assert not object_store.connection_pool_monitor_thread.is_alive()
+        assert not object_store.session.cleaned_up

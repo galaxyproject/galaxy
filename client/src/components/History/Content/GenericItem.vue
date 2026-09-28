@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from "@vueuse/core";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
@@ -103,10 +104,11 @@ function onViewCollection(collection: any) {
             v-if="hasBeenVisible"
             :id="itemId"
             :key="view"
-            v-slot="{ result: item, loading }"
+            v-slot="{ result: item, loading, error }"
             :view="view"
             auto-refresh>
-            <LoadingSpan v-if="loading" message="Loading dataset" />
+            <BAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</BAlert>
+            <LoadingSpan v-else-if="loading" message="Loading dataset" />
             <div v-else>
                 <ContentItem
                     :id="item.hid ?? item.element_index + 1"

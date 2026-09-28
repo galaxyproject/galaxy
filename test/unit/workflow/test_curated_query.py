@@ -17,6 +17,7 @@ import pytest
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.schema import CuratedWorkflowsQueryPayload
 
@@ -30,7 +31,7 @@ def trans() -> MockTrans:
 
 @pytest.fixture
 def manager(trans: MockTrans) -> WorkflowsManager:
-    return WorkflowsManager(trans.app)
+    return WorkflowsManager(trans.app, DynamicToolManager(trans.app))
 
 
 def make_user(trans: MockTrans, username: str, deleted: bool = False) -> model.User:
