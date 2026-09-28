@@ -103,6 +103,42 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
     });
 
+    it("auto-pairs mates that arrive in separate history updates", async () => {
+        const a = buildFakeDataset("a", "hello world.1.fastq");
+        const b = buildFakeDataset("b", "hello world.2.fastq");
+
+        const wrapper = await mountCreator([]);
+        await wrapper.setProps({ initialElements: [a] });
+        await flushPromises();
+        expect(gridRowIds(wrapper)).toEqual(["single:a"]);
+
+        await wrapper.setProps({ initialElements: [a, b] });
+        await flushPromises();
+
+        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
+    });
+
+    it("does not re-pair mates the user unpaired when another element arrives", async () => {
+        const a = buildFakeDataset("a", "sample_1");
+        const b = buildFakeDataset("b", "sample_2");
+        const c = buildFakeDataset("c", "other_1");
+
+        const wrapper = await mountCreator([a, b]);
+        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
+
+        const { context } = wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs as unknown as {
+            context: { onUnpair: (pair: { forward: HDASummary; reverse: HDASummary; name: string }) => void };
+        };
+        context.onUnpair({ forward: a, reverse: b, name: "sample" });
+        await flushPromises();
+        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b"]);
+
+        await wrapper.setProps({ initialElements: [a, b, c] });
+        await flushPromises();
+
+        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b", "single:c"]);
+    });
+
     it("gives a paired row and its later split-survivor row different AG Grid row ids", async () => {
         const a = buildFakeDataset("a", "sample_1");
         const b = buildFakeDataset("b", "sample_2");

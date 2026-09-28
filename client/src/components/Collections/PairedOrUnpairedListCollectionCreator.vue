@@ -305,6 +305,7 @@ function syncRowDataToRowPairing() {
 
 function initialize() {
     discardedIds.clear();
+    userUnpairedIds.clear();
     if (currentForwardFilter.value === undefined) {
         const summary = autoPairWithCommonFilters(props.initialElements, true);
         const { forwardFilter, reverseFilter } = summary;
@@ -334,6 +335,9 @@ function initialize() {
  */
 const discardedIds = new Set<string>();
 
+/** IDs of elements whose pair the user broke up; new arrivals must not auto-pair them again. */
+const userUnpairedIds = new Set<string>();
+
 function knownRowIds(): Set<string> {
     const ids = new Set<string>();
     for (const row of rowData.value) {
@@ -359,10 +363,20 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
     }
 
     if (!flatLists.value) {
+        // Mates can arrive in separate history updates (e.g. uploads finishing one at a time),
+        // so new elements are paired against unpaired rows still waiting for a partner too.
+        const waiting: HistoryItemSummary[] = [];
+        for (const row of rowData.value) {
+            if ("unpaired" in row.datasets && !userUnpairedIds.has(row.datasets.unpaired.id)) {
+                waiting.push(row.datasets.unpaired);
+            }
+        }
+        const candidates = [...waiting, ...newElements];
+
         // Filters may not have been detected yet if the creator first initialized with
         // no elements (e.g. an empty history) so try again now that new elements arrived.
         if (!currentForwardFilter.value || !currentReverseFilter.value) {
-            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(newElements, removeExtensions.value);
+            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(candidates, removeExtensions.value);
             if (forwardFilter !== undefined && reverseFilter !== undefined) {
                 currentForwardFilter.value = forwardFilter;
                 currentReverseFilter.value = reverseFilter;
@@ -371,16 +385,30 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
 
         if (currentForwardFilter.value && currentReverseFilter.value) {
             const { pairs, unpaired } = splitIntoPairedAndUnpaired(
-                newElements,
+                candidates,
                 currentForwardFilter.value,
                 currentReverseFilter.value,
                 removeExtensions.value,
             );
+            const newIds = new Set(newElements.map((el) => el.id));
             for (const pair of pairs) {
-                rowData.value.push(pairedRow(pair));
+                // a pair completing a waiting row takes that row's place in the grid
+                let targetIndex: number | null = null;
+                for (const el of [pair.forward, pair.reverse]) {
+                    if (!newIds.has(el.id)) {
+                        targetIndex = onRemove({ unpaired: el }, false, false);
+                    }
+                }
+                if (targetIndex === null) {
+                    rowData.value.push(pairedRow(pair));
+                } else {
+                    rowData.value.splice(targetIndex, 0, pairedRow(pair));
+                }
             }
             for (const el of unpaired) {
-                rowData.value.push(unpairedRow(el));
+                if (newIds.has(el.id)) {
+                    rowData.value.push(unpairedRow(el));
+                }
             }
             return;
         }
@@ -749,6 +777,8 @@ function _refresh() {
 }
 
 function onUnpair(pair: GenericPair<HistoryItemSummary>) {
+    userUnpairedIds.add(pair.forward.id);
+    userUnpairedIds.add(pair.reverse.id);
     const targetIndex = onRemove(pair, false, false) || 0;
     rowData.value.splice(targetIndex, 0, unpairedRow(pair.forward), unpairedRow(pair.reverse));
     _refresh();
