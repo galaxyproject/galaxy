@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
@@ -43,7 +43,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const breadcrumbItems = [{ title: "Workflows" }];
 
-const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();

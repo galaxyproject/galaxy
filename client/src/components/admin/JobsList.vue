@@ -41,13 +41,13 @@
                 <b-form-group>
                     <FilterMenu
                         id="job-search"
+                        v-model:filter-text="filter"
+                        v-model:show-advanced="showAdvanced"
                         name="jobs"
                         placeholder="search jobs"
                         :filter-class="filterClass"
-                        v-model:filter-text="filter"
                         has-help
-                        :loading="busy"
-                        v-model:show-advanced="showAdvanced">
+                        :loading="busy">
                         <template v-slot:menu-help-text>
                             <div>
                                 <p>This textbox box can be used to filter the jobs displayed.</p>

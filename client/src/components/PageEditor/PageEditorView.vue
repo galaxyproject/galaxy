@@ -239,9 +239,9 @@ function handleRevisionRestore(revisionId: string) {
                         @update="handleContentUpdate" />
                 </div>
                 <GModal
+                    v-model:show="store.showRevisions"
                     data-description="page revisions modal"
                     fixed-height
-                    v-model:show="store.showRevisions"
                     size="small"
                     :title="`${labels.entityName} Revisions`">
                     <template v-slot:header>

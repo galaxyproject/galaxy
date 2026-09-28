@@ -37,20 +37,20 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
+            v-model:pressed="localFormatsVisible"
             v-g-tooltip.hover.bottom="!formatsVisible ? orList([...props.extensions]) : ''"
             size="small"
             color="blue"
             transparent
-            inline
-            v-model:pressed="localFormatsVisible">
+            inline>
             <span v-localize>accepted formats</span>
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
         </GButton>
         <GPopover
             v-if="props.popover"
-            :target="props.formatsButtonId"
             v-model:show="localFormatsVisible"
+            :target="props.formatsButtonId"
             placement="bottom">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>

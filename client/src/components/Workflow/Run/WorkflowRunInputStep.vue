@@ -99,7 +99,7 @@ export default {
         // dropdown search box coalesces into a single backend round trip.
         this.onSearchChange = debounce(this.onSearchChange, 400);
     },
-    beforeDestroy() {
+    beforeUnmount() {
         this.onSearchChange.cancel?.();
     },
     methods: {

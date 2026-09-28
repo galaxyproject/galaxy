@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { useConfig } from "@/composables/config";
@@ -8,7 +8,6 @@ import { useConfig } from "@/composables/config";
 import ChangePassword from "@/components/Login/ChangePassword.vue";
 import LoginIndex from "@/components/Login/LoginIndex.vue";
 
-const router = useRouter();
 const route = useRoute();
 const { config, isConfigLoaded } = useConfig();
 

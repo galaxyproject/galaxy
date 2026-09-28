@@ -126,7 +126,7 @@ async function copy() {
         </transition>
 
         <transition>
-            <GForm v-if="!loading" @submit.native.prevent="copy">
+            <GForm v-if="!loading" @submit.prevent="copy">
                 <GFormLabel
                     title="Enter a title for the new history"
                     invalid-feedback="Please enter a valid history title."

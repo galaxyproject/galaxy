@@ -39,17 +39,17 @@ function openGraph(history: HistorySummary) {
     <ActivityPanel title="History Graphs">
         <template v-slot:header>
             <FilterMenu
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                v-model:filter-text="filter"
-                :loading="historiesLoading || loading"
-                v-model:show-advanced="showAdvanced" />
+                :loading="historiesLoading || loading" />
         </template>
         <HistoryScrollList
             v-show="!showAdvanced"
-            :filter="filter"
             v-model:loading="loading"
+            :filter="filter"
             :current-item-id="highlightId"
             hide-deleted
             @setFilter="setFilter"

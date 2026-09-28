@@ -44,14 +44,14 @@ watch(
             <FlexPanel
                 v-if="documentationMounted || documentationVisible"
                 v-show="documentationVisible"
+                v-model:reactive-width="documentationWidth"
                 panel-id="custom-tool-documentation-panel"
                 class="custom-tool-documentation-panel"
                 :class="{ 'documentation-only': documentationExpanded }"
                 side="right"
                 :collapsible="false"
                 :min-width="320"
-                :max-width="800"
-                v-model:reactive-width="documentationWidth">
+                :max-width="800">
                 <div class="custom-tool-documentation-pane">
                     <div class="custom-tool-documentation-controls">
                         <GButton

@@ -93,7 +93,6 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { localize } from "@/utils/localization";
 
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";

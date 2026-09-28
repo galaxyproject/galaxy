@@ -101,8 +101,8 @@ async function getDetails() {
 
         <GModal
             id="details-modal"
-            size="small"
             v-model:show="showModal"
+            size="small"
             :title="TITLE_LOCATION_DETAILS"
             @open="getDetails">
             <div>

@@ -136,10 +136,10 @@ loadData();
                                 track-by="id"
                                 placeholder="Select or search roles..."
                                 @search-change="onRoleSearch">
-                                <template slot="noResult">
+                                <template v-slot:noResult>
                                     <div>No roles found</div>
                                 </template>
-                                <template slot="noOptions">
+                                <template v-slot:noOptions>
                                     <div>No roles found</div>
                                 </template>
                             </Multiselect>

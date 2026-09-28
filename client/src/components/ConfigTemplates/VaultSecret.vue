@@ -59,7 +59,7 @@ async function onOk() {
             </div>
             <span v-sanitize-html:links="helpHtml" class="ui-form-info form-text text-muted" />
         </div>
-        <GModal confirm size="small" v-model:show="showEdit" :title="editTitle" ok-text="Update" @ok="onOk">
+        <GModal v-model:show="showEdit" confirm size="small" :title="editTitle" ok-text="Update" @ok="onOk">
             <div>
                 <BFormTextarea v-if="multiline" v-model="secretValue" rows="8" no-resize />
                 <GFormInput v-else v-model="secretValue" class="w-100" type="password" />
