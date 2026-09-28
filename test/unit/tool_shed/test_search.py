@@ -1,5 +1,11 @@
+from collections.abc import Callable
 from functools import partial
 from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+    TYPE_CHECKING,
+)
 
 import pytest
 from whoosh import index
@@ -9,28 +15,32 @@ from tool_shed.webapp.search import (
     repo_search,
     tool_search,
 )
+from tool_shed.webapp.search.tool_search import ToolBoosts
+
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
 
 
 @pytest.fixture(params=["tool", "repository"])
-def search_index(request, tmp_path):
+def search_index(request, tmp_path) -> tuple[str, Callable[[int], None], Callable[[int, int], dict[str, Any]]]:
     kind = request.param
     config = SimpleNamespace(whoosh_index_dir=str(tmp_path))
-    app = SimpleNamespace(config=config)
+    app = cast("ToolShedApp", SimpleNamespace(config=config))
     if kind == "tool":
         index_dir = tmp_path / "tools"
         index_dir.mkdir()
         schema = tool_search.schema
-        boosts = SimpleNamespace(
+        tool_boosts = ToolBoosts(
             tool_name_boost=1.2,
             tool_description_boost=0.6,
             tool_help_boost=0.4,
             tool_repo_owner_username_boost=0.3,
         )
-        search = partial(tool_search.ToolSearch().search, app, "cutadapt", boosts=boosts)
+        search = partial(tool_search.ToolSearch().search, app, "cutadapt", boosts=tool_boosts)
     else:
         index_dir = tmp_path
         schema = repo_search.schema
-        boosts = SimpleNamespace(
+        repo_boosts = SimpleNamespace(
             repo_name_boost=1.2,
             repo_description_boost=0.6,
             repo_long_description_boost=0.4,
@@ -40,10 +50,10 @@ def search_index(request, tmp_path):
             categories_boost=0.3,
         )
         trans = SimpleNamespace(app=app, security=SimpleNamespace(encode_id=str))
-        search = partial(repo_search.RepoSearch().search, trans, "cutadapt", boosts=boosts)
+        search = partial(repo_search.RepoSearch().search, trans, "cutadapt", boosts=repo_boosts)
     search_index = index.create_in(index_dir, schema)
 
-    def populate(total):
+    def populate(total: int) -> None:
         with search_index.writer() as writer:
             for i in range(total):
                 document = dict(id=str(i) if kind == "tool" else i, name="cutadapt")
@@ -55,7 +65,7 @@ def search_index(request, tmp_path):
 
 
 @pytest.mark.parametrize("total,page_size", [(0, 2), (4, 2), (5, 2), (20, 20)])
-def test_search_pagination(search_index, total, page_size):
+def test_search_pagination(search_index, total: int, page_size: int) -> None:
     kind, populate, search = search_index
     populate(total)
     seen: set[str] = set()
@@ -74,7 +84,7 @@ def test_search_pagination(search_index, total, page_size):
 
 
 @pytest.mark.parametrize("page", [0, -1])
-def test_search_invalid_page(search_index, page):
+def test_search_invalid_page(search_index, page: int) -> None:
     _, populate, search = search_index
     populate(1)
     with pytest.raises(ObjectNotFound, match="The requested page does not exist"):
