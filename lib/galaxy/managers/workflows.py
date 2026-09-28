@@ -100,6 +100,7 @@ from galaxy.tools.parameters.workflow_utils import (
     RuntimeValue,
     workflow_building_modes,
 )
+from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
@@ -2060,6 +2061,11 @@ class WorkflowContentsManager(UsesAnnotations):
             step.label = step_dict["label"]
 
         module = module_factory.from_dict(trans, step_dict, detached=dry_run, **kwds)
+        connected_input_names = [name for name, conns in step_dict.get("input_connections", {}).items() if conns]
+        if connected_input_names and isinstance(module, ToolModule) and module.tool:
+            # Descriptions may carry no state for connected inputs (e.g. format2 `in:`), which
+            # recovering state fills with RuntimeValue - mark them connected before saving.
+            module.add_dummy_datasets(connections=[Bunch(input_name=name) for name in connected_input_names])
         self.__set_default_label(step, module, step_dict.get("tool_state"))
         module.save_to_step(step, detached=dry_run)
 
