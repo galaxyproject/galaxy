@@ -36,7 +36,7 @@ describe("Workflow editor SaveChangesModal", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("hands the parent the proceed choice", async () => {

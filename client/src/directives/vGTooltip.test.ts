@@ -206,7 +206,7 @@ describe("vGTooltip", () => {
             wrapper.get(".dropdown-item").element.dispatchEvent(new Event("focusin", { bubbles: true }));
             expect(getRenderedTooltip()).toBeNull();
 
-            wrapper.destroy();
+            wrapper.unmount();
         });
 
         test("names an icon-only toggle instead of the element", async () => {
@@ -230,7 +230,7 @@ describe("vGTooltip", () => {
                 undefined as unknown as VNode,
             );
             expect(toggle.attributes("aria-label")).toBeUndefined();
-            wrapper.destroy();
+            wrapper.unmount();
         });
 
         test("keeps the name of a toggle with text or its own label", () => {
@@ -241,7 +241,7 @@ describe("vGTooltip", () => {
 
             expect(wrapper.get("#text .dropdown-toggle").attributes("aria-label")).toBeUndefined();
             expect(wrapper.get("#labelled .dropdown-toggle").attributes("aria-label")).toBe("Upload");
-            wrapper.destroy();
+            wrapper.unmount();
         });
 
         test("does not show while the menu is open", async () => {

@@ -55,7 +55,7 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         vi.useRealTimers();
         vi.unstubAllGlobals();
     });

@@ -197,7 +197,7 @@ describe("PageDisplayToolbar", () => {
             await flushPromises();
 
             expect(flashSavedIndicator).toHaveBeenCalledOnce();
-            saveWrapper.destroy();
+            saveWrapper.unmount();
         });
 
         it("does not show saved feedback after a failed save", async () => {
@@ -217,7 +217,7 @@ describe("PageDisplayToolbar", () => {
             await flushPromises();
 
             expect(flashSavedIndicator).not.toHaveBeenCalled();
-            saveWrapper.destroy();
+            saveWrapper.unmount();
         });
 
         it("back button text says whatever the label back button value is", () => {

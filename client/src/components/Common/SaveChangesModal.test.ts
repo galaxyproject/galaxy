@@ -70,7 +70,7 @@ describe("SaveChangesModal reusable component", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     async function makeDirty() {
@@ -272,7 +272,7 @@ describe("SaveChangesModal reusable component", () => {
 
         it("stops listening after unmount", async () => {
             await makeDirty();
-            wrapper.destroy();
+            wrapper.unmount();
             const event = dispatchBeforeUnload();
 
             expect(event.defaultPrevented).toBe(false);

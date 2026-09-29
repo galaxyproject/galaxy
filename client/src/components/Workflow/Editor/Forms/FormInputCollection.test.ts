@@ -46,7 +46,7 @@ describe("FormInputCollection", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         vi.useRealTimers();
     });
 

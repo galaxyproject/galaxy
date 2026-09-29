@@ -35,7 +35,7 @@ async function showTooltip() {
 
 describe("GTooltip", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         floatingUi.stopTracking.mockClear();
@@ -62,7 +62,7 @@ describe("GTooltip", () => {
     it("stops tracking its reference when unmounted while shown", async () => {
         await showTooltip();
 
-        wrapper!.destroy();
+        wrapper!.unmount();
         wrapper = undefined;
 
         expect(floatingUi.stopTracking).toHaveBeenCalled();

@@ -81,7 +81,7 @@ describe("FormDefault", () => {
         collectionTypeField().vm.$emit("onChange", "list:paired");
         expect(collectionWrapper.emitted("onSetData")).toHaveLength(2);
         expect(collectionWrapper.emitted("onSetData")[1][1].inputs.collection_type).toBe("list:paired");
-        collectionWrapper.destroy();
+        collectionWrapper.unmount();
     });
 
     it("check initial value and value change", async () => {

@@ -65,7 +65,7 @@ async function openMenu(wrapper: Wrapper<Vue>) {
 }
 
 afterEach(() => {
-    wrapper?.destroy();
+    wrapper?.unmount();
     wrapper = undefined;
 });
 
@@ -265,7 +265,7 @@ describe("GDropdown.vue", () => {
             await openMenu(mounted);
             await flushPromises();
 
-            mounted.destroy();
+            mounted.unmount();
 
             expect(stopTracking).toHaveBeenCalledOnce();
         });
@@ -291,7 +291,7 @@ describe("GDropdown.vue", () => {
             });
 
             (mounted.get(".dropdown-toggle").element as HTMLElement).click();
-            mounted.destroy();
+            mounted.unmount();
             await flushPromises();
 
             expect(addListener).not.toHaveBeenCalledWith("click", expect.any(Function), true);

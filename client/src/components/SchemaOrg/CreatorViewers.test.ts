@@ -32,7 +32,7 @@ const CASES = [
 
 describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -69,7 +69,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         // Duplicate ids would anchor every creator's popover to the first icon.
         expect(firstTarget).not.toEqual(secondTarget);
 
-        first.destroy();
-        second.destroy();
+        first.unmount();
+        second.unmount();
     });
 });

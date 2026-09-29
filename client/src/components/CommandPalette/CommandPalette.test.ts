@@ -100,7 +100,7 @@ describe("CommandPalette", () => {
         useCommandPalette().closePalette();
         // the MRU list is a module level singleton, shared by every test here
         useRecentPaletteItems().clearRecentItems();
-        wrapper?.destroy();
+        wrapper?.unmount();
     });
 
     function input() {
@@ -794,7 +794,7 @@ describe("CommandPalette", () => {
     });
 
     it("re-runs the search once the tool store finishes hydrating", async () => {
-        wrapper.destroy();
+        wrapper.unmount();
         useCommandPalette().closePalette();
 
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: true });

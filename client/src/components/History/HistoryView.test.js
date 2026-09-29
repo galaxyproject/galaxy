@@ -167,7 +167,7 @@ describe("History center panel View", () => {
         expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
         expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
         expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     function expectCorrectLayout(wrapper) {

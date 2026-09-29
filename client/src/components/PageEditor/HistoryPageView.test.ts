@@ -278,7 +278,7 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
             expect(store.clearCurrentPage).not.toHaveBeenCalled();
         });
@@ -396,7 +396,7 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).toHaveBeenCalled();
         });
     });
