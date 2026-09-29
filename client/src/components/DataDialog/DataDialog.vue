@@ -17,7 +17,9 @@ import { Services } from "./services";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-type Record = SelectionItem;
+// `_rowVariant` was bootstrap-vue's BTable row-styling convention; GTable doesn't read it (this
+// is a no-op today), but keeping the type honest rather than dropping the assignment outright.
+type Record = SelectionItem & { _rowVariant?: string };
 
 interface Props {
     allowUpload?: boolean;
