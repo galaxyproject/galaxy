@@ -13,6 +13,10 @@ recycle (``--max-requests``) into an unexplained core dump:
 
 This worker bounds the drain, puts the ``SIGABRT`` handler back, and reports what
 was still in flight whenever a worker is torn down the hard way.
+
+Fixes are upstreamed at Kludex/uvicorn-worker#46 and can be dropped once that is
+merged/released and when we switch from in-tree uvicorn.workers (deprecated) to
+the standalone uvicorn_worker.
 """
 
 import asyncio
@@ -138,10 +142,8 @@ class Worker(_BaseWorker):
         self._uvicorn_server: Optional[Server] = None
         self._drain_started: Optional[float] = None
         self._connections_at_drain_start: frozenset[Any] = frozenset()
+        # TODO: remove when upstream fix version is released/required
         if self.config.timeout_graceful_shutdown is None:
-            # Without this uvicorn drains forever while no longer notifying the
-            # arbiter, so a recycle that catches a long-running request always ends
-            # in SIGABRT. graceful_timeout is gunicorn's name for exactly this bound.
             self.config.timeout_graceful_shutdown = self.cfg.graceful_timeout
         # The arbiter aborts `timeout` seconds after the last notify, and the last
         # notify can be up to `self.timeout` (half of cfg.timeout) before the drain
@@ -157,12 +159,9 @@ class Worker(_BaseWorker):
                 earliest_abort,
             )
 
+    # TODO: remove when upstream fix version is released/required
     def init_signals(self):
         super().init_signals()
-        # uvicorn resets every signal gunicorn handles to SIG_DFL. For SIGABRT --
-        # which the arbiter sends when a worker misses its timeout -- the default
-        # disposition is a core dump, which skips both the worker_abort hook and
-        # every atexit handler. Put gunicorn's own handler back.
         signal.signal(signal.SIGABRT, self.handle_abort)
 
     async def _serve(self):

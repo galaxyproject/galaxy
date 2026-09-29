@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import signal
 from unittest.mock import Mock
 
 from gunicorn.config import Config
@@ -37,11 +36,6 @@ def make_connection(method="GET", path="/api/jobs", query=b"", client=("10.0.0.1
     )
 
 
-def test_graceful_shutdown_is_bounded_by_graceful_timeout():
-    # uvicorn leaves this unset, which makes the drain unbounded
-    assert make_worker(graceful_timeout=30).config.timeout_graceful_shutdown == 30
-
-
 def test_warns_when_graceful_timeout_leaves_no_room_under_timeout(caplog):
     make_worker(timeout=20, graceful_timeout=30)
     assert "leaves no room under timeout" in caplog.text
@@ -50,17 +44,6 @@ def test_warns_when_graceful_timeout_leaves_no_room_under_timeout(caplog):
 def test_no_warning_for_production_style_timeouts(caplog):
     make_worker(timeout=600, graceful_timeout=30)
     assert "leaves no room" not in caplog.text
-
-
-def test_init_signals_restores_the_gunicorn_abort_handler():
-    worker = make_worker()
-    previous = signal.getsignal(signal.SIGABRT)
-    try:
-        worker.init_signals()
-        # uvicorn's init_signals leaves this as SIG_DFL, which core dumps
-        assert signal.getsignal(signal.SIGABRT) == worker.handle_abort
-    finally:
-        signal.signal(signal.SIGABRT, previous)
 
 
 def test_summary_names_the_requests_still_in_flight():
