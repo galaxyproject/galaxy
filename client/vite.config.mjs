@@ -52,6 +52,10 @@ export default defineConfig(({ command }) => ({
     base: "./",
     resolve: {
         tsconfigPaths: true,
+        // galaxy-ui declares vue-router as a "^3 || ^4" peer, and pnpm satisfies that
+        // with its own vue-router 3 copy. Without deduping, galaxy-ui's RouterLink is
+        // the vue-router 3 component, which renders nothing under Vue 3.
+        dedupe: ["vue-router"],
         alias: {
             // Use @vue/compat for Vue 2 compatibility mode
             vue: "@vue/compat",
