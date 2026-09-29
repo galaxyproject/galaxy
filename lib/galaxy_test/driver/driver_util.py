@@ -71,6 +71,7 @@ from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
 DEFAULT_CONFIG_PREFIX = "GALAXY"
+GX_IT_PROXY_STARTUP_TIMEOUT = 60
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "test_data")
@@ -703,11 +704,12 @@ class EmbeddedServerWrapper(ServerWrapper):
 
 
 class GravityServerWrapper(ServerWrapper):
-    def __init__(self, name, host, port, state_dir, stop_command):
+    def __init__(self, name, host, port, state_dir, galaxyctl, gxit_port=None):
         super().__init__(name, host, port)
         self.url_prefix = os.environ.get("GALAXY_CONFIG_GALAXY_URL_PREFIX", "/")
         self.state_dir = Path(state_dir)
-        self.stop_command = stop_command
+        self.galaxyctl = galaxyctl
+        self.gxit_port = gxit_port
 
     def wait_for_server(self):
         try:
@@ -720,6 +722,37 @@ class GravityServerWrapper(ServerWrapper):
             )
         except Exception:
             log.error("Gravity logs:\n%s", self.get_logs())
+        if self.gxit_port:
+            self._wait_for_gx_it_proxy()
+
+    def _wait_for_gx_it_proxy(self):
+        deadline = time.monotonic() + GX_IT_PROXY_STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection(("localhost", self.gxit_port), timeout=1):
+                    return
+            except OSError:
+                time.sleep(0.5)
+        message = self._gx_it_proxy_startup_failure()
+        try:
+            self.stop()
+        except subprocess.CalledProcessError as e:
+            message = f"{message}{os.linesep}Stopping gravity failed as well: {e}"
+        raise Exception(message)
+
+    def _gx_it_proxy_startup_failure(self) -> str:
+        gxit_log_path = self.state_dir / "log" / "gx-it-proxy.log"
+        gxit_logs = gxit_log_path.read_text() if gxit_log_path.exists() else f"{gxit_log_path} was not created"
+        status = self.galaxyctl("status", check=False)
+        return (
+            f"gx-it-proxy did not accept connections on localhost:{self.gxit_port} within "
+            f"{GX_IT_PROXY_STARTUP_TIMEOUT} seconds. The proxy is started with npx, which downloads "
+            "@galaxyproject/gx-it-proxy from the npm registry when it is not cached, so a log that ends "
+            "at the 'Executing:' line means npx was still fetching or installing the package; a stopped "
+            f"process with an error in the log means the proxy crashed.{os.linesep}"
+            f"galaxyctl status:{os.linesep}{status}{os.linesep}"
+            f"gx-it-proxy log:{os.linesep}{gxit_logs}"
+        )
 
     def get_logs(self):
         gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
@@ -728,7 +761,7 @@ class GravityServerWrapper(ServerWrapper):
         return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}celery logs:{os.linesep}{celery_logs}"
 
     def stop(self):
-        self.stop_command()
+        self.galaxyctl("shutdown")
 
 
 def launch_gravity(port, gxit_port=None, galaxy_config=None):
@@ -761,11 +794,19 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         supervisord_socket = socket.name
     gravity_env = os.environ.copy()
     gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
-    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "update"], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "start"], env=gravity_env)
-    return state_dir, lambda: subprocess.check_output(
-        ["galaxyctl", "--config-file", config_fh.name, "shutdown"], env=gravity_env
-    )
+
+    def galaxyctl(*args: str, check: bool = True) -> str:
+        return subprocess.run(
+            ["galaxyctl", "--config-file", config_fh.name, *args],
+            env=gravity_env,
+            check=check,
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout
+
+    galaxyctl("update")
+    galaxyctl("start")
+    return state_dir, galaxyctl, gxit_port if config["gravity"]["gx_it_proxy"]["enable"] else None
 
 
 @functools.lru_cache(maxsize=1)
@@ -955,8 +996,8 @@ def launch_server(
 
     if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
         galaxy_config["root"] = galaxy_root
-        state_dir, stop_command = launch_gravity(port=port, galaxy_config=galaxy_config)
-        gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, stop_command)
+        state_dir, galaxyctl, gxit_port = launch_gravity(port=port, galaxy_config=galaxy_config)
+        gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, galaxyctl, gxit_port=gxit_port)
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 
