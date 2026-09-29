@@ -823,6 +823,10 @@ function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh
         }
     } else {
         rowId = unpairedRowId(item.unpaired.id);
+        if (activeUnpairedTarget.value?.unpaired.id === item.unpaired.id) {
+            activeUnpairedTarget.value = null;
+            pairingTargetsStore.resetUnpairedTarget();
+        }
         if (discard) {
             discardedIds.add(item.unpaired.id);
         }
