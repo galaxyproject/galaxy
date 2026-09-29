@@ -629,19 +629,15 @@ class TestToolBox(BaseToolBoxTestCase):
         assert "builtin_converters" in toolbox._integrated_tool_panel
 
     @pytest.mark.parametrize("edam_mode", ["merged", "topics", "operations"])
-    def test_builtin_converters_in_edam_panel_after_reload(self, monkeypatch, edam_mode):
-        self._init_tool(tool_id="tabular_to_dbnsfp")
+    def test_builtin_converters_in_edam_panel_after_reload(self, edam_mode):
+        converter = self._init_tool(tool_id="tabular_to_dbnsfp")
         self._add_config("""<toolbox></toolbox>""")
         self.app.config.edam_panel_views = edam_mode
         old_toolbox = self.toolbox
 
         # Startup registers converters after constructing the first toolbox.
-        registry = self.app.datatypes_registry
-        monkeypatch.setattr(registry, "converters", [("tool.xml", "tabular", "snpsiftdbnsfp")])
-        monkeypatch.setattr(registry, "converters_path", self.test_directory)
-        registry.load_datatype_converters(old_toolbox)
-        converter = old_toolbox.get_tool("tabular_to_dbnsfp")
-        assert converter is not None
+        old_toolbox.register_tool(converter)
+        self.app.datatypes_registry._register_converter_tool(converter, "tabular", "snpsiftdbnsfp")
 
         # On reload, panel views are rendered before the new toolbox replaces
         # app.toolbox and before load_datatype_converters runs again.
