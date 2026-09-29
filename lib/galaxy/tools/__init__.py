@@ -578,6 +578,9 @@ class ToolBox(AbstractToolBox):
         }
         for tool in converters:
             tool.hidden = False
+            # On reload these converters belong to the previous toolbox and
+            # must be registered here before panel views resolve their ids.
+            self.register_tool(tool)
             section.elems.append_tool(tool)
             integrated_section.elems.append_tool(tool)
 

@@ -23,6 +23,7 @@ from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
     SIMPLE_TOOL_WITH_MACRO,
 )
+from galaxy.tools import ToolBox
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
@@ -626,6 +627,31 @@ class TestToolBox(BaseToolBoxTestCase):
         toolbox = self.toolbox
         assert "builtin_converters" in toolbox._tool_panel
         assert "builtin_converters" in toolbox._integrated_tool_panel
+
+    @pytest.mark.parametrize("edam_mode", ["merged", "topics", "operations"])
+    def test_builtin_converters_in_edam_panel_after_reload(self, monkeypatch, edam_mode):
+        self._init_tool(tool_id="tabular_to_dbnsfp")
+        self._add_config("""<toolbox></toolbox>""")
+        self.app.config.edam_panel_views = edam_mode
+        old_toolbox = self.toolbox
+
+        # Startup registers converters after constructing the first toolbox.
+        registry = self.app.datatypes_registry
+        monkeypatch.setattr(registry, "converters", [("tool.xml", "tabular", "snpsiftdbnsfp")])
+        monkeypatch.setattr(registry, "converters_path", self.test_directory)
+        registry.load_datatype_converters(old_toolbox)
+        converter = old_toolbox.get_tool("tabular_to_dbnsfp")
+        assert converter is not None
+
+        # On reload, panel views are rendered before the new toolbox replaces
+        # app.toolbox and before load_datatype_converters runs again.
+        new_toolbox = ToolBox(self.config_files, self.test_directory, self.app)
+        assert self.app.toolbox is old_toolbox
+        assert new_toolbox.get_tool(converter.id) is converter
+        panel = new_toolbox.to_panel_view(mock_trans(), view="default")
+        assert converter.id in panel["builtin_converters"]["tools"]
+        edam_panel = new_toolbox.to_panel_view(mock_trans(), view=f"ontology:edam_{edam_mode}")
+        assert converter.id in edam_panel["uncategorized"]["tools"]
 
     def test_default_lineage(self):
         self.__init_versioned_tools()
