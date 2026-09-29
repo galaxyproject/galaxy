@@ -12,6 +12,7 @@ import { Services } from "../services";
 import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -223,9 +224,9 @@ function stopWatchingRepository() {
         <div>
             <LoadingSpan v-if="loading" message="Loading repository details" />
             <div v-else>
-                <b-alert v-if="error" variant="danger" show>
+                <GAlert v-if="error" variant="danger" show>
                     {{ error }}
-                </b-alert>
+                </GAlert>
                 <div v-else class="border rounded">
                     <GTable borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
                         <template v-slot:cell(numeric_revision)="row">

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -10,6 +9,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import Heading from "../Common/Heading.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowInvocationInputs from "./WorkflowInvocationInputs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const OUTPUTS_NOT_AVAILABLE_YET_MSG =
@@ -68,7 +68,7 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
         <div v-if="parameters.length || inputData.length">
             <WorkflowInvocationInputs :invocation="props.invocation" />
         </div>
-        <BAlert v-else show variant="info"> No input data was provided for this workflow invocation. </BAlert>
+        <GAlert v-else show variant="info"> No input data was provided for this workflow invocation. </GAlert>
     </div>
     <div v-else-if="props.tab === 'outputs'">
         <div v-if="outputs.length">
@@ -86,20 +86,20 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
                 :key="index"
                 data-description="non-terminal invocation output">
                 <Heading size="text" bold separator>{{ label }}</Heading>
-                <BAlert
+                <GAlert
                     v-if="!props.terminal"
                     class="m-1 py-2"
                     show
                     variant="info"
                     data-description="non-terminal invocation output loading">
                     <LoadingSpan message="Output not created yet" />
-                </BAlert>
-                <BAlert v-else class="m-1 py-2" show variant="danger">
+                </GAlert>
+                <GAlert v-else class="m-1 py-2" show variant="danger">
                     <LoadingSpan message="Output not available" />
-                </BAlert>
+                </GAlert>
             </div>
         </div>
-        <BAlert v-else show variant="info">
+        <GAlert v-else show variant="info">
             <p>
                 <LoadingSpan v-if="!props.terminal" :message="OUTPUTS_NOT_AVAILABLE_YET_MSG" />
                 <span v-else v-localize>
@@ -113,6 +113,6 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
                 </i>
                 option on individual outputs on individual steps in the workflow.
             </p>
-        </BAlert>
+        </GAlert>
     </div>
 </template>

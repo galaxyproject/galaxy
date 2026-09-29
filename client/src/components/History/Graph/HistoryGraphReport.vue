@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 
 import { useHistoryGraphSummary } from "./useHistoryGraphSummary";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -23,12 +23,12 @@ const summaryHtml = computed(() => (summary.value ? renderMarkdown(summary.value
 <template>
     <div class="history-graph-report p-2">
         <LoadingSpan v-if="loading" message="Generating history summary" />
-        <BAlert v-else-if="error" variant="danger" show class="mb-0">
+        <GAlert v-else-if="error" variant="danger" show class="mb-0">
             Failed to generate the AI summary: {{ error }}
-        </BAlert>
+        </GAlert>
         <!-- eslint-disable-next-line vue/no-v-html — markdown is sanitised by useMarkdown -->
         <div v-else-if="summary" class="report-text" v-html="summaryHtml" />
-        <BAlert v-else show variant="info" class="mb-0">No summary available.</BAlert>
+        <GAlert v-else show variant="info" class="mb-0">No summary available.</GAlert>
     </div>
 </template>
 

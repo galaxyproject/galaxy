@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { BAlert, BLink, BProgress } from "bootstrap-vue";
+import { BLink, BProgress } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     querySelectionBreak: boolean;
@@ -37,7 +39,7 @@ watch(
 </script>
 
 <template>
-    <BAlert
+    <GAlert
         class="m-2"
         variant="info"
         :show="dismissCountDown"
@@ -49,5 +51,5 @@ watch(
         `select all` status.
         <BProgress variant="info" :max="dismissSecs" :value="dismissCountDown" height="4px" />
         <BLink @click="onDoNotShowAgain">Do not show again</BLink>
-    </BAlert>
+    </GAlert>
 </template>

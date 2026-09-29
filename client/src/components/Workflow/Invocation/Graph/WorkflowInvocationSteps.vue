@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -12,6 +11,7 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useToolStore } from "@/stores/toolStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -106,12 +106,12 @@ watch(
 </script>
 
 <template>
-    <BAlert v-if="loading || graphLoading" variant="info" show>
+    <GAlert v-if="loading || graphLoading" variant="info" show>
         <LoadingSpan message="Loading invocation steps" />
-    </BAlert>
-    <BAlert v-else-if="error" variant="danger" show>
+    </GAlert>
+    <GAlert v-else-if="error" variant="danger" show>
         {{ error }}
-    </BAlert>
+    </GAlert>
     <div v-else-if="graphSteps && workflow" class="steps-container">
         <div class="px-1 pt-1 pb-2">
             <DelayedInput placeholder="search steps" :delay="200" @change="(v) => (currentQuery = v)" />
@@ -153,9 +153,9 @@ watch(
             </div>
         </div>
 
-        <BAlert v-else variant="info" show> No steps match the search query. </BAlert>
+        <GAlert v-else variant="info" show> No steps match the search query. </GAlert>
     </div>
-    <BAlert v-else variant="info" show> There are no steps to display. </BAlert>
+    <GAlert v-else variant="info" show> There are no steps to display. </GAlert>
 </template>
 
 <style scoped lang="scss">

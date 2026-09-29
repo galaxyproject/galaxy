@@ -1,8 +1,8 @@
 <template>
     <div ref="outerContainer" :style="fillWidth ? 'overflow: hidden' : undefined">
-        <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+        <GAlert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <div ref="chartContainer" :class="fillWidth && 'w-100'" />
     </div>
 </template>
@@ -12,6 +12,8 @@ import { useResizeObserver } from "@vueuse/core";
 import type { View } from "vega";
 import embed, { type VisualizationSpec } from "vega-embed";
 import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;

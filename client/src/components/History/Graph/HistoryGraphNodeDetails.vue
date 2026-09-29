@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
-
 import type { HistoryGraphNode } from "./historyGraphMapper";
 
 import HistoryGraphNodeBody from "./HistoryGraphNodeBody.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     /** The selected graph node, or null when nothing is selected. */
@@ -18,6 +17,6 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <BAlert v-if="!node" show variant="info" class="mb-0">{{ emptyText }}</BAlert>
+    <GAlert v-if="!node" show variant="info" class="mb-0">{{ emptyText }}</GAlert>
     <HistoryGraphNodeBody v-else :node="node" />
 </template>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,6 +9,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import type { TrsSelection } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsIdImport from "@/components/Workflow/Import/TrsIdImport.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
@@ -123,18 +123,18 @@ defineExpose({ attemptImport });
 
 <template>
     <div class="workflow-import-trs">
-        <BAlert v-if="isAnonymous" class="text-center my-2" show variant="danger">
+        <GAlert v-if="isAnonymous" class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
-        </BAlert>
+        </GAlert>
 
         <div v-else>
-            <BAlert v-if="importing" show variant="info">
+            <GAlert v-if="importing" show variant="info">
                 <LoadingSpan message="Importing workflow" />
-            </BAlert>
+            </GAlert>
 
-            <BAlert v-if="errorMessage" show variant="danger">
+            <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
-            </BAlert>
+            </GAlert>
 
             <div v-if="effectiveView === 'trsSearch'" style="min-height: 500px">
                 <TrsSearch ref="trsSearchRef" @input-valid="onChildValidation" />

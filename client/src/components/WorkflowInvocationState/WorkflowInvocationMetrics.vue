@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
+import { BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
 import { computed, ref, watch } from "vue";
@@ -10,6 +10,7 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -403,9 +404,9 @@ const groupByInTitles = computed(() => {
 
 <template>
     <div>
-        <BAlert v-if="props.notTerminal" variant="warning" show>
+        <GAlert v-if="props.notTerminal" variant="warning" show>
             <LoadingSpan message="Metrics will update and change as the workflow progresses." />
-        </BAlert>
+        </GAlert>
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>

@@ -1,5 +1,5 @@
 <template>
-    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
+    <GAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</GAlert>
     <div v-else class="p-2">
         <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
         <ConfigureSelector
@@ -20,7 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
@@ -29,6 +28,7 @@ import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 

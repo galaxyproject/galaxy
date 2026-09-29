@@ -1,8 +1,8 @@
 <template>
     <div aria-labelledby="tool-recommendation-heading">
-        <BAlert v-if="errorMessage" variant="warning" show>
+        <GAlert v-if="errorMessage" variant="warning" show>
             Tool recommendations could not be loaded: {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="!deprecated && showMessage" class="infomessagelarge">
             <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
@@ -19,7 +19,6 @@
 </template>
 
 <script>
-import { BAlert } from "bootstrap-vue";
 import * as d3 from "d3";
 
 import { getDatatypesMapper } from "@/components/Datatypes";
@@ -29,8 +28,10 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
-    components: { BAlert },
+    components: { GAlert },
     props: {
         toolId: {
             type: String,

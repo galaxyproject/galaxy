@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref, toRef } from "vue";
 
@@ -8,6 +8,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -47,12 +48,12 @@ try {
 </script>
 
 <template>
-    <BAlert v-if="errorMessage" variant="danger" show>
+    <GAlert v-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
-    </BAlert>
-    <BAlert v-else-if="datatypesMapperLoading || loading" variant="info" show>
+    </GAlert>
+    <GAlert v-else-if="datatypesMapperLoading || loading" variant="info" show>
         <LoadingSpan message="Loading workflow" />
-    </BAlert>
+    </GAlert>
     <div v-else-if="datatypesMapper && !loading" class="d-flex flex-column">
         <Heading h2 separator bold size="sm"> Graph </Heading>
         <BCard class="workflow-preview mx-1 flex-grow-1">
@@ -67,7 +68,7 @@ try {
                 readonly />
         </BCard>
     </div>
-    <BAlert v-else variant="danger" show> Unable to load graph due to missing datatypes mapper. </BAlert>
+    <GAlert v-else variant="danger" show> Unable to load graph due to missing datatypes mapper. </GAlert>
 </template>
 
 <style scoped>

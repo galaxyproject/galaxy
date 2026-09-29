@@ -1,16 +1,15 @@
 <template>
     <div class="p-2">
         <ConfigureHeader @cancel="$emit('cancel')" />
-        <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
-        <BAlert v-else-if="!requiredObject || requirementFulfilled" v-localize variant="info" show>
+        <GAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</GAlert>
+        <GAlert v-else-if="!requiredObject || requirementFulfilled" v-localize variant="info" show>
             No inputs required for <b>`{{ contentName }}`</b>.
-        </BAlert>
+        </GAlert>
         <ConfigureSelector v-else :labels="labels" :object-type="requiredObject" @change="onChange" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { WorkflowLabel } from "@/components/Markdown/Editor/types";
@@ -20,6 +19,7 @@ import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     content: string;

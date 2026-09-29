@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -8,6 +7,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import GridInvocation from "../Grid/GridInvocation.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     storedWorkflowId: string;
@@ -42,10 +42,10 @@ onMounted(async () => {
             id: workflow.id,
             name: workflow.name,
         }" />
-    <BAlert v-else-if="loading" variant="info" show>
+    <GAlert v-else-if="loading" variant="info" show>
         <LoadingSpan message="Loading invocations for workflow" />
-    </BAlert>
-    <BAlert v-else variant="danger" show>
+    </GAlert>
+    <GAlert v-else variant="danger" show>
         <p>Failed to load stored workflow with ID: {{ props.storedWorkflowId }}</p>
-    </BAlert>
+    </GAlert>
 </template>

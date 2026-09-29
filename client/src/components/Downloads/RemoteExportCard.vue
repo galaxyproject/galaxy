@@ -7,12 +7,12 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
@@ -139,19 +139,19 @@ function onGoToObject() {
             <p v-if="exportRecord.modelStoreFormat" class="text-muted mb-2">
                 <strong>Format:</strong> {{ exportRecord.modelStoreFormat }}
             </p>
-            <BAlert v-if="exportRecord.isPreparing" variant="info" show>
+            <GAlert v-if="exportRecord.isPreparing" variant="info" show>
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Exporting to remote file source...</span>
-            </BAlert>
-            <BAlert v-if="exportRecord.isReady" variant="success" show>
+            </GAlert>
+            <GAlert v-if="exportRecord.isReady" variant="success" show>
                 <FontAwesomeIcon :icon="faCheckCircle" />
                 <span>Export completed successfully</span>
-            </BAlert>
-            <BAlert v-if="exportRecord.hasFailed" variant="danger" show>
+            </GAlert>
+            <GAlert v-if="exportRecord.hasFailed" variant="danger" show>
                 <FontAwesomeIcon :icon="faExclamationTriangle" />
                 <span>Export failed.</span>
                 <span v-if="exportRecord.errorMessage"> <strong>Error:</strong> {{ exportRecord.errorMessage }} </span>
-            </BAlert>
+            </GAlert>
         </template>
     </GCard>
 </template>

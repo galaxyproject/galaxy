@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { WorkflowLabel } from "./Editor/types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 interface LabelSelectorProps {
     hasLabels: boolean;
     labels: Array<WorkflowLabel>;
@@ -36,7 +38,7 @@ function update(index: number) {
                 {{ label.label }}
             </b-form-radio>
         </div>
-        <b-alert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </b-alert>
+        <GAlert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </GAlert>
         <p class="mt-3 text-muted">
             You may add new labels by selecting a step in the workflow editor and then editing the corresponding label
             field in the step form.

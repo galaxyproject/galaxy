@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faCheck, faExternalLinkAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type CreateLinkFeedback = components["schemas"]["CreateLinkFeedback"];
@@ -68,16 +68,16 @@ onMounted(() => {
 
 <template>
     <div>
-        <BAlert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <LoadingSpan v-else-if="isLoading" />
         <div v-else-if="hasData">
             <div v-for="(message, messageIndex) in applicationData.messages" :key="messageIndex">
-                <BAlert :variant="message[1]" show>
+                <GAlert :variant="message[1]" show>
                     <FontAwesomeIcon v-if="applicationData.refresh" spin :icon="faSpinner" />
                     <span>{{ message[0] }}</span>
-                </BAlert>
+                </GAlert>
             </div>
             <div v-if="applicationData.preparable_steps">
                 <h4 class="my-2">Display Application Initialization</h4>
@@ -88,7 +88,7 @@ onMounted(() => {
                     <span>('{{ step.state }}')</span>
                 </div>
             </div>
-            <BAlert v-if="applicationData.resource" variant="info" show>
+            <GAlert v-if="applicationData.resource" variant="info" show>
                 <span>
                     <span>Display application is ready and can be viewed at</span>
                     <a :href="applicationData.resource" target="_blank">
@@ -96,7 +96,7 @@ onMounted(() => {
                         <FontAwesomeIcon :icon="faExternalLinkAlt" />
                     </a>
                 </span>
-            </BAlert>
+            </GAlert>
         </div>
     </div>
 </template>

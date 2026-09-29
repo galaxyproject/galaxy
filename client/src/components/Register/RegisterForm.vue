@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
 import {
-    BAlert,
     BCard,
     BCardBody,
     BCardFooter,
@@ -25,6 +24,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import VerticalSeparator from "../Common/VerticalSeparator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 import ExternalRegistration from "@/components/User/ExternalIdentities/ExternalRegistration.vue";
@@ -109,14 +109,14 @@ async function submit() {
     <div class="register-form">
         <div class="d-flex justify-content-md-center">
             <div>
-                <BAlert :show="!!registrationWarningMessage" variant="info">
+                <GAlert :show="!!registrationWarningMessage" variant="info">
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span v-html="registrationWarningMessage" />
-                </BAlert>
+                </GAlert>
 
-                <BAlert :show="!!messageText" variant="danger">
+                <GAlert :show="!!messageText" variant="danger">
                     {{ messageText }}
-                </BAlert>
+                </GAlert>
 
                 <BForm id="registration" @submit.prevent="submit()">
                     <BCard no-body>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
@@ -8,6 +8,7 @@ import { useRouter } from "vue-router/composables";
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const emit = defineEmits<{
@@ -94,12 +95,12 @@ defineExpose({ attemptImport });
             instead.
         </BFormGroup>
 
-        <BAlert :show="hasErrorMessage" variant="danger">
+        <GAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="loading" show variant="info">
+        <GAlert v-if="loading" show variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
-        </BAlert>
+        </GAlert>
     </BForm>
 </template>

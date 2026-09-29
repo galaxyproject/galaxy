@@ -91,7 +91,7 @@ describe("DatasetAttributes", () => {
 
         await flushPromises();
 
-        expect(wrapper.find("[role=alert]").text()).toBe("success");
+        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("success");
     });
 
     it("check rendering without conversion option", async () => {
