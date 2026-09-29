@@ -236,6 +236,7 @@ class DatasetInstanceMaterializer:
                 include_tags=attached,
                 include_metadata=True,
             )
+            materialized_dataset_instance.name = dataset_instance.name
         elif replacement_dataset:
             materialized_dataset_instance.dataset = replacement_dataset.dataset
             materialized_dataset_instance.dataset_id = replacement_dataset.dataset_id
