@@ -43,6 +43,6 @@ describe("MastheadDropdown.vue", () => {
         await flushPromises();
 
         expect(document.activeElement).toBe(toggle.element);
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

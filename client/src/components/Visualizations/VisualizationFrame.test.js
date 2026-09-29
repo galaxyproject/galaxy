@@ -30,7 +30,7 @@ const postFrom = (wrapper, data) =>
     window.dispatchEvent(new MessageEvent("message", { data, source: wrapper.find("iframe").element.contentWindow }));
 
 afterEach(() => {
-    mounted.forEach((wrapper) => wrapper.destroy());
+    mounted.forEach((wrapper) => wrapper.unmount());
     mounted = [];
     vi.useRealTimers();
 });
@@ -93,7 +93,7 @@ describe("several visualizations on one page", () => {
     it("does not emit a debounced change after it has been removed", async () => {
         const { first } = await twoFrames();
         postFrom(first, { from: "galaxy-visualization", visualization_config: {}, visualization_title: "in flight" });
-        first.destroy();
+        first.unmount();
         await settle();
         expect(first.emitted("change")).toBeFalsy();
     });
@@ -101,7 +101,7 @@ describe("several visualizations on one page", () => {
     it("takes its listener off the shared window when removed", async () => {
         const added = vi.spyOn(window, "addEventListener");
         const removed = vi.spyOn(window, "removeEventListener");
-        mountFrame({}).destroy();
+        mountFrame({}).unmount();
         const handler = added.mock.calls.find(([type]) => type === "message")?.[1];
         expect(handler).toBeDefined();
         expect(removed.mock.calls).toContainEqual(["message", handler]);

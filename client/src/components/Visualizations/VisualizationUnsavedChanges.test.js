@@ -25,7 +25,7 @@ const localVue = getLocalVue();
 let wrapper;
 
 afterEach(() => {
-    wrapper?.destroy();
+    wrapper?.unmount();
     wrapper = undefined;
     vi.useRealTimers();
 });

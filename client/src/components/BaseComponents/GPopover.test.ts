@@ -74,7 +74,7 @@ async function showPopover(placement: string, resolvedPlacement: string, propsDa
 
 describe("GPopover", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -150,7 +150,7 @@ describe("GPopover", () => {
             attachTo: mountPoint,
             propsData: { target: "short-lived-trigger", triggers: "hover" },
         });
-        shortLived.destroy();
+        shortLived.unmount();
         await nextTick();
         await nextTick();
 
@@ -160,7 +160,7 @@ describe("GPopover", () => {
     it("removes the relocated popover when unmounted", async () => {
         await showPopover("bottom", "bottom");
 
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
 
         expect(document.body.querySelector(".popover")).toBeNull();
@@ -200,7 +200,7 @@ describe("GPopover hover", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -493,7 +493,7 @@ describe("GPopover hover", () => {
 
         leave(target, 158.5, 12);
         const unmounted = wrapper!;
-        unmounted.destroy();
+        unmounted.unmount();
         wrapper = undefined;
 
         expect(added).toHaveBeenCalled();
@@ -575,7 +575,7 @@ describe("GPopover hover", () => {
         target.dispatchEvent(new MouseEvent(show ? "mouseleave" : "mouseenter"));
 
         const unmounted = wrapper!;
-        unmounted.destroy();
+        unmounted.unmount();
         wrapper = undefined;
         await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
 
@@ -893,7 +893,7 @@ describe("GPopover escape", () => {
 
 describe("GPopover description", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -939,7 +939,7 @@ describe("GPopover description", () => {
 
         expect(target.getAttribute("aria-describedby")).toBe(`existing-hint ${popoverEl().id}`);
 
-        wrapper.destroy();
+        wrapper.unmount();
         wrapper = undefined;
 
         expect(target.getAttribute("aria-describedby")).toBe("existing-hint");
@@ -948,7 +948,7 @@ describe("GPopover description", () => {
 
 describe("GPopover click", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });

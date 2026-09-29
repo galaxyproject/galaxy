@@ -172,7 +172,7 @@ describe("FormDisplay", () => {
         "relays pagination and search events from repeated %s inputs",
         async (type) => {
             const input = { type, name: "input2", options: {} };
-            wrapper.destroy();
+            wrapper.unmount();
             wrapper = mount(FormDisplay, {
                 localVue,
                 propsData: {

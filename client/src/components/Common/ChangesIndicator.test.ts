@@ -70,7 +70,7 @@ describe("ChangesIndicator", () => {
         const wrapper = mountIndicator();
 
         const flashPromise = wrapper.vm.flashSavedIndicator();
-        wrapper.destroy();
+        wrapper.unmount();
         await flashPromise;
 
         expect(vi.getTimerCount()).toBe(0);

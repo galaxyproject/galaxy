@@ -100,7 +100,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    wrapper?.destroy();
+    wrapper?.unmount();
     wrapper = undefined;
     // happy-dom has no confirm of its own, so the stub has to be taken back off.
     delete window.confirm;
@@ -148,7 +148,7 @@ describe("warning about unsaved work", () => {
         const listening = watchUnloadListeners();
         mountDisplay({ visualization: "example", visualizationId: "v1" });
         expect(listening.size).toBe(1);
-        wrapper.destroy();
+        wrapper.unmount();
         respond();
         await flushPromises();
         expect(listening.size).toBe(0);

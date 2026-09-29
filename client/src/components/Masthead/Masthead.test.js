@@ -72,12 +72,12 @@ describe("Masthead.vue", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         window.location.href = originalUrl;
     });
 
     async function remount(config, user = currentUser) {
-        wrapper.destroy();
+        wrapper.unmount();
         setupMockConfig(config);
         const userStore = useUserStore();
         userStore.currentUser = user;
