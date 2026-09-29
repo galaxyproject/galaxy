@@ -9,6 +9,7 @@ import random
 import string
 import time
 from abc import abstractmethod
+from collections.abc import Callable
 from dataclasses import (
     dataclass,
     field,
@@ -24,12 +25,15 @@ from typing import (
     NamedTuple,
     Protocol,
     TYPE_CHECKING,
+    TypeVar,
 )
 
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from typing_extensions import ParamSpec
 
+from .keys import Key
 from .selenium_keys import (
     SELENIUM_KEY_TO_PLAYWRIGHT,
     SELENIUM_MODIFIERS,
@@ -43,6 +47,7 @@ if TYPE_CHECKING:
 from galaxy.navigation.components import (
     Component,
     HasText,
+    Target,
 )
 from galaxy.navigation.data import load_root_component
 from galaxy.util import (
@@ -62,6 +67,10 @@ from .has_driver import (
 from .has_driver_proxy import HasDriverProxy
 from .smart_components import SmartComponent
 from .web_element_protocol import WebElementProtocol
+
+P = ParamSpec("P")
+T = TypeVar("T")
+ExceptionCheck = Callable[[Exception], bool]
 
 # Test case data
 DEFAULT_PASSWORD = "123456"
@@ -137,7 +146,7 @@ def _exception_indicates_playwright_timeout(e):
         return False
 
 
-def exception_seems_to_indicate_transition(e):
+def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
     Galaxy features many different transition effects that change the page state over time.
@@ -161,11 +170,11 @@ def exception_seems_to_indicate_transition(e):
 
 
 def retry_call_during_transitions(
-    f,
-    attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
-    sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
-    exception_check=exception_seems_to_indicate_transition,
-):
+    f: Callable[[], T],
+    attempts: int = RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
+    sleep: float = RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
+    exception_check: ExceptionCheck = exception_seems_to_indicate_transition,
+) -> T:
     previous_attempts = 0
     while True:
         try:
@@ -182,13 +191,13 @@ def retry_call_during_transitions(
 
 
 def retry_during_transitions(
-    f,
-    attempts=RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
-    sleep=RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
-    exception_check=exception_seems_to_indicate_transition,
-):
+    f: Callable[P, T],
+    attempts: int = RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT,
+    sleep: float = RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT,
+    exception_check: ExceptionCheck = exception_seems_to_indicate_transition,
+) -> Callable[P, T]:
     @wraps(f)
-    def _retry(*args, **kwds):
+    def _retry(*args: P.args, **kwds: P.kwargs) -> T:
         return retry_call_during_transitions(
             partial(f, *args, **kwds), attempts=attempts, sleep=sleep, exception_check=exception_check
         )
@@ -2220,6 +2229,93 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
+    # --- Keyboard helpers ---
+
+    def platform_modifier_key(self) -> Key:
+        """Return the modifier the client binds shortcuts to on this browser's platform.
+
+        The browser decides this, not the machine running the tests, so the check
+        is the one behind ``eventStore.isMac``.
+        """
+        is_mac = self.execute_script("return navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;")
+        return Key.META if is_mac else Key.CONTROL
+
+    # --- Command palette helpers ---
+
+    def command_palette_open(self) -> None:
+        """Open the command palette from the masthead search button."""
+        self.components.masthead.search.wait_for_and_click()
+        self.command_palette_wait_for_open()
+
+    def command_palette_toggle_with_shortcut(self) -> None:
+        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus."""
+        self.press("k", modifiers=[self.platform_modifier_key()])
+
+    def command_palette_wait_for_open(self) -> None:
+        self.components.command_palette.input.wait_for_visible()
+
+    def command_palette_wait_for_closed(self) -> None:
+        self.components.command_palette._.wait_for_absent_or_hidden()
+
+    def command_palette_type(self, text: str) -> None:
+        """Append to the palette input a character at a time, the way a user types.
+
+        Tokens are parsed as they arrive, so ``h:`` leaves the input empty behind
+        a scope badge and whatever follows is a query inside that scope.
+        """
+        self.components.command_palette.input.wait_for_and_send_keys(text)
+
+    def command_palette_badge_text(self) -> str:
+        """Text of the scope or action badge in front of the input."""
+        return self.components.command_palette.badge.wait_for_text()
+
+    @retry_during_transitions
+    def command_palette_option_titles(self) -> list[str]:
+        """Titles of the rendered result rows, in the order they are shown.
+
+        The rows are replaced on every search, so the read is retried rather
+        than left to raise out of whatever wait is polling it.
+        """
+        return [element.text for element in self.components.command_palette.option_title.all()]
+
+    def command_palette_wait_for_input_value(self, value: str) -> None:
+        """Wait for the palette input to hold exactly this text."""
+        self._wait_on(
+            lambda: self.components.command_palette.input.wait_for_value() == value,
+            f"command palette input to hold [{value}]",
+            wait_type=WAIT_TYPES.UX_TRANSITION,
+        )
+
+    def command_palette_wait_for_option(self, title: str) -> None:
+        """Wait for a result row with this exact title.
+
+        Searches are debounced and most of them reach the API, so this waits
+        longer than a render.
+        """
+        self._wait_on(
+            lambda: title in self.command_palette_option_titles(),
+            f"command palette result titled [{title}]",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
+
+    def command_palette_click_option(self, title: str) -> None:
+        """Run the result row with this title; the click bubbles from the title to the row."""
+        self.command_palette_wait_for_option(title)
+        self._command_palette_click_rendered_option(title)
+
+    @retry_during_transitions
+    def _command_palette_click_rendered_option(self, title: str) -> None:
+        """Click a row already known to be rendered - the wait stays outside the retry."""
+        for element in self.components.command_palette.option_title.all():
+            if element.text == title:
+                element.click()
+                return
+        raise AssertionError(f"No command palette result titled [{title}]")
+
+    def command_palette_click_category(self, category_id: str) -> None:
+        """Narrow the current root query to one category tab of the category row."""
+        self.components.command_palette.category(category=category_id).wait_for_and_click()
+
     # --- Window Manager helpers ---
 
     def window_manager_toggle(self):
@@ -2741,12 +2837,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.assert_selector_absent_or_hidden(selector)
 
     @retry_during_transitions
-    def assert_absent_or_hidden_after_transitions(self, selector):
+    def assert_absent_or_hidden_after_transitions(self, selector_template: Target, **kwds: Any) -> None:
         """Variant of assert_absent_or_hidden that retries during transitions.
 
         See details above for more information about this.
         """
-        return super().assert_absent_or_hidden_after_transitions(selector)
+        super().assert_absent_or_hidden_after_transitions(selector_template, **kwds)
 
     def assert_tooltip_text(self, element, expected: str | HasText, sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
@@ -2844,12 +2940,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return element
 
     @retry_during_transitions
-    def wait_for_and_click(self, selector_template):
-        return super().wait_for_and_click(selector_template)
+    def wait_for_and_click(self, selector_template: Target, **kwds: Any) -> Any:
+        return super().wait_for_and_click(selector_template, **kwds)
 
     @retry_during_transitions
-    def wait_for_and_double_click(self, selector_template):
-        return super().wait_for_and_double_click(selector_template)
+    def wait_for_and_double_click(self, selector_template: Target, **kwds: Any) -> Any:
+        return super().wait_for_and_double_click(selector_template, **kwds)
 
     def set_history_annotation(self, annotation, clear_text=False):
         toggle = self.history_element("editor toggle")
