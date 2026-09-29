@@ -47,7 +47,9 @@ const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
 const offset = ref(0);
-const loading = ref(true);
+const fetching = ref(true);
+// My workflows are filtered by owner, so keep loading until the user is known
+const loading = computed(() => fetching.value || (props.activeList === "my" && !userStore.currentUser));
 const overlay = ref(false);
 const filterText = ref("");
 const totalWorkflows = ref(0);
@@ -168,7 +170,7 @@ async function load(overlayLoading = false, silent = false) {
         if (overlayLoading) {
             overlay.value = true;
         } else {
-            loading.value = true;
+            fetching.value = true;
         }
     }
 
@@ -187,7 +189,7 @@ async function load(overlayLoading = false, silent = false) {
     } else {
         // there are invalid filters, so we don't want to search
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
         return;
     }
 
@@ -209,7 +211,7 @@ async function load(overlayLoading = false, silent = false) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
     }
 }
 
