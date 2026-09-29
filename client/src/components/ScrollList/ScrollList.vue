@@ -251,7 +251,7 @@ watch(
                     <component
                         :is="'div'"
                         v-for="(item, index) in items"
-                        :key="itemKey(item)"
+                        :key="itemKey(item as T)"
                         style="display: contents">
                         <slot name="item" :item="item" :index="index" />
                     </component>
