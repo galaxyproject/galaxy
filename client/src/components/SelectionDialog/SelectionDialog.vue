@@ -292,7 +292,11 @@ defineExpose({
                     :filter-class="props.filterClass"
                     :loading="props.isBusy" />
 
-                <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
+                <DataDialogSearch
+                    v-else
+                    :value="filter"
+                    :title="props.searchTitle || props.title"
+                    @input="(v: string) => (filter = v)" />
             </div>
         </template>
         <slot name="helper" />

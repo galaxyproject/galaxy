@@ -42,7 +42,11 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 
 <template>
     <div>
-        <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
+        <ConfigurationTestSummaryModal
+            :value="showTestResults"
+            :error="testingError"
+            :test-results="testResults"
+            @input="(v: boolean) => (showTestResults = v)" />
 
         <ManageIndexHeader header="My Repositories" :message="message" create-route="/file_source_instances/create" />
 

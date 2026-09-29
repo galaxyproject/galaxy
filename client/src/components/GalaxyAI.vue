@@ -659,7 +659,7 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
-            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
+            <ChatInput :value="query" :busy="busy" @input="(v: string) => (query = v)" @submit="submitQuery" />
         </div>
     </div>
 </template>
