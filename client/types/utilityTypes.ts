@@ -18,11 +18,11 @@ export type Last<A extends readonly [...any]> = A[Subtract<Length<A>, 1>];
 export type First<A extends readonly [...any]> = A[Length<A>];
 
 /**
- * Extract the prop types of a vue 2 component. This is an alternative to `ExtractPropTypes`, which has unreliable behavior in vue 2.
+ * Extract the prop types of a Vue SFC from its component constructor type.
  * @example
  * type MyComponentPropsType = GetComponentPropTypes<typeof MyComponent>;
  */
-export type GetComponentPropTypes<T extends import("vue").ComponentPublicInstance> = T["$props"];
+export type GetComponentPropTypes<T extends abstract new (...args: any) => any> = InstanceType<T>["$props"];
 
 /** Convert snake case string literal to camel case string literal */
 export type SnakeToCamelCase<S extends string> = S extends `${infer T}_${infer U}`
