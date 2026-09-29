@@ -12,7 +12,9 @@ recycle (``--max-requests``) into an unexplained core dump:
   the ``atexit`` handler that shuts Galaxy down.
 
 This worker bounds the drain, puts the ``SIGABRT`` handler back, and reports what
-was still in flight whenever a worker is torn down the hard way.
+was still in flight whenever a worker is torn down the hard way. Requests that never
+finish by themselves, such as event streams, can be ended when the drain starts via
+:func:`on_drain_start`.
 """
 
 import asyncio
@@ -23,6 +25,7 @@ import sys
 import threading
 import time
 import traceback
+from collections.abc import Callable
 from types import FrameType
 from typing import (
     Any,
@@ -49,6 +52,28 @@ DRAIN_POLL_INTERVAL = 0.25
 DRAIN_DEADLINE_LEAD = 1.0
 #: Frames to keep per thread in the stack dump.
 STACK_FRAME_LIMIT = 30
+
+_drain_start_callbacks: list[Callable[[], None]] = []
+
+
+def on_drain_start(callback: Callable[[], None]) -> Callable[[], None]:
+    """Call ``callback`` on the event loop when a worker begins a graceful shutdown.
+
+    It runs just before uvicorn stops accepting connections and waits for in-flight
+    requests, so it can end requests that would otherwise hold the drain open until
+    the deadline. A callback that raises is logged and does not stop the shutdown.
+    Returns a function that unregisters the callback.
+    """
+    _drain_start_callbacks.append(callback)
+    return lambda: _drain_start_callbacks.remove(callback)
+
+
+def _run_drain_start_callbacks():
+    for callback in list(_drain_start_callbacks):
+        try:
+            callback()
+        except Exception:
+            log.exception("Graceful shutdown callback %r failed", callback)
 
 
 def _interesting_frame(frames):
@@ -125,6 +150,10 @@ class _Server(Server):
     async def shutdown(self, sockets=None):
         reporter = asyncio.ensure_future(self._worker.report_drain(self))
         try:
+            # Everything in Server.shutdown() up to its first await -- closing the
+            # listeners and marking connections not keep-alive -- happens before any
+            # request task sees what the callbacks did.
+            _run_drain_start_callbacks()
             await super().shutdown(sockets=sockets)
         finally:
             reporter.cancel()

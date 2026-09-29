@@ -3,12 +3,24 @@
 import asyncio
 import logging
 import signal
+import socket
 from unittest.mock import Mock
 
 from gunicorn.config import Config
+from starlette.applications import Starlette
+from starlette.responses import (
+    PlainTextResponse,
+    StreamingResponse,
+)
+from starlette.routing import Route
 
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.web_stack import gunicorn_config
-from galaxy.webapps.galaxy.workers import Worker
+from galaxy.webapps.galaxy.workers import (
+    _Server,
+    on_drain_start,
+    Worker,
+)
 
 
 def make_worker(timeout=300, graceful_timeout=30):
@@ -130,3 +142,65 @@ def test_worker_abort_hook_logs_the_summary_at_error(caplog):
     gunicorn_config.worker_abort(worker)
     errors = [r for r in caplog.records if r.levelname == "ERROR"]
     assert errors and "/api/datasets" in errors[-1].getMessage()
+
+
+async def open_stream_through_a_recycle(worker, manager):
+    """Hold an event stream open while another request takes the worker to its limit.
+
+    Returns what the stream's client received. uvicorn counts a request once its
+    response completes, so the stream alone never triggers the recycle.
+    """
+
+    async def events(request):
+        return StreamingResponse(manager.stream(request.is_disconnected, user_id=None))
+
+    async def version(request):
+        return PlainTextResponse("26.1")
+
+    routes = [Route("/api/events/stream", events), Route("/api/version", version)]
+    worker.config.app = Starlette(routes=routes)
+    worker.config.limit_max_requests = 1
+    server = _Server(config=worker.config, worker=worker)
+    sock = socket.create_server(("127.0.0.1", 0))
+    serving = asyncio.ensure_future(server.serve(sockets=[sock]))
+    try:
+        while not server.started:
+            await asyncio.sleep(0.01)
+        stream, stream_writer = await asyncio.open_connection(*sock.getsockname())
+        stream_writer.write(b"GET /api/events/stream HTTP/1.1\r\nHost: test\r\n\r\n")
+        received = await asyncio.wait_for(stream.readuntil(b"event: ready"), timeout=5)
+        _, writer = await asyncio.open_connection(*sock.getsockname())
+        writer.write(b"GET /api/version HTTP/1.1\r\nHost: test\r\nConnection: close\r\n\r\n")
+        # The recycle drains within uvicorn's 0.1s pause unless the stream holds it open.
+        received += await asyncio.wait_for(stream.read(), timeout=5)
+        await asyncio.wait_for(serving, timeout=5)
+        return received
+    finally:
+        serving.cancel()
+
+
+def test_max_requests_recycle_ends_open_event_streams():
+    manager = SSEConnectionManager()
+    unregister = on_drain_start(manager.begin_shutdown)
+    try:
+        body = asyncio.run(open_stream_through_a_recycle(make_worker(), manager))
+    finally:
+        unregister()
+    assert body.endswith(b"0\r\n\r\n")  # the stream's final chunk
+    assert manager.total_connections == 0
+
+
+def test_a_failing_drain_start_callback_does_not_stop_shutdown(caplog):
+    def fail():
+        raise RuntimeError("boom")
+
+    manager = SSEConnectionManager()
+    unregister_failing = on_drain_start(fail)
+    unregister = on_drain_start(manager.begin_shutdown)
+    try:
+        body = asyncio.run(open_stream_through_a_recycle(make_worker(), manager))
+    finally:
+        unregister()
+        unregister_failing()
+    assert body.endswith(b"0\r\n\r\n")
+    assert "Graceful shutdown callback" in caplog.text

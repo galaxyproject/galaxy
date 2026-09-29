@@ -22,6 +22,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Route
 from tuspyserver import create_tus_router
 
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
@@ -37,6 +38,7 @@ from galaxy.webapps.base.webapp import (
     config_allows_origin,
 )
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+from galaxy.webapps.galaxy.workers import on_drain_start
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 
@@ -331,6 +333,8 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_tus(app, gx_app)
     app.state.route_name_index = build_route_name_index(app)
     include_mcp(app, gx_app, mcp_app)
+    # Event streams never end by themselves; end them as the worker starts draining.
+    gx_app.haltables.append(("SSE drain callback", on_drain_start(gx_app[SSEConnectionManager].begin_shutdown)))
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         # The ASGI server only runs the lifespan of the app it is handed, and
