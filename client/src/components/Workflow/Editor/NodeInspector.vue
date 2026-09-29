@@ -68,7 +68,7 @@ function updateStored(v: boolean) {
             side="right"
             :min="100"
             :max="1200"
-            @positionChanged="(v) => inspectorStore.setWidth(props.step, v)"></DraggableSeparator>
+            @positionChanged="(v: number) => inspectorStore.setWidth(props.step, v)"></DraggableSeparator>
 
         <div class="inspector-heading">
             <Heading h2 inline size="sm"> {{ title }} </Heading>
@@ -126,23 +126,23 @@ function updateStored(v: boolean) {
                     class="w-100"
                     :step="props.step"
                     :datatypes="props.datatypes"
-                    @onSetData="(id, d) => emit('dataChanged', id, d)"
-                    @onUpdateStep="(id, s) => emit('stepUpdated', id, s)"
-                    @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
-                    @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
-                    @onLabel="(id, l) => emit('labelChanged', id, l)"></FormTool>
+                    @onSetData="(id: number, d: object) => emit('dataChanged', id, d)"
+                    @onUpdateStep="(id: number, s: Step) => emit('stepUpdated', id, s)"
+                    @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
+                    @onAnnotation="(id: string, a: string) => emit('annotationChanged', id, a)"
+                    @onLabel="(id: string, l: string) => emit('labelChanged', id, l)"></FormTool>
                 <FormDefault
                     v-else
                     class="w-100"
                     :step="props.step"
                     :datatypes="datatypes"
-                    @onSetData="(id, d) => emit('dataChanged', id, d)"
-                    @onUpdateStep="(id, s) => emit('stepUpdated', id, s)"
-                    @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
-                    @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
-                    @onLabel="(id, l) => emit('labelChanged', id, l)"
-                    @onEditSubworkflow="(id) => emit('editSubworkflow', id)"
-                    @onAttemptRefactor="(...args) => emit('attemptRefactor', ...args)" />
+                    @onSetData="(id: number, d: object) => emit('dataChanged', id, d)"
+                    @onUpdateStep="(id: number, s: Step) => emit('stepUpdated', id, s)"
+                    @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
+                    @onAnnotation="(id: string, a: string) => emit('annotationChanged', id, a)"
+                    @onLabel="(id: string, l: string) => emit('labelChanged', id, l)"
+                    @onEditSubworkflow="(id: string) => emit('editSubworkflow', id)"
+                    @onAttemptRefactor="(...args: any[]) => emit('attemptRefactor', ...args)" />
             </IdleLoad>
         </div>
     </section>
