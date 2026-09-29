@@ -2,9 +2,10 @@
 Rules for user account fields that depend on nothing but the value.
 
 galaxy.schema validates API payloads with these and the managers apply them for
-every other caller, so a field has one rule however its value arrives. As in
-galaxy.security.validate_user_input, the validate_* functions return a
-user-facing message, or "" for a valid value, and never echo the input.
+every other caller, so a field has one rule however its value arrives. The
+validate_* functions return a user-facing message, or "" for a valid value, and
+never echo the input. Rules that need the database or configuration, such as
+uniqueness, live in galaxy.security.validate_user_input.
 """
 
 import re
@@ -41,6 +42,15 @@ DISPLAY_NAME_REJECTED_CATEGORIES = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl"
 DISPLAY_NAME_BLANK_CHARACTERS = frozenset("\u034f\u115f\u1160\u17b4\u17b5\u2800\u3164\uffa0")
 DISPLAY_NAME_JOINERS = frozenset("\u200c\u200d")
 
+# Public name validity parameters
+PUBLICNAME_MAX_LEN = 255
+VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
+VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
+FILL_CHAR = "-"
+
+# Password validity parameters
+PASSWORD_MIN_LEN = 6
+
 
 def canonicalize_email(email: str | None) -> str:
     """Return the form of an email address that is validated and stored.
@@ -63,6 +73,38 @@ def validate_email_str(email: str | None) -> str:
         return "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
         return f"Email address cannot be more than {EMAIL_MAX_LEN} characters in length."
+    return ""
+
+
+def validate_publicname_str(publicname: str | None) -> str:
+    """Validates a string containing a public username."""
+    if not publicname:
+        return "Public name cannot be empty"
+    if len(publicname) > PUBLICNAME_MAX_LEN:
+        return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
+    if not (VALID_PUBLICNAME_RE.match(publicname)):
+        return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
+    return ""
+
+
+def transform_publicname(publicname: str | None) -> str:
+    """
+    Transform publicname to respect the minimum and maximum string length, and
+    the allowed characters.
+    FILL_CHAR is used to extend or replace characters.
+    """
+    # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
+    if not publicname:
+        raise ValueError("Public name cannot be empty")
+    publicname = publicname.lower()
+    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
+    publicname = publicname[:PUBLICNAME_MAX_LEN]
+    return publicname
+
+
+def validate_password_str(password: str | None) -> str:
+    if not password or len(password) < PASSWORD_MIN_LEN:
+        return f"Use a password of at least {PASSWORD_MIN_LEN} characters."
     return ""
 
 

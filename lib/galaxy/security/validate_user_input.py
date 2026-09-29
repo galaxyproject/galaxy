@@ -6,7 +6,6 @@ user inputs - so these methods do not need to be escaped.
 """
 
 import logging
-import re
 from typing import (
     Any,
     Protocol,
@@ -22,7 +21,20 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
-from galaxy.util.user_input import validate_email_str
+from galaxy.util.user_input import (
+    EMAIL_MAX_LEN,
+    FILL_CHAR,
+    is_valid_email_str,
+    PASSWORD_MIN_LEN,
+    PUBLICNAME_MAX_LEN,
+    transform_publicname,
+    VALID_EMAIL_RE,
+    VALID_PUBLICNAME_RE,
+    VALID_PUBLICNAME_SUB,
+    validate_email_str,
+    validate_password_str,
+    validate_publicname_str,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import User
@@ -45,32 +57,6 @@ class UserValidationContext(Protocol):
 
 
 log = logging.getLogger(__name__)
-
-# Public name validity parameters
-PUBLICNAME_MAX_LEN = 255
-VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
-VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
-FILL_CHAR = "-"
-
-# Password validity parameters
-PASSWORD_MIN_LEN = 6
-
-
-def validate_password_str(password):
-    if not password or len(password) < PASSWORD_MIN_LEN:
-        return f"Use a password of at least {PASSWORD_MIN_LEN} characters."
-    return ""
-
-
-def validate_publicname_str(publicname):
-    """Validates a string containing a public username."""
-    if not publicname:
-        return "Public name cannot be empty"
-    if len(publicname) > PUBLICNAME_MAX_LEN:
-        return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
-    if not (VALID_PUBLICNAME_RE.match(publicname)):
-        return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
-    return ""
 
 
 def validate_email(
@@ -149,21 +135,6 @@ def validate_publicname(trans: UserValidationContext, publicname, user=None):
     if trans.sa_session.scalars(stmt).first():
         return "Public name is taken; please choose another."
     return ""
-
-
-def transform_publicname(publicname):
-    """
-    Transform publicname to respect the minimum and maximum string length, and
-    the allowed characters.
-    FILL_CHAR is used to extend or replace characters.
-    """
-    # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if not publicname:
-        raise ValueError("Public name cannot be empty")
-    publicname = publicname.lower()
-    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-    publicname = publicname[:PUBLICNAME_MAX_LEN]
-    return publicname
 
 
 def validate_password(trans: UserValidationContext, password, confirm):
@@ -256,3 +227,28 @@ class EmailAddressNormalizer:
                 email_localpart = email_localpart[: email_localpart.index(delim)]
 
         return email_localpart
+
+
+__all__ = (
+    "EMAIL_MAX_LEN",
+    "EmailAddressNormalizer",
+    "extract_domain",
+    "FILL_CHAR",
+    "is_email_banned",
+    "is_valid_email_str",
+    "PASSWORD_MIN_LEN",
+    "PUBLICNAME_MAX_LEN",
+    "transform_publicname",
+    "UserValidationContext",
+    "VALID_EMAIL_RE",
+    "VALID_PUBLICNAME_RE",
+    "VALID_PUBLICNAME_SUB",
+    "validate_email",
+    "validate_email_domain_name",
+    "validate_email_str",
+    "validate_password",
+    "validate_password_str",
+    "validate_preferred_object_store_id",
+    "validate_publicname",
+    "validate_publicname_str",
+)

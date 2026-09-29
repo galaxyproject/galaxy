@@ -198,7 +198,6 @@ from galaxy.schema.states import (
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.security.validate_user_input import validate_password_str
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnDefinitions,
@@ -242,6 +241,7 @@ from galaxy.util.hash_util import (
 )
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.user_input import validate_password_str
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.expression import BindParameter

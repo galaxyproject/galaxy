@@ -6,6 +6,7 @@ from typing import (
     get_args,
     get_origin,
     Protocol,
+    TypeVar,
     Union,
 )
 
@@ -17,18 +18,25 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import (
+    MessageException,
+    RequestParameterInvalidException,
+)
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
-def validation_message_wrapper(callable: Callable):
+T = TypeVar("T")
+R = TypeVar("R")
+
+
+def validation_message_wrapper(callable: Callable[[T], R]) -> Callable[[T], R]:
     """Wraps MessageException in a PydanticCustomError."""
 
-    def wrapper(database_id):
+    def wrapper(value: T) -> R:
         try:
-            return callable(database_id)
+            return callable(value)
         except MessageException as e:
             # we want to return it as a PydanticCustomError
             # so that it can be handled by the Pydantic error handling system, so we can restore the
@@ -36,6 +44,17 @@ def validation_message_wrapper(callable: Callable):
             raise PydanticCustomError("message_exception", "A seralizable exception occurrred", {"exception": e})
 
     return wrapper
+
+
+def message_rule_validator(rule: Callable[[T], str]) -> Callable[[T], T]:
+    """Turn a rule returning a user-facing message ("" when valid) into a pydantic validator."""
+
+    def check(value: T) -> T:
+        if message := rule(value):
+            raise RequestParameterInvalidException(message)
+        return value
+
+    return validation_message_wrapper(check)
 
 
 @validation_message_wrapper
