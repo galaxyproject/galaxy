@@ -94,7 +94,6 @@ async function createWrapper(localVue, currentUserId, history) {
         props: { id: history.id },
         global: {
             ...localVue,
-            plugins: [...(localVue.plugins || []), router],
             provide: {
                 store: {
                     dispatch: vi.fn,
@@ -102,6 +101,11 @@ async function createWrapper(localVue, currentUserId, history) {
                 },
             },
         },
+        // Passed at the top level (rather than spliced into `global.plugins`
+        // by hand) so the VTU adapter replaces getLocalVue()'s default router
+        // with this one instead of installing both and crashing with
+        // "Cannot redefine property: $route".
+        router,
     });
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
