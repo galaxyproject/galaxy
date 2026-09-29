@@ -67,6 +67,51 @@ def _skip_output_assoc_name(name: str) -> bool:
     return ToolOutputCollectionPart.is_named_collection_part_name(name) or name.startswith("__new_primary_file")
 
 
+def _set_step_tool(step: WorkflowStep, job: Job) -> None:
+    step.dynamic_tool = job.dynamic_tool
+    if job.dynamic_tool is None or job.dynamic_tool.public:
+        # User-defined tool steps are identified by ``dynamic_tool`` alone, see
+        # ``WorkflowStep.effective_tool_id``.
+        step.tool_id = job.tool_id
+
+
+def _unsummarized_job_message(trans: ProvidesHistoryContext, job_id: int, summary: "WorkflowSummary") -> str:
+    """Why a requested job has no representative in the history summary."""
+    message = (
+        f"Cannot extract a workflow step for job {trans.security.encode_id(job_id)} - it produced no output in "
+        "this history that workflow extraction can represent."
+    )
+    if WARNING_SOME_DATASETS_NOT_READY in summary.warnings:
+        message += (
+            " Some outputs in this history are still queued or running and were skipped - wait for them to "
+            "finish and extract again."
+        )
+    return message
+
+
+def _implicit_map_output_hid(summary: "WorkflowSummary", job: Job, assoc_name: str) -> int:
+    """hid of the mapped output collection carrying ``job``'s ``assoc_name`` output."""
+    hid: Optional[int] = None
+    pairs = summary.jobs[job]
+    for query_assoc_name, dataset_collection in pairs:
+        if query_assoc_name == assoc_name:
+            hid = summary.hid(dataset_collection)
+    if hid is None:
+        log.error(
+            "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s.",
+            job.id,
+            pairs,
+            assoc_name,
+        )
+        found = ", ".join(f"'{name}'" for name, _ in pairs if name) or "none"
+        raise exceptions.InconsistentApplicationState(
+            f"Failed to extract a workflow step for job {job.id} (tool '{job.tool_id}') - it was mapped over a "
+            f"collection, but its output '{assoc_name}' is not carried by any output collection in this history "
+            f"(collections found for this job: {found})."
+        )
+    return hid
+
+
 def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, str]) -> None:
     """Wire ``step``'s ``input_name`` to ``source`` (output_step, output_name).
     The source is always an earlier step - a job only consumes outputs of jobs
@@ -186,16 +231,14 @@ def extract_steps(
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
             log.warning(f"job_id {job_id} not found in job_id2representative_job {summary.job_id2representative_job}")
-            raise AssertionError("Attempt to create workflow with job not connected to current history")
+            raise exceptions.RequestParameterInvalidException(_unsummarized_job_message(trans, job_id, summary))
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
-        if job.dynamic_tool_id:
-            step.dynamic_tool_id = job.dynamic_tool_id
+        _set_step_tool(step, job)
         # NOTE: We shouldn't need to do two passes here since only
         #       an earlier job can be used as an input to a later
         #       job.
@@ -215,21 +258,9 @@ def extract_steps(
             assoc_name = assoc.name
             if _skip_output_assoc_name(assoc_name):
                 continue
+            hid: int
             if job in summary.implicit_map_jobs:
-                hid: Optional[int] = None
-                for implicit_pair in jobs[job]:
-                    query_assoc_name, dataset_collection = implicit_pair
-                    if query_assoc_name == assoc_name or assoc_name.startswith(
-                        f"__new_primary_file_{query_assoc_name}|"
-                    ):
-                        hid = summary.hid(dataset_collection)
-                if hid is None:
-                    template = (
-                        "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s."
-                    )
-                    message = template % (job.id, jobs[job], assoc_name)
-                    log.warning(message)
-                    raise Exception("Failed to extract job.")
+                hid = _implicit_map_output_hid(summary, job, assoc_name)
             else:
                 if hasattr(assoc, "dataset"):
                     has_hid = assoc.dataset
@@ -673,11 +704,9 @@ def extract_steps_by_ids(
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
-        if job.dynamic_tool_id:
-            step.dynamic_tool_id = job.dynamic_tool_id
+        _set_step_tool(step, job)
 
         mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
         if output_hdcas:

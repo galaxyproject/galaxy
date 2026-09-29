@@ -333,9 +333,9 @@ class WorkflowRunCrateProfileBuilder:
                         properties={
                             "@type": "HowToStep",
                             "position": position[0],
-                            "name": step.tool_id,
+                            "name": step.effective_tool_id,
                             "description": step_description,
-                            "workExample": f"#{step.tool_id}",
+                            "workExample": f"#{step.effective_tool_id}",
                         },
                     )
                 )
@@ -363,7 +363,7 @@ class WorkflowRunCrateProfileBuilder:
         """
         for step in steps:
             if step.type == "tool":
-                tool_id = step.tool_id
+                tool_id = step.effective_tool_id
                 tool_version = step.tool_version
 
                 # Cache key based on tool ID and version

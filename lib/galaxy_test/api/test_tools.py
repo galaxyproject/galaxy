@@ -332,6 +332,17 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
 
+    @skip_without_tool("filter_param_value_nested_conditional")
+    def test_build_request_param_value_filter_in_inactive_nested_case(self):
+        # https://github.com/galaxyproject/galaxy/issues/23077
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("filter_param_value_nested_conditional", history_id)
+            outer = build["inputs"][0]
+            inner = outer["cases"][0]["inputs"][0]
+            select1, select2 = inner["cases"][1]["inputs"]
+            assert select1["value"] == "hg19_value"
+            assert [o[1] for o in select2["options"]] == ["hg19_value"]
+
     @skip_without_tool("dbkey_filter_multi_input")
     def test_build_request_dbkey_filter_hdca_multi_input(self):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22399:

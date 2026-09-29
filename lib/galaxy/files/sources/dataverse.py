@@ -39,7 +39,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
     requests,
-    stream_to_open_named_file,
+    stream_to_path,
 )
 from galaxy.util.hash_util import HashFunctionNames
 from galaxy.util.user_agent import get_default_headers
@@ -455,10 +455,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
-                f = open(file_path, "wb")
-                return stream_to_open_named_file(
-                    page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
-                )
+                return stream_to_path(page, file_path, source_encoding=get_charset_from_http_headers(page.headers))
         except HTTPError as e:
             if e.code == 401:
                 raise AuthenticationRequired(

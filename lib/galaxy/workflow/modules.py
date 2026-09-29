@@ -33,6 +33,7 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.model import (
     DatasetInstance,
+    DynamicTool,
     HistoryDatasetCollectionAssociation,
     Job,
     PostJobAction,
@@ -2412,31 +2413,44 @@ class ToolModule(WorkflowModule):
             if tool_id:
                 tool_id = remove_version_from_guid(tool_id) or tool_id
             kwds = dict(kwds, exact_tools=False)
-        if tool_id is None and tool_uuid is None:
-            tool_representation = d.get("tool_representation")
-            if tool_representation:
-                if tool_representation.get("class") == "GalaxyUserTool":
-                    # User-defined tool embedded in the workflow: create it as a
-                    # private UDT owned by the importing user. Requires
-                    # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-                    # InsufficientPermissionsException otherwise.
-                    if trans.user is None:
-                        raise exceptions.InsufficientPermissionsException(
-                            "User is not allowed to run unprivileged tools"
-                        )
-                    unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(
-                        trans.user, unprivileged_request
-                    )
-                else:
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
-                    create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+        tool_representation = d.get("tool_representation")
+        if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
+            # User-defined tool embedded in the workflow. A referenced tool the
+            # importing user owns is reused; otherwise (an export by another
+            # user or from another Galaxy) the embedded definition becomes a
+            # private UDT owned by the importing user. Requires
+            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
+            # InsufficientPermissionsException otherwise.
+            if trans.user is None:
+                raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
+            if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
+                unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
+                dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(trans.user, unprivileged_request)
                 tool_uuid = dynamic_tool.uuid
+        elif tool_representation and tool_id is None and tool_uuid is None:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
+            create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
+            dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+            tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        # Steps that embed ``tool_representation`` are exported workflows, which may carry any
+        # tool_id, and still import. A step that references a user-defined tool only by uuid
+        # must name it consistently.
+        if (
+            tool_id is not None
+            and tool_uuid is not None
+            and not d.get("tool_representation")
+            and module.tool
+            and module.tool.is_unprivileged_tool
+            and tool_id != module.tool.id
+        ):
+            raise exceptions.RequestParameterInvalidException(
+                f"tool_id '{tool_id}' does not match user-defined tool {tool_uuid} (id '{module.tool.id}'); "
+                f"omit tool_id or pass '{module.tool.id}' when referencing a tool by tool_uuid"
+            )
         module.post_job_actions = d.get("post_job_actions", {})
         module.workflow_outputs = d.get("workflow_outputs", [])
         if module.tool:
@@ -2452,11 +2466,12 @@ class ToolModule(WorkflowModule):
 
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
+        tool_id = step.effective_tool_id
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
         module = super().from_workflow_step(
-            trans, step, tool_id=step.tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
+            trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
         )
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
@@ -2464,13 +2479,10 @@ class ToolModule(WorkflowModule):
             module.post_job_actions[pja.action_type] = pja
         if module.tool:
             message = ""
-            if (
-                step.tool_id
-                and step.tool_id != module.tool.id
-                or step.tool_version
-                and step.tool_version != module.tool.version
+            if tool_id and (
+                tool_id != module.tool.id or step.tool_version and step.tool_version != module.tool.version
             ):  # This means the exact version of the tool is not installed. We inform the user.
-                old_tool_shed = step.tool_id.split("/repos/")[0]
+                old_tool_shed = tool_id.split("/repos/")[0]
                 if (
                     old_tool_shed not in module.tool.id
                 ):  # Only display the following warning if the tool comes from a different tool shed
@@ -2487,12 +2499,12 @@ class ToolModule(WorkflowModule):
             if step.tool_version and (
                 step.tool_version != module.tool.version and not get_safe_version(module.tool, step.tool_version)
             ):
-                message += f"<span title=\"tool id '{step.tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
+                message += f"<span title=\"tool id '{tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
         else:
-            log.warning(f"The tool '{step.tool_id}' is missing. Cannot build workflow module.")
+            log.warning(f"The tool '{tool_id}' is missing. Cannot build workflow module.")
         return module
 
     # ---- Saving in various forms ------------------------------------------
@@ -2507,7 +2519,12 @@ class ToolModule(WorkflowModule):
         if tool_uuid := getattr(self, "tool_uuid", None):
             tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
             if tool:
-                step.dynamic_tool_id = tool.dynamic_tool.id
+                # Set the relationship, not just the foreign key, so unsaved steps (refactor
+                # dry runs) can resolve the tool through it.
+                step.dynamic_tool = self.trans.sa_session.get(DynamicTool, tool.dynamic_tool_id)
+                if tool.is_unprivileged_tool:
+                    # Identified by ``dynamic_tool``, see ``WorkflowStep.effective_tool_id``.
+                    step.tool_id = None
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
@@ -2827,8 +2844,9 @@ class ToolModule(WorkflowModule):
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
+        tool_id = step.effective_tool_id
         tool = trans.app.toolbox.get_tool(
-            step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+            tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
         )
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?

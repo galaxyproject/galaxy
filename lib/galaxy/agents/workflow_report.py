@@ -83,7 +83,7 @@ class WorkflowReportAgent(SimpleGalaxyAgent):
             for step in sorted(tool_steps, key=lambda s: s.order_index):
                 label = step.effective_label or step.label
                 annotation = f" — {step.annotations[0].annotation}" if step.annotations else ""
-                lines.append(f"  {step.order_index + 1}. {label!r} [tool_id: {step.tool_id}]{annotation}")
+                lines.append(f"  {step.order_index + 1}. {label!r} [tool_id: {step.effective_tool_id}]{annotation}")
 
         # Workflow outputs — include the originating step label and tool_id so the LLM
         # can infer the likely output type (image, tabular, HTML) for directive selection
@@ -95,7 +95,7 @@ class WorkflowReportAgent(SimpleGalaxyAgent):
                 step = out.workflow_step
                 if step:
                     step_label = step.effective_label or step.label or f"step {step.order_index + 1}"
-                    tool_id = step.tool_id or ""
+                    tool_id = step.effective_tool_id or ""
                     lines.append(
                         f"  - {out_label!r} [from step {step.order_index + 1}: {step_label!r}, tool_id: {tool_id}]"
                     )

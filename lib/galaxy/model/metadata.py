@@ -627,9 +627,12 @@ class FileParameter(MetadataParameter):
         if isinstance(value, int):
             return session.get(galaxy.model.MetadataFile, value)
         else:
-            wrapped_value = session.execute(
-                select(galaxy.model.MetadataFile).filter_by(uuid=value)
-            ).scalar_one_or_none()
+            # metadata_file.uuid is not unique in existing databases, use the oldest row so the result is
+            # deterministic.
+            stmt = (
+                select(galaxy.model.MetadataFile).filter_by(uuid=value).order_by(galaxy.model.MetadataFile.id).limit(1)
+            )
+            wrapped_value = session.scalars(stmt).first()
             if wrapped_value:
                 return wrapped_value
             else:
@@ -643,7 +646,7 @@ class FileParameter(MetadataParameter):
                 # Dataset.state = OK to the DB before exec_after_process had replaced the file,
                 # exposing a globall inconsistent state to the workflow scheduler.
                 session.flush()
-            return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one_or_none()
+            return session.scalars(stmt).first()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
@@ -654,6 +657,10 @@ class FileParameter(MetadataParameter):
             return self.unwrap(value)
         if target_context.parent is None:
             return None
+        target = target_context.parent
+        if value and (value.history_dataset is target or value.library_dataset is target):
+            # The MetadataFile already belongs to the target dataset, there is nothing to copy.
+            return self.unwrap(value)
         target_dataset = target_context.parent.dataset
         assert target_dataset is not None
         assert target_dataset.object_store is not None

@@ -82,6 +82,44 @@ def test_file_source_http_generic():
         assert_realizes_as(file_sources, test_url, "hello generic world", user_context=user_context)
 
 
+def test_file_source_http_leaves_reused_fd_open(tmp_path):
+    test_url = "https://www.elsewhere.org/myfile.txt"
+    target = tmp_path / "realized"
+    sentinel_path = tmp_path / "sentinel"
+    sentinel_fds = []
+    real_close = os.close
+
+    def close_and_reuse_fd(fd):
+        real_close(fd)
+        # Another thread opening a file now receives the freed descriptor number.
+        sentinel_fds.append(os.open(sentinel_path, os.O_WRONLY | os.O_CREAT))
+
+    def generic_response(request, **kwargs):
+        response: Any = io.StringIO("hello generic world")
+        response.headers = {}
+        response.geturl = lambda: test_url
+        return response
+
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    with (
+        mock.patch.object(urllib.request, "urlopen", new=generic_response),
+        mock.patch.object(os, "close", new=close_and_reuse_fd),
+    ):
+        file_source_pair.file_source.realize_to(file_source_pair.path, str(target), user_context=user_context_fixture())
+
+    try:
+        for fd in sentinel_fds:
+            os.fstat(fd)
+    finally:
+        for fd in sentinel_fds:
+            try:
+                real_close(fd)
+            except OSError:
+                pass
+    assert target.read_text() == "hello generic world"
+
+
 def test_file_source_ftp_url():
     test_url = "ftp://ftp.gnu.org/README"
 

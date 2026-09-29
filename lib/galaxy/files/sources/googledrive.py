@@ -19,7 +19,10 @@ from pydantic import (
     Field,
 )
 
-from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.models import (
+    FilesSourceRuntimeContext,
+    RemoteFileTimestamp,
+)
 from galaxy.util.config_templates import TemplateExpansion
 from ._fsspec import (
     CacheOptionsDictType,
@@ -99,7 +102,7 @@ class GoogleDriveFilesSource(
             return "/"
         return filesystem_path if filesystem_path.startswith("/") else f"/{filesystem_path}"
 
-    def _extract_timestamp(self, info: dict):
+    def _extract_timestamp(self, info: dict) -> RemoteFileTimestamp:
         timestamp = info.get("modifiedTime") or info.get("createdTime") or super()._extract_timestamp(info)
         if isinstance(timestamp, str):
             return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))

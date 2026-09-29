@@ -133,11 +133,10 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
         if resource_info.is_dir:
             return RemoteDirectory(name=name, uri=uri, path=path)
         else:
-            created = resource_info.created
             return RemoteFile(
                 name=name,
                 size=resource_info.size,
-                ctime=self.to_dict_time(created),
+                ctime=resource_info.created,
                 uri=uri,
                 path=path,
             )

@@ -1178,7 +1178,7 @@ steps:
         assert len(empty_search_response.json()) == 0
 
     @requires_new_history
-    @transient_failure(issue=21242)
+    @transient_failure(issue=21242, potentially_fixed=True)
     def test_delete_job_with_message(self, history_id):
         # Setup a job that will take a while to run so we can verify our cancelling
         input_dataset_id = self.__history_with_ok_dataset(history_id)
@@ -1205,9 +1205,9 @@ steps:
             # Check the output dataset is deleted and the info field contains the message
             dataset_details = self._get(f"histories/{history_id}/contents/{output_dataset_id}").json()
             if dataset_details["deleted"] is not True:
-                return False
+                return None
             if dataset_details["misc_info"] != expected_message:
-                return False
+                return None
             return True
 
         assert wait_on(check, "dataset to be deleted with message")

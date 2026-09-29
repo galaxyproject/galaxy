@@ -1,0 +1,127 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { http, HttpResponse } from "msw";
+import { setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { CreateElement } from "vue";
+import { ref } from "vue";
+
+import type { HistorySummary } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
+import type { PreparedUpload } from "@/components/Panels/Upload/types";
+import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
+import { useHistoryStore } from "@/stores/historyStore";
+import { buildPreparedUpload } from "@/utils/upload";
+
+import { useUploadState } from "./uploadState";
+
+import UploadMethodView from "./UploadMethodView.vue";
+
+vi.mock("@/composables/config", () => ({
+    useConfig: () => ({ config: ref({}), isConfigLoaded: ref(true) }),
+}));
+
+const methodComponent = vi.hoisted(() => ({ prepared: null as PreparedUpload | null }));
+
+vi.mock("./uploadMethodRegistry", async (importOriginal: () => Promise<Record<string, unknown>>) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getUploadMethod: () => ({
+            id: "paste-links",
+            name: "Paste Links",
+            requiresTargetHistory: true,
+            component: {
+                render: (h: CreateElement) => h("div"),
+                mounted(this: { $emit: (event: string, ready: boolean) => void }) {
+                    this.$emit("ready", true);
+                },
+                methods: {
+                    prepareUpload: () => methodComponent.prepared,
+                },
+            },
+        }),
+    };
+});
+
+const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
+const { server } = useServerMock();
+
+function makeHistory(id: string, name: string): HistorySummary {
+    return {
+        id,
+        name,
+        archived: false,
+        deleted: false,
+        annotation: "",
+        count: 0,
+        model_class: "History",
+        published: false,
+        purged: false,
+        tags: [],
+        update_time: "2024-01-01T00:00:00Z",
+        url: `/api/histories/${id}`,
+    };
+}
+
+function mountView() {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    setActivePinia(pinia);
+    const historyStore = useHistoryStore();
+    historyStore.setHistory(makeHistory("hist-a", "History A"));
+    historyStore.setCurrentHistoryId("hist-a");
+
+    return mount(UploadMethodView as object, {
+        propsData: { methodId: "paste-links" },
+        localVue,
+        pinia,
+        router,
+        stubs: {
+            GTip: true,
+            TargetHistorySelector: true,
+        },
+    });
+}
+
+describe("UploadMethodView start", () => {
+    const unhandledRejections: unknown[] = [];
+    const recordUnhandledRejection = (reason: unknown) => unhandledRejections.push(reason);
+
+    beforeEach(() => {
+        unhandledRejections.length = 0;
+        process.on("unhandledRejection", recordUnhandledRejection);
+        useUploadState().clearAll();
+    });
+
+    afterEach(() => {
+        process.off("unhandledRejection", recordUnhandledRejection);
+        useUploadState().clearAll();
+    });
+
+    it("records a rejected upload request in the upload state without leaving an unhandled rejection", async () => {
+        server.use(
+            http.post("/api/tools/fetch", () =>
+                HttpResponse.json(
+                    { err_msg: "Action requires account activation.", err_code: 403007 },
+                    { status: 403 },
+                ),
+            ),
+        );
+        const item = makeUrlItem({ name: "remote.txt", targetHistoryId: "hist-a" });
+        methodComponent.prepared = buildPreparedUpload([item]);
+        const wrapper = mountView();
+        await flushPromises();
+
+        await wrapper.find('[data-test-id="start-upload"]').trigger("click");
+        await flushPromises();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const [upload] = useUploadState().activeItems.value;
+        expect(upload?.status).toBe("error");
+        expect(upload?.error).toBe("Action requires account activation.");
+        expect(unhandledRejections).toEqual([]);
+    });
+});

@@ -26,6 +26,7 @@ from galaxy.files.models import (
     RemoteDirectory,
     RemoteFile,
     RemoteFileHash,
+    RemoteFileTimestamp,
     StrictModel,
 )
 from galaxy.files.sources import BaseFilesSource
@@ -215,19 +216,13 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return path
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> RemoteFileTimestamp:
         """Extract the timestamp from fsspec file info to use it in the RemoteFile entry.
 
         Subclasses can override this to customize timestamp extraction.
         By default, it tries to extract 'mtime', 'modified', or 'LastModified'
         """
         return info.get("mtime") or info.get("modified") or info.get("LastModified")
-
-    def _get_formatted_timestamp(self, info: dict) -> Optional[str]:
-        """Get a formatted timestamp for the RemoteFile entry."""
-        mtime = self._extract_timestamp(info)
-        formatted_timestamp = self.to_dict_time(mtime)
-        return formatted_timestamp
 
     def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
         """Get optional file hashes provided by the remote filesystem for the RemoteFile entry.
@@ -248,7 +243,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             return RemoteDirectory(name=name, uri=uri, path=entry_path)
         else:
             size = int(info.get("size", 0))
-            ctime = self._get_formatted_timestamp(info)
+            ctime = self._extract_timestamp(info)
             hashes = self._get_file_hashes(info)
             return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path, hashes=hashes)
 

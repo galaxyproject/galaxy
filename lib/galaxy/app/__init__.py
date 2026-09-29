@@ -686,6 +686,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.history_manager = self._register_singleton(HistoryManager)
         self.job_search = self._register_singleton(JobSearch)
         self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
+        self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.landing_request_manager = self._register_singleton(LandingRequestManager)
@@ -758,7 +759,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
         self._configure_tool_config_files()
-        self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         self._configure_datatypes_registry(
             use_converters=use_converters,

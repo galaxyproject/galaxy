@@ -6,12 +6,14 @@ tools
 """
 
 import abc
+import hashlib
 import logging
 import os
 import random
 import shutil
 import threading
 import time
+from collections import OrderedDict
 from typing import (
     Any,
     Dict,
@@ -91,6 +93,9 @@ class UserObjectStoreResolver(Protocol):
     def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
         pass
 
+    def object_store_from_config(self, object_store_configuration: ObjectStoreConfiguration) -> "ConcreteObjectStore":
+        pass
+
 
 class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta):
     _app_config: "UserObjectStoresAppConfig"
@@ -101,8 +106,67 @@ class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta
         pass
 
     def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
-        object_store_configuration = self.resolve_object_store_uri_config(uri)
+        return self.object_store_from_config(self.resolve_object_store_uri_config(uri))
+
+    def object_store_from_config(self, object_store_configuration: ObjectStoreConfiguration) -> "ConcreteObjectStore":
         return concrete_object_store(object_store_configuration, self._app_config)
+
+
+class UserObjectStoreCache:
+    """Reuse concrete user object stores while their resolved configuration is unchanged.
+
+    Building a concrete store can be expensive (e.g. a boto3 client plus a
+    ``HeadBucket`` round trip), so it happens once per distinct configuration.
+    The configuration is still resolved on every lookup: secrets live in the
+    vault and can change without touching the ``UserObjectStore`` row, and
+    comparing resolved configurations detects that in every Galaxy process
+    without any cross-process invalidation.
+    """
+
+    def __init__(self, resolver: UserObjectStoreResolver, maxsize: int = 64):
+        self._resolver = resolver
+        self._maxsize = maxsize
+        self._lock = threading.Lock()
+        self._stores: OrderedDict[str, Tuple[str, ConcreteObjectStore]] = OrderedDict()
+
+    def get(self, uri: str) -> "ConcreteObjectStore":
+        object_store_configuration = self._resolver.resolve_object_store_uri_config(uri)
+        config_hash = hashlib.sha256(object_store_configuration.model_dump_json().encode()).hexdigest()
+        with self._lock:
+            cached = self._stores.get(uri)
+            if cached and cached[0] == config_hash:
+                self._stores.move_to_end(uri)
+                return cached[1]
+        # Build outside the lock so a slow backend doesn't block lookups for other stores.
+        object_store = self._resolver.object_store_from_config(object_store_configuration)
+        unused: Optional[ConcreteObjectStore] = None
+        retired: List[ConcreteObjectStore] = []
+        with self._lock:
+            cached = self._stores.get(uri)
+            if cached and cached[0] == config_hash:
+                # Another thread built the same store first; keep theirs.
+                unused = object_store
+                object_store = cached[1]
+            else:
+                if cached:
+                    retired.append(cached[1])
+                self._stores[uri] = (config_hash, object_store)
+                while len(self._stores) > self._maxsize:
+                    retired.append(self._stores.popitem(last=False)[1][1])
+            self._stores.move_to_end(uri)
+        if unused is not None:
+            unused.shutdown()
+        # Other threads may still be using a retired store.
+        for store in retired:
+            store.soft_shutdown()
+        return object_store
+
+    def shutdown(self):
+        with self._lock:
+            stores = [store for _, store in self._stores.values()]
+            self._stores.clear()
+        for store in stores:
+            store.shutdown()
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -450,6 +514,13 @@ class BaseObjectStore(ObjectStore):
     def shutdown(self):
         """Close any connections for this ObjectStore."""
         self.running = False
+
+    def soft_shutdown(self):
+        """Shut down a store that is no longer handed out but may still be in use by other threads.
+
+        Override if :meth:`shutdown` would break operations that are still in flight.
+        """
+        self.shutdown()
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -1383,6 +1454,9 @@ class DistributedObjectStore(NestedObjectStore):
 
         self.original_weighted_backend_ids = self.weighted_backend_ids
         self.user_object_store_resolver = user_object_store_resolver
+        self._user_object_store_cache = (
+            UserObjectStoreCache(user_object_store_resolver) if user_object_store_resolver else None
+        )
         self.user_selection_allowed = user_selection_allowed
         self.allow_user_selection = bool(user_selection_allowed) or (user_object_store_resolver is not None)
         self.sleeper = None
@@ -1489,6 +1563,8 @@ class DistributedObjectStore(NestedObjectStore):
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
         super().shutdown()
+        if self._user_object_store_cache is not None:
+            self._user_object_store_cache.shutdown()
         if self.sleeper is not None:
             self.sleeper.wake()
 
@@ -1547,8 +1623,8 @@ class DistributedObjectStore(NestedObjectStore):
         try:
             return self.backends[object_store_id]
         except KeyError:
-            if is_user_object_store(object_store_id) and self.user_object_store_resolver:
-                return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
+            if is_user_object_store(object_store_id) and self._user_object_store_cache:
+                return self._user_object_store_cache.get(object_store_id)
             raise
 
     def get_quota_source_map(self) -> "QuotaSourceMap":

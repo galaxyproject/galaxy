@@ -29,7 +29,6 @@ References:
 - [6] https://docs.pyfilesystem.org/
 """
 
-import datetime
 import os.path
 from types import MethodType
 from typing import (
@@ -205,11 +204,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
             dict_.update(
                 {
                     "size": resource_info.size,
-                    "ctime": self.to_dict_time(
-                        datetime.datetime.fromisoformat(resource_info.get("rspace", "created")).astimezone(
-                            datetime.timezone.utc
-                        )
-                    ),
+                    "ctime": resource_info.get("rspace", "created"),
                 }
             )
             entry = RemoteFile(

@@ -847,7 +847,7 @@ class WesService(ServiceBase):
             task_id = str(step_order)
 
         # Get step name
-        step_name = workflow_step.label or workflow_step.tool_id or f"step_{step.order_index}"
+        step_name = workflow_step.label or workflow_step.effective_tool_id or f"step_{step.order_index}"
 
         # Build TaskLog with or without job details
         if job_id is not None:
@@ -975,7 +975,7 @@ class WesService(ServiceBase):
 
         # Get step name
         workflow_step = step.workflow_step
-        step_name = workflow_step.label or workflow_step.tool_id or f"step_{step.order_index}"
+        step_name = workflow_step.label or workflow_step.effective_tool_id or f"step_{step.order_index}"
 
         # Handle different step types
         if step.job_id:
