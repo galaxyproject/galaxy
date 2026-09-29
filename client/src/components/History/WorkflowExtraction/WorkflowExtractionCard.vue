@@ -213,7 +213,7 @@ function displayLabel(output: ExtractionOutput): string {
         select-title="Include as a step in the workflow"
         dim-when-unselected
         @rename="onTitleRename"
-        @clear-title="emit('clear-step-label')"
+        @clearTitle="emit('clear-step-label')"
         @select="emit('select')">
         <template v-slot:select>
             <FontAwesomeIcon
