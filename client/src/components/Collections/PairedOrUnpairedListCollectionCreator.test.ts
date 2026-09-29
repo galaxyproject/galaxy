@@ -8,6 +8,7 @@ import { ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 
@@ -66,7 +67,7 @@ function buildFakeDataset(id: string, name: string): HDASummary {
 }
 
 async function mountCreator(initialElements: HDASummary[]) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(PairedOrUnpairedListCollectionCreator as object, {
@@ -102,6 +103,75 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
 
         expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
     });
+
+    it("auto-pairs mates that arrive in separate history updates", async () => {
+        const a = buildFakeDataset("a", "hello world.1.fastq");
+        const b = buildFakeDataset("b", "hello world.2.fastq");
+
+        const wrapper = await mountCreator([]);
+        await wrapper.setProps({ initialElements: [a] });
+        await flushPromises();
+        expect(gridRowIds(wrapper)).toEqual(["single:a"]);
+
+        await wrapper.setProps({ initialElements: [a, b] });
+        await flushPromises();
+
+        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
+    });
+
+    it("does not re-pair mates the user unpaired when another element arrives", async () => {
+        const a = buildFakeDataset("a", "sample_1");
+        const b = buildFakeDataset("b", "sample_2");
+        const c = buildFakeDataset("c", "other_1");
+
+        const wrapper = await mountCreator([a, b]);
+        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
+
+        const { context } = wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs as unknown as {
+            context: { onUnpair: (pair: { forward: HDASummary; reverse: HDASummary; name: string }) => void };
+        };
+        context.onUnpair({ forward: a, reverse: b, name: "sample" });
+        await flushPromises();
+        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b"]);
+
+        await wrapper.setProps({ initialElements: [a, b, c] });
+        await flushPromises();
+
+        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b", "single:c"]);
+    });
+
+    it.each(["auto-paired", "removed"])(
+        "allows click-pairing after the selected dataset is %s by a history update",
+        async (change) => {
+            const a = buildFakeDataset("a", "sample_1");
+            const b = buildFakeDataset("b", "sample_2");
+            const c = buildFakeDataset("c", "unmatched-c");
+            const d = buildFakeDataset("d", "unmatched-d");
+            const wrapper = await mountCreator([a, c, d]);
+            const pairingTargetsStore = usePairingDatasetTargetsStore();
+            const { context } = wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs as unknown as {
+                context: { onUnpairedClick: (value: { unpaired: HDASummary }) => void };
+            };
+
+            context.onUnpairedClick({ unpaired: a });
+            expect(pairingTargetsStore.unpairedTarget).toBe("a");
+
+            await wrapper.setProps({ initialElements: change === "auto-paired" ? [a, b, c, d] : [c, d] });
+            await flushPromises();
+            expect(gridRowIds(wrapper)).toEqual(
+                change === "auto-paired" ? ["pair:a", "single:c", "single:d"] : ["single:c", "single:d"],
+            );
+            expect(pairingTargetsStore.unpairedTarget).toBeNull();
+
+            context.onUnpairedClick({ unpaired: c });
+            expect(pairingTargetsStore.unpairedTarget).toBe("c");
+            context.onUnpairedClick({ unpaired: d });
+            await flushPromises();
+
+            expect(gridRowIds(wrapper)).toEqual(change === "auto-paired" ? ["pair:a", "pair:c"] : ["pair:c"]);
+            expect(pairingTargetsStore.unpairedTarget).toBeNull();
+        },
+    );
 
     it("gives a paired row and its later split-survivor row different AG Grid row ids", async () => {
         const a = buildFakeDataset("a", "sample_1");
