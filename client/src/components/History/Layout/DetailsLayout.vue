@@ -145,11 +145,12 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
-                    v-model="clickToEditName"
+                    :value="clickToEditName"
                     component="h3"
                     data-description="name display"
                     no-save-on-blur
-                    class="name-display my-2 w-100" />
+                    class="name-display my-2 w-100"
+                    @input="(v: string) => (clickToEditName = v)" />
                 <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
                 </Heading>

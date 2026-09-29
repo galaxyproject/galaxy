@@ -248,7 +248,10 @@ if (props.id) {
                         label="Publication Time (local time)"
                         label-for="broadcast-publication-time"
                         description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
-                        <GDateTime id="broadcast-publication-time" v-model="publicationDate" />
+                        <GDateTime
+                            id="broadcast-publication-time"
+                            :value="publicationDate"
+                            @input="(v: Date) => (publicationDate = v)" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
@@ -257,7 +260,10 @@ if (props.id) {
                         label="Expiration Time (local time)"
                         label-for="broadcast-expiration-time"
                         description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
-                        <GDateTime id="broadcast-expiration-time" v-model="expirationDate" />
+                        <GDateTime
+                            id="broadcast-expiration-time"
+                            :value="expirationDate"
+                            @input="(v: Date) => (expirationDate = v)" />
                     </BFormGroup>
                 </BCol>
             </BRow>
