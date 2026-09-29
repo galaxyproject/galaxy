@@ -32,6 +32,7 @@ FILES_SOURCES_CONFIG = """
 - type: irods
 - type: gitlab
 - type: arc
+- type: galaxy2galaxy
 """
 JOB_CONF_YAML = """
 runners:
@@ -97,6 +98,7 @@ def test_fs_default():
         assert not cds.check_dropboxdrivefs()
         assert not cds.check_webdav4()
         assert not cds.check_arcfs_fsspec()
+        assert not cds.check_galaxy_fsspec()
 
 
 def test_fs_configured():
@@ -110,6 +112,7 @@ def test_fs_configured():
         assert cds.check_dropboxdrivefs()
         assert cds.check_webdav4()
         assert cds.check_arcfs_fsspec()
+        assert cds.check_galaxy_fsspec()
         assert cds.check_fs_irods()
 
 
