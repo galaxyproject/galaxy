@@ -1,5 +1,5 @@
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,7 +24,7 @@ interface PostRequest {
 let postRequests: PostRequest[] = [];
 
 describe("ChangePassword", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(async () => {
         postRequests = [];

@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -53,7 +52,7 @@ async function mountTarget() {
     return wrapper;
 }
 
-async function submit(wrapper: Wrapper<Vue>) {
+async function submit(wrapper: VueWrapper) {
     await wrapper.find("#admin-group-submit").trigger("click");
     await flushPromises();
 }

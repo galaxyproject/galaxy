@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -31,7 +30,7 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     } as Step;
 }
 
-function mountPickValue(step?: Step): Wrapper<Vue> {
+function mountPickValue(step?: Step): VueWrapper {
     return shallowMount(FormPickValue as any, {
         propsData: {
             step: step ?? makeStep(),
@@ -44,12 +43,12 @@ function mountPickValue(step?: Step): Wrapper<Vue> {
     });
 }
 
-function getLastEmittedState(wrapper: Wrapper<Vue>): EmittedState {
+function getLastEmittedState(wrapper: VueWrapper): EmittedState {
     const events = wrapper.emitted().onChange!;
     return events[events.length - 1]![0] as EmittedState;
 }
 
-function getEmittedCount(wrapper: Wrapper<Vue>): number {
+function getEmittedCount(wrapper: VueWrapper): number {
     return wrapper.emitted().onChange!.length;
 }
 

@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -57,7 +56,7 @@ function captureReset() {
     return requests;
 }
 
-async function submit(wrapper: Wrapper<Vue>, password: string, confirm: string) {
+async function submit(wrapper: VueWrapper, password: string, confirm: string) {
     await wrapper.find("#admin-reset-password").setValue(password);
     await wrapper.find("#admin-reset-password-confirm").setValue(confirm);
     await wrapper.find("#admin-reset-password-submit").trigger("click");

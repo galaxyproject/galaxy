@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick, ref } from "vue";
 
 import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
@@ -127,7 +126,7 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (history mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage(HISTORY_ID);
@@ -172,7 +171,7 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (standalone mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage();

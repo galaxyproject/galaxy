@@ -2,7 +2,7 @@ import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,7 +32,7 @@ vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
 });
 
 describe("ToolForm", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let userStore: ReturnType<typeof useUserStore>;
     let historyStore: ReturnType<typeof useHistoryStore>;
 

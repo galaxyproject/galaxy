@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
@@ -20,7 +20,7 @@ async function mountBadge(badge: ObjectStoreBadgeType) {
     return wrapper;
 }
 
-async function getTooltip(wrapper: Wrapper<Vue>) {
+async function getTooltip(wrapper: VueWrapper) {
     const badge = wrapper.find(".object-store-badge-wrapper");
 
     return badge.attributes("data-mock-directive");

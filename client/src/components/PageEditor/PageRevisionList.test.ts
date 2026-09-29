@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { PageRevisionSummary } from "@/api/pages";
@@ -77,7 +77,7 @@ describe("PageRevisionList", () => {
     });
 
     describe("Rendering revision items", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
         const revisions = [
             makeRevision({ id: "rev-current", edit_source: "user", create_time: "2025-06-16T14:00:00Z" }),
             makeRevision({ id: "rev-older", edit_source: "agent", create_time: "2025-06-15T10:30:00Z" }),

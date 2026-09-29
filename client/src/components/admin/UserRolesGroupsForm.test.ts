@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -91,15 +90,15 @@ async function mountTarget() {
     return wrapper;
 }
 
-function multiselect(wrapper: Wrapper<Vue>, id: string) {
+function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
 }
 
-function selectedTags(wrapper: Wrapper<Vue>, id: string) {
+function selectedTags(wrapper: VueWrapper, id: string) {
     return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
 }
 
-async function submit(wrapper: Wrapper<Vue>) {
+async function submit(wrapper: VueWrapper) {
     await wrapper.find("#admin-user-roles-groups-submit").trigger("click");
     await flushPromises();
 }

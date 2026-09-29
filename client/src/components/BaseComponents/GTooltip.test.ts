@@ -1,6 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import GTooltip from "./GTooltip.vue";
@@ -20,7 +19,7 @@ vi.mock("@floating-ui/dom", () => ({
     shift: () => ({ name: "shift", fn: () => ({}) }),
 }));
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 async function showTooltip() {
     const reference = document.createElement("button");

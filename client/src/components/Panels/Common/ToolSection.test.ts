@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { describe, expect, test, vi } from "vitest";
 import { ref } from "vue";
@@ -18,7 +18,7 @@ vi.mock("@/composables/config", () => ({
 const localVue = getLocalVue();
 const pinia = createPinia();
 
-function sectionIsOpened(wrapper: Wrapper<Vue>) {
+function sectionIsOpened(wrapper: VueWrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
 }
 
@@ -135,7 +135,7 @@ describe("ToolSection element ordering", () => {
         { id: "m_tool", name: "Mango" },
     ] as Tool[];
 
-    function getRenderedToolIds(wrapper: Wrapper<Vue>) {
+    function getRenderedToolIds(wrapper: VueWrapper) {
         return wrapper.findAll("[data-tool-id]").map((w) => w.attributes("data-tool-id"));
     }
 

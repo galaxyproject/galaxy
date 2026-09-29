@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
@@ -167,7 +167,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         testOutputsDisplayed(wrapper, false);
     });
 
-    function testOutputsDisplayed(wrapper: Wrapper<Vue>, terminal = true) {
+    function testOutputsDisplayed(wrapper: VueWrapper, terminal = true) {
         /** The actual outputs of the workflow invocation */
         const testDatasetOutputLabels = Object.keys(invocationData.outputs);
         const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);

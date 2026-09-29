@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -73,7 +73,7 @@ describe("PageDisplayToolbar", () => {
         return newStore;
     }
 
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let store: ReturnType<typeof usePageEditorStore>;
 
     beforeEach(async () => {

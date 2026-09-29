@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -129,7 +129,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
 };
 
 describe("FilesDialog, file mode", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -266,7 +266,7 @@ describe("FilesDialog, file mode", () => {
 });
 
 describe("FilesDialog, create new file source button", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -295,7 +295,7 @@ describe("FilesDialog, create new file source button", () => {
 });
 
 describe("FilesDialog, file mode with templates", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     beforeEach(async () => {
         wrapper = await initComponent({ multiple: true }, true);
     });
@@ -306,7 +306,7 @@ describe("FilesDialog, file mode with templates", () => {
 });
 
 describe("FilesDialog, directory mode", () => {
-    let wrapper: Wrapper<any>;
+    let wrapper: VueWrapper<any>;
     let utils: Utils;
 
     beforeEach(async () => {
@@ -351,9 +351,9 @@ describe("FilesDialog, directory mode", () => {
 });
 
 class Utils {
-    wrapper: Wrapper<any>;
+    wrapper: VueWrapper<any>;
 
-    constructor(wrapper: Wrapper<any>) {
+    constructor(wrapper: VueWrapper<any>) {
         this.wrapper = wrapper;
     }
 
@@ -464,7 +464,7 @@ class Utils {
         expect(this.getOkButton().attributes("aria-disabled")).toBeFalsy();
     }
 
-    getSelectAllCheckbox(): Wrapper<any> {
+    getSelectAllCheckbox(): VueWrapper<any> {
         const checkbox = this.wrapper.find("input[id^='g-table-select-all-']");
         expect(checkbox.exists()).toBe(true);
         return checkbox;

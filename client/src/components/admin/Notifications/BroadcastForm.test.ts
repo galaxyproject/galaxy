@@ -2,7 +2,7 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
@@ -55,7 +55,7 @@ async function mountBroadcastForm(props?: object) {
 const { server, http } = useServerMock();
 
 describe("BroadcastForm.vue", () => {
-    function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
+    function expectSubmitButton(wrapper: VueWrapper, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
@@ -64,7 +64,7 @@ describe("BroadcastForm.vue", () => {
     }
 
     async function createBroadcast(
-        wrapper: Wrapper<Vue>,
+        wrapper: VueWrapper,
         mockRouter: { push: ReturnType<typeof vi.fn> },
         actionsLink = false,
     ) {

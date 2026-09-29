@@ -1,6 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
@@ -37,7 +36,7 @@ vi.mock("@floating-ui/dom", () => ({
     shift: (options?: unknown) => ({ name: "shift", options, fn: () => ({}) }),
 }));
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 // Queried off the document, since the popover relocates out of the wrapper.
 function popoverEl() {

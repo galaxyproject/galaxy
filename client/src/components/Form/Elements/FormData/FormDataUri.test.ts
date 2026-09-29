@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -25,7 +25,7 @@ function initWrapper(value: DataUri) {
     return wrapper;
 }
 
-function assertLocationIsFound(wrapper: Wrapper<Vue>, uriData: DataUri | DataUriCollectionElement) {
+function assertLocationIsFound(wrapper: VueWrapper, uriData: DataUri | DataUriCollectionElement) {
     if (!("location" in uriData)) {
         throw new Error("The DataUri type does not have a url property");
     }
@@ -34,7 +34,7 @@ function assertLocationIsFound(wrapper: Wrapper<Vue>, uriData: DataUri | DataUri
 }
 
 function assertIdentifierIsFound(
-    wrapper: Wrapper<Vue>,
+    wrapper: VueWrapper,
     uriData: DataUri | DataUriCollectionElement,
     hasIdentifier = false,
     expectIdentifier = "File",

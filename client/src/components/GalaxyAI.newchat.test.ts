@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -99,11 +99,11 @@ function mountChat() {
     return { wrapper, chatStore };
 }
 
-function messageTexts(wrapper: Wrapper<Vue>) {
+function messageTexts(wrapper: VueWrapper) {
     return wrapper.findAll(".chat-message-stub").map((w) => w.text());
 }
 
-async function sendMessage(wrapper: Wrapper<Vue>, text: string) {
+async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
     input.vm.$emit("input", text);
     await wrapper.vm.$nextTick();

@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, RouterLinkStub, type Wrapper } from "@vue/test-utils";
+import { mount, RouterLinkStub, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
@@ -18,7 +18,7 @@ import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 
 const localVue = getLocalVue(true);
 
-async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
+async function mountComponent(component: object, propsData: object = {}): Promise<VueWrapper> {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 

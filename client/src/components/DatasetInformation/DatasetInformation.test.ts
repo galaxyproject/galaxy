@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,8 +45,8 @@ const datasetResponse: DatasetResponse = {
 };
 
 describe("DatasetInformation/DatasetInformation", () => {
-    let wrapper: Wrapper<Vue>;
-    let datasetInfoTable: Wrapper<Vue>;
+    let wrapper: VueWrapper;
+    let datasetInfoTable: VueWrapper;
 
     beforeEach(async () => {
         server.use(

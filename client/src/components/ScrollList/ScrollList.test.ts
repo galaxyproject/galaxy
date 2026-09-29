@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
@@ -65,7 +65,7 @@ let expectedTotalItemCount = 0;
  * @param wrapper Optional component wrapper to update the `propItems` with new items.
  */
 const testLoader = vi.fn(
-    (offset: number, limit: number, wrapper?: Wrapper<Vue>): Promise<{ items: TestItem[]; total: number }> => {
+    (offset: number, limit: number, wrapper?: VueWrapper): Promise<{ items: TestItem[]; total: number }> => {
         const newItems = TEST_ITEMS.slice(offset, offset + limit);
 
         if (wrapper) {
@@ -90,7 +90,7 @@ const testLoader = vi.fn(
 );
 
 describe("ScrollList with local loader and data", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(async () => {
         testLoader.mockClear();
@@ -189,7 +189,7 @@ describe("ScrollList with local loader and data", () => {
 });
 
 describe("ScrollList with prop items and no local state", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();
@@ -229,7 +229,7 @@ describe("ScrollList with prop items and no local state", () => {
 });
 
 describe("ScrollList with prop items and a local state loader", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();

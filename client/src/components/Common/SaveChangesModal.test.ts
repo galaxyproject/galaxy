@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import SaveChangesModal from "./SaveChangesModal.vue";
@@ -38,11 +37,11 @@ interface GuardExpose {
     guardNavigation: (navigate: () => void) => void;
 }
 
-function footerButtons(wrapper: Wrapper<Vue>) {
+function footerButtons(wrapper: VueWrapper) {
     return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 
-function buttonsDisabled(wrapper: Wrapper<Vue>) {
+function buttonsDisabled(wrapper: VueWrapper) {
     return footerButtons(wrapper).map((button) => button.props("disabled"));
 }
 
@@ -50,7 +49,7 @@ describe("SaveChangesModal reusable component", () => {
     let onSave: ReturnType<typeof vi.fn>;
     let onDiscard: ReturnType<typeof vi.fn>;
     let push: typeof mockPush;
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -66,7 +65,7 @@ describe("SaveChangesModal reusable component", () => {
                 onSave,
                 onDiscard,
             },
-        }) as Wrapper<Vue>;
+        }) as VueWrapper;
     });
 
     afterEach(() => {

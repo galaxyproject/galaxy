@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import SaveChangesModal from "./SaveChangesModal.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -13,16 +12,16 @@ const CANCEL = 0;
 const DONT_SAVE = 1;
 const SAVE = 2;
 
-function footerButtons(wrapper: Wrapper<Vue>) {
+function footerButtons(wrapper: VueWrapper) {
     return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 
-function buttonsDisabled(wrapper: Wrapper<Vue>) {
+function buttonsDisabled(wrapper: VueWrapper) {
     return footerButtons(wrapper).map((button) => button.props("disabled"));
 }
 
 describe("Workflow editor SaveChangesModal", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = mount(SaveChangesModal as object, {
@@ -32,7 +31,7 @@ describe("Workflow editor SaveChangesModal", () => {
                 navUrl: "/workflows/list",
                 appendVersion: false,
             },
-        }) as Wrapper<Vue>;
+        }) as VueWrapper;
     });
 
     afterEach(() => {

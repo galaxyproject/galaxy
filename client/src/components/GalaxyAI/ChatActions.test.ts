@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -42,7 +42,7 @@ function mountComponent(source: "center" | "docked" | "panel") {
 }
 
 /** Find a GButton by its title prop */
-function findButton(wrapper: Wrapper<Vue>, title: string) {
+function findButton(wrapper: VueWrapper, title: string) {
     const all = wrapper.findAllComponents(GButton);
     for (let i = 0; i < all.length; i++) {
         if (all.at(i).props("title") === title) {
