@@ -1,6 +1,9 @@
 import * as Sentry from "@sentry/vue";
-import Vue from "vue";
-import type VueRouter from "vue-router";
+// "vue" resolves to @vue/compat at build time, but vue-tsc types it against the
+// real vue package, which has no default export; import the compat Vue directly
+// so it keeps the .config/.mixin shape @sentry/vue's Vue2-style integration expects.
+import Vue from "@vue/compat";
+import type { Router } from "vue-router";
 
 interface GalaxyConfig {
     sentry_dsn_public?: string;
@@ -37,7 +40,7 @@ function isReplayEnabled(user?: GalaxyUser): boolean {
     }
 }
 
-export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
+export function initSentry(Galaxy: GalaxyInstance, router: Router): void {
     const config = Galaxy.config;
     if (!config.sentry_dsn_public) {
         return;
