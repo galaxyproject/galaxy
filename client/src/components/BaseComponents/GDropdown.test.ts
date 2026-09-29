@@ -99,7 +99,7 @@ describe("GDropdown.vue", () => {
                 `<GDropdown split text="Create"><GDropdownItem>List</GDropdownItem></GDropdown>`,
             );
 
-            const [main, toggle] = wrapper.findAll(".dropdown > button").wrappers;
+            const [main, toggle] = wrapper.findAll(".dropdown > button");
             expect(main?.attributes("id")).toBeTruthy();
             expect(wrapper.get(".dropdown-menu").attributes("aria-labelledby")).toBe(main?.attributes("id"));
             expect(toggle?.text()).toBe("More options for Create");
@@ -119,7 +119,7 @@ describe("GDropdown.vue", () => {
                 <GDropdownGroup header="Admins Only"><GDropdownItem>Import</GDropdownItem></GDropdownGroup>
                 <GDropdownGroup><GDropdownItem>Other</GDropdownItem></GDropdownGroup>`);
 
-            const [labelled, unlabelled] = wrapper.findAll("[role='group']").wrappers;
+            const [labelled, unlabelled] = wrapper.findAll("[role='group']");
             const header = wrapper.get(".dropdown-header");
             expect(header.attributes("id")).toBeTruthy();
             expect(labelled?.attributes("aria-labelledby")).toBe(header.attributes("id"));
@@ -305,7 +305,7 @@ describe("GDropdown.vue", () => {
                 <GDropdownItem to="/histories/list">Histories</GDropdownItem>
                 <GDropdownItem href="https://example.org/">External</GDropdownItem>`);
 
-            const [routerItem, hrefItem] = wrapper.findAll("a.dropdown-item").wrappers;
+            const [routerItem, hrefItem] = wrapper.findAll("a.dropdown-item");
             expect(routerItem?.attributes("href")).toBe("/histories/list");
             expect(hrefItem?.attributes("href")).toBe("https://example.org/");
         });
@@ -422,16 +422,14 @@ describe("GDropdown.vue", () => {
                 <GDropdownItemButton active>Three</GDropdownItemButton>
                 <GDropdownItem>Four</GDropdownItem>`);
 
-            const current = wrapper
-                .findAll("[role='menuitem']")
-                .wrappers.map((item) => item.attributes("aria-current"));
+            const current = wrapper.findAll("[role='menuitem']").map((item) => item.attributes("aria-current"));
             expect(current).toEqual(["true", "true", "true", undefined]);
         });
 
         it("keeps items out of the tab order and marks disabled ones", () => {
             const wrapper = mountDropdown(MENU);
 
-            const items = wrapper.findAll("[role='menuitem']").wrappers;
+            const items = wrapper.findAll("[role='menuitem']");
             expect(items.map((item) => item.attributes("tabindex"))).toEqual(["-1", "-1", "-1", "-1", "-1"]);
             expect(items[1]?.attributes("aria-disabled")).toBe("true");
             expect(items[3]?.attributes("disabled")).toBe("disabled");
@@ -575,7 +573,7 @@ describe("GDropdown.vue", () => {
                     </GDropdownForm>
                     <GDropdownItem>Outer two</GDropdownItem>
                 </GDropdown>`);
-            const [outerToggle, innerToggle] = wrapper.findAll(".dropdown-toggle").wrappers;
+            const [outerToggle, innerToggle] = wrapper.findAll(".dropdown-toggle");
             await press(outerToggle!, "ArrowDown");
             (innerToggle!.element as HTMLElement).focus();
             await press(innerToggle!, "ArrowDown");

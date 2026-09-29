@@ -40,7 +40,7 @@ describe("AuthoringHelpPanel", () => {
         expect(wrapper.find(".authoring-help-body").exists()).toBe(false);
 
         await toolDefinitionToggle.trigger("click");
-        expect(wrapper.findAll("th").wrappers.map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
+        expect(wrapper.findAll("th").map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
         const containerHelpLink = wrapper.find('#tool-format a[href="/help/terms/galaxy.tools.container"]');
         const commandHelpLink = wrapper.find('#tool-format a[href="/help/terms/unix.commandLine"]');
         expect(containerHelpLink.text()).toBe("container image");
@@ -89,7 +89,7 @@ describe("AuthoringHelpPanel", () => {
         );
 
         const parameterSection = wrapper.find("#parameter-boolean");
-        expect(parameterSection.findAll("th").wrappers.map((header) => header.text())).toEqual([
+        expect(parameterSection.findAll("th").map((header) => header.text())).toEqual([
             "Field",
             "Details",
             "Default",

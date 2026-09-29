@@ -141,8 +141,8 @@ describe("Masthead.vue", () => {
         const links = switcher.findAll("a.dropdown-item");
         expect(switcher.exists()).toBe(true);
         expect(switcher.attributes("title")).toBe("Switch sites");
-        expect(links.wrappers.map((link) => link.text())).toEqual(["Single Cell <Omics>", "Climate"]);
-        expect(links.wrappers.map((link) => link.attributes("href"))).toEqual([
+        expect(links.map((link) => link.text())).toEqual(["Single Cell <Omics>", "Climate"]);
+        expect(links.map((link) => link.attributes("href"))).toEqual([
             "https://singlecell.example.org/root/?exact=true#destination",
             "https://climate.example.org",
         ]);
@@ -176,7 +176,7 @@ describe("Masthead.vue", () => {
             });
 
             const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");
-            expect(links.wrappers.map((link) => link.attributes("href"))).toEqual(["https://safe.example.org"]);
+            expect(links.map((link) => link.attributes("href"))).toEqual(["https://safe.example.org"]);
         },
     );
 
@@ -190,6 +190,6 @@ describe("Masthead.vue", () => {
         });
 
         const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");
-        expect(links.wrappers.map((link) => link.text())).toEqual(["Safe"]);
+        expect(links.map((link) => link.text())).toEqual(["Safe"]);
     });
 });

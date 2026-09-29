@@ -96,7 +96,7 @@ function multiselect(wrapper: Wrapper<Vue>, id: string) {
 }
 
 function selectedTags(wrapper: Wrapper<Vue>, id: string) {
-    return wrapper.findAll(`#${id} .multiselect__tag`).wrappers.map((tag) => tag.text());
+    return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
 }
 
 async function submit(wrapper: Wrapper<Vue>) {

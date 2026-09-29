@@ -109,7 +109,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
-            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading galaxy notebooks"));
+            const loadingAlert = alerts.find((w) => w.text().includes("Loading galaxy notebooks"));
             expect(loadingAlert).toBeTruthy();
         });
     });

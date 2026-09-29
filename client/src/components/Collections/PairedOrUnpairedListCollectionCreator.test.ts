@@ -94,7 +94,7 @@ async function mountCreator(initialElements: HDASummary[]) {
 
 /** Row ids as our AG Grid stub renders them - the `RowT.id` contract the namespacing fix targets. */
 function gridRowIds(wrapper: ReturnType<typeof mount>): string[] {
-    return wrapper.findAll(".grid-row").wrappers.map((row) => row.attributes("data-row-id") ?? "");
+    return wrapper.findAll(".grid-row").map((row) => row.attributes("data-row-id") ?? "");
 }
 
 describe("PairedOrUnpairedListCollectionCreator", () => {

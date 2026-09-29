@@ -71,7 +71,7 @@ async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]
     for (const name of names) {
         const option = wrapper
             .findAll(".options-list.unselected > button")
-            .wrappers.find((candidate) => candidate.text().includes(name));
+            .find((candidate) => candidate.text().includes(name));
         await option?.trigger("click");
         await flushPromises();
     }

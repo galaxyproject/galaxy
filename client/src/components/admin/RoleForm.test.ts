@@ -64,7 +64,7 @@ function multiselect(wrapper: Wrapper<Vue>, id: string) {
 }
 
 function selectedTags(wrapper: Wrapper<Vue>, id: string) {
-    return wrapper.findAll(`#${id} .multiselect__tag`).wrappers.map((tag) => tag.text());
+    return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
 }
 
 async function submit(wrapper: Wrapper<Vue>) {
@@ -114,9 +114,7 @@ describe("RoleForm.vue create mode", () => {
         const wrapper = await mountTarget();
         await wrapper.find("#role-name").setValue("Test Role");
         await wrapper.find("#role-description").setValue("Test Description");
-        const roleType = wrapper
-            .findAllComponents(FormSelection)
-            .wrappers.find((w) => w.attributes("id") === "role-type");
+        const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === "role-type");
         roleType!.vm.$emit("input", "user_tool_execute");
         multiselect(wrapper, "role-groups").vm.$emit("input", [{ id: "g1", name: "Group 1" }]);
         multiselect(wrapper, "role-users").vm.$emit("input", [{ id: "u1", email: "user1@example.org" }]);

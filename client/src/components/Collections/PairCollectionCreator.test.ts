@@ -66,13 +66,13 @@ async function mountCreator(initialElements: HDASummary[]) {
 function pairedIds(wrapper: ReturnType<typeof mount>): string[] {
     return wrapper
         .findAllComponents(FixedIdentifierDatasetCollectionElementView)
-        .wrappers.map((slot) => (slot.props("element") as HDASummary).id);
+        .map((slot) => (slot.props("element") as HDASummary).id);
 }
 
 async function clickDataset(wrapper: ReturnType<typeof mount>, id: string) {
     const view = wrapper
         .findAllComponents(DatasetCollectionElementView)
-        .wrappers.find((candidate) => (candidate.props("element") as HDASummary).id === id);
+        .find((candidate) => (candidate.props("element") as HDASummary).id === id);
     view?.vm.$emit("element-is-selected", view.props("element"));
     await flushPromises();
 }
