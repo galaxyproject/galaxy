@@ -24,6 +24,7 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicUnprivilegedToolCreatePayload,
 )
+from galaxy.tool_util_models.tool_outputs import USER_TOOL_LABEL_REFERENCE_RE
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 
 HELP_RELATIVE_PATH = Path("client/src/components/Tool/authoringHelp.yml")
@@ -118,6 +119,10 @@ def _supply_fragment_context(tool_dict: Dict[str, Any]) -> None:
     for text in templated_text:
         for name, path_suffix in INPUT_REFERENCE.findall(text):
             _add_input(tool_dict, name, "data" if path_suffix else "text")
+    for output in tool_dict.get("outputs") or []:
+        for match in USER_TOOL_LABEL_REFERENCE_RE.finditer(output.get("label") or ""):
+            if match["input"]:
+                _add_input(tool_dict, match["input"], "data" if match["keys"] else "text")
 
     for test in tool_dict.get("tests") or []:
         for name, value in (test.get("inputs") or {}).items():
