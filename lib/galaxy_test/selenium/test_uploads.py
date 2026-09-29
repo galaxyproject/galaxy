@@ -5,7 +5,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -191,9 +190,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.history_panel_wait_for_hid_ok(2)
         # self.screenshot("rules_example_2_5_download_complete")
 
-    @selenium_only(
-        "Rule editor Apply is intercepted by a closing vue-multiselect dropdown in rule_builder_swap_columns"
-    )
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local

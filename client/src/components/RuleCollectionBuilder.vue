@@ -1267,11 +1267,15 @@ export default {
                 this.addColumnRegexReplacement = null;
             }
         },
-        addColumnRegexGroupCount: function (oldVal, newVal) {
-            if (oldVal != newVal) {
-                if (newVal < 1) {
-                    this.addColumnRegexGroupCount = 1;
-                }
+        addColumnRegexGroupCount: function (newVal) {
+            // An emptied field is mid-edit, not a count below the minimum. Clamping it
+            // here puts the old count back under the cursor and the next digit lands
+            // beside it.
+            if (newVal === "" || newVal === null) {
+                return;
+            }
+            if (newVal < 1) {
+                this.addColumnRegexGroupCount = 1;
             }
         },
         validInput: function (newState) {

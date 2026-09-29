@@ -70,3 +70,28 @@ describe("RuleCollectionBuilder.resetSource serialization", () => {
         expect(ctx.mapping[0]).toHaveProperty("error");
     });
 });
+
+// The group-count watcher guards against a count below one. Vue hands a watcher
+// (newValue, oldValue), so reading the guard off the wrong parameter clamps on the
+// value the field just left rather than the one it just took.
+const groupCountWatcher = RuleCollectionBuilder.watch.addColumnRegexGroupCount;
+
+describe("RuleCollectionBuilder add-column-regex group count", () => {
+    it("keeps a count typed into a field that was emptied first", () => {
+        const ctx = { addColumnRegexGroupCount: "2" };
+        groupCountWatcher.call(ctx, "2", "");
+        expect(ctx.addColumnRegexGroupCount).toBe("2");
+    });
+
+    it("leaves an emptied field alone so the next digit replaces it", () => {
+        const ctx = { addColumnRegexGroupCount: "" };
+        groupCountWatcher.call(ctx, "", 1);
+        expect(ctx.addColumnRegexGroupCount).toBe("");
+    });
+
+    it("raises a below-minimum count to one", () => {
+        const ctx = { addColumnRegexGroupCount: 0 };
+        groupCountWatcher.call(ctx, 0, 2);
+        expect(ctx.addColumnRegexGroupCount).toBe(1);
+    });
+});
