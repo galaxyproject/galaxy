@@ -7,29 +7,42 @@ A tool's parameter values travel through Galaxy in several representations, each
 ## State Representations
 
 Every representation subclasses `ToolState` and sets its `state_representation`. The arrows are the
-conversions between them, named after the functions in `galaxy.tool_util.parameters.convert`.
+conversions between them, labelled with the function that performs each one.
 
 ```{mermaid}
-flowchart LR
-    relaxed["RelaxedRequestToolState<br/>relaxed_request"]
-    request["RequestToolState<br/>request"]
-    request_internal["RequestInternalToolState<br/>request_internal"]
-    dereferenced["RequestInternalDereferencedToolState<br/>request_internal_dereferenced"]
-    job_internal["JobInternalToolState<br/>job_internal"]
-    job_runtime["JobRuntimeToolState<br/>job_runtime"]
-    landing["LandingRequestToolState<br/>landing_request"]
-    landing_internal["LandingRequestInternalToolState<br/>landing_request_internal"]
-    test_case["TestCaseToolState<br/>test_case_xml"]
-    test_case_json["TestCaseJsonToolState<br/>test_case_json"]
-    workflow_step["WorkflowStepToolState<br/>workflow_step"]
-    workflow_step_linked["WorkflowStepLinkedToolState<br/>workflow_step_linked"]
+flowchart TB
+    subgraph requests ["Tool requests"]
+        relaxed["RelaxedRequestToolState<br/><code>relaxed_request</code>"]
+        request["RequestToolState<br/><code>request</code>"]
+        request_internal["RequestInternalToolState<br/><code>request_internal</code>"]
+        dereferenced["RequestInternalDereferencedToolState<br/><code>request_internal_dereferenced</code>"]
+    end
+    subgraph jobs ["Jobs"]
+        job_internal["JobInternalToolState<br/><code>job_internal</code>"]
+        job_runtime["JobRuntimeToolState<br/><code>job_runtime</code>"]
+    end
+    subgraph tests ["Tool tests"]
+        test_case["TestCaseToolState<br/><code>test_case_xml</code>"]
+        test_case_json["TestCaseJsonToolState<br/><code>test_case_json</code>"]
+    end
+    subgraph workflows ["Workflows"]
+        workflow_step["WorkflowStepToolState<br/><code>workflow_step</code>"]
+        workflow_step_linked["WorkflowStepLinkedToolState<br/><code>workflow_step_linked</code>"]
+    end
+    subgraph landing_requests ["Landing requests"]
+        landing["LandingRequestToolState<br/><code>landing_request</code>"]
+        landing_internal["LandingRequestInternalToolState<br/><code>landing_request_internal</code>"]
+    end
 
     relaxed -- strictify --> request
     request -- decode --> request_internal
     request_internal -- dereference --> dereferenced
-    dereferenced -- expand --> job_internal
+    dereferenced -- expand_meta_parameters_async --> job_internal
+    job_internal -- runtimeify --> job_runtime
+    test_case -- encode_test --> request
+    request_internal -- to_workflow_step_state --> workflow_step_linked
     landing -- landing_decode --> landing_internal
-    workflow_step -- preprocess links and defaults --> workflow_step_linked
+    job_runtime ~~~ landing
 ```
 
 - **Request** states reference datasets as `{src: "hda", id: <encoded_id>}` and allow mapping and
@@ -37,10 +50,14 @@ flowchart LR
   `strictify` converts it into a strict request.
 - **Request internal** states use decoded ids and may still contain URI `src` dictionaries.
   Dereferencing turns those URIs into HDAs.
-- **Job internal** states have mapping constructs expanded out, one state per job.
-- **Test case** states reference files by name or URI and do not allow mapping constructs.
+- **Job internal** states have mapping constructs expanded out, one state per job. **Job runtime**
+  states replace dataset references with the JSON a running job sees.
+- **Test case** states reference files by name or URI and do not allow mapping constructs. XML
+  tool tests produce `test_case_xml` states, YAML tool tests `test_case_json` ones.
 - **Workflow step** states make nearly everything optional except conditional discriminators. The
-  linked variant brings in the step's connections and defaults so they can be validated too.
+  linked variant replaces data and collection references with connection markers, since workflows
+  represent those inputs as connections.
+- **Landing request** states hold the pre-filled tool form values of a landing request.
 
 ## Submitting a Job Through the API
 
