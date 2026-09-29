@@ -86,9 +86,8 @@ watch(referencedJobIds, async () => {
             return;
         }
 
-        if ("history_id" in data) {
-            const historyId = data.history_id;
-            jobsToHistories.value[jobId] = historyId;
+        if ("history_id" in data && data.history_id) {
+            jobsToHistories.value[jobId] = data.history_id;
         }
     });
 });
@@ -294,7 +293,7 @@ const tableItems = computed<ItemInterface[]>(() => {
 });
 
 async function makeAccessible(item: ItemInterface) {
-    let accessibleResult: Boolean | undefined = undefined;
+    let accessibleResult: boolean | undefined = undefined;
     let errorResult: MessageException | undefined = undefined;
     let accessibleMap: AccessibleMapRef;
     if (item.type == "history") {
@@ -335,7 +334,7 @@ async function makeAccessible(item: ItemInterface) {
         accessibleMap.value[item.id] = `${title} Reason: ${errorMessage}.`;
         return;
     }
-    accessibleMap.value[item.id] = accessibleResult;
+    accessibleMap.value[item.id] = accessibleResult ?? null;
 }
 </script>
 
