@@ -29,7 +29,11 @@ from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
 from galaxy.model.store import SessionlessContext
-from galaxy.model.store.ro_crate_utils import DATASETS_MAPPING_FILENAME
+from galaxy.model.store.datasets_mapping import (
+    DATASETS_MAPPING_FILENAME,
+    mapping_row,
+    MappingEntry,
+)
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -834,6 +838,95 @@ def test_invocation_ro_crate_registers_datasets_mapping(tmp_path):
     assert os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
     crate = ROCrate(str(tmp_path))
     assert DATASETS_MAPPING_FILENAME in [entity.id for entity in crate.get_entities()]
+
+
+def test_invocation_ro_crate_archive_includes_datasets_mapping(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    crate_zip = tmp_path / "crate.zip"
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    with CompressedFile(crate_zip) as compressed_file:
+        assert compressed_file.file_type == "zip"
+        compressed_file.extract(crate_directory)
+    assert os.path.exists(crate_directory / DATASETS_MAPPING_FILENAME)
+    crate = ROCrate(str(crate_directory))
+    assert DATASETS_MAPPING_FILENAME in [entity.id for entity in crate.get_entities()]
+
+
+def test_datasets_mapping_includes_provenance_only_datasets(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.add_dataset(d1, include_files=False)
+
+    _, rows = _read_datasets_mapping(tmp_path)
+    assert len(rows) == 1
+    assert rows[0]["hid"] == str(d1.hid)
+    assert rows[0]["name"] == d1.name
+    assert rows[0]["exported_file"] == ""
+
+
+def test_history_export_survives_mapping_failure(tmp_path, monkeypatch):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("mapping boom")
+
+    monkeypatch.setattr(store, "write_datasets_mapping", fail)
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+    assert os.path.exists(os.path.join(tmp_path, store.ATTRS_FILENAME_HISTORY))
+    assert not os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+
+
+def _serialized_hda_dict():
+    return {
+        "hid": 4,
+        "name": "my dataset",
+        "file_name": "datasets/my_dataset_abc123.txt",
+        "extension": "txt",
+        "state": "ok",
+        "tags": ["tag1", "tag2:value"],
+        "annotation": "some annotation",
+        "create_time": "2026-09-29 11:42:47.123456",
+        "update_time": "2026-09-29 12:00:00.000000",
+        "encoded_id": "abc123",
+    }
+
+
+def test_mapping_row_projects_serialized_dict():
+    row = mapping_row(MappingEntry(serialized=_serialized_hda_dict(), file_size="42", collection_name="my collection"))
+    assert row == {
+        "hid": "4",
+        "name": "my dataset",
+        "exported_file": "datasets/my_dataset_abc123.txt",
+        "extension": "txt",
+        "state": "ok",
+        "collection_name": "my collection",
+        "tags": "tag1,tag2:value",
+        "annotation": "some annotation",
+        "file_size": "42",
+        "create_time": "2026-09-29 11:42:47.123456",
+        "update_time": "2026-09-29 12:00:00.000000",
+    }
+
+
+def test_mapping_row_tolerates_missing_keys():
+    row = mapping_row(
+        MappingEntry(serialized={"name": "library file", "extension": "txt"}, file_size="", collection_name="")
+    )
+    assert row["name"] == "library file"
+    assert row["hid"] == ""
+    assert row["exported_file"] == ""
+    assert row["state"] == ""
+    assert row["tags"] == ""
+    assert row["annotation"] == ""
 
 
 def test_finalize_job_state():

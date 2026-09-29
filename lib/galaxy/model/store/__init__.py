@@ -1,6 +1,5 @@
 import abc
 import contextlib
-import csv
 import datetime
 import logging
 import os
@@ -117,11 +116,14 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
 )
-from .ro_crate_utils import (
+from .datasets_mapping import (
     add_mapping_file_to_crate,
-    DATASETS_MAPPING_FILENAME,
-    WorkflowRunCrateProfileBuilder,
+    collection_names_by_dataset_id,
+    file_size_of,
+    MappingEntry,
+    write_datasets_mapping,
 )
+from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -152,20 +154,6 @@ ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 ATTRS_FILENAME_CONVERSIONS = "implicit_dataset_conversions.txt"
 TRACEBACK = "traceback.txt"
 GALAXY_EXPORT_VERSION = "2"
-
-DATASETS_MAPPING_COLUMNS = (
-    "hid",
-    "name",
-    "exported_file",
-    "extension",
-    "state",
-    "collection_name",
-    "tags",
-    "annotation",
-    "file_size",
-    "create_time",
-    "update_time",
-)
 
 DICT_STORE_ATTRS_KEY_HISTORY = "history"
 DICT_STORE_ATTRS_KEY_DATASETS = "datasets"
@@ -2498,86 +2486,36 @@ class DirectoryModelExportStore(ModelExportStore):
                 f"Cannot export history dataset [{getattr(dataset, 'hid', '')}: {dataset.name}] with id {self.exported_key(dataset)}"
             )
 
-    def _dataset_collection_names(self) -> dict[int, str]:
-        names: dict[int, list[str]] = {}
-        for collection in self.included_collections:
-            if isinstance(collection, model.HistoryDatasetCollectionAssociation):
-                for hda in collection.dataset_instances:
-                    if hda.id is not None:
-                        names.setdefault(hda.id, []).append(collection.name or "")
-        return {dataset_id: "; ".join(sorted(set(values))) for dataset_id, values in names.items()}
-
-    def _dataset_mapping_row(
-        self,
-        dataset: model.DatasetInstance,
-        collection_names: dict[int, str],
-    ) -> dict[str, str]:
-        file_name = None
-        if dataset.dataset is not None:
-            file_name, _ = self.dataset_id_to_path.get(dataset.dataset.id, (None, None))
-        tags = ""
-        if hasattr(dataset, "make_tag_string_list"):
-            tags = ",".join(dataset.make_tag_string_list())
-        annotations = "; ".join(
-            a.annotation for a in (getattr(dataset, "annotations", None) or []) if getattr(a, "annotation", None)
-        )
-        file_size = ""
-        if dataset.dataset is not None and dataset.dataset.file_size is not None:
-            file_size = str(dataset.dataset.file_size)
-        create_time = getattr(dataset, "create_time", None)
-        update_time = getattr(dataset, "update_time", None)
-        return {
-            "hid": str(getattr(dataset, "hid", None) or ""),
-            "name": dataset.name or "",
-            "exported_file": file_name or "",
-            "extension": dataset.extension or "",
-            "state": str(dataset.state or ""),
-            "collection_name": collection_names.get(dataset.id, "") if dataset.id is not None else "",
-            "tags": tags,
-            "annotation": annotations,
-            "file_size": file_size,
-            "create_time": create_time.isoformat() if create_time else "",
-            "update_time": update_time.isoformat() if update_time else "",
-        }
-
-    def _write_datasets_mapping(self) -> None:
-        if not self.included_datasets:
-            return
-        collection_names = self._dataset_collection_names()
-        rows = [self._dataset_mapping_row(dataset, collection_names) for dataset in self.included_datasets]
-        rows.sort(key=lambda row: (row["hid"] == "", row["hid"].zfill(10), row["name"]))
-        mapping_path = os.path.join(self.export_directory, DATASETS_MAPPING_FILENAME)
-        with open(mapping_path, "w", encoding="utf-8", newline="") as mapping_file:
-            writer = csv.DictWriter(
-                mapping_file,
-                fieldnames=list(DATASETS_MAPPING_COLUMNS),
-                delimiter="\t",
-                extrasaction="ignore",
-                lineterminator="\n",
-            )
-            writer.writeheader()
-            writer.writerows(rows)
-
     def _finalize(self) -> None:
         export_directory = self.export_directory
 
-        datasets_attrs = []
-        provenance_attrs = []
+        serialized_datasets: list[JsonDictT] = []
+        serialized_provenance: list[JsonDictT] = []
+        mapping_entries: list[MappingEntry] = []
+        collection_names = collection_names_by_dataset_id(self.included_collections)
         for dataset, include_files in self.included_datasets.values():
+            serialized = cast(model.Serializable, dataset).serialize(self.security, self.serialization_options)
             if include_files:
-                datasets_attrs.append(dataset)
+                serialized_datasets.append(serialized)
             else:
-                provenance_attrs.append(dataset)
+                serialized_provenance.append(serialized)
+            mapping_entries.append(
+                MappingEntry(
+                    serialized=serialized,
+                    file_size=file_size_of(dataset),
+                    collection_name=collection_names.get(dataset.id, "") if dataset.id is not None else "",
+                )
+            )
 
         def to_json(attributes):
             return json_encoder.encode([a.serialize(self.security, self.serialization_options) for a in attributes])
 
         datasets_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_DATASETS)
         with open(datasets_attrs_filename, "w") as datasets_attrs_out:
-            datasets_attrs_out.write(to_json(datasets_attrs))
+            datasets_attrs_out.write(json_encoder.encode(serialized_datasets))
 
         with open(f"{datasets_attrs_filename}.provenance", "w") as provenance_attrs_out:
-            provenance_attrs_out.write(to_json(provenance_attrs))
+            provenance_attrs_out.write(json_encoder.encode(serialized_provenance))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
         with open(libraries_attrs_filename, "w") as libraries_attrs_out:
@@ -2703,7 +2641,7 @@ class DirectoryModelExportStore(ModelExportStore):
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
         try:
-            self._write_datasets_mapping()
+            write_datasets_mapping(self.export_directory, mapping_entries)
         except Exception:
             log.warning("Failed to write datasets mapping file, continuing export without it.", exc_info=True)
 

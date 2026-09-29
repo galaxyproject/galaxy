@@ -20,7 +20,8 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.util.path import StrPath
+
+from .datasets_mapping import add_mapping_file_to_crate
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +30,6 @@ PROFILES_VERSION = "0.1"
 WROC_PROFILE_VERSION = "1.0"
 
 GALAXY_EXPORT_VERSION = "2.0"
-
-DATASETS_MAPPING_FILENAME = "datasets_mapping.tsv"
-DATASETS_MAPPING_ENCODING_FORMAT = "text/tab-separated-values"
 
 ATTRS_FILENAME_HISTORY = "history_attrs.txt"
 ATTRS_FILENAME_DATASETS = "datasets_attrs.txt"
@@ -42,21 +40,6 @@ ATTRS_FILENAME_EXPORT = "export_attrs.txt"
 ATTRS_FILENAME_LIBRARIES = "libraries_attrs.txt"
 ATTRS_FILENAME_LIBRARY_FOLDERS = "library_folders_attrs.txt"
 ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
-
-
-def add_mapping_file_to_crate(crate: ROCrate, export_directory: StrPath) -> None:
-    mapping_path = os.path.join(export_directory, DATASETS_MAPPING_FILENAME)
-    if os.path.exists(mapping_path):
-        crate.add_file(
-            mapping_path,
-            dest_path=DATASETS_MAPPING_FILENAME,
-            properties={
-                "name": DATASETS_MAPPING_FILENAME,
-                "encodingFormat": DATASETS_MAPPING_ENCODING_FORMAT,
-                "about": {"@id": "./"},
-                "description": "Tabular mapping of Galaxy datasets to exported files",
-            },
-        )
 
 
 class WorkflowRunCrateProfileBuilder:
