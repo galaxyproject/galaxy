@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import FormData from "./Elements/FormData/FormData.vue";
 import FormDisplay from "./FormDisplay.vue";
@@ -13,7 +14,7 @@ vi.mock("./Elements/FormData/FormData.vue", () => ({
     default: {
         name: "FormData",
         props: ["name"],
-        render: (h) => h("div"),
+        render: () => h("div"),
     },
 }));
 

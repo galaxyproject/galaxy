@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import DisplayApplications from "./DisplayApplications.vue";
 
@@ -66,7 +67,7 @@ const raw = {
 vi.mock("../providers/DatasetProvider", () => ({
     default: {
         render() {
-            return this.$scopedSlots.default({
+            return this.$slots.default({
                 loading: false,
                 result: raw,
             });
@@ -82,8 +83,8 @@ function mountTarget() {
         stubs: {
             RouterLink: {
                 props: ["to"],
-                render(h) {
-                    return h("a", { attrs: { href: this.to } }, this.$slots.default);
+                render() {
+                    return h("a", { href: this.to }, this.$slots.default?.());
                 },
             },
         },

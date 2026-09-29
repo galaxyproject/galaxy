@@ -4,7 +4,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -26,7 +26,7 @@ vi.mock("@/composables/useAgGrid", () => ({
         AgGridVue: {
             name: "AgGridVue",
             props: ["rowData"],
-            render(h: (tag: string, data: unknown, children: unknown) => unknown) {
+            render() {
                 const self = this as unknown as { rowData: { id: string }[] };
                 return h(
                     "div",

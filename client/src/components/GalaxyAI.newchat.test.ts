@@ -3,7 +3,7 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useChatStore } from "@/stores/chatStore";
 
@@ -17,14 +17,14 @@ const { mockGet, mockPost, mockPut, ChatMessageCellStub, ChatInputStub } = vi.ho
     ChatMessageCellStub: {
         name: "ChatMessageCellStub",
         props: ["message"],
-        render(this: { message: { content: string } }, h: (...args: unknown[]) => unknown) {
+        render(this: { message: { content: string } }) {
             return h("div", { class: "chat-message-stub" }, [this.message.content]);
         },
     },
     ChatInputStub: {
         name: "ChatInputStub",
         props: ["value", "busy"],
-        render(h: (...args: unknown[]) => unknown) {
+        render() {
             return h("input", { class: "chat-input-stub" });
         },
     },
