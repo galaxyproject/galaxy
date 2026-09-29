@@ -34,7 +34,12 @@ function openCenterChat() {
 
 function openDockedChat(location: "right" | "bottom") {
     /** Stores an id if there is a `/galaxyai/:exchangeId` route param */
-    const routedChatId = route.path.includes("galaxyai") ? route.params["exchangeId"] || null : null;
+    // The galaxyai/:exchangeId route param is never repeated, but vue-router's generic params
+    // type always allows string[] -- narrow to the single value it actually is.
+    const exchangeIdParam = route.params["exchangeId"];
+    const routedChatId = route.path.includes("galaxyai")
+        ? (Array.isArray(exchangeIdParam) ? exchangeIdParam[0] : exchangeIdParam) || null
+        : null;
     const wasCenterMode = chatStore.isCenterMode;
 
     if (isOnGalaxyAIRoute.value) {
