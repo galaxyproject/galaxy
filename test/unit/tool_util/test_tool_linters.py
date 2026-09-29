@@ -933,6 +933,89 @@ OUTPUTS_FORMAT_SOURCE_COLLECTION_ELEMENT = """
 </tool>
 """
 
+OUTPUTS_FORMAT_SOURCE_NESTED_LEGACY = """
+<tool id="id" name="name">
+    <inputs>
+        <section name="outer" title="Outer">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="yes">Yes</option>
+                </param>
+                <when value="yes">
+                    <param name="input1" type="data" format="data" />
+                </when>
+            </conditional>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="outer|input1" />
+        <data name="output2" format_source="input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT_IN_CONDITIONAL = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <repeat name="files" title="Files">
+                    <param name="input1" type="data" format="data" />
+                </repeat>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="files_0|input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_PROFILE_26 = """
+<tool id="id" name="name" profile="26.0">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_REPEAT = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <param name="input1" type="data_collection" collection_type="paired" format="data" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="queries_0|input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_NOT_DATA = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="text" />
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
 OUTPUTS_FORMAT_SOURCE_UNQUALIFIED_ELEMENT = """
 <tool id="id" name="name">
     <inputs>
@@ -2538,6 +2621,56 @@ def test_outputs_format_source_collection_element(lint_ctx):
     run_lint_module(lint_ctx, output, tool_source)
     assert "format_source" not in lint_ctx.warn_messages
     assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_nested_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_NESTED_LEGACY)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' uses unqualified format_source='outer|input1'. Use the qualified name 'outer|cond|input1'."
+        in lint_ctx.warn_messages
+    )
+    assert (
+        "Output 'output2' references format_source='input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_repeat_in_conditional(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT_IN_CONDITIONAL)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='files_0|input1' which does not match any input parameter. Did you mean 'cond|files_0|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert "format_source" not in lint_ctx.warn_messages
+
+
+def test_outputs_structured_like_unqualified_profile_26(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_PROFILE_26)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='input1' which does not match any input parameter. Did you mean 'cond|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_structured_like_repeat(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_REPEAT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='queries_0|input1' inside a repeat, which cannot be resolved when mapping over collections."
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_structured_like_not_data(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_NOT_DATA)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='input1' which is not a dataset or collection input."
+        in lint_ctx.error_messages
+    )
 
 
 def test_outputs_format_source_unqualified_element(lint_ctx):
