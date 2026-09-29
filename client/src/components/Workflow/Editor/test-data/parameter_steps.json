@@ -1629,5 +1629,37 @@
       "left": 406.02532958984375,
       "top": 1101.7839660644531
     }
+  },
+  "36": {
+    "id": 36,
+    "type": "parameter_input",
+    "label": "multiple integer parameter input",
+    "content_id": null,
+    "name": "Input parameter",
+    "tool_state": {
+      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"integer\", \"multiple\": \"true\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "label": "multiple integer parameter input",
+        "type": "integer",
+        "optional": false,
+        "parameter": true,
+        "multiple": true
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 1201.7839660644531
+    }
   }
 }

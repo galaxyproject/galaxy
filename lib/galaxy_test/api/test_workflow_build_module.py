@@ -63,3 +63,15 @@ class TestBuildWorkflowModule(ApiTestCase):
         inputs = {step_input["name"]: step_input for step_input in module["inputs"]}
         assert inputs["select_ex"]["type"] == "select"
         assert inputs["select_ex"]["multiple"] is True
+
+    def test_build_module_multiple_integer_parameter(self):
+        module = self.workflow_populator.build_module(
+            step_type="parameter_input",
+            inputs={
+                "parameter_definition|parameter_type": "integer",
+                "parameter_definition|multiple": True,
+            },
+        )
+        assert not module["errors"], module["errors"]
+        assert module["outputs"][0]["type"] == "integer"
+        assert module["outputs"][0]["multiple"] is True

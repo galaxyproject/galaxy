@@ -565,29 +565,36 @@ describe("canAccept", () => {
             "Cannot attach an optional output to a required parameter",
         );
     });
-    it("rejects single text parameter to multiple data_column parameter connection", () => {
+    it("accepts integer parameter to multiple data_column parameter connection", () => {
         const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
-        const textOutputParam = terminals["text parameter input"]!["output"] as OutputParameterTerminal;
-        expect(columnsInputParam.canAccept(textOutputParam).canAccept).toBe(false);
-        expect(columnsInputParam.canAccept(textOutputParam).reason).toBe(
-            "Cannot attach a text parameter to a integer input",
+        const integerOutputParam = terminals["integer parameter input"]!["output"] as OutputParameterTerminal;
+        expect(columnsInputParam.canAccept(integerOutputParam).canAccept).toBe(true);
+    });
+    it("accepts multiple integer parameter to multiple data_column parameter connection", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(true);
+    });
+    it("rejects multiple integer parameter to single data_column parameter connection", () => {
+        const columnInputParam = terminals["column and select parameters"]!["single_col"] as InputParameterTerminal;
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(columnInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(false);
+        expect(columnInputParam.canAccept(multipleIntegerOutputParam).reason).toBe(
+            "This output parameter represents multiple values but input only accepts a single value",
         );
     });
-    it("accepts multiple text parameter to multiple data_column parameter connection", () => {
+    it("rejects multiple text parameter to multiple data_column parameter connection", () => {
         const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
         const multipleTextOutputParam = terminals["multiple text parameter input"]![
             "output"
         ] as OutputParameterTerminal;
-        expect(columnsInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(true);
-    });
-    it("rejects multiple text parameter to single data_column parameter connection", () => {
-        const columnInputParam = terminals["column and select parameters"]!["single_col"] as InputParameterTerminal;
-        const multipleTextOutputParam = terminals["multiple text parameter input"]![
-            "output"
-        ] as OutputParameterTerminal;
-        expect(columnInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(false);
-        expect(columnInputParam.canAccept(multipleTextOutputParam).reason).toBe(
-            "This output parameter represents multiple values but input only accepts a single value",
+        expect(columnsInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(false);
+        expect(columnsInputParam.canAccept(multipleTextOutputParam).reason).toBe(
+            "Cannot attach a text parameter to a integer input",
         );
     });
     it("accepts multiple text parameter to multiple select parameter connection", () => {
@@ -599,12 +606,12 @@ describe("canAccept", () => {
     });
     it("rejects second connection to multiple data_column parameter", () => {
         const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
-        const multipleTextOutputParam = terminals["multiple text parameter input"]![
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
             "output"
         ] as OutputParameterTerminal;
-        columnsInputParam.connect(multipleTextOutputParam);
-        expect(columnsInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(false);
-        expect(columnsInputParam.canAccept(multipleTextOutputParam).reason).toBe(
+        columnsInputParam.connect(multipleIntegerOutputParam);
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(false);
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).reason).toBe(
             "Input already filled with another connection, delete it before connecting another output.",
         );
     });

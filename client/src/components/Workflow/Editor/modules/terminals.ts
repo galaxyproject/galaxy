@@ -590,9 +590,7 @@ export class InputParameterTerminal extends BaseInputTerminal {
         if (!this.optional && other.optional) {
             return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
         }
-        // Workflow integer inputs cannot be multiple, so a list of columns comes from a multiple text input.
-        const acceptsColumnList = this.type === "data_column" && effectiveOtherType === "text" && other.multiple;
-        const canAccept = effectiveThisType === effectiveOtherType || acceptsColumnList;
+        const canAccept = effectiveThisType === effectiveOtherType;
         if (!this.acceptsMultipleValues && other.multiple) {
             return new ConnectionAcceptable(
                 false,

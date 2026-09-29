@@ -426,6 +426,51 @@ steps:
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
+    def test_multiple_integer_parameter_connections(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input: data
+  columns: integer
+steps:
+  multiple_columns:
+    tool_id: column_param_list
+    in:
+      input1: input
+  single_integer:
+    tool_id: simple_constructs
+    in:
+      inttest: columns
+""")
+        editor = self.components.workflow_editor
+        self.assert_connected("columns#output", "single_integer#inttest")
+
+        editor.node._(label="columns").wait_for_and_click()
+        multiple = self.components.tool_form.parameter_checkbox_input(
+            parameter="parameter_definition|multiple"
+        ).wait_for_present()
+        self.execute_script("arguments[0].click();", multiple)
+        self.assert_connection_invalid("columns#output", "single_integer#inttest")
+        self.screenshot("workflow_editor_multiple_integer_parameter_invalid_connection")
+
+        self.workflow_editor_destroy_connection("single_integer#inttest")
+        multiple_columns = editor.node._(label="multiple_columns")
+        multiple_columns.wait_for_and_click()
+        editor.connect_icon(name="col").wait_for_and_click()
+        multiple_columns.input_terminal(name="col").wait_for_present()
+        self.workflow_editor_connect("columns#output", "multiple_columns#col")
+        self.assert_connected("columns#output", "multiple_columns#col")
+        self.assert_workflow_has_changes_and_save()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        assert json.loads(steps["columns"]["tool_state"])["multiple"] is True
+        assert steps["multiple_columns"]["input_connections"]["col"]["id"] == steps["columns"]["id"]
+        assert "inttest" not in steps["single_integer"]["input_connections"]
+
+    @selenium_test
     def test_non_data_map_over_carried_through(self):
         # Use auto_layout=false, which prevents placing any
         # step outside of the scroll area
