@@ -49,9 +49,25 @@ export function getLocalVue(instrumentLocalization = false) {
     const l = instrumentLocalization ? testLocalize : _l;
     const pinia = createPinia();
     setActivePinia(pinia);
+    // Vue Router 3 auto-injected a (possibly path-less) $route/$router into every
+    // component via a global mixin, so old tests never had to think about it. Vue
+    // Router 4 only provides useRoute()/useRouter() when a router is actually
+    // installed, so give every test a default one here. Tests that need specific
+    // routes still pass their own `router` to mount(); the VTU adapter makes that
+    // explicit router take priority over this default.
+    const plugins = [[localizationPlugin, l], pinia];
+    try {
+        plugins.push(createTestRouter());
+    } catch {
+        // Some tests fully replace the "vue-router" module with vi.mock() using a
+        // factory that only defines useRoute/useRouter, without createRouter /
+        // createWebHistory. Skip the default router there rather than blowing up
+        // every test in the file; those tests already provide their own routing
+        // stubs for whatever they need.
+    }
 
     const config = {
-        plugins: [[localizationPlugin, l], pinia],
+        plugins,
         // Render the default slot of stubbed components so tests can still
         // interact with content placed inside layout / wrapper components
         // (BInputGroup, BCard, etc.) that we stub for compat-mode safety.
