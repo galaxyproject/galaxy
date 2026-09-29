@@ -68,6 +68,12 @@ from galaxy.job_execution.setup import (
     TOOL_PROVIDED_JOB_METADATA_KEYS,
     validate_working_directory_path,
 )
+from galaxy.jobs.environment import (
+    DestinationEnvironmentEntry,
+    EnvironmentScope,
+    EnvironmentStatement,
+    normalize_environment_entry,
+)
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -182,12 +188,10 @@ def config_exception(e, file):
     return Exception(message)
 
 
-def _warn_on_container_native_job_env(destination: JobDestination, runner_configs: dict[str, dict[str, Any]]) -> None:
+def _warn_on_container_native_job_env(destination_id: str, runner_load: str, *, job_env_configured: bool) -> None:
     """Warn that container-native runners expose job_env to the tool."""
-    if not destination.job_env or not destination.runner:
+    if not job_env_configured:
         return
-
-    runner_load = runner_configs.get(destination.runner, {}).get("load", "")
     container_native_runners = (
         "KubernetesJobRunner",
         "PulsarCoexecutionJobRunner",
@@ -202,7 +206,7 @@ def _warn_on_container_native_job_env(destination: JobDestination, runner_config
     if any(name in runner_load for name in container_native_runners):
         log.warning(
             "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
-            destination.id,
+            destination_id,
         )
 
 
@@ -263,14 +267,7 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
         # TODO: handle enabled/disabled in configure_from
         environment["params"] = params
-        for key in ("env", "job_env", "tool_env"):
-            environment[key] = JobConfiguration.get_envs(destination, key)
-        env_counts = dict.fromkeys(("env", "job_env", "tool_env"), 0)
-        environment["env_order"] = []
-        for child in destination:
-            if child.tag in env_counts:
-                environment["env_order"].append((child.tag, env_counts[child.tag]))
-                env_counts[child.tag] += 1
+        environment["env"] = JobConfiguration.get_envs(destination)
         destination_resubmits = JobConfiguration.get_resubmits(destination)
         if destination_resubmits:
             environment["resubmit"] = destination_resubmits
@@ -279,6 +276,11 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
         runner = destination.get("runner")
         if runner:
             environment["runner"] = runner
+        _warn_on_container_native_job_env(
+            destination_id,
+            runners.get(runner or "", {}).get("load", ""),
+            job_env_configured=bool(destination.findall("job_env")),
+        )
 
         tags = destination.get("tags")
         # Store tags as a list
@@ -525,32 +527,43 @@ class JobConfiguration(ConfiguresHandlers):
                         metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
                         job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
 
-            destination_kwds = {}
-
             params = environment_dict.get("params")
             if params is None:
                 # Treat the excess keys in the environment as the destination parameters
                 # allowing a flat configuration of these things.
                 params = {}
                 for key, value in environment_dict.items():
-                    if key in ["id", "tags", "runner", "shell", "env", "job_env", "tool_env", "env_order", "resubmit"]:
+                    if key in ["id", "tags", "runner", "shell", "env", "job_env", "tool_env", "resubmit"]:
                         continue
                     params[key] = value
                 environment_dict["params"] = params
 
-            for key in ["tags", "runner", "shell", "env", "job_env", "tool_env", "env_order", "resubmit", "params"]:
-                if key in environment_dict:
-                    destination_kwds[key] = environment_dict[key]
-            if "env_order" not in destination_kwds:
-                destination_kwds["env_order"] = [
-                    (key, index)
-                    for key, entries in environment_dict.items()
-                    if key in ("env", "job_env", "tool_env")
-                    for index in range(len(entries))
-                ]
-            destination_kwds["id"] = environment_id
-            job_destination = JobDestination(**destination_kwds)
-            _warn_on_container_native_job_env(job_destination, job_config_dict["runners"])
+            env_entries: list[DestinationEnvironmentEntry] = []
+            for key, entries in environment_dict.items():
+                scope: EnvironmentScope | None
+                if key == "env":
+                    scope = None  # Preserve scoped entries already parsed from XML.
+                elif key == "job_env":
+                    scope = "job"
+                elif key == "tool_env":
+                    scope = "tool"
+                else:
+                    continue
+                env_entries.extend(normalize_environment_entry(entry, scope) for entry in entries)
+            job_destination = JobDestination(
+                id=environment_id,
+                tags=environment_dict.get("tags"),
+                runner=environment_dict.get("runner"),
+                shell=environment_dict.get("shell"),
+                resubmit=environment_dict.get("resubmit", []),
+                params=params,
+                env=env_entries,
+            )
+            _warn_on_container_native_job_env(
+                environment_id,
+                job_config_dict["runners"].get(job_destination.runner or "", {}).get("load", ""),
+                job_env_configured=bool(environment_dict.get("job_env")),
+            )
             if not self.__is_enabled(job_destination.params):
                 continue
 
@@ -750,31 +763,31 @@ class JobConfiguration(ConfiguresHandlers):
         return JobConfiguration.get_params(self.app.config, parent)
 
     @staticmethod
-    def get_envs(parent, tag="env"):
-        """Parses any child <env> tags in to a dictionary suitable for persistence.
+    def get_envs(parent: "Element", tag: str | None = None) -> list[DestinationEnvironmentEntry]:
+        """Parse XML environment setup elements directly into an ordered scoped list.
 
-        :param parent: Parent element in which to find child <env> tags.
-        :type parent: ``lxml.etree._Element``
-
-        :returns: dict
+        ``env`` is the legacy alias for ``job_env``. Both produce job-scoped
+        entries; ``tool_env`` produces tool-scoped name/value assignments.
+        These entries remain separate from persisted runner parameters.
         """
-        rval = []
-        for param in parent.findall(tag):
-            rval.append(
-                dict(
-                    name=param.get("id"),
-                    file=param.get("file"),
-                    execute=param.get("exec"),
-                    value=(param.text or "") if tag == "tool_env" else param.text,
-                    raw=util.asbool(param.get("raw", "false")),
-                )
-            )
-        if tag == "tool_env":
-            rval = [
-                {key: value for key, value in entry.items() if key not in ("file", "execute") or value is not None}
-                for entry in rval
-            ]
-        return rval
+        entries: list[DestinationEnvironmentEntry] = []
+        for element in parent:
+            if element.tag not in ("env", "job_env", "tool_env"):
+                continue
+            if tag is not None and element.tag != tag:
+                continue
+            statement: EnvironmentStatement = {
+                "name": element.get("id"),
+                "value": element.text or "",
+                "raw": util.asbool(element.get("raw", "false")),
+            }
+            if "file" in element.attrib:
+                statement["file"] = element.get("file")
+            if "exec" in element.attrib:
+                statement["execute"] = element.get("exec")
+            scope: EnvironmentScope = "tool" if element.tag == "tool_env" else "job"
+            entries.append(normalize_environment_entry(statement, scope))
+        return entries
 
     @staticmethod
     def get_resubmits(parent: "Element") -> list[ResubmitConfigDict]:

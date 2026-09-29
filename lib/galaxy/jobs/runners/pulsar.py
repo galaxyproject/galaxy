@@ -731,7 +731,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
 
-        env = job_wrapper.job_destination.environment
+        env = job_wrapper.job_destination.env.copy()
         return self.get_client(params, job_id, env)
 
     def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
