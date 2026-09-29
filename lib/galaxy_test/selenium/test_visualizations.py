@@ -4,7 +4,6 @@ from galaxy_test.base.populators import (
 )
 from .framework import (
     managed_history,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -63,9 +62,6 @@ class TestVisualizationsAnonymous(SeleniumTestCase, UsesUploadActivity):
 class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    # Playwright strict mode violation: ".n-input__input input" resolves to 2 elements
-    # (visualization name + IGV search input). Needs a more specific selector.
-    @selenium_only
     @selenium_test
     @managed_history
     @skip_without_visualization_plugin("igv")

@@ -883,7 +883,7 @@ igv:
       selector: '(//button[text()=" OK "])[1]'
     selected_genome: '[title="${title}"]'
     expand_button: '[data-description="sidebutton expand"]'
-    name_input: '.n-input__input input'
+    name_input: '[data-description="side panel title input"] input'
     save_button: '[data-description="sidebutton save"]'
     settings_tab: '.n-tabs-tab[data-name="settings"]'
 
