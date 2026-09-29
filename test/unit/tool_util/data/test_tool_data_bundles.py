@@ -14,16 +14,14 @@ from galaxy.tool_util.data.bundles.models import (
     DataTableBundleProcessorDescription,
     get_path_headers,
 )
-from galaxy.util import (
-    galaxy_directory,
-    parse_xml,
-)
+from galaxy.tool_util.unittest_utils import functional_test_tool_directory
+from galaxy.util import parse_xml
 from galaxy.util.resources import (
     as_file,
     resource_path,
 )
 
-TOOLS_DIRECTORY = os.path.abspath(os.path.join(galaxy_directory(), "test/functional/tools/"))
+TOOLS_DIRECTORY = os.path.abspath(functional_test_tool_directory())
 
 
 def test_xml_parsing() -> None:

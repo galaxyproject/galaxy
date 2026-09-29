@@ -78,8 +78,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.web_stack import ApplicationStack
 
-glx_dir = galaxy_directory()
-
 
 # =============================================================================
 def buildMockEnviron(**kwargs):
@@ -416,7 +414,7 @@ class MockTrans:
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
         if template_lookup is None:
-            template_path = os.path.join(glx_dir, "templates")
+            template_path = os.path.join(galaxy_directory(), "templates")
             template_lookup = mako.lookup.TemplateLookup(directories=template_path)
         template = template_lookup.get_template(filename)
         kwargs.update(h=MockTemplateHelpers())

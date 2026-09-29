@@ -41,7 +41,7 @@ def parameter_bundle_for_internal_tool(relpath: str) -> ToolParameterBundleModel
 
 
 def parameter_tool_source(basename: str) -> ToolSource:
-    parameters_dir = os.path.join(galaxy_directory(), "test/functional/tools/parameters")
+    parameters_dir = functional_test_tool_path("parameters")
     if basename.endswith("_y"):
         yaml_name = basename[:-2]
         path = os.path.join(parameters_dir, f"{yaml_name}.yml")

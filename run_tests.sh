@@ -554,6 +554,7 @@ do
             --ignore lib/galaxy/datatypes/converters/
             --ignore lib/galaxy/jobs/runners/chronos.py
             --ignore lib/galaxy/model/migrations/alembic
+            --ignore lib/galaxy/tool_util/unittest_utils/functional_tools/
             --ignore lib/galaxy/tools/bundled
             --ignore lib/galaxy/web/proxy/js/node_modules/
             --ignore lib/galaxy_test
