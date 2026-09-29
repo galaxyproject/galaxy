@@ -1,8 +1,11 @@
 import gzip
+import ipaddress
 
 import pytest
 from sqlalchemy import select
 
+from galaxy.files import ConfiguredFileSources
+from galaxy.files.models import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
 from galaxy.model import (
     DatasetCollection,
@@ -20,6 +23,8 @@ from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     deferred_hda_model_store_dict_space_to_tab,
     one_ld_library_deferred_model_store_dict,
+    TEST_SOURCE_URI,
+    TEST_SOURCE_URI_SIMPLE_LINE,
 )
 from galaxy.util.resources import resource_string
 from .model.test_model_store import (
@@ -30,6 +35,25 @@ from .model.test_model_store import (
 from .test_model_copy import _create_hda
 
 CONTENTS_2_BED = resource_string(__name__, "model/2.bed")
+CONTENTS_SIMPLE_LINE = "This is a line of text.\n"
+LOCALHOST_ALLOWLIST = FileSourcePluginsConfig(
+    fetch_url_allowlist=[ipaddress.ip_network("127.0.0.0/24")],
+)
+
+
+@pytest.fixture
+def file_sources():
+    return ConfiguredFileSources(LOCALHOST_ALLOWLIST, load_stock_plugins=True)
+
+
+@pytest.fixture
+def bed_2_uri(mock_http_server):
+    return mock_http_server.get_url(remote_url=TEST_SOURCE_URI, body=CONTENTS_2_BED)
+
+
+@pytest.fixture
+def simple_line_uri(mock_http_server):
+    return mock_http_server.get_url(remote_url=TEST_SOURCE_URI_SIMPLE_LINE, body=CONTENTS_SIMPLE_LINE)
 
 
 def test_undeferred_hdas_untouched(tmpdir):
@@ -43,16 +67,16 @@ def test_undeferred_hdas_untouched(tmpdir):
     assert materializer.ensure_materialized(hda) == hda
 
 
-def test_deferred_hdas_basic_attached():
+def test_deferred_hdas_basic_attached(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -66,25 +90,25 @@ def test_deferred_hdas_basic_attached():
     _assert_2_bed_metadata(materialized_hda)
 
 
-def test_hash_validate():
+def test_hash_validate(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
 
 
-def test_hash_invalid():
+def test_hash_invalid(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     store_dict["datasets"][0]["file_metadata"]["hashes"][0]["hash_value"] = "invalidhash"
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
@@ -92,7 +116,7 @@ def test_hash_invalid():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -129,9 +153,9 @@ def test_requested_transform_actions_on_deferred_hdas_preserved():
     assert deferred_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
 
 
-def test_hash_validate_source_of_download():
+def test_hash_validate_source_of_download(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     store_dict["datasets"][0]["file_metadata"]["sources"][0]["hashes"] = [
         {"model_class": "DatasetSourceHash", "hash_function": "MD5", "hash_value": "f568c29421792b1b1df4474dafae01f1"}
     ]
@@ -141,16 +165,16 @@ def test_hash_validate_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
     assert materialized_dataset.state == "ok", materialized_hda.info
 
 
-def test_hash_invalid_source_of_download():
+def test_hash_invalid_source_of_download(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     store_dict["datasets"][0]["file_metadata"]["sources"][0]["hashes"] = [
         {"model_class": "DatasetSourceHash", "hash_function": "MD5", "hash_value": "invalidhash"}
     ]
@@ -160,24 +184,24 @@ def test_hash_invalid_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
     assert materialized_dataset.state == "error", materialized_hda.info
 
 
-def test_deferred_hdas_basic_attached_store_by_uuid():
+def test_deferred_hdas_basic_attached_store_by_uuid(bed_2_uri, file_sources):
     # skip a flush here so this is a different path...
     fixture_context = setup_fixture_context_with_history(store_by="uuid")
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -190,16 +214,16 @@ def test_deferred_hdas_basic_attached_store_by_uuid():
     _assert_path_contains_2_bed(path)
 
 
-def test_deferred_hdas_basic_detached(tmpdir):
+def test_deferred_hdas_basic_detached(tmpdir, bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -211,9 +235,9 @@ def test_deferred_hdas_basic_detached(tmpdir):
     _assert_2_bed_metadata(materialized_hda)
 
 
-def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
+def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir, simple_line_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy")
+    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy", source_uri=simple_line_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -221,7 +245,7 @@ def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -234,9 +258,9 @@ def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
     _assert_path_contains_simple_lines_as_tsv(external_filename)
 
 
-def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
+def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir, simple_line_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1")
+    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1", source_uri=simple_line_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -247,7 +271,7 @@ def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
         {"action": "datatype_groom"},
         {"action": "spaces_to_tabs"},
     ]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -263,9 +287,9 @@ def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
     _assert_path_contains_simple_lines_as_tsv(external_filename)
 
 
-def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
+def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir, simple_line_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy", apply_transform=False)
+    store_dict = deferred_hda_model_store_dict_space_to_tab("legacy", apply_transform=False, source_uri=simple_line_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -273,7 +297,7 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == []
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -286,9 +310,9 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
     _assert_path_contains_simple_lines_as_text(external_filename)
 
 
-def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
+def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir, simple_line_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1", apply_transform=False)
+    store_dict = deferred_hda_model_store_dict_space_to_tab("25.1", apply_transform=False, source_uri=simple_line_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -296,7 +320,7 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -309,9 +333,9 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
     _assert_path_contains_simple_lines_as_text(external_filename)
 
 
-def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
+def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir, bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -320,7 +344,7 @@ def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
 
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -332,9 +356,9 @@ def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
     _assert_2_bed_metadata(materialized_hda)
 
 
-def test_deferred_hdas_basic_attached_from_detached_hda():
+def test_deferred_hdas_basic_attached_from_detached_hda(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
@@ -344,7 +368,10 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
-        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
+        True,
+        object_store=fixture_context.app.object_store,
+        sa_session=fixture_context.sa_session(),
+        file_sources=file_sources,
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
@@ -359,19 +386,19 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
     _assert_2_bed_metadata(materialized_hda)
 
 
-def test_deferred_ldda_basic_attached():
+def test_deferred_ldda_basic_attached(bed_2_uri, file_sources):
     import_options = store.ImportOptions(
         allow_library_creation=True,
     )
     fixture_context = setup_fixture_context_with_history()
-    store_dict = one_ld_library_deferred_model_store_dict()
+    store_dict = one_ld_library_deferred_model_store_dict(source_uri=bed_2_uri)
     perform_import_from_store_dict(fixture_context, store_dict, import_options=import_options)
     deferred_ldda = fixture_context.sa_session.scalars(select(LibraryDatasetDatasetAssociation)).all()[0]
     assert deferred_ldda
     assert deferred_ldda.dataset is not None
     assert deferred_ldda.dataset.state == "deferred"
 
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_ldda)
     assert materialized_hda.history is None
     materialized_dataset = materialized_hda.dataset
@@ -458,15 +485,15 @@ def test_deferred_binary_contents_not_converted(tmpdir, filename, extension, con
         assert f.read() == contents
 
 
-def test_deferred_hdas_with_deferred_metadata():
+def test_deferred_hdas_with_deferred_metadata(bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    store_dict = deferred_hda_model_store_dict(metadata_deferred=True)
+    store_dict = deferred_hda_model_store_dict(source_uri=bed_2_uri, metadata_deferred=True)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -501,10 +528,10 @@ def test_materialize_unattached_undeferred_hdcas_noop(tmpdir):
     assert input_hdca == materialized_hdca  # doesn't have deferred data so just assert it is input.
 
 
-def test_materialize_unattached_deferred_hdcas(tmpdir):
+def test_materialize_unattached_deferred_hdcas(tmpdir, bed_2_uri, file_sources):
     fixture_context = setup_fixture_context_with_history()
-    materializer = materializer_factory(False, transient_directory=tmpdir)
-    deferred_hdca = _test_hdca(tmpdir, fixture_context)
+    materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
+    deferred_hdca = _test_hdca(tmpdir, fixture_context, source_uri=bed_2_uri)
     assert deferred_hdca.has_deferred_data
     assert len(deferred_hdca.collection.elements) == 2
     assert _deferred_element_count(deferred_hdca.collection) == 1
@@ -523,9 +550,10 @@ def _test_hdca(
     fixture_context: StoreFixtureContextWithHistory,
     include_element_deferred: bool = True,
     include_element_ok: bool = True,
+    source_uri: str = TEST_SOURCE_URI,
 ) -> HistoryDatasetCollectionAssociation:
     app, sa_session, _, history = fixture_context
-    store_dict = deferred_hda_model_store_dict()
+    store_dict = deferred_hda_model_store_dict(source_uri=source_uri)
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     sa_session.add(deferred_hda)
