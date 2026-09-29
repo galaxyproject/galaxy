@@ -14,9 +14,13 @@ const localVue = getLocalVue(true);
 // A reactive route stub: vue-router's real `route.query` is reactive
 let mockRoute = reactive<{ path: string; query: Record<string, string> }>({ path: "/", query: {} });
 
-vi.mock("vue-router", () => ({
-    useRoute: () => mockRoute,
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRoute: () => mockRoute,
+    };
+});
 
 vi.mock("@/api/workflows", () => ({
     getWorkflowInfo: vi.fn(),

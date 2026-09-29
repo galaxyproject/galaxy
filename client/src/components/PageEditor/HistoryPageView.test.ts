@@ -20,14 +20,18 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const mockPush = vi.fn();
-vi.mock("vue-router", () => ({
-    useRouter: vi.fn(() => ({
-        push: mockPush,
-    })),
-    useRoute: vi.fn(() => ({
-        params: {},
-    })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({
+            push: mockPush,
+        })),
+        useRoute: vi.fn(() => ({
+            params: {},
+        })),
+    };
+});
 
 const mockPushToFrameOrPage = vi.fn();
 vi.mock("@/composables/windowAwareNavigation", () => ({

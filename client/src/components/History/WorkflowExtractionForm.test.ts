@@ -32,7 +32,12 @@ vi.mock("vue-router", async (importOriginal) => {
     const actual = (await importOriginal()) as Record<string, unknown>;
     return {
         ...actual,
-        useRouter: () => ({ push: vi.fn() }),
+        // BreadcrumbHeading (rendered inside GHeading) calls router.resolve(path).path,
+        // so the stub needs a resolve() alongside the push() spy.
+        useRouter: () => ({
+            push: vi.fn(),
+            resolve: (to: unknown) => ({ path: typeof to === "string" ? to : ((to as { path?: string })?.path ?? "") }),
+        }),
     };
 });
 
