@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
 
@@ -19,9 +18,6 @@ interface HistoryDatasetPermissionsProps {
 const props = defineProps<HistoryDatasetPermissionsProps>();
 
 const route = useRoute();
-
-const loading = ref(true);
-const loadError = ref("");
 
 const {
     managePermissionsOptions,
@@ -63,26 +59,11 @@ async function change(value: unknown) {
 }
 
 async function init() {
-    loading.value = true;
-    loadError.value = "";
-    try {
-        const { data } = await getPermissions(props.historyId);
-        updateRefs(
-            data.inputs,
-            managePermissionsOptions,
-            accessPermissionsOptions,
-            managePermissions,
-            accessPermissions,
-        );
-    } catch (error) {
-        loadError.value = errorMessageAsString(error);
-        throw error;
-    } finally {
-        loading.value = false;
-    }
+    const { data } = await getPermissions(props.historyId);
+    updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
 }
 
-const { onSuccess, onError } = useCallbacks(init);
+const { loading, loadError, onSuccess, onError } = useCallbacks(init);
 </script>
 
 <template>
