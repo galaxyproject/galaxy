@@ -182,6 +182,30 @@ def config_exception(e, file):
     return Exception(message)
 
 
+def _warn_on_container_native_job_env(destination: JobDestination, runner_configs: dict[str, dict[str, Any]]) -> None:
+    """Warn that container-native runners expose job_env to the tool."""
+    if not destination.job_env or not destination.runner:
+        return
+
+    runner_load = runner_configs.get(destination.runner, {}).get("load", "")
+    container_native_runners = (
+        "KubernetesJobRunner",
+        "PulsarCoexecutionJobRunner",
+        "PulsarTesJobRunner",
+        "PulsarGcpBatchJobRunner",
+        "kubernetes",
+        "pulsar_kubernetes",
+        "pulsar_coexecution",
+        "pulsar_tes",
+        "pulsar_gcp_batch",
+    )
+    if any(name in runner_load for name in container_native_runners):
+        log.warning(
+            "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
+            destination.id,
+        )
+
+
 def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
     config_dict: dict[str, Any] = {}
 
@@ -526,25 +550,7 @@ class JobConfiguration(ConfiguresHandlers):
                 ]
             destination_kwds["id"] = environment_id
             job_destination = JobDestination(**destination_kwds)
-            runner_load = job_config_dict["runners"].get(job_destination.runner, {}).get("load", "")
-            if job_destination.job_env and any(
-                name in runner_load
-                for name in (
-                    "KubernetesJobRunner",
-                    "PulsarCoexecutionJobRunner",
-                    "PulsarTesJobRunner",
-                    "PulsarGcpBatchJobRunner",
-                    "kubernetes",
-                    "pulsar_kubernetes",
-                    "pulsar_coexecution",
-                    "pulsar_tes",
-                    "pulsar_gcp_batch",
-                )
-            ):
-                log.warning(
-                    "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
-                    environment_id,
-                )
+            _warn_on_container_native_job_env(job_destination, job_config_dict["runners"])
             if not self.__is_enabled(job_destination.params):
                 continue
 
