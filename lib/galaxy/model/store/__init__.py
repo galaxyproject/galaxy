@@ -1,5 +1,6 @@
 import abc
 import contextlib
+import csv
 import datetime
 import logging
 import os
@@ -116,7 +117,11 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
 )
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
+from .ro_crate_utils import (
+    add_mapping_file_to_crate,
+    DATASETS_MAPPING_FILENAME,
+    WorkflowRunCrateProfileBuilder,
+)
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -147,6 +152,27 @@ ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 ATTRS_FILENAME_CONVERSIONS = "implicit_dataset_conversions.txt"
 TRACEBACK = "traceback.txt"
 GALAXY_EXPORT_VERSION = "2"
+
+DATASETS_MAPPING_COLUMNS = (
+    "hid",
+    "name",
+    "exported_file",
+    "extra_files_path",
+    "extension",
+    "state",
+    "visible",
+    "deleted",
+    "included_files",
+    "uuid",
+    "encoded_id",
+    "history_name",
+    "collection_name",
+    "tags",
+    "annotation",
+    "file_size",
+    "create_time",
+    "update_time",
+)
 
 DICT_STORE_ATTRS_KEY_HISTORY = "history"
 DICT_STORE_ATTRS_KEY_DATASETS = "datasets"
@@ -2479,6 +2505,79 @@ class DirectoryModelExportStore(ModelExportStore):
                 f"Cannot export history dataset [{getattr(dataset, 'hid', '')}: {dataset.name}] with id {self.exported_key(dataset)}"
             )
 
+    def _dataset_collection_names(self) -> dict[int, str]:
+        names: dict[int, list[str]] = {}
+        for collection in self.included_collections:
+            if isinstance(collection, model.HistoryDatasetCollectionAssociation):
+                for hda in collection.dataset_instances:
+                    if hda.id is not None:
+                        names.setdefault(hda.id, []).append(collection.name or "")
+        return {dataset_id: "; ".join(sorted(set(values))) for dataset_id, values in names.items()}
+
+    def _dataset_mapping_row(
+        self,
+        dataset: model.DatasetInstance,
+        include_files: bool,
+        collection_names: dict[int, str],
+    ) -> dict[str, str]:
+        file_name, extra_files_path = None, None
+        if dataset.dataset is not None:
+            file_name, extra_files_path = self.dataset_id_to_path.get(dataset.dataset.id, (None, None))
+        tags = ""
+        if hasattr(dataset, "make_tag_string_list"):
+            tags = ",".join(dataset.make_tag_string_list())
+        annotations = "; ".join(
+            a.annotation for a in (getattr(dataset, "annotations", None) or []) if getattr(a, "annotation", None)
+        )
+        history = getattr(dataset, "history", None)
+        file_size = ""
+        if dataset.dataset is not None and dataset.dataset.file_size is not None:
+            file_size = str(dataset.dataset.file_size)
+        uuid = str(dataset.dataset.uuid) if dataset.dataset is not None else ""
+        create_time = getattr(dataset, "create_time", None)
+        update_time = getattr(dataset, "update_time", None)
+        return {
+            "hid": str(getattr(dataset, "hid", None) or ""),
+            "name": dataset.name or "",
+            "exported_file": file_name or "",
+            "extra_files_path": extra_files_path or "",
+            "extension": dataset.extension or "",
+            "state": str(dataset.state or ""),
+            "visible": str(bool(dataset.visible)),
+            "deleted": str(bool(dataset.deleted)),
+            "included_files": str(bool(include_files)),
+            "uuid": uuid,
+            "encoded_id": str(self.exported_key(dataset)),
+            "history_name": getattr(history, "name", None) or "",
+            "collection_name": collection_names.get(dataset.id, "") if dataset.id is not None else "",
+            "tags": tags,
+            "annotation": annotations,
+            "file_size": file_size,
+            "create_time": create_time.isoformat() if create_time else "",
+            "update_time": update_time.isoformat() if update_time else "",
+        }
+
+    def _write_datasets_mapping(self) -> None:
+        if not self.included_datasets:
+            return
+        collection_names = self._dataset_collection_names()
+        rows = [
+            self._dataset_mapping_row(dataset, include_files, collection_names)
+            for dataset, include_files in self.included_datasets.values()
+        ]
+        rows.sort(key=lambda row: (row["hid"] == "", row["hid"].zfill(10), row["name"]))
+        mapping_path = os.path.join(self.export_directory, DATASETS_MAPPING_FILENAME)
+        with open(mapping_path, "w", encoding="utf-8", newline="") as mapping_file:
+            writer = csv.DictWriter(
+                mapping_file,
+                fieldnames=list(DATASETS_MAPPING_COLUMNS),
+                delimiter="\t",
+                extrasaction="ignore",
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+
     def _finalize(self) -> None:
         export_directory = self.export_directory
 
@@ -2623,6 +2722,8 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(export_attrs_filename, "w") as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
+        self._write_datasets_mapping()
+
     def __exit__(
         self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
     ) -> bool:
@@ -2692,6 +2793,7 @@ class WriteCrates:
             dest_path="README.md",
             properties=properties,
         )
+        add_mapping_file_to_crate(ro_crate, self.export_directory)
 
         for dataset, _ in self.included_datasets.values():
             assert dataset.dataset is not None
