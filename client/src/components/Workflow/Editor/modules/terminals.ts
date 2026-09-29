@@ -557,10 +557,15 @@ interface InputParameterTerminalArgs extends InputTerminalArgs {
 
 export class InputParameterTerminal extends BaseInputTerminal {
     type: ParameterStepInput["type"];
+    acceptsMultipleValues: boolean;
 
     constructor(attr: InputParameterTerminalArgs) {
         super(attr);
         this.type = attr.type;
+        // Multiple values arrive through a single parameter connection, so unlike multiple data
+        // inputs a connected collection is mapped over rather than consumed as a list.
+        this.acceptsMultipleValues = attr.input.multiple;
+        this.multiple = false;
         this.getStepMapOver();
     }
 
@@ -585,8 +590,10 @@ export class InputParameterTerminal extends BaseInputTerminal {
         if (!this.optional && other.optional) {
             return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
         }
-        const canAccept = effectiveThisType === effectiveOtherType;
-        if (!this.multiple && other.multiple) {
+        // Workflow integer inputs cannot be multiple, so a list of columns comes from a multiple text input.
+        const acceptsColumnList = this.type === "data_column" && effectiveOtherType === "text" && other.multiple;
+        const canAccept = effectiveThisType === effectiveOtherType || acceptsColumnList;
+        if (!this.acceptsMultipleValues && other.multiple) {
             return new ConnectionAcceptable(
                 false,
                 `This output parameter represents multiple values but input only accepts a single value`,

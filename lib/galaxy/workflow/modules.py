@@ -2804,7 +2804,7 @@ class ToolModule(WorkflowModule):
                             InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
-                                multiple=False,
+                                multiple=isinstance(input, SelectToolParameter) and input.multiple,
                                 input_type="parameter",
                                 optional=getattr(input, "optional", False),
                                 type=input_type,

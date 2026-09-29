@@ -1526,5 +1526,108 @@
       "left": 12.8729248046875,
       "top": 1001.7839660644531
     }
+  },
+  "34": {
+    "id": 34,
+    "type": "parameter_input",
+    "label": "multiple text parameter input",
+    "content_id": null,
+    "name": "Input parameter",
+    "tool_state": {
+      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"multiple\": \"true\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "label": "multiple text parameter input",
+        "type": "text",
+        "optional": false,
+        "parameter": true,
+        "multiple": true
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 1101.7839660644531
+    }
+  },
+  "35": {
+    "id": 35,
+    "type": "tool",
+    "label": "column and select parameters",
+    "content_id": "column_and_select_params",
+    "name": "column_and_select_params",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "col": "{\"__class__\": \"ConnectedValue\"}",
+      "single_col": "{\"__class__\": \"ConnectedValue\"}",
+      "select_ex": "{\"__class__\": \"ConnectedValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Input 1",
+        "multiple": false,
+        "extensions": [
+          "tabular"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      },
+      {
+        "name": "col",
+        "label": "Columns to use",
+        "multiple": true,
+        "input_type": "parameter",
+        "optional": false,
+        "type": "data_column"
+      },
+      {
+        "name": "single_col",
+        "label": "Column to use",
+        "multiple": false,
+        "input_type": "parameter",
+        "optional": false,
+        "type": "data_column"
+      },
+      {
+        "name": "select_ex",
+        "label": "Select options",
+        "multiple": true,
+        "input_type": "parameter",
+        "optional": false,
+        "type": "select"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output1",
+        "extensions": [
+          "tabular"
+        ],
+        "type": "data",
+        "optional": false,
+        "multiple": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 406.02532958984375,
+      "top": 1101.7839660644531
+    }
   }
 }
