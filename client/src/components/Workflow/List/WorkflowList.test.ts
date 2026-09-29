@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { server, http } = useServerMock();
 
@@ -101,11 +102,14 @@ describe("WorkflowList", () => {
         const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
         await flushPromises();
         expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
+        expect(wrapper.find("#workflow-list-empty").exists()).toBe(false);
 
         userStore.currentUser = FAKE_USER;
         await flushPromises();
 
         expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
     });
 
     it("toggle show deleted workflows", async () => {
