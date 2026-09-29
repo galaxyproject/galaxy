@@ -7,7 +7,7 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.toolbox.base import ToolConfRepository
-from galaxy_test.base.mock_http_server import (
+from galaxy.util.unittest_utils.mock_http_server import (
     MockHTTPRequestHandler,
     MockHttpServer,
     start_mock_http_server,

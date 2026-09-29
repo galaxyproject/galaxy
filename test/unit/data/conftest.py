@@ -4,7 +4,7 @@ from collections.abc import Generator
 
 import pytest
 
-from galaxy_test.base.mock_http_server import (
+from galaxy.util.unittest_utils.mock_http_server import (
     MockHTTPRequestHandler,
     MockHttpServer,
     start_mock_http_server,

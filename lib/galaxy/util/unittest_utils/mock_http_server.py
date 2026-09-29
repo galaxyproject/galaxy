@@ -26,6 +26,7 @@ from urllib.parse import urlparse
 
 import pytest
 
+from galaxy.util import galaxy_directory
 from galaxy.util.unittest_utils import is_site_up
 
 
@@ -176,8 +177,7 @@ class MockHttpServer:
             file_path_obj = Path(file_path)
             if not file_path_obj.is_absolute():
                 # Resolve relative paths from the Galaxy project root
-                galaxy_root = Path(__file__).resolve().parents[3]
-                file_path_obj = galaxy_root / file_path_obj
+                file_path_obj = Path(galaxy_directory()) / file_path_obj
             encoded_body = file_path_obj.read_bytes()
         elif isinstance(body, str):
             encoded_body = body.encode()
