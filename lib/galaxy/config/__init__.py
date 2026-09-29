@@ -743,6 +743,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     container_resolvers_config_file: str
     database_connection: str
     drmaa_external_runjob_script: str
+    edam_panel_views: str
     email_from: Optional[str]
     enable_tool_shed_check: bool
     file_source_temp_dir: str

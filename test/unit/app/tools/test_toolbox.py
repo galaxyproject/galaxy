@@ -659,7 +659,7 @@ class TestToolBox(BaseToolBoxTestCase):
         # Match the reload order, including the converter load after construction.
         new_toolbox = ToolBox(self.config_files, self.test_directory, self.app)
         registry.load_datatype_converters(new_toolbox, use_cached=True)
-        converter = registry.datatype_converters["tabular"]["snpsiftdbnsfp"]
+        converter: Tool = registry.datatype_converters["tabular"]["snpsiftdbnsfp"]
         assert self.app.toolbox is old_toolbox
         assert converter.name == ("Updated converter" if replacement_version else "Test Tool")
         assert converter.version == (replacement_version or "1.0")
