@@ -46,6 +46,22 @@ const modulesToTransform = [
     "@fortawesome",
     "ro-crate-zip-explorer",
     "yaml",
+    // Vitest treats node_modules packages as SSR-external by default, which
+    // resolves their own `import ... from "vue"` via plain Node resolution
+    // instead of the `vue: "@vue/compat"` alias below. That gives these
+    // packages a second, separate Vue module instance -- so a ref they create
+    // (test-utils' app/renderer, a Pinia store's state, vue-router's route)
+    // tracks dependents through a different reactivity graph than the one
+    // components render with, and mutating it never triggers a re-render even
+    // though reads see the new value. Inlining them routes their "vue" import
+    // through the same alias as everything else.
+    "@vue/test-utils",
+    "vue-router",
+    "pinia",
+    "@pinia/testing",
+    // Vue-component libraries that mix a component's own Vue internals
+    // (mixins, emits) into ours at runtime; same reasoning as above.
+    "@johmun/vue-tags-input",
 ];
 
 export default defineConfig({
