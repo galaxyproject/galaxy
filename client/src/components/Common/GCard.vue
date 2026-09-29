@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -6,6 +7,7 @@ import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
+import type { BootstrapSize } from "@/components/Common";
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
@@ -316,6 +318,14 @@ const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
 
 /**
+ * FontAwesome's size tokens don't include "md" -- passing it through today just produces an
+ * unstyled "fa-md" class, so this keeps that a no-op explicitly instead of lying to the types.
+ */
+function toIconSize(size: BootstrapSize | undefined): SizeProp | undefined {
+    return size && size !== "md" ? size : undefined;
+}
+
+/**
  * Number of lines before title truncation (undefined = no truncation)
  */
 const allowedTitleLines = computed(() => props.titleNLines);
@@ -584,13 +594,15 @@ function onKeyDown(event: KeyboardEvent) {
                                                 {{ localize(indicator.label) }}
                                             </GButton>
                                             <FontAwesomeIcon
-                                                v-else-if="(indicator.visible ?? true) && indicator.disabled"
+                                                v-else-if="
+                                                    (indicator.visible ?? true) && indicator.disabled && indicator.icon
+                                                "
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="`${indicator.id}-icon`"
                                                 v-g-tooltip.hover
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
-                                                :size="indicator.size || 'sm'"
+                                                :size="toIconSize(indicator.size) || 'sm'"
                                                 fixed-width />
                                         </template>
                                     </slot>
@@ -671,7 +683,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-if="sa.icon"
                                                 :icon="sa.icon"
                                                 fixed-width
-                                                :size="sa.size || undefined" />
+                                                :size="toIconSize(sa.size)" />
                                             <span class="g-card-secondary-action-label">
                                                 {{ localize(sa.label) }}
                                             </span>
@@ -706,7 +718,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 <FontAwesomeIcon
                                                     v-if="pa.icon"
                                                     :icon="pa.icon"
-                                                    :size="pa.size || undefined"
+                                                    :size="toIconSize(pa.size)"
                                                     fixed-width />
                                                 {{ localize(pa.label) }}
                                             </GButton>

@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { FontAwesomeIcon, type FontAwesomeIconProps } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
@@ -754,7 +754,7 @@ defineExpose({
                                     </div>
                                     <FontAwesomeIcon
                                         v-if="field.sortable && getSortIcon(field)"
-                                        :icon="getSortIcon(field)"
+                                        :icon="getSortIcon(field)!"
                                         :class="{ 'g-table-sort-icon': sortBy !== field.key }"
                                         class="ml-1 flex-shrink-0" />
                                 </div>
@@ -825,7 +825,12 @@ defineExpose({
                                             <FontAwesomeIcon
                                                 v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
                                                 v-g-tooltip.hover
-                                                v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
+                                                v-bind="
+                                                    getIconProps(
+                                                        item,
+                                                        getGlobalIndex(paginatedIndex),
+                                                    ) as FontAwesomeIconProps
+                                                "
                                                 fixed-width />
                                         </template>
 
