@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 
@@ -9,7 +10,7 @@ import FormCollectionType from "./FormCollectionType.vue";
 import FormDefault from "./FormDefault.vue";
 import FormInputCollection from "./FormInputCollection.vue";
 
-vi.mock("./FormDatatype.vue", () => ({ default: { render: (h) => h("div") } }));
+vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
 
 const localVue = getLocalVue();
 
