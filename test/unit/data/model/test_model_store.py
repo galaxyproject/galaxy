@@ -778,7 +778,19 @@ def test_history_export_writes_datasets_mapping(tmp_path):
         export_store.export_history(history)
 
     fieldnames, rows = _read_datasets_mapping(tmp_path)
-    assert fieldnames == list(store.DATASETS_MAPPING_COLUMNS)
+    assert fieldnames == [
+        "hid",
+        "name",
+        "exported_file",
+        "extension",
+        "state",
+        "collection_name",
+        "tags",
+        "annotation",
+        "file_size",
+        "create_time",
+        "update_time",
+    ]
     assert len(rows) == 2
     rows_by_hid = {row["hid"]: row for row in rows}
     assert rows_by_hid[str(d1.hid)]["name"] == "my cool dataset, with comma"

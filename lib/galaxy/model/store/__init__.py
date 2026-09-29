@@ -157,15 +157,8 @@ DATASETS_MAPPING_COLUMNS = (
     "hid",
     "name",
     "exported_file",
-    "extra_files_path",
     "extension",
     "state",
-    "visible",
-    "deleted",
-    "included_files",
-    "uuid",
-    "encoded_id",
-    "history_name",
     "collection_name",
     "tags",
     "annotation",
@@ -2517,38 +2510,28 @@ class DirectoryModelExportStore(ModelExportStore):
     def _dataset_mapping_row(
         self,
         dataset: model.DatasetInstance,
-        include_files: bool,
         collection_names: dict[int, str],
     ) -> dict[str, str]:
-        file_name, extra_files_path = None, None
+        file_name = None
         if dataset.dataset is not None:
-            file_name, extra_files_path = self.dataset_id_to_path.get(dataset.dataset.id, (None, None))
+            file_name, _ = self.dataset_id_to_path.get(dataset.dataset.id, (None, None))
         tags = ""
         if hasattr(dataset, "make_tag_string_list"):
             tags = ",".join(dataset.make_tag_string_list())
         annotations = "; ".join(
             a.annotation for a in (getattr(dataset, "annotations", None) or []) if getattr(a, "annotation", None)
         )
-        history = getattr(dataset, "history", None)
         file_size = ""
         if dataset.dataset is not None and dataset.dataset.file_size is not None:
             file_size = str(dataset.dataset.file_size)
-        uuid = str(dataset.dataset.uuid) if dataset.dataset is not None else ""
         create_time = getattr(dataset, "create_time", None)
         update_time = getattr(dataset, "update_time", None)
         return {
             "hid": str(getattr(dataset, "hid", None) or ""),
             "name": dataset.name or "",
             "exported_file": file_name or "",
-            "extra_files_path": extra_files_path or "",
             "extension": dataset.extension or "",
             "state": str(dataset.state or ""),
-            "visible": str(bool(dataset.visible)),
-            "deleted": str(bool(dataset.deleted)),
-            "included_files": str(bool(include_files)),
-            "uuid": uuid,
-            "encoded_id": str(self.exported_key(dataset)),
-            "history_name": getattr(history, "name", None) or "",
             "collection_name": collection_names.get(dataset.id, "") if dataset.id is not None else "",
             "tags": tags,
             "annotation": annotations,
@@ -2561,10 +2544,7 @@ class DirectoryModelExportStore(ModelExportStore):
         if not self.included_datasets:
             return
         collection_names = self._dataset_collection_names()
-        rows = [
-            self._dataset_mapping_row(dataset, include_files, collection_names)
-            for dataset, include_files in self.included_datasets.values()
-        ]
+        rows = [self._dataset_mapping_row(dataset, collection_names) for dataset in self.included_datasets]
         rows.sort(key=lambda row: (row["hid"] == "", row["hid"].zfill(10), row["name"]))
         mapping_path = os.path.join(self.export_directory, DATASETS_MAPPING_FILENAME)
         with open(mapping_path, "w", encoding="utf-8", newline="") as mapping_file:
