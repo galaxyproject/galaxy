@@ -663,6 +663,36 @@ test_data:
         )
         self._assert_extract_dataset_step_kept(downloaded_workflow)
 
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_job_without_summarized_output_rejected(self, history_id):
+        """A job that produced nothing in the extracted-from history cannot be a
+        step. Regression for #22451: this used to be an AssertionError, i.e. an
+        opaque 500 naming neither the job nor a cause the user could act on."""
+        other_history_id = self.dataset_populator.new_history()
+        other_input = self.dataset_populator.new_dataset(other_history_id, content="1 2 3\n")
+        self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
+        run = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": other_input["id"]}},
+            history_id=other_history_id,
+        )
+        self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
+        foreign_job_id = run["jobs"][0]["id"]
+
+        response = self._post(
+            "workflows",
+            data={
+                "from_history_id": history_id,
+                "workflow_name": "job with no output here",
+                "job_ids": dumps([foreign_job_id]),
+            },
+        )
+        self._assert_status_code_is(response, 400)
+        message = response.json()["err_msg"]
+        assert foreign_job_id in message, message
+        assert "produced no output in this history" in message, message
+
     def __run_random_lines_mapped_over_singleton(self, history_id):
         hdca = self.dataset_collection_populator.create_list_in_history(history_id, contents=["1 2 3\n4 5 6"]).json()
         hdca_id = hdca["id"]
