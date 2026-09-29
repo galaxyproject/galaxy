@@ -1,7 +1,7 @@
 import type * as FloatingUI from "@floating-ui/dom";
 import { autoUpdate, computePosition } from "@floating-ui/dom";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
@@ -20,7 +20,7 @@ vi.mock("@floating-ui/dom", async (importOriginal) => {
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 function mountTemplate(template: string, methods: Record<string, () => void> = {}) {
     wrapper = mount(
@@ -49,17 +49,17 @@ function focusedText() {
     return document.activeElement?.textContent?.trim();
 }
 
-async function press(element: Wrapper<Vue> | Element, key: string, shiftKey = false) {
+async function press(element: VueWrapper | Element, key: string, shiftKey = false) {
     const target = "element" in element ? element.element : element;
     target.dispatchEvent(new KeyboardEvent("keydown", { key, shiftKey, bubbles: true, cancelable: true }));
     await flushPromises();
 }
 
-function isMenuOpen(wrapper: Wrapper<Vue>) {
+function isMenuOpen(wrapper: VueWrapper) {
     return wrapper.get(".dropdown-menu").classes().includes("show");
 }
 
-async function openMenu(wrapper: Wrapper<Vue>) {
+async function openMenu(wrapper: VueWrapper) {
     await wrapper.get(".dropdown-toggle").trigger("click");
     expect(isMenuOpen(wrapper)).toBe(true);
 }
@@ -211,8 +211,8 @@ describe("GDropdown.vue", () => {
         });
 
         it.each([
-            ["ArrowDown", (toggle: Wrapper<Vue>) => press(toggle, "ArrowDown")],
-            ["Enter or Space", (toggle: Wrapper<Vue>) => toggle.trigger("click")],
+            ["ArrowDown", (toggle: VueWrapper) => press(toggle, "ArrowDown")],
+            ["Enter or Space", (toggle: VueWrapper) => toggle.trigger("click")],
         ])("focuses an item opened with %s only once the menu is placed", async (_key, open) => {
             let placeMenu = () => {};
             vi.mocked(computePosition).mockReturnValueOnce(

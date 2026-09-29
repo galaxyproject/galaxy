@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import VueRouter from "vue-router";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
@@ -33,7 +32,7 @@ class VisibleIntersectionObserver {
 }
 
 describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     const fetchItem = vi.mocked(itemSrc === "hda" ? fetchDatasetDetails : fetchCollectionSummary);
     const item = {
         id: "item-id",

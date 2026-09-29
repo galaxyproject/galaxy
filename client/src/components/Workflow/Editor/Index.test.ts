@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, mockUnprivilegedToolsRequest, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -144,7 +144,7 @@ describe("Index", () => {
     });
 
     describe("default mount", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
         let stateStore: ReturnType<typeof useWorkflowStateStore>;
 
         beforeEach(() => {
@@ -674,7 +674,7 @@ describe("Index", () => {
 
         /** Marks the workflow as changed via a real user-facing event (annotation
          * update through `WorkflowAttributes`), rather than reaching into internals. */
-        async function triggerHasChanges(w: Wrapper<Vue>) {
+        async function triggerHasChanges(w: VueWrapper) {
             w.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "trigger change");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
@@ -683,7 +683,7 @@ describe("Index", () => {
         /** `Index.vue` never exposes `onNavigate` directly; the "exit" activity
          * routes to "/workflows/list" through it with no forceSave/appendVersion,
          * matching what these tests exercise. */
-        async function triggerOnNavigateToList(w: Wrapper<Vue>) {
+        async function triggerOnNavigateToList(w: VueWrapper) {
             w.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "exit");
         }
 

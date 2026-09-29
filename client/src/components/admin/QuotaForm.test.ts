@@ -1,9 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
@@ -109,13 +108,13 @@ async function mountTarget(quota?: ReturnType<typeof quotaDetails>) {
     return wrapper;
 }
 
-async function choose(wrapper: Wrapper<Vue>, selectionId: string, value: string) {
+async function choose(wrapper: VueWrapper, selectionId: string, value: string) {
     const selection = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === selectionId);
     selection!.vm.$emit("input", value);
     await flushPromises();
 }
 
-async function submit(wrapper: Wrapper<Vue>) {
+async function submit(wrapper: VueWrapper) {
     await wrapper.find("#admin-quota-submit").trigger("click");
     await flushPromises();
 }
@@ -236,7 +235,7 @@ describe("QuotaForm.vue edit mode", () => {
 });
 
 describe("QuotaForm.vue create mode", () => {
-    async function fillRequiredFields(wrapper: Wrapper<Vue>) {
+    async function fillRequiredFields(wrapper: VueWrapper) {
         await wrapper.find("#admin-quota-name").setValue("New Quota");
         await wrapper.find("#admin-quota-description").setValue("New Description");
         await wrapper.find("#admin-quota-amount").setValue("10 GB");

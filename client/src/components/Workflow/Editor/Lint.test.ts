@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -19,7 +19,7 @@ const steps: Steps = lintStepsData as unknown as Steps;
 const stepsRef = ref(steps);
 
 describe("Lint", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let stepStore: ReturnType<typeof useWorkflowStepStore>;
 
     beforeEach(() => {

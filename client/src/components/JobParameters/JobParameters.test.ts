@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -42,7 +42,7 @@ describe("JobParameters/JobParameters.vue", () => {
         await flushPromises();
 
         const checkTableParameter = (
-            element: Wrapper<any>,
+            element: VueWrapper<any>,
             expectedTitle: string,
             expectedValue: string | { id: string; src: string },
             link?: string,

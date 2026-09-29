@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
@@ -77,7 +77,7 @@ function countEmptyQuerySearches(provider: CommandPaletteProvider): SearchCounte
 }
 
 describe("CommandPalette", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let router: VueRouter;
 
     beforeEach(async () => {

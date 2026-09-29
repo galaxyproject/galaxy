@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import FormCollectionType from "./FormCollectionType.vue";
 import FormColumnDefinitions from "./FormColumnDefinitions.vue";
@@ -27,13 +26,13 @@ function stepWithCollectionType(collectionType: string | null) {
     };
 }
 
-function lastEmittedState(wrapper: Wrapper<Vue>) {
+function lastEmittedState(wrapper: VueWrapper) {
     const emitted = wrapper.emitted("onChange");
     return emitted?.[emitted.length - 1]?.[0];
 }
 
 describe("FormInputCollection", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = shallowMount(FormInputCollection as object, {

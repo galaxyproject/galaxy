@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -41,7 +41,7 @@ async function mountFolderDetailsWrapper(localVue: ReturnType<typeof getLocalVue
     return wrapper;
 }
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     const localVue = getLocalVue();
 
     beforeEach(async () => {

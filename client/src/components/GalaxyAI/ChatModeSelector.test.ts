@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
@@ -39,7 +39,7 @@ function mountComponent() {
 }
 
 /** Returns the three GButton wrappers in template order: [fullView, sidePanel, bottomPanel] */
-function getButtons(wrapper: Wrapper<Vue>) {
+function getButtons(wrapper: VueWrapper) {
     return wrapper.findAllComponents(GButton);
 }
 

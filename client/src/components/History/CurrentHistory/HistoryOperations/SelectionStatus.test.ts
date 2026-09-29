@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -29,7 +29,7 @@ async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     return wrapper;
 }
 
-async function expectWrapperButtonToEmitEvent(wrapper: Wrapper<Vue>, buttonSelector: string, expectedEvent: string) {
+async function expectWrapperButtonToEmitEvent(wrapper: VueWrapper, buttonSelector: string, expectedEvent: string) {
     expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
     await wrapper.find(buttonSelector).trigger("click");
     expect(wrapper.emitted()).toHaveProperty(expectedEvent);

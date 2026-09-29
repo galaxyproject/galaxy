@@ -1,5 +1,5 @@
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -19,7 +19,7 @@ let postRequests: PostRequest[] = [];
 let originalSearch: string;
 
 describe("NewUserConfirmation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(async () => {
         postRequests = [];

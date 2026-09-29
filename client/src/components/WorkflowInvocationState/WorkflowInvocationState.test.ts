@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -279,7 +279,7 @@ describe("WorkflowInvocationState check 'Debug' tab", () => {
  * exposing the internals of the component. This is just to restore the previous behavior of the test
  * and it only uses the wrapper to check the props of the invocation summary component.
  */
-function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
+function isInvocationAndJobTerminal(wrapper: VueWrapper): boolean {
     const invocationSummary = wrapper.find(selectors.invocationSummary);
     return invocationSummary.exists() && invocationSummary.html().includes('invocationandjobterminal="true"');
 }

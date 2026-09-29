@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +30,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         );
     });
 
-    function doMount(split: boolean): Wrapper<Vue> {
+    function doMount(split: boolean): VueWrapper {
         const wrapper = mount(WorkflowStorageConfiguration as object, {
             propsData: {
                 splitObjectStore: split,

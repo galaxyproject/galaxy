@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -53,7 +53,7 @@ vi.mock("@/stores/tourStore", () => {
 vi.mock("@/composables/toast");
 
 describe("Tool Generated Tour Dropdown Item", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     /** This is used to trigger a change in what `historyItemsStore.getStatesForHids` returns */
     const currentItemState = ref<State | null>(null);
 
@@ -206,13 +206,13 @@ describe("Tool Generated Tour Dropdown Item", () => {
 
     /** Confirms the tour is _(still)_ generating, given that the dropdown item is disabled
      * and the tour store not yet updated. */
-    function tourIsGenerating(dropdownItem: Wrapper<Vue>) {
+    function tourIsGenerating(dropdownItem: VueWrapper) {
         expect(dropdownItem.attributes("aria-disabled")).toBe("true");
         expect(setTourMock).toHaveBeenCalledTimes(0);
     }
 
     /** Confirms the tour has been generated and the `tourStore` updated with it. */
-    function tourHasGenerated(dropdownItem: Wrapper<Vue>) {
+    function tourHasGenerated(dropdownItem: VueWrapper) {
         // The second toast confirms the tour is ready
         expect(raisedToasts()).toContainEqual({ variant: "success", message: "You can now start the tour" });
         expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();
@@ -224,7 +224,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     /** Confirms the tour generation failed, the dropdown item is enabled, the tour store not updated
      * and the expected error is message shown in a toast.
      */
-    function tourGenerationFailedWith(dropdownItem: Wrapper<Vue>, message: string) {
+    function tourGenerationFailedWith(dropdownItem: VueWrapper, message: string) {
         // The second toast confirms the tour generation failed
         expect(raisedToasts()).toContainEqual({ variant: "error", message });
         expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();

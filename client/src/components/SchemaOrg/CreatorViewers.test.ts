@@ -1,13 +1,12 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import GrantViewer from "./GrantViewer.vue";
 import OrganizationViewer from "./OrganizationViewer.vue";
 import PersonViewer from "./PersonViewer.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 const CASES = [
     {

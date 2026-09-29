@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import DatasetDownload from "./DatasetDownload.vue";
 
@@ -13,7 +12,7 @@ const items = [
 ];
 
 describe("DatasetDownload", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = mount(DatasetDownload as object, {

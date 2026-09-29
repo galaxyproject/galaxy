@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -43,7 +43,7 @@ vi.mock("@/components/Citation/services", () => ({
 setupMockHistoryBreadcrumbs();
 
 describe("CitationsList", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
