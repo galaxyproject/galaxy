@@ -1,7 +1,8 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -16,10 +17,7 @@ beforeEach(() => {
     getRequests = [];
 });
 
-function mountDefault() {
-    const data = {
-        name: "workflow_name",
-    };
+function mountDefault(data = { name: "workflow_name" }) {
     server.use(
         http.untyped.get("/api/workflows/workflow_id/download", ({ request }) => {
             getRequests.push({ url: request.url });
@@ -33,6 +31,12 @@ function mountDefault() {
             expanded: false,
         },
         localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn }),
+        stubs: {
+            FontAwesomeIcon: true,
+            "b-popover": true,
+            "router-link": true,
+        },
     });
 }
 
@@ -68,6 +72,31 @@ describe("WorkflowDisplay", () => {
         expect(getRequests.length).toBe(1);
         expect(getRequests[0].url).toContain("/api/workflows/workflow_id/download");
         expect(getRequests[0].url).toContain("style=preview");
+    });
+
+    it("renders numbered step titles from preview steps", async () => {
+        const wrapper = mountDefault({
+            name: "workflow_name",
+            // deliberately out of array order to prove numbering comes from order_index
+            steps: [
+                {
+                    order_index: 1,
+                    type: "tool",
+                    label: "My cool tool",
+                    tool_id: "cat1",
+                    tool_version: "1.0",
+                    inputs: [],
+                },
+                { order_index: 2, type: "subworkflow", label: "My subworkflow", inputs: [] },
+                { order_index: 0, type: "data_input", label: "Input dataset", inputs: [] },
+            ],
+        });
+        await flushPromises();
+        const text = wrapper.text();
+        expect(text).toContain("Step 1: Input dataset");
+        expect(text).toContain("Step 2: My cool tool");
+        expect(text).toContain("Step 3: My subworkflow");
+        expect(text).not.toContain("NaN");
     });
 
     it("error message as object", async () => {
