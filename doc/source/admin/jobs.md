@@ -177,10 +177,13 @@ variable is omitted. Missing required declared variables produce a warning on
 the job information page and an info-level log entry, without failing the job.
 Only variable names are recorded. Optional variables produce no warning.
 
-Existing `<param id="docker_env_VARIABLE">VALUE</param>` and
-`<param id="singularity_env_VARIABLE">VALUE</param>` settings continue to work.
-They set values only inside the corresponding container runtime and override
-forwarded values. They are superseded by `tool_env` but are not deprecated.
+Prefer `tool_env` for variables consumed by tools. Setting them through
+`<param id="docker_env_VARIABLE">VALUE</param>` or
+`<param id="singularity_env_VARIABLE">VALUE</param>` is a supported anti-pattern:
+it ties the configuration to a specific container runtime, so switching runtimes
+or running without a container can change the tool's environment. These params
+set values only inside the corresponding container runtime and override values
+forwarded from the job environment.
 
 Destinations may also specify other destinations (which may be dynamic destinations) that jobs should be resubmitted to if they fail to complete at the first destination for certain reasons. This is done with the `<resubmit>` tag contained within a `<destination>`.
 
