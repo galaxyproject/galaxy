@@ -745,6 +745,9 @@ OUTPUTS_FORMAT_INPUT = """
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 <tool id="id" name="name">
+    <inputs>
+        <param name="input_readpair" type="data_collection" collection_type="paired" format="data" />
+    </inputs>
     <outputs>
         <collection name="output_collection" type="paired">
             <data name="forward" format_source="input_readpair" />
@@ -895,6 +898,139 @@ OUTPUTS_FORMAT_SOURCE_QUALIFIED = """
     </inputs>
     <outputs>
         <data name="output1" format_source="cond|input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_COLLECTION_ELEMENT = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="paired_input" type="data_collection" collection_type="paired" format="data" />
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="single">Single</option>
+                <option value="paired">Paired</option>
+            </param>
+            <when value="single">
+                <param name="input1" type="data" format="data" />
+            </when>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="paired_input['forward']" />
+        <data name="output2" format_source='paired_input["reverse"]' />
+        <data name="output3" format_source="paired_input[0]" />
+        <data name="output4" format_source="paired_input" />
+        <data name="output5" format_source="cond|input1['forward']" />
+        <collection name="output6" type="paired" format_source="paired_input['forward']">
+            <data name="forward" format_source="cond|input1['forward']" />
+            <data name="reverse" format_source="paired_input[1]" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_UNQUALIFIED_ELEMENT = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output1" type="paired">
+            <data name="forward" format_source="input1['forward']" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_ELEMENT_OF_DATASET = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1['forward']" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="yes">Yes</option>
+                </param>
+                <when value="yes">
+                    <param name="input1" type="data" format="data" />
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="queries_0|cond|input1" />
+        <data name="output2" format_source="queries_2|cond|input1" />
+        <data name="output3" format_source="queries_0|input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT_UNPREFIXED = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <param name="input1" type="data" format="data" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_QUALIFIED_MISSING = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <repeat name="files" title="Files">
+                    <param name="input1" type="data" format="data" />
+                </repeat>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output1" type="list" format_source="cond|input1">
+            <discover_datasets pattern="__name_and_ext__" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_NESTED_DATA_MISSING = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <collection name="output1" type="paired">
+            <data name="forward" format_source="input1" />
+            <data name="reverse" format_source="input2" />
+        </collection>
     </outputs>
 </tool>
 """
@@ -2395,6 +2531,71 @@ def test_outputs_format_source_qualified(lint_ctx):
     run_lint_module(lint_ctx, output, tool_source)
     assert "format_source" not in lint_ctx.warn_messages
     assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_collection_element(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_COLLECTION_ELEMENT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "format_source" not in lint_ctx.warn_messages
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_unqualified_element(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_UNQUALIFIED_ELEMENT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'forward' uses unqualified format_source='input1['forward']'. Use the qualified name 'cond|input1['forward']'."
+        in lint_ctx.warn_messages
+    )
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_element_of_dataset(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_ELEMENT_OF_DATASET)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' selects an element with format_source='input1['forward']' but 'input1' is not a collection input."
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_repeat(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output3' uses unqualified format_source='queries_0|input1'. Use the qualified name 'queries_0|cond|input1'."
+        in lint_ctx.warn_messages
+    )
+    assert len([m for m in lint_ctx.warn_messages if "format_source" in m.message]) == 1
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_repeat_unprefixed(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT_UNPREFIXED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='input1' which does not match any input parameter. Did you mean 'queries_0|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_qualified_missing(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_QUALIFIED_MISSING)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='cond|input1' which does not match any input parameter. Did you mean 'cond|files_0|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_nested_data_missing(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_NESTED_DATA_MISSING)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'reverse' references format_source='input2' which does not match any input parameter."
+        in lint_ctx.error_messages
+    )
+    assert len([m for m in lint_ctx.error_messages if "format_source" in m.message]) == 1
 
 
 def test_stdio_default_for_default_profile(lint_ctx):

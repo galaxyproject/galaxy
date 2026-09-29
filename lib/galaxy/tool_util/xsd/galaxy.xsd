@@ -6367,9 +6367,11 @@ discovered data sets on Galaxy versions prior to 24.0 and should be specified us
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
-References to parameters in sections or conditionals must be qualified using ``|`` (e.g. ``cond|input1``).
-An element of a collection input can be selected with Python-style item access (e.g. ``input_collection['forward']``);
-without an index the first dataset of the collection is used.
+References to parameters in sections, conditionals or repeats should be qualified using ``|`` (e.g. ``cond|input1``),
+and repeats need an instance index (e.g. ``queries_0|input1``). Unqualified names inside sections and conditionals
+still resolve for backward compatibility but are ambiguous if several parameters share the name.
+A single element of a collection input can be selected by index or identifier (e.g. ``input_collection['forward']``);
+without a selector the first dataset of the collection is used.
 For collections (Galaxy 26.1 and later) this is the default format for discovered elements; a ``format`` on
 ``<discover_datasets>`` or an extension captured from the filename takes precedence.
         ]]></xs:documentation>
@@ -6417,7 +6419,8 @@ This only applies to collections that are mapped over a non-collection input and
         <xs:documentation xml:lang="en">This copies the metadata information
 from the tool's input dataset to serve as default for information that cannot be detected from the output.
 One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
-References to parameters in sections or conditionals must be qualified using ``|`` (e.g. ``cond|input1``).</xs:documentation>
+References to parameters in sections, conditionals or repeats should be qualified as for ``format_source``
+(e.g. ``cond|input1``, ``queries_0|input1``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
@@ -6493,8 +6496,9 @@ same as that of the input dataset selected (and named ``input1``) for the tool.
 The following will create datasets in the history panel, setting the output data
 type to be the same as that of an input dataset named by the ``format_source``
 attribute. If the parameter is inside sections or conditionals, prefix it with
-their names separated by ``|`` (e.g. ``qual|qfile`` below). If the parameter is a
-collection, an element can be selected with Python-style item access, e.g.
+their names separated by ``|`` (e.g. ``qual|qfile`` below); a repeat also needs
+an instance index (e.g. ``queries_0|qfile``). If the parameter is a collection, a
+single element can be selected by index or identifier, e.g.
 ``input_collection['forward']`` refers to the forward dataset of a paired collection.
 
 ```xml
