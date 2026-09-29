@@ -12,6 +12,11 @@ import pytest
 
 from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util.unittest_utils.mock_http_server import (
+    MockHTTPRequestHandler,
+    MockHttpServer,
+    start_mock_http_server,
+)
 from galaxy_test.base.api import (
     AnonymousGalaxyInteractor,
     ApiTestInteractor,
@@ -21,11 +26,6 @@ from galaxy_test.base.api_util import (
     get_user_api_key,
 )
 from galaxy_test.base.env import setup_keep_outdir
-from galaxy_test.base.mock_http_server import (
-    MockHTTPRequestHandler,
-    MockHttpServer,
-    start_mock_http_server,
-)
 from galaxy_test.base.populators import (
     check_missing_tool,
     DatasetCollectionPopulator,
