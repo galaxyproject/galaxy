@@ -108,6 +108,7 @@ query_tags = [
     IndexQueryTag("name", "The history's name."),
     IndexQueryTag("annotation", "The history's annotation.", "a"),
     IndexQueryTag("tag", "The history's tags.", "t"),
+    IndexQueryTag("tool_id", "The id of a tool used by a job in the history."),
 ]
 
 AllHistoriesQueryParam = Query(

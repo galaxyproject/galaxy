@@ -112,6 +112,7 @@ INDEX_SEARCH_FILTERS = {
     "name": "name",
     "user": "user",
     "tag": "tag",
+    "tool_id": "tool_id",
     "is": "is",
 }
 
@@ -177,6 +178,18 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                 stmt = stmt.outerjoin(self.model_class.tags.of_type(alias))
                 return tag_filter(alias, term_text, quoted)
 
+            def tool_id_exists(term_text: str, quoted: bool):
+                tool_id_column = Job.tool_id
+                condition = tool_id_column == term_text if quoted else tool_id_column.ilike(f"%{term_text}%")
+                return (
+                    select(1)
+                    .select_from(Job)
+                    .where(Job.history_id == self.model_class.id)
+                    .where(condition)
+                    .correlate_except(Job)
+                    .exists()
+                )
+
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
@@ -186,6 +199,8 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                         stmt = stmt.where(pg)
                     elif key == "name":
                         stmt = stmt.where(text_column_filter(self.model_class.name, term))
+                    elif key == "tool_id":
+                        stmt = stmt.where(tool_id_exists(term.text, term.quoted))
                     elif key == "user":
                         stmt = append_user_filter(stmt, self.model_class, term)
                     elif key == "is":
