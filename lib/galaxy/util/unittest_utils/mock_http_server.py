@@ -8,6 +8,8 @@ When targeting a remote Galaxy server (GALAXY_TEST_EXTERNAL), falls back to
 the real external URLs with automatic skip-if-down behavior.
 """
 
+from __future__ import annotations
+
 import os
 import re
 import threading
