@@ -20,6 +20,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.exceptions import ObjectNotFound
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
@@ -262,10 +263,13 @@ def generate_sharable_link_for_repository_in_tool_shed(
     return sharable_url
 
 
-def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
+def get_repository_in_tool_shed(app: "ToolShedApp", id: str, eagerload_columns: list | None = None) -> model.Repository:
     """Get a repository on the tool shed side from the database via id."""
     options = [joinedload(col) for col in eagerload_columns] if eagerload_columns else []
-    return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
+    repository = app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
+    if repository is None:
+        raise ObjectNotFound(f"Repository not found for id {id}")
+    return repository
 
 
 def get_repo_info_dict(

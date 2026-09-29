@@ -19,7 +19,7 @@ from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revis
 log = logging.getLogger(__name__)
 
 
-def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_path=None):
+def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_path=None) -> dict[str, str]:
     """
     Return a dictionary of valid readme file name <-> readme file content pairs for all readme files defined in the received metadata.  Since the
     received changeset_revision (which is associated with the received metadata) may not be the latest installable changeset revision, the README
@@ -30,7 +30,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
     else:
         latest_downloadable_changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
-    readme_files_dict = {}
+    readme_files_dict: dict[str, str] = {}
     if metadata:
         if "readme_files" in metadata:
             for relative_path_to_readme_file in metadata["readme_files"]:

@@ -4,7 +4,7 @@ from typing import (
 )
 
 KeyedQueryT = tuple[str, str]
-ParseFilterResultT = tuple[list["FilteredTerm"] | None, str | None]
+ParseFilterResultT = tuple[list["FilteredTerm"] | None, str]
 QUOTE_PATTERN = re.compile(r"\'(.*?)\'")
 
 # Defaults for `filter_terms` used by index-search callers. A whitespace-rich

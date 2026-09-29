@@ -7,6 +7,7 @@ from dataclasses import (
 from typing import (
     Any,
     Literal,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -42,6 +43,13 @@ from tool_shed.webapp.model import (
 )
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed_client.schema import ChangesetMetadataStatus
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+    from sqlalchemy.orm import (
+        scoped_session,
+        Session,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -1069,7 +1077,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         )
                         successful_count += 1
                 except Exception:
-                    log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
+                    log.exception("Error attempting to reset metadata on repository %s", repository_id)
                     unsuccessful_count += 1
             message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
@@ -1215,14 +1223,16 @@ def get_repository_metadata(session, repository_id):
     return session.scalars(stmt)
 
 
-def get_current_repositories(session, order=False):
+def get_current_repositories(session: "scoped_session[Session]", order: bool = False) -> "ScalarResult[Repository]":
     stmt = select(Repository).where(Repository.deleted == false())
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)
     return session.scalars(stmt)
 
 
-def get_filtered_repositories(session, repo_ids, order):
+def get_filtered_repositories(
+    session: "scoped_session[Session]", repo_ids: list[int], order: bool
+) -> "ScalarResult[Repository]":
     stmt = select(Repository).where(Repository.id.in_(repo_ids))
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)

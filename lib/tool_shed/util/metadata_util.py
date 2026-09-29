@@ -178,7 +178,9 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     return changeset_tups
 
 
-def get_next_downloadable_changeset_revision(app, repository, after_changeset_revision):
+def get_next_downloadable_changeset_revision(
+    app: "ToolShedApp", repository: Repository, after_changeset_revision: str
+) -> str | None:
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
@@ -265,7 +267,7 @@ def get_repository_metadata_by_repository_id_changeset_revision(app, id, changes
     return get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
 
 
-def get_updated_changeset_revisions(app: "ToolShedApp", name, owner, changeset_revision):
+def get_updated_changeset_revisions(app: "ToolShedApp", name: str, owner: str, changeset_revision: str) -> str:
     """
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.

@@ -15,6 +15,7 @@ from tool_shed.webapp.search import (
     repo_search,
     tool_search,
 )
+from tool_shed.webapp.search.repo_search import RepoBoosts
 from tool_shed.webapp.search.tool_search import ToolBoosts
 
 if TYPE_CHECKING:
@@ -40,7 +41,7 @@ def search_index(request, tmp_path) -> tuple[str, Callable[[int], None], Callabl
     else:
         index_dir = tmp_path
         schema = repo_search.schema
-        repo_boosts = SimpleNamespace(
+        repo_boosts = RepoBoosts(
             repo_name_boost=1.2,
             repo_description_boost=0.6,
             repo_long_description_boost=0.4,

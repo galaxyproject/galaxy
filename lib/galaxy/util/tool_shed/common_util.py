@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
 )
@@ -159,50 +160,27 @@ def handle_galaxy_url(trans: "GalaxyWebTransaction", **kwd):
     return galaxy_url
 
 
-def parse_repository_dependency_tuple(repository_dependency_tuple, contains_error=False):
+def parse_repository_dependency_tuple(
+    repository_dependency_tuple: Sequence[str], contains_error: bool = False
+) -> tuple[str, str, str, str, str, str]:
     # Default both prior_installation_required and only_if_compiling_contained_td to False in cases where metadata should be reset on the
     # repository containing the repository_dependency definition.
     prior_installation_required = "False"
     only_if_compiling_contained_td = "False"
-    if contains_error:
-        if len(repository_dependency_tuple) == 5:
-            tool_shed, name, owner, changeset_revision, error = repository_dependency_tuple
-        elif len(repository_dependency_tuple) == 6:
-            tool_shed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
-        elif len(repository_dependency_tuple) == 7:
-            (
-                tool_shed,
-                name,
-                owner,
-                changeset_revision,
-                prior_installation_required,
-                only_if_compiling_contained_td,
-                error,
-            ) = repository_dependency_tuple
-        return (
+    if len(repository_dependency_tuple) == 4:
+        tool_shed, name, owner, changeset_revision = repository_dependency_tuple
+    elif len(repository_dependency_tuple) == 5:
+        tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
+    elif len(repository_dependency_tuple) == 6:
+        (
             tool_shed,
             name,
             owner,
             changeset_revision,
             prior_installation_required,
             only_if_compiling_contained_td,
-            error,
-        )
-    else:
-        if len(repository_dependency_tuple) == 4:
-            tool_shed, name, owner, changeset_revision = repository_dependency_tuple
-        elif len(repository_dependency_tuple) == 5:
-            tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
-        elif len(repository_dependency_tuple) == 6:
-            (
-                tool_shed,
-                name,
-                owner,
-                changeset_revision,
-                prior_installation_required,
-                only_if_compiling_contained_td,
-            ) = repository_dependency_tuple
-        return tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
+        ) = repository_dependency_tuple
+    return tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
 
 
 def remove_port_from_tool_shed_url(tool_shed_url: str) -> str:
