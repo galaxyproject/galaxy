@@ -1,5 +1,5 @@
-import { configureCompat, createApp } from "@vue/compat";
 import { createPinia } from "pinia";
+import { configureCompat, createApp } from "vue";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
