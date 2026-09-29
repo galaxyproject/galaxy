@@ -1,7 +1,9 @@
+from collections.abc import Mapping
+
 RAW_VALUE_BY_DEFAULT = False
 
 
-def env_to_statement(env):
+def env_to_statement(env: Mapping[str, object]) -> str:
     """Return the abstraction description of an environment variable definition
     into a statement for shell script.
 
@@ -22,15 +24,20 @@ def env_to_statement(env):
     'module load java/1.5.1'
     """
     if source_file := env.get("file", None):
+        assert isinstance(source_file, str)
         return f". {__escape(source_file, env)}"
     if execute := env.get("execute", None):
+        assert isinstance(execute, str)
         return execute
     name = env["name"]
-    value = __escape(env["value"], env)
+    value = env["value"]
+    assert isinstance(name, str)
+    assert isinstance(value, str)
+    value = __escape(value, env)
     return f"{name}={value}; export {name}"
 
 
-def __escape(value, env):
+def __escape(value: str, env: Mapping[str, object]) -> str:
     raw = env.get("raw", RAW_VALUE_BY_DEFAULT)
     if not raw:
         value = '"' + value.replace('"', '\\"') + '"'

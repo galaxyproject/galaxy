@@ -20,11 +20,13 @@ def test_invalid_names(name):
 
 def test_destination_scopes():
     destination = JobDestination(
-        env=[{"name": "LEGACY", "value": "1"}],
-        job_env=[{"name": "JOB", "value": "2"}],
-        tool_env=[{"name": "TOOL", "value": "3"}],
+        env=[
+            {"name": "LEGACY", "value": "1"},
+            {"type": "job", "name": "JOB", "value": "2"},
+            {"type": "tool", "name": "TOOL", "value": "3"},
+        ],
     )
-    assert [e["name"] for e in destination.environment] == ["LEGACY", "JOB", "TOOL"]
+    assert [e["name"] for e in destination.env] == ["LEGACY", "JOB", "TOOL"]
     assert destination.tool_env_names == ["TOOL"]
 
 
@@ -33,7 +35,7 @@ def test_destination_scopes():
 )
 def test_tool_env_rejects_unknown_names(entry):
     with pytest.raises(ValueError):
-        JobDestination(tool_env=[entry])
+        JobDestination(env=[{"type": "tool", **entry}])
 
 
 def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
