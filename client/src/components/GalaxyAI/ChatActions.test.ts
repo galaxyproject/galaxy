@@ -38,6 +38,13 @@ function mountComponent(source: "center" | "docked" | "panel") {
         stubs: { FontAwesomeIcon: true },
     });
     const store = useChatStore();
+    // chatStore is a setup-syntax store, so @pinia/testing's automatic action
+    // spying (which relies on the options-API `actions` map) doesn't apply --
+    // spy on the actions these tests assert against explicitly.
+    vi.spyOn(store, "requestNewChat");
+    vi.spyOn(store, "setLocation");
+    vi.spyOn(store, "hideChat");
+    vi.spyOn(store, "setActiveChatId");
     return { wrapper, store };
 }
 
