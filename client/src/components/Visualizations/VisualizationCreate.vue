@@ -52,8 +52,8 @@ async function getPlugin() {
 
 function onSelect(dataset: OptionType) {
     const query = dataset.id ? `&dataset_id=${dataset.id}` : "";
+    // @ts-ignore - monkeypatched router accepts a second options argument; drop with migration.
     router.push(`/visualizations/display?visualization=${plugin.value?.name}${query}`, {
-        // @ts-ignore
         title: dataset.name,
     });
 }
