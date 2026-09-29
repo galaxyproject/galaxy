@@ -421,7 +421,8 @@ class FastAPIRepositories:
         request: UpdateRepositoryRequest = Body(...),
     ) -> DetailedRepository:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        ensure_can_manage(trans, repository)
+        if not can_update_repo(trans, repository):
+            raise InsufficientPermissionsException("You do not have permission to update this repository.")
 
         # may want to set some of these to null, so we're using the exclude_unset feature
         # to just serialize the ones we want to use to a dictionary.
