@@ -17,10 +17,14 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("vue-router", () => ({
-    useRouter: vi.fn(() => ({ push: vi.fn() })),
-    useRoute: vi.fn(() => ({ params: {} })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({ push: vi.fn() })),
+        useRoute: vi.fn(() => ({ params: {} })),
+    };
+});
 
 const mockUrlData = vi.fn();
 vi.mock("@/utils/url", () => ({

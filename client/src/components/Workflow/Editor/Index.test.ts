@@ -100,10 +100,14 @@ function editorStubs() {
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
 let mockRoute: { query: Record<string, string>; fullPath: string } = { query: {}, fullPath: "/" };
-vi.mock("vue-router", () => ({
-    useRouter: () => ({ push: mockPush, replace: mockReplace }),
-    useRoute: () => mockRoute,
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: () => ({ push: mockPush, replace: mockReplace }),
+        useRoute: () => mockRoute,
+    };
+});
 
 vi.mock("./modules/services");
 vi.mock("@/onload/loadConfig");

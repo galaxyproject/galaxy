@@ -15,9 +15,13 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("vue-router", () => ({
-    useRoute: vi.fn(() => ({})),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        useRoute: vi.fn(() => ({})),
+    };
+});
 
 function createTarget(propsData = {}) {
     return mount(MountTarget, {
