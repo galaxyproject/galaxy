@@ -517,7 +517,7 @@ histories:
     advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
     advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
     history_cards: '.history-card-list .g-card'
-    history_card_title: '[id^="g-card-title-link-history-"]'
+    history_card_title: '[id^="g-card-title-history-"]'
     history_card_select: 'input[id^="g-card-select-history-"]'
     import_button: '[data-description="header action import new history"]'
     reset_input: '#history-list-filter [data-description="reset query"]'
