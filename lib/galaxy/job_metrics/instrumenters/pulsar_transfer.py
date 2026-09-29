@@ -81,7 +81,8 @@ class PulsarTransferPlugin(InstrumentPlugin):
         path = self._instrument_file_path(job_directory, phase)
         try:
             with open(path) as fh:
-                return json.load(fh)
+                recorded: dict[str, Any] = json.load(fh)
+                return recorded
         except FileNotFoundError:
             # Pulsar did not report this phase - an older Pulsar, a job that ran somewhere
             # else entirely, or outputs that never made it back.
