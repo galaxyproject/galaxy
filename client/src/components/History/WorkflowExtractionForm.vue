@@ -455,8 +455,8 @@ function stepKind(job: ExtractionRow): string {
                 :data-icj-id="isMappedTool(job) ? job.implicit_collection_jobs_id : undefined"
                 :data-step-kind="stepKind(job)"
                 @rename="onJobRename(index)"
-                @toggle-output="(outputIndex) => onOutputToggle(index, outputIndex)"
-                @rename-output="(outputIndex) => onOutputRename(index, outputIndex)"
+                @toggle-output="(outputIndex: number) => onOutputToggle(index, outputIndex)"
+                @rename-output="(outputIndex: number) => onOutputRename(index, outputIndex)"
                 @select="onJobSelect(index)"
                 @view-job="onViewJob" />
         </div>

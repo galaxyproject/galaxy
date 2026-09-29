@@ -142,7 +142,7 @@ function onTagClicked(tag: string) {
                 :validator="(x) => !!isValid(x)"
                 @addOption="onAddTag"
                 @input="onInput"
-                @selected="(tag) => userTagsStore.onTagUsed(tag)" />
+                @selected="(tag: string) => userTagsStore.onTagUsed(tag)" />
         </div>
 
         <div v-else>

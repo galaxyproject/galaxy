@@ -2,7 +2,7 @@
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
+import { type Position, type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -152,7 +152,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 class="draggable-pan"
                 @mouseup="onMouseup"
                 @move="onMove"
-                @pan-by="(p) => emit('pan-by', p)" />
+                @pan-by="(p: Position) => emit('pan-by', p)" />
 
             <label :for="textAreaId" class="sr-only">Markdown Input</label>
             <textarea

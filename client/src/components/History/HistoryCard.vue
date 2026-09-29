@@ -281,8 +281,8 @@ function onKeyDown(event: KeyboardEvent) {
         @titleClick="onTitleClick"
         @rename="emit('rename', history.id, history.name)"
         @select="isMyHistory(history) && emit('select', history)"
-        @tagsUpdate="(tags) => onTagsUpdate(history.id, tags)"
-        @tagClick="(tag) => emit('tagClick', tag)"
+        @tagsUpdate="(tags: string[]) => onTagsUpdate(history.id, tags)"
+        @tagClick="(tag: string) => emit('tagClick', tag)"
         @click="onClick"
         @keydown="onKeyDown">
         <template v-if="props.archivedView && isArchivedHistory(history)" v-slot:titleActions>

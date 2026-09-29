@@ -246,5 +246,5 @@ async function onImportLocal() {
         :tags-editable="false"
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="workflow.update_time ?? ''"
-        @tagClick="(tag) => emit('tagClick', tag)" />
+        @tagClick="(tag: string) => emit('tagClick', tag)" />
 </template>

@@ -1392,11 +1392,7 @@ initializeWorkflowEditor();
                     :steps="steps"
                     :has-changes="hasChanges"
                     :on-save="onSave"
-                    @onAttributes="
-                        (e) => {
-                            showAttributes(e);
-                        }
-                    "
+                    @onAttributes="showAttributes"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActive('workflow-undo-redo')" :store-id="id" />
@@ -1579,8 +1575,8 @@ initializeWorkflowEditor();
                     :initial-position="{ x: 50, y: 50 }"
                     :loading="loadingWorkflow || initialLoading"
                     @scrollTo="scrollToId = null"
-                    @transform="(value) => (transform = value)"
-                    @graph-offset="(value) => (graphOffset = value)"
+                    @transform="(value: ZoomTransform) => (transform = value)"
+                    @graph-offset="(value: typeof graphOffset.value) => (graphOffset = value)"
                     @onClone="onClone"
                     @onCreate="onInsertTool"
                     @onChange="hasChanges = true"

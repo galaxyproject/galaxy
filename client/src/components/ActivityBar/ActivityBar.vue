@@ -490,7 +490,7 @@ defineExpose({
                 :activity-bar-id="props.activityBarId"
                 :heading="localize(props.optionsHeading)"
                 :search-placeholder="localize(props.optionsSearchPlaceholder)"
-                @activityClicked="(id) => emit('activityClicked', id)" />
+                @activityClicked="(id: string) => emit('activityClicked', id)" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
             <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>

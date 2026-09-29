@@ -87,7 +87,7 @@ const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id
                 :workflow-compatible="item.is_workflow_compatible"
                 :version="item.version"
                 :grid-view="props.gridView"
-                @apply-filter="(filter, value) => $emit('apply-filter', filter, value)" />
+                @apply-filter="(filter: string, value: string) => $emit('apply-filter', filter, value)" />
         </template>
     </ScrollList>
 </template>
