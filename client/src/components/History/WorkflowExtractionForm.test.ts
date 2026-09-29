@@ -1,5 +1,6 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -776,5 +777,19 @@ describe("WorkflowExtractionCard seed_warning", () => {
 
     it("does not render a seed warning badge when seed_warning is absent", () => {
         expect(cardBadges(INPUT_JOB).find((b) => b.id === "seed-warning")).toBeFalsy();
+    });
+});
+
+describe("WorkflowExtractionCard step label clear", () => {
+    it("emits clear-step-label when GCard's clear-title button is clicked", async () => {
+        const job = { ...toExtractionRow(TOOL_JOB), stepLabel: "concatenate" };
+        const wrapper = mount(WorkflowExtractionCard as object, {
+            propsData: { job },
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            stubs: { GenericHistoryItem: true },
+        });
+        await wrapper.find(".g-card-clear-title").trigger("click");
+        expect(wrapper.emitted("clear-step-label")).toHaveLength(1);
     });
 });
