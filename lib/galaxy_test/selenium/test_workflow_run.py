@@ -714,6 +714,45 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_multiple_integer_parameter(self):
+        history_id, inputs = self.workflow_run_setup_inputs("""
+input:
+  value: 2.tabular
+  file_type: tabular
+  type: File
+""")
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input: data
+  columns:
+    type: [integer]
+outputs:
+  output:
+    outputSource: column_param_list/output2
+steps:
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: input
+      col: columns
+      col_names: columns
+""")
+        self.workflow_run_specify_inputs(inputs)
+        self.components.workflow_run.simplified_textarea(label="columns").wait_for_and_send_keys("1\n2")
+        self.screenshot("workflow_run_multiple_integer_parameter")
+        self.workflow_run_submit()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        assert invocation["input_step_parameters"]["columns"]["parameter_value"] == [1, 2]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=invocation["outputs"]["output"]["id"]
+        )
+        assert "col 1,2" in content, content
+
+    @selenium_test
+    @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
         self.workflow_run_open_workflow("""
 class: GalaxyWorkflow

@@ -7575,6 +7575,58 @@ data_input:
             # Optional step parameter without default value will not be recorded.
             assert "int_input" not in invocation["input_step_parameters"]
 
+    @skip_without_tool("column_param_list")
+    def test_run_with_multiple_int_parameter_one_per_line(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input: data
+  columns:
+    type: [integer]
+outputs:
+  output:
+    outputSource: column_param_list/output2
+steps:
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: input
+      col: columns
+      col_names: columns
+"""
+        test_data = """
+input:
+  value: 2.tabular
+  type: File
+  file_type: tabular
+columns:
+  value: "{columns}"
+  type: raw
+"""
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                workflow,
+                test_data=test_data.format(columns="1\\n2"),
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            assert invocation["input_step_parameters"]["columns"]["parameter_value"] == [1, 2]
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=invocation["outputs"]["output"]["id"]
+            )
+            assert "col 1,2" in content, content
+
+            response = self.workflow_populator.run_workflow(
+                workflow,
+                test_data=test_data.format(columns="1\\ntwo"),
+                history_id=history_id,
+                expected_response=400,
+                assert_ok=False,
+            )
+            assert "columns: an integer is required" in response["err_msg"]
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")

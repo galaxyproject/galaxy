@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import FormHidden from "./Elements/FormHidden.vue";
+import FormNumber from "./Elements/FormNumber.vue";
 import FormText from "./Elements/FormText.vue";
 import FormElement from "./FormElement.vue";
 
@@ -82,6 +83,17 @@ describe("FormElement", () => {
     it("displays as the correct type if is_workflow is true", async () => {
         await wrapper.setProps({ type: "data_column", attributes: { is_workflow: true } });
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
+    });
+
+    it("displays a multiple integer as one value per line", async () => {
+        await wrapper.setProps({ type: "integer", value: "1\n2", workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormNumber).exists()).toBe(false);
+        const textarea = wrapper.find("textarea");
+        expect(textarea.element.value).toBe("1\n2");
+        expect(textarea.attributes("placeholder")).toBe("please provide integers, one per line");
+
+        await wrapper.setProps({ attributes: { multiple: false } });
+        expect(wrapper.findComponent(FormNumber).exists()).toBe(true);
     });
 
     it("marks required values", async () => {

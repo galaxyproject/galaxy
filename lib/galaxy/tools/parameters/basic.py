@@ -430,7 +430,7 @@ class TextToolParameter(SimpleTextToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('multiple', False), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -448,6 +448,8 @@ class TextToolParameter(SimpleTextToolParameter):
             self.optionality_inferred = False
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
+        # Only workflow parameters (which have no tool) accept multiple values, entered one per line.
+        self.multiple = tool is None and string_as_bool(input_source.get_bool("multiple", False))
 
     def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
         search = self.type == "text"
@@ -473,6 +475,7 @@ class TextToolParameter(SimpleTextToolParameter):
         other_values = other_values or {}
         d["area"] = self.area
         d["datalist"] = self.datalist
+        d["multiple"] = self.multiple
         d["optional"] = self.optional
         return d
 
@@ -487,10 +490,16 @@ class IntegerToolParameter(TextToolParameter):
     >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
     >>> assert type(p.from_json("10", trans)) == int
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)
+    >>> p = IntegerToolParameter(None, {"name": "_name", "type": "integer", "multiple": True, "min": 1})
+    >>> p.to_python("1\\n2,3", None)
+    [1, 2, 3]
+    >>> p.validate([1, 2])
+    >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):
+    ...     p.validate("1\\ntwo")
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
@@ -499,7 +508,7 @@ class IntegerToolParameter(TextToolParameter):
         super().__init__(tool, input_source)
         if self.value:
             try:
-                int(self.value)
+                self._to_int_values(self.value) if self.multiple else int(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
         self.min = input_source.get("min")
@@ -517,8 +526,33 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
+    def _to_int_values(self, value) -> list[int]:
+        if not isinstance(value, (str, list)):
+            value = [value]
+        return [int(v) for v in multiple_select_value_split(value)]
+
+    def _is_multiple_value(self, value) -> bool:
+        return self.multiple and value is not None and not contains_workflow_parameter(value)
+
+    def _multiple_to_python(self, value) -> list[int]:
+        try:
+            return self._to_int_values(value)
+        except ValueError:
+            raise ParameterValueError("an integer is required", self.name, value) from None
+
+    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
+        if not self._is_multiple_value(value):
+            return super().validate(value, trans)
+        values = self._multiple_to_python(value)
+        if not values and not self.optional:
+            raise ParameterValueError("at least one integer is required", self.name, value)
+        for v in values:
+            super().validate(v, trans)
+
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -534,6 +568,8 @@ class IntegerToolParameter(TextToolParameter):
                 )
 
     def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -545,6 +581,8 @@ class IntegerToolParameter(TextToolParameter):
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is not None and self.value != "":
+            if self.multiple:
+                return self._to_int_values(self.value)
             return int(self.value)
         else:
             return None
@@ -560,7 +598,7 @@ class FloatToolParameter(TextToolParameter):
     >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
     >>> assert type(p.from_json("36.1", trans)) == float
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)

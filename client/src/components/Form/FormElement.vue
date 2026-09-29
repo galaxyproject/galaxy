@@ -98,12 +98,17 @@ const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.v
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
 
+const isMultipleInteger = computed(() => props.type === "integer" && Boolean(attrs.value.multiple));
+
 const computedPlaceholder = computed(() => {
     if (!props.workflowRun) {
         return "";
     }
     if (props.attributes?.placeholder || !props.type) {
         return props.attributes?.placeholder;
+    }
+    if (isMultipleInteger.value) {
+        return `please provide integers, one per line${isOptional.value ? " (optional)" : ""}`;
     }
     return `please provide ${props.type in TYPE_TO_PLACEHOLDER ? TYPE_TO_PLACEHOLDER[props.type] : "a value"}${
         isOptional.value ? " (optional)" : ""
@@ -373,7 +378,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
                 <FormNumber
-                    v-else-if="props.type === 'integer' || props.type === 'float'"
+                    v-else-if="(props.type === 'integer' && !isMultipleInteger) || props.type === 'float'"
                     :id="props.id"
                     v-model="currentValue"
                     :max="attrs.max"
@@ -396,6 +401,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 <FormText
                     v-else-if="
                         ['text', 'password'].includes(props.type ?? '') ||
+                        isMultipleInteger ||
                         (attrs.is_workflow &&
                             ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(
                                 props.type ?? '',
