@@ -117,7 +117,8 @@ raw
 `env` is the legacy alias for `job_env`. Both configure the job script environment.
 For local and cluster runners that wrap the tool command in Docker or Singularity,
 these entries are **not automatically injected into the tool container**. This
-preserves existing configurations, including variables used by host-side steps.
+legacy behavior is preserved for security reasons, so job-scoped variables are
+not exposed to tool containers by default.
 
 `tool_env` exports variables in the job script and explicitly forwards them into
 wrapped tool containers. It accepts only `name`/`value` entries and the optional
