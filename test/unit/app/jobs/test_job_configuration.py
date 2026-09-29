@@ -380,8 +380,27 @@ class TestScopedJobEnvironment(BaseJobConfXmlParserTestCase):
             """<job_conf><plugins><plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" /></plugins><destinations default="local"><destination id="local" runner="local"><tool_env id="X">tool</tool_env><job_env id="X">job</job_env><env id="X">legacy</env><tool_env id="EMPTY"></tool_env></destination></destinations></job_conf>"""
         )
         destination = self.job_config.get_destination("local")
-        assert [entry["value"] for entry in destination.environment][:3] == ["tool", "job", "legacy"]
+        assert [entry["value"] for entry in destination.env][:3] == ["tool", "job", "legacy"]
+        assert [entry["type"] for entry in destination.env] == ["tool", "job", "job", "tool"]
         assert destination.tool_env_names == ["X", "EMPTY"]
+        assert not {"env", "job_env", "tool_env", "env_order"}.intersection(destination.params)
+
+    def test_xml_container_native_job_env_warning(self):
+        self._check_xml_container_native_warning("job_env", True)
+
+    def test_xml_container_native_legacy_env_has_no_warning(self):
+        self._check_xml_container_native_warning("env", False)
+
+    def _check_xml_container_native_warning(self, tag, warns):
+        self._write_config(
+            f'<job_conf><plugins><plugin id="native" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner" /></plugins><destinations default="native"><destination id="native" runner="native"><{tag} id="X">value</{tag}></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            destination = self.job_config.get_destination("native")
+        assert destination.env[0]["type"] == "job"
+        assert warning.called is warns
+        if warns:
+            assert "also reach the tool container" in warning.call_args[0][0]
 
     def test_yaml_order_and_container_native_warning(self):
         self.config.job_config_file = os.path.join(self.temp_directory, "job_conf.yml")
@@ -405,7 +424,7 @@ execution:
 """)
         with mock.patch("galaxy.jobs.log.warning") as warning:
             destination = self.job_config.get_destination("native")
-        assert [entry["value"] for entry in destination.environment] == ["tool", "job", "legacy"]
+        assert [entry["value"] for entry in destination.env] == ["tool", "job", "legacy"]
+        assert [entry["type"] for entry in destination.env] == ["tool", "job", "job"]
         assert "also reach the tool container" in warning.call_args[0][0]
-        assert "job_env" not in destination.params
-        assert "tool_env" not in destination.params
+        assert not {"env", "job_env", "tool_env", "env_order"}.intersection(destination.params)
