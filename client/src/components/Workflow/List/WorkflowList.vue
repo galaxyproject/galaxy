@@ -56,7 +56,12 @@ const listHeader = ref<any>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
-const workflowsLoaded = ref<WorkflowSummary[]>([]);
+const workflowsFetched = ref<WorkflowSummary[]>([]);
+const workflowsLoaded = computed(() =>
+    props.activeList === "my"
+        ? workflowsFetched.value.filter((w) => userStore.matchesCurrentUsername(w.owner))
+        : workflowsFetched.value,
+);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -197,15 +202,7 @@ async function load(overlayLoading = false, silent = false) {
             skipStepCounts: true,
         });
 
-        let filteredWorkflows = data;
-
-        if (props.activeList === "my") {
-            // Wait for the shared user load; App.vue already reports failures, so ignore them here.
-            await userStore.loadUser(false).catch(() => {});
-            filteredWorkflows = filteredWorkflows.filter((w: any) => userStore.matchesCurrentUsername(w.owner));
-        }
-
-        workflowsLoaded.value = filteredWorkflows;
+        workflowsFetched.value = data;
 
         totalWorkflows.value = totalMatches;
     } catch (e) {
