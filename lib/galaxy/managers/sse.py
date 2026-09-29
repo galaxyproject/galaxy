@@ -48,6 +48,10 @@ def parse_event_id(event_id: str) -> Optional[datetime]:
 #: stream loop polls this each iteration so managers don't depend on starlette.
 IsDisconnected = Callable[[], Awaitable[bool]]
 
+#: Queued by :meth:`SSEConnectionManager.begin_shutdown` to wake a stream waiting
+#: on an empty queue. Never sent to a client.
+_SHUTDOWN_WAKEUP = object()
+
 
 @dataclass
 class SSEEvent:
@@ -78,6 +82,8 @@ class SSEConnectionManager:
     - ``disconnect()`` is called from the SSE endpoint's ``finally`` block.
     - ``push_to_user()`` / ``push_broadcast()`` are called from ANY thread
       (typically the Kombu daemon thread via control task handlers).
+    - ``begin_shutdown()`` is called from the event loop when the worker starts
+      draining, and ends every stream.
     """
 
     def __init__(self, statsd_client: Optional[VanillaGalaxyStatsdClient] = None) -> None:
@@ -92,6 +98,7 @@ class SSEConnectionManager:
         # to the set of user_ids / session_ids that have asked for events.
         self._history_viewers_user: dict[str, set[int]] = defaultdict(set)
         self._history_viewers_session: dict[str, set[int]] = defaultdict(set)
+        self._shutting_down = False
 
     def _ensure_loop(self) -> None:
         """Capture the running asyncio event loop. Must be called from async context."""
@@ -158,6 +165,25 @@ class SSEConnectionManager:
             galaxy_session_id,
             len(self._broadcast_connections),
         )
+
+    def begin_shutdown(self) -> None:
+        """End every open stream, and any opened from now on, straight away.
+
+        Called on the event loop when the web worker starts a graceful shutdown.
+        A stream never finishes by itself, so without this each one holds the
+        drain open until its deadline and is then cancelled. The browser's
+        ``EventSource`` reconnects on its own, to another worker since this one
+        has stopped accepting connections.
+        """
+        self._shutting_down = True
+        log.info("Ending %d SSE stream(s) for worker shutdown", len(self._broadcast_connections))
+        for queue in list(self._broadcast_connections):
+            try:
+                queue.put_nowait(_SHUTDOWN_WAKEUP)
+            except asyncio.QueueFull:
+                # A stream is only blocked in ``get()`` on an empty queue; this one
+                # checks the flag before it next reads.
+                pass
 
     # -- Called from ANY thread (Kombu thread or async) --
 
@@ -321,15 +347,19 @@ class SSEConnectionManager:
         this generator — see that class for why long-lived streams must not
         pin a pooled connection.
         """
+        if self._shutting_down:
+            return
         queue = self.connect(user_id, galaxy_session_id)
         if catch_up is not None:
             await queue.put(catch_up)
         try:
-            while True:
+            while not self._shutting_down:
                 if await is_disconnected():
                     break
                 try:
-                    event: SSEEvent = await asyncio.wait_for(queue.get(), timeout=keepalive)
+                    event = await asyncio.wait_for(queue.get(), timeout=keepalive)
+                    if event is _SHUTDOWN_WAKEUP:
+                        break
                     yield event.to_wire()
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
