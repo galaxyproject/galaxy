@@ -83,6 +83,16 @@ preferences:
               required: False
 
     # Used in file_sources_conf.yml
+    galaxy2galaxy:
+        description: Your usegalaxy.org account
+        inputs:
+            - name: api_key
+              label: usegalaxy.org API key. Create it there, under User then Preferences then Manage API Key.
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+
+    # Used in file_sources_conf.yml
     owncloud:
         description: Your External OwnCloud account
         inputs:
