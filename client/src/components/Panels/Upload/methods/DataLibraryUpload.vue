@@ -818,7 +818,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             v-g-tooltip.hover
                             class="mr-2 text-muted"
                             :title="getPermissionTitle(getItemFolderEntry(item))">
-                            <FontAwesomeIcon :icon="getPermissionIcon(getItemFolderEntry(item))" />
+                            <FontAwesomeIcon :icon="getPermissionIcon(getItemFolderEntry(item))!" />
                         </span>
                     </template>
 

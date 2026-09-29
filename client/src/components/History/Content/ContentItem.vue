@@ -363,7 +363,7 @@ function unexpandedClick(event: Event) {
                     <span v-if="hasStateIcon" class="state-icon">
                         <FontAwesomeIcon
                             fixed-width
-                            :icon="contentState.icon"
+                            :icon="contentState.icon!"
                             :spin="contentState.spin"
                             :title="item.populated_state_message || contentState.text" />
                     </span>

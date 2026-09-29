@@ -340,7 +340,7 @@ watch(operationMessage, () => {
                         outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon v-if="action.icon" :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
                     </GButton>
                 </div>
