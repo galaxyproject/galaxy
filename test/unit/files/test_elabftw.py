@@ -20,7 +20,7 @@ from galaxy.files.sources.elabftw import (
     MAX_ITEMS_PER_PAGE,
     remote_entry_sort_key,
 )
-from galaxy_test.base.mock_http_server import (
+from galaxy.util.unittest_utils.mock_http_server import (
     MockHTTPRequestHandler,
     Route,
 )
