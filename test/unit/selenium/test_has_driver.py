@@ -1,6 +1,7 @@
 """Unit tests for galaxy.selenium.has_driver module."""
 
 import sys
+import time
 from typing import cast
 
 import pytest
@@ -1234,6 +1235,23 @@ class TestPageSource:
 
         # Second source should contain content from accessibility page
         assert "good-section" in source2 or "bad-section" in source2
+
+
+class TestCurrentUrl:
+    """Test current_url property."""
+
+    def test_current_url_sees_client_side_route_change(self, has_driver_instance, base_url):
+        """A poll that only reads current_url must still observe a pushState."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#push-state-later")
+
+        # Deliberately no other driver call in the loop - that is what a test
+        # waiting on a client-side route change does, and what used to hang.
+        deadline = time.time() + 5
+        while time.time() < deadline and "pushed=1" not in has_driver_instance.current_url:
+            time.sleep(0.05)
+
+        assert "pushed=1" in has_driver_instance.current_url
 
 
 class TestPageTitle:

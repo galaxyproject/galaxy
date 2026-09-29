@@ -116,6 +116,10 @@
       <div id="rerender-inner">Drop here too</div>
     </div>
 
+    <!-- Client-side route change, the way a Vue router push after a save is:
+         the URL moves with no document navigation, and not until a later tick. -->
+    <button id="push-state-later">Push state</button>
+
     <!-- Frame for iframe testing -->
     <iframe
       name="frame"
@@ -177,6 +181,14 @@
         dropTarget.textContent =
           "Dropped: " + e.dataTransfer.getData("text/plain");
       });
+
+      document
+        .getElementById("push-state-later")
+        .addEventListener("click", function () {
+          setTimeout(function () {
+            history.pushState({}, "", "basic.html?pushed=1");
+          }, 100);
+        });
 
       // The zone listens, but dragenter replaces the inner box the caller is
       // holding a reference to - so a non-atomic event sequence loses the drop.

@@ -119,6 +119,7 @@ from typing import (
 from playwright.sync_api import (
     Browser,
     ElementHandle,
+    Error as PlaywrightError,
     Frame,
     FrameLocator,
     Page,
@@ -279,10 +280,19 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         Get the current page URL.
 
+        page.url is a local mirror that only advances while a Playwright call
+        pumps the event loop, so a Python poll reading nothing else never sees a
+        history.pushState land. Ask the page, as Selenium's current_url does.
+
         Returns:
             The current URL
         """
-        return self.page.url
+        try:
+            return str(self.page.evaluate("window.location.href"))
+        except PlaywrightError:
+            # Mid-navigation the execution context is gone; the mirror is then
+            # the best available answer.
+            return self.page.url
 
     @property
     def page_source(self) -> str:
