@@ -53,7 +53,8 @@ const routerPushMock = vi.fn();
 
 // The component reads the router via `useRouter()` (mocked here) while child
 // components (e.g. GButton's `<RouterLink>`) need a real router on the mount
-// option to render — keep both wired up.
+// option to render -- getLocalVue() provides that default router now, so we
+// only need to override useRouter() itself.
 vi.mock("vue-router", async (importOriginal) => {
     const actual = (await importOriginal()) as Record<string, unknown>;
     return {
@@ -104,7 +105,7 @@ describe("ToolsList", () => {
         const wrapper = mount(ToolsList as object, {
             global: {
                 ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia, router],
+                plugins: [...(localVue.plugins ?? []), pinia],
             },
         });
 
@@ -138,7 +139,7 @@ describe("ToolsList", () => {
         mount(ToolsList as object, {
             global: {
                 ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia, router],
+                plugins: [...(localVue.plugins ?? []), pinia],
             },
             props: FILTER_SETTINGS,
         });

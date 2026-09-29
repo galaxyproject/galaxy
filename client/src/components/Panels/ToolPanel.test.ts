@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -27,7 +27,6 @@ interface ToolPanelView {
 }
 
 const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
 const toolsList = toolsListUntyped;
@@ -154,7 +153,7 @@ describe("ToolPanel", () => {
             },
             global: {
                 ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia, router],
+                plugins: [...(localVue.plugins ?? []), pinia],
             },
         });
 

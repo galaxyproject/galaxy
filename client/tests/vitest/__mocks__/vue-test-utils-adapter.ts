@@ -62,26 +62,28 @@ function adaptMountOptions(options: Record<string, any> = {}): Record<string, an
         delete normalized.stubs;
     }
 
-    // Add collected plugins to global.plugins, avoiding duplicates
+    // Add collected plugins to global.plugins. A plugin passed directly to
+    // mount() (e.g. a test's own `pinia`/`router`) is explicit intent and must
+    // win over a same-kind default already sitting in global.plugins (e.g. from
+    // getLocalVue()), so drop the existing default rather than the incoming one.
     if (pluginsToAdd.length > 0) {
         normalized.global = normalized.global ?? {};
         const existingPlugins = normalized.global.plugins ?? [];
 
-        // Filter out plugins that would be duplicates
-        const filteredPluginsToAdd = pluginsToAdd.filter((plugin) => {
-            // Check if a Pinia instance already exists
-            if (isPinia(plugin)) {
-                return !existingPlugins.some(isPinia);
+        const addingPinia = pluginsToAdd.some(isPinia);
+        const addingRouter = pluginsToAdd.some(isRouter);
+
+        const remainingExisting = existingPlugins.filter((plugin) => {
+            if (addingPinia && isPinia(plugin)) {
+                return false;
             }
-            // Check if a Router instance already exists
-            if (isRouter(plugin)) {
-                return !existingPlugins.some(isRouter);
+            if (addingRouter && isRouter(plugin)) {
+                return false;
             }
-            // For other plugins, add them
             return true;
         });
 
-        normalized.global.plugins = [...existingPlugins, ...filteredPluginsToAdd];
+        normalized.global.plugins = [...remainingExisting, ...pluginsToAdd];
     }
 
     return normalized;
