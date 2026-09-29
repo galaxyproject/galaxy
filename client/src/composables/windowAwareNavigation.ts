@@ -11,8 +11,7 @@
  *    intercepts and opens it as a floating frame.
  * 3. When inactive: push the *inline* URL plainly.
  */
-import type VueRouter from "vue-router";
-import type { RawLocation } from "vue-router";
+import type { RouteLocationRaw, Router } from "vue-router";
 import { isNavigationFailure, useRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
@@ -40,7 +39,7 @@ interface FrameOrPageOptions {
  * nothing at all when the window manager takes the navigation or a confirmation is
  * declined, so there is not always a promise to attach to.
  */
-export function pushIgnoringNavCancel(router: VueRouter, location: RawLocation, options?: RouterPushOptions): void {
+export function pushIgnoringNavCancel(router: Router, location: RouteLocationRaw, options?: RouterPushOptions): void {
     const pushed: Promise<unknown> | undefined = options
         ? // @ts-ignore - monkeypatched router accepts a second options argument; drop with migration.
           router.push(location, options)
