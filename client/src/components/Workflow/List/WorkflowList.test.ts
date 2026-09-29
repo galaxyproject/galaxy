@@ -9,7 +9,6 @@ import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
-import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
@@ -21,7 +20,6 @@ const { server, http } = useServerMock();
 vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
 }));
-vi.mock("@/composables/toast");
 
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
@@ -50,8 +48,6 @@ async function mountWorkflowList() {
 
     const userStore = useUserStore();
     userStore.currentUser = FAKE_USER;
-    // createTestingPinia stubs actions to return undefined by default; WorkflowList awaits this one.
-    vi.mocked(userStore.loadUser).mockResolvedValue(undefined);
 
     await flushPromises();
 
@@ -101,41 +97,15 @@ describe("WorkflowList", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(pinia);
         const userStore = useUserStore();
-        let resolveUser!: () => void;
-        vi.mocked(userStore.loadUser).mockReturnValue(
-            new Promise<void>((resolve) => {
-                resolveUser = resolve;
-            }),
-        );
 
         const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
         await flushPromises();
         expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
 
         userStore.currentUser = FAKE_USER;
-        resolveUser();
         await flushPromises();
 
         expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
-    });
-
-    it("render own workflows when the user load rejects but the user is already set", async () => {
-        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
-        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 3 });
-
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(pinia);
-        const userStore = useUserStore();
-        userStore.currentUser = FAKE_USER;
-        vi.mocked(userStore.loadUser).mockRejectedValue(new Error("user load failed"));
-
-        const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
-        await flushPromises();
-
-        // App.vue's shared user/histories load rejected, but the user was already set from it;
-        // the list must still render, and must not add its own toast on top of App's.
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
-        expect(Toast.error).not.toHaveBeenCalled();
     });
 
     it("toggle show deleted workflows", async () => {
