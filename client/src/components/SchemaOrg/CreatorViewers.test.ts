@@ -2,6 +2,7 @@ import { mount, type Wrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
 import type Vue from "vue";
 
+import GrantViewer from "./GrantViewer.vue";
 import OrganizationViewer from "./OrganizationViewer.vue";
 import PersonViewer from "./PersonViewer.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
@@ -20,6 +21,12 @@ const CASES = [
         component: OrganizationViewer,
         propsData: { organization: { name: "Example Institute", email: "info@example.org" } },
         prefix: "organization-viewer-",
+    },
+    {
+        name: "GrantViewer",
+        component: GrantViewer,
+        propsData: { grant: { name: "Example Grant", identifier: "EX-123" } },
+        prefix: "grant-viewer-",
     },
 ];
 
