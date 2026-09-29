@@ -5,6 +5,7 @@ from abc import (
     abstractmethod,
 )
 from logging import getLogger
+from shlex import quote
 from typing import (
     Any,
     Optional,
@@ -462,12 +463,12 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command: str) -> str:
         env_directives = []
-        for pass_through_var in self.tool_info.env_pass_through:
-            env_directives.append(f'"{pass_through_var}=${pass_through_var}"')
+        pass_through = []
+        for name in dict.fromkeys(self.tool_info.env_pass_through):
+            env_directives.append(name)
+            pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export {name}; fi')
 
-        # Allow destinations to explicitly set environment variables just for
-        # docker container. Better approach is to set for destination and then
-        # pass through only what tool needs however. (See todo in ToolInfo.)
+        # Legacy runtime-specific values override the variables forwarded by name.
         for key, value in self.destination_info.items():
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_") :]
@@ -490,6 +491,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
         else:
             cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
+        run_host_props = docker_host_props.copy()
+        if run_host_props["sudo"] and self.tool_info.env_pass_through:
+            names = ",".join(dict.fromkeys(self.tool_info.env_pass_through))
+            run_host_props["sudo_cmd"] += f" --preserve-env={quote(names)}"
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -504,7 +509,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             guest_ports=self.tool_info.guest_ports,
             host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
-            **docker_host_props,
+            **run_host_props,
         )
         kill_command = docker_util.build_docker_simple_command(
             "kill", container_name=self.container_name, **docker_host_props
@@ -515,11 +520,13 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # https://stackoverflow.com/questions/34228864/stop-and-delete-docker-container-if-its-running
         # Standard error is:
         #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
+        pass_through_commands = "\n".join(pass_through)
         return f"""
 _on_exit() {{
   {kill_command} &> /dev/null
 }}
 {TRAP_KILL_CONTAINER}
+{pass_through_commands}
 {cache_command}
 {run_command}"""
 
@@ -590,12 +597,11 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command: str) -> str:
         env = []
-        for pass_through_var in self.tool_info.env_pass_through:
-            env.append((pass_through_var, f"${pass_through_var}"))
+        pass_through = []
+        for name in dict.fromkeys(self.tool_info.env_pass_through):
+            pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export SINGULARITYENV_{name}="${name}"; fi')
 
-        # Allow destinations to explicitly set environment variables just for
-        # docker container. Better approach is to set for destination and then
-        # pass through only what tool needs however. (See todo in ToolInfo.)
+        # Legacy runtime-specific values override the variables forwarded by name.
         for key, value in self.destination_info.items():
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_") :]
@@ -614,6 +620,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             self.container_id,
             volumes=volumes,
             env=env,
+            home="$HOME" if "HOME" in self.tool_info.env_pass_through else None,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
@@ -625,7 +632,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
-        return run_command
+        return "\n".join([*pass_through, run_command])
 
 
 CONTAINER_CLASSES: dict[str, type[Container]] = dict(

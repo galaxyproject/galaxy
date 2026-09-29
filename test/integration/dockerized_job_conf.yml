@@ -9,6 +9,20 @@ execution:
   environments:
     local_docker:
       runner: local
+      env:
+        - name: LEGACY_VAR
+          value: legacy
+      job_env:
+        - name: JOB_VAR
+          value: job
+        - name: DECLARED_VAR
+          value: declared
+        - name: EMPTY_VAR
+          value: ''
+      tool_env:
+        - name: TOOL_VAR
+          value: tool
+      docker_env_CONTAINER_VAR: container
       docker_enabled: true
       require_container: true
       tmp_dir: '$(mktemp -d)'

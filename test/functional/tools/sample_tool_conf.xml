@@ -4,6 +4,8 @@
   <tool file="export_remote_0.1.0.xml" />
   <tool file="export_remote.xml" />
   <section id="test" name="Test Section">
+    <tool file="runtime_environment.xml" />
+    <tool file="runtime_environment_parallelism.xml" />
     <tool file="multi_data_optional.xml" />
     <tool file="paths_as_file.xml" />
     <tool file="param_text_option.xml" />

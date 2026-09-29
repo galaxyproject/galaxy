@@ -24,6 +24,10 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
 )
+from galaxy.tool_util.runtime_environment import (
+    required_environment_checks,
+    RUNTIME_ENVIRONMENT_WARNING_FILE,
+)
 
 if typing.TYPE_CHECKING:
     from galaxy.jobs import MinimalJobWrapper
@@ -139,6 +143,12 @@ def build_command(
         commands_builder.prepend_command(container_monitor_command)
 
     working_directory = remote_job_directory or job_wrapper.working_directory
+    if job_wrapper.tool:
+        warning_path = join(
+            working_directory, "metadata" if for_pulsar else "outputs", RUNTIME_ENVIRONMENT_WARNING_FILE
+        )
+        if checks := required_environment_checks(job_wrapper.tool.runtime_environment_variables, warning_path):
+            commands_builder.prepend_command(checks)
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
 
     if job_wrapper.is_cwl_job:

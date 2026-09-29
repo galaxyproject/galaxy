@@ -71,6 +71,18 @@ class TestFrameworkTools(ApiTestCase, ConfiguresDatabaseVault):
         super().handle_galaxy_config_kwds(config)
         cls._configure_database_vault(config)
 
+    def test_runtime_environment_warning(self):
+        from galaxy_test.base.populators import DatasetPopulator
+
+        populator = DatasetPopulator(self.galaxy_interactor)
+        with populator.test_history() as history_id:
+            result = populator.run_tool("runtime_environment", {}, history_id)
+            populator.wait_for_history(history_id, assert_ok=True)
+            job = populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
+            assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
+            assert job["state"] == "ok"
+
     @pytest.mark.parametrize("testcase", cases(), ids=idfn)
     def test_tool(self, testcase: ToolTest):
         use_legacy_api = os.environ.get("GALAXY_TEST_USE_LEGACY_TOOL_API", DEFAULT_USE_LEGACY_API)
