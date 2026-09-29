@@ -13692,7 +13692,8 @@ export interface components {
                 | "ckan"
                 | "commoncrawl"
                 | "gitlab"
-                | "arc";
+                | "arc"
+                | "galaxy2galaxy";
             /** Variables */
             variables?:
                 | (
@@ -27079,7 +27080,8 @@ export interface components {
                 | "ckan"
                 | "commoncrawl"
                 | "gitlab"
-                | "arc";
+                | "arc"
+                | "galaxy2galaxy";
             /** Uri Root */
             uri_root: string;
             /**
