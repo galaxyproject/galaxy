@@ -1,9 +1,0 @@
-<style>
-mindmapDiagram {
-    node {
-        BackgroundColor #FFEFD5
-        BorderColor DarkOrange
-        LineColor Orange
-    }
-}
-</style>

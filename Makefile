@@ -8,9 +8,7 @@ CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
-SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
-SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 PNPM := $(shell $(IN_VENV) command -v pnpm 2> /dev/null)
 PNPM_INSTALL_OPTS=--frozen-lockfile
 # Default to not fail on error, set to 1 to fail client builds on a plugin error.
@@ -61,14 +59,6 @@ remove-unused-imports:  ## Remove unused imports in Python code base
 pyupgrade:  ## Convert older code patterns to Python 3.10+ idiomatic ones
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs auto-walrus
-
-docs-slides-ready:
-	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
-	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
-	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
-
-docs-slides-export: docs-slides-ready
-	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
 _open-docs:
 	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
