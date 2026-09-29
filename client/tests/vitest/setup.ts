@@ -3,9 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
 
-import { configureCompat } from "@vue/compat";
 import { config } from "@vue/test-utils";
 import { vi } from "vitest";
+import { configureCompat } from "vue";
 
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
