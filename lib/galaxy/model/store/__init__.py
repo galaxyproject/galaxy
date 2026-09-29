@@ -2702,7 +2702,10 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(export_attrs_filename, "w") as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
-        self._write_datasets_mapping()
+        try:
+            self._write_datasets_mapping()
+        except Exception:
+            log.warning("Failed to write datasets mapping file, continuing export without it.", exc_info=True)
 
     def __exit__(
         self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
