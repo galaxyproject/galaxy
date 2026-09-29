@@ -44,6 +44,13 @@ TOOL_XML_1 = """
             url="https://galaxyproject.org/iuc/"
             name="Galaxy IUC" />
     </creator>
+    <funding>
+        <grant
+            name="EuroScienceGateway"
+            description="A distributed computing network across 13 European countries."
+            identifier="101057388"
+            url="https://cordis.europa.eu/project/id/101057388" />
+    </funding>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -225,6 +232,18 @@ tests:
        out1:
          lines_diff: 4
          compare: sim_size
+creator:
+    - class: Person
+      givenName: Björn
+      familyName: Grüning
+      identifier: http://orcid.org/0000-0002-3079-6586
+    - class: Organization
+      name: Galaxy IUC
+      url: https://galaxyproject.org/iuc/
+funding:
+    - name: EuroScienceGateway
+      identifier: '101057388'
+      url: https://cordis.europa.eu/project/id/101057388
 """
 
 TOOL_EXPRESSION_XML_1 = """
@@ -515,6 +534,17 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert creator2["class"] == "Organization"
         assert creator2["name"] == "Galaxy IUC"
 
+    def test_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        grant = funding[0]
+        assert grant["class"] == "Grant"
+        assert grant["name"] == "EuroScienceGateway"
+        assert grant["identifier"] == "101057388"
+        assert grant["url"] == "https://cordis.europa.eu/project/id/101057388"
+        assert grant["description"] == "A distributed computing network across 13 European countries."
+
 
 class TestYamlLoader(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
@@ -671,6 +701,28 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
+
+    def test_parse_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        assert creators[0] == {
+            "class": "Person",
+            "givenName": "Björn",
+            "familyName": "Grüning",
+            "identifier": "http://orcid.org/0000-0002-3079-6586",
+        }
+        assert creators[1] == {"class": "Organization", "name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}
+
+    def test_parse_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        assert funding[0] == {
+            "class": "Grant",
+            "name": "EuroScienceGateway",
+            "identifier": "101057388",
+            "url": "https://cordis.europa.eu/project/id/101057388",
+        }
 
 
 class TestDataSourceLoader(BaseLoaderTestCase):

@@ -2843,17 +2843,35 @@ class SubworkflowStep(WorkflowStepBase):
     )
 
 
-class Creator(Model):
+class Thing(Model):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this thing.")
+    name: str | None = Field(None, title="Name", description="The name of the thing.")
+    alternate_name: str | None = Field(
+        None,
+        alias="alternateName",
+        title="Alternate Name",
+    )
+    description: str | None = Field(
+        None,
+        title="Description",
+    )
+    identifier: str | None = Field(None, title="Identifier")
+    image: AnyHttpUrl | None = Field(
+        None,
+        title="Image URL",
+    )
+    url: AnyHttpUrl | None = Field(
+        None,
+        title="URL",
+    )
+
+
+class Creator(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
     name: str | None = Field(None, title="Name", description="The name of the creator.")
     address: str | None = Field(
         None,
         title="Address",
-    )
-    alternate_name: str | None = Field(
-        None,
-        alias="alternateName",
-        title="Alternate Name",
     )
     email: str | None = Field(
         None,
@@ -2865,17 +2883,9 @@ class Creator(Model):
         title="Fax Number",
     )
     identifier: str | None = Field(None, title="Identifier", description="Identifier (typically an orcid.org ID)")
-    image: AnyHttpUrl | None = Field(
-        None,
-        title="Image URL",
-    )
     telephone: str | None = Field(
         None,
         title="Telephone",
-    )
-    url: AnyHttpUrl | None = Field(
-        None,
-        title="URL",
     )
 
 
@@ -2914,6 +2924,13 @@ class Person(Creator):
         None,
         alias="jobTitle",
         title="Job Title",
+    )
+
+
+class Grant(Thing):
+    class_: str = Field(
+        "Grant",
+        alias="class",
     )
 
 

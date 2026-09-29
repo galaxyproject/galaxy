@@ -448,6 +448,22 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert "platform for interactive" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
 
+    @selenium_test
+    def test_tool_footer_creators_and_funding(self):
+        self.home()
+        self.tool_open("bibtex")
+        tool_form = self.components.tool_form
+        tool_form.about.wait_for_and_click()
+
+        tool_form.creator.wait_for_visible()
+        creators_text = [creator.text for creator in tool_form.creator.all()]
+        assert len(creators_text) == 2, creators_text
+        assert any("Galaxy IUC" in text for text in creators_text), creators_text
+
+        grant_text = tool_form.grant.wait_for_visible().text
+        assert "EuroScienceGateway" in grant_text
+        assert "101057388" in grant_text
+
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         tds = self._get_dataset_tool_parameters(hid)
         assert tds

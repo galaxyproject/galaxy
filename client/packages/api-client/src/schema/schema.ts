@@ -10358,6 +10358,8 @@ export interface components {
              * @default Organization
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Fax Number */
@@ -21617,6 +21619,8 @@ export interface components {
              * @default Person
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Family Name */

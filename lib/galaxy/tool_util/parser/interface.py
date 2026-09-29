@@ -416,10 +416,17 @@ class ToolSource(metaclass=ABCMeta):
         Return minimum python version that the tool template has been developed against.
         """
 
-    def parse_creator(self):
+    def parse_creator(self) -> list[dict[str, Any]]:
         """Return list of metadata relating to creator/author of tool.
 
         Result should be list of schema.org data model Person or Organization objects.
+        """
+        return []
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        """Return list of metadata relating to funding of tool development.
+
+        Result should be list of schema.org data model Grant objects.
         """
         return []
 

@@ -799,10 +799,10 @@ class XmlToolSource(ToolSource):
                 config_files.append(FileSourceConfigFile(name=name, filename=filename, content={"type": "files"}))
         return config_files
 
-    def parse_creator(self):
+    def parse_creator(self) -> list[dict[str, Any]]:
         creators_el = self.root.find("creator")
         if creators_el is None:
-            return None
+            return []
 
         creators = []
         for creator_el in creators_el:
@@ -814,9 +814,23 @@ class XmlToolSource(ToolSource):
             else:
                 continue
             creator_as_dict["class"] = clazz
-            creator_as_dict.update(creator_el.attrib)
+            creator_as_dict.update(_element_to_dict(creator_el))
             creators.append(creator_as_dict)
         return creators
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        funding_el = self.root.find("funding")
+        if funding_el is None:
+            return []
+
+        funding = []
+        for grant_el in funding_el:
+            grant_as_dict = {}
+            if grant_el.tag == "grant":
+                grant_as_dict["class"] = "Grant"
+                grant_as_dict.update(_element_to_dict(grant_el))
+                funding.append(grant_as_dict)
+        return funding
 
 
 def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
