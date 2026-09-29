@@ -124,7 +124,9 @@ export default {
     },
     props: {
         inputs: {
-            type: Array,
+            // Usually an array of input definitions, but FormRepeat passes a single cached
+            // record (v-for below iterates objects fine too) for each repeat block.
+            type: [Array, Object],
             default: null,
         },
         loading: {
