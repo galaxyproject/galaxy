@@ -1,8 +1,6 @@
 declare module "@vue/compat" {
-    export * from "@vue/runtime-dom";
-    export { default } from "@vue/runtime-dom";
+    export * from "vue";
+    export { default } from "vue";
 
-    export function configureCompat(config: { MODE?: 2 | 3; [key: string]: any }): void;
-
-    export function createApp(...args: any[]): any;
+    export function configureCompat(config: { MODE?: 2 | 3; [key: string]: unknown }): void;
 }
