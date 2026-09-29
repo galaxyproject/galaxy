@@ -36,6 +36,11 @@ function mountCard(options?: {
     setActivePinia(pinia);
     const toolStore = useToolStore();
     const userStore = useUserStore();
+    // userStore is a setup-syntax store, so @pinia/testing's automatic action
+    // spying (which relies on the options-API `actions` map) doesn't apply --
+    // spy on the actions this file asserts against explicitly.
+    vi.spyOn(userStore, "removeFavoriteTag");
+    vi.spyOn(userStore, "addFavoriteTag");
     toolStore.toolSections = {
         "ontology:edam_operations": {
             operation_2409: {
