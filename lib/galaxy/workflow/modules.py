@@ -12,7 +12,9 @@ from typing import (
     Any,
     cast,
     get_args,
+    NamedTuple,
     Optional,
+    Protocol,
     TYPE_CHECKING,
     TypeAlias,
     Union,
@@ -164,6 +166,19 @@ class OptionDict(TypedDict):
     label: str
     value: str
     selected: bool
+
+
+class InputConnection(Protocol):
+    """Anything naming a connected step input, e.g. a ``WorkflowStepConnection``."""
+
+    @property
+    def input_name(self) -> str: ...
+
+
+class ConnectedInputName(NamedTuple):
+    """Connection known only by input name, before step connections exist."""
+
+    input_name: str
 
 
 class ConditionalStepWhen(BooleanToolParameter):
@@ -538,7 +553,7 @@ class WorkflowModule:
         module, try to update. Returns a list of messages to be displayed
         """
 
-    def add_dummy_datasets(self, connections=None, steps=None):
+    def add_dummy_datasets(self, connections: Optional[Iterable[InputConnection]] = None, steps=None):
         """Replace connected inputs with placeholder/dummy values."""
 
     def get_config_form(self, step=None):
@@ -2685,7 +2700,7 @@ class ToolModule(WorkflowModule):
         if self.tool:
             return self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
 
-    def add_dummy_datasets(self, connections=None, steps=None):
+    def add_dummy_datasets(self, connections: Optional[Iterable[InputConnection]] = None, steps=None):
         if self.tool:
             if connections:
                 # Store connections by input name
