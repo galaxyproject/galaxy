@@ -34,10 +34,11 @@ class ToolCache:
         self._hashes_initialized = False
 
     def assert_hashes_initialized(self) -> None:
-        if not self._hashes_initialized:
-            for tool_hash in self._hash_by_tool_paths.values():
-                tool_hash.hash  # noqa: B018
-            self._hashes_initialized = True
+        with self._lock:
+            if not self._hashes_initialized:
+                for tool_hash in self._hash_by_tool_paths.values():
+                    tool_hash.hash  # noqa: B018
+                self._hashes_initialized = True
 
     def cleanup(self) -> list[str]:
         """
@@ -120,10 +121,10 @@ class ToolCache:
 
     def cache_tool(self, config_filename: "StrPath", tool: "Tool") -> None:
         tool_id = str(tool.id)
-        # We defer hashing of the config file if we haven't called assert_hashes_initialized.
-        # This allows startup to occur without having to read in and hash all tool and macro files
-        lazy_hash = not self._hashes_initialized
         with self._lock:
+            # Defer startup hashing, but read the flag under the initialization lock:
+            # initialization may finish while this insertion is waiting for the lock.
+            lazy_hash = not self._hashes_initialized
             self._hash_by_tool_paths[str(config_filename)] = ToolHash(config_filename, lazy_hash=lazy_hash)
             self._tool_paths_by_id[tool_id] = config_filename
             self._tools_by_path[str(config_filename)] = tool
