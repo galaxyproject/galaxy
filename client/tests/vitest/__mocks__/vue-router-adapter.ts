@@ -26,14 +26,14 @@ const {
 
 // Re-export all Vue Router 4 APIs
 export {
-    RouterLink,
-    RouterView,
-    onBeforeRouteLeave,
-    onBeforeRouteUpdate,
+    createWebHashHistory,
     isNavigationFailure,
     NavigationFailureType,
+    onBeforeRouteLeave,
+    onBeforeRouteUpdate,
+    RouterLink,
+    RouterView,
     START_LOCATION,
-    createWebHashHistory,
 };
 
 export const createRouter = _createRouter;
@@ -45,76 +45,42 @@ export const useRouter = _useRouter;
 /**
  * Vue Router 3 compatibility - VueRouter constructor
  *
- * This creates a class that mimics Vue Router 3's VueRouter constructor
- * but actually uses Vue Router 4's createRouter under the hood.
+ * Mimics Vue Router 3's `new VueRouter(options)` constructor, but hands back
+ * the real Vue Router 4 instance instead of a separate wrapper object.
+ *
+ * Earlier this class held its own `router` and re-implemented push/replace/etc.
+ * as proxy methods that delegated to it. That meant `new VueRouter()` returned
+ * one object while `app.use(router)` (via `install()`) installed a *different*
+ * one (`this.router`), so `$router`/`useRouter()` inside a mounted component
+ * resolved to the inner instance. A test that did `router.push = vi.fn()` on
+ * the outer wrapper was monkey-patching an object nothing else ever saw --
+ * the component's real navigation calls went through the untouched original,
+ * so assertions like `expect(router.push).toHaveBeenCalledWith(...)` failed
+ * with "is not a spy". Returning the real router directly from the
+ * constructor means there is only ever one object, so patching it and
+ * installing it both act on the same instance.
  */
 class VueRouterCompat {
-    private router: Router;
-
     constructor(options: any = {}) {
         const routes = options.routes || [];
         const history = _createMemoryHistory();
 
-        this.router = _createRouter({
+        // A class constructor that returns an object replaces `this` with
+        // that object for `new VueRouterCompat()` -- see MDN's page on the
+        // `constructor` method. Vue Router 4's router already implements
+        // every instance method/getter Vue Router 3 tests expect (push,
+        // replace, go, back, forward, beforeEach, afterEach, resolve,
+        // currentRoute, options, isReady, install), so there is nothing left
+        // to proxy.
+        return _createRouter({
             history,
             routes,
-        });
+        }) as unknown as VueRouterCompat;
     }
 
-    // Proxy all router methods
-    push(...args: any[]) {
-        return this.router.push(...args);
-    }
-
-    replace(...args: any[]) {
-        return this.router.replace(...args);
-    }
-
-    go(delta: number) {
-        return this.router.go(delta);
-    }
-
-    back() {
-        return this.router.back();
-    }
-
-    forward() {
-        return this.router.forward();
-    }
-
-    beforeEach(guard: any) {
-        return this.router.beforeEach(guard);
-    }
-
-    afterEach(guard: any) {
-        return this.router.afterEach(guard);
-    }
-
-    resolve(to: any, current?: any) {
-        return this.router.resolve(to);
-    }
-
-    get currentRoute() {
-        return this.router.currentRoute;
-    }
-
-    // Vue Router 3 install method (for localVue.use(VueRouter))
-    static install(app: any) {
+    // Vue Router 3 static install method (for localVue.use(VueRouter))
+    static install(_app: any) {
         // No-op for compatibility - Vue Router 4 uses plugin pattern
-    }
-
-    // Instance install for app.use(routerInstance)
-    install(app: any) {
-        return this.router.install(app);
-    }
-
-    // Make it usable as a plugin
-    get options() {
-        return this.router.options;
-    }
-
-    isReady() {
-        return this.router.isReady();
     }
 }
 
