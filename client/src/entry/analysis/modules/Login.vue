@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import type { LocationQueryValue } from "vue-router";
 import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
@@ -18,12 +19,12 @@ const sessionCsrfToken = computed(() => {
     return getGalaxyInstance().session_csrf_token;
 });
 const queryAttributeForceString = function (
-    queryAttribute: string | (string | null)[] | undefined,
+    queryAttribute: LocationQueryValue | LocationQueryValue[] | undefined,
 ): string | undefined {
     if (Array.isArray(queryAttribute)) {
         return queryAttribute[0] || undefined;
     } else {
-        return queryAttribute;
+        return queryAttribute || undefined;
     }
 };
 </script>
