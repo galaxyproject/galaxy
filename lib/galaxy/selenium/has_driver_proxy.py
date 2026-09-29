@@ -414,6 +414,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Switch back to main page content from iframe."""
         return self._driver_impl.switch_to_default_content()
 
+    def visit_new_window(self):
+        """Focus the window or tab the page just opened, closing it on exit."""
+        return self._driver_impl.visit_new_window()
+
     # JavaScript execution
 
     def execute_script(self, script: str, *args):

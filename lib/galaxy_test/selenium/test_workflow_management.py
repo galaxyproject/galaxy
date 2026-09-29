@@ -2,7 +2,6 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TestsGalaxyPagers,
@@ -50,16 +49,13 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         # ditto - moderate violation relating to header ordering
         workflows.import_trs_id.assert_no_axe_violations_with_impact_of_at_least("serious")
 
-    @selenium_only("Needs a backend-neutral window/tab abstraction - uses driver.switch_to.window")
     @selenium_test
     def test_view(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
         self.workflow_index_view_external_link()
-        self.driver.switch_to.window(self.driver.window_handles[1])
-        assert self.driver.current_url == self.example_workflow_url
-        self.driver.close()
-        self.driver.switch_to.window(self.driver.window_handles[0])
+        with self.visit_new_window():
+            assert self.current_url == self.example_workflow_url
         self.components.workflows.external_link.wait_for_visible()
 
         self.components.workflows.view_button.wait_for_and_click()
