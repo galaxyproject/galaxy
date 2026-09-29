@@ -1,0 +1,33 @@
+class: GalaxyTool
+id: expect_failure_invalid_inputs_y
+name: expect_failure_invalid_inputs_y
+version: "0.1.0"
+container: busybox
+shell_command: |
+  echo '$(inputs.taxid)' > out1.txt
+inputs:
+  - name: taxid
+    type: text
+    value: "1"
+    label: Taxonomic ID(s)
+    validators:
+      - type: regex
+        expression: '^\d+[\d ]*$'
+        message: Enter a space-separated list of numeric tax IDs
+outputs:
+  - name: out1
+    type: data
+    format: txt
+    from_work_dir: out1.txt
+tests:
+  - inputs:
+      taxid: "10386 11176"
+    outputs:
+      out1:
+        asserts:
+          - has_line:
+              line: "10386 11176"
+  # the regex validator rejects this value, so the job is never created
+  - inputs:
+      taxid: "10386 f5"
+    expect_failure: true

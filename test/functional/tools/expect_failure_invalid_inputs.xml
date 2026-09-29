@@ -1,0 +1,30 @@
+<tool id="expect_failure_invalid_inputs" name="expect_failure_invalid_inputs" version="0.1.0" profile="24.2">
+    <description>test declaring inputs that fail parameter validation</description>
+    <command><![CDATA[
+        echo '$taxid' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="taxid" type="text" value="1" label="Taxonomic ID(s)">
+            <validator type="regex" message="Enter a space-separated list of numeric tax IDs">^\d+[\d ]*$</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="txt" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="taxid" value="10386 11176"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="10386 11176"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- the regex validator rejects this value, so the job is never created -->
+        <test expect_failure="true">
+            <param name="taxid" value="10386 f5"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
