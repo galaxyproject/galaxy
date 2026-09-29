@@ -27,7 +27,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        sorted_histories = self.get_published_history_names_from_server(order="name-asc")
+        sorted_histories = self.get_published_history_names_from_server(sort_by="name")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -39,7 +39,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector('[data-title="Sort by Update time ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        expected_history_names = self.get_published_history_names_from_server(order="update_time-asc")
+        expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -107,11 +107,23 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
             else:
                 assert history_name == expected_histories[index]
 
-    def get_published_history_names_from_server(self, order=None):
+    def get_published_history_names_from_server(self, sort_by="update_time"):
+        # Send the grid's own query (getPublishedHistories in client/src/api/histories.ts), which
+        # leaves out deleted histories that /api/histories/published still returns.
         # The database collation decides name ordering, so re-sorting the response here
         # could only ever agree with one backend. Let the server order it, like the grid.
-        params = {"order": order} if order else None
-        published_histories = self.dataset_populator._get("histories/published", params).json()
+        params = {
+            "keys": "name",
+            # Without a search the endpoint falls back to the legacy index, which ignores the rest.
+            "search": "",
+            "sort_by": sort_by,
+            "sort_desc": False,
+            "show_own": False,
+            "show_published": True,
+            "show_shared": False,
+            "show_archived": False,
+        }
+        published_histories = self.dataset_populator._get("histories", params).json()
         return [history["name"] for history in published_histories]
 
     def get_present_histories(self):
