@@ -1297,7 +1297,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         if old_id:
             if old_id not in self._tools_by_old_id:
                 self._tools_by_old_id[old_id] = []
-            self._tools_by_old_id[old_id].append(tool)
+            if tool not in self._tools_by_old_id[old_id]:
+                self._tools_by_old_id[old_id].append(tool)
 
     def _invalidate_tool_caches(self, tool_id: Optional[str] = None) -> None:
         """Drop cached `to_dict` payloads and curated/EDAM id sets.

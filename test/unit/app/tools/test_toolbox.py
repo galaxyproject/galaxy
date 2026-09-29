@@ -665,6 +665,7 @@ class TestToolBox(BaseToolBoxTestCase):
         assert converter.version == (replacement_version or "1.0")
         assert new_toolbox.get_tool(converter.id) is converter
         assert new_toolbox.get_tool(converter.id, tool_version=converter.version) is converter
+        assert new_toolbox.get_tool(converter.id, get_all_versions=True) == [converter]
         assert new_toolbox._tool_panel["builtin_converters"].elems.get_tool_with_id(converter.id) is converter
         panel = new_toolbox.to_panel_view(mock_trans(), view="default")
         assert converter.id in panel["builtin_converters"]["tools"]
