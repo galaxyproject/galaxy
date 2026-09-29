@@ -117,13 +117,15 @@ from ._bco_convert_utils import (
     SoftwarePrerequisiteTracker,
 )
 from .datasets_mapping import (
-    add_mapping_file_to_crate,
     collection_names_by_dataset_id,
     file_size_of,
     MappingEntry,
     write_datasets_mapping,
 )
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
+from .ro_crate_utils import (
+    add_mapping_file_to_crate,
+    WorkflowRunCrateProfileBuilder,
+)
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,

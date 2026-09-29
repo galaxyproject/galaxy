@@ -15,13 +15,10 @@ from typing import (
 )
 from collections.abc import Iterable
 
-from rocrate.rocrate import ROCrate
-
 from galaxy import model
 from galaxy.util.path import StrPath
 
 DATASETS_MAPPING_FILENAME = "datasets_mapping.tsv"
-DATASETS_MAPPING_ENCODING_FORMAT = "text/tab-separated-values"
 
 DATASETS_MAPPING_COLUMNS = (
     "hid",
@@ -95,18 +92,3 @@ def write_datasets_mapping(export_directory: StrPath, entries: list[MappingEntry
         )
         writer.writeheader()
         writer.writerows(rows)
-
-
-def add_mapping_file_to_crate(crate: ROCrate, export_directory: StrPath) -> None:
-    mapping_path = os.path.join(export_directory, DATASETS_MAPPING_FILENAME)
-    if os.path.exists(mapping_path):
-        crate.add_file(
-            mapping_path,
-            dest_path=DATASETS_MAPPING_FILENAME,
-            properties={
-                "name": DATASETS_MAPPING_FILENAME,
-                "encodingFormat": DATASETS_MAPPING_ENCODING_FORMAT,
-                "about": {"@id": "./"},
-                "description": "Tabular mapping of Galaxy datasets to exported files",
-            },
-        )
