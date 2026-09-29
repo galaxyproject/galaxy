@@ -304,3 +304,27 @@ def application_stack_log_formatter() -> logging.Formatter:
 
 def get_app_kwds(config_section, app_name=None):
     return application_stack_class().get_app_kwds(config_section, app_name=app_name)
+
+
+_drain_start_callbacks: list[Callable[[], None]] = []
+
+
+def on_drain_start(callback: Callable[[], None]) -> Callable[[], None]:
+    """Call ``callback`` on the event loop when a worker begins a graceful shutdown.
+
+    It runs just before uvicorn stops accepting connections and waits for in-flight
+    requests, so it can end requests that would otherwise hold the drain open until
+    the deadline. A callback that raises is logged and does not stop the shutdown.
+    Returns a function that unregisters the callback.
+    """
+    _drain_start_callbacks.append(callback)
+    return lambda: _drain_start_callbacks.remove(callback)
+
+
+def run_drain_start_callbacks() -> None:
+    """Run the callbacks registered with :func:`on_drain_start`. Called by the worker."""
+    for callback in list(_drain_start_callbacks):
+        try:
+            callback()
+        except Exception:
+            log.exception("Graceful shutdown callback %r failed", callback)

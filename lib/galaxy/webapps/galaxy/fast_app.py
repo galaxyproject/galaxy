@@ -25,6 +25,7 @@ from tuspyserver import create_tus_router
 from galaxy.managers.sse import SSEConnectionManager
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
+from galaxy.web_stack import on_drain_start
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_raw_context_middlewares,
@@ -38,7 +39,6 @@ from galaxy.webapps.base.webapp import (
     config_allows_origin,
 )
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
-from galaxy.webapps.galaxy.workers import on_drain_start
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 

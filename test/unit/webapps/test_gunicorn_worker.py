@@ -15,10 +15,12 @@ from starlette.responses import (
 from starlette.routing import Route
 
 from galaxy.managers.sse import SSEConnectionManager
-from galaxy.web_stack import gunicorn_config
+from galaxy.web_stack import (
+    gunicorn_config,
+    on_drain_start,
+)
 from galaxy.webapps.galaxy.workers import (
     _Server,
-    on_drain_start,
     Worker,
 )
 
