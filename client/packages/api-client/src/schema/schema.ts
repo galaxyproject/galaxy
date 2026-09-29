@@ -23828,6 +23828,7 @@ export interface components {
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
+                      | components["schemas"]["RuntimeEnvironmentWarningJobMessage"]
                   )[]
                 | null;
             /**
@@ -23970,6 +23971,34 @@ export interface components {
             range_end: number | ("-inf" | "inf");
             /** Range Start */
             range_start: number | ("-inf" | "inf");
+        };
+        /** RuntimeEnvironmentVariable */
+        RuntimeEnvironmentVariable: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /** RuntimeEnvironmentWarningJobMessage */
+        RuntimeEnvironmentWarningJobMessage: {
+            /** Desc */
+            desc: string | null;
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "runtime_environment_warning";
+            /** Variable Names */
+            variable_names: string[];
         };
         /** StdioReadErrorJobMessage */
         StdioReadErrorJobMessage: {
@@ -29836,6 +29865,11 @@ export interface components {
         };
         /** YamlToolSource */
         YamlToolSource: {
+            /**
+             * Runtime Environment Variables
+             * @default []
+             */
+            runtime_environment_variables: components["schemas"]["RuntimeEnvironmentVariable"][];
             /**
              * citations
              * @description DOI or BibTeX references for publications describing the wrapped tool.

@@ -103,6 +103,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     output_discovery_job_message,
+    runtime_environment_job_messages,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -238,7 +239,14 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
         # TODO: handle enabled/disabled in configure_from
         environment["params"] = params
-        environment["env"] = JobConfiguration.get_envs(destination)
+        for key in ("env", "job_env", "tool_env"):
+            environment[key] = JobConfiguration.get_envs(destination, key)
+        env_counts = dict.fromkeys(("env", "job_env", "tool_env"), 0)
+        environment["env_order"] = []
+        for child in destination:
+            if child.tag in env_counts:
+                environment["env_order"].append((child.tag, env_counts[child.tag]))
+                env_counts[child.tag] += 1
         destination_resubmits = JobConfiguration.get_resubmits(destination)
         if destination_resubmits:
             environment["resubmit"] = destination_resubmits
@@ -501,16 +509,42 @@ class JobConfiguration(ConfiguresHandlers):
                 # allowing a flat configuration of these things.
                 params = {}
                 for key, value in environment_dict.items():
-                    if key in ["id", "tags", "runner", "shell", "env", "resubmit"]:
+                    if key in ["id", "tags", "runner", "shell", "env", "job_env", "tool_env", "env_order", "resubmit"]:
                         continue
                     params[key] = value
                 environment_dict["params"] = params
 
-            for key in ["tags", "runner", "shell", "env", "resubmit", "params"]:
+            for key in ["tags", "runner", "shell", "env", "job_env", "tool_env", "env_order", "resubmit", "params"]:
                 if key in environment_dict:
                     destination_kwds[key] = environment_dict[key]
+            if "env_order" not in destination_kwds:
+                destination_kwds["env_order"] = [
+                    (key, index)
+                    for key, entries in environment_dict.items()
+                    if key in ("env", "job_env", "tool_env")
+                    for index in range(len(entries))
+                ]
             destination_kwds["id"] = environment_id
             job_destination = JobDestination(**destination_kwds)
+            runner_load = job_config_dict["runners"].get(job_destination.runner, {}).get("load", "")
+            if job_destination.job_env and any(
+                name in runner_load
+                for name in (
+                    "KubernetesJobRunner",
+                    "PulsarCoexecutionJobRunner",
+                    "PulsarTesJobRunner",
+                    "PulsarGcpBatchJobRunner",
+                    "kubernetes",
+                    "pulsar_kubernetes",
+                    "pulsar_coexecution",
+                    "pulsar_tes",
+                    "pulsar_gcp_batch",
+                )
+            ):
+                log.warning(
+                    "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
+                    environment_id,
+                )
             if not self.__is_enabled(job_destination.params):
                 continue
 
@@ -710,7 +744,7 @@ class JobConfiguration(ConfiguresHandlers):
         return JobConfiguration.get_params(self.app.config, parent)
 
     @staticmethod
-    def get_envs(parent):
+    def get_envs(parent, tag="env"):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <env> tags.
@@ -719,16 +753,21 @@ class JobConfiguration(ConfiguresHandlers):
         :returns: dict
         """
         rval = []
-        for param in parent.findall("env"):
+        for param in parent.findall(tag):
             rval.append(
                 dict(
                     name=param.get("id"),
                     file=param.get("file"),
                     execute=param.get("exec"),
-                    value=param.text,
+                    value=(param.text or "") if tag == "tool_env" else param.text,
                     raw=util.asbool(param.get("raw", "false")),
                 )
             )
+        if tag == "tool_env":
+            rval = [
+                {key: value for key, value in entry.items() if key not in ("file", "execute") or value is not None}
+                for entry in rval
+            ]
         return rval
 
     @staticmethod
@@ -2461,6 +2500,8 @@ class MinimalJobWrapper(HasResourceParameters):
         state, tool_stdout, tool_stderr, job_messages = check_output(
             self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
+
+        job_messages.extend(runtime_environment_job_messages(self.working_directory))
 
         # Store the modified stdout and stderr in the job:
         if job is not None:

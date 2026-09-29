@@ -23,7 +23,7 @@ mapping:
   handling:
     type: map
     allowempty: true
-  execution: 
+  execution:
     type: map
     allowempty: true
     mapping:
@@ -59,6 +59,36 @@ mapping:
                         type: str
                       execute:
                         type: str
+              job_env:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      name:
+                        type: str
+                      raw:
+                        type: bool
+                      value:
+                        type: str
+                      file:
+                        type: str
+                      execute:
+                        type: str
+              tool_env:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      name:
+                        type: str
+                      raw:
+                        type: bool
+                      value:
+                        type: str
+                      file:
+                        type: str
+                      execute:
+                        type: str
               resubmit:
                 type: seq
                 sequence:
@@ -77,7 +107,7 @@ mapping:
               tool_evaluation_strategy:
                 type: str
 
-  tools: 
+  tools:
     type: seq
     sequence:
       - type: map
