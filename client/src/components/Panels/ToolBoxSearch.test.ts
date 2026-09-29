@@ -190,21 +190,21 @@ describe("ToolBox search", () => {
         vi.advanceTimersByTime(250);
         await flushPromises();
 
-        let toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
+        let toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__"]);
 
         await input.setValue("#favorites Filter");
         vi.advanceTimersByTime(250);
         await flushPromises();
 
-        toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
+        toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__"]);
 
         await input.setValue("#favorites");
         vi.advanceTimersByTime(250);
         await flushPromises();
 
-        toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
+        toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__"]);
     });
 
@@ -276,7 +276,7 @@ describe("ToolBox search", () => {
         });
         await flushPromises();
 
-        const toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
+        const toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual([latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"]);
     });
 
@@ -303,13 +303,13 @@ describe("ToolBox search", () => {
         });
         await flushPromises();
 
-        const tagSectionNames = wrapper.findAll(".toolSectionTitle .name").wrappers.map((item) => item.text().trim());
+        const tagSectionNames = wrapper.findAll(".toolSectionTitle .name").map((item) => item.text().trim());
         expect(tagSectionNames).toEqual(["genome_coordinates", "data_cleanup"]);
         expect(wrapper.text()).not.toContain("missing_tag");
 
         const genomeCoordinatesSection = wrapper
             .findAll(".toolSectionTitle")
-            .wrappers.find((item) => item.text().includes("genome_coordinates"));
+            .find((item) => item.text().includes("genome_coordinates"));
         expect(genomeCoordinatesSection).toBeTruthy();
         expect(genomeCoordinatesSection?.find(".favorite-tag-section-icon").exists()).toBe(true);
         expect(genomeCoordinatesSection?.find(".favorite-tag-section-icon-open").exists()).toBe(false);
@@ -320,7 +320,7 @@ describe("ToolBox search", () => {
 
         const dataCleanupSection = wrapper
             .findAll(".toolSectionTitle")
-            .wrappers.find((item) => item.text().includes("data_cleanup"));
+            .find((item) => item.text().includes("data_cleanup"));
         expect(dataCleanupSection).toBeTruthy();
         await dataCleanupSection?.find(".title-link").trigger("click");
         await flushPromises();
@@ -336,9 +336,9 @@ describe("ToolBox search", () => {
         await flushPromises();
 
         expect(userStore.removeFavoriteTag).toHaveBeenCalledWith("genome_coordinates");
-        expect(
-            wrapper.findAll(".toolSectionTitle").wrappers.some((item) => item.text().includes("genome_coordinates")),
-        ).toBe(false);
+        expect(wrapper.findAll(".toolSectionTitle").some((item) => item.text().includes("genome_coordinates"))).toBe(
+            false,
+        );
     });
 
     it("does not include tagged tool versions that are outside the default panel", async () => {
@@ -357,7 +357,7 @@ describe("ToolBox search", () => {
 
         const dataCleanupSection = wrapper
             .findAll(".toolSectionTitle")
-            .wrappers.find((item) => item.text().includes("data_cleanup"));
+            .find((item) => item.text().includes("data_cleanup"));
         expect(dataCleanupSection).toBeTruthy();
         await dataCleanupSection?.find(".title-link").trigger("click");
         await flushPromises();
@@ -406,9 +406,7 @@ describe("ToolBox search", () => {
         expect(wrapper.find('[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(false);
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
         expect(
-            wrapper
-                .findAll(".toolSectionTitle .name")
-                .wrappers.some((item) => item.text().trim() === "genome_coordinates"),
+            wrapper.findAll(".toolSectionTitle .name").some((item) => item.text().trim() === "genome_coordinates"),
         ).toBe(false);
 
         const recentLabel = wrapper.findAll(".tool-panel-label").find((item) => item.text().includes("Recent tools"));
@@ -464,7 +462,7 @@ describe("ToolBox search", () => {
 
         const operationSection = wrapper
             .findAll(".toolSectionTitle")
-            .wrappers.find((item) => item.text().includes("Data handling"));
+            .find((item) => item.text().includes("Data handling"));
         expect(operationSection).toBeTruthy();
         expect(operationSection?.find(".favorite-edam-operation-section-icon").exists()).toBe(true);
 

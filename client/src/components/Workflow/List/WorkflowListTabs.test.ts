@@ -75,7 +75,7 @@ async function mountTabs(active: WorkflowListTab, options: MountOptions = {}) {
 }
 
 function tabIds(wrapper: Awaited<ReturnType<typeof mountTabs>>) {
-    return wrapper.findAll("li.nav-item").wrappers.map((tab) => tab.attributes("id"));
+    return wrapper.findAll("li.nav-item").map((tab) => tab.attributes("id"));
 }
 
 describe("WorkflowListTabs", () => {
@@ -105,7 +105,7 @@ describe("WorkflowListTabs", () => {
     it("links each tab to its route", async () => {
         const wrapper = await mountTabs("curated");
 
-        const hrefs = wrapper.findAll("li.nav-item a").wrappers.map((link) => link.attributes("href"));
+        const hrefs = wrapper.findAll("li.nav-item a").map((link) => link.attributes("href"));
         expect(hrefs).toEqual([
             "/workflows/list_curated",
             "/workflows/list",

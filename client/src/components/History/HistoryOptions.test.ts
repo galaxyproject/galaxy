@@ -125,7 +125,7 @@ describe("History Navigation", () => {
         });
 
         const allItems = wrapper.findAllComponents(GDropdownItem);
-        const disabledItems = allItems.wrappers.filter((el) => el.props("disabled"));
+        const disabledItems = allItems.filter((el) => el.props("disabled"));
 
         disabledItems.forEach((option) => {
             expect((option.props("title") as string).toLowerCase()).toContain("log in");
@@ -141,7 +141,7 @@ describe("History Navigation", () => {
         );
 
         const optionElements = wrapper.findAllComponents(GDropdownItem);
-        const optionTexts = optionElements.wrappers.map((el) => el.text());
+        const optionTexts = optionElements.map((el) => el.text());
 
         expect(optionTexts).toStrictEqual(unownedHistoryOptions);
     });

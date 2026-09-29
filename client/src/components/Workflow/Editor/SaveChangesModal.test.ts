@@ -14,7 +14,7 @@ const DONT_SAVE = 1;
 const SAVE = 2;
 
 function footerButtons(wrapper: Wrapper<Vue>) {
-    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton).wrappers;
+    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 
 function buttonsDisabled(wrapper: Wrapper<Vue>) {

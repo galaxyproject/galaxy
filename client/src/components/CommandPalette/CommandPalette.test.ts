@@ -164,7 +164,7 @@ describe("CommandPalette", () => {
     }
 
     function optionRow(text: string) {
-        return wrapper.findAll("[data-description='palette option']").wrappers.find((row) => row.text().includes(text));
+        return wrapper.findAll("[data-description='palette option']").find((row) => row.text().includes(text));
     }
 
     function spyOnInputFocus() {
@@ -174,7 +174,7 @@ describe("CommandPalette", () => {
     function sectionIds() {
         return wrapper
             .findAll("[data-description^='palette section ']")
-            .wrappers.map((section) => section.attributes("data-description"));
+            .map((section) => section.attributes("data-description"));
     }
 
     /** Presses or releases a modifier on the window, as holding it down would */
@@ -234,7 +234,7 @@ describe("CommandPalette", () => {
         await type("atac");
         const option = wrapper
             .findAll("[data-description='palette option']")
-            .wrappers.find((row) => row.text().includes("ATAC peaks"));
+            .find((row) => row.text().includes("ATAC peaks"));
         await option?.trigger("click");
 
         expect(useRecentPaletteItems().recentItems("visualization")).toMatchObject([
@@ -399,7 +399,7 @@ describe("CommandPalette", () => {
         // the key badge is decorative, so the row names its shortcut itself
         const keyRow = wrapper
             .findAll("[data-description='palette option']")
-            .wrappers.find((row) => row.text().includes("Open the selected result"));
+            .find((row) => row.text().includes("Open the selected result"));
         expect(keyRow?.attributes("aria-label")).toBe("Open the selected result (↵)");
     });
 

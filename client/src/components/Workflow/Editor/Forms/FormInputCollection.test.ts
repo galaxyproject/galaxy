@@ -75,9 +75,7 @@ describe("FormInputCollection", () => {
         await wrapper.setProps({ step: stepWithCollectionType("sample_sheet") });
 
         expect(wrapper.findComponent(FormCollectionType).props("value")).toBe("sample_sheet:paired");
-        const optionalField = wrapper
-            .findAllComponents(FormElement)
-            .wrappers.find((field) => field.props("id") === "optional");
+        const optionalField = wrapper.findAllComponents(FormElement).find((field) => field.props("id") === "optional");
         expect(optionalField).toBeDefined();
         const emittedCount = wrapper.emitted("onChange")!.length;
         optionalField!.vm.$emit("input", true);

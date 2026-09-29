@@ -103,7 +103,7 @@ function mountChat() {
 }
 
 function messageTexts(wrapper: Wrapper<Vue>) {
-    return wrapper.findAll(".chat-message-stub").wrappers.map((w) => w.text());
+    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
 }
 
 async function sendMessage(wrapper: Wrapper<Vue>, text: string) {
