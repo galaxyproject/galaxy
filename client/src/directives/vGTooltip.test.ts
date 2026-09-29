@@ -103,6 +103,52 @@ describe("vGTooltip", () => {
         vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
     });
 
+    describe("with a controlled show value", () => {
+        function mountControlled(show: boolean) {
+            return mount(
+                {
+                    directives: { "g-tooltip": vGTooltip },
+                    data: () => ({ show }),
+                    template: `<div v-g-tooltip="{ title: 'Cannot connect', show }" />`,
+                } as object,
+                { attachTo: document.body },
+            );
+        }
+
+        test("shows and hides when the value changes, without waiting for hover", async () => {
+            const wrapper = mountControlled(false);
+            expect(getRenderedTooltip()).toBeNull();
+
+            await wrapper.setData({ show: true });
+            expect(getRenderedTooltip()?.textContent).toContain("Cannot connect");
+
+            await wrapper.setData({ show: false });
+            expect(getRenderedTooltip()).toBeNull();
+
+            wrapper.destroy();
+        });
+
+        test("is shown right away when mounted with show set", () => {
+            const wrapper = mountControlled(true);
+            expect(getRenderedTooltip()).not.toBeNull();
+            wrapper.destroy();
+        });
+
+        test("leaves a hover-shown tooltip alone on unrelated re-renders", async () => {
+            const wrapper = mountControlled(false);
+            wrapper.element.dispatchEvent(new Event("mouseenter"));
+            await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+            expect(getRenderedTooltip()).not.toBeNull();
+
+            await wrapper.setData({ show: false });
+            wrapper.vm.$forceUpdate();
+            await wrapper.vm.$nextTick();
+            expect(getRenderedTooltip()).not.toBeNull();
+
+            wrapper.destroy();
+        });
+    });
+
     describe("on a menu button", () => {
         function createMenuTooltipTarget() {
             const host = document.createElement("div");

@@ -14,6 +14,7 @@
  *   v-g-tooltip                           → reads element's title attribute
  *   v-g-tooltip="'text'"                  → string content
  *   v-g-tooltip="{ title, placement }"    → object config (title optional, falls back to :title)
+ *   v-g-tooltip="{ title, show }"         → also shows/hides whenever `show` changes (like b-tooltip :show)
  */
 
 import {
@@ -136,6 +137,13 @@ function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown)
         return (bindingValue as { placement: Placement }).placement;
     }
     return "top";
+}
+
+function getShow(bindingValue: unknown): boolean | undefined {
+    if (typeof bindingValue === "object" && bindingValue !== null && "show" in bindingValue) {
+        return Boolean((bindingValue as { show: unknown }).show);
+    }
+    return undefined;
 }
 
 function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): string {
@@ -423,6 +431,9 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
 
         stateMap.set(el, state);
         updateContent(el, binding.value, state, vnode);
+        if (getShow(binding.value)) {
+            showTooltip(el);
+        }
     },
 
     componentUpdated(el, binding, vnode) {
@@ -432,6 +443,16 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
         updateContent(el, binding.value, state, vnode);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
+
+        // Only act on a change, so re-renders don't close a tooltip the user opened by hovering
+        const show = getShow(binding.value);
+        if (show !== undefined && show !== getShow(binding.oldValue)) {
+            if (show) {
+                showTooltip(el);
+            } else {
+                hideTooltip(el);
+            }
+        }
 
         // Hide if content became empty
         const content = state.isHtml ? state.contentEl.innerHTML : state.contentEl.textContent;
