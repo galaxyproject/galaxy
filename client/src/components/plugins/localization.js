@@ -1,5 +1,5 @@
 /**
- * Makes localization directives and filters available
+ * Makes the localize directive and mixin methods available
  */
 
 import _l from "@/utils/localization";
@@ -37,8 +37,6 @@ function localizeMixin(l) {
 
 export const localizationPlugin = {
     install(Vue, l = _l) {
-        Vue.filter("localize", l);
-        Vue.filter("l", l);
         Vue.directive("localize", localizeDirective(l));
         Vue.mixin(localizeMixin(l));
     },
