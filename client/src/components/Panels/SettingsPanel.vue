@@ -66,6 +66,6 @@ function onQuery(newQuery: string) {
         <ActivitySettings
             :query="query"
             :activity-bar-id="props.activityBarId"
-            @activityClicked="(...args) => emit('activityClicked', ...args)" />
+            @activityClicked="(activityId: string) => emit('activityClicked', activityId)" />
     </ActivityPanel>
 </template>

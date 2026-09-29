@@ -109,16 +109,21 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :clickable="props.clickable"
             :highlighted="props.rangeSelectAnchor?.id === workflow.id"
             class="workflow-card-in-list"
-            @select="(...args) => emit('select', ...args)"
-            @tagClick="(...args) => emit('tagClick', ...args)"
-            @refreshList="(...args) => emit('refreshList', ...args)"
-            @updateFilter="(...args) => emit('updateFilter', ...args)"
+            @select="(selectedWorkflow: WorkflowSummary) => emit('select', selectedWorkflow)"
+            @tagClick="(tag: string) => emit('tagClick', tag)"
+            @refreshList="(overlayLoading?: boolean, silent?: boolean) => emit('refreshList', overlayLoading, silent)"
+            @updateFilter="(key: string, value: any) => emit('updateFilter', key, value)"
             @rename="onRename"
             @preview="onPreview"
             @insert="onInsert(workflow)"
             @insertSteps="onInsertSteps(workflow)"
-            @on-key-down="(...args) => emit('on-key-down', ...args)"
-            @on-workflow-card-click="(...args) => emit('on-workflow-card-click', ...args)" />
+            @on-key-down="
+                (clickedWorkflow: WorkflowSummary, event: KeyboardEvent) => emit('on-key-down', clickedWorkflow, event)
+            "
+            @on-workflow-card-click="
+                (clickedWorkflow: WorkflowSummary, event: Event) =>
+                    emit('on-workflow-card-click', clickedWorkflow, event)
+            " />
 
         <WorkflowRename
             v-if="showRename"
