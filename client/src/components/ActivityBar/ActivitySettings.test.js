@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
@@ -40,7 +40,6 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        const router = createTestRouter();
         // Mock the response of the API call
         server.use(
             http.get("/api/unprivileged_tools", ({ params, query, response }) => {
@@ -51,7 +50,7 @@ describe("ActivitySettings", () => {
         wrapper = mount(mountTarget, {
             global: {
                 ...getLocalVue(),
-                plugins: [...(getLocalVue().plugins || []), pinia, router],
+                plugins: [...(getLocalVue().plugins || []), pinia],
                 stubs: {
                     FontAwesomeIcon: { template: "<div></div>" },
                 },
