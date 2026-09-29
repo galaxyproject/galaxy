@@ -36,7 +36,7 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
         }
         const jobMetricsObject = datasetType === "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
 
-        jobMetricsObject.value[datasetId] = data;
+        jobMetricsObject.value[datasetId] = data.filter((metric): metric is JobMetric => metric !== null);
     }
 
     async function fetchJobMetricsForJobId(jobId: string) {
@@ -51,7 +51,7 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
             rethrowSimpleWithStatus(error, response);
         }
 
-        jobMetricsByJobId.value[jobId] = data;
+        jobMetricsByJobId.value[jobId] = data.filter((metric): metric is JobMetric => metric !== null);
     }
 
     return {
