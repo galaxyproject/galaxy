@@ -169,7 +169,7 @@ async function deleteSelected() {
                     :class="{ selected: selectedIds.has(item.id), current: item.id === currentExchangeId }"
                     role="button"
                     tabindex="0"
-                    @click="(event) => handleItemClick(item, index, event)">
+                    @click="(event: MouseEvent) => handleItemClick(item, index, event)">
                     <span v-if="selectionMode" class="history-checkbox">
                         <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
                     </span>

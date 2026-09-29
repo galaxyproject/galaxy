@@ -177,7 +177,7 @@ function onStart() {
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
-        @mousedown="(e) => emit('mousedown', e)">
+        @mousedown="(e: MouseEvent) => emit('mousedown', e)">
         <slot></slot>
     </Draggable>
 </template>

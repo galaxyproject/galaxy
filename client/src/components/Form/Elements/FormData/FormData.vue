@@ -1150,7 +1150,7 @@ const noOptionsWarningMessage = computed(() => {
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions"
                 @on-browse="onBrowse"
-                @set-current-field="(value) => (currentField = value)" />
+                @set-current-field="(value: number) => (currentField = value)" />
 
             <div class="w-100 d-flex flex-gapx-1">
                 <FormSelect

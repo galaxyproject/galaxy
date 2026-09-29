@@ -359,10 +359,10 @@ onClickOutside(
                     }"
                     @mousedown.prevent.stop
                     @click="() => onOptionSelected(option)"
-                    @keydown="(e) => onOptionKey(e, i)"
+                    @keydown="(e: KeyboardEvent) => onOptionKey(e, i)"
                     @mouseover="() => onOptionHover(i)"
                     @focusin="() => onOptionHover(i)"
-                    @keydown.tab="(e) => onOptionTab(e, i)">
+                    @keydown.tab="(e: KeyboardEvent) => onOptionTab(e, i)">
                     <span>
                         {{ option }}
                     </span>

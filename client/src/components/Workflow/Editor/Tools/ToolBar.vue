@@ -23,6 +23,7 @@ import { computed, toRefs, watch } from "vue";
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type { WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
@@ -343,7 +344,7 @@ function autoLayout() {
                 <ColorSelector
                     :color="commentOptions.color"
                     class="color-selector"
-                    @set-color="(color) => (commentOptions.color = color)" />
+                    @set-color="(color: WorkflowCommentColor) => (commentOptions.color = color)" />
             </div>
 
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option small">

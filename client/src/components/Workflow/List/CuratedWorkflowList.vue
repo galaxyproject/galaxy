@@ -332,7 +332,7 @@ onMounted(() => load());
                     :key="workflow.id"
                     :workflow="workflow"
                     :grid-view="currentListViewMode === 'grid'"
-                    @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
+                    @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)"
                     @collectionClick="toggleCollection" />
             </div>
         </GOverlay>

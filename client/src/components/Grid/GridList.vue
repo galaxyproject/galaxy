@@ -452,7 +452,7 @@ watch(operationMessage, () => {
                                     <GridExpand
                                         v-else-if="fieldEntry.type == 'expand'"
                                         :details-showing="expanded.has(rowData)"
-                                        @show-details="(s) => showDetails(rowData, s)" />
+                                        @show-details="(s: boolean) => showDetails(rowData, s)" />
                                     <GridBoolean
                                         v-else-if="fieldEntry.type == 'boolean'"
                                         :value="rowData[fieldEntry.key]" />

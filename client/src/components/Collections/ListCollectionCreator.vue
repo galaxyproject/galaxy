@@ -654,7 +654,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                 :show-hid="showHid"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
-                                @onRename="(name) => (element.name = name)" />
+                                @onRename="(name: string) => (element.name = name)" />
                         </draggable>
                     </div>
 
@@ -674,7 +674,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                 text-only
                                 :element="selectionAsHdaSummary(selectValue.option.value)"
                                 :hide-extension="!showElementExtension"
-                                @onRename="(name) => renameElement(selectValue.option.value, name)" />
+                                @onRename="(name: string) => renameElement(selectValue.option.value, name)" />
                         </template>
                     </FormSelectMany>
                 </template>
