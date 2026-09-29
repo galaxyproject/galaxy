@@ -564,6 +564,11 @@ class ToolBox(AbstractToolBox):
         self._init_dependency_manager()
 
     def load_builtin_converters(self):
+        registry = self.app.datatypes_registry
+        if registry.datatype_converters:
+            # Refresh converters from the previous toolbox before rendering
+            # panels so edits without a version bump don't retain stale tools.
+            registry.load_datatype_converters(self, use_cached=True)
         id = "builtin_converters"
         section = ToolSection({"name": "Built-in Converters", "id": id})
         self._tool_panel[id] = section
@@ -573,13 +578,10 @@ class ToolBox(AbstractToolBox):
         integrated_section = ToolSection({"name": "Built-in Converters", "id": id})
         self._integrated_tool_panel[id] = integrated_section
 
-        converters = {
-            tool for target in self.app.datatypes_registry.datatype_converters.values() for tool in target.values()
-        }
+        converters = {tool for target in registry.datatype_converters.values() for tool in target.values()}
         for tool in converters:
             tool.hidden = False
-            # On reload these converters belong to the previous toolbox and
-            # must be registered here before panel views resolve their ids.
+            # Ensure every displayed converter is registered before views resolve its id.
             self.register_tool(tool)
             section.elems.append_tool(tool)
             integrated_section.elems.append_tool(tool)

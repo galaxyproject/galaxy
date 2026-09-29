@@ -1,5 +1,6 @@
 import logging
 import time
+from pathlib import Path
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -629,21 +630,42 @@ class TestToolBox(BaseToolBoxTestCase):
         assert "builtin_converters" in toolbox._integrated_tool_panel
 
     @pytest.mark.parametrize("edam_mode", ["merged", "topics", "operations"])
-    def test_builtin_converters_in_edam_panel_after_reload(self, edam_mode):
-        converter = self._init_tool(tool_id="tabular_to_dbnsfp")
+    @pytest.mark.parametrize("replacement_version", [None, "1.0", "0.9", "2.0"])
+    def test_builtin_converters_in_edam_panel_after_reload(self, edam_mode, replacement_version):
+        self._init_tool(tool_id="tabular_to_dbnsfp")
         self._add_config("""<toolbox></toolbox>""")
         self.app.config.edam_panel_views = edam_mode
         old_toolbox = self.toolbox
+        self.app.watchers.shutdown()
 
         # Startup registers converters after constructing the first toolbox.
-        old_toolbox.register_tool(converter)
-        self.app.datatypes_registry._register_converter_tool(converter, "tabular", "snpsiftdbnsfp")
+        registry = self.app.datatypes_registry
+        datatypes_config = Path(self.test_directory) / "datatypes_conf.xml"
+        datatypes_config.write_text("""<datatypes><registration converters_path=".">
+                <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular">
+                    <converter file="tool.xml" target_datatype="snpsiftdbnsfp"/>
+                </datatype>
+            </registration></datatypes>""")
+        registry.load_datatypes(root_dir=self.test_directory, config=datatypes_config)
+        registry.load_datatype_converters(old_toolbox)
+        original = registry.datatype_converters["tabular"]["snpsiftdbnsfp"]
+        if replacement_version is not None:
+            tool_path = Path(original.config_file)
+            contents = tool_path.read_text().replace('name="Test Tool"', 'name="Updated converter"')
+            contents = contents.replace('version="1.0"', f'version="{replacement_version}"')
+            tool_path.write_text(contents)
+            self.app.tool_cache.expire_tool(original.id)
 
-        # On reload, panel views are rendered before the new toolbox replaces
-        # app.toolbox and before load_datatype_converters runs again.
+        # Match the reload order, including the converter load after construction.
         new_toolbox = ToolBox(self.config_files, self.test_directory, self.app)
+        registry.load_datatype_converters(new_toolbox, use_cached=True)
+        converter = registry.datatype_converters["tabular"]["snpsiftdbnsfp"]
         assert self.app.toolbox is old_toolbox
+        assert converter.name == ("Updated converter" if replacement_version else "Test Tool")
+        assert converter.version == (replacement_version or "1.0")
         assert new_toolbox.get_tool(converter.id) is converter
+        assert new_toolbox.get_tool(converter.id, tool_version=converter.version) is converter
+        assert new_toolbox._tool_panel["builtin_converters"].elems.get_tool_with_id(converter.id) is converter
         panel = new_toolbox.to_panel_view(mock_trans(), view="default")
         assert converter.id in panel["builtin_converters"]["tools"]
         edam_panel = new_toolbox.to_panel_view(mock_trans(), view=f"ontology:edam_{edam_mode}")
