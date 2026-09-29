@@ -13,7 +13,6 @@ agreeing on this shape.
 """
 
 import json
-import logging
 from typing import Any
 
 from galaxy.util import nice_size
@@ -24,8 +23,6 @@ from ..formatting import (
     seconds_to_str,
 )
 from ..safety import Safety
-
-log = logging.getLogger(__name__)
 
 PREPROCESS = "preprocess"
 POSTPROCESS = "postprocess"
@@ -75,27 +72,20 @@ class PulsarTransferPlugin(InstrumentPlugin):
         properties: dict[str, Any] = {}
         for phase in PHASES:
             recorded = self.__read_phase(job_directory, phase)
-            for key in KEYS:
-                if key in recorded:
-                    properties[f"{phase}_{key}"] = recorded[key]
+            for key, value in recorded.items():
+                if key in KEYS:
+                    properties[f"{phase}_{key}"] = value
         return properties
 
     def __read_phase(self, job_directory: str, phase: str) -> dict[str, Any]:
         path = self._instrument_file_path(job_directory, phase)
         try:
             with open(path) as fh:
-                recorded = json.load(fh)
+                return json.load(fh)
         except FileNotFoundError:
             # Pulsar did not report this phase - an older Pulsar, a job that ran somewhere
             # else entirely, or outputs that never made it back.
             return {}
-        except Exception:
-            log.warning("Failed to read Pulsar %s transfer metrics from %s", phase, path, exc_info=True)
-            return {}
-        if not isinstance(recorded, dict):
-            log.warning("Pulsar %s transfer metrics at %s were not an object", phase, path)
-            return {}
-        return recorded
 
 
 # Only the plugin class - plugin discovery walks __all__ looking for one.

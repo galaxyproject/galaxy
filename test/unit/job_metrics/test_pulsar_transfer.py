@@ -1,4 +1,8 @@
 import json
+import logging
+from types import SimpleNamespace
+
+import pytest
 
 from galaxy.job_metrics import (
     JobInstrumenter,
@@ -49,14 +53,30 @@ def test_unexpected_keys_are_ignored(tmpdir):
     assert "preprocess_retries" not in PulsarTransferPlugin().job_properties(1, str(tmpdir))
 
 
-def test_corrupt_file_is_skipped(tmpdir):
+def test_corrupt_file_raises(tmpdir):
     tmpdir.join(PREPROCESS_FILE).write("not json")
-    assert PulsarTransferPlugin().job_properties(1, str(tmpdir)) == {}
+    with pytest.raises(json.JSONDecodeError):
+        PulsarTransferPlugin().job_properties(1, str(tmpdir))
 
 
-def test_non_object_file_is_skipped(tmpdir):
-    tmpdir.join(PREPROCESS_FILE).write("[1, 2, 3]")
-    assert PulsarTransferPlugin().job_properties(1, str(tmpdir)) == {}
+@pytest.mark.parametrize("recorded", [[], [1, 2, 3], "files", None, 3, True])
+def test_non_object_file_raises(tmpdir, recorded):
+    tmpdir.join(PREPROCESS_FILE).write(json.dumps(recorded))
+    with pytest.raises(AttributeError):
+        PulsarTransferPlugin().job_properties(1, str(tmpdir))
+
+
+@pytest.mark.parametrize("contents", ["not json", "[]"])
+def test_collection_logs_invalid_metrics_without_raising(tmpdir, caplog, contents):
+    tmpdir.join(PREPROCESS_FILE).write(contents)
+    instrumenter = JobMetrics(conf_dict=[{"type": "pulsar_transfer"}]).default_job_instrumenter
+    with caplog.at_level(logging.ERROR, logger="galaxy.job_metrics"):
+        assert instrumenter.collect_properties(SimpleNamespace(id=1), str(tmpdir)) == {}
+    assert len(caplog.records) == 1
+    record = caplog.records[0]
+    assert record.levelno == logging.ERROR
+    assert "Failed to collect job properties for plugin" in record.message
+    assert record.exc_info is not None
 
 
 def test_plugin_is_configurable_by_type():
