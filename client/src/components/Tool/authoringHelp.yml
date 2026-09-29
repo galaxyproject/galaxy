@@ -150,7 +150,8 @@ sections:
     body: |
       Each output declares a `type` and a `name`. Dataset outputs identify the
       produced file with `from_work_dir`; collection outputs use
-      `discover_datasets`.
+      `discover_datasets`. An optional `label` sets the name shown in the
+      history; see [Output labels](#output-labels).
 
       {{output_type_index}}
 
@@ -292,6 +293,39 @@ sections:
             - |
               function basename(path) { return path.split('/').pop(); }
       ```
+
+  - id: output-labels
+    title: Output labels
+    kind: reference
+    body: |
+      An output's `label` is the name its dataset or collection gets in the
+      history. Galaxy fills in these references when it creates the job:
+
+      | Reference | Value |
+      | --- | --- |
+      | `$(inputs.num_lines)`, `$(inputs.options.mode)` | A text, number, boolean or select input, also inside a conditional or section. |
+      | `$(inputs.reads.name)` | A dataset or collection input's name in the history. |
+      | `$(inputs.reads.element_identifier)` | For a run mapped over a collection, the identifier of the element the job runs on, such as a sample name. Otherwise the same as `name`. |
+      | `$(inputs.reads.format)` | A dataset input's datatype. |
+      | `$(runtime.on_string)` | The input description other tools use, such as `data 1 and data 2`. |
+
+      An optional input left empty fills in as nothing. Anything else, such
+      as `${ ... }` or a file path, is kept as written: an input may not have
+      been written yet when the job is created. A label can be at most 250
+      characters long.
+
+      ```yaml
+      outputs:
+        - name: head
+          type: data
+          format: fastqsanger
+          from_work_dir: head.fastq
+          label: $(inputs.reads.element_identifier) (first $(inputs.num_lines) lines)
+      ```
+
+      Prefer `element_identifier` to `name`: sample names carry through a
+      workflow, while a dataset's history name usually describes the step
+      that made it, such as `Trim on data 1`.
 
   - id: expressions-shell
     title: Why do some shell constructs fail?

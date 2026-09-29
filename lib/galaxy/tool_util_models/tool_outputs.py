@@ -5,6 +5,7 @@ but the goal here is to switch to using these overtime at least for external API
 code where actual tool objects aren't created.
 """
 
+import re
 from typing import (
     Any,
     Dict,
@@ -360,6 +361,22 @@ class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool]
     ] = None
 
 
+# The dataset and collection name columns hold 255 characters.
+MAX_USER_TOOL_LABEL_LENGTH = 250
+USER_TOOL_LABEL_REFERENCE_RE = re.compile(r"\$\((?:inputs\.(?P<input>\w+)(?P<keys>(?:\.\w+)*)|runtime\.on_string)\)")
+
+UserToolOutputLabel = Annotated[
+    Optional[str],
+    Field(
+        description=(
+            "Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and "
+            "`$(runtime.on_string)` references are filled in when the job is created."
+        ),
+        max_length=MAX_USER_TOOL_LABEL_LENGTH,
+    ),
+]
+
+
 class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
     """A user-defined tool dataset discovered only from files inside the job working directory."""
 
@@ -376,6 +393,27 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
                 }
             ],
             "x-usage-examples": [
+                {
+                    "field": "label",
+                    "description": (
+                        "`label` can be used to name the output after the run's inputs. When the run maps over a "
+                        "collection, `$(inputs.reads.element_identifier)` is the sample name. "
+                        "[Output labels](#output-labels) lists the references a label can use."
+                    ),
+                    "definition": {
+                        "inputs": [{"name": "reads", "type": "data", "format": ["fastqsanger"]}],
+                        "shell_command": "head -n 400 '$(inputs.reads.path)' > first.fastq",
+                        "outputs": [
+                            {
+                                "name": "first_reads",
+                                "type": "data",
+                                "format": "fastqsanger",
+                                "label": "$(inputs.reads.element_identifier) (first 400 lines)",
+                                "from_work_dir": "first.fastq",
+                            }
+                        ],
+                    },
+                },
                 {
                     "field": "format",
                     "description": (
@@ -504,6 +542,7 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
         },
     )
 
+    label: UserToolOutputLabel = None
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[
         Optional[List[FilePatternDatasetCollectionDescription]],
@@ -630,6 +669,7 @@ class IncomingUserToolOutputCollection(IncomingToolOutputCollection):
         }
     )
 
+    label: UserToolOutputLabel = None
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[
         Optional[List[FilePatternDatasetCollectionDescription]],
