@@ -110,7 +110,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     function mergeWorkflowSummaries(workflows: WorkflowSummary[]) {
         workflows.forEach((workflow) => {
             const cached = workflowSummariesById.value[workflow.id];
-            set(workflowSummariesById.value, workflow.id, cached ? { ...cached, ...workflow } : workflow);
+            workflowSummariesById.value[workflow.id] = cached ? { ...cached, ...workflow } : workflow;
         });
     }
 
@@ -127,7 +127,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         const merged = isFirstPage
             ? [...incomingIds, ...cached.filter((workflowId) => !incoming.has(workflowId))]
             : [...cached, ...incomingIds.filter((workflowId) => !cached.includes(workflowId))];
-        set(listIdsByKey.value, key, merged);
+        listIdsByKey.value[key] = merged;
     }
 
     async function fetchAndMergeWorkflowList(
