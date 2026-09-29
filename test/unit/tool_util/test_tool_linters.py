@@ -3533,6 +3533,7 @@ def test_list_linters():
         "RequirementVersionMissing",
         "RequirementVersionWhitespace",
         "ResourceRequirementExpression",
+        "RuntimeEnvironmentVariables",
         "StdIOAbsence",
         "StdIOAbsenceLegacy",
         "StdIORegex",
