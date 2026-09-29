@@ -1103,7 +1103,7 @@ export default {
         },
         onSetData(stepId, newData) {
             return this.lastQueue
-                .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
+                .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState), undefined, stepId)
                 .then((data) => {
                     // Superseded edits resolve without module data.
                     if (data === undefined) {

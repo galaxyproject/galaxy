@@ -170,6 +170,49 @@ describe("Index", () => {
         }
     });
 
+    it("applies queued form edits for different steps", async () => {
+        await flushPromises();
+        vi.useFakeTimers();
+        try {
+            const updateStep = vi.spyOn(wrapper.vm.stepActions, "updateStep").mockImplementation(() => {});
+            const moduleData = (toolState: object) => ({
+                content_id: "cat1",
+                inputs: [],
+                outputs: [],
+                config_form: { inputs: [] },
+                tool_state: toolState,
+                tool_version: "1.0",
+                errors: null,
+            });
+            let resolveFirst!: (data: object) => void;
+            const firstResponse = new Promise((resolve) => {
+                resolveFirst = resolve;
+            });
+            const firstEdit = { text: "first" };
+            const mockGetModule = vi.mocked(getModule);
+            mockGetModule.mockReset();
+            mockGetModule.mockImplementation((requestData) =>
+                requestData === firstEdit ? firstResponse : Promise.resolve(moduleData(requestData)),
+            );
+            const onSetData = wrapper.vm.onSetData;
+
+            const first = onSetData(1, firstEdit);
+            const stepZero = onSetData(0, { text: "step 0" });
+            const stepOne = onSetData(1, { text: "step 1" });
+
+            resolveFirst(moduleData(firstEdit));
+            await first;
+            await vi.advanceTimersByTimeAsync(1000);
+            await Promise.all([stepZero, stepOne]);
+
+            expect(mockGetModule).toHaveBeenCalledWith({ text: "step 0" }, 0, wrapper.vm.stateStore.setLoadingState);
+            expect(updateStep).toHaveBeenCalledWith(0, moduleData({ text: "step 0" }));
+            expect(updateStep).toHaveBeenLastCalledWith(1, moduleData({ text: "step 1" }));
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("resolves datatypes", async () => {
         expect(wrapper.vm.datatypesMapper).not.toBeNull();
         expect(wrapper.vm.datatypes).not.toBeNull();
