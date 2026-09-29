@@ -166,10 +166,14 @@
 <script setup lang="ts">
 import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+// "vue" resolves to @vue/compat at build time, but vue-tsc types it against the
+// real vue package, which has no default export; import the compat Vue directly
+// so Vue.use keeps its type.
+import Vue from "@vue/compat";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
-import Vue, { computed, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";

@@ -1,6 +1,10 @@
 <script setup lang="ts">
+// "vue" resolves to @vue/compat at build time, but vue-tsc types it against the
+// real vue package, which has no default export; import the compat Vue directly
+// so Vue.use keeps its type.
+import Vue from "@vue/compat";
 import BootstrapVue from "bootstrap-vue";
-import Vue, { computed } from "vue";
+import { computed } from "vue";
 
 Vue.use(BootstrapVue);
 

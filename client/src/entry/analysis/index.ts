@@ -1,5 +1,9 @@
+// configureCompat is a compat-build-only API, not part of the real "vue" package's
+// types that vue-tsc now checks against; import it from @vue/compat, which "vue"
+// resolves to at build time anyway.
+import { configureCompat } from "@vue/compat";
 import { createPinia } from "pinia";
-import { configureCompat, createApp } from "vue";
+import { createApp } from "vue";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
