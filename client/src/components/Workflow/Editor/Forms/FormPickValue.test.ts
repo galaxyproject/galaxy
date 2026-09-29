@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
 
@@ -11,7 +10,6 @@ import FormPickValue from "./FormPickValue.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 interface EmittedState {
     mode: string;

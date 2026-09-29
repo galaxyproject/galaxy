@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -23,7 +23,6 @@ const { server, http } = useServerMock();
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = getLocalVue();
-    localVue.use(PiniaVuePlugin);
     let wrapper;
     let testPinia;
     let deleteRequests = [];

@@ -4,7 +4,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
@@ -21,7 +20,6 @@ setupMockConfig({ disabled: false, enabled: true });
 vi.mock("vue-router");
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 function createTestGrid(): GridConfig {
     return {

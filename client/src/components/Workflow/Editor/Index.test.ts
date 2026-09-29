@@ -3,7 +3,7 @@ import { getLocalVue, mockUnprivilegedToolsRequest, suppressExpectedErrorMessage
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vue, { nextTick } from "vue";
 
@@ -48,7 +48,6 @@ const SELECTORS = {
 (ChangesIndicator as unknown as { name?: string }).name = "ChangesIndicator";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const mockFlashSavedIndicator = vi.fn();
 

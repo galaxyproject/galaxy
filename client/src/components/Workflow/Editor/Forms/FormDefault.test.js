@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
@@ -13,7 +12,6 @@ import FormInputCollection from "./FormInputCollection.vue";
 vi.mock("./FormDatatype.vue", () => ({ default: { render: (h) => h("div") } }));
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 describe("FormDefault", () => {
     let wrapper;
