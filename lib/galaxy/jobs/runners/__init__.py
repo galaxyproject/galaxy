@@ -533,8 +533,7 @@ class BaseJobRunner:
         env_setup_commands = kwds.get("env_setup_commands", [])
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
         destination = job_wrapper.job_destination
-        envs = destination.env
-        envs.extend(job_wrapper.environment_variables)
+        envs = [*destination.environment, *job_wrapper.environment_variables]
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
@@ -589,7 +588,7 @@ class BaseJobRunner:
             tool.containers,
             tool.requirements,
             tool.requires_galaxy_python_environment,
-            tool.docker_env_pass_through,
+            list(dict.fromkeys([*tool.docker_env_pass_through, *job_wrapper.job_destination.tool_env_names])),
             guest_ports=guest_ports,
             tool_id=tool.id,
             tool_version=tool.version,

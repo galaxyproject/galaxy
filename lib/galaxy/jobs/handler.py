@@ -381,6 +381,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             config_job_destination = self.app.job_config.get_destination(job.destination_id)
             job_destination.resubmit = config_job_destination.resubmit
             job_destination.env = config_job_destination.env
+            job_destination.job_env = config_job_destination.job_env
+            job_destination.tool_env = config_job_destination.tool_env
+            job_destination.env_order = config_job_destination.env_order
             job_destination.tags = config_job_destination.tags
         except KeyError:
             log.debug(

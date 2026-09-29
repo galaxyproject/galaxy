@@ -30,6 +30,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_SORT,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
     DirectCredential,
@@ -434,6 +435,12 @@ class XmlToolSource(ToolSource):
         as_dict["includes"] = parse_include_exclude_list("include")
         as_dict["excludes"] = parse_include_exclude_list("exclude")
         return RequiredFiles.from_dict(as_dict)
+
+    def parse_runtime_environment_variables(self):
+        return [
+            RuntimeEnvironmentVariable.model_validate(dict(element.attrib))
+            for element in self.root.findall("requirements/runtime_environment_variable")
+        ]
 
     def parse_requirements(self):
         return requirements.parse_requirements_from_xml(self.root, parse_resources_and_credentials=True)

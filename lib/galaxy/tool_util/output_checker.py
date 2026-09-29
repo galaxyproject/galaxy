@@ -1,6 +1,8 @@
 import re
+from collections.abc import Iterable
 from enum import Enum
 from logging import getLogger
+from pathlib import Path
 from typing import (
     Literal,
     TYPE_CHECKING,
@@ -12,6 +14,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
 
 if TYPE_CHECKING:
     from galaxy.tool_util.parser.stdio import (
@@ -38,6 +41,7 @@ JobMessageTypeLiteral = Literal[
     "output_collection_security",
     "output_discovery",
     "stdio_read_error",
+    "runtime_environment_warning",
 ]
 
 
@@ -76,6 +80,11 @@ class StdioReadErrorJobMessage(JobMessage):
     errno: int | None
 
 
+class RuntimeEnvironmentWarningJobMessage(JobMessage):
+    type: Literal["runtime_environment_warning"]
+    variable_names: list[str]
+
+
 AnyJobMessage = (
     ExitCodeJobMessage
     | RegexJobMessage
@@ -83,6 +92,7 @@ AnyJobMessage = (
     | OutputCollectionSecurityJobMessage
     | OutputDiscoveryJobMessage
     | StdioReadErrorJobMessage
+    | RuntimeEnvironmentWarningJobMessage
 )
 
 
@@ -266,3 +276,38 @@ def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> Re
         "match": match_str,
         "error_level": regex.error_level,
     }
+
+
+def _runtime_environment_variable_names(job_directory: str) -> list[str]:
+    """Read only variable names recorded after the job environment was set up."""
+    names = []
+    for directory in ("outputs", "metadata"):
+        path = Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE
+        if path.is_file():
+            names.extend(
+                name for name in path.read_text().splitlines() if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name)
+            )
+    return list(dict.fromkeys(names))
+
+
+def merge_runtime_environment_warnings(job_directory: str, task_directories: Iterable[str]) -> None:
+    """Publish task warnings before the parent job's metadata and output checks."""
+    names = list(
+        dict.fromkeys(name for directory in task_directories for name in _runtime_environment_variable_names(directory))
+    )
+    path = Path(job_directory) / "outputs" / RUNTIME_ENVIRONMENT_WARNING_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(f"{name}\n" for name in names))
+
+
+def runtime_environment_job_messages(job_directory: str) -> list[RuntimeEnvironmentWarningJobMessage]:
+    names = _runtime_environment_variable_names(job_directory)
+    if not names:
+        return []
+    desc = f"Required runtime environment variables are unset: {', '.join(names)}"
+    log.info(desc)
+    return [
+        RuntimeEnvironmentWarningJobMessage(
+            type="runtime_environment_warning", variable_names=names, desc=desc, error_level=StdioErrorLevel.WARNING
+        )
+    ]
