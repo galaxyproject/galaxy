@@ -51,7 +51,10 @@ const {
 
 const currentExchangeId = computed(() => {
     if (chatStore.isCenterMode) {
-        return route.params["exchangeId"] || null;
+        // The galaxyai/:exchangeId route param is never repeated, but vue-router's generic
+        // params type always allows string[] -- narrow to the single value it actually is.
+        const param = route.params["exchangeId"];
+        return (Array.isArray(param) ? param[0] : param) || null;
     } else {
         return chatStore.activeChatId;
     }
