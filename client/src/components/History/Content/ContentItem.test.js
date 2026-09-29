@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
@@ -16,7 +15,6 @@ const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
-localVue.use(PiniaVuePlugin);
 const router = new VueRouter();
 
 vi.mock("vue-router", async (importOriginal) => ({

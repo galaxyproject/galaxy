@@ -1,14 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
 import ToolEntryPoints from "./ToolEntryPoints.vue";
 
 describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
     const localVue = getLocalVue();
-    localVue.use(PiniaVuePlugin);
     const router = injectTestRouter(localVue);
     const INACTIVE_ITS = [
         {

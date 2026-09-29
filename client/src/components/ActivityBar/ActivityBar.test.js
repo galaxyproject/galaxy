@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
@@ -28,7 +27,6 @@ vi.mock("vue-router", () => ({
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {

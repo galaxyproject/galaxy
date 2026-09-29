@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
@@ -14,7 +14,6 @@ import lintStepsData from "./test-data/lint_steps.json";
 import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const steps: Steps = lintStepsData as unknown as Steps;
 const stepsRef = ref(steps);

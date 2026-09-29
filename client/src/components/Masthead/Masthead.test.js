@@ -5,7 +5,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUserStore } from "@/stores/userStore";
@@ -46,7 +45,6 @@ describe("Masthead.vue", () => {
         setupMockConfig({});
         originalUrl = window.location.href;
         localVue = getLocalVue();
-        localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia({ createSpy: vi.fn });
 
         windowTab = {
