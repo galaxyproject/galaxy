@@ -13,7 +13,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 const router = useRouter();
 
 const loading = ref(false);
-const email = ref(router.currentRoute.query.email || "");
+const email = ref(router.currentRoute.value.query.email || "");
 const message = ref("");
 const messageVariant = ref("info");
 

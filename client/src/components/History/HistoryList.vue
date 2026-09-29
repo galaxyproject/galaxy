@@ -521,8 +521,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(async () => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    if (router.currentRoute.value.query.owner) {
+        updateFilterValue("user", `'${router.currentRoute.value.query.owner}'`);
     }
 
     await load();
@@ -684,7 +684,7 @@ onMounted(async () => {
                 @on-key-down="onKeyDown"
                 @on-history-card-click="onClick"
                 @updateFilter="updateFilterValue"
-                @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)" />
+                @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)" />
         </GOverlay>
 
         <div class="d-flex mt-1 align-items-center">
