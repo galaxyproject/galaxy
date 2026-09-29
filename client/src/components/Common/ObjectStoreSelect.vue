@@ -19,7 +19,7 @@ const emit = defineEmits<{
     <div>
         <SourceOptionCard
             v-for="objectStore in objectStores"
-            :key="objectStore.object_store_id"
+            :key="objectStore.object_store_id ?? undefined"
             :source-option="objectStore"
             submit-button-tooltip="Filter datasets to this storage location"
             @select="emit('select', objectStore.object_store_id ?? null)">

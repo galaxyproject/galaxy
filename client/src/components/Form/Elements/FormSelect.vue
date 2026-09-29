@@ -16,6 +16,11 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
+// vue-multiselect's types only allow a string here, but at runtime an explicit null
+// (not just omitting the prop) suppresses the label instead of falling back to its
+// default text -- its .d.ts doesn't account for that.
+const noLabel = null as unknown as string;
+
 type SelectValue = Record<string, unknown> | string | number | null;
 type ValueWithTags = SelectValue & { tags: string[] };
 
@@ -277,13 +282,13 @@ function isSelected(item: SelectValue): boolean {
             :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"
             :disabled="disabled"
-            :deselect-label="null"
+            :deselect-label="noLabel"
             label="label"
             :multiple="multiple"
             :options="reorderedOptions"
             :placeholder="placeholder"
             :selected-label="selectedLabel"
-            :select-label="null"
+            :select-label="noLabel"
             :track-by="trackBy"
             :internal-search="false"
             @search-change="onSearchChange"
