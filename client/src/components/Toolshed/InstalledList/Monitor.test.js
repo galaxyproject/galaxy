@@ -8,23 +8,28 @@ vi.mock("app");
 vi.mock("onload/loadConfig", () => ({
     getAppRoot: vi.fn(() => "/"),
 }));
+
+const { getInstalledRepositories } = vi.hoisted(() => ({
+    getInstalledRepositories: vi.fn(async () => [
+        {
+            name: "name_0",
+            owner: "owner_0",
+            status: "status_0_0",
+            description: "description_0_0",
+        },
+        {
+            name: "name_1",
+            owner: "owner_1",
+            status: "status_1",
+            description: "description_1",
+        },
+    ]),
+}));
+
 vi.mock("../services", () => ({
     Services: class Services {
-        async getInstalledRepositories() {
-            return [
-                {
-                    name: "name_0",
-                    owner: "owner_0",
-                    status: "status_0_0",
-                    description: "description_0_0",
-                },
-                {
-                    name: "name_1",
-                    owner: "owner_1",
-                    status: "status_1",
-                    description: "description_1",
-                },
-            ];
+        getInstalledRepositories(...args) {
+            return getInstalledRepositories(...args);
         }
     },
 }));
@@ -44,5 +49,26 @@ describe("Monitor", () => {
         expect(cells.at(1).text()).toContain("status_0_0");
         expect(cells.at(3).text()).toContain("name_1 (owner_1)");
         expect(cells.at(4).text()).toContain("status_1");
+    });
+
+    it("stops polling once unmounted", async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        try {
+            getInstalledRepositories.mockClear();
+            const wrapper = mount(Monitor);
+            await flushPromises();
+            expect(getInstalledRepositories).toHaveBeenCalledTimes(1);
+
+            vi.advanceTimersByTime(5000);
+            await flushPromises();
+            expect(getInstalledRepositories).toHaveBeenCalledTimes(2);
+
+            wrapper.destroy();
+            vi.advanceTimersByTime(15000);
+            await flushPromises();
+            expect(getInstalledRepositories).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
