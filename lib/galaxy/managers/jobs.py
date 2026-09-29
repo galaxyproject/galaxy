@@ -2103,6 +2103,8 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
 
 def get_output_name(tool, output, params):
     try:
+        if output.label:
+            return tool.render_output_label(output.label, params, None, tool_state=params)
         return tool.tool_action.get_output_name(
             output,
             tool=tool,

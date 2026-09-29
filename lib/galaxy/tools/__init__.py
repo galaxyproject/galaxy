@@ -11,6 +11,7 @@ import re
 import tarfile
 import tempfile
 from collections.abc import (
+    Mapping,
     MutableMapping,
     Sequence,
 )
@@ -2052,6 +2053,22 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         help_html = help_html.replace("${static_path}", static_path)
         help_html = help_html.replace("${host_url}", host_url)
         return help_html
+
+    def render_output_label(
+        self,
+        label: str,
+        cheetah_context: dict[str, Any],
+        on_text: Optional[str],
+        tool_state: Optional[Mapping[str, Any]] = None,
+    ) -> str:
+        """Render an output ``label`` as a Cheetah template.
+
+        ``cheetah_context`` gains ``tool`` and ``on_string``. ``tool_state`` is the tool state the
+        context was built from, for tool classes that render labels without Cheetah.
+        """
+        cheetah_context["tool"] = self
+        cheetah_context["on_string"] = on_text
+        return fill_template(label, context=cheetah_context, python_template_version=self.python_template_version)
 
     @property
     def biotools_reference(self) -> Optional[str]:

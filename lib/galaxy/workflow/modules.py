@@ -135,7 +135,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.workflow_parameter_input_definitions import (
@@ -2659,13 +2658,11 @@ class ToolModule(WorkflowModule):
                         formats.append(format)
                 if tool_output.label:
                     try:
-                        params = make_dict_copy(self.state.inputs)
-                        params["on_string"] = "input dataset(s)"
-                        params["tool"] = self.tool
-                        extra_kwds["label"] = fill_template(
+                        extra_kwds["label"] = self.tool.render_output_label(
                             tool_output.label,
-                            context=params,
-                            python_template_version=self.tool.python_template_version,
+                            make_dict_copy(self.state.inputs),
+                            "input dataset(s)",
+                            tool_state=self.state.inputs,
                         )
                     except Exception:
                         pass
