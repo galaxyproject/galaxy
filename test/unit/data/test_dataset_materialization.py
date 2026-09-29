@@ -225,6 +225,7 @@ def test_deferred_hdas_basic_detached(tmpdir, bed_2_uri, file_sources):
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(False, transient_directory=tmpdir, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
+    assert materialized_hda.name == deferred_hda.name
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
