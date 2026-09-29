@@ -6,7 +6,7 @@ import BootstrapVue from "bootstrap-vue";
 import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
-import { localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
+import { localizationPlugin } from "@/components/plugins";
 import { vGTooltip } from "@/directives/vGTooltip";
 
 // Load Pinia
@@ -20,9 +20,6 @@ Vue.directive("g-tooltip", vGTooltip);
 
 // localization filters and directives
 Vue.use(localizationPlugin);
-
-// rxjs utilities
-Vue.use(vueRxShortcutPlugin);
 
 function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there
