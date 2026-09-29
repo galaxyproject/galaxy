@@ -36,6 +36,9 @@ vi.mock("@/stores/historyStore", () => ({
 vi.mock("@/stores/userStore", () => ({
     useUserStore: vi.fn(() => ({
         matchesCurrentUserId: mockMatchesCurrentUserId,
+        // PageCard (rendered per page item) also checks this to decide whether
+        // to show the "sharing" action, so the mock store needs it too.
+        matchesCurrentUsername: vi.fn(() => false),
     })),
 }));
 
