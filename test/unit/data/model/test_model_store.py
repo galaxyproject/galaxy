@@ -1,10 +1,12 @@
 """Unit tests for importing and exporting data from model stores."""
 
+import csv
 import json
 import os
 import pathlib
 import shutil
 import sys
+import tarfile
 from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
@@ -27,6 +29,7 @@ from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
 from galaxy.model.store import SessionlessContext
+from galaxy.model.store.ro_crate_utils import DATASETS_MAPPING_FILENAME
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -756,6 +759,69 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
         assert compressed_file.file_type == "zip"
         compressed_file.extract(crate_directory)
     validate_invocation_crate_directory(crate_directory)
+
+
+def _read_datasets_mapping(directory):
+    mapping_path = os.path.join(directory, DATASETS_MAPPING_FILENAME)
+    with open(mapping_path, encoding="utf-8", newline="") as mapping_file:
+        reader = csv.DictReader(mapping_file, delimiter="\t")
+        return reader.fieldnames, list(reader)
+
+
+def test_history_export_writes_datasets_mapping(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+    d1.name = "my cool dataset, with comma"
+    app.commit()
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+    fieldnames, rows = _read_datasets_mapping(tmp_path)
+    assert fieldnames == list(store.DATASETS_MAPPING_COLUMNS)
+    assert len(rows) == 2
+    rows_by_hid = {row["hid"]: row for row in rows}
+    assert rows_by_hid[str(d1.hid)]["name"] == "my cool dataset, with comma"
+    assert rows_by_hid[str(d2.hid)]["name"] == d2.name
+    for row in rows:
+        assert row["exported_file"]
+        assert os.path.exists(os.path.join(tmp_path, row["exported_file"]))
+
+
+def test_history_export_tar_includes_datasets_mapping(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    tar_path = str(tmp_path / "history.tgz")
+    with store.TarModelExportStore(tar_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+    with tarfile.open(tar_path) as tar:
+        assert DATASETS_MAPPING_FILENAME in tar.getnames()
+
+
+def test_history_ro_crate_registers_datasets_mapping(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+        export_store.export_history(history)
+
+    assert os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+    crate = ROCrate(str(tmp_path))
+    assert DATASETS_MAPPING_FILENAME in [entity.id for entity in crate.get_entities()]
+
+
+def test_invocation_ro_crate_registers_datasets_mapping(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+
+    assert os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+    crate = ROCrate(str(tmp_path))
+    assert DATASETS_MAPPING_FILENAME in [entity.id for entity in crate.get_entities()]
 
 
 def test_finalize_job_state():
