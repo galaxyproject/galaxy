@@ -3,19 +3,15 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import { Toast } from "@/composables/toast";
 import { useConfigStore } from "@/stores/configurationStore";
-
-vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
 
 beforeEach(() => {
     setActivePinia(createPinia());
-    vi.clearAllMocks();
 });
 
-it.each(["network", "http"])("handles a %s configuration failure and permits retry", async (failure) => {
+it.each(["network", "http"])("keeps a %s configuration failure and clears it on retry", async (failure) => {
     server.use(
         mswHttp.get("/api/configuration", () =>
             failure === "network"
@@ -24,12 +20,12 @@ it.each(["network", "http"])("handles a %s configuration failure and permits ret
         ),
     );
     const store = useConfigStore();
-    await vi.waitFor(() => expect(Toast.error).toHaveBeenCalledOnce());
-    expect(Toast.error).toHaveBeenCalledWith(expect.any(String), "Unable to load Galaxy configuration");
+    await vi.waitFor(() => expect(store.loadError).not.toBe(""));
     expect(store.isLoaded).toBe(false);
 
     server.use(http.get("/api/configuration", () => HttpResponse.json({ brand: "Galaxy" })));
     await store.loadConfig();
     expect(store.isLoaded).toBe(true);
+    expect(store.loadError).toBe("");
     expect(store.config.brand).toBe("Galaxy");
 });

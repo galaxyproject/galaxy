@@ -33,9 +33,10 @@
                 </Alert>
             </template>
 
-            <Alert v-if="userLoadError && !embedded" id="user-load-error" variant="danger">
-                Unable to load your user data: {{ userLoadError }}
-                <button type="button" class="btn btn-link" @click="loadUser">Retry</button>
+            <Alert v-if="(configLoadError || userLoadError) && !embedded" id="startup-load-error" variant="danger">
+                <div v-if="configLoadError">Unable to load the Galaxy configuration: {{ configLoadError }}</div>
+                <div v-if="userLoadError">Unable to load your user data: {{ userLoadError }}</div>
+                <button type="button" class="btn btn-link p-0" @click="retryStartupLoad">Retry</button>
             </Alert>
 
             <router-view @update:confirmation="confirmation = $event" />
@@ -67,6 +68,7 @@ import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
 import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -141,6 +143,9 @@ export default {
             historyStore.startWatchingHistory();
         }
 
+        const configStore = useConfigStore();
+        const { loadError: configLoadError } = storeToRefs(configStore);
+
         const userLoadError = ref("");
         async function loadUser() {
             userLoadError.value = "";
@@ -148,6 +153,15 @@ export default {
                 await userStore.loadUser();
             } catch (error) {
                 userLoadError.value = errorMessageAsString(error);
+            }
+        }
+
+        function retryStartupLoad() {
+            if (configLoadError.value) {
+                configStore.loadConfig();
+            }
+            if (userLoadError.value) {
+                loadUser();
             }
         }
 
@@ -183,8 +197,9 @@ export default {
         );
 
         return {
+            configLoadError,
             userLoadError,
-            loadUser,
+            retryStartupLoad,
             confirmation,
             toastRef,
             confirmDialogRef,
