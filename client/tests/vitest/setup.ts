@@ -10,6 +10,14 @@ import { vi } from "vitest";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
 
+// Vue passes a warning's component props to console.warn as raw objects, and
+// vitest-fail-on-console formats every argument before deciding whether to
+// silence it -- a big enough props object overflows the string it builds.
+// Hand Vue's warnings to the console as the plain strings Vue already has.
+config.global.config.warnHandler = (message: string, _instance: unknown, trace: string) => {
+    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+};
+
 // Mock g-tooltip directive globally so components don't trigger
 // "Failed to resolve directive" warnings during tests.
 config.global.directives = {
