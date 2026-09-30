@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-container fluid>
+        <BContainer fluid>
             <div v-if="dataset">
                 <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
                 <GButton
@@ -67,7 +67,7 @@
                 <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
             </GButton>
-        </b-container>
+        </BContainer>
     </div>
 </template>
 
@@ -76,7 +76,7 @@ import "vue-multiselect/dist/vue-multiselect.css";
 
 import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
+import { BContainer } from "bootstrap-vue";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
@@ -92,10 +92,10 @@ import PermissionsHeader from "@/components/Libraries/LibraryPermissions/Permiss
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 
 Vue.use(VueObserveVisibility);
-Vue.use(BootstrapVue);
 
 export default {
     components: {
+        BContainer,
         PermissionsInputField,
         FontAwesomeIcon,
         GButton,

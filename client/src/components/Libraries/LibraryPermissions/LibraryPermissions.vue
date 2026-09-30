@@ -50,8 +50,6 @@
 <script>
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { extractRoles } from "@/components/Libraries/library-utils";
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
@@ -61,8 +59,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

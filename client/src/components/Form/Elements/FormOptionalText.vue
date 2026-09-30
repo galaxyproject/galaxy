@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-form-checkbox v-model="currentStatus" class="ui-switch" switch>
+        <BFormCheckbox v-model="currentStatus" class="ui-switch" switch>
             Set value for this optional select field?
-        </b-form-checkbox>
+        </BFormCheckbox>
         <FormText
             v-if="currentStatus"
             :id="id"
@@ -18,10 +18,13 @@
 </template>
 
 <script>
+import { BFormCheckbox } from "bootstrap-vue";
+
 import FormText from "./FormText.vue";
 
 export default {
     components: {
+        BFormCheckbox,
         FormText,
     },
     props: {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
@@ -80,8 +81,8 @@ watch(
         </ul>
         <div v-else>{{ errorContent }}</div>
     </GAlert>
-    <b-card v-else body-class="p-0" class="workflow-display">
-        <b-card-header v-if="!embedded">
+    <BCard v-else body-class="p-0" class="workflow-display">
+        <BCardHeader v-if="!embedded">
             <span class="float-right">
                 <GButton
                     v-g-tooltip.hover
@@ -110,8 +111,8 @@ watch(
                 <span>Workflow:</span>
                 <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+        <BCardBody>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
@@ -129,8 +130,8 @@ watch(
                     </div>
                 </div>
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 <style scoped>
 .content-height {

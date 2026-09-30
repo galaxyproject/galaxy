@@ -3,8 +3,8 @@
         <h2 class="h-sm">
             {{ title }}
         </h2>
-        <b-row>
-            <b-col>
+        <BRow>
+            <BCol>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
                         :id="id"
@@ -26,19 +26,20 @@
                         </template>
                     </Multiselect>
                 </div>
-            </b-col>
-            <b-col>
+            </BCol>
+            <BCol>
                 <GAlert show variant="info">
                     <div v-sanitize-html="alert" />
                 </GAlert>
-            </b-col>
-        </b-row>
+            </BCol>
+        </BRow>
     </div>
 </template>
 
 <script>
 import "vue-multiselect/dist/vue-multiselect.css";
 
+import { BCol, BRow } from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 import VueObserveVisibility from "vue-observe-visibility";
@@ -50,6 +51,8 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 Vue.use(VueObserveVisibility);
 export default {
     components: {
+        BCol,
+        BRow,
         GAlert,
         Multiselect,
     },

@@ -539,7 +539,7 @@
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
-                        <b-input
+                        <BFormInput
                             v-model="collectionName"
                             v-g-tooltip.hover
                             class="collection-name"
@@ -549,7 +549,7 @@
                     </div>
                 </div>
             </template>
-            <b-row v-if="mode == 'modal'" class="mx-auto">
+            <BRow v-if="mode == 'modal'" class="mx-auto">
                 <GButton
                     tooltip
                     :title="titleCancel"
@@ -573,7 +573,7 @@
                         {{ finishButtonTitle }}
                     </GButton>
                 </TooltipOnHover>
-            </b-row>
+            </BRow>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'wait'" class="rule-collection-builder">
@@ -613,10 +613,9 @@
 <script>
 import HotTable from "@handsontable/vue";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
+import { BFormInput, BRow } from "bootstrap-vue";
 import { escape } from "lodash";
 import { mapActions } from "pinia";
-import Vue from "vue";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
 import { fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
@@ -645,8 +644,6 @@ import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
 import StateDiv from "@/components/RuleBuilder/StateDiv.vue";
 import TooltipOnHover from "@/components/TooltipOnHover.vue";
 
-Vue.use(BootstrapVue);
-
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
@@ -663,6 +660,8 @@ const stripUiKeys = function (entry) {
 
 export default {
     components: {
+        BFormInput,
+        BRow,
         GAlert,
         TooltipOnHover,
         HotTable,

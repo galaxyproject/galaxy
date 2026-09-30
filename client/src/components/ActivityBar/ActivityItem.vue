@@ -3,6 +3,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faExclamation, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
+import { BNavItem } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
@@ -81,7 +82,7 @@ const meta = computed(() => store.metaForId(props.id));
 <template>
     <Popper :placement="tooltipPlacement" class="activity-item-popper">
         <template v-slot:reference>
-            <b-nav-item
+            <BNavItem
                 class="activity-item"
                 :class="{ 'nav-item-active': isActive }"
                 :link-attrs="{ id: `activity-${id}` }"
@@ -118,7 +119,7 @@ const meta = computed(() => store.metaForId(props.id));
                     <FontAwesomeIcon :icon="icon" />
                 </div>
                 <TextShort v-if="title" :text="localize(title)" class="nav-title" />
-            </b-nav-item>
+            </BNavItem>
         </template>
         <div class="text-center px-2 py-1">
             <small v-if="tooltip">{{ localize(tooltip) }}</small>

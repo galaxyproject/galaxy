@@ -9,11 +9,11 @@
             </span>
         </td>
         <td v-if="codeItem">
-            <b-row align-v="center">
-                <b-col cols="11">
+            <BRow align-v="center">
+                <BCol cols="11">
                     <pre :class="codeClass">{{ codeItem }}</pre>
-                </b-col>
-                <b-col
+                </BCol>
+                <BCol
                     v-g-tooltip.hover
                     class="nopadding pointer"
                     :title="`click to ${action}`"
@@ -21,8 +21,8 @@
                     @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
                     @mouseup="toggleExpanded()">
                     <FontAwesomeIcon :icon="iconClass" />
-                </b-col>
-            </b-row>
+                </BCol>
+            </BRow>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
@@ -30,11 +30,14 @@
 <script>
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCol, BRow } from "bootstrap-vue";
 
 import HelpText from "@/components/Help/HelpText.vue";
 
 export default {
     components: {
+        BCol,
+        BRow,
         FontAwesomeIcon,
         HelpText,
     },

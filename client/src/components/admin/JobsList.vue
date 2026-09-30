@@ -20,25 +20,25 @@
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
-        <b-row>
-            <b-col class="col-sm-4">
-                <b-form-group>
-                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+        <BRow>
+            <BCol class="col-sm-4">
+                <BFormGroup>
+                    <BFormCheckbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
-                    </b-form-checkbox>
-                </b-form-group>
-                <b-form name="jobs" @submit.prevent="onRefresh">
-                    <b-form-group
+                    </BFormCheckbox>
+                </BFormGroup>
+                <BForm name="jobs" @submit.prevent="onRefresh">
+                    <BFormGroup
                         v-show="!showAllRunning"
                         id="cutoff"
                         label="Cutoff in minutes"
                         description="Display jobs that had their state updated in the given time period.">
-                        <b-input-group>
-                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
-                        </b-input-group>
-                    </b-form-group>
-                </b-form>
-                <b-form-group>
+                        <BInputGroup>
+                            <BFormInput id="cutoff" v-model="cutoffMin" type="number"> </BFormInput>
+                        </BInputGroup>
+                    </BFormGroup>
+                </BForm>
+                <BFormGroup>
                     <FilterMenu
                         id="job-search"
                         v-model:filter-text="filter"
@@ -98,27 +98,27 @@
                             </div>
                         </template>
                     </FilterMenu>
-                </b-form-group>
-            </b-col>
-        </b-row>
+                </BFormGroup>
+            </BCol>
+        </BRow>
         <transition name="fade">
-            <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
-                <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
-                    <b-input-group>
-                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
-                        </b-form-input>
-                        <b-input-group-append>
-                            <b-btn type="submit">Submit</b-btn>
-                        </b-input-group-append>
-                    </b-input-group>
-                </b-form-group>
-                <b-form-group
+            <BForm v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                <BFormGroup label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                    <BInputGroup>
+                        <BFormInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
+                        </BFormInput>
+                        <BInputGroupAppend>
+                            <BButton type="submit">Submit</BButton>
+                        </BInputGroupAppend>
+                    </BInputGroup>
+                </BFormGroup>
+                <BFormGroup
                     description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
-                    <b-form-checkbox id="send-notification" v-model="sendNotification" switch>
+                    <BFormCheckbox id="send-notification" v-model="sendNotification" switch>
                         Send a warning notification to users
-                    </b-form-checkbox>
-                </b-form-group>
-            </b-form>
+                    </BFormCheckbox>
+                </BFormGroup>
+            </BForm>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <JobsTable
@@ -134,17 +134,14 @@
             @handler-clicked="(handler) => appendTagFilter('handler', handler)"
             @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
-                <b-form-checkbox
-                    v-model="allSelected"
-                    :indeterminate="indeterminate"
-                    @change="toggleAll"></b-form-checkbox>
+                <BFormCheckbox v-model="allSelected" :indeterminate="indeterminate" @change="toggleAll"></BFormCheckbox>
             </template>
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox
+                <BFormCheckbox
                     :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :value="data.item['id']"></b-form-checkbox>
+                    :value="data.item['id']"></BFormCheckbox>
             </template>
         </JobsTable>
 
@@ -167,6 +164,17 @@
 </template>
 
 <script>
+import {
+    BButton,
+    BCol,
+    BForm,
+    BFormCheckbox,
+    BFormGroup,
+    BFormInput,
+    BInputGroup,
+    BInputGroupAppend,
+    BRow,
+} from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -186,6 +194,15 @@ import Heading from "@/components/Common/Heading.vue";
 
 export default {
     components: {
+        BButton,
+        BCol,
+        BForm,
+        BFormCheckbox,
+        BFormGroup,
+        BFormInput,
+        BInputGroup,
+        BInputGroupAppend,
+        BRow,
         GAlert,
         FilterMenu,
         JobLock,

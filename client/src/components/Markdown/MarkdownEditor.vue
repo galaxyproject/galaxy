@@ -8,7 +8,7 @@
                         {{ title }}
                     </div>
                     <div>
-                        <b-form-radio-group
+                        <BFormRadioGroup
                             v-if="!hasLabels"
                             v-model="editor"
                             v-g-tooltip.hover.bottom
@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { DirectiveMode } from "./directives";

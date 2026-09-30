@@ -1,4 +1,5 @@
 <script setup>
+import { BCard, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
@@ -35,9 +36,9 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3 overflow-auto reset-theme-variables">
-        <b-form-radio-group v-model="currentValue">
-            <b-form-radio
+    <BCard :show="show" class="mr-3 overflow-auto reset-theme-variables">
+        <BFormRadioGroup v-model="currentValue">
+            <BFormRadio
                 v-for="(themeDetails, theme, index) in config.themes"
                 :key="theme"
                 :value="theme"
@@ -51,9 +52,9 @@ watch(
                     <span v-localize class="theme-hover">Hover</span>
                     <span v-localize class="theme-active">Active</span>
                 </div>
-            </b-form-radio>
-        </b-form-radio-group>
-    </b-card>
+            </BFormRadio>
+        </BFormRadioGroup>
+    </BCard>
 </template>
 
 <style lang="scss" scoped>

@@ -11,48 +11,46 @@
             {{ repo.long_description || repo.description }}
         </div>
         <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
-        <b-form-group
+        <BFormGroup
             v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
-            <b-form-input v-model="toolSection" list="sectionSelect" />
+            <BFormInput v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
                 </option>
             </datalist>
-        </b-form-group>
+        </BFormGroup>
         <Heading separator size="sm" :collapse="advancedShow ? 'open' : 'closed'" @click="onAdvanced">
             {{ advancedTitle }} advanced settings
         </Heading>
         <GCollapse v-model="advancedShow" class="mt-2">
-            <b-card>
-                <b-form-group
+            <BCard>
+                <BFormGroup
                     v-if="toolConfigs.length > 1"
                     label="Tool Configuration:"
                     description="Choose a tool configuration.">
-                    <b-form-radio
-                        v-for="filename in toolConfigs"
-                        :key="filename"
-                        v-model="toolConfig"
-                        :value="filename">
+                    <BFormRadio v-for="filename in toolConfigs" :key="filename" v-model="toolConfig" :value="filename">
                         {{ filename }}
-                    </b-form-radio>
-                </b-form-group>
-                <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
-                    <b-form-checkbox v-model="installResolverDependencies">
+                    </BFormRadio>
+                </BFormGroup>
+                <BFormGroup label="Dependencies:" description="Choose how to handle dependencies.">
+                    <BFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installRepositoryDependencies">
+                    </BFormCheckbox>
+                    <BFormCheckbox v-model="installRepositoryDependencies">
                         Install repository dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
-                </b-form-group>
-            </b-card>
+                    </BFormCheckbox>
+                    <BFormCheckbox v-model="installToolDependencies"> Install tool dependencies </BFormCheckbox>
+                </BFormGroup>
+            </BCard>
         </GCollapse>
     </GModal>
 </template>
 <script>
+import { BCard, BFormCheckbox, BFormGroup, BFormInput, BFormRadio } from "bootstrap-vue";
+
 import { GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 
@@ -61,7 +59,16 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 export default {
-    components: { GCollapse, GModal, Heading },
+    components: {
+        BCard,
+        BFormCheckbox,
+        BFormGroup,
+        BFormInput,
+        BFormRadio,
+        GCollapse,
+        GModal,
+        Heading,
+    },
     props: {
         repo: {
             type: Object,

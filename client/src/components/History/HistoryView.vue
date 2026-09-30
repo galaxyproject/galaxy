@@ -27,7 +27,7 @@
         </BreadcrumbHeading>
 
         <GAlert :show="copySuccess">
-            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
+            History imported and is now your active history. <BLink :to="importedHistoryLink">View here</BLink>.
         </GAlert>
 
         <CollectionPanel
@@ -45,6 +45,7 @@
 <script>
 import { faFileImport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
 import { mapActions, mapState } from "pinia";
 
 import { isAnonymousUser } from "@/api";
@@ -61,6 +62,7 @@ import HistoryOptions from "@/components/History/HistoryOptions.vue";
 
 export default {
     components: {
+        BLink,
         GAlert,
         HistoryPanel,
         CollectionPanel,
