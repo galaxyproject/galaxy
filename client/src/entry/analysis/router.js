@@ -110,20 +110,8 @@ import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-// Async component for CustomToolEditor to reduce bundle size
-// NOTE: We use the full async component factory pattern instead of simple dynamic imports
-// (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
-const CustomToolEditor = () => ({
-    component: import("@/components/Tool/CustomToolEditor.vue"),
-    loading: {
-        template: '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading Tool Editor...</div>',
-    },
-    error: {
-        template: '<div class="alert alert-danger">Failed to load Tool Editor</div>',
-    },
-    delay: 200,
-    timeout: 10000,
-});
+// Lazy-loaded so Monaco stays out of the main bundle.
+const CustomToolEditor = () => import("@/components/Tool/CustomToolEditor.vue");
 
 // TODO: patchRouterPush was used with Vue Router 3 but VueRouter constructor
 // doesn't exist in Vue Router 4. Revisit if navigation duplicate warnings return.
