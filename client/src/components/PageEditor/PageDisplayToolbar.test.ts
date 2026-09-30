@@ -97,8 +97,8 @@ describe("PageDisplayToolbar", () => {
         it("shows edit toolbar with Edit button pressed", async () => {
             expect(wrapper.find(SELECTORS.EDITOR_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.find(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
-            expect(wrapper.find(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
         });
 
         it("shows rename button and page title in toolbar", () => {
@@ -256,8 +256,8 @@ describe("PageDisplayToolbar", () => {
         it("shows display toolbar with Preview button pressed", async () => {
             expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.find(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
-            expect(wrapper.find(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
         });
 
         it("Edit button emits an edit event", async () => {

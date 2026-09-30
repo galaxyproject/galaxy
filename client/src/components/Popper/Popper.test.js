@@ -18,6 +18,11 @@ vi.mock("@popperjs/core", () => ({
     })),
 }));
 
+// happy-dom only resolves getComputedStyle() (what `isVisible()` reads) for
+// elements attached to the document, so mount into the body rather than a
+// detached container.
+let container;
+
 function mountTarget(trigger = "click", interactive = false) {
     return mount(PopperComponent, {
         props: {
@@ -30,18 +35,22 @@ function mountTarget(trigger = "click", interactive = false) {
             reference: "<button>Reference</button>",
             default: "<p>Popper Content</p>",
         },
+        attachTo: container,
     });
 }
 
 describe("PopperComponent.vue", () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        container = document.createElement("div");
+        document.body.appendChild(container);
     });
 
     afterEach(() => {
         vi.runOnlyPendingTimers();
         vi.useRealTimers();
         vi.clearAllMocks();
+        container.remove();
     });
 
     test("renders component with default props", async () => {

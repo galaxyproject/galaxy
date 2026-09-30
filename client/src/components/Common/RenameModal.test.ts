@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { createWrapper, mount } from "@vue/test-utils";
+import { DOMWrapper, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -50,7 +50,7 @@ describe("RenameModal tested for renaming workflows", () => {
 
         const wrapper = await mountRenameModal();
 
-        await createWrapper(document.body).find(INPUT_SELECTOR).setValue("Renamed Workflow");
+        await new DOMWrapper(document.body).find(INPUT_SELECTOR).setValue("Renamed Workflow");
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
@@ -63,7 +63,7 @@ describe("RenameModal tested for renaming workflows", () => {
 
         const wrapper = await mountRenameModal();
 
-        await createWrapper(document.body).find(INPUT_SELECTOR).setValue("Attempted New Name");
+        await new DOMWrapper(document.body).find(INPUT_SELECTOR).setValue("Attempted New Name");
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
@@ -75,7 +75,7 @@ describe("RenameModal tested for renaming workflows", () => {
         // Simulate parent closing and reopening the modal (destroys old instance)
         wrapper.unmount();
         await mountRenameModal();
-        expect((createWrapper(document.body).find(INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
+        expect((new DOMWrapper(document.body).find(INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
             WORKFLOW_NAME,
         );
     });

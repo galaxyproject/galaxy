@@ -16,8 +16,10 @@ vi.mock("@/composables/upload/uploadAdvancedMode", () => ({
     useUploadAdvancedMode: () => ({ advancedMode }),
 }));
 
-// Reactive state object for useUserStore mock — storeToRefs expects a reactive object.
-const userStoreState = reactive({ isAnonymous: true });
+// Reactive state object for useUserStore mock. storeToRefs() only picks up a property
+// as a ref if the underlying (pre-reactive-unwrap) value is itself a ref -- which is how
+// Pinia stores their own state -- so a plain boolean property here wouldn't be seen.
+const userStoreState = reactive({ isAnonymous: ref(true) });
 
 vi.mock("@/stores/userStore", () => ({
     useUserStore: () => userStoreState,

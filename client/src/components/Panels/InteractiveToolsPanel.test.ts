@@ -29,6 +29,14 @@ const mockTools: Partial<Tool>[] = [
     { id: "vscode", version: "1.0", name: "VS Code", model_class: "InteractiveTool", description: "Code editor" },
 ];
 
+// `getInteractiveTools` is a Pinia getter (a `computed` that itself returns a
+// function), and Vue's reactive proxy only unwraps refs through its `get`
+// trap -- not through the property descriptor `vi.spyOn` reads -- so it can't
+// be spied on directly. Seed the state it derives from instead.
+function seedToolsById(toolStore: ReturnType<typeof useToolStore>, toolsList: Partial<Tool>[]) {
+    toolStore.toolsById = Object.fromEntries(toolsList.map((tool) => [tool.id as string, tool as Tool]));
+}
+
 describe("InteractiveToolsPanel component", () => {
     beforeEach(() => {
         // Reset mocks
@@ -46,7 +54,7 @@ describe("InteractiveToolsPanel component", () => {
         // Mock the stores before mounting
         const toolStore = useToolStore();
         vi.spyOn(toolStore, "fetchTools").mockImplementation(vi.fn());
-        vi.spyOn(toolStore, "getInteractiveTools").mockReturnValue(toolsList as Tool[]);
+        seedToolsById(toolStore, toolsList);
 
         const interactiveToolsStore = useInteractiveToolsStore();
         vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());
@@ -166,7 +174,7 @@ describe("InteractiveToolsPanel component", () => {
         // Mock the stores
         const toolStore = useToolStore();
         vi.spyOn(toolStore, "fetchTools").mockImplementation(vi.fn());
-        vi.spyOn(toolStore, "getInteractiveTools").mockReturnValue(mockTools as Tool[]);
+        seedToolsById(toolStore, mockTools);
 
         const interactiveToolsStore = useInteractiveToolsStore();
         vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());

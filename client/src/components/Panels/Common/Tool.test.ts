@@ -23,8 +23,8 @@ describe("Tool", () => {
             pinia,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("");
-        nameElement.trigger("click");
+        expect(nameElement[0]?.text()).toBe("");
+        nameElement[0]?.trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
         expect(labelsElement.element.children.length).toBe(0);

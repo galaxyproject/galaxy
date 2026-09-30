@@ -18,7 +18,7 @@ const localVue = getLocalVue();
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
     const router = new VueRouter();
 
-    router.push(routePath);
+    await router.push(routePath);
 
     const wrapper = mount(BreadcrumbHeading as object, {
         global: localVue,

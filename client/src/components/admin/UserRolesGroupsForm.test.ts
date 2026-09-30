@@ -85,6 +85,7 @@ async function mountTarget() {
         localVue,
         propsData: { userId: "u1" },
         stubs: { FontAwesomeIcon: true },
+        attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
@@ -92,6 +93,11 @@ async function mountTarget() {
 
 function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
+}
+
+// vue-multiselect only renders its option list once the dropdown is open.
+async function openDropdown(wrapper: VueWrapper, id: string) {
+    await wrapper.find(`#${id}-select`).trigger("focus");
 }
 
 function selectedTags(wrapper: VueWrapper, id: string) {
@@ -124,6 +130,7 @@ describe("UserRolesGroupsForm.vue", () => {
         expect(searches).toHaveLength(1);
         expect(searches[0]!.get("search")).toBeNull();
         expect(searches[0]!.get("exclude_private")).toBe("true");
+        await openDropdown(wrapper, "admin-user-roles");
         expect(wrapper.find("#admin-user-roles").text()).toContain("QA");
     });
 
@@ -153,8 +160,8 @@ describe("UserRolesGroupsForm.vue", () => {
         useRoleSearch();
         const bodies = captureSaves();
         const wrapper = await mountTarget();
-        multiselect(wrapper, "admin-user-roles").vm.$emit("input", []);
-        multiselect(wrapper, "admin-user-groups").vm.$emit("input", [
+        multiselect(wrapper, "admin-user-roles").vm.$emit("update:modelValue", []);
+        multiselect(wrapper, "admin-user-groups").vm.$emit("update:modelValue", [
             { id: "g1", name: "Group 1" },
             { id: "g2", name: "Group 2" },
         ]);

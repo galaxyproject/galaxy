@@ -1,6 +1,6 @@
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DOMWrapper, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toast } from "@/composables/toast";
 
@@ -11,10 +11,16 @@ const toggleButton = ".toggle-button";
 
 const localVue = getLocalVue();
 
+// The underlying HeadlessMultiselect teleports its options popup to `#app`. Recreate
+// that root so the teleported content lands in the DOM, mirroring how the real app
+// mounts; it's not a descendant of the wrapper, so it's queried via document.body.
+let appRoot;
+
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
         props: props,
         global: localVue,
+        attachTo: appRoot,
     });
 };
 
@@ -49,6 +55,13 @@ describe("StatelessTags", () => {
         suppressBootstrapVueWarnings();
         onNewTagSeenMock.mockClear();
         toastWarning.mockClear();
+        appRoot = document.createElement("div");
+        appRoot.id = "app";
+        document.body.appendChild(appRoot);
+    });
+
+    afterEach(() => {
+        appRoot.remove();
     });
 
     it("shows tags", () => {
@@ -86,10 +99,10 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
 
-        const multiselect = wrapper.find(selectors.multiselect);
-
         await wrapper.vm.$nextTick();
-        const options = multiselect.findAll(selectors.options);
+        // The options popup is teleported to #app, so it's not a descendant of the
+        // wrapper -- query the DOM directly for it.
+        const options = new DOMWrapper(document.body).findAll(selectors.options);
 
         const visibleOptions = options.filter((option) => option.isVisible());
 
@@ -110,7 +123,7 @@ describe("StatelessTags", () => {
         const multiselect = wrapper.find(selectors.multiselect);
         await multiselect.find(selectors.input).setValue("new_tag");
         await wrapper.vm.$nextTick();
-        multiselect.find(selectors.options).trigger("click");
+        new DOMWrapper(document.body).find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
 
         expect(onNewTagSeenMock.mock.calls.length).toBe(1);
@@ -128,7 +141,7 @@ describe("StatelessTags", () => {
         await multiselect.find(selectors.input).setValue(":illegal_tag");
         await wrapper.vm.$nextTick();
 
-        const option = multiselect.find(selectors.options);
+        const option = new DOMWrapper(document.body).find(selectors.options);
         expect(option.classes()).toContain("invalid");
 
         option.trigger("click");

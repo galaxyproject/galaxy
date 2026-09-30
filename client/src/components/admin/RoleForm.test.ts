@@ -53,6 +53,7 @@ async function mountTarget(propsData: { roleId?: string } = {}) {
         localVue,
         propsData,
         stubs: { FontAwesomeIcon: true },
+        attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
@@ -60,6 +61,11 @@ async function mountTarget(propsData: { roleId?: string } = {}) {
 
 function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
+}
+
+// vue-multiselect only renders its option list once the dropdown is open.
+async function openDropdown(wrapper: VueWrapper, id: string) {
+    await wrapper.find(`#${id}-select`).trigger("focus");
 }
 
 function selectedTags(wrapper: VueWrapper, id: string) {
@@ -115,8 +121,8 @@ describe("RoleForm.vue create mode", () => {
         await wrapper.find("#role-description").setValue("Test Description");
         const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === "role-type");
         roleType!.vm.$emit("input", "user_tool_execute");
-        multiselect(wrapper, "role-groups").vm.$emit("input", [{ id: "g1", name: "Group 1" }]);
-        multiselect(wrapper, "role-users").vm.$emit("input", [{ id: "u1", email: "user1@example.org" }]);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [{ id: "g1", name: "Group 1" }]);
+        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [{ id: "u1", email: "user1@example.org" }]);
         await submit(wrapper);
         expect(requests.post).toEqual([
             {
@@ -143,6 +149,7 @@ describe("RoleForm.vue create mode", () => {
         multiselect(wrapper, "role-users").vm.$emit("search-change", "user1");
         await flushPromises();
         expect(searchedEmail).toBe("user1");
+        await openDropdown(wrapper, "role-users");
         expect(wrapper.find("#role-users").text()).toContain("user1@example.org");
     });
 
@@ -210,8 +217,8 @@ describe("RoleForm.vue edit mode", () => {
         const requests = captureRequests();
         const wrapper = await mountTarget({ roleId: "r1" });
         await wrapper.find("#role-name").setValue("Renamed Role");
-        multiselect(wrapper, "role-users").vm.$emit("input", []);
-        multiselect(wrapper, "role-groups").vm.$emit("input", [
+        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", []);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [
             { id: "g1", name: "Group 1" },
             { id: "g2", name: "Group 2" },
         ]);
