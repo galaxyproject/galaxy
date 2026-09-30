@@ -370,9 +370,9 @@ class _InputReferences:
 
 
 def _param_name(param: "Element") -> str | None:
-    name = param.attrib.get("name")
+    name: str | None = param.attrib.get("name")
     if not name:
-        argument = param.attrib.get("argument")
+        argument: str | None = param.attrib.get("argument")
         if argument:
             name = argument.lstrip("-").replace("-", "_")
     return name
@@ -441,7 +441,8 @@ def _check_structured_like_reference(
 
 
 def _output_name(node: "Element") -> str:
-    return node.attrib.get("name", "unknown")
+    name: str = node.attrib.get("name", "unknown")
+    return name
 
 
 def _warn_unqualified(
