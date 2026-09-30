@@ -6,8 +6,10 @@ GTNDatabaseBuilder.
 """
 
 import gzip
+import json
 import os
 import sqlite3
+import subprocess
 from datetime import (
     datetime,
     timedelta,
@@ -575,3 +577,42 @@ def test_tutorial_curriculum_serializes_for_the_agent(curriculum_db: Path):
     assert payload["url"] == "https://training.galaxyproject.org/qc"
     assert len(payload["objectives"]) == 2
     assert payload["tutorial"] == "quality-control"
+
+
+def _gtn_checkout(root: Path, with_git: bool) -> Path:
+    tutorial_dir = root / "topics" / "sequence-analysis" / "tutorials" / "quality-control"
+    (tutorial_dir / "workflows").mkdir(parents=True)
+    (tutorial_dir / "tutorial.md").write_text("---\ntitle: Quality Control\n---\n\nRun FastQC.\n", encoding="utf-8")
+    (tutorial_dir / "workflows" / "qc.ga").write_text("{}", encoding="utf-8")
+    (tutorial_dir / "workflows" / "qc-long-reads.ga").write_text("{}", encoding="utf-8")
+    (tutorial_dir / "workflows" / "index.md").write_text("layout: workflow-list", encoding="utf-8")
+    if with_git:
+        git = ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.org"]
+        subprocess.run(git[:3] + ["init", "-q"], check=True)
+        subprocess.run(git + ["add", "."], check=True)
+        subprocess.run(git + ["commit", "-q", "-m", "fixture"], check=True)
+    return root
+
+
+@pytest.mark.parametrize("with_git", [True, False])
+def test_build_records_workflows_and_the_gtn_commit(tmp_path: Path, with_git: bool):
+    # The builder declared these columns but never filled them.
+    gtn_path = _gtn_checkout(tmp_path / "training-material", with_git)
+    db_path = tmp_path / "out.db"
+    GTNDatabaseBuilder(gtn_path=gtn_path, output_path=db_path).build()
+    expected_commit = (
+        subprocess.run(["git", "-C", str(gtn_path), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        if with_git
+        else ""
+    )
+
+    with sqlite3.connect(db_path) as conn:
+        workflows_json, gtn_commit = conn.execute("SELECT workflows_json, gtn_commit FROM tutorials").fetchone()
+        meta_commit = conn.execute("SELECT value FROM metadata WHERE key = 'gtn_commit'").fetchone()
+
+    assert json.loads(workflows_json) == [
+        "topics/sequence-analysis/tutorials/quality-control/workflows/qc-long-reads.ga",
+        "topics/sequence-analysis/tutorials/quality-control/workflows/qc.ga",
+    ]
+    assert gtn_commit == expected_commit
+    assert meta_commit == (expected_commit,)
