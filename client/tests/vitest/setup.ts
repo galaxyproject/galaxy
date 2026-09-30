@@ -2,29 +2,13 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
+import "@/compat-config";
 
 import { config } from "@vue/test-utils";
 import { vi } from "vitest";
-import { configureCompat } from "vue";
 
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
-
-// Configure Vue 3 compat mode - suppress warnings for Vue 2 features used in tests
-configureCompat({
-    MODE: 2,
-    // Suppress specific deprecation warnings that are expected during migration
-    GLOBAL_EXTEND: "suppress-warning",
-    GLOBAL_MOUNT: "suppress-warning",
-    GLOBAL_PROTOTYPE: "suppress-warning",
-    INSTANCE_EVENT_EMITTER: "suppress-warning",
-    INSTANCE_EVENT_HOOKS: "suppress-warning",
-    OPTIONS_DESTROYED: "suppress-warning",
-    OPTIONS_BEFORE_DESTROY: "suppress-warning",
-    WATCH_ARRAY: "suppress-warning",
-    COMPONENT_V_MODEL: "suppress-warning",
-    RENDER_FUNCTION: "suppress-warning",
-});
 
 // Mock g-tooltip directive globally so components don't trigger
 // "Failed to resolve directive" warnings during tests.
@@ -35,13 +19,12 @@ config.global.directives = {
             el.setAttribute("data-mock-directive", binding.value || el.title || "");
         },
     },
+    // v-sanitize-html is the real directive; only the DOMPurify call behind it is
+    // replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
+    "sanitize-html": vSanitizeHtml,
+    "no-sanitize-html": vNoSanitizeHtml,
 };
-
-// v-sanitize-html is the real directive; only the DOMPurify call behind it is
-// replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
 vi.mock("@/directives/sanitizeHtml");
-Vue.directive("sanitize-html", vSanitizeHtml);
-Vue.directive("no-sanitize-html", vNoSanitizeHtml);
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");

@@ -1,5 +1,7 @@
+import "@/compat-config";
+
 import { createPinia } from "pinia";
-import { configureCompat, createApp } from "vue";
+import { createApp } from "vue";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
@@ -11,13 +13,6 @@ import { installAppPlugins } from "@/utils/mountVueComponent";
 import { getRouter } from "./router";
 
 import App from "./App.vue";
-
-// Configure compat mode
-configureCompat({
-    MODE: 2,
-    GLOBAL_SET: true, // Enable Vue.set for libraries that need it
-    GLOBAL_DELETE: true, // Enable Vue.delete for libraries that need it
-});
 
 const pinia = createPinia();
 
