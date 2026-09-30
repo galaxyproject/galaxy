@@ -44,7 +44,9 @@ const emit = defineEmits(["input"]);
 const currentValue = computed({
     get: () => props.options.find((option) => option.id === props.value),
     set(newValue) {
-        emit("input", newValue.id);
+        if (newValue) {
+            emit("input", newValue.id);
+        }
     },
 });
 </script>
@@ -53,6 +55,7 @@ const currentValue = computed({
     <Multiselect
         :id="id"
         v-model="currentValue"
+        :allow-empty="false"
         class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
