@@ -9,6 +9,7 @@ projects (e.g. gxformat2).
 import re
 
 from ._markdown_directives import (
+    CELL_TYPES,
     DYNAMIC_ARGUMENTS,
     DynamicArguments,
     EMBED_CAPABLE_DIRECTIVES,
@@ -21,8 +22,7 @@ BLOCK_FENCE_END = re.compile(r"```[\s]*")
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 
-# Cell types the client renders (SectionWrapper.vue).
-GALAXY_MARKDOWN_CELL_TYPES = ("galaxy", "markdown", "vega", "visualization", "vitessce")
+GALAXY_MARKDOWN_CELL_TYPES = tuple(CELL_TYPES)
 # What JS trim() strips; str.strip() differs (e.g. keeps U+FEFF).
 JS_TRIM_CHARACTERS = (
     "\t\n\v\f\r \u00a0\u1680"
@@ -30,7 +30,7 @@ JS_TRIM_CHARACTERS = (
     "\u2028\u2029\u202f\u205f\u3000\ufeff"
 )
 
-# The directive registry imported above (DynamicArguments, VALID_ARGUMENTS,
+# The directive registry imported above (CELL_TYPES, DynamicArguments, VALID_ARGUMENTS,
 # EMBED_CAPABLE_DIRECTIVES, SHARED_ARGUMENTS) is generated from
 # client/src/components/Markdown/directives.yml by scripts/markdown_directives_doc.py.
 # Edit directives.yml and regenerate; do not edit _markdown_directives.py by hand.

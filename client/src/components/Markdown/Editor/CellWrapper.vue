@@ -68,7 +68,7 @@
                     :mode="mode"
                     @change="$emit('change', $event)" />
                 <small class="cell-wrapper-type position-absolute">
-                    {{ VALID_TYPES.includes(name) ? name : "unknown" }}
+                    {{ MARKDOWN_CELL_TYPES.includes(name) ? name : "unknown" }}
                 </small>
             </div>
         </div>
@@ -79,6 +79,8 @@
 import { faAngleDoubleUp, faEdit, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
+
+import { MARKDOWN_CELL_TYPES } from "@/components/Markdown/directives";
 
 import type { WorkflowLabel } from "./types";
 
@@ -92,8 +94,6 @@ import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");
-
-const VALID_TYPES = ["galaxy", "markdown", "vega", "visualization", "vitessce"];
 
 const props = defineProps<{
     cellIndex: number;
