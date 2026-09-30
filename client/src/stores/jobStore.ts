@@ -105,6 +105,9 @@ export const useJobStore = defineStore("jobStore", () => {
                 storedJobs.value[params.id] = job;
                 delete loadingErrors.value[params.id];
                 delete retryCounts[params.id];
+                if (params.full !== false) {
+                    fullyLoadedJobIds.add(params.id);
+                }
                 return job;
             } catch (error) {
                 retryCounts[params.id] = (retryCounts[params.id] ?? 0) + 1;
@@ -220,11 +223,7 @@ export const useJobStore = defineStore("jobStore", () => {
 
         // The cached job is terminal but doesn't satisfy the currently requested structure
         if (cachedJobIsTerminal) {
-            fetchJob({ id, full: true }).then((job) => {
-                if (job) {
-                    fullyLoadedJobIds.add(id);
-                }
-            });
+            fetchJob({ id, full: true });
             return stopWatchingReturn;
         }
 
@@ -244,9 +243,6 @@ export const useJobStore = defineStore("jobStore", () => {
                 // upgraded this poll to `full: true` since it started.
                 const requestFull = activePolls.get(id)?.full ?? full;
                 let job = await fetchJob({ id, full: requestFull });
-                if (job && requestFull) {
-                    fullyLoadedJobIds.add(id);
-                }
                 if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
                     // The poll may have been upgraded to `full` *after* the fetch above was
                     // already made with the pre-upgrade value, in which case a terminal result
@@ -255,9 +251,6 @@ export const useJobStore = defineStore("jobStore", () => {
                     // still honored.
                     if (activePolls.get(id)?.full && !fullyLoadedJobIds.has(id)) {
                         job = await fetchJob({ id, full: true });
-                        if (job) {
-                            fullyLoadedJobIds.add(id);
-                        }
                     }
                     // Terminal jobs never poll again; dispose (not just stop) to release the
                     // watcher's listener, since a new watcher is made if this job is polled again.
