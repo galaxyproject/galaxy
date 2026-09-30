@@ -1,3 +1,75 @@
+diff --git a/esm/components/form-select/form-select.js b/esm/components/form-select/form-select.js
+index 6ff150e8f5c8adbd25974ef9512c992ea2ee72be..4c750ec183ebd7092cabce7cf81da8f519de5f43 100644
+--- a/esm/components/form-select/form-select.js
++++ b/esm/components/form-select/form-select.js
+@@ -4,6 +4,7 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
+
+ function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
++import { noop } from '../../utils/noop';
+ import { extend } from '../../vue';
+ import { NAME_FORM_SELECT } from '../../constants/components';
+ import { EVENT_NAME_CHANGE } from '../../constants/events';
+@@ -125,7 +126,9 @@ export var BFormSelect = /*#__PURE__*/extend({
+         'aria-invalid': this.computedAriaInvalid
+       },
+       on: {
+-        change: this.onChange
++        change: this.onChange,
++        // See form-radio-check.js: compat's v-model directive needs an assigner.
++        'update:modelValue': noop
+       },
+       directives: [{
+         name: 'model',
+diff --git a/esm/components/form-tags/form-tags.js b/esm/components/form-tags/form-tags.js
+index 91057996d3c92e5ef34ee928e647186f83dd8ada..5ca54f2e499e63b1576a87bcbc3c314a31a3d48d 100644
+--- a/esm/components/form-tags/form-tags.js
++++ b/esm/components/form-tags/form-tags.js
+@@ -20,6 +20,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
+
+ // Tagged input form control
+ // Based loosely on https://adamwathan.me/renderless-components-in-vuejs/
++import { noop } from '../../utils/noop';
+ import { extend } from '../../vue';
+ import { NAME_FORM_TAGS } from '../../constants/components';
+ import { EVENT_NAME_BLUR, EVENT_NAME_FOCUS, EVENT_NAME_FOCUSIN, EVENT_NAME_FOCUSOUT, EVENT_NAME_TAG_STATE, EVENT_OPTIONS_PASSIVE } from '../../constants/events';
+@@ -606,7 +607,10 @@ export var BFormTags = /*#__PURE__*/extend({
+         domProps: {
+           value: inputAttrs.value
+         },
+-        on: inputHandlers,
++        on: _objectSpread(_objectSpread({}, inputHandlers), {}, {
++          // See form-radio-check.js: compat's v-model directive needs an assigner.
++          'update:modelValue': noop
++        }),
+         // Directive needed to get `event.target.composing` set (if needed)
+         directives: [{
+           name: 'model',
+diff --git a/esm/mixins/form-radio-check.js b/esm/mixins/form-radio-check.js
+index fff40a0ad426a7de3455820bdc4cca8ede85b5af..5b8ba0ffc727c5cfb0aaef55d2e44f9709b0a20b 100644
+--- a/esm/mixins/form-radio-check.js
++++ b/esm/mixins/form-radio-check.js
+@@ -6,6 +6,7 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
+
+ function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
++import { noop } from '../utils/noop';
+ import { extend } from '../vue';
+ import { PROP_TYPE_ANY, PROP_TYPE_BOOLEAN, PROP_TYPE_STRING } from '../constants/props';
+ import { EVENT_NAME_CHANGE } from '../constants/events';
+@@ -230,7 +231,11 @@ export var formRadioCheckMixin = extend({
+         checked: this.isChecked
+       },
+       on: _objectSpread({
+-        change: this.handleChange
++        change: this.handleChange,
++        // Vue 3's v-model directive (which compat maps `model` to) calls the
++        // vnode's update:modelValue handler on change; the component handles
++        // change itself, so give the directive a no-op like Vue 2 had.
++        'update:modelValue': noop
+       }, isBtnMode ? {
+         focus: this.handleFocus,
+         blur: this.handleFocus
 diff --git a/esm/vue.js b/esm/vue.js
 index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..5c72e6746a86413868fcff2fc0e7a1523126101d 100644
 --- a/esm/vue.js
