@@ -14,7 +14,6 @@ vi.mock("@/components/History/model/queries");
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 vi.mock("vue-router", async (importOriginal) => ({

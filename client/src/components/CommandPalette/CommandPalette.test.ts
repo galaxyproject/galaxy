@@ -28,7 +28,6 @@ vi.mock("@/composables/config");
 vi.mock("@/composables/toast");
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 const { server, http } = useServerMock();
 

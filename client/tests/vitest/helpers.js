@@ -36,14 +36,9 @@ const mockedDirective = {
  * Returns the global mount configuration for Vue Test Utils v2.
  * Use this with mount() like: mount(Component, { global: getLocalVue() })
  *
- * Note: BootstrapVue and vue-rx are not compatible with Vue 3.
- * Use component-specific stubs for bootstrap components in tests.
- *
  * Includes Pinia store by default for components that use stores.
  *
- * For backward compatibility with Vue 2 patterns, the returned object
- * has a .use() method that adds plugins (no-op in most cases since
- * plugins should be passed via the adapter).
+ * @returns {import("@vue/test-utils").GlobalMountOptions}
  */
 export function getLocalVue(instrumentLocalization = false) {
     const l = instrumentLocalization ? testLocalize : _l;
@@ -135,14 +130,6 @@ export function getLocalVue(instrumentLocalization = false) {
             BMediaBody: true,
             Portal: true,
             PortalTarget: true,
-        },
-        // Vue 2 compatibility: .use() method for localVue.use(Plugin)
-        // This is a no-op since the VTU adapter handles plugin registration
-        use(plugin) {
-            // For VueRouter, the adapter handles it via the router mount option
-            // For other plugins, they should be passed via mount options
-            // This method exists only to prevent "localVue.use is not a function" errors
-            return config;
         },
     };
 

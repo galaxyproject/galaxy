@@ -18,7 +18,6 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 const FAKE_USER = getFakeRegisteredUser();

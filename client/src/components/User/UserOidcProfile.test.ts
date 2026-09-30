@@ -29,7 +29,6 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 function mountProfile(userOverrides = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });

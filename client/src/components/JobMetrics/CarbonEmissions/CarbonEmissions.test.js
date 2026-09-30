@@ -8,7 +8,6 @@ import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./ca
 import CarbonEmissions from "./CarbonEmissions.vue";
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 const oneGibibyteMemoryInMebibyte = 1024;

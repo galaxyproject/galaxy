@@ -15,8 +15,6 @@ const BETA_CLASS = ".breadcrumb-heading-header-beta";
 
 const localVue = getLocalVue();
 
-localVue.use(VueRouter);
-
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
     const router = new VueRouter();
 

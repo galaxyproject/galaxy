@@ -20,7 +20,6 @@ vi.mock("@/api/datasetCollections");
 setupSelectableMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 class VisibleIntersectionObserver {
     constructor(private callback: IntersectionObserverCallback) {}

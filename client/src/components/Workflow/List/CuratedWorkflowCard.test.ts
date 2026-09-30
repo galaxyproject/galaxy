@@ -39,7 +39,6 @@ let toastError: ReturnType<typeof vi.spyOn>;
 let routerPush: ReturnType<typeof vi.spyOn>;
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 const VELOCYTO_TRS =

@@ -32,7 +32,6 @@ vi.mock("@/composables/config", async () => {
 });
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 const REGISTERED_USER = getFakeRegisteredUser();
