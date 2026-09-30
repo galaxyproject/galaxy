@@ -33,42 +33,42 @@ describe("login entry routes", () => {
     it("renders the login page for anonymous users", async () => {
         setUser(null);
         const router = await navigateTo("/login/start");
-        expect(router.currentRoute.path).toEqual("/login/start");
+        expect(router.currentRoute.value.path).toEqual("/login/start");
         // A route-level `redirect` function returning undefined would match nothing here,
         // leaving anonymous users with a blank page instead of the login form.
-        expect(router.currentRoute.matched).toHaveLength(1);
-        expect(router.currentRoute.matched[0]?.components?.default).toBeTruthy();
+        expect(router.currentRoute.value.matched).toHaveLength(1);
+        expect(router.currentRoute.value.matched[0]?.components?.default).toBeTruthy();
     });
 
     it("keeps the pending destination on the route for the login form to use", async () => {
         setUser(null);
         const router = await navigateTo(`/login/start?redirect=${encodeURIComponent(LANDING_PATH)}`);
-        expect(router.currentRoute.path).toEqual("/login/start");
-        expect(router.currentRoute.query.redirect).toEqual(LANDING_PATH);
+        expect(router.currentRoute.value.path).toEqual("/login/start");
+        expect(router.currentRoute.value.query.redirect).toEqual(LANDING_PATH);
     });
 
     it("sends a logged-in user straight to the pending destination", async () => {
         setUser("f2db41e1fa331b3e");
         const router = await navigateTo(`/login/start?redirect=${encodeURIComponent(LANDING_PATH)}`);
-        expect(router.currentRoute.fullPath).toEqual(LANDING_PATH);
+        expect(router.currentRoute.value.fullPath).toEqual(LANDING_PATH);
     });
 
     it("sends a logged-in user home when nothing is pending", async () => {
         setUser("f2db41e1fa331b3e");
         const router = await navigateTo("/login/start");
-        expect(router.currentRoute.path).toEqual("/");
+        expect(router.currentRoute.value.path).toEqual("/");
     });
 
     it("refuses to bounce a logged-in user off this Galaxy", async () => {
         setUser("f2db41e1fa331b3e");
         const router = await navigateTo("/login/start?redirect=https%3A%2F%2Fevil.example.com%2F");
-        expect(router.currentRoute.path).toEqual("/");
+        expect(router.currentRoute.value.path).toEqual("/");
     });
 
     it("applies the same treatment to the registration entry route", async () => {
         setUser("f2db41e1fa331b3e");
         const router = await navigateTo(`/register/start?redirect=${encodeURIComponent(LANDING_PATH)}`);
-        expect(router.currentRoute.fullPath).toEqual(LANDING_PATH);
+        expect(router.currentRoute.value.fullPath).toEqual(LANDING_PATH);
     });
 
     it("renders the registration page for anonymous users", async () => {
@@ -76,16 +76,16 @@ describe("login entry routes", () => {
         // gate redirects first, because /register/start is not in its allowed paths.
         setUser(null);
         const router = await navigateTo("/register/start");
-        expect(router.currentRoute.path).toEqual("/register/start");
-        expect(router.currentRoute.matched).toHaveLength(1);
+        expect(router.currentRoute.value.path).toEqual("/register/start");
+        expect(router.currentRoute.value.matched).toHaveLength(1);
     });
 
     it("renders the password reset page and preserves the email for anonymous users", async () => {
         setUser(null);
         const router = await navigateTo("/login/reset_password?email=test%40example.com");
 
-        expect(router.currentRoute.path).toEqual("/login/reset_password");
-        expect(router.currentRoute.query.email).toEqual("test@example.com");
-        expect(router.currentRoute.matched).toHaveLength(1);
+        expect(router.currentRoute.value.path).toEqual("/login/reset_password");
+        expect(router.currentRoute.value.query.email).toEqual("test@example.com");
+        expect(router.currentRoute.value.matched).toHaveLength(1);
     });
 });

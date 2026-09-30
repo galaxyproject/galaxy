@@ -1,20 +1,34 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AuthoringHelpPanel from "./AuthoringHelpPanel.vue";
 
 const localVue = getLocalVue();
 
+// happy-dom only resolves getComputedStyle() (what isVisible() reads) for elements
+// attached to the document, so mount into the body rather than a detached container.
+let container: HTMLDivElement;
+
 function mountAuthoringHelpPanel() {
     return mount(AuthoringHelpPanel as object, {
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
+        attachTo: container,
     });
 }
 
 describe("AuthoringHelpPanel", () => {
+    beforeEach(() => {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+        container.remove();
+    });
+
     it("expands and collapses a help section", async () => {
         const wrapper = mountAuthoringHelpPanel();
         const quickStartToggle = wrapper.find('[data-description="toggle help section quick-start"]');

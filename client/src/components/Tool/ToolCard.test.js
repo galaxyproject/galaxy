@@ -32,7 +32,7 @@ describe("ToolCard", () => {
     let userStore;
 
     beforeEach(async () => {
-        if (router.currentRoute.fullPath !== "/") {
+        if (router.currentRoute.value.fullPath !== "/") {
             await router.push("/");
         }
 
@@ -118,9 +118,13 @@ describe("ToolCard", () => {
         const badge = wrapper.find("[data-description='newer tool version']");
         expect(badge.text()).toBe("Newer version available");
 
-        await badge.trigger("click");
+        // BBadge is a stubbed legacy component, so a real DOM click on its stub root
+        // doesn't reach the (never-forwarded) click listener -- emit on the component
+        // instance instead.
+        wrapper.findComponent("[data-description='newer tool version']").vm.$emit("click");
+        await flushPromises();
 
-        expect(router.currentRoute.fullPath).toBe("/?tool_id=identifier&version=latest");
+        expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");
     });
 
     it("does not show newer version badge for the latest lineage version", async () => {

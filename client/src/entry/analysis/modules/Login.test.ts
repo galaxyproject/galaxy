@@ -16,6 +16,13 @@ vi.mock("@/app/index", () => ({
 
 vi.mock("@/composables/config");
 
+// Login gets its route via the Composition API's useRoute(), which resolves through
+// injection rather than the (Options API) `$router` global mocks used to cover.
+let currentRouteQuery: object = {};
+vi.mock("vue-router", () => ({
+    useRoute: () => ({ query: currentRouteQuery }),
+}));
+
 beforeEach(() => {
     setMockConfig({
         allow_local_account_creation: true,
@@ -30,22 +37,15 @@ beforeEach(() => {
     });
 });
 
-const mockRouter = (query: object) => ({
-    currentRoute: {
-        query,
-    },
-});
-
 function shallowMountLogin(routerQuery: object = {}) {
+    currentRouteQuery = routerQuery;
+
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     return shallowMount(Login as object, {
         global: localVue,
         pinia,
-        mocks: {
-            $router: mockRouter(routerQuery),
-        },
     });
 }
 

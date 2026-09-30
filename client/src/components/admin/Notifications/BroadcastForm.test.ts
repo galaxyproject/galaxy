@@ -5,7 +5,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -21,13 +21,22 @@ const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 
 const localVue = getLocalVue(true);
 
+// BroadcastForm gets its router via the Composition API's useRouter(), which resolves
+// through injection rather than the (Options API) `$router` global mocks used to cover.
+const mockPush = vi.fn();
+vi.mock("vue-router", () => ({
+    useRouter: () => ({
+        push: (...args: unknown[]) => mockPush(...args),
+    }),
+}));
+
+beforeEach(() => {
+    mockPush.mockClear();
+});
+
 async function mountBroadcastForm(props?: object) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
-
-    const mockRouter = {
-        push: vi.fn(),
-    };
 
     const wrapper = mount(BroadcastForm as object, {
         props: {
@@ -37,19 +46,18 @@ async function mountBroadcastForm(props?: object) {
         pinia,
         stubs: {
             FontAwesomeIcon: true,
-            FormElement: true,
+            // FormElement is rendered for real (not stubbed): the assertions below
+            // interact with its underlying <input> elements via setValue(), which a
+            // stub root element can't support.
             GDateTime: true,
             LoadingSpan: true,
             BroadcastContainer: true,
-        },
-        mocks: {
-            $router: mockRouter,
         },
     });
 
     await flushPromises();
 
-    return { wrapper, mockRouter };
+    return { wrapper, mockRouter: { push: mockPush } };
 }
 
 const { server, http } = useServerMock();

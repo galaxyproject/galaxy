@@ -20,6 +20,9 @@ function mountIndicator(hasChanges = false): VueWrapper<ChangesIndicatorInstance
     return mount(ChangesIndicator as object, {
         localVue,
         propsData: { hasChanges },
+        // happy-dom only resolves getComputedStyle() (what isVisible() reads) for
+        // elements attached to the document, so mount into the body.
+        attachTo: document.body,
     }) as unknown as VueWrapper<ChangesIndicatorInstance>;
 }
 

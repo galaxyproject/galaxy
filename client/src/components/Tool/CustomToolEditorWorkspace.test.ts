@@ -14,6 +14,9 @@ describe("CustomToolEditorWorkspace", () => {
                 editor: '<textarea data-description="tool yaml editor" />',
                 documentation: '<article data-description="tool documentation" />',
             },
+            // happy-dom only resolves getComputedStyle() (what isVisible() reads) for
+            // elements attached to the document, so mount into the body.
+            attachTo: document.body,
         });
     }
 

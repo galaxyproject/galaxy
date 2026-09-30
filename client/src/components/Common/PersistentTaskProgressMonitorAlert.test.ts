@@ -1,13 +1,9 @@
-import { shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
-import {
-    type MonitoringData,
-    type MonitoringRequest,
-    usePersistentProgressTaskMonitor,
-} from "@/composables/persistentProgressMonitor";
+import { getPersistentKey, type MonitoringData, type MonitoringRequest } from "@/composables/persistentProgressMonitor";
 
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";
 
@@ -42,22 +38,60 @@ const FAKE_MONITOR: TaskMonitor = {
     fetchTaskStatus: vi.fn(),
 };
 
+// Seed the monitoring data this component reads directly via localStorage, rather than
+// through usePersistentProgressTaskMonitor(). That composable's useLocalStorage() call
+// registers a "storage" event listener that's only torn down when its owning effect
+// scope is disposed, and a call made at the top level of a test (outside any component
+// or effectScope) has no such scope, so the listener leaks for the rest of the file.
+// With enough of those piled up, a later localStorage write fans out across all of them
+// at once and the test run runs out of memory.
+function seedMonitoringData(request: MonitoringRequest, monitoringData: MonitoringData) {
+    localStorage.setItem(getPersistentKey(request), JSON.stringify(monitoringData));
+}
+
+// Each mounted component also owns one such listener (via its own internal
+// usePersistentProgressTaskMonitor() call), scoped to the component instance this time --
+// so it's cleaned up by unmounting rather than by avoiding the composable. Track and
+// unmount every wrapper between tests for the same reason.
+const mountedWrappers: VueWrapper[] = [];
+
 const mountComponent = (
     props: ComponentUnderTestProps = {
         monitorRequest: FAKE_MONITOR_REQUEST,
         useMonitor: FAKE_MONITOR,
     },
 ) => {
-    return shallowMount(PersistentTaskProgressMonitorAlert as object, {
+    const wrapper = shallowMount(PersistentTaskProgressMonitorAlert as object, {
         props: {
             ...props,
         },
+        global: {
+            stubs: {
+                // Assertions read the alert text out of GAlert's default slot, and the
+                // `variant` prop as a plain attribute. VTU's auto-stub with
+                // `renderStubDefaultSlot: true` crashes (runs out of memory) for this
+                // component, so stub it explicitly instead.
+                GAlert: { template: "<div><slot /></div>" },
+                // VTU's auto-stub for bootstrap-vue's BLink (a legacy Vue.extend
+                // component) crashes the same way once this component's full
+                // composable graph is mounted around it -- stub it explicitly too.
+                // `class` and `href` fall through onto the root element as usual.
+                BLink: { template: "<a><slot /></a>" },
+            },
+        },
     });
+    mountedWrappers.push(wrapper as unknown as VueWrapper);
+    return wrapper;
 };
 
 describe("PersistentTaskProgressMonitorAlert.vue", () => {
     beforeEach(() => {
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, FAKE_MONITOR).reset();
+        localStorage.clear();
+    });
+
+    afterEach(() => {
+        mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+        localStorage.clear();
     });
 
     it("does not render when no monitoring data is available", () => {
@@ -77,7 +111,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(),
             isFinal: false,
         };
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+        seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: FAKE_MONITOR_REQUEST,
@@ -103,7 +137,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(),
             isFinal: true,
         };
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+        seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: FAKE_MONITOR_REQUEST,
@@ -129,7 +163,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(),
             isFinal: true,
         };
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+        seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: FAKE_MONITOR_REQUEST,
@@ -160,7 +194,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(),
             isFinal: true,
         };
-        usePersistentProgressTaskMonitor(monitoringRequest, useMonitor, existingMonitoringData);
+        seedMonitoringData(monitoringRequest, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: monitoringRequest,
@@ -190,7 +224,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(),
             isFinal: true,
         };
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+        seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: FAKE_MONITOR_REQUEST,
@@ -216,7 +250,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
             isFinal: true,
         };
-        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+        seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
             monitorRequest: FAKE_MONITOR_REQUEST,

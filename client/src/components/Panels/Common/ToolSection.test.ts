@@ -34,8 +34,8 @@ describe("ToolSection", () => {
             pinia,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
-        nameElement.trigger("click");
+        expect(nameElement[0]?.text()).toBe("name");
+        nameElement[0]?.trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
     });
 
