@@ -60,4 +60,16 @@ describe("DetailsLayout", () => {
         expect(wrapper.find(".edit-button").attributes("title")).toContain("Not Editable");
         expect(wrapper.find(".click-to-edit-label").exists()).toBe(false);
     });
+
+    it("shows a summarized name as text", () => {
+        const name = "Run <b>2</b> of the assembly";
+        const wrapper = mount(DetailsLayout, {
+            localVue,
+            pinia: createPinia(),
+            propsData: { name, summarized: "both" },
+        });
+        const nameDisplay = wrapper.find("[data-description='name display']");
+        expect(nameDisplay.find("b").exists()).toBe(false);
+        expect(nameDisplay.text()).toBe(name);
+    });
 });

@@ -160,7 +160,7 @@ watch(
                     </span>
                     <span v-if="dataset.file_size" class="filesize">
                         <span v-localize class="prompt">size</span>
-                        <span class="value font-weight-bold" v-html="bytesToString(dataset.file_size, false)" />
+                        <span class="value font-weight-bold">{{ bytesToString(dataset.file_size) }}</span>
                     </span>
                 </div>
             </transition>
@@ -217,7 +217,9 @@ watch(
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
-                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <p>
+                        File size: <strong>{{ bytesToString(dataset.file_size || 0) }}</strong>
+                    </p>
                     <a :href="downloadUrl" class="btn btn-primary mt-2" download>
                         <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
                     </a>
@@ -235,7 +237,9 @@ watch(
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
-                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <p>
+                        File size: <strong>{{ bytesToString(dataset.file_size || 0) }}</strong>
+                    </p>
                     <a :href="downloadUrl" class="btn btn-primary mt-2" download>
                         <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
                     </a>

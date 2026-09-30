@@ -54,7 +54,7 @@ loadTours();
                 <div v-if="match(tour)" class="rounded border p-2 mb-2">
                     <GLink :to="withPrefix(`/tours/${tour.id}`)" data-description="tour link" thin>
                         <div class="text-primary">{{ tour.name || tour.id }}</div>
-                        <div v-html="tour.description" />
+                        <div v-sanitize-html="tour.description" />
                         <div
                             v-for="(tag, index) in tour.tags"
                             :key="index"

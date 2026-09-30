@@ -40,6 +40,21 @@ function isOfType(item: ROCrateEntity, type: string): boolean {
     return item["@type"] === type;
 }
 
+// JSON-LD lets a text property be a string, a language-tagged {"@value": ...}
+// object or an array of either; the summary wants one string.
+export function textValue(value: unknown): string {
+    if (typeof value === "string") {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        return value.map(textValue).filter(Boolean).join(" ");
+    }
+    if (value && typeof value === "object" && "@value" in value) {
+        return String(value["@value"]);
+    }
+    return "";
+}
+
 export function isCrate(crate: unknown): crate is ROCrateImmutableView {
     return typeof crate === "object" && crate !== null && "@graph" in crate;
 }
@@ -112,7 +127,7 @@ export async function extractROCrateSummary(crate: ROCrateImmutableView): Promis
 
     return {
         name,
-        description: root.description,
+        description: textValue(root.description),
         publicationDate,
         conformsTo,
         license,

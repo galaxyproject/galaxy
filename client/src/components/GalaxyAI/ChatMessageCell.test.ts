@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { ActionSuggestion } from "@/composables/agentActions";
 import { ActionType } from "@/composables/agentActions";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import type { ChatMessage } from "./chatTypes";
 
@@ -297,5 +298,11 @@ describe("ChatMessageCell", () => {
             expect(wrapper.find(".custom-slot").exists()).toBe(true);
             expect(wrapper.find(".custom-slot").text()).toBe("Extra content");
         });
+    });
+
+    it("renders assistant markdown through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        mountCell(makeAssistantMessage({ content: "See <b>this</b>" }));
+        expect(sanitizeHtml).toHaveBeenCalledWith("<p>See <b>this</b></p>", "links");
     });
 });
