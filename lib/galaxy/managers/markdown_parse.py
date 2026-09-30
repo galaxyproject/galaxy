@@ -57,7 +57,7 @@ EMBED_DIRECTIVE_REGEX_ANY = re.compile(r"\$\{galaxy\s+.*\}")
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
 
-    _check_fence_types(galaxy_markdown)
+    validate_galaxy_markdown_fence_types(galaxy_markdown)
 
     expecting_container_close_for = None
     last_line_no = 0
@@ -131,7 +131,8 @@ def _invalid_line(template: str, line_no: int, **kwd):
     raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
 
 
-def _check_fence_types(galaxy_markdown: str) -> None:
+def validate_galaxy_markdown_fence_types(galaxy_markdown: str) -> None:
+    """Throw a ValueError if a ``` fence opens a cell type the client can't render."""
     # Mirrors the client's parseMarkdown, which starts a cell at any ``` line.
     for line_no, line in enumerate(galaxy_markdown.split("\n")):
         stripped = line.strip(JS_TRIM_CHARACTERS)

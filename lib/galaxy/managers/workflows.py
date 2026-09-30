@@ -66,6 +66,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.executables import artifact_class
+from galaxy.managers.markdown_parse import validate_galaxy_markdown_fence_types
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import (
     History,
@@ -929,6 +930,13 @@ class WorkflowContentsManager(UsesAnnotations):
                 for missing_tool_tup in missing_tool_tups
             ]
             raise MissingToolsException(workflow, errors)
+
+        report_markdown = (workflow.reports_config or {}).get("markdown")
+        if report_markdown:
+            try:
+                validate_galaxy_markdown_fence_types(report_markdown)
+            except ValueError as e:
+                raise exceptions.MalformedContents(f"Invalid workflow report: {e}")
 
         # Connect up
         if not dry_run:

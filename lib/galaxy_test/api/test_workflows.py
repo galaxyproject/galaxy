@@ -1404,6 +1404,19 @@ steps:
         put_response = self._update_workflow(workflow_id, workflow_object)
         self._assert_status_code_is(put_response, 400)
 
+    def test_update_report_with_unsupported_fence(self):
+        # Import keeps accepting existing reports; saving an edited one is rejected.
+        workflow_object = self.workflow_populator.load_workflow(name="test_import")
+        workflow_object["report"] = {"markdown": "# Report\n\n```python\nprint('hello')\n```\n"}
+        upload_response = self.__test_upload(workflow=workflow_object)
+        workflow_id = upload_response.json()["id"]
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is(put_response, 400)
+        assert "Unsupported fenced block type [python]" in put_response.json()["err_msg"]
+        workflow_object["report"] = {"markdown": "# Report\n\n~~~python\nprint('hello')\n~~~\n"}
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is(put_response, 200)
+
     def test_require_unique_step_uuids(self):
         workflow_dup_uuids = self.workflow_populator.load_workflow(name="test_import")
         uuid0 = str(uuid4())
