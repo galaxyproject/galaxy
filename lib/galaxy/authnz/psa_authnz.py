@@ -561,7 +561,7 @@ class PSAAuthnz(IdentityProvider):
 class Strategy(BaseStrategy):
     def __init__(self, request, session, storage, config, tpl=None):
         self.request = request
-        self.session = session if session else {}
+        self.session = session if session is not None else {}
         self.config = config
         self.config["SOCIAL_AUTH_REDIRECT_IS_HTTPS"] = (
             True if self.request and self.request.host.startswith("https:") else False
@@ -579,7 +579,7 @@ class Strategy(BaseStrategy):
         self.session[name] = value
 
     def session_pop(self, name):
-        raise NotImplementedError("Not implemented.")
+        return self.session.pop(name, None)
 
     def request_data(self, merge=True):
         if not self.request:

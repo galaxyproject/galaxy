@@ -13,7 +13,10 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
 import pytest
@@ -34,6 +37,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
+from galaxy.authnz.keycloak import KeycloakOpenIdConnect
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
@@ -43,6 +47,7 @@ from galaxy.authnz.psa_authnz import (
     create_user_and_activate,
     decode_access_token,
     PSAAuthnz,
+    Strategy,
     sync_user_profile,
 )
 
@@ -421,6 +426,41 @@ def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
         oidc_backend_config=manager.oidc_backends_config,
         app_config=mock_app.config,
     )
+
+
+def make_mock_trans():
+    """Build a minimal trans mock with sa_session, request, and session."""
+    trans = MagicMock()
+    trans.sa_session = MagicMock()
+    trans.request = MagicMock()
+    trans.request.host = "https://galaxy.example.com"
+    trans.session = {}
+    return trans
+
+
+@patch("galaxy.authnz.oidc.generate_pkce_pair")
+@patch.object(KeycloakOpenIdConnect, "get_and_store_nonce", return_value="nonce123")
+@patch.object(KeycloakOpenIdConnect, "oidc_config")
+def test_pkce_verifier_is_stored_in_galaxy_session(mock_oidc_config, mock_get_and_store_nonce, mock_generate_pkce):
+    mock_oidc_config.return_value = {
+        "authorization_endpoint": "https://keycloak.example.com/auth",
+        "token_endpoint": "https://keycloak.example.com/token",
+    }
+    mock_generate_pkce.return_value = ("verifier123", "challenge456")
+    trans = make_mock_trans()
+    config = {
+        "provider": "keycloak",
+        "PKCE_SUPPORT": True,
+        "redirect_uri": "https://galaxy.example.com/authnz/keycloak/callback",
+    }
+    strategy = Strategy(trans.request, trans.session, None, config)
+    backend = KeycloakOpenIdConnect(strategy, config["redirect_uri"])
+
+    params = backend.auth_params(state="test_state")
+
+    assert params["code_challenge"] == "challenge456"
+    assert params["code_challenge_method"] == "S256"
+    assert trans.session["pkce_code_verifier"] == "verifier123"
 
 
 @pytest.mark.parametrize(
