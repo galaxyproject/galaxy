@@ -60,11 +60,11 @@ async function loadRecommendations() {
             const predData = responsePred.predicted_data;
             deprecated.value = predData.is_deprecated;
             deprecatedMessage.value = predData.message;
-            if (predData.children.length > 0) {
+            if (!deprecated.value && predData.children.length > 0) {
                 const outputDatatypes = predData.o_extensions;
                 const children = predData.children;
                 const compatibleTools = getCompatibleRecommendations(children, outputDatatypes, datatypesMapper);
-                if (compatibleTools.length > 0 && deprecated.value === false) {
+                if (compatibleTools.length > 0) {
                     showMessage.value = true;
                     const filteredData: PredictedTools = {
                         o_extensions: predData.o_extensions,
@@ -234,18 +234,21 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!errorMessage && (deprecated || showMessage)">
-        <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
-        <div v-if="!deprecated && showMessage">
-            You have used {{ getShortToolId(props.toolId) }} tool. For further analysis, you could try using the
-            following/recommended tools. The recommended tools are shown in the decreasing order of their scores
-            predicted using machine learning analysis on workflows. Therefore, tools at the top may be more useful than
-            the ones at the bottom. Please click on one of the following/recommended tools to open its definition.
-        </div>
-        <div v-else-if="deprecated" class="warningmessagelarge">
+    <div v-if="!errorMessage">
+        <div v-if="deprecated" class="warningmessagelarge">
             <h2 class="h-sm">Tool deprecated</h2>
             You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
         </div>
-        <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
+        <template v-else-if="showMessage">
+            <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
+            <div>
+                You have used {{ getShortToolId(props.toolId) }} tool. For further analysis, you could try using the
+                following/recommended tools. The recommended tools are shown in the decreasing order of their scores
+                predicted using machine learning analysis on workflows. Therefore, tools at the top may be more useful
+                than the ones at the bottom. Please click on one of the following/recommended tools to open its
+                definition.
+            </div>
+            <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
+        </template>
     </div>
 </template>
