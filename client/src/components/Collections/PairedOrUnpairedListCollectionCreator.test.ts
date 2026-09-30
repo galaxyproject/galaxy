@@ -31,9 +31,7 @@ vi.mock("@/composables/useAgGrid", () => ({
                 return h(
                     "div",
                     {},
-                    (self.rowData || []).map((row) =>
-                        h("div", { class: "grid-row", attrs: { "data-row-id": row.id } }, []),
-                    ),
+                    (self.rowData || []).map((row) => h("div", { class: "grid-row", "data-row-id": row.id }, [])),
                 );
             },
         },

@@ -28,7 +28,6 @@ function mountTarget(props = {}) {
         props: props,
         stubs: {
             FontAwesomeIcon: true,
-            GButton: true,
         },
         directives: {
             localize: () => {},

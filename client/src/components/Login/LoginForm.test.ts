@@ -64,7 +64,9 @@ describe("LoginForm", () => {
     it("basics", async () => {
         const wrapper = await mountLoginForm();
 
-        const cardHeader = wrapper.find(".card-header");
+        // BCardHeader is globally stubbed, so it renders as `b-card-header-stub`
+        // rather than gaining the real component's own `.card-header` class.
+        const cardHeader = wrapper.find("b-card-header-stub");
         expect(cardHeader.text()).toBe("Welcome to Galaxy, please log in");
 
         const inputs = wrapper.findAll("input");
@@ -184,7 +186,7 @@ describe("LoginForm", () => {
 
         const wrapper = await mountLoginForm();
 
-        expect(wrapper.find(".card-header").exists()).toBe(false);
+        expect(wrapper.find("b-card-header-stub").exists()).toBe(false);
 
         const alert = wrapper.find(".alert");
         expect(alert.classes()).toContain("alert-info");

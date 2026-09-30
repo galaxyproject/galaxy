@@ -13,10 +13,14 @@ import TEST_JOBS_JSON from "./test/json/jobs.json";
 
 import JobStepJobs from "./JobStepJobs.vue";
 
-vi.mock("vue-router", () => ({
-    useRoute: vi.fn(() => ({})),
-    useRouter: vi.fn(() => ({ push: vi.fn() })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRoute: vi.fn(() => ({})),
+        useRouter: vi.fn(() => ({ push: vi.fn() })),
+    };
+});
 
 const localVue = getLocalVue();
 
@@ -84,7 +88,8 @@ describe("JobStepJobs", () => {
             stubs: {
                 ContentItem: true,
                 FontAwesomeIcon: true,
-                JobInformation: true,
+                // Not stubbed: the test opens the modal and inspects JobInformation's
+                // own rendered table (#job-information, #galaxy-tool-id).
                 JobParameters: true,
                 RouterLink: true,
             },

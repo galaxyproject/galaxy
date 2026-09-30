@@ -46,15 +46,15 @@ describe("ActivitySettings", () => {
                 return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
             }),
         );
-        activityStore = useActivityStore(undefined);
+        activityStore = useActivityStore("test-activity-bar");
         wrapper = mount(mountTarget, {
             global: {
                 ...getLocalVue(),
-                plugins: [...(getLocalVue().plugins || []), pinia],
                 stubs: {
                     FontAwesomeIcon: { template: "<div></div>" },
                 },
             },
+            pinia,
             props: {
                 query: "",
                 activityBarId: "test-activity-bar",

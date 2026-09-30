@@ -91,10 +91,12 @@ describe("Masthead.vue", () => {
 
     it("should render simple tab item links", () => {
         // window manager, extension tab, command palette search, help, user
-        expect(wrapper.findAll("li.nav-item").length).toBe(5);
+        // BNavItem is globally stubbed, so most tab items render as `b-nav-item-stub`
+        // rather than as `li.nav-item` (real bootstrap-vue markup).
+        expect(wrapper.findAll("li.nav-item, b-nav-item-stub").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
-        expect(wrapper.find("#help a").attributes("href")).toBe("/about");
+        expect(wrapper.find("#help").attributes("href")).toBe("/about");
     });
 
     it("should open the command palette from the search button", async () => {
@@ -106,14 +108,27 @@ describe("Masthead.vue", () => {
     });
 
     it("should display window manager button", async () => {
-        expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
+        // BNavItem is globally stubbed (see getLocalVue()), and the auto-stub doesn't
+        // reproduce BNavItem's own internal click -> $emit('click') wiring on its nested
+        // <a>, so the click never reaches MastheadItem's listener through the stub.
+        // Use the real BNavItem here so the click can be exercised end-to-end.
+        const realWrapper = mount(Masthead, {
+            props: { windowTab },
+            global: { ...localVue, stubs: { ...localVue.stubs, BNavItem: false } },
+            pinia: testPinia,
+        });
+        await flushPromises();
+
+        expect(realWrapper.find("#enable-window-manager a svg").exists()).toBe(true);
         expect(windowTab._active).toBe(false);
-        await wrapper.find("#enable-window-manager a").trigger("click");
+        await realWrapper.find("#enable-window-manager a").trigger("click");
         expect(windowTab._active).toBe(true);
+
+        realWrapper.unmount();
     });
 
     it("should load webhooks on creation", async () => {
-        expect(wrapper.find("#extension a").text()).toBe("Extension Point");
+        expect(wrapper.find("#extension").text()).toBe("Extension Point");
     });
 
     it("does not render the site switcher without destinations", async () => {

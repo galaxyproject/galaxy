@@ -157,6 +157,10 @@ async function mountLoadingDatasetView() {
     router.push = vi.fn();
     router.replace = vi.fn();
 
+    // Never resolve the dataset fetch, so the view stays in its loading state
+    // for the duration of the test instead of racing flushPromises() to completion.
+    server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
+
     const wrapper = mount(DatasetView, {
         props: {
             datasetId: DATASET_ID,
@@ -255,7 +259,9 @@ describe("DatasetView", () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
             expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
-            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            // `.dataset-view` only renders once loading finishes (it's the `v-else` branch
+            // of the same conditional the LoadingSpan is in), so it can't coexist with it.
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
         });
 
         it("renders dataset information", async () => {
@@ -368,8 +374,9 @@ describe("DatasetView", () => {
             const wrapper = await mountDatasetView("preview");
             await flushPromises(); // Wait for preferred visualization check
 
-            // No preferred visualization should be set
-            expect(wrapper.vm.preferredVisualization).toBeUndefined();
+            // No preferred visualization should be set. `getPreferredVisualization` falls
+            // back to `null` (not `undefined`) when nothing is configured.
+            expect(wrapper.vm.preferredVisualization).toBeNull();
 
             // Check that we're using the default iframe
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);

@@ -227,7 +227,10 @@ describe("DownloadItemCard.vue", () => {
         await removeButton.trigger("click");
 
         expect(wrapper.emitted("onDelete")).toBeTruthy();
-        expect(wrapper.emitted("onDelete")?.[0][0]).toBe(baseMonitoringData.request);
+        // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
+        // same object reference as `baseMonitoringData.request` even though its
+        // contents are identical.
+        expect(wrapper.emitted("onDelete")?.[0][0]).toEqual(baseMonitoringData.request);
     });
 
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {

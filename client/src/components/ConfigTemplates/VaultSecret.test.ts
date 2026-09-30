@@ -37,7 +37,7 @@ describe("VaultSecret", () => {
             },
             localVue,
         });
-        expect(wrapper.html()).toContain("bformtextarea-stub");
+        expect(wrapper.html()).toContain("b-form-textarea-stub");
     });
 
     it("renders help through v-sanitize-html with the links profile", () => {

@@ -1,9 +1,10 @@
 import { registerToastHost, unregisterToastHost, useToast } from "@galaxyproject/galaxy-ui";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import GToast from "./GToast.vue";
 
@@ -15,7 +16,25 @@ const SELECTORS = {
 const localVue = getLocalVue();
 const { toasts, addToast, clearToasts } = useToast();
 
+// Track every wrapper mounted in a test and unmount it afterwards so we don't
+// leak reactive GToast instances (all reading the same toast-queue singleton)
+// across tests.
+const mountedWrappers: Array<{ unmount: () => void }> = [];
+
+/**
+ * @param realTransitions VTU stubs `<transition>`/`<transition-group>` by default
+ * (regardless of the `stubs` config), which skips their enter/leave class
+ * lifecycle entirely. Pass `true` for tests that assert on those classes.
+ */
+function mountGToast(options: Record<string, unknown> = {}, realTransitions = false) {
+    const global = realTransitions ? { ...localVue, stubs: { ...localVue.stubs, TransitionGroup: false } } : localVue;
+    const wrapper = mount(GToast as object, { global, ...options });
+    mountedWrappers.push(wrapper);
+    return wrapper;
+}
+
 afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
     clearToasts();
     vi.useRealTimers();
 });
@@ -23,10 +42,10 @@ afterEach(() => {
 describe("GToast.vue", () => {
     it("when modal is active, modal triggers toast to render inside main browser window", async () => {
         const host = "modal-toast-host";
-        const rootWrapper = mount(GToast as object, { localVue });
+        const rootWrapper = mountGToast();
 
         registerToastHost(host);
-        const modalWrapper = mount(GToast as object, { propsData: { host }, localVue });
+        const modalWrapper = mountGToast({ propsData: { host } });
         addToast("Shown above the modal", { duration: 0 });
         await nextTick();
 
@@ -37,7 +56,7 @@ describe("GToast.vue", () => {
     });
 
     it("renders queued toasts with title, message and variant class", async () => {
-        const wrapper = mount(GToast as object, { localVue });
+        const wrapper = mountGToast();
 
         addToast("Something happened", { title: "Heads up", variant: "warning", duration: 0 });
         await nextTick();
@@ -49,7 +68,7 @@ describe("GToast.vue", () => {
     });
 
     it("removes a toast when its close button is clicked", async () => {
-        const wrapper = mount(GToast as object, { localVue });
+        const wrapper = mountGToast({}, true);
 
         addToast("Dismiss me", { duration: 0 });
         await nextTick();
@@ -64,7 +83,7 @@ describe("GToast.vue", () => {
 
     it("auto-dismisses a toast after its duration elapses", async () => {
         vi.useFakeTimers();
-        const wrapper = mount(GToast as object, { localVue });
+        const wrapper = mountGToast({}, true);
 
         addToast("Temporary", { duration: 1000 });
         await nextTick();
@@ -82,7 +101,7 @@ describe("GToast.vue", () => {
         ["warning", "g-toast-warning", "Warning"],
         ["error", "g-toast-danger", "Error"],
     ] as const)("%s() raises a %s toast with the default title", async (method, variantClass, defaultTitle) => {
-        const wrapper = mount(GToast as object, { localVue });
+        const wrapper = mountGToast();
         const raise = useToast()[method];
 
         raise("A message");
@@ -95,8 +114,15 @@ describe("GToast.vue", () => {
     });
 
     it("navigates via the router when a toast with `to` is clicked", async () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/histories/view" }] });
-        const wrapper = mount(GToast as object, { localVue, router });
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [
+                { path: "/", component: { template: "<div />" } },
+                { path: "/histories/view", component: { template: "<div />" } },
+            ],
+        });
+        await router.push("/");
+        const wrapper = mountGToast({ router });
 
         addToast("Click here to see it.", { to: "/histories/view", duration: 0 });
         await nextTick();
@@ -105,6 +131,7 @@ describe("GToast.vue", () => {
         expect(toast.classes()).toContain("g-toast-clickable");
 
         await toast.trigger("click");
-        expect(router.currentRoute.path).toBe("/histories/view");
+        await flushPromises();
+        expect(router.currentRoute.value.path).toBe("/histories/view");
     });
 });

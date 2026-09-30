@@ -52,9 +52,11 @@ describe("JobParameters/JobParameters.vue", () => {
             if (typeof expectedValue === "string") {
                 expect(tds.at(1).text()).toContain(expectedValue);
             } else {
-                const genericItem = tds.at(1).find("generichistoryitem-stub");
-                expect(genericItem.attributes("item-id")).toBe(expectedValue.id);
-                expect(genericItem.attributes("item-src")).toBe(expectedValue.src);
+                const genericItem = tds.at(1).find("generic-history-item-stub");
+                // Stub props render as bare lowercase attributes (no hyphen), matching
+                // their camelCase prop names (itemId/itemSrc), not kebab-case.
+                expect(genericItem.attributes("itemid")).toBe(expectedValue.id);
+                expect(genericItem.attributes("itemsrc")).toBe(expectedValue.src);
             }
             if (link) {
                 const a_element = tds.at(1).find("a");

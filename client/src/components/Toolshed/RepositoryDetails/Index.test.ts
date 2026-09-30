@@ -47,7 +47,7 @@ describe("RepositoryDetails", () => {
             global: localVue,
             pinia,
         });
-        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading repository details");
+        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading repository details");
         await flushPromises();
         expect(wrapper.findAll(".alert").length).toBe(0);
     });

@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -14,6 +15,7 @@ function mountExtReg(cfg: object) {
     return shallowMount(ExternalRegistration as object, {
         pinia,
         props: { idpsWithRegistration },
+        global: getLocalVue(),
         stubs: {
             GAlert: true,
             GButton: true,

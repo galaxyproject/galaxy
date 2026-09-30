@@ -65,12 +65,13 @@ const raw = {
 };
 
 vi.mock("../providers/DatasetProvider", () => ({
+    // A plain-object `render() { this.$slots... }` method gets routed through Vue
+    // compat's legacy `with(this)` render-context wrapping (RENDER_FUNCTION compat),
+    // which doesn't play well with a hand-built component here. `setup()` returning
+    // a render function sidesteps that entirely.
     default: {
-        render() {
-            return this.$slots.default({
-                loading: false,
-                result: raw,
-            });
+        setup(_props, { slots }) {
+            return () => slots.default?.({ loading: false, result: raw });
         },
     },
 }));
@@ -81,10 +82,12 @@ function mountTarget() {
             datasetId: "dataset-id",
         },
         stubs: {
+            // setup() (not an options-API `render() { this.$slots }` method) --
+            // see the DatasetProvider mock above for why.
             RouterLink: {
                 props: ["to"],
-                render() {
-                    return h("a", { href: this.to }, this.$slots.default?.());
+                setup(props, { slots }) {
+                    return () => h("a", { href: props.to }, slots.default?.());
                 },
             },
         },

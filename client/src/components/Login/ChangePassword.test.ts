@@ -48,8 +48,10 @@ describe("ChangePassword", () => {
     });
 
     it("basics", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Change your password");
+        // BCard is globally stubbed, so its `header` prop shows up as a literal
+        // attribute on the stub rather than rendered into a `.card-header` div.
+        const card = wrapper.find("b-card-stub");
+        expect(card.attributes("header")).toBe("Change your password");
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);

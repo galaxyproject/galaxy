@@ -18,7 +18,9 @@ const SELECTORS = {
     JOB_STATE_BUTTON: ".g-button",
     JOBS_TABLE: ".job-step-jobs",
     JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
-    STUBBED_JOB_DETAILS: "anonymous-stub",
+    // Stub name follows the `JobDetailsDisplayed` local import alias JobStep.vue
+    // registers it under, not JobDetails.vue's own inferred `<script setup>` name.
+    STUBBED_JOB_DETAILS: "job-details-displayed-stub",
 };
 
 describe("Job Step", () => {

@@ -38,21 +38,23 @@ describe("QuotaMeter.vue", () => {
     });
 
     it("changes appearance depending on usage", async () => {
+        // BProgressBar is globally stubbed, so its `variant` prop shows up as a literal
+        // attribute on the stub rather than translated into a real `.bg-*` class.
         const config = { enable_quotas: true };
         {
             const user = { ...FAKE_USER, quota_percent: 30 };
             const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-success");
+            expect(wrapper.find(".quota-progress b-progress-bar-stub").attributes("variant")).toBe("success");
         }
         {
             const user = { ...FAKE_USER, quota_percent: 80 };
             const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-warning");
+            expect(wrapper.find(".quota-progress b-progress-bar-stub").attributes("variant")).toBe("warning");
         }
         {
             const user = { ...FAKE_USER, quota_percent: 95 };
             const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-danger");
+            expect(wrapper.find(".quota-progress b-progress-bar-stub").attributes("variant")).toBe("danger");
         }
     });
 
