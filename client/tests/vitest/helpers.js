@@ -89,8 +89,6 @@ export function getLocalVue(instrumentLocalization = false) {
             BPagination: true,
             BTabs: true,
             BTab: true,
-            BNav: true,
-            BNavItem: true,
             BOverlay: true,
             BPopover: true,
             BTooltip: true,
@@ -100,7 +98,7 @@ export function getLocalVue(instrumentLocalization = false) {
             BInputGroupPrepend: true,
             BInputGroupText: true,
             // BFormInput, BFormCheckbox, BFormRadio*, BFormSelect, BFormTextarea,
-            // BFormFile, BFormDate/TimePicker, BFormTags and BLink are NOT
+            // BFormFile, BFormDate/TimePicker, BFormTags, BLink, BNav and BNavItem are NOT
             // stubbed here so tests can interact with the real form-control
             // inputs they render (via the bootstrap-vue compat shim, which now
             // works after the h-fallback / data-flatten patches).
