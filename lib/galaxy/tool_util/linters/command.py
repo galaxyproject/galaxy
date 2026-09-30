@@ -97,7 +97,7 @@ def _wraps_external_software(tool_source: "ToolSource") -> bool:
 
 class VersionCommandMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -116,7 +116,7 @@ class VersionCommandMissing(Linter):
 
 class VersionCommandMissingNoRequirements(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
