@@ -2,7 +2,6 @@
 // use this instead of your own mount function so that all vue components get
 // the same plugins and events.
 
-import BootstrapVue from "bootstrap-vue";
 import { createPinia, getActivePinia } from "pinia";
 import { createApp, h } from "vue";
 
@@ -23,7 +22,6 @@ function getOrCreatePinia() {
 // Plugins every Galaxy app needs, shared by the main analysis app and the
 // transitional apps mounted below.
 export function installAppPlugins(app) {
-    app.use(BootstrapVue);
     app.use(localizationPlugin);
     app.directive("g-tooltip", vGTooltip);
     // Renders markup through DOMPurify; the replacement for raw v-html
