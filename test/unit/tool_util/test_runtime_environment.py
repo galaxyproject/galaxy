@@ -1,13 +1,36 @@
+import json
+import shlex
 import subprocess
+import sys
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
 from galaxy.jobs.job_destination import JobDestination
-from galaxy.tool_util.output_checker import runtime_environment_job_messages
+from galaxy.tool_util.deps.container_classes import (
+    DockerContainer,
+    SingularityContainer,
+)
+from galaxy.tool_util.deps.dependencies import (
+    AppInfo,
+    JobInfo,
+    ToolInfo,
+)
+from galaxy.tool_util.lint import get_lint_context_for_tool_source
+from galaxy.tool_util.output_checker import (
+    merge_runtime_environment_warnings,
+    runtime_environment_job_messages,
+)
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.tool_util.runtime_environment import required_environment_checks
+from galaxy.tool_util_models import (
+    UserToolSource,
+    YamlToolSource,
+)
 from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
+from galaxy.util import parse_xml_string_to_etree
 
 
 @pytest.mark.parametrize(
@@ -34,8 +57,10 @@ def test_destination_scopes():
     "entry", [{"file": "/env.sh"}, {"execute": "module load x"}, {"name": "bad-name", "value": "x"}]
 )
 def test_tool_env_rejects_unknown_names(entry):
+    # Deliberately malformed, so it can't satisfy the entry TypedDicts.
+    env: list[Any] = [{"type": "tool", **entry}]
     with pytest.raises(ValueError):
-        JobDestination(env=[{"type": "tool", **entry}])
+        JobDestination(env=env)
 
 
 def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
@@ -57,16 +82,9 @@ def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
 
 
 def test_xml_runtime_environment():
-    from lxml.etree import ElementTree
-
-    from galaxy.tool_util.parser.xml import XmlToolSource
-    from galaxy.util import XML
-
     source = XmlToolSource(
-        ElementTree(
-            XML(
-                '<tool><requirements><runtime_environment_variable name="_JAVA_OPTIONS" description="JVM options"/><runtime_environment_variable name="LICENSE_SERVER" required="true"/></requirements></tool>'
-            )
+        parse_xml_string_to_etree(
+            '<tool><requirements><runtime_environment_variable name="_JAVA_OPTIONS" description="JVM options"/><runtime_environment_variable name="LICENSE_SERVER" required="true"/></requirements></tool>'
         )
     )
     variables = source.parse_runtime_environment_variables()
@@ -76,11 +94,6 @@ def test_xml_runtime_environment():
 
 
 def test_yaml_installed_and_user_tools():
-    from galaxy.tool_util_models import (
-        UserToolSource,
-        YamlToolSource,
-    )
-
     VALID_TOOL = {
         "class": "GalaxyUserTool",
         "id": "test",
@@ -100,26 +113,16 @@ def test_yaml_installed_and_user_tools():
 
 
 def test_runtime_environment_lint():
-    from lxml.etree import ElementTree
-
-    from galaxy.tool_util.lint import get_lint_context_for_tool_source
-    from galaxy.tool_util.parser.xml import XmlToolSource
-    from galaxy.util import XML
-
     source = XmlToolSource(
-        ElementTree(
-            XML(
-                '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/><runtime_environment_variable name="PATH"/></requirements></tool>'
-            )
+        parse_xml_string_to_etree(
+            '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/><runtime_environment_variable name="PATH"/></requirements></tool>'
         )
     )
     ctx = get_lint_context_for_tool_source(source)
     assert any("Reserved runtime" in m.message for m in ctx.error_messages)
     source = XmlToolSource(
-        ElementTree(
-            XML(
-                '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/></requirements></tool>'
-            )
+        parse_xml_string_to_etree(
+            '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/></requirements></tool>'
         )
     )
     ctx = get_lint_context_for_tool_source(source)
@@ -127,21 +130,16 @@ def test_runtime_environment_lint():
     assert any("Service token" in m.message for m in ctx.info_messages)
 
 
+def _write_python_script(path, body):
+    # A shebang can't hold an interpreter path containing spaces, as CI's does.
+    source = path.with_suffix(".py")
+    source.write_text(body)
+    path.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(source))} "$@"\n')
+    path.chmod(0o755)
+
+
 @pytest.mark.parametrize("runtime,sudo", [("docker", False), ("singularity", False), ("docker", True)])
 def test_forwarding_preserves_unset_empty_and_legacy_overrides(tmp_path, runtime, sudo):
-    import json
-    import sys
-
-    from galaxy.tool_util.deps.container_classes import (
-        DockerContainer,
-        SingularityContainer,
-    )
-    from galaxy.tool_util.deps.dependencies import (
-        AppInfo,
-        JobInfo,
-        ToolInfo,
-    )
-
     # Simulate only runtime argument/environment handling, so this test needs no daemon or image.
     runtime_script = tmp_path / runtime
     if runtime == "docker":
@@ -167,7 +165,7 @@ import json, os
 print(json.dumps({k[len('SINGULARITYENV_'):]: v for k, v in os.environ.items() if k.startswith('SINGULARITYENV_')}))
 """
     sudo_script = tmp_path / "sudo"
-    sudo_script.write_text(f"#!{sys.executable}\n" + """
+    sudo_body = """
 import os, sys
 args = sys.argv[1:]
 preserved = []
@@ -179,12 +177,11 @@ while args and args[0].startswith('--'):
         raise RuntimeError('Unexpected sudo option: ' + option)
 environment = {name: os.environ[name] for name in preserved if name in os.environ}
 os.execve(args[0], args, environment)
-""")
-    sudo_script.chmod(0o755)
+"""
+    _write_python_script(sudo_script, sudo_body)
     if sudo:
         body += "\nassert 'UNRELATED_SECRET' not in os.environ\n"
-    runtime_script.write_text(f"#!{sys.executable}\n{body}")
-    runtime_script.chmod(0o755)
+    _write_python_script(runtime_script, body)
     container_class = DockerContainer if runtime == "docker" else SingularityContainer
     container = container_class(
         container_id="image",
@@ -219,8 +216,6 @@ os.execve(args[0], args, environment)
 
 
 def test_merge_task_runtime_warnings(tmp_path):
-    from galaxy.tool_util.output_checker import merge_runtime_environment_warnings
-
     task_dirs = [tmp_path / "task_0", tmp_path / "task_1"]
     for task, directory, names in [
         (task_dirs[0], "outputs", "FIRST\nSHARED\n"),
