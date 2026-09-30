@@ -739,7 +739,10 @@ steps:
       col_names: columns
 """)
         self.workflow_run_specify_inputs(inputs)
-        self.components.workflow_run.simplified_textarea(label="columns").wait_for_and_send_keys("1\n2")
+        workflow_run = self.components.workflow_run
+        workflow_run.simplified_number_list_input(label="columns", index=1).wait_for_and_send_keys("1")
+        workflow_run.simplified_number_list_add(label="columns").wait_for_and_click()
+        workflow_run.simplified_number_list_input(label="columns", index=2).wait_for_and_send_keys("2")
         self.screenshot("workflow_run_multiple_integer_parameter")
         self.workflow_run_submit()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)

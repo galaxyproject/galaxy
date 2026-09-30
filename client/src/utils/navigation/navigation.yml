@@ -996,9 +996,12 @@ workflow_run:
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
-    simplified_textarea:
+    simplified_number_list_input:
       type: xpath
-      selector: //div[@data-label="${label}"]//textarea
+      selector: (//div[@data-label="${label}"]//div[@data-description="number list row"])[${index}]//input[@type="number"]
+    simplified_number_list_add:
+      type: xpath
+      selector: //div[@data-label="${label}"]//button[@data-description="add value"]
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'

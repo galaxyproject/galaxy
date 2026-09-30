@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import FormHidden from "./Elements/FormHidden.vue";
 import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormText from "./Elements/FormText.vue";
 import FormElement from "./FormElement.vue";
 
@@ -85,15 +86,14 @@ describe("FormElement", () => {
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
     });
 
-    it("displays a multiple integer as one value per line", async () => {
-        await wrapper.setProps({ type: "integer", value: "1\n2", workflowRun: true, attributes: { multiple: true } });
-        expect(wrapper.findComponent(FormNumber).exists()).toBe(false);
-        const textarea = wrapper.find("textarea");
-        expect(textarea.element.value).toBe("1\n2");
-        expect(textarea.attributes("placeholder")).toBe("please provide integers, one per line");
+    it("displays a multiple integer as a list of number fields", async () => {
+        await wrapper.setProps({ type: "integer", value: [1, 2], workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(true);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(2);
 
-        await wrapper.setProps({ attributes: { multiple: false } });
-        expect(wrapper.findComponent(FormNumber).exists()).toBe(true);
+        await wrapper.setProps({ value: 1, attributes: { multiple: false } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(false);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
     });
 
     it("marks required values", async () => {

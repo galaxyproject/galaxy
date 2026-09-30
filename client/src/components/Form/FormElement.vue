@@ -22,6 +22,7 @@ import FormError from "./Elements/FormError.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
@@ -106,9 +107,6 @@ const computedPlaceholder = computed(() => {
     }
     if (props.attributes?.placeholder || !props.type) {
         return props.attributes?.placeholder;
-    }
-    if (isMultipleInteger.value) {
-        return `please provide integers, one per line${isOptional.value ? " (optional)" : ""}`;
     }
     return `please provide ${props.type in TYPE_TO_PLACEHOLDER ? TYPE_TO_PLACEHOLDER[props.type] : "a value"}${
         isOptional.value ? " (optional)" : ""
@@ -377,8 +375,18 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 </div>
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
+                <FormNumberList
+                    v-else-if="isMultipleInteger"
+                    :id="props.id"
+                    v-model="currentValue"
+                    :max="attrs.max"
+                    :min="attrs.min"
+                    :placeholder="computedPlaceholder"
+                    :optional="isOptional"
+                    :show-state="props.workflowRun"
+                    type="integer" />
                 <FormNumber
-                    v-else-if="(props.type === 'integer' && !isMultipleInteger) || props.type === 'float'"
+                    v-else-if="props.type === 'integer' || props.type === 'float'"
                     :id="props.id"
                     v-model="currentValue"
                     :max="attrs.max"
@@ -401,7 +409,6 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 <FormText
                     v-else-if="
                         ['text', 'password'].includes(props.type ?? '') ||
-                        isMultipleInteger ||
                         (attrs.is_workflow &&
                             ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(
                                 props.type ?? '',

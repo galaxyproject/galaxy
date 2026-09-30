@@ -7576,7 +7576,7 @@ data_input:
             assert "int_input" not in invocation["input_step_parameters"]
 
     @skip_without_tool("column_param_list")
-    def test_run_with_multiple_int_parameter_one_per_line(self):
+    def test_run_with_multiple_int_parameter(self):
         workflow = """
 class: GalaxyWorkflow
 inputs:
@@ -7600,13 +7600,13 @@ input:
   type: File
   file_type: tabular
 columns:
-  value: "{columns}"
+  value: {columns}
   type: raw
 """
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
                 workflow,
-                test_data=test_data.format(columns="1\\n2"),
+                test_data=test_data.format(columns="[1, 2]"),
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
@@ -7620,7 +7620,7 @@ columns:
 
             response = self.workflow_populator.run_workflow(
                 workflow,
-                test_data=test_data.format(columns="1\\ntwo"),
+                test_data=test_data.format(columns="[1, two]"),
                 history_id=history_id,
                 expected_response=400,
                 assert_ok=False,
