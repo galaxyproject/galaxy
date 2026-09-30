@@ -17,6 +17,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     FilesSourceRuntimeContext,
     RemoteFile,
+    to_utc_datetime,
 )
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -88,7 +89,7 @@ class CommonCrawlFilesSource(
                 log.warning("Could not fetch metadata for '%s'", entry.path, exc_info=True)
                 continue
             entry.size = int(info.get("size", entry.size))
-            entry.ctime = self._get_formatted_timestamp(info)
+            entry.ctime = to_utc_datetime(self._extract_timestamp(info))
 
     def _open_fs(
         self,

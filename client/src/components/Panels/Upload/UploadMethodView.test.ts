@@ -1,14 +1,21 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { http, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CreateElement } from "vue";
 import { nextTick, ref } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import type { PreparedUpload } from "@/components/Panels/Upload/types";
+import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useHistoryStore } from "@/stores/historyStore";
+import { buildPreparedUpload } from "@/utils/upload";
+
+import { useUploadState } from "./uploadState";
 
 import UploadMethodView from "./UploadMethodView.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -17,24 +24,34 @@ vi.mock("@/composables/config", () => ({
     useConfig: () => ({ config: ref({}), isConfigLoaded: ref(true) }),
 }));
 
+const methodComponent = vi.hoisted(() => ({ prepared: null as PreparedUpload | null }));
+
 vi.mock("./uploadMethodRegistry", async (importOriginal: () => Promise<Record<string, unknown>>) => {
     const actual = await importOriginal();
     return {
         ...actual,
         getUploadMethod: () => ({
-            id: "local-file",
-            name: "Upload from Computer",
+            id: "paste-links",
+            name: "Paste Links",
             requiresTargetHistory: true,
-            component: { render: (h: CreateElement) => h("div") },
+            component: {
+                render: (h: CreateElement) => h("div"),
+                mounted(this: { $emit: (event: string, ready: boolean) => void }) {
+                    this.$emit("ready", true);
+                },
+                methods: {
+                    prepareUpload: () => methodComponent.prepared,
+                },
+            },
         }),
     };
 });
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
-const { server, http } = useServerMock();
+const { server } = useServerMock();
 
-server.use(http.get("/api/configuration", ({ response }) => response(200).json({})));
+server.use(http.get("/api/configuration", () => HttpResponse.json({})));
 
 function makeHistory(id: string, name: string): HistorySummary {
     return {
@@ -66,7 +83,7 @@ function mountView() {
     seedHistories(historyStore);
 
     const wrapper = mount(UploadMethodView as object, {
-        propsData: { methodId: "local-file" },
+        propsData: { methodId: "paste-links" },
         localVue,
         pinia,
         router,
@@ -134,5 +151,46 @@ describe("UploadMethodView history mismatch alert", () => {
         historyStore.setCurrentHistoryId("hist-a");
         await nextTick();
         expect(mismatchAlert(wrapper).exists()).toBe(false);
+    });
+});
+
+describe("UploadMethodView start", () => {
+    const unhandledRejections: unknown[] = [];
+    const recordUnhandledRejection = (reason: unknown) => unhandledRejections.push(reason);
+
+    beforeEach(() => {
+        unhandledRejections.length = 0;
+        process.on("unhandledRejection", recordUnhandledRejection);
+        useUploadState().clearAll();
+    });
+
+    afterEach(() => {
+        process.off("unhandledRejection", recordUnhandledRejection);
+        useUploadState().clearAll();
+    });
+
+    it("records a rejected upload request in the upload state without leaving an unhandled rejection", async () => {
+        server.use(
+            http.get("/api/object_stores", () => HttpResponse.json([])),
+            http.post("/api/tools/fetch", () =>
+                HttpResponse.json(
+                    { err_msg: "Action requires account activation.", err_code: 403007 },
+                    { status: 403 },
+                ),
+            ),
+        );
+        const item = makeUrlItem({ name: "remote.txt", targetHistoryId: "hist-a" });
+        methodComponent.prepared = buildPreparedUpload([item]);
+        const { wrapper } = mountView();
+        await flushPromises();
+
+        await wrapper.find('[data-test-id="start-upload"]').trigger("click");
+        await flushPromises();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const [upload] = useUploadState().activeItems.value;
+        expect(upload?.status).toBe("error");
+        expect(upload?.error).toBe("Action requires account activation.");
+        expect(unhandledRejections).toEqual([]);
     });
 });

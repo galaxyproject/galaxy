@@ -116,7 +116,7 @@ def one_ld_library_model_store_dict(source_uri=TEST_SOURCE_URI):
     }
 
 
-def one_ld_library_deferred_model_store_dict(source_uri=TEST_SOURCE_URI):
+def one_ld_library_deferred_model_store_dict(source_uri: str = TEST_SOURCE_URI):
     dataset_hash = dict(
         model_class="DatasetHash",
         hash_function=TEST_HASH_FUNCTION,
@@ -346,7 +346,7 @@ TRANSFORM_ACTIONS_TYPE = Literal["25.1", "legacy"]
 def deferred_hda_model_store_dict_space_to_tab(
     actions_type: TRANSFORM_ACTIONS_TYPE,
     apply_transform: bool = True,
-    source_uri=TEST_SOURCE_URI_SIMPLE_LINE,
+    source_uri: str = TEST_SOURCE_URI_SIMPLE_LINE,
 ):
     dataset_source: dict[str, Any] = dict(
         model_class="DatasetSource",

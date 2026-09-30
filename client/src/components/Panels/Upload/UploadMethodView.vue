@@ -136,8 +136,10 @@ function handleStart() {
     if (!prepared) {
         return;
     }
-    // Fire-and-forget: progress is tracked in uploadState, visible in the progress view
-    void submitPreparedUpload(targetHistoryId.value, prepared, undefined, targetObjectStoreId.value ?? undefined);
+    // Fire-and-forget: progress and failures are tracked per item in uploadState, visible in the progress view
+    submitPreparedUpload(targetHistoryId.value, prepared, undefined, targetObjectStoreId.value ?? undefined).catch(
+        () => undefined,
+    );
     uploadMethodRef.value?.reset?.();
     router.push("/upload/progress");
 }

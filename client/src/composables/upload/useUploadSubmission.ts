@@ -188,6 +188,12 @@ export function useUploadSubmission() {
                 if (itemSignal?.aborted) {
                     continue;
                 }
+                // Copies after this one never start, so they fail with it.
+                const errorMessage = errorMessageAsString(err);
+                markTrackedError(uploadState, libraryUploads.slice(index), errorMessage);
+                if (batchId) {
+                    uploadState.setBatchError(batchId, errorMessage);
+                }
                 throw err;
             }
             if (copied && "id" in copied && copied.id) {
