@@ -220,6 +220,28 @@ describe("useJobStore", () => {
         expect(callCount).toBe(2);
     });
 
+    it("does not re-fetch a terminal job that was already cached full via getJob, not pollJobUntilTerminal", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response(200).json(buildJob("job10", "ok"));
+            }),
+        );
+
+        const store = useJobStore();
+        // Cached via getJob's auto-fetch (default full: true), not via pollJobUntilTerminal.
+        // Nothing marks this id as "fully loaded" unless every fetch path does so consistently.
+        store.getJob("job10");
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        // A later poll (default full: true) for the same id must be satisfied by the cache.
+        store.pollJobUntilTerminal({ id: "job10" });
+        await flushPromises();
+        expect(callCount).toBe(1);
+    });
+
     it("does not skip a non-terminal job even if a base version is already cached", async () => {
         let callCount = 0;
         server.use(
