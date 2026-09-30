@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import * as d3 from "d3";
 import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { getDatatypesMapper } from "@/components/Datatypes";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
 import { getCompatibleRecommendations, type PredictedToolChild } from "@/components/Workflow/Editor/modules/utilities";
+import { useToolRouting } from "@/composables/route";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
 
@@ -35,7 +35,7 @@ const props = defineProps<{
     toolId: string;
 }>();
 
-const router = useRouter();
+const { routeToTool } = useToolRouting();
 
 const deprecated = ref(false);
 const deprecatedMessage = ref("");
@@ -122,7 +122,7 @@ function renderD3Tree(predictedTools: PredictedTools) {
         }
         const tId = d.data.id;
         if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
-            router.push(`/?tool_id=${tId}`);
+            routeToTool(tId);
         }
     };
     const update = (source: TreeNode) => {
