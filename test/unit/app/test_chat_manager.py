@@ -5,9 +5,13 @@ from unittest import mock
 
 import pytest
 
+from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.tutor_analytics import TutorAnalyticsManager
-from galaxy.schema.agents import AgentResponse
+from galaxy.schema.agents import (
+    AgentResponse,
+    TutorModeToggle,
+)
 from galaxy.schema.fields import Security
 from galaxy.schema.schema import ChatPayload
 from galaxy.security.idencoding import IdEncodingHelper
@@ -416,3 +420,40 @@ class TestJobChatPersistence:
         assert result.response == content
         assert result.agent_response is None
         api._get_agent_response_full.assert_not_awaited()
+
+
+class TestLearningModeFlag:
+    """The tutor endpoints refuse requests unless the admin turned Learning Mode on."""
+
+    def _api(self, enabled):
+        return ChatAPI(
+            config=mock.Mock(enable_learning_mode=enabled),
+            chat_manager=ChatManager(),
+            job_manager=mock.Mock(),
+            agent_service=mock.Mock(),
+            workflow_manager=mock.Mock(),
+        )
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda api, trans: api.get_tutor_state(trans=trans, user=trans.user),
+            lambda api, trans: api.update_tutor_state(
+                payload={"tutor_mode_enabled": True}, trans=trans, user=trans.user
+            ),
+            lambda api, trans: api.toggle_tutor_mode(
+                payload=TutorModeToggle(enabled=True), trans=trans, user=trans.user
+            ),
+        ],
+    )
+    def test_tutor_endpoints_refuse_when_learning_mode_is_off(self, call):
+        trans = _make_trans()
+        trans.user.preferences = mock.MagicMock()
+        with pytest.raises(ConfigDoesNotAllowException):
+            call(self._api(False), trans)
+        trans.user.preferences.__setitem__.assert_not_called()
+
+    def test_tutor_state_is_served_when_learning_mode_is_on(self):
+        trans = _make_trans()
+        trans.user.preferences = {}
+        assert self._api(True).get_tutor_state(trans=trans, user=trans.user)["tutor_mode_enabled"] is False

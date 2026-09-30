@@ -54,6 +54,11 @@ vi.mock("@/components/GalaxyAI/ChatMessageCell.vue", () => ({ default: ChatMessa
 vi.mock("@/components/GalaxyAI/ChatInput.vue", () => ({ default: ChatInputStub }));
 
 const mockActiveContext = ref<ActiveContext | null>(null);
+const mockConfig = ref<Record<string, unknown>>({ enable_learning_mode: true });
+
+vi.mock("@/composables/config", () => ({
+    useConfig: () => ({ config: mockConfig, isConfigLoaded: ref(true) }),
+}));
 
 vi.mock("@/composables/useActiveContext", () => ({
     useActiveContext: () => ({ activeContext: mockActiveContext, contextLabel: ref("") }),
@@ -126,7 +131,18 @@ describe("GalaxyAI", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockActiveContext.value = null;
+        mockConfig.value = { enable_learning_mode: true };
         mockGet.mockResolvedValue({ data: [], error: undefined });
+    });
+
+    it("hides the learning mode switch and skips the tutor state when the server has it off", async () => {
+        mockConfig.value = { enable_learning_mode: false };
+        const { wrapper } = mountChat();
+        await flushPromises();
+
+        expect(wrapper.find("[data-description='learning mode toggle']").exists()).toBe(false);
+        expect(mockGet).not.toHaveBeenCalledWith("/api/chat/tutor/state");
+        wrapper.destroy();
     });
 
     it.each([null, { contextType: "notebook", pageId: "page-1", historyId: "hist-1" }] as const)(

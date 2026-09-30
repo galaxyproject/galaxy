@@ -367,6 +367,16 @@ class TestAgentUnitMocked:
         registry = build_default_registry()
         assert len(registry.list_agents()) == 9
 
+    @pytest.mark.parametrize("enabled", [False, True])
+    def test_teaching_assistant_needs_learning_mode_enabled(self, enabled):
+        """Learning Mode ships off: with a config, the tutor registers only when enable_learning_mode is set."""
+        config = mock.Mock()
+        config.inference_services = {}
+        config.enable_learning_mode = enabled
+        registry = build_default_registry(config)
+        assert registry.is_registered("teaching_assistant") is enabled
+        assert registry.is_registered("error_analysis")
+
     def test_disabled_agent_registry_get_agent_raises(self):
         """Registry.get_agent for a disabled agent gives 'Unknown agent type' error."""
         config = mock.Mock()
@@ -1833,7 +1843,31 @@ class TestAgentUnitMocked:
         assert mock_exec.call_args[0][0] == "router"
 
     def _enable_tutor_mode(self):
+        self.mock_config.enable_learning_mode = True
         self.mock_user.preferences = {"learning_state": json.dumps({"tutor_mode_enabled": True})}
+
+    @pytest.mark.asyncio
+    async def test_saved_tutor_preference_is_ignored_when_learning_mode_is_off(self):
+        """A preference saved while the feature was on must not route to the tutor once an admin turns it off."""
+        self._enable_tutor_mode()
+        self.mock_config.enable_learning_mode = False
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "how do I run BWA?",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={},
+                agent_type="auto",
+            )
+
+        assert mock_exec.call_args[0][0] == "router"
 
     @pytest.mark.asyncio
     async def test_route_and_execute_uses_teaching_assistant_when_tutor_mode_enabled(self):
