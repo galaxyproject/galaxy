@@ -81,8 +81,6 @@ export function getLocalVue(instrumentLocalization = false) {
             // kebab/PascalCase, so one key per component is enough -- and a second
             // key would shadow per-test overrides like `stubs: { BCard: false }`.
             BButton: true,
-            BFormInput: true,
-            BFormCheckbox: true,
             BModal: true,
             BCard: true,
             BDropdown: true,
@@ -90,11 +88,8 @@ export function getLocalVue(instrumentLocalization = false) {
             BAlert: true,
             BBadge: true,
             BSpinner: true,
-            BLink: true,
             BCollapse: true,
             BFormGroup: true,
-            BFormSelect: true,
-            BFormTextarea: true,
             BTable: true,
             BPagination: true,
             BTabs: true,
@@ -109,7 +104,8 @@ export function getLocalVue(instrumentLocalization = false) {
             BInputGroupAppend: true,
             BInputGroupPrepend: true,
             BInputGroupText: true,
-            // BFormRadio*, BFormFile, BFormDate/TimePicker, BFormTags are NOT
+            // BFormInput, BFormCheckbox, BFormRadio*, BFormSelect, BFormTextarea,
+            // BFormFile, BFormDate/TimePicker, BFormTags and BLink are NOT
             // stubbed here so tests can interact with the real form-control
             // inputs they render (via the bootstrap-vue compat shim, which now
             // works after the h-fallback / data-flatten patches).
