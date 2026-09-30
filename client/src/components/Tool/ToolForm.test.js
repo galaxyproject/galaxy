@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -135,5 +136,21 @@ describe("ToolForm", () => {
         expect(wrapper.vm.showError).toBe(true);
         expect(wrapper.vm.errorMessage).toBe(errorMessage);
         expect(wrapper.text()).toContain(errorMessage);
+    });
+
+    it("reports a rejected form update and re-enables the form", async () => {
+        const toastError = vi.spyOn(Toast, "error").mockImplementation(() => {});
+        server.use(
+            http.untyped.post("/api/tools/tool_id/build", () => {
+                return HttpResponse.json({ err_msg: "Rate limit exceeded" }, { status: 429 });
+            }),
+        );
+        await flushPromises();
+
+        wrapper.vm.onUpdate();
+        await flushPromises();
+
+        expect(toastError).toHaveBeenCalledWith("Rate limit exceeded", "Updating parameters failed");
+        expect(wrapper.vm.disabled).toBe(false);
     });
 });

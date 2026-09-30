@@ -117,6 +117,7 @@ import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
 import { findInputByDottedName } from "@/components/Form/utilities";
+import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -126,6 +127,7 @@ import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { parseBool } from "@/utils/parseBool";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getToolFormData, updateToolFormData } from "./services";
 import { submitToolJob } from "./submit";
@@ -355,6 +357,9 @@ export default {
                 .then((data) => {
                     this.formConfig = data;
                 })
+                .catch((error) => {
+                    Toast.error(errorMessageAsString(error), "Updating parameters failed");
+                })
                 .finally(() => {
                     this.disabled = false;
                 });
@@ -380,7 +385,10 @@ export default {
                 this.history_id,
                 this.formData,
                 optionsPagination,
-            ).then((data) => this.mergeFetchedOptions(name, src, data));
+            )
+                .then((data) => this.mergeFetchedOptions(name, src, data))
+                // The already loaded options stay usable, and scrolling the sentinel back into view retries.
+                .catch((error) => console.warn(`ToolForm - loading more options for ${name} failed`, error));
         },
         /**
          * Handle the user typing in the dropdown's search box. Refetch the
@@ -405,7 +413,10 @@ export default {
                 this.history_id,
                 this.formData,
                 optionsPagination,
-            ).then((data) => this.mergeFetchedOptions(name, src, data));
+            )
+                .then((data) => this.mergeFetchedOptions(name, src, data))
+                // The typed query still filters the already loaded options, and the next keystroke retries.
+                .catch((error) => console.warn(`ToolForm - searching options for ${name} failed`, error));
         },
         /**
          * Merge a freshly fetched page of options (from load-more or search) into
