@@ -22,6 +22,10 @@ import os
 import re
 import sys
 import unicodedata
+from typing import (
+    Any,
+    TypedDict,
+)
 
 import yaml
 
@@ -65,29 +69,63 @@ CONTEXT_NOTES = {
     "invocation": "Invocation reference — usually injected automatically.",
 }
 
+# Mode-keyed values map a DirectiveMode ("page", "report") to text; see directives.ts.
+ModeValue = str | dict[str, str]
 
-def load_directives(path=DIRECTIVES_YML):
+
+class DirectiveParameter(TypedDict, total=False):
+    type: str
+    context: str
+    description: str
+    default: str | bool
+    values: list[str]
+
+
+Parameters = dict[str, DirectiveParameter]
+
+
+class DirectiveEntry(TypedDict, total=False):
+    side_panel_name: ModeValue
+    side_panel_description: ModeValue
+    help: ModeValue
+    category: str
+    renders: str
+    embeddable: bool
+    requires: str
+    parameter_set: str
+    parameters: Parameters
+    dynamic_parameters: bool
+
+
+ParameterSets = dict[str, Parameters]
+Directives = dict[str, DirectiveEntry]
+# (output path, rendered text)
+Artifact = tuple[str, str]
+
+
+def load_directives(path: str = DIRECTIVES_YML) -> tuple[list[str], ParameterSets, Directives]:
     """Return (shared_arguments, parameter_sets, directives) parsed from directives.yml."""
     data = _load_yml(path)
-    shared_arguments = data.get("_shared_arguments", [])
-    parameter_sets = data.get("_parameter_sets", {})
-    directives = {key: value for key, value in data.items() if not key.startswith("_")}
+    shared_arguments: list[str] = data.get("_shared_arguments", [])
+    parameter_sets: ParameterSets = data.get("_parameter_sets", {})
+    directives: Directives = {key: value for key, value in data.items() if not key.startswith("_")}
     return shared_arguments, parameter_sets, directives
 
 
-def load_cell_types(path=DIRECTIVES_YML):
+def load_cell_types(path: str = DIRECTIVES_YML) -> list[str]:
     """Return the fenced block (cell) types listed in directives.yml."""
     return list(_load_yml(path)["_cell_types"])
 
 
-def _load_yml(path):
+def _load_yml(path: str) -> dict[str, Any]:
     with open(path) as f:
-        return yaml.safe_load(f)
+        data: dict[str, Any] = yaml.safe_load(f)
+    return data
 
 
-def resolve_parameters(entry, parameter_sets):
+def resolve_parameters(entry: DirectiveEntry, parameter_sets: ParameterSets) -> Parameters:
     """Merge a directive's shared parameter_set and inline parameters, preserving order."""
-    parameters = {}
+    parameters: Parameters = {}
     set_name = entry.get("parameter_set")
     if set_name and set_name in parameter_sets:
         parameters.update(parameter_sets[set_name])
@@ -95,21 +133,21 @@ def resolve_parameters(entry, parameter_sets):
     return parameters
 
 
-def directive_arguments(entry, parameter_sets):
+def directive_arguments(entry: DirectiveEntry, parameter_sets: ParameterSets) -> list[str] | None:
     """Return the validated argument names for a directive (None when dynamic)."""
     if entry.get("dynamic_parameters"):
         return None
     return sorted(resolve_parameters(entry, parameter_sets))
 
 
-def _mode_value(value):
+def _mode_value(value: ModeValue | None) -> str | None:
     """Collapse a possibly mode-keyed value to a single string (prefer report)."""
     if isinstance(value, dict):
-        value = value.get("report") or value.get("page") or next(iter(value.values()))
+        return value.get("report") or value.get("page") or next(iter(value.values()))
     return value
 
 
-def dispatch_containers(path=MARKDOWN_UTIL_PY):
+def dispatch_containers(path: str = MARKDOWN_UTIL_PY) -> set[str]:
     """Return the set of directive names dispatched in markdown_util.py.
 
     Harvests both the ``container == "x"`` and ``container in ["x", "y"]`` forms so
@@ -123,9 +161,11 @@ def dispatch_containers(path=MARKDOWN_UTIL_PY):
     return names
 
 
-def consistency_errors(shared_arguments, parameter_sets, directives, containers):
+def consistency_errors(
+    shared_arguments: list[str], parameter_sets: ParameterSets, directives: Directives, containers: set[str]
+) -> list[str]:
     """Return human-readable problems with directives.yml or its backend dispatch."""
-    errors = []
+    errors: list[str] = []
 
     for name, entry in directives.items():
         set_name = entry.get("parameter_set")
@@ -151,11 +191,11 @@ def consistency_errors(shared_arguments, parameter_sets, directives, containers)
     return errors
 
 
-def _py_str(value):
+def _py_str(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def _py_list(items, indent):
+def _py_list(items: list[str], indent: int) -> str:
     if not items:
         return "[]"
     pad = " " * indent
@@ -163,7 +203,9 @@ def _py_list(items, indent):
     return "[\n" + body + f"{pad}]"
 
 
-def render_python(shared_arguments, parameter_sets, directives, cell_types):
+def render_python(
+    shared_arguments: list[str], parameter_sets: ParameterSets, directives: Directives, cell_types: list[str]
+) -> str:
     """Render the generated validator registry module (markdown_parse consumes this)."""
     lines = [
         "# Generated by scripts/markdown_directives_doc.py from",
@@ -191,12 +233,12 @@ def render_python(shared_arguments, parameter_sets, directives, cell_types):
     return "\n".join(lines) + "\n"
 
 
-def render_requirements(directives):
+def render_requirements(directives: Directives) -> str:
     """Render requirements.yml (object -> directives) from each directive's 'requires'."""
     grouped: dict[str, list[str]] = {}
     for name, entry in directives.items():
         grouped.setdefault(entry.get("requires", "none"), []).append(name)
-    lines = []
+    lines: list[str] = []
     for obj, names in grouped.items():
         lines.append(f"{obj}:")
         for name in names:
@@ -204,7 +246,7 @@ def render_requirements(directives):
     return "\n".join(lines) + "\n"
 
 
-def _display_width(text):
+def _display_width(text: str) -> int:
     """Display width matching prettier/string-width (wide East Asian + emoji count as 2)."""
     width = 0
     for char in text:
@@ -214,12 +256,12 @@ def _display_width(text):
     return width
 
 
-def _table(headers, rows):
+def _table(headers: list[str], rows: list[list[str]]) -> str:
     """Render a GitHub Markdown table padded exactly as prettier would format it."""
     columns = list(zip(*([headers] + rows)))
     widths = [max(3, *(_display_width(cell) for cell in column)) for column in columns]
 
-    def _row(cells):
+    def _row(cells: list[str] | tuple[str, ...]) -> str:
         padded = (cell + " " * (width - _display_width(cell)) for cell, width in zip(cells, widths))
         return "| " + " | ".join(padded) + " |"
 
@@ -228,9 +270,9 @@ def _table(headers, rows):
     return "\n".join(lines)
 
 
-def render_markdown(shared_arguments, parameter_sets, directives):
+def render_markdown(shared_arguments: list[str], parameter_sets: ParameterSets, directives: Directives) -> str:
     """Render directives.yml metadata to the Markdown reference."""
-    out = []
+    out: list[str] = []
     out.append("# Galaxy Markdown Directive Reference")
     out.append("")
     out.append(
@@ -287,7 +329,7 @@ def render_markdown(shared_arguments, parameter_sets, directives):
     )
     out.append("")
 
-    by_category = {category: [] for category in CATEGORY_ORDER}
+    by_category: dict[str, list[tuple[str, DirectiveEntry]]] = {category: [] for category in CATEGORY_ORDER}
     for name, entry in directives.items():
         by_category.setdefault(entry.get("category", "utility"), []).append((name, entry))
 
@@ -324,7 +366,7 @@ def render_markdown(shared_arguments, parameter_sets, directives):
                     out.append("Accepts arguments specific to the selected visualization plugin (not validated).")
                     out.append("")
             elif parameters:
-                param_rows = []
+                param_rows: list[list[str]] = []
                 for param_name, meta in parameters.items():
                     default = meta.get("default")
                     default_cell = (
@@ -359,7 +401,9 @@ def render_markdown(shared_arguments, parameter_sets, directives):
     return "\n".join(out)
 
 
-def build_artifacts(shared_arguments, parameter_sets, directives, cell_types):
+def build_artifacts(
+    shared_arguments: list[str], parameter_sets: ParameterSets, directives: Directives, cell_types: list[str]
+) -> list[Artifact]:
     """Return [(path, rendered_text)] for every artifact generated from directives.yml."""
     return [
         (OUTPUT_MD, render_markdown(shared_arguments, parameter_sets, directives) + "\n"),
@@ -368,7 +412,7 @@ def build_artifacts(shared_arguments, parameter_sets, directives, cell_types):
     ]
 
 
-def _write_or_check(path, rendered, check, drift):
+def _write_or_check(path: str, rendered: str, check: bool, drift: list[str]) -> None:
     try:
         with open(path) as f:
             current = f.read()
@@ -382,7 +426,7 @@ def _write_or_check(path, rendered, check, drift):
         f.write(rendered)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="verify generated artifacts are up to date")
     args = parser.parse_args()
