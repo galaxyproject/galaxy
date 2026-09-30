@@ -70,6 +70,8 @@ export default defineConfig({
         vue({
             template: {
                 compilerOptions: {
+                    // Match the app build, see vite.config.mjs.
+                    comments: false,
                     compatConfig: {
                         MODE: 2,
                     },

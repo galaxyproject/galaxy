@@ -91,6 +91,10 @@ export default defineConfig(({ command }) => ({
                 compilerOptions: {
                     // Preserve whitespace to match Webpack's vue-loader default behavior
                     whitespace: "preserve",
+                    // Vue 2 dropped template comments; Vue 3 keeps them outside production
+                    // builds, where a leading comment turns a single-root component into a
+                    // Fragment and breaks attribute fallthrough.
+                    comments: false,
                     // Enable Vue 3 compat mode
                     compatConfig: {
                         MODE: 2,
