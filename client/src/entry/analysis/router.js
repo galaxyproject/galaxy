@@ -189,7 +189,7 @@ export function getRouter(Galaxy) {
                 name: "error",
                 path: "/client-error/",
                 component: ClientError,
-                props: true,
+                props: () => ({ message: window.history.state?.errorMessage }),
             },
             /** Analysis routes */
             {
@@ -983,8 +983,10 @@ export function getRouter(Galaxy) {
         }
     });
 
+    // Vue Router 4 drops params that aren't part of the path, so the message
+    // travels in history state instead.
     router.onError((error) => {
-        router.push({ name: "error", params: { error: error } });
+        router.push({ name: "error", state: { errorMessage: error.message } });
     });
 
     return router;
