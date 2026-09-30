@@ -206,8 +206,8 @@ class CustomToolAgent(BaseGalaxyAgent):
       re-rolled once with the critique. Cap of one refine; if refinement
       breaks validation, the original tool is kept.
 
-    Container selection is a separate, opt-in concern (default off): the
-    producer prompt says nothing about choosing an image. Instead a dedicated
+    Container resolution is a separate, opt-in concern (default off): the
+    producer prompt only asks for a plausible image. When enabled, a dedicated
     **container critic** infers the conda packages from the tool's
     ``shell_command``/configfiles alone, a verified ``quay.io/biocontainers``
     image is resolved from them, and a deterministic gate applies it.
@@ -419,8 +419,8 @@ class CustomToolAgent(BaseGalaxyAgent):
                         log.info("CustomTool: critic edits not applicable; falling back to full refine")
                         tool, tool_yaml, result = await self._full_refine(query, critique, tool, tool_yaml, result)
 
-            # Container selection (opt-in, critic-independent). The producer prompt
-            # says nothing about images; instead a dedicated container critic infers
+            # Container resolution (opt-in, critic-independent). The producer's own
+            # image choice is a best guess; a dedicated container critic infers
             # the conda packages from the final tool's shell_command/configfiles, the
             # recommender resolves a verified quay.io image, and the deterministic
             # gate applies it. Run last so it sees the post-refine command.
