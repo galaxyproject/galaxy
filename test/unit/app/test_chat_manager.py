@@ -1,21 +1,39 @@
 """Unit tests for ChatManager page-scoped methods."""
 
 import json
+from typing import Any
 from unittest import mock
 
 import pytest
 
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.managers.chat import ChatManager
+from galaxy.managers.learning_state import LearningStateManager
 from galaxy.managers.tutor_analytics import TutorAnalyticsManager
 from galaxy.schema.agents import (
     AgentResponse,
+    LearningStateUpdate,
     TutorModeToggle,
 )
 from galaxy.schema.fields import Security
 from galaxy.schema.schema import ChatPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.api.chat import ChatAPI
+
+
+def _chat_api(**overrides: Any) -> ChatAPI:
+    """Build ChatAPI the way the DI container would, with real managers where they're cheap."""
+    deps: dict[str, Any] = {
+        "config": mock.Mock(),
+        "chat_manager": ChatManager(),
+        "job_manager": mock.Mock(),
+        "agent_service": mock.Mock(),
+        "workflow_manager": mock.Mock(),
+        "learning_state_manager": LearningStateManager(),
+        "tutor_analytics_manager": TutorAnalyticsManager(),
+    }
+    deps.update(overrides)
+    return ChatAPI(**deps)
 
 
 def _make_trans(user_id=1):
@@ -358,13 +376,7 @@ class TestJobChatPersistence:
                 obj.create_time = None
 
         trans.sa_session.add.side_effect = assign_identity
-        api = ChatAPI(
-            config=mock.Mock(),
-            chat_manager=ChatManager(),
-            job_manager=mock.Mock(),
-            agent_service=mock.Mock(),
-            workflow_manager=mock.Mock(),
-        )
+        api = _chat_api()
         api.chat_manager.get = mock.Mock(return_value=None)
         api.job_manager.get_accessible_job.return_value = mock.Mock(id=7)
         api._get_agent_response_full = mock.AsyncMock(
@@ -426,20 +438,14 @@ class TestLearningModeFlag:
     """The tutor endpoints refuse requests unless the admin turned Learning Mode on."""
 
     def _api(self, enabled):
-        return ChatAPI(
-            config=mock.Mock(enable_learning_mode=enabled),
-            chat_manager=ChatManager(),
-            job_manager=mock.Mock(),
-            agent_service=mock.Mock(),
-            workflow_manager=mock.Mock(),
-        )
+        return _chat_api(config=mock.Mock(enable_learning_mode=enabled))
 
     @pytest.mark.parametrize(
         "call",
         [
             lambda api, trans: api.get_tutor_state(trans=trans, user=trans.user),
             lambda api, trans: api.update_tutor_state(
-                payload={"tutor_mode_enabled": True}, trans=trans, user=trans.user
+                payload=LearningStateUpdate(tutor_mode_enabled=True), trans=trans, user=trans.user
             ),
             lambda api, trans: api.toggle_tutor_mode(
                 payload=TutorModeToggle(enabled=True), trans=trans, user=trans.user
@@ -457,4 +463,17 @@ class TestLearningModeFlag:
     def test_tutor_state_is_served_when_learning_mode_is_on(self):
         trans = _make_trans()
         trans.user.preferences = {}
-        assert self._api(True).get_tutor_state(trans=trans, user=trans.user)["tutor_mode_enabled"] is False
+        assert self._api(True).get_tutor_state(trans=trans, user=trans.user).tutor_mode_enabled is False
+
+    def test_state_update_only_takes_user_settable_fields(self):
+        trans = _make_trans()
+        trans.user.preferences = {}
+        # Counters are server-derived; a user must not be able to forge their own progress.
+        payload = LearningStateUpdate.model_validate({"scaffolding_level": 4, "interaction_count": 999})
+
+        state = self._api(True).update_tutor_state(payload=payload, trans=trans, user=trans.user)
+
+        assert state.scaffolding_level == 4
+        assert state.interaction_count == 0
+        with pytest.raises(ValueError):
+            LearningStateUpdate(scaffolding_level=9)

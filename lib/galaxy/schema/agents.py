@@ -256,7 +256,25 @@ class LearningState(BaseModel):
     last_interaction: str | None = Field(default=None, description="ISO timestamp of last interaction")
 
 
+class LearningStateUpdate(BaseModel):
+    """The learning-state fields a user may set themselves.
+
+    Counters and timestamps are derived server-side and deliberately absent, so a
+    user cannot forge their own progress.
+    """
+
+    scaffolding_level: int | None = Field(default=None, ge=1, le=5, description="Scaffolding level 1-5")
+    tutor_mode_enabled: bool | None = Field(default=None, description="Whether tutor mode is active")
+
+
 class TutorModeToggle(BaseModel):
     """Request to toggle tutor mode."""
 
     enabled: bool = Field(description="Whether to enable or disable tutor mode")
+
+
+class TutorModeResponse(BaseModel):
+    """Tutor mode after a toggle, with the full learning state."""
+
+    enabled: bool = Field(description="Whether tutor mode is now active")
+    state: LearningState

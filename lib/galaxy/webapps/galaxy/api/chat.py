@@ -39,6 +39,9 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.agents import (
     AgentResponse,
+    LearningState,
+    LearningStateUpdate,
+    TutorModeResponse,
     TutorModeToggle,
     WorkflowReportResponse,
 )
@@ -123,6 +126,8 @@ class ChatAPI:
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
     workflow_manager: WorkflowsManager = depends(WorkflowsManager)
+    learning_state_manager: LearningStateManager = depends(LearningStateManager)
+    tutor_analytics_manager: TutorAnalyticsManager = depends(TutorAnalyticsManager)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -530,37 +535,22 @@ class ChatAPI:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> dict[str, Any]:
+    ) -> LearningState:
         """Get the user's current learning state for the cognitive tutor."""
         self._ensure_learning_mode_enabled()
-        manager = LearningStateManager()
-        return manager.get_learning_state(trans)
+        return LearningState(**self.learning_state_manager.get_learning_state(trans))
 
     @router.put("/api/chat/tutor/state", unstable=True)
     def update_tutor_state(
         self,
-        payload: dict[str, Any] = Body(..., description="Partial learning state update"),
+        payload: LearningStateUpdate = Body(..., description="Partial learning state update"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> dict[str, Any]:
-        """Update the user's learning state (partial update).
-
-        Only a small allowlist of fields is user-settable. Fields that get injected into
-        the tutor's system prompt or are derived server-side (interaction_count,
-        demonstrations_count, ...) are intentionally rejected here so a user cannot inject
-        prompt content or forge their own progress.
-        """
+    ) -> LearningState:
+        """Update the user-settable parts of the learning state (partial update)."""
         self._ensure_learning_mode_enabled()
-        updates: dict[str, Any] = {}
-        if "tutor_mode_enabled" in payload:
-            updates["tutor_mode_enabled"] = bool(payload["tutor_mode_enabled"])
-        if "scaffolding_level" in payload:
-            try:
-                updates["scaffolding_level"] = max(1, min(5, int(payload["scaffolding_level"])))
-            except (TypeError, ValueError):
-                pass
-        manager = LearningStateManager()
-        return manager.update_learning_state(trans, updates)
+        updates = payload.model_dump(exclude_none=True)
+        return LearningState(**self.learning_state_manager.update_learning_state(trans, updates))
 
     @router.post("/api/chat/tutor/mode", unstable=True)
     def toggle_tutor_mode(
@@ -568,15 +558,14 @@ class ChatAPI:
         payload: TutorModeToggle = Body(..., description="Whether to enable or disable tutor mode"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> dict[str, Any]:
+    ) -> TutorModeResponse:
         """Toggle tutor mode on or off."""
         self._ensure_learning_mode_enabled()
-        manager = LearningStateManager()
         if payload.enabled:
-            state = manager.enable_tutor_mode(trans)
+            state = self.learning_state_manager.enable_tutor_mode(trans)
         else:
-            state = manager.disable_tutor_mode(trans)
-        return {"enabled": state.get("tutor_mode_enabled", False), "state": state}
+            state = self.learning_state_manager.disable_tutor_mode(trans)
+        return TutorModeResponse(enabled=state["tutor_mode_enabled"], state=LearningState(**state))
 
     @router.get("/api/chat/tutor/analytics", require_admin=True, unstable=True)
     def get_tutor_analytics(
@@ -585,10 +574,9 @@ class ChatAPI:
     ) -> dict[str, Any]:
         """Aggregate tutor usage analytics across all users (admin only)."""
         self._ensure_learning_mode_enabled()
-        manager = TutorAnalyticsManager()
-        return manager.get_analytics(trans)
+        return self.tutor_analytics_manager.get_analytics(trans)
 
-    def _ensure_learning_mode_enabled(self):
+    def _ensure_learning_mode_enabled(self) -> None:
         if not self.config.enable_learning_mode:
             raise ConfigDoesNotAllowException("Learning Mode is not enabled on this Galaxy server.")
 

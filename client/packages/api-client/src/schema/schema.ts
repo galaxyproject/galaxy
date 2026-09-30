@@ -19068,6 +19068,60 @@ export interface components {
          * @enum {string}
          */
         LandingRequestState: "unclaimed" | "claimed";
+        /**
+         * LearningState
+         * @description User's learning state for the cognitive tutor.
+         */
+        LearningState: {
+            /**
+             * Demonstrations Count
+             * @description Demonstrations that submitted at least one job
+             * @default 0
+             */
+            demonstrations_count: number;
+            /**
+             * Interaction Count
+             * @description Total tutor interactions
+             * @default 0
+             */
+            interaction_count: number;
+            /**
+             * Last Interaction
+             * @description ISO timestamp of last interaction
+             */
+            last_interaction?: string | null;
+            /**
+             * Scaffolding Level
+             * @description Scaffolding level 1-5 (1=max support, 5=minimal)
+             * @default 3
+             */
+            scaffolding_level: number;
+            /**
+             * Tutor Mode Enabled
+             * @description Whether tutor mode is active
+             * @default false
+             */
+            tutor_mode_enabled: boolean;
+        };
+        /**
+         * LearningStateUpdate
+         * @description The learning-state fields a user may set themselves.
+         *
+         *     Counters and timestamps are derived server-side and deliberately absent, so a
+         *     user cannot forge their own progress.
+         */
+        LearningStateUpdate: {
+            /**
+             * Scaffolding Level
+             * @description Scaffolding level 1-5
+             */
+            scaffolding_level?: number | null;
+            /**
+             * Tutor Mode Enabled
+             * @description Whether tutor mode is active
+             */
+            tutor_mode_enabled?: boolean | null;
+        };
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -26242,6 +26296,18 @@ export interface components {
             scope_type: "recent" | "seed_centered";
             /** Seed In Scope */
             seed_in_scope?: boolean | null;
+        };
+        /**
+         * TutorModeResponse
+         * @description Tutor mode after a toggle, with the full learning state.
+         */
+        TutorModeResponse: {
+            /**
+             * Enabled
+             * @description Whether tutor mode is now active
+             */
+            enabled: boolean;
+            state: components["schemas"]["LearningState"];
         };
         /**
          * TutorModeToggle
@@ -34082,9 +34148,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["TutorModeResponse"];
                 };
             };
             /** @description Request Error */
@@ -34125,9 +34189,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["LearningState"];
                 };
             };
             /** @description Request Error */
@@ -34162,9 +34224,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                "application/json": components["schemas"]["LearningStateUpdate"];
             };
         };
         responses: {
@@ -34174,9 +34234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["LearningState"];
                 };
             };
             /** @description Request Error */

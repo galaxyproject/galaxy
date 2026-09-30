@@ -26,10 +26,12 @@ class AgentService:
         config: GalaxyAppConfiguration,
         job_manager: JobManager,
         registry: AgentRegistry,
+        learning_state_manager: LearningStateManager | None = None,
     ):
         self.config = config
         self.job_manager = job_manager
         self.registry = registry
+        self.learning_state_manager = learning_state_manager or LearningStateManager()
 
     def create_dependencies(self, trans: SessionRequestContext, user: User) -> GalaxyAgentDependencies:
         """Create agent dependencies for dependency injection."""
@@ -135,7 +137,7 @@ class AgentService:
         if trans.user is None or not getattr(self.config, "enable_learning_mode", False):
             return False
         try:
-            state = LearningStateManager().get_learning_state(trans)
+            state = self.learning_state_manager.get_learning_state(trans)
         except Exception as e:
             log.warning(f"Could not read tutor learning state, routing normally: {e}")
             return False
