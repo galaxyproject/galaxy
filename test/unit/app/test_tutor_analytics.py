@@ -98,7 +98,7 @@ class TestTutorAnalytics:
         ]
         session = mock.Mock()
         session.execute.return_value.scalars.return_value.all.return_value = rows
-        trans = SimpleNamespace(sa_session=session)
+        trans = mock.Mock(sa_session=session)
 
         states = self.manager._learning_states(trans)
         result = self.manager._aggregate([], states)
