@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
 import { getJobDuration } from "./utilities";
@@ -28,6 +28,7 @@ const props = defineProps<{
 
 const job = ref<ShowFullJobResponse | null>(null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
+const invocationLookupError = ref<string | null>(null);
 
 const stdout_length = ref(50000);
 const stdout_text = ref("");
@@ -129,7 +130,14 @@ watch(
             newId &&
             (fetchedInvocationId.value === undefined || (fetchedInvocationId.value === null && newId !== oldId))
         ) {
-            const invocation = await fetchInvocationForJob(newId);
+            let invocation;
+            try {
+                invocation = await fetchInvocationForJob(newId);
+                invocationLookupError.value = null;
+            } catch (e) {
+                invocationLookupError.value = errorMessageAsString(e);
+                return;
+            }
             if (invocation) {
                 fetchedInvocationId.value = invocation.id;
             } else {
@@ -272,6 +280,12 @@ watch(
                     <td>Workflow Invocation</td>
                     <td>
                         <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
+                    </td>
+                </tr>
+                <tr v-else-if="invocationLookupError">
+                    <td>Workflow Invocation</td>
+                    <td id="invocation-lookup-error" class="text-danger">
+                        Could not determine the workflow invocation: {{ invocationLookupError }}
                     </td>
                 </tr>
             </tbody>
