@@ -235,12 +235,13 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             if history is None:
                 return "The user has no active history."
             history_id = teaching_assistant.deps.trans.security.encode_id(history.id)
-            result = teaching_assistant.ops.get_history_contents(history_id, limit=100, order="hid-asc")
-            datasets = result.get("contents", [])
+            # The newest items are what a learner is asking about, but they read best oldest-first.
+            result = teaching_assistant.ops.get_history_contents(history_id, limit=15, order="hid-dsc")
+            datasets = list(reversed(result.get("contents", [])))
             if not datasets:
                 return "The user's current history is empty."
             summary_lines = []
-            for ds in datasets[:15]:
+            for ds in datasets:
                 state_indicator = ds.get("state", "?")
                 line = (
                     f"- [{state_indicator}] HID {ds.get('hid', '?')}: "
@@ -257,10 +258,9 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                         line += f" -- failed job {job_id}, use analyze_error"
                 summary_lines.append(line)
             total = result.get("pagination", {}).get("total_items", len(datasets))
-            shown = min(len(datasets), 15)
             header = f"User's current history has {total} datasets"
-            if total > shown:
-                header += f" (showing first {shown})"
+            if total > len(datasets):
+                header += f" (showing the latest {len(datasets)})"
             return header + ":\n" + "\n".join(summary_lines)
 
         @agent.tool
