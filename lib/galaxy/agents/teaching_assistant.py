@@ -77,7 +77,7 @@ def _plain_markdown(value: str) -> str:
 
 
 def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], content: str) -> str:
-    sources = {}
+    sources: dict[str, dict[str, Any]] = {}
     job_tools: list[str] = []
     for message in ctx.messages:
         # Conversation history and failed transport attempts cannot authorize new citations.
@@ -219,17 +219,17 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         agent.output_validator(_render_tutorial_references)
 
         @agent.tool
-        async def search_training_materials(ctx, query: str) -> str | ToolReturn:
+        async def search_training_materials(ctx: RunContext[GalaxyAgentDependencies], query: str) -> str | ToolReturn:
             """Search GTN training materials for relevant tutorials."""
             return teaching_assistant._search_tutorials(query, limit=5)
 
         @agent.tool
-        async def suggest_tutorials(ctx, topic: str) -> str | ToolReturn:
+        async def suggest_tutorials(ctx: RunContext[GalaxyAgentDependencies], topic: str) -> str | ToolReturn:
             """Suggest an ordered set of tutorials for a topic, easiest first."""
             return teaching_assistant._search_tutorials(topic, limit=8, easiest_first=True)
 
         @agent.tool
-        async def check_user_context(ctx) -> str:
+        async def check_user_context(ctx: RunContext[GalaxyAgentDependencies]) -> str:
             """Inspect the user's current history. Failed items include the job ID to pass to analyze_error."""
             history = teaching_assistant.deps.trans.get_history()
             if history is None:
@@ -264,7 +264,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return header + ":\n" + "\n".join(summary_lines)
 
         @agent.tool
-        async def analyze_error(ctx, job_id: str) -> str | ToolReturn:
+        async def analyze_error(ctx: RunContext[GalaxyAgentDependencies], job_id: str) -> str | ToolReturn:
             """Get error details for a failed job. Returns raw analysis for pedagogical reframing."""
             try:
                 status = teaching_assistant.ops.get_job_status(job_id, full=True)
@@ -324,7 +324,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return ToolReturn(return_value=report, metadata={"tutor_job_tools": tools})
 
         @agent.tool
-        async def recommend_tools(ctx, task_description: str) -> str:
+        async def recommend_tools(ctx: RunContext[GalaxyAgentDependencies], task_description: str) -> str:
             """Get tool recommendations for a task. Returns results for guided discovery."""
             try:
                 response = await teaching_assistant._call_agent_from_tool(
@@ -344,7 +344,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 return "Available tools:\n" + "\n".join(formatted)
 
         @agent.tool
-        async def demonstrate_concept(ctx, tool_id: str, inputs_json: str) -> str:
+        async def demonstrate_concept(ctx: RunContext[GalaxyAgentDependencies], tool_id: str, inputs_json: str) -> str:
             """Demonstrate a tool. Use sparingly -- prefer coaching over showing.
 
             Runs the tool only when live execution is enabled for this deployment;
