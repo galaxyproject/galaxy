@@ -5,6 +5,7 @@ import { BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { vShort } from "@/components/plugins/short";
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
 

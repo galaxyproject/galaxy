@@ -61,7 +61,6 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
-import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
 import { getAppRoot } from "@/onload";
@@ -95,9 +94,6 @@ export default {
         ConfirmDialog,
         BroadcastsOverlay,
         TourRunner,
-    },
-    directives: {
-        short,
     },
     setup() {
         const tourStore = useTourStore();
