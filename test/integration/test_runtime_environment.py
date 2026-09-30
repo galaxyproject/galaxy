@@ -5,6 +5,7 @@ from galaxy_test.driver import integration_util
 
 
 class TestRuntimeEnvironmentIntegration(integration_util.IntegrationTestCase):
+    jobs_directory: str
     framework_tool_and_types = True
     metadata_strategy = "directory"
 
