@@ -572,7 +572,9 @@ def test_get_tutorial_curriculum_distinguishes_missing_from_unstated(curriculum_
 def test_tutorial_curriculum_serializes_for_the_agent(curriculum_db: Path):
     db = GTNSearchDB(db_path=str(curriculum_db))
 
-    payload = db.get_tutorial_curriculum("sequence-analysis", "quality-control").to_dict()
+    curriculum = db.get_tutorial_curriculum("sequence-analysis", "quality-control")
+    assert curriculum is not None
+    payload = curriculum.to_dict()
 
     assert payload["url"] == "https://training.galaxyproject.org/qc"
     assert len(payload["objectives"]) == 2

@@ -3,11 +3,18 @@
 import json
 import re
 from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+)
 from unittest import mock
 
 import pytest
 
 pydantic_ai = pytest.importorskip("pydantic_ai")
+
+from pydantic_ai import RunContext
+from pydantic_ai.messages import ToolReturn
 
 from galaxy.agents import (
     AgentType,
@@ -15,6 +22,7 @@ from galaxy.agents import (
 )
 from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
 from galaxy.agents.gtn.search import TutorialCurriculum
+from galaxy.agents.operations import AgentOperationsManager
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.teaching_assistant import (
     _render_tutorial_references,
@@ -30,6 +38,24 @@ from galaxy.schema.agents import (
     LearningState,
     TutorModeToggle,
 )
+
+
+def _fake_ops(agent: TeachingAssistantAgent) -> Any:
+    """Give a test a spec'd operations double instead of assigning bare methods (which mypy rejects)."""
+    ops = mock.create_autospec(AgentOperationsManager, instance=True)
+    agent.ops = ops
+    return ops
+
+
+def _fake_ctx(run_id: str | None, messages: list[Any]) -> RunContext[GalaxyAgentDependencies]:
+    """Build a RunContext-shaped double; _render_tutorial_references only reads run_id and messages."""
+    return cast(RunContext[GalaxyAgentDependencies], SimpleNamespace(run_id=run_id, messages=messages))
+
+
+def _tool_metadata(result: str | ToolReturn) -> dict[str, Any]:
+    """Narrow a tool function's str | ToolReturn result down to its metadata dict."""
+    assert isinstance(result, ToolReturn)
+    return result.metadata
 
 
 class TestTeachingAssistantRegistration:
@@ -131,21 +157,23 @@ class TestTeachingAssistantAgent:
             self.mock_trans.security.encode_id.assert_not_called()
 
     @pytest.mark.parametrize("log_prefix", ["", "HISAT2 starting\n" + "progress\n" * 1000])
-    async def test_error_analysis_passes_stderr_to_specialist(self, log_prefix):
+    async def test_error_analysis_passes_stderr_to_specialist(self, log_prefix, monkeypatch):
         agent = TeachingAssistantAgent(self.deps)
         stderr = log_prefix + "No index found"
-        agent.ops.get_job_status = mock.Mock(
-            return_value={"job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": stderr}}
-        )
-        agent._call_agent_from_tool = mock.AsyncMock(return_value="Check which reference index was selected.")
-        agent.ops.get_job_parameters = mock.Mock(side_effect=ValueError("tool not installed"))
+        ops = _fake_ops(agent)
+        ops.get_job_status.return_value = {
+            "job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": stderr}
+        }
+        delegate = mock.AsyncMock(return_value="Check which reference index was selected.")
+        monkeypatch.setattr(agent, "_call_agent_from_tool", delegate)
+        ops.get_job_parameters.side_effect = ValueError("tool not installed")
         ctx = mock.Mock()
 
         result = (await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")).return_value
 
-        agent.ops.get_job_status.assert_called_once_with("encoded-job", full=True)
+        ops.get_job_status.assert_called_once_with("encoded-job", full=True)
         assert "No index found" in result
-        delegated_query = agent._call_agent_from_tool.call_args.args[1]
+        delegated_query = delegate.call_args.args[1]
         assert "No index found" in delegated_query
         assert len(delegated_query.split("stderr=", 1)[1]) <= JOB_LOG_EXCERPT_CHARS
         if log_prefix:
@@ -153,33 +181,33 @@ class TestTeachingAssistantAgent:
             assert "HISAT2 starting" in delegated_query
         assert "Check which reference index was selected." in result
 
-    async def test_error_analysis_reports_settings_by_form_label(self):
+    async def test_error_analysis_reports_settings_by_form_label(self, monkeypatch):
         # Without the real settings the tutor invented a "Column" parameter and a "Header" option for Filter1.
         agent = TeachingAssistantAgent(self.deps)
-        agent.ops.get_job_status = mock.Mock(
-            return_value={"job": {"tool_id": "Filter1", "state": "error", "exit_code": 1, "stderr": "IndexError"}}
-        )
-        agent.ops.get_job_parameters = mock.Mock(
-            return_value={
-                "parameters": [
-                    {"label": "Filter", "value": "HID 3: counts.tabular", "depth": 1},
-                    {"label": "With following condition", "value": "c7>100", "depth": 1},
-                    {"label": "Advanced", "value": None, "depth": 1},
-                    {"label": "Number of header lines to skip", "value": "1", "depth": 2},
-                ],
-                "has_parameter_errors": False,
-            }
-        )
-        agent._call_agent_from_tool = mock.AsyncMock(return_value="The condition names a missing column.")
+        ops = _fake_ops(agent)
+        ops.get_job_status.return_value = {
+            "job": {"tool_id": "Filter1", "state": "error", "exit_code": 1, "stderr": "IndexError"}
+        }
+        ops.get_job_parameters.return_value = {
+            "parameters": [
+                {"label": "Filter", "value": "HID 3: counts.tabular", "depth": 1},
+                {"label": "With following condition", "value": "c7>100", "depth": 1},
+                {"label": "Advanced", "value": None, "depth": 1},
+                {"label": "Number of header lines to skip", "value": "1", "depth": 2},
+            ],
+            "has_parameter_errors": False,
+        }
+        delegate = mock.AsyncMock(return_value="The condition names a missing column.")
+        monkeypatch.setattr(agent, "_call_agent_from_tool", delegate)
 
         result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
         result = result.return_value
 
-        agent.ops.get_job_parameters.assert_called_once_with("encoded-job")
+        ops.get_job_parameters.assert_called_once_with("encoded-job")
         assert "- Filter: HID 3: counts.tabular" in result
         assert "- With following condition: c7>100" in result
         assert "- Advanced\n  - Number of header lines to skip: 1" in result
-        assert "c7>100" in agent._call_agent_from_tool.call_args.args[1]
+        assert "c7>100" in delegate.call_args.args[1]
 
     @pytest.mark.parametrize(
         "tool_id, tool_name, expected",
@@ -189,15 +217,16 @@ class TestTeachingAssistantAgent:
             ("Filter1", None, ["Filter1"]),
         ],
     )
-    async def test_error_analysis_records_the_failing_tool(self, tool_id, tool_name, expected):
+    async def test_error_analysis_records_the_failing_tool(self, tool_id, tool_name, expected, monkeypatch):
         agent = TeachingAssistantAgent(self.deps)
-        agent.ops.get_job_status = mock.Mock(return_value={"job": {"tool_id": tool_id, "state": "error"}})
-        agent.ops.get_job_parameters = mock.Mock(side_effect=ValueError("no summary"))
+        ops = _fake_ops(agent)
+        ops.get_job_status.return_value = {"job": {"tool_id": tool_id, "state": "error"}}
+        ops.get_job_parameters.side_effect = ValueError("no summary")
         if tool_name:
-            agent.ops.get_tool_details = mock.Mock(return_value={"name": tool_name})
+            ops.get_tool_details.return_value = {"name": tool_name}
         else:
-            agent.ops.get_tool_details = mock.Mock(side_effect=ValueError("not installed"))
-        agent._call_agent_from_tool = mock.AsyncMock(return_value="")
+            ops.get_tool_details.side_effect = ValueError("not installed")
+        monkeypatch.setattr(agent, "_call_agent_from_tool", mock.AsyncMock(return_value=""))
 
         result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
 
@@ -217,7 +246,7 @@ class TestTeachingAssistantAgent:
             objectives=["Assess short reads FASTQ quality using FastQC"],
         )
 
-        source = agent._search_tutorials("QC", 5).metadata["tutor_sources"][0]
+        source = _tool_metadata(agent._search_tutorials("QC", 5))["tutor_sources"][0]
 
         agent.gtn_db.get_tutorial_curriculum.assert_called_once_with("sequence-analysis", "quality-control")
         assert "FastQC" in source["about"]
@@ -278,7 +307,7 @@ class TestTeachingAssistantAgent:
                     part_kind="tool-return", tool_name="analyze_error", metadata={"tutor_job_tools": job_tools}
                 )
             )
-        ctx = SimpleNamespace(run_id="current", messages=[SimpleNamespace(run_id="current", parts=parts)])
+        ctx = _fake_ctx("current", [SimpleNamespace(run_id="current", parts=parts)])
         content = f"Here is the fix.\n[[tutorial:{cited}]]"
 
         if allowed:
@@ -296,33 +325,32 @@ class TestTeachingAssistantAgent:
         # Without a job ID the tutor could only send the learner off to dig out the error themselves.
         agent = TeachingAssistantAgent(self.deps)
         self.mock_trans.get_history.return_value = mock.Mock(id=7)
-        agent.ops.get_history_contents = mock.Mock(
-            return_value={
-                "contents": [
-                    {"id": "ds-ok", "hid": 1, "name": "reads.fastq", "state": "ok", "history_content_type": "dataset"},
-                    {
-                        "id": "ds-bad",
-                        "hid": 2,
-                        "name": "Filter on 1",
-                        "state": "error",
-                        "history_content_type": "dataset",
-                    },
-                    {
-                        "id": "hdca",
-                        "hid": 3,
-                        "name": "trimmed",
-                        "state": "error",
-                        "history_content_type": "dataset_collection",
-                    },
-                ],
-                "pagination": {"total_items": 2},
-            }
-        )
-        agent.ops.get_job_details = mock.Mock(return_value={"job_id": "encoded-failed-job"})
+        ops = _fake_ops(agent)
+        ops.get_history_contents.return_value = {
+            "contents": [
+                {"id": "ds-ok", "hid": 1, "name": "reads.fastq", "state": "ok", "history_content_type": "dataset"},
+                {
+                    "id": "ds-bad",
+                    "hid": 2,
+                    "name": "Filter on 1",
+                    "state": "error",
+                    "history_content_type": "dataset",
+                },
+                {
+                    "id": "hdca",
+                    "hid": 3,
+                    "name": "trimmed",
+                    "state": "error",
+                    "history_content_type": "dataset_collection",
+                },
+            ],
+            "pagination": {"total_items": 2},
+        }
+        ops.get_job_details.return_value = {"job_id": "encoded-failed-job"}
 
         result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
 
-        agent.ops.get_job_details.assert_called_once_with("ds-bad")
+        ops.get_job_details.assert_called_once_with("ds-bad")
         failed_line = next(line for line in result.splitlines() if "HID 2" in line)
         assert "encoded-failed-job" in failed_line
         assert "job" not in next(line for line in result.splitlines() if "HID 1" in line)
@@ -332,7 +360,7 @@ class TestTeachingAssistantAgent:
         # A learner asks about the job that just failed, which is the newest item, not the oldest.
         agent = TeachingAssistantAgent(self.deps)
         self.mock_trans.get_history.return_value = mock.Mock(id=7)
-        items = [
+        items: list[dict[str, Any]] = [
             {"id": f"ds-{hid}", "hid": hid, "name": f"step {hid}", "state": "ok", "history_content_type": "dataset"}
             for hid in range(1, 40)
         ]
@@ -341,11 +369,12 @@ class TestTeachingAssistantAgent:
         )
 
         def contents(history_id, limit=100, offset=0, order="hid-asc", **kwargs):
-            ordered = sorted(items, key=lambda item: item["hid"], reverse=order == "hid-dsc")
+            ordered = sorted(items, key=lambda item: int(item["hid"]), reverse=order == "hid-dsc")
             return {"contents": ordered[offset : offset + limit], "pagination": {"total_items": len(items)}}
 
-        agent.ops.get_history_contents = contents
-        agent.ops.get_job_details = mock.Mock(return_value={"job_id": "encoded-failed-job"})
+        ops = _fake_ops(agent)
+        ops.get_history_contents.side_effect = contents
+        ops.get_job_details.return_value = {"job_id": "encoded-failed-job"}
 
         result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
 
@@ -409,12 +438,12 @@ class TestTeachingAssistantAgent:
         }
         agent.gtn_db = mock.Mock()
         agent.gtn_db.search.return_value = [second, first]
-        result = agent._search_tutorials("QC", 8, easiest_first=True)
-        sources = result.metadata["tutor_sources"]
+        metadata = _tool_metadata(agent._search_tutorials("QC", 8, easiest_first=True))
+        sources = metadata["tutor_sources"]
         assert sources[0]["excerpt"] == "First excerpt."
         assert sources[0]["id"] != sources[1]["id"]
-        part = SimpleNamespace(part_kind="tool-return", tool_name="suggest_tutorials", metadata=result.metadata)
-        ctx = SimpleNamespace(run_id="current", messages=[SimpleNamespace(run_id="current", parts=[part])])
+        part = SimpleNamespace(part_kind="tool-return", tool_name="suggest_tutorials", metadata=metadata)
+        ctx = _fake_ctx("current", [SimpleNamespace(run_id="current", parts=[part])])
         rendered = _render_tutorial_references(ctx, f"[[tutorial:{sources[1]['id']}]]")
         assert "[Quality \\[control\\]](<https://training.galaxyproject.org/qc>)" in rendered
         assert "[invented](" not in rendered
@@ -442,7 +471,7 @@ class TestTeachingAssistantAgent:
         agent.gtn_db = mock.Mock()
         agent.gtn_db.search.return_value = [marked_up, only_markup]
 
-        sources = agent._search_tutorials("QC", 5).metadata["tutor_sources"]
+        sources = _tool_metadata(agent._search_tutorials("QC", 5))["tutor_sources"]
 
         assert sources[0]["excerpt"] == "...1. FastQC on the reads..."
         assert sources[1]["excerpt"] == "Inspect reads before mapping"
@@ -460,7 +489,7 @@ class TestTeachingAssistantAgent:
         ],
     )
     def test_inline_html_in_answers_becomes_markdown(self, content, expected):
-        ctx = SimpleNamespace(run_id="current", messages=[])
+        ctx = _fake_ctx("current", [])
         assert _render_tutorial_references(ctx, content) == expected
 
     @pytest.mark.parametrize("tool_name, run_id", [("recommend_tools", "current"), ("suggest_tutorials", None)])
@@ -470,7 +499,7 @@ class TestTeachingAssistantAgent:
             tool_name=tool_name,
             metadata={"tutor_sources": [{"id": "000000000000", "title": "Invented"}]},
         )
-        ctx = SimpleNamespace(run_id=run_id, messages=[SimpleNamespace(run_id=run_id, parts=[part])])
+        ctx = _fake_ctx(run_id, [SimpleNamespace(run_id=run_id, parts=[part])])
         with pytest.raises(pydantic_ai.ModelRetry):
             _render_tutorial_references(ctx, "[[tutorial:000000000000]]")
 

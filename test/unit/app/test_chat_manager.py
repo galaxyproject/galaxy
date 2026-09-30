@@ -48,10 +48,12 @@ def _make_trans(user_id=1):
 class _FakeChatExchange:
     """Lightweight stand-in that avoids SQLAlchemy instrumentation."""
 
-    user_id = mock.Mock()
-    job_id = mock.Mock()
-    page_id = mock.Mock()
-    id = mock.Mock()
+    # Class-level Mocks stand in for SQLAlchemy column expressions (e.g. ChatExchange.id.desc());
+    # typed Any so tests can also assign real ids to instances (e.g. exchange.id = 31).
+    user_id: Any = mock.Mock()
+    job_id: Any = mock.Mock()
+    page_id: Any = mock.Mock()
+    id: Any = mock.Mock()
 
     def __init__(self, user=None, job_id=None, page_id=None, message=None, **kw):
         self.user = user
@@ -376,20 +378,26 @@ class TestJobChatPersistence:
                 obj.create_time = None
 
         trans.sa_session.add.side_effect = assign_identity
-        api = _chat_api()
-        api.chat_manager.get = mock.Mock(return_value=None)
-        api.job_manager.get_accessible_job.return_value = mock.Mock(id=7)
-        api._get_agent_response_full = mock.AsyncMock(
+
+        job_manager = mock.Mock()
+        job_manager.get_accessible_job.return_value = mock.Mock(id=7)
+        api = _chat_api(job_manager=job_manager)
+
+        get_mock = mock.Mock(return_value=None)
+        monkeypatch.setattr(api.chat_manager, "get", get_mock)
+
+        delegate = mock.AsyncMock(
             return_value=AgentResponse(
                 content="Check which reference index was selected.",
                 agent_type="teaching_assistant",
                 confidence="high",
             )
         )
-        return api, trans
+        monkeypatch.setattr(api, "_get_agent_response_full", delegate)
+        return api, trans, get_mock, delegate
 
     async def test_job_tutor_round_trip_preserves_attribution_and_feedback(self, job_chat):
-        api, trans = job_chat
+        api, trans, get_mock, delegate = job_chat
         payload = ChatPayload(query="Help me understand this failed job")
         result = await api.query(job_id=7, payload=payload, agent_type="auto", trans=trans, user=trans.user)
 
@@ -401,12 +409,12 @@ class TestJobChatPersistence:
         assert stored["agent_type"] == "teaching_assistant"
         assert stored["agent_response"] == result.agent_response.model_dump()
 
-        api.chat_manager.get.return_value = exchange
+        get_mock.return_value = exchange
         cached = await api.query(job_id=7, payload=payload, agent_type="auto", trans=trans, user=trans.user)
         assert cached.response == result.response
         assert cached.agent_response == result.agent_response
         assert cached.exchange_id == result.exchange_id
-        api._get_agent_response_full.assert_awaited_once()
+        delegate.assert_awaited_once()
 
         exchange.messages[0].feedback = 0
         analytics = TutorAnalyticsManager()
@@ -420,10 +428,10 @@ class TestJobChatPersistence:
 
     @pytest.mark.parametrize("content", ["Check the reference index.", '{"response": "An example"}', "[]", "null"])
     async def test_cached_legacy_job_responses_remain_plain_text(self, job_chat, content):
-        api, trans = job_chat
+        api, trans, get_mock, delegate = job_chat
         exchange = _FakeChatExchange(message=content)
         exchange.id = 31
-        api.chat_manager.get.return_value = exchange
+        get_mock.return_value = exchange
 
         result = await api.query(
             job_id=7, payload=ChatPayload(query="Why did this fail?"), agent_type="auto", trans=trans, user=trans.user
@@ -431,7 +439,7 @@ class TestJobChatPersistence:
 
         assert result.response == content
         assert result.agent_response is None
-        api._get_agent_response_full.assert_not_awaited()
+        delegate.assert_not_awaited()
 
 
 class TestLearningModeFlag:
