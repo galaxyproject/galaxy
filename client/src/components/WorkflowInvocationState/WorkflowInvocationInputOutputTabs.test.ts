@@ -103,8 +103,10 @@ async function mountWorkflowInvocationInputOutputTabs(
             tab,
         },
         stubs: {
+            // ParameterStep renders the actual parameters table (via GTable) from its
+            // `parameters` prop rather than a slot, so stubbing it would hide the very
+            // rows the "shows invocation inputs" test inspects.
             ContentItem: true,
-            ParameterStep: true,
         },
         pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
     });

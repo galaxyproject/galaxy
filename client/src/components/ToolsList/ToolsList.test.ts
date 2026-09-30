@@ -118,11 +118,12 @@ describe("ToolsList", () => {
 
         expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
 
-        // Now add all filters in the advanced menu
+        // Now add all filters in the advanced menu. BFormInput isn't stubbed, so
+        // `find()` here returns the real <input> DOM element, not a component wrapper.
         for (const [selector, value] of Object.entries(FILTER_INPUTS)) {
             const filterInput = wrapper.find(selector);
-            expect(filterInput.vm).toBeTruthy();
-            expect(filterInput.props().type).toBe("text");
+            expect(filterInput.exists()).toBe(true);
+            expect(filterInput.attributes("type")).toBe("text");
             await filterInput.setValue(value);
         }
 

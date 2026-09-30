@@ -67,12 +67,14 @@ interface BarChartProps {
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
 }
 
-function mountBarChartWrapper(props: BarChartProps) {
+function mountBarChartWrapper(props: BarChartProps, { realBCard = false }: { realBCard?: boolean } = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const localVue = getLocalVue();
     return mount(BarChart as object, {
         props: props,
-        global: localVue,
+        // BCard is globally stubbed, and the stub only ever renders the default
+        // slot -- never named slots like `#header`, where the title lives.
+        global: realBCard ? { ...localVue, stubs: { ...localVue.stubs, BCard: false } } : localVue,
         pinia,
     });
 }
@@ -98,10 +100,13 @@ describe("BarChart.vue", () => {
         });
 
         it("should render with the correct title", () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
+            const wrapper = mountBarChartWrapper(
+                {
+                    title: "Test Bar Chart",
+                    data: TEST_DATA,
+                },
+                { realBCard: true },
+            );
             expect(wrapper.find("h4").text()).toBe("Test Bar Chart");
         });
 

@@ -59,8 +59,10 @@ describe("NewUserConfirmation", () => {
     });
 
     it("basics", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Confirm new account creation");
+        // BCard is globally stubbed, so its `header` prop shows up as a literal
+        // attribute on the stub rather than rendered into a `.card-header` div.
+        const card = wrapper.find("b-card-stub");
+        expect(card.attributes("header")).toBe("Confirm new account creation");
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(1);

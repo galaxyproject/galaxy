@@ -48,7 +48,7 @@ describe("InstalledList", () => {
             },
             global: localVue,
         });
-        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repositories");
+        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repositories");
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".installed-message").text()).toBe("2 repositories installed on this instance.");
         const names = wrapper.findAll(".name");
@@ -57,7 +57,9 @@ describe("InstalledList", () => {
         expect(names.at(1).text()).toBe("name_1");
         const links = wrapper.findAllComponents(GLink);
         expect(links.length).toBe(3);
-        const badge = links.at(1).find(".badge");
+        // BBadge is globally stubbed, so it renders as `b-badge-stub` rather than
+        // gaining the real component's own `.badge` class.
+        const badge = links.at(1).find("b-badge-stub");
         expect(badge.text()).toBe("Newer version available!");
         expect(wrapper.vm.fields.some((field) => field.key === "tool_shed")).toBe(true);
     });

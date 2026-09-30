@@ -233,7 +233,8 @@ describe("ChatMessageCell", () => {
                 },
             ];
             const wrapper = mountCell(makeAssistantMessage({ suggestions }));
-            expect(wrapper.find(".action-card").exists()).toBe(true);
+            // ActionCard is stubbed by mountCell, so its own `.action-card` class never renders.
+            expect(wrapper.find("action-card-stub").exists()).toBe(true);
         });
 
         it("does not render ActionCard when no suggestions", () => {
@@ -275,7 +276,9 @@ describe("ChatMessageCell", () => {
             const emitted = wrapper.emitted("handle-action");
             expect(emitted).toHaveLength(1);
             expect(emitted![0]![0]).toEqual(action);
-            expect(emitted![0]![1]).toBe(agentResponse);
+            // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
+            // same object reference as `agentResponse` even though its contents are identical.
+            expect(emitted![0]![1]).toEqual(agentResponse);
         });
     });
 

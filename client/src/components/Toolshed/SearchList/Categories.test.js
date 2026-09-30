@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import Categories from "./Categories.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 vi.mock("../services", () => ({
     Services: class Services {
@@ -38,7 +39,8 @@ describe("Categories", () => {
             },
             global: localVue,
         });
-        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading categories");
+        // LoadingSpan isn't stubbed, so check the real component's props directly.
+        expect(wrapper.findComponent(LoadingSpan).props("message")).toBe("Loading categories");
     });
 
     it("test categories table", async () => {

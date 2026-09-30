@@ -82,10 +82,13 @@ describe("watchHistory", () => {
     it("survives a failing request", async () => {
         suppressDebugConsole(); // we log that 500, totally expected, do not include it in test output
 
-        // Stage 1: Initial successful load
+        // Stage 1: Initial successful load. `watchHistory.js` tracks the last-seen
+        // update_time in a module-level variable (by design -- there's only one watcher
+        // in production), so this needs a value newer than the previous test's "0" or the
+        // fetch gets skipped as a no-op here too.
         server.use(
             http.untyped.get("/history/current_history_json", () => {
-                return HttpResponse.json(historyData);
+                return HttpResponse.json({ ...historyData, update_time: "0.1" });
             }),
             http.untyped.get(/api\/histories\/history-id\/contents?.*/, () => {
                 return HttpResponse.json(historyItems);

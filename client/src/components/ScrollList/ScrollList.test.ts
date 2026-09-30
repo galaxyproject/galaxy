@@ -14,8 +14,7 @@ const TOTAL_ITEMS = 50;
 const BUFFER_SIZE = 5;
 const TEST_ITEM_DIV = "div[data-description='test item']";
 const LOAD_MORE_BUTTON = "[data-description='load more items button']";
-const TEST_ITEM_SLOT = ({ item }: { item: TestItem; index: number }) =>
-    `<div data-description="test item">Test ${item.name}</div>`;
+const TEST_ITEM_SLOT = `<template #default="{ item }"><div data-description="test item">Test {{ item.name }}</div></template>`;
 const ITEM_NAME = "test item";
 const ITEM_NAME_PLURAL = "test items";
 

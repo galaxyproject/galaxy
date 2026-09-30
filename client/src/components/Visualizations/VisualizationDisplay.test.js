@@ -89,9 +89,10 @@ function watchUnloadListeners() {
 }
 
 function decide(guard) {
-    let allowed = true;
-    guard({}, {}, (proceed) => (allowed = proceed !== false));
-    return allowed;
+    // Vue Router 4 guards signal cancellation via their return value (`false`),
+    // not the old `(to, from, next)` callback style.
+    const result = guard({}, {});
+    return result !== false;
 }
 
 beforeEach(() => {

@@ -431,7 +431,9 @@ describe("GDropdown.vue", () => {
             const items = wrapper.findAll("[role='menuitem']");
             expect(items.map((item) => item.attributes("tabindex"))).toEqual(["-1", "-1", "-1", "-1", "-1"]);
             expect(items[1]?.attributes("aria-disabled")).toBe("true");
-            expect(items[3]?.attributes("disabled")).toBe("disabled");
+            // Vue 3 renders a true boolean attribute as an empty string (`disabled=""`),
+            // not the attribute name as its value like Vue 2 did.
+            expect(items[3]?.attributes("disabled")).toBe("");
         });
 
         it("closes on Escape and returns focus to the toggle", async () => {

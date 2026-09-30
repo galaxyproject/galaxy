@@ -27,7 +27,9 @@ describe("LoginIndex", () => {
     });
 
     it("switching between register and login", async () => {
-        const cardHeader = wrapper.find(".card-header");
+        // BCardHeader is globally stubbed, so it renders as `b-card-header-stub`
+        // rather than gaining the real component's own `.card-header` class.
+        const cardHeader = wrapper.find("b-card-header-stub");
         expect(cardHeader.text()).toBe("Welcome to Galaxy, please log in");
 
         const missingToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE); // TODO: Never appears because of the GLink change
