@@ -154,13 +154,9 @@ function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): stri
         return String((bindingValue as { title: string }).title || "");
     }
     // Fall back to element's title attribute.
-    // Also check vnode attrs/props for components with inheritAttrs: false (e.g. BFormCheckbox)
+    // Also check the vnode's props for components with inheritAttrs: false (e.g. BFormCheckbox)
     // where :title doesn't land on the root DOM element.
-    const title =
-        el.getAttribute("title") ||
-        (vnode?.data?.attrs as Record<string, unknown> | undefined)?.title ||
-        (vnode?.componentOptions?.propsData as Record<string, unknown> | undefined)?.title ||
-        null;
+    const title = el.getAttribute("title") || vnode?.props?.title || null;
     if (title) {
         el.dataset.gTooltipTitle = String(title);
     }
@@ -387,7 +383,7 @@ function getLabelTarget(el: HTMLElement) {
 }
 
 export const vGTooltip: ObjectDirective<HTMLElement> = {
-    inserted(el, binding, vnode) {
+    mounted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -436,7 +432,7 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
     },
 
-    componentUpdated(el, binding, vnode) {
+    updated(el, binding, vnode) {
         const state = stateMap.get(el);
         if (!state) {
             return;
@@ -461,7 +457,7 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
     },
 
-    unbind(el) {
+    unmounted(el) {
         const state = stateMap.get(el);
         if (!state) {
             return;

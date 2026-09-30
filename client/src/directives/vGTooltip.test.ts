@@ -33,7 +33,7 @@ describe("vGTooltip", () => {
             arg: undefined,
         } as unknown as DirectiveBinding<unknown>;
 
-        vGTooltip.inserted?.(element, binding, undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.mounted?.(element, binding, undefined as unknown as VNode, undefined as unknown as VNode);
 
         return element;
     }
@@ -54,7 +54,12 @@ describe("vGTooltip", () => {
         await advanceTooltipHoverDelay();
         expect(getRenderedTooltip()).not.toBeNull();
 
-        vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.unmounted?.(
+            element,
+            bindingForCleanup(),
+            undefined as unknown as VNode,
+            undefined as unknown as VNode,
+        );
     });
 
     test("cancels delayed show when hover leaves early", async () => {
@@ -67,7 +72,12 @@ describe("vGTooltip", () => {
 
         expect(getRenderedTooltip()).toBeNull();
 
-        vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.unmounted?.(
+            element,
+            bindingForCleanup(),
+            undefined as unknown as VNode,
+            undefined as unknown as VNode,
+        );
     });
 
     test("suppresses native title during delayed hover and restores it on leave", async () => {
@@ -81,7 +91,12 @@ describe("vGTooltip", () => {
 
         expect(element.getAttribute("title")).toBe("Native title");
 
-        vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.unmounted?.(
+            element,
+            bindingForCleanup(),
+            undefined as unknown as VNode,
+            undefined as unknown as VNode,
+        );
     });
 
     test("shows immediately on focusin", () => {
@@ -90,7 +105,12 @@ describe("vGTooltip", () => {
         element.dispatchEvent(new Event("focusin"));
         expect(getRenderedTooltip()).not.toBeNull();
 
-        vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.unmounted?.(
+            element,
+            bindingForCleanup(),
+            undefined as unknown as VNode,
+            undefined as unknown as VNode,
+        );
     });
 
     test("stays visible when a plain button is clicked", () => {
@@ -100,7 +120,12 @@ describe("vGTooltip", () => {
         element.dispatchEvent(new Event("click"));
         expect(getRenderedTooltip()).not.toBeNull();
 
-        vGTooltip.unbind?.(element, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+        vGTooltip.unmounted?.(
+            element,
+            bindingForCleanup(),
+            undefined as unknown as VNode,
+            undefined as unknown as VNode,
+        );
     });
 
     describe("with a controlled show value", () => {
@@ -125,13 +150,13 @@ describe("vGTooltip", () => {
             await wrapper.setData({ show: false });
             expect(getRenderedTooltip()).toBeNull();
 
-            wrapper.destroy();
+            wrapper.unmount();
         });
 
         test("is shown right away when mounted with show set", () => {
             const wrapper = mountControlled(true);
             expect(getRenderedTooltip()).not.toBeNull();
-            wrapper.destroy();
+            wrapper.unmount();
         });
 
         test("leaves a hover-shown tooltip alone on unrelated re-renders", async () => {
@@ -145,7 +170,7 @@ describe("vGTooltip", () => {
             await wrapper.vm.$nextTick();
             expect(getRenderedTooltip()).not.toBeNull();
 
-            wrapper.destroy();
+            wrapper.unmount();
         });
     });
 
@@ -159,7 +184,7 @@ describe("vGTooltip", () => {
             host.appendChild(toggle);
             document.body.appendChild(host);
 
-            vGTooltip.inserted?.(
+            vGTooltip.mounted?.(
                 host,
                 bindingForCleanup(),
                 undefined as unknown as VNode,
@@ -178,7 +203,12 @@ describe("vGTooltip", () => {
             toggle.dispatchEvent(new Event("click", { bubbles: true }));
             expect(getRenderedTooltip()).toBeNull();
 
-            vGTooltip.unbind?.(host, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+            vGTooltip.unmounted?.(
+                host,
+                bindingForCleanup(),
+                undefined as unknown as VNode,
+                undefined as unknown as VNode,
+            );
         });
 
         function mountDropdown(template: string) {
@@ -223,7 +253,7 @@ describe("vGTooltip", () => {
             expect(toggle.attributes("aria-expanded")).toBe("true");
             expect(toggle.attributes("aria-label")).toBe("More options");
 
-            vGTooltip.unbind?.(
+            vGTooltip.unmounted?.(
                 wrapper.element as HTMLElement,
                 bindingForCleanup(),
                 undefined as unknown as VNode,
@@ -255,7 +285,12 @@ describe("vGTooltip", () => {
             toggle.dispatchEvent(new Event("focusin", { bubbles: true }));
             expect(getRenderedTooltip()).toBeNull();
 
-            vGTooltip.unbind?.(host, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
+            vGTooltip.unmounted?.(
+                host,
+                bindingForCleanup(),
+                undefined as unknown as VNode,
+                undefined as unknown as VNode,
+            );
         });
     });
 });

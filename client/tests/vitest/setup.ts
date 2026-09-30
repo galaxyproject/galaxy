@@ -34,10 +34,6 @@ config.global.directives = {
         mounted(el: HTMLElement, binding: { value?: string }) {
             el.setAttribute("data-mock-directive", binding.value || el.title || "");
         },
-        // Vue 2 compat hook
-        bind(el: HTMLElement, binding: { value?: string }) {
-            el.setAttribute("data-mock-directive", binding.value || el.title || "");
-        },
     },
 };
 
