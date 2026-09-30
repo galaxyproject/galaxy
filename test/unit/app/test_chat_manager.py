@@ -444,6 +444,7 @@ class TestLearningModeFlag:
             lambda api, trans: api.toggle_tutor_mode(
                 payload=TutorModeToggle(enabled=True), trans=trans, user=trans.user
             ),
+            lambda api, trans: api.get_tutor_analytics(trans=trans),
         ],
     )
     def test_tutor_endpoints_refuse_when_learning_mode_is_off(self, call):

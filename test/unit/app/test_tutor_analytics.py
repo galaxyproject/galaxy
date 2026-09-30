@@ -2,6 +2,7 @@
 
 import json
 from types import SimpleNamespace
+from unittest import mock
 
 from galaxy.managers.tutor_analytics import (
     TUTOR_AGENT_TYPE,
@@ -85,3 +86,22 @@ class TestTutorAnalytics:
             _msg(4, "router", feedback=0),  # downvoted but not tutor -> excluded
         ]
         assert self.manager._downvoted_tutor_queries(messages) == ["q"]
+
+    def test_stored_states_that_are_not_objects_are_skipped(self):
+        # One bad preference row shouldn't take down the whole admin report.
+        rows = [
+            SimpleNamespace(value="[]"),
+            SimpleNamespace(value="null"),
+            SimpleNamespace(value="not json"),
+            SimpleNamespace(value=json.dumps({"tutor_mode_enabled": True, "interaction_count": "lots"})),
+            SimpleNamespace(value=json.dumps({"tutor_mode_enabled": True, "interaction_count": 4})),
+        ]
+        session = mock.Mock()
+        session.execute.return_value.scalars.return_value.all.return_value = rows
+        trans = SimpleNamespace(sa_session=session)
+
+        states = self.manager._learning_states(trans)
+        result = self.manager._aggregate([], states)
+
+        assert result["learning_state_users"] == 2
+        assert result["total_interactions"] == 4
