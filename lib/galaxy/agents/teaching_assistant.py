@@ -142,6 +142,11 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
         )
     ]
     if off_topic:
+        log.info(
+            "Tutor retried an off-topic tutorial citation for failed %s: %s",
+            "/".join(job_tools),
+            "; ".join(sources[source_id]["title"] for source_id in off_topic),
+        )
         raise ModelRetry(
             f"For a failed job, cite only a tutorial whose title or stated objectives name the failing tool "
             f"({', '.join(job_tools)}). Remove the other tutorial markers; citing none is fine."

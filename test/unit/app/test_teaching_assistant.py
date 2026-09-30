@@ -235,7 +235,7 @@ class TestTeachingAssistantAgent:
             ("aaaaaaaaaaa1", None, True),
         ],
     )
-    def test_job_failure_answers_cite_only_tutorials_about_the_tool(self, cited, job_tools, allowed):
+    def test_job_failure_answers_cite_only_tutorials_about_the_tool(self, cited, job_tools, allowed, caplog):
         sources = [
             {
                 "id": "aaaaaaaaaaa1",
@@ -283,8 +283,11 @@ class TestTeachingAssistantAgent:
         if allowed:
             assert "Here is the fix." in _render_tutorial_references(ctx, content)
         else:
-            with pytest.raises(pydantic_ai.ModelRetry, match="failing tool"):
-                _render_tutorial_references(ctx, content)
+            with caplog.at_level("INFO", logger="galaxy.agents.teaching_assistant"):
+                with pytest.raises(pydantic_ai.ModelRetry, match="failing tool"):
+                    _render_tutorial_references(ctx, content)
+            # Logged so a live run can show the check fired, since the retry never reaches the answer.
+            assert any("off-topic tutorial" in r.getMessage() for r in caplog.records)
 
     async def test_history_summary_gives_failed_items_a_job_id(self):
         # Without a job ID the tutor could only send the learner off to dig out the error themselves.
