@@ -45,6 +45,10 @@ def get_publisher(error=False):
         # in normal operation we don't want noisy warnings, that's tool author business
         settings_overrides["report_level"] = no_report_level
 
+    # Rendered text must not read files or URLs on the server (include, raw and
+    # csv-table :file:/:url:).
+    settings_overrides["file_insertion_enabled"] = False
+
     Publisher = docutils.core.Publisher
     pub = Publisher(
         parser=None,
