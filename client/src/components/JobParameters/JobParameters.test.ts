@@ -1,3 +1,4 @@
+import { nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -48,18 +49,18 @@ describe("JobParameters/JobParameters.vue", () => {
             link?: string,
         ) => {
             const tds = element.findAll("td");
-            expect(tds.at(0).text()).toBe(expectedTitle);
+            expect(nth(tds, 0).text()).toBe(expectedTitle);
             if (typeof expectedValue === "string") {
-                expect(tds.at(1).text()).toContain(expectedValue);
+                expect(nth(tds, 1).text()).toContain(expectedValue);
             } else {
-                const genericItem = tds.at(1).find("generic-history-item-stub");
+                const genericItem = nth(tds, 1).find("generic-history-item-stub");
                 // Stub props render as bare lowercase attributes (no hyphen), matching
                 // their camelCase prop names (itemId/itemSrc), not kebab-case.
                 expect(genericItem.attributes("itemid")).toBe(expectedValue.id);
                 expect(genericItem.attributes("itemsrc")).toBe(expectedValue.src);
             }
             if (link) {
-                const a_element = tds.at(1).find("a");
+                const a_element = nth(tds, 1).find("a");
                 expect(a_element.attributes("href")).toBe(link);
             }
         };

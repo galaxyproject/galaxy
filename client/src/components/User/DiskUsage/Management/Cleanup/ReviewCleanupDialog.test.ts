@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
@@ -80,7 +80,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
         expect(confirmationModal.props("show")).toBeFalsy();
         await wrapper.find(DELETE_BUTTON).trigger("click");
         expect(confirmationModal.props("show")).toBeTruthy();
@@ -91,7 +91,7 @@ describe("ReviewCleanupDialog.vue", () => {
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
         expect(confirmationModal.props("okDisabled")).toBe(true);
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
         await flushPromises();
@@ -104,7 +104,7 @@ describe("ReviewCleanupDialog.vue", () => {
         await wrapper.find(DELETE_BUTTON).trigger("click");
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
         confirmationModal.vm.$emit("ok");
         await flushPromises();

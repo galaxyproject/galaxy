@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -95,22 +95,22 @@ describe("PageRevisionList", () => {
 
         it("shows 'Current' badge only on the first (index 0) item", () => {
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
-            expect(items.at(0).find(SELECTORS.CURRENT_BADGE).exists()).toBe(true);
-            expect(items.at(1).find(SELECTORS.CURRENT_BADGE).exists()).toBe(false);
-            expect(items.at(2).find(SELECTORS.CURRENT_BADGE).exists()).toBe(false);
+            expect(nth(items, 0).find(SELECTORS.CURRENT_BADGE).exists()).toBe(true);
+            expect(nth(items, 1).find(SELECTORS.CURRENT_BADGE).exists()).toBe(false);
+            expect(nth(items, 2).find(SELECTORS.CURRENT_BADGE).exists()).toBe(false);
         });
 
         it("shows correct edit_source labels: user->Manual, agent->AI, restore->Restored", () => {
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
-            expect(items.at(0).text()).toContain("Manual");
-            expect(items.at(1).text()).toContain("AI");
-            expect(items.at(2).text()).toContain("Restored");
+            expect(nth(items, 0).text()).toContain("Manual");
+            expect(nth(items, 1).text()).toContain("AI");
+            expect(nth(items, 2).text()).toContain("Restored");
         });
 
         it("shows formatted dates", () => {
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
             for (let i = 0; i < items.length; i++) {
-                const text = items.at(i).text();
+                const text = nth(items, i).text();
                 expect(text).toMatch(/\w{3}\s+\d/);
             }
         });
@@ -131,7 +131,7 @@ describe("PageRevisionList", () => {
             });
 
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
-            expect(items.at(0).find(SELECTORS.RESTORE_BUTTON).exists()).toBe(false);
+            expect(nth(items, 0).find(SELECTORS.RESTORE_BUTTON).exists()).toBe(false);
         });
 
         it("shows restore button on non-current revisions (index > 0)", () => {
@@ -140,8 +140,8 @@ describe("PageRevisionList", () => {
             });
 
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
-            expect(items.at(1).find(SELECTORS.RESTORE_BUTTON).exists()).toBe(true);
-            expect(items.at(1).find(SELECTORS.RESTORE_BUTTON).text()).toContain("Restore");
+            expect(nth(items, 1).find(SELECTORS.RESTORE_BUTTON).exists()).toBe(true);
+            expect(nth(items, 1).find(SELECTORS.RESTORE_BUTTON).text()).toContain("Restore");
         });
     });
 
@@ -152,7 +152,7 @@ describe("PageRevisionList", () => {
             });
 
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
-            await items.at(1).trigger("click");
+            await nth(items, 1).trigger("click");
 
             expect(wrapper.emitted().select).toBeTruthy();
             expect(wrapper.emitted().select![0]![0]).toBe("rev-2");
@@ -163,7 +163,7 @@ describe("PageRevisionList", () => {
                 revisions: [makeRevision({ id: "rev-current" }), makeRevision({ id: "rev-older" })],
             });
 
-            const restoreBtn = wrapper.findAll(SELECTORS.RESTORE_BUTTON).at(0);
+            const restoreBtn = nth(wrapper.findAll(SELECTORS.RESTORE_BUTTON), 0);
             await restoreBtn.trigger("click");
 
             expect(wrapper.emitted().restore).toBeTruthy();
@@ -175,7 +175,7 @@ describe("PageRevisionList", () => {
                 revisions: [makeRevision({ id: "rev-current" }), makeRevision({ id: "rev-older" })],
             });
 
-            const restoreBtn = wrapper.findAll(SELECTORS.RESTORE_BUTTON).at(0);
+            const restoreBtn = nth(wrapper.findAll(SELECTORS.RESTORE_BUTTON), 0);
             await restoreBtn.trigger("click");
 
             expect(wrapper.emitted().restore).toBeTruthy();

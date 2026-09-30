@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -76,15 +76,15 @@ describe("Lint", () => {
         expect(links.length).toBeGreaterThanOrEqual(4);
 
         // Check the order of warnings as they appear in the rendered output
-        expect(links.at(0).text().toLowerCase()).toContain("untyped_parameter");
-        expect(links.at(1).text().toLowerCase()).toContain("step label: input_label");
-        expect(links.at(2).text().toLowerCase()).toContain("data input: missing an annotation");
-        expect(links.at(3).text().toLowerCase()).toContain("step label: output");
+        expect(nth(links, 0).text().toLowerCase()).toContain("untyped_parameter");
+        expect(nth(links, 1).text().toLowerCase()).toContain("step label: input_label");
+        expect(nth(links, 2).text().toLowerCase()).toContain("data input: missing an annotation");
+        expect(nth(links, 3).text().toLowerCase()).toContain("step label: output");
 
         // Only 1 non-critical, attribute-related issue
         const attributeLink = wrapper.findAll("[data-description='attribute link']");
         expect(attributeLink.length).toBe(1);
-        expect(attributeLink.at(0).text().toLowerCase()).toContain("provide readme for your workflow");
+        expect(nth(attributeLink, 0).text().toLowerCase()).toContain("provide readme for your workflow");
     });
 
     it("should fire refactor event to extract untyped parameter and remove unlabeled workflows", async () => {

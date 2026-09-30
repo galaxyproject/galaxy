@@ -108,10 +108,14 @@ function mountCard(workflow: CuratedWorkflow, isAnonymous = false) {
 }
 
 function importActionOf(wrapper: ReturnType<typeof mountCard>) {
-    return wrapper
+    const action = wrapper
         .findComponent(GCard)
         .props("primaryActions")
-        .find((action: { id: string }) => action.id === "curated-import");
+        ?.find((action: { id: string }) => action.id === "curated-import");
+    if (!action?.handler) {
+        throw new Error("No curated-import action with a handler on the card");
+    }
+    return { ...action, handler: action.handler };
 }
 
 async function clickImport(wrapper: ReturnType<typeof mountCard>, workflow: CuratedWorkflow) {
@@ -122,6 +126,14 @@ async function clickImport(wrapper: ReturnType<typeof mountCard>, workflow: Cura
 function badgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
     const badges = wrapper.findComponent(GCard).props("badges") ?? [];
     return badges.find((badge: { id: string }) => badge.id === id);
+}
+
+function requiredBadgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
+    const badge = badgeById(wrapper, id);
+    if (!badge) {
+        throw new Error(`No badge "${id}" on the card`);
+    }
+    return badge;
 }
 
 function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
@@ -285,7 +297,7 @@ describe("CuratedWorkflowCard", () => {
                 ],
             }),
         );
-        const badge = badgeById(wrapper, "curated-missing-tools");
+        const badge = requiredBadgeById(wrapper, "curated-missing-tools");
 
         expect(badge).toMatchObject({ label: "Needs 3 tools", variant: "warning" });
         expect(badge.title).toBe("Not installed on this Galaxy: fastp, multiqc, wig_to_bigWig");
@@ -295,7 +307,7 @@ describe("CuratedWorkflowCard", () => {
     it("keeps import enabled when tools are missing, so an admin can import and install them", () => {
         const wrapper = mountCard(iwcWorkflow({ missing_tools: ["wig_to_bigWig"] }));
 
-        expect(badgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
+        expect(requiredBadgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
         expect(importActionOf(wrapper).disabled).toBe(false);
     });
 

@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -72,7 +72,7 @@ describe("RDMDestinationSelector", () => {
             const emitted = wrapper.emitted("onRecordSelected");
 
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+            expect(nth(emitted, 0)[0]).toEqual(FAKE_ENTRY.uri);
         });
     });
 
@@ -88,7 +88,7 @@ describe("RDMDestinationSelector", () => {
 
             const emitted = wrapper.emitted("onRecordSelected");
             expect(emitted).toBeTruthy();
-            expect(emitted?.at(0)[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
+            expect(nth(emitted, 0)[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
         });
     });
 
@@ -135,7 +135,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+                expect(nth(emitted, 0)[0]).toEqual(FAKE_ENTRY.uri);
             });
         });
 
@@ -152,7 +152,7 @@ describe("RDMDestinationSelector", () => {
 
                 const emitted = wrapper.emitted("onRecordSelected");
                 expect(emitted).toBeTruthy();
-                expect(emitted?.at(0)[0]).toEqual(fakeRecordUri);
+                expect(nth(emitted, 0)[0]).toEqual(fakeRecordUri);
             });
         });
     });

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -106,7 +106,7 @@ describe("JobStepJobs", () => {
         expect(wrapper.find(SELECTORS.JOB_CONTENT).text()).toBe("");
 
         // click on a row and expect the modal to be populated
-        await tableRows.at(0).trigger("click");
+        await nth(tableRows, 0).trigger("click");
         await flushPromises();
 
         expect(wrapper.find(SELECTORS.JOB_CONTENT).text()).not.toBe("");

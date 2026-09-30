@@ -50,13 +50,11 @@ function mountComponent(source: "center" | "docked" | "panel") {
 
 /** Find a GButton by its title prop */
 function findButton(wrapper: VueWrapper, title: string) {
-    const all = wrapper.findAllComponents(GButton);
-    for (let i = 0; i < all.length; i++) {
-        if (all.at(i).props("title") === title) {
-            return all.at(i);
-        }
+    const button = wrapper.findAllComponents(GButton).find((candidate) => candidate.props("title") === title);
+    if (!button) {
+        throw new Error(`GButton with title "${title}" not found`);
     }
-    throw new Error(`GButton with title "${title}" not found`);
+    return button;
 }
 
 describe("ChatActions", () => {

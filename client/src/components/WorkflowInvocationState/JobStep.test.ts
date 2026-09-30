@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { nth } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -50,16 +51,16 @@ describe("Job Step", () => {
             const expectedCount = TEST_JOBS_BY_STATES[jobState]?.length as number;
 
             // check that the button has the expected text
-            expect(buttons.at(i).text()).toBe(
+            expect(nth(buttons, i).text()).toBe(
                 `${expectedCount} job${expectedCount === 1 ? "" : "s"} ${statePlaceholders[jobState] || jobState}`,
             );
 
             // click the button to switch to this state
-            await buttons.at(i).trigger("click");
+            await nth(buttons, i).trigger("click");
             await flushPromises();
 
             // the clicked button should be pressed
-            expect(buttons.at(i).classes()).toContain("g-pressed");
+            expect(nth(buttons, i).classes()).toContain("g-pressed");
 
             // renders a table with jobs for the current state
             const tableRows = wrapper.find(SELECTORS.JOBS_TABLE).findAll(SELECTORS.JOB_ROW);
@@ -68,7 +69,7 @@ describe("Job Step", () => {
             // each row has the expected state (as the last cell in the row)
             tableRows.forEach((tr) => {
                 const cells = tr.findAll("td");
-                expect(cells.at(cells.length - 1).text()).toBe(jobState);
+                expect(nth(cells, -1).text()).toBe(jobState);
             });
         }
     });
@@ -89,7 +90,7 @@ describe("Job Step", () => {
 
         let buttons = wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
         expect(buttons.length).toBe(Object.keys(TEST_JOBS_BY_STATES).length);
-        let firstButton = buttons.at(0);
+        let firstButton = nth(buttons, 0);
 
         // verify initial data is displayed for 'new' state'
         expect(firstButton.classes()).toContain("g-pressed");
@@ -100,7 +101,7 @@ describe("Job Step", () => {
         expect(wrapper.find(SELECTORS.JOB_ROW).find("td:last-child").text()).toBe("new");
 
         // we have one running job already
-        expect(buttons.at(1).text()).toBe("1 job running");
+        expect(nth(buttons, 1).text()).toBe("1 job running");
 
         // we trigger the state change by updating the first job's state from 'new' to 'running'
         const updatedJob = { ...TEST_JOBS_JSON[0], state: "running" };

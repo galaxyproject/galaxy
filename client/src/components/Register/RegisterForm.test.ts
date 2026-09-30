@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -57,11 +57,11 @@ describe("RegisterForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
 
-        const usernameField = inputs.at(0);
+        const usernameField = nth(inputs, 0);
         expect(usernameField.attributes("type")).toBe("text");
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs.at(1);
+        const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
         await pwdField.setValue("test_pwd");
 

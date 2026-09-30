@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -26,11 +26,11 @@ describe("DatasetDownload", () => {
     it("checks basics", async () => {
         const dropdownItems = wrapper.findAll(".dropdown-item");
         expect(dropdownItems.length).toBe(3);
-        expect(dropdownItems.at(0).text()).toBe("Download Dataset");
-        expect(dropdownItems.at(1).text()).toBe("Download a");
-        expect(dropdownItems.at(2).text()).toBe("Download b");
+        expect(nth(dropdownItems, 0).text()).toBe("Download Dataset");
+        expect(nth(dropdownItems, 1).text()).toBe("Download a");
+        expect(nth(dropdownItems, 2).text()).toBe("Download b");
         for (let i = 0; i < dropdownItems.length; i++) {
-            await dropdownItems.at(i).trigger("click");
+            await nth(dropdownItems, i).trigger("click");
         }
         await wrapper.setProps({ item: items[1] });
         const foundItems = wrapper.find(".dropdown-item").exists();

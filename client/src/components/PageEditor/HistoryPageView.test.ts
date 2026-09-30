@@ -248,10 +248,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             const md = wrapper.findComponent(PageDisplayOnly);
-            const config = md.props("markdownConfig");
-            expect(config.id).toBe(PAGE_ID);
-            expect(config.title).toBe("My Page");
-            expect(config.content).toBe("# Hello");
+            expect(md.props("markdownConfig")).toMatchObject({ id: PAGE_ID, title: "My Page", content: "# Hello" });
         });
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {

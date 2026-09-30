@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
+import { expectConfigurationRequest, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -105,8 +105,8 @@ describe("DatasetError", () => {
         expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
 
         const messages = wrapper.findAll("#dataset-error-job-messages .code");
-        expect(messages.at(0).text()).toBe("message_1");
-        expect(messages.at(1).text()).toBe("message_2");
+        expect(nth(messages, 0).text()).toBe("message_1");
+        expect(nth(messages, 1).text()).toBe("message_2");
 
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();

@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -57,9 +57,9 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         expect(params.length).toBe(responseKeys.length);
 
         for (let counter = 0; counter < responseKeys.length - 1; counter++) {
-            const parameter = params.at(counter).findAll("td");
-            const parameterTitle = parameter.at(0).text();
-            const parameterValue = parameter.at(1).text();
+            const parameter = nth(params, counter).findAll("td");
+            const parameterTitle = nth(parameter, 0).text();
+            const parameterValue = nth(parameter, 1).text();
 
             expect(responseKeys.includes(parameterTitle)).toBeTruthy();
             // since we render null as an empty string, rendered empty string should always equal null in test data

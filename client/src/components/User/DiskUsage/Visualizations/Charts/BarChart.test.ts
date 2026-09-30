@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -148,8 +148,8 @@ describe("BarChart.vue", () => {
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
             expect(items.length).toBe(2);
-            expect(items.at(0).text()).toBe("foo: 1");
-            expect(items.at(1).text()).toBe("bar: 2");
+            expect(nth(items, 0).text()).toBe("foo: 1");
+            expect(nth(items, 1).text()).toBe("bar: 2");
         });
 
         it("should render legend symbols with correct colors", async () => {
@@ -164,8 +164,8 @@ describe("BarChart.vue", () => {
             await flushPromises();
             const symbols = wrapper.findAll(".legend-symbol");
             expect(symbols.length).toBe(2);
-            expect(symbols.at(0).attributes("style")).toContain("background-color");
-            expect(symbols.at(1).attributes("style")).toContain("background-color");
+            expect(nth(symbols, 0).attributes("style")).toContain("background-color");
+            expect(nth(symbols, 1).attributes("style")).toContain("background-color");
         });
 
         it("should not render legend when there is no data", () => {
@@ -218,10 +218,10 @@ describe("BarChart.vue", () => {
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
-            await items.at(0).trigger("click");
+            await nth(items, 0).trigger("click");
             await flushPromises();
-            expect(items.at(0).classes()).not.toContain("legend-item-dimmed");
-            expect(items.at(1).classes()).toContain("legend-item-dimmed");
+            expect(nth(items, 0).classes()).not.toContain("legend-item-dimmed");
+            expect(nth(items, 1).classes()).toContain("legend-item-dimmed");
         });
 
         it("should not trigger selection on click when selection is disabled", async () => {

@@ -1,6 +1,6 @@
 import { faCog, faCopy, faFilter, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -161,15 +161,15 @@ describe("GridList", () => {
         await flushPromises();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
         const dropdownItems = dropdown.findAll(".dropdown-item");
-        expect(dropdownItems.at(0).text()).toBe("operation-title-1");
-        expect(dropdownItems.at(1).text()).toBe("operation-title-3");
-        await dropdownItems.at(0).trigger("click");
+        expect(nth(dropdownItems, 0).text()).toBe("operation-title-1");
+        expect(nth(dropdownItems, 1).text()).toBe("operation-title-3");
+        await nth(dropdownItems, 0).trigger("click");
         const clickHandler = testGrid.fields[2]!.operations![0]!.handler;
         expect(clickHandler).toHaveBeenCalledTimes(1);
         expect(vi.mocked(clickHandler).mock.calls[0]!.slice(0, 1)).toEqual([
             { id: "id-1", link: "link-1", operation: "operation-1" },
         ]);
-        await dropdownItems.at(1).trigger("click");
+        await nth(dropdownItems, 1).trigger("click");
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("Operation-3 has been executed.");

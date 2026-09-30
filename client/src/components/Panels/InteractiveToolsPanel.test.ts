@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -207,15 +207,15 @@ describe("InteractiveToolsPanel component", () => {
         expect(activeToolItems).toHaveLength(2);
 
         // Check that the first active tool has the correct name
-        expect(activeToolItems.at(0).text()).toContain("Active RStudio");
-        expect(activeToolItems.at(0).text()).toContain("Running");
+        expect(nth(activeToolItems, 0).text()).toContain("Active RStudio");
+        expect(nth(activeToolItems, 0).text()).toContain("Running");
 
         // Check that the second active tool (starting) has the correct name
-        expect(activeToolItems.at(1).text()).toContain("Starting Jupyter");
-        expect(activeToolItems.at(1).text()).toContain("Starting...");
+        expect(nth(activeToolItems, 1).text()).toContain("Starting Jupyter");
+        expect(nth(activeToolItems, 1).text()).toContain("Starting...");
 
         // Check that stop buttons are present
-        expect(activeToolItems.at(0).find(".btn-link.text-danger").exists()).toBe(true);
-        expect(activeToolItems.at(1).find(".btn-link.text-danger").exists()).toBe(true);
+        expect(nth(activeToolItems, 0).find(".btn-link.text-danger").exists()).toBe(true);
+        expect(nth(activeToolItems, 1).find(".btn-link.text-danger").exists()).toBe(true);
     });
 });

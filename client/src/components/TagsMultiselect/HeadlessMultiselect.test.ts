@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { DOMWrapper, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { nextTick } from "vue";
@@ -144,8 +144,8 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("bc");
             const options = findAllOptions();
 
-            expect(options[0].find("span").text()).toBe("bc");
-            expect(options[1].find("span").text()).toBe("abc");
+            expect(nth(options, 0).find("span").text()).toBe("bc");
+            expect(nth(options, 1).find("span").text()).toBe("abc");
 
             await close(wrapper);
         });
@@ -275,10 +275,10 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = findAllOptions();
 
-            await options[0].trigger("click");
+            await nth(options, 0).trigger("click");
             expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
 
-            await options[1].trigger("click");
+            await nth(options, 1).trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
             await close(wrapper);
         });
@@ -292,10 +292,10 @@ describe("HeadlessMultiselect", () => {
             await open(wrapper);
             const options = findAllOptions();
 
-            await options[0].trigger("click");
+            await nth(options, 0).trigger("click");
             expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
-            await options[1].trigger("click");
+            await nth(options, 1).trigger("click");
             expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });

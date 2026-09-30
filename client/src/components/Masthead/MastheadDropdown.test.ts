@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -20,10 +20,10 @@ describe("MastheadDropdown.vue", () => {
         });
 
         const items = wrapper.findAll("a.dropdown-item");
-        expect(items.at(0).attributes("href")).toBe("#");
-        expect(items.at(1).attributes("href")).toBe("https://example.org/root/?exact=true");
+        expect(nth(items, 0).attributes("href")).toBe("#");
+        expect(nth(items, 1).attributes("href")).toBe("https://example.org/root/?exact=true");
 
-        await items.at(0).trigger("click");
+        await nth(items, 0).trigger("click");
         expect(handler).toHaveBeenCalledOnce();
     });
 

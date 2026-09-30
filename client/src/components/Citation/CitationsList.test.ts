@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -70,10 +70,10 @@ describe("CitationsList", () => {
         // It finds the Galaxy citation from the config, and the mocked citation for the history tools.
         expect(citationItems.length).toBe(2);
 
-        expect(citationItems.at(0).text()).toContain(
+        expect(nth(citationItems, 0).text()).toContain(
             "The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update",
         );
-        expect(citationItems.at(1).text()).toContain(
+        expect(nth(citationItems, 1).text()).toContain(
             "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations",
         );
     });
