@@ -10,6 +10,7 @@ import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
+import { installAppPlugins } from "@/utils/mountVueComponent";
 
 import { getRouter } from "./router";
 
@@ -54,5 +55,6 @@ window.addEventListener("load", async () => {
     const app = createApp(App);
     app.use(router);
     app.use(pinia);
+    installAppPlugins(app);
     app.mount("#app");
 });

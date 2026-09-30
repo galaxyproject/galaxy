@@ -20,13 +20,9 @@ function getOrCreatePinia() {
     return getActivePinia() || createPinia();
 }
 
-function createConfiguredApp(ComponentDefinition, propsData = {}) {
-    const app = createApp({
-        render() {
-            return h(ComponentDefinition, propsData);
-        },
-    });
-    app.use(getOrCreatePinia());
+// Plugins every Galaxy app needs, shared by the main analysis app and the
+// transitional apps mounted below.
+export function installAppPlugins(app) {
     app.use(BootstrapVue);
     app.use(localizationPlugin);
     app.directive("g-tooltip", vGTooltip);
@@ -34,6 +30,16 @@ function createConfiguredApp(ComponentDefinition, propsData = {}) {
     app.directive("sanitize-html", vSanitizeHtml);
     // Unsanitized markup from the server or shipped code; each use documents why
     app.directive("no-sanitize-html", vNoSanitizeHtml);
+}
+
+function createConfiguredApp(ComponentDefinition, propsData = {}) {
+    const app = createApp({
+        render() {
+            return h(ComponentDefinition, propsData);
+        },
+    });
+    app.use(getOrCreatePinia());
+    installAppPlugins(app);
     return app;
 }
 
