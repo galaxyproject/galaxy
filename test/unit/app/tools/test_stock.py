@@ -12,6 +12,11 @@ def test_stock_tool_paths():
     assert "parse_values_from_file.xml" in file_names
 
 
+def test_stock_tool_paths_lists_bundled_tools_once():
+    file_names = [f.name for f in stock_tool_paths()]
+    assert file_names.count("meme.xml") == 1
+
+
 def test_stock_tool_paths_includes_datatype_converters():
     file_names = [f.name for f in stock_tool_paths()]
     assert "bam_to_bai.xml" in file_names

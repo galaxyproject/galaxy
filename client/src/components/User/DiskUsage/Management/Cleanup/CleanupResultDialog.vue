@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -8,6 +7,7 @@ import localize from "@/utils/localization";
 import type { CleanupResult } from "./model";
 
 import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -61,9 +61,9 @@ defineExpose({
 
             <LoadingSpan v-if="isLoading" class="mx-auto" message="Cleaning Up" data-test-id="loading-spinner" />
             <div v-else-if="result">
-                <BAlert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
+                <GAlert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}
-                </BAlert>
+                </GAlert>
                 <h3 v-else-if="result.success" data-test-id="success-info">
                     You've cleared <b>{{ result.niceTotalFreeBytes }}</b>
                 </h3>
@@ -72,11 +72,11 @@ defineExpose({
                         You've successfully cleared <b>{{ result.totalCleaned }}</b> items for a total of
                         <b>{{ result.niceTotalFreeBytes }}</b> but...
                     </h3>
-                    <BAlert v-if="result.hasSomeErrors" show variant="warning">
+                    <GAlert v-if="result.hasSomeErrors" show variant="warning">
                         <h3 class="mb-0">
                             <b>{{ result.errors.length }}</b> items couldn't be cleared
                         </h3>
-                    </BAlert>
+                    </GAlert>
                 </div>
 
                 <GTable

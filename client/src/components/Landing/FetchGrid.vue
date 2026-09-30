@@ -10,6 +10,7 @@ import { useAgGrid } from "@/composables/useAgGrid";
 import { type DerivedColumn, type FetchTable, fetchTargetToTable, type RowsType, tableToRequest } from "./fetchModels";
 import { enforceColumnUniqueness, useGridHelpers } from "./gridHelpers";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCard from "@/components/Common/GCard.vue";
 import DataFetchRequestParameter from "@/components/JobParameters/DataFetchRequestParameter.vue";
 
@@ -223,25 +224,25 @@ function handleDataUpdated(event: any) {
     <GCard :title="title" :secondary-actions="secondaryActions">
         <template v-slot:description>
             <div v-if="viewMode === 'raw'">
-                <BAlert v-if="!richSupportForTarget" show dismissible variant="warning">
+                <GAlert v-if="!richSupportForTarget" show dismissible variant="warning">
                     This target is using advanced features that we don't yet support a rich tabular view for, an
                     annotated request is shown here and can still be used to import the target data. If you would like
                     this to see this kind of target supported, please
                     <a href="https://github.com/galaxyproject/galaxy/issues">create an issue on GitHub</a>
                     titled something like "Support Rich View of Data Fetch Request" and include this request as an
                     example.
-                </BAlert>
-                <BAlert v-if="modified" show dismissible variant="warning">
+                </GAlert>
+                <GAlert v-if="modified" show dismissible variant="warning">
                     This shows the initial data import request, you have modified the import data and your modifications
                     will be reflected in the final data import but not in this initial request.
-                </BAlert>
+                </GAlert>
                 <DataFetchRequestParameter :parameter-value="props.target" />
             </div>
             <div v-else-if="viewMode === 'table'" :class="[theme]">
-                <BAlert v-if="modified" show dismissible variant="info">
+                <GAlert v-if="modified" show dismissible variant="info">
                     You have modified the import data from the initial request, these modifications will be reflected in
                     the final data import.
-                </BAlert>
+                </GAlert>
                 <AgGridVue
                     :row-data="gridRowData"
                     :column-defs="gridColumns"

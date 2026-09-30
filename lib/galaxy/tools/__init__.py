@@ -1521,6 +1521,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
+        self.funding = tool_source.parse_funding()
         self.parse_inputs(self.tool_source)
         self.parse_outputs(self.tool_source)
         self.raw_help = None
@@ -2996,6 +2997,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "action": action,
                 "license": self.license,
                 "creator": self.creator,
+                "funding": self.funding,
                 "method": self.method,
                 "enctype": self.enctype,
             }
@@ -4242,10 +4244,7 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
     def element_is_valid(element: model.DatasetCollectionElement):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
-        if (
-            element_object.state != model.Dataset.states.PAUSED
-            and element_object.state in model.Dataset.non_ready_states
-        ):
+        if element_object.is_pending:
             raise ToolInputsNotReadyException("An input dataset is pending.")
         return element_object.is_ok
 
@@ -4275,15 +4274,7 @@ class FilterNullTool(FilterDatasetsTool):
     def element_is_valid(element: model.DatasetCollectionElement):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
-        if element_object.extension == "expression.json":
-            if element_object.peek == "null":
-                # shortcut
-                return False
-            else:
-                with open(element_object.get_file_name()) as fh:
-                    if fh.read(5) == "null":
-                        return False
-        return True
+        return not element_object.is_null_expression()
 
 
 class FlattenTool(DatabaseOperationTool):

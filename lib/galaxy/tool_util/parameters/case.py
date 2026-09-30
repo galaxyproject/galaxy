@@ -67,16 +67,21 @@ class TestCaseStateAndWarnings:
     tool_state: TestCaseToolState
     warnings: list[str]
     unhandled_inputs: list[str]
+    expect_failure: bool = False
 
     def validate(self, tool_parameter_bundle: list[ToolParameterT], name: str | None = None) -> None:
         """Run the full validation sequence against this built state.
 
         Shared by ``test_case_state`` (the request parsing path) and ``test_case_validation``
         (the reporting path) so the two cannot diverge on what makes a test case valid.
+
+        Tests expecting failure may supply values the tool rejects (e.g. to exercise a
+        validator) - Galaxy rejects those at submission, so only parameter names are checked.
         """
-        self.tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in self.unhandled_inputs:
             raise RequestParameterInvalidException(f"Invalid parameter name found {input_name}")
+        if not self.expect_failure:
+            self.tool_state.validate(tool_parameter_bundle, name=name)
 
 
 @dataclass
@@ -340,7 +345,9 @@ def test_case_state(
         ):
             unhandled_inputs.append(input_name)
 
-    result = TestCaseStateAndWarnings(TestCaseToolState(state), warnings, unhandled_inputs)
+    result = TestCaseStateAndWarnings(
+        TestCaseToolState(state), warnings, unhandled_inputs, expect_failure=test_dict.get("expect_failure", False)
+    )
     if validate:
         result.validate(tool_parameter_bundle, name=name)
     return result

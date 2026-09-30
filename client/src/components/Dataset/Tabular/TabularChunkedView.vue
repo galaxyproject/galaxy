@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useInfiniteScroll } from "@vueuse/core";
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import { parse } from "csv-parse/sync";
 import { computed, reactive, ref } from "vue";
 
@@ -10,6 +9,7 @@ import type { TableField } from "@/components/Common/GTable.types";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 interface TabularChunk {
@@ -194,8 +194,8 @@ async function nextChunk() {
             :hide-header="props.options.file_ext === 'tabular'"
             :items="tableRows"
             :load-more-loading="isLoading" />
-        <BAlert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
     </div>
 </template>

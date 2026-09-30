@@ -99,6 +99,22 @@ def tag_exists_filter(
     return stmt.correlate_except(association_model_class).exists()
 
 
+def owner_annotation_exists_filter(association_model_class, fk_column, parent_id_column, owner_id_column, term_text):
+    """Correlated EXISTS subquery that matches the owner's annotation on the parent row against term_text.
+
+    Other users' annotations are ignored for the same reason as in ``tag_exists_filter``.
+    """
+    return (
+        select(1)
+        .select_from(association_model_class)
+        .where(fk_column == parent_id_column)
+        .where(association_model_class.user_id == owner_id_column)
+        .where(association_model_class.annotation.ilike(f"%{term_text}%"))
+        .correlate_except(association_model_class)
+        .exists()
+    )
+
+
 def user_exists_filter(owner_id_column, term_text: str):
     """Correlated EXISTS subquery that matches the owning user's username."""
     return (

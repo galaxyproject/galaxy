@@ -1,0 +1,31 @@
+- doc: |
+    Test that ColumnSetAction reaches the elements of a mapped over pick_value
+    output. The action has to descend into the collection - assigning the
+    metadata to the collection itself silently does nothing to the datasets.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          path: 1.bed
+          filetype: bed
+        - identifier: el2
+          class: File
+          path: 1.bed
+          filetype: bed
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        el1:
+          class: File
+          metadata:
+            chromCol: 2
+        el2:
+          class: File
+          metadata:
+            chromCol: 2

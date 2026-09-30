@@ -95,7 +95,7 @@ describe("RoleForm.vue create mode", () => {
             ),
         );
         const wrapper = await mountTarget();
-        expect(wrapper.findComponent({ name: "BAlert" }).text()).toContain("Groups failed");
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Groups failed");
         expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
@@ -104,7 +104,7 @@ describe("RoleForm.vue create mode", () => {
         const requests = captureRequests();
         const wrapper = await mountTarget();
         await submit(wrapper);
-        expect(wrapper.findComponent({ name: "BAlert" }).text()).toContain("Please complete all required inputs.");
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Please complete all required inputs.");
         expect(requests.post).toEqual([]);
     });
 
@@ -160,7 +160,7 @@ describe("RoleForm.vue create mode", () => {
         await wrapper.find("#role-name").setValue("Bad Role");
         await wrapper.find("#role-description").setValue("Bad Description");
         await submit(wrapper);
-        expect(wrapper.findComponent({ name: "BAlert" }).text()).toContain("Failed to create role: Creation failed");
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Failed to create role: Creation failed");
         expect(mockPush).not.toHaveBeenCalled();
     });
 });
@@ -247,7 +247,7 @@ describe("RoleForm.vue edit mode", () => {
             ),
         );
         const wrapper = await mountTarget({ roleId: "r1" });
-        expect(wrapper.findComponent({ name: "BAlert" }).text()).toContain("Users failed");
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Users failed");
         expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
@@ -260,7 +260,7 @@ describe("RoleForm.vue edit mode", () => {
         );
         const wrapper = await mountTarget({ roleId: "r1" });
         await submit(wrapper);
-        expect(wrapper.findComponent({ name: "BAlert" }).text()).toContain("Name taken");
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Name taken");
         expect(mockPush).not.toHaveBeenCalled();
     });
 });

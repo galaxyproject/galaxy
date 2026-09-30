@@ -1,6 +1,9 @@
 <template>
     <div aria-labelledby="tool-recommendation-heading">
-        <div v-if="!deprecated && showMessage" class="infomessagelarge">
+        <GAlert v-if="errorMessage" variant="warning" show>
+            Tool recommendations could not be loaded: {{ errorMessage }}
+        </GAlert>
+        <div v-else-if="!deprecated && showMessage" class="infomessagelarge">
             <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
@@ -22,9 +25,13 @@ import { getDatatypesMapper } from "@/components/Datatypes";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
 import { getCompatibleRecommendations } from "@/components/Workflow/Editor/modules/utilities";
 import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
+    components: { GAlert },
     props: {
         toolId: {
             type: String,
@@ -33,6 +40,7 @@ export default {
     },
     data() {
         return {
+            errorMessage: null,
             deprecated: false,
             deprecatedMessage: "",
             showMessage: false,
@@ -47,35 +55,37 @@ export default {
         this.loadRecommendations();
     },
     methods: {
-        loadRecommendations() {
-            const toolId = this.getToolId;
+        async loadRecommendations() {
             const requestData = {
-                tool_sequence: toolId,
+                tool_sequence: this.getToolId,
             };
-            getToolPredictions(requestData).then((responsePred) => {
-                getDatatypesMapper(false).then((datatypesMapper) => {
-                    const predData = responsePred.predicted_data;
-                    this.deprecated = predData.is_deprecated;
-                    this.deprecatedMessage = predData.message;
-                    if (responsePred !== null && predData.children.length > 0) {
-                        const filteredData = {};
-                        const outputDatatypes = predData.o_extensions;
-                        const children = predData.children;
-                        const compatibleTools = getCompatibleRecommendations(
-                            children,
-                            outputDatatypes,
-                            datatypesMapper,
-                        );
-                        if (compatibleTools.length > 0 && this.deprecated === false) {
-                            this.showMessage = true;
-                            filteredData.o_extensions = predData.o_extensions;
-                            filteredData.name = predData.name;
-                            filteredData.children = compatibleTools;
-                            this.renderD3Tree(filteredData);
-                        }
+            try {
+                const responsePred = await getToolPredictions(requestData);
+                if (!responsePred) {
+                    return;
+                }
+                const datatypesMapper = await getDatatypesMapper(false);
+                const predData = responsePred.predicted_data;
+                this.deprecated = predData.is_deprecated;
+                this.deprecatedMessage = predData.message;
+                if (predData.children.length > 0) {
+                    const compatibleTools = getCompatibleRecommendations(
+                        predData.children,
+                        predData.o_extensions,
+                        datatypesMapper,
+                    );
+                    if (compatibleTools.length > 0 && !this.deprecated) {
+                        this.showMessage = true;
+                        this.renderD3Tree({
+                            o_extensions: predData.o_extensions,
+                            name: predData.name,
+                            children: compatibleTools,
+                        });
                     }
-                });
-            });
+                }
+            } catch (error) {
+                this.errorMessage = errorMessageAsString(error);
+            }
         },
         renderD3Tree(predictedTools) {
             let i = 0;

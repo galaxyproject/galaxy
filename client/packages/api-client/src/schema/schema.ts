@@ -10389,6 +10389,8 @@ export interface components {
              * @default Organization
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Fax Number */
@@ -21717,6 +21719,8 @@ export interface components {
              * @default Person
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Family Name */
@@ -22219,9 +22223,9 @@ export interface components {
             class: "File";
             /**
              * Creation time
-             * @description The creation time of the file.
+             * @description When the file was created or last modified, in UTC, or null if the file source does not report it.
              */
-            ctime: string;
+            ctime: string | null;
             /**
              * Hashes
              * @description List of precomputed hashes for the file, if available.
@@ -27534,7 +27538,7 @@ export interface components {
              * Active
              * @description Whether the account is active. Only an administrator can change this.
              */
-            active?: boolean | null;
+            active?: boolean;
             /**
              * Display name
              * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
@@ -27544,7 +27548,7 @@ export interface components {
              * Email
              * @description New email address. When `user_activation_on` is set, changing the email deactivates the account and sends an activation link to the new address.
              */
-            email?: string | null;
+            email?: string;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -27552,9 +27556,9 @@ export interface components {
             preferred_object_store_id?: string | null;
             /**
              * Username
-             * @description The name of the user.
+             * @description The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; the current name is accepted as stored.
              */
-            username?: string | null;
+            username?: string;
         };
         /** VariableResponse */
         VariableResponse: {

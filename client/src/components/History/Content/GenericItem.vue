@@ -12,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import ContentItem from "./ContentItem.vue";
 import GenericElement from "./GenericElement.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
@@ -103,10 +104,11 @@ function onViewCollection(collection: any) {
             v-if="hasBeenVisible"
             :id="itemId"
             :key="view"
-            v-slot="{ result: item, loading }"
+            v-slot="{ result: item, loading, error }"
             :view="view"
             auto-refresh>
-            <LoadingSpan v-if="loading" message="Loading dataset" />
+            <GAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</GAlert>
+            <LoadingSpan v-else-if="loading" message="Loading dataset" />
             <div v-else>
                 <ContentItem
                     :id="item.hid ?? item.element_index + 1"

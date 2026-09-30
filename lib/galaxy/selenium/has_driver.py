@@ -286,6 +286,30 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.driver.switch_to.default_content()
 
+    def visit_new_window(self):
+        """
+        Focus the window or tab the page just opened, closing it on exit.
+
+        See HasDriverProtocol.visit_new_window.
+        """
+        original = self.driver.current_window_handle
+
+        def _new_handle(driver):
+            return next((handle for handle in driver.window_handles if handle != original), False)
+
+        new_handle = self._wait_on_selenium_condition(_new_handle, "new window to open")
+        self.driver.switch_to.window(new_handle)
+
+        @contextmanager
+        def _visit_new_window_context():
+            try:
+                yield
+            finally:
+                self.driver.close()
+                self.driver.switch_to.window(original)
+
+        return _visit_new_window_context()
+
     def get_cookies(self) -> list[Cookie]:
         """
         Get all cookies for the current domain.

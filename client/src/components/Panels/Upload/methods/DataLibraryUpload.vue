@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type {
@@ -30,6 +30,7 @@ import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "
 import type { LibraryDatasetItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -737,12 +738,12 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <!-- Error message -->
-            <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
+            <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
                 <div class="d-flex justify-content-between align-items-center">
                     <span>{{ errorMessage }}</span>
                     <GButton color="red" class="ml-2" @click="onErrorRetry"> Retry </GButton>
                 </div>
-            </BAlert>
+            </GAlert>
 
             <!-- Library List View -->
             <div v-if="!currentLibrary" class="browser-table-container">

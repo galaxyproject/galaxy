@@ -2,6 +2,11 @@
 
 import logging
 import os
+from typing import (
+    Any,
+    NamedTuple,
+    TYPE_CHECKING,
+)
 
 import whoosh.index
 from whoosh import scoring
@@ -16,7 +21,18 @@ from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import unicodify
 
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+
 log = logging.getLogger(__name__)
+
+
+class ToolBoosts(NamedTuple):
+    tool_name_boost: float
+    tool_description_boost: float
+    tool_help_boost: float
+    tool_repo_owner_username_boost: float
+
 
 schema = Schema(
     name=TEXT(stored=True),
@@ -32,7 +48,9 @@ schema = Schema(
 
 
 class ToolSearch:
-    def search(self, app, search_term, page, page_size, boosts):
+    def search(
+        self, app: "ToolShedApp", search_term: str, page: int, page_size: int, boosts: ToolBoosts
+    ) -> dict[str, Any]:
         """
         Perform the search on the given search_term
 
@@ -71,7 +89,7 @@ class ToolSearch:
                 log.debug(f"searching tools for: #{str(search_term)}")
                 log.debug(f"total hits: {str(len(hits))}")
                 log.debug(f"scored hits: {str(hits.scored_length())}")
-                results = {}
+                results: dict[str, Any] = {}
                 results["total_results"] = str(len(hits))
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
@@ -7,6 +7,7 @@ import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumb
 
 import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
@@ -17,8 +18,6 @@ interface HistoryDatasetPermissionsProps {
 const props = defineProps<HistoryDatasetPermissionsProps>();
 
 const route = useRoute();
-
-const loading = ref(true);
 
 const {
     managePermissionsOptions,
@@ -62,17 +61,18 @@ async function change(value: unknown) {
 async function init() {
     const { data } = await getPermissions(props.historyId);
     updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
-    loading.value = false;
 }
 
-const { onSuccess, onError } = useCallbacks(init);
+const { loading, loadError, onSuccess, onError } = useCallbacks(init);
 </script>
 
 <template>
     <div>
         <BreadcrumbHeading v-if="route.path === '/histories/permissions'" :items="breadcrumbItems" />
 
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <DatasetPermissionsForm
+            v-else
             :loading="loading"
             :simple-permissions="simplePermissions"
             :title="title"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { ModelStoreFormat } from "@/api";
@@ -12,6 +12,7 @@ import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 
 import type { HistoryExportData, HistoryExportDestination } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
 import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
 import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
@@ -260,9 +261,9 @@ function resetWizard() {
 
 <template>
     <div>
-        <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
+        <GAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <GenericWizard
             class="history-export-wizard"
             :use="wizard"

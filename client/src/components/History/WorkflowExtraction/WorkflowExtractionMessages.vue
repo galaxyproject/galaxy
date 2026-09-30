@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
@@ -46,7 +46,7 @@ const warningsContext = ref<"alert" | "popover">("alert");
                 </div>
             </GPopover>
         </div>
-        <BAlert
+        <GAlert
             v-if="props.warnings.length && warningsContext === 'alert'"
             variant="warning"
             fade
@@ -54,6 +54,6 @@ const warningsContext = ref<"alert" | "popover">("alert");
             dismissible
             @dismissed="warningsContext = 'popover'">
             <div v-for="(warning, index) in props.warnings" :key="index">{{ warning }}</div>
-        </BAlert>
+        </GAlert>
     </div>
 </template>

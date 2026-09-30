@@ -1,0 +1,37 @@
+<tool id="column_assertion_delimiter" name="column_assertion_delimiter" version="0.1.0" profile="26.2">
+    <description>column assertions split on the dataset's delimiter metadata</description>
+    <command><![CDATA[
+printf 'col1,col2,col3\n1,2,3\n' > '$csv_output' &&
+printf 'col1\tcol2\tcol3\n1\t2\t3\n' > '$tabular_output'
+    ]]></command>
+    <inputs />
+    <outputs>
+        <data name="csv_output" format="csv" />
+        <data name="tabular_output" format="tabular" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- csv records a comma delimiter, so an undeclared sep counts three columns -->
+            <output name="csv_output">
+                <assert_contents>
+                    <has_n_columns n="3" />
+                </assert_contents>
+            </output>
+            <!-- tabular still splits on tabs -->
+            <output name="tabular_output">
+                <assert_contents>
+                    <has_n_columns n="3" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- an explicit sep wins over the dataset delimiter -->
+            <output name="csv_output">
+                <assert_contents>
+                    <has_n_columns n="1" sep="&#9;" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help />
+</tool>

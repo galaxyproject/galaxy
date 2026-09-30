@@ -331,6 +331,17 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
 
+    @skip_without_tool("filter_param_value_nested_conditional")
+    def test_build_request_param_value_filter_in_inactive_nested_case(self):
+        # https://github.com/galaxyproject/galaxy/issues/23077
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("filter_param_value_nested_conditional", history_id)
+            outer = build["inputs"][0]
+            inner = outer["cases"][0]["inputs"][0]
+            select1, select2 = inner["cases"][1]["inputs"]
+            assert select1["value"] == "hg19_value"
+            assert [o[1] for o in select2["options"]] == ["hg19_value"]
+
     @skip_without_tool("dbkey_filter_multi_input")
     def test_build_request_dbkey_filter_hdca_multi_input(self):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22399:
@@ -2965,12 +2976,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "forward"
-        assert output2_content.strip() == "reverse"
+        assert output1_content.splitlines() == ["identifier forward", "safe_identifier forward"]
+        assert output2_content.splitlines() == ["identifier reverse", "safe_identifier reverse"]
 
     @skip_without_tool("identifier_single")
     def test_identifier_outside_map(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="Plain HDA")
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="../Plain HDA")
         inputs = {
             "input1": {"src": "hda", "id": new_dataset1["id"]},
         }
@@ -2985,7 +2996,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "Plain HDA"
+        assert output1_content.splitlines() == ["identifier ../Plain HDA", "safe_identifier _Plain_HDA"]
 
     @skip_without_tool("identifier_multiple")
     def test_list_selectable_in_multidata_input(self, history_id):

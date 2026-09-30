@@ -26,9 +26,9 @@
             </div>
         </BreadcrumbHeading>
 
-        <b-alert :show="copySuccess">
+        <GAlert :show="copySuccess">
             History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
-        </b-alert>
+        </GAlert>
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
@@ -54,12 +54,14 @@ import { useUserStore } from "@/stores/userStore";
 import CollectionPanel from "./CurrentCollection/CollectionPanel.vue";
 import HistoryPanel from "./CurrentHistory/HistoryPanel.vue";
 import CopyModal from "./Modals/CopyModal.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";
 
 export default {
     components: {
+        GAlert,
         HistoryPanel,
         CollectionPanel,
         CopyModal,

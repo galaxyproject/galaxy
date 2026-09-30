@@ -23,14 +23,14 @@
             <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
             structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
         </RuleModalHeader>
-        <b-alert v-if="validityErrorMessages.length != 0" class="alert-area" show variant="warning" dismissible>
+        <GAlert v-if="validityErrorMessages.length != 0" class="alert-area" show variant="warning" dismissible>
             {{ validityErrorHeader }}
             <ul>
                 <li v-for="error in validityErrorMessages" :key="error">
                     {{ error }}
                 </li>
             </ul>
-        </b-alert>
+        </GAlert>
         <RuleModalMiddle v-if="ruleView == 'source'">
             <p v-if="ruleSourceError" class="errormessagelarge">{{ ruleSourceError }}</p>
             <textarea v-model="ruleSource" class="rule-source"></textarea>
@@ -622,6 +622,7 @@ import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "./BaseComponents/GButton.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
 import IdentifierDisplay from "@/components/RuleBuilder/IdentifierDisplay.vue";
 import RegularExpressionInput from "@/components/RuleBuilder/RegularExpressionInput.vue";
@@ -656,6 +657,7 @@ const stripUiKeys = function (entry) {
 
 export default {
     components: {
+        GAlert,
         TooltipOnHover,
         HotTable,
         RuleGrid,
@@ -1267,11 +1269,15 @@ export default {
                 this.addColumnRegexReplacement = null;
             }
         },
-        addColumnRegexGroupCount: function (oldVal, newVal) {
-            if (oldVal != newVal) {
-                if (newVal < 1) {
-                    this.addColumnRegexGroupCount = 1;
-                }
+        addColumnRegexGroupCount: function (newVal) {
+            // An emptied field is mid-edit, not a count below the minimum. Clamping it
+            // here puts the old count back under the cursor and the next digit lands
+            // beside it.
+            if (newVal === "" || newVal === null) {
+                return;
+            }
+            if (newVal < 1) {
+                this.addColumnRegexGroupCount = 1;
             }
         },
         validInput: function (newState) {

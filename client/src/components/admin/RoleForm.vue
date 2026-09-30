@@ -3,7 +3,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 import { useRouter } from "vue-router/composables";
@@ -11,6 +10,7 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
@@ -159,7 +159,7 @@ fetchData();
     <div>
         <LoadingSpan v-if="loading" />
         <div v-else id="admin-role-form">
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
             <template v-if="!loadFailed">
                 <FormCard :title="isEditMode ? `Role '${savedName}'` : 'Create a new Role'" icon="fa-file-contract">
                     <template v-slot:body>

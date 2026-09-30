@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchImmediate } from "@vueuse/core";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -8,6 +7,7 @@ import { GalaxyApi } from "@/api";
 import type { components } from "@/api/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import License from "@/components/License/License.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -80,12 +80,12 @@ watchImmediate(
 
 <template>
     <div>
-        <BAlert v-if="licensesLoading" variant="info" class="m-0" show>
+        <GAlert v-if="licensesLoading" variant="info" class="m-0" show>
             <LoadingSpan message="Loading licenses" />
-        </BAlert>
-        <BAlert v-else-if="errorMessage" variant="danger" class="m-0" show>
+        </GAlert>
+        <GAlert v-else-if="errorMessage" variant="danger" class="m-0" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <Multiselect
             v-else
             v-model="currentLicense"

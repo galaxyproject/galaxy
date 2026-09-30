@@ -16,7 +16,7 @@ describe("FormNumber", () => {
 
     const getInput = async (wrapper) => await wrapper.find("input[type='number']");
     const getInputRange = async (wrapper) => await wrapper.find("input[type='range']");
-    const getAlert = async (wrapper) => await wrapper.find("[role='alert']");
+    const getAlert = async (wrapper) => await wrapper.find(".alert");
 
     it("renders a number input with appropriate type", async () => {
         const wrapperFloat = await mountFormNumber({ value: 1, type: "float" });

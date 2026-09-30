@@ -58,6 +58,7 @@ import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
+import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -65,6 +66,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import GToast from "@/components/BaseComponents/GToast.vue";
@@ -95,6 +97,7 @@ export default {
         const tourStore = useTourStore();
         const { currentTour } = storeToRefs(tourStore);
 
+        const { error: toastError } = useToast();
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
 
@@ -133,7 +136,9 @@ export default {
                 if (embedded.value) {
                     userStore.$reset();
                 } else {
-                    userStore.loadUser();
+                    userStore.loadUser().catch((error) => {
+                        toastError(errorMessageAsString(error), "Failed to load user or histories");
+                    });
                 }
             },
             { immediate: true },

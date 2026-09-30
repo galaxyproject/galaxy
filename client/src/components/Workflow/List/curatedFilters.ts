@@ -5,7 +5,8 @@ import Filtering, { contains, expandNameTag } from "@/utils/filtering";
  * honours name, tag and collection, and `hasInvalidFilters` correctly rejects
  * anything else.
  */
-export function curatedWorkflowFilters() {
+/** `collection:` stays valid in local mode, where it matches nothing, but is only offered in the menu for IWC. */
+export function curatedWorkflowFilters(includeCollections: boolean) {
     const curatedFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
@@ -16,20 +17,36 @@ export function curatedWorkflowFilters() {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
-        collection: { placeholder: "collection", type: String, handler: contains("collection"), menuItem: true },
+        collection: {
+            placeholder: "collection",
+            type: String,
+            handler: contains("collection"),
+            menuItem: includeCollections,
+        },
         c: { handler: contains("c"), menuItem: false },
     } as const;
 
     return new Filtering({ ...curatedFilters }, undefined, false);
 }
 
-export function curatedHelpHtml() {
+/** Collections are an IWC grouping, so local mode never advertises them. */
+export function curatedHelpHtml(includeCollections: boolean) {
+    const searchedFields = includeCollections
+        ? "names, descriptions, tags and collections"
+        : "names, descriptions and tags";
+    const collectionFilter = includeCollections
+        ? `
+            <dt><code>collection:____</code></dt>
+            <dd>
+                Shows workflows in the given IWC collection. The collection buttons above
+                the search, or a collection badge on a card, set this for you.
+            </dd>`
+        : "";
     return `<div>
         <p>This menu can be used to filter the curated workflows displayed.</p>
 
         <p>
-            Text entered here will be searched against workflow names, descriptions,
-            tags and collections. Additionally, advanced filtering tags can be used to refine the search
+            Text entered here will be searched against workflow ${searchedFields}. Additionally, advanced filtering tags can be used to refine the search
             more precisely. Filtering tags are of the form
             <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
             <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to search
@@ -50,12 +67,7 @@ export function curatedHelpHtml() {
             <dd>
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
-            </dd>
-            <dt><code>collection:____</code></dt>
-            <dd>
-                Shows workflows in the given IWC collection. The collection buttons above
-                the search, or a collection badge on a card, set this for you.
-            </dd>
+            </dd>${collectionFilter}
         </dl>
     </div>`;
 }

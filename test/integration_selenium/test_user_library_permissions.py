@@ -97,8 +97,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         allowed_user_email = self.components.libraries.add_items_permission_field_text.wait_for_text()
         assert allowed_user_email == email
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
-        # assert that toast message is appearing
-        self.components.libraries.folder.toast_msg.wait_for_visible()
+        # the "Library created." toast may still be visible, only this one proves the save completed
+        self.components.libraries.folder.toast_msg_with_text(text="Library permissions saved.").wait_for_visible()
 
         self.logout()
         # login back to the 'regular' user account

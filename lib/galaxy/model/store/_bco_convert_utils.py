@@ -10,14 +10,15 @@ from galaxy.tool_util.identifiers import uri_safe_tool_id
 
 
 class SoftwarePrerequisiteTracker:
-    _recorded_tools: set[str] = set()
-    _software_prerequisites: list[SoftwarePrerequisite] = []
+    def __init__(self) -> None:
+        self._recorded_tools: set[str] = set()
+        self._software_prerequisites: list[SoftwarePrerequisite] = []
 
     def register_step(self, step: WorkflowStep) -> None:
         if step.type != "tool":
             # TODO: walk subworkflow steps someday...
             return
-        tool_id = step.tool_id
+        tool_id = step.effective_tool_id
         if tool_id in self._recorded_tools:
             return
 

@@ -110,7 +110,7 @@ def md5_hash_file(path: StrPath) -> str | None:
         return None
 
 
-def md5_hash_str(s):
+def md5_hash_str(s: Any) -> str:
     """
     Return hex encoded md5 hash of string s
     """

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const router = useRouter();
@@ -37,9 +38,9 @@ async function resetLogin() {
             <div class="row justify-content-md-center">
                 <div class="col col-lg-6">
                     <BForm @submit.prevent="resetLogin">
-                        <BAlert v-if="!!message" id="reset-password-alert" class="mt-2" :variant="messageVariant" show>
+                        <GAlert v-if="!!message" id="reset-password-alert" class="mt-2" :variant="messageVariant" show>
                             {{ message }}
-                        </BAlert>
+                        </GAlert>
 
                         <BCard header="Reset your password">
                             <BFormGroup label="Email Address">

@@ -99,7 +99,9 @@ def test_multi_select_optional(required_tool: RequiredTool, tool_input_format: D
 def test_identifier_outside_map(target_history: TargetHistory, required_tool: RequiredTool):
     hda = target_history.with_dataset("123", named="Plain HDA")
     execute = required_tool.execute().with_inputs({"input1": hda.src_dict})
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Plain HDA")
+    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped(
+        "identifier Plain HDA\nsafe_identifier Plain_HDA"
+    )
 
 
 @requires_tool_id("identifier_multiple")
@@ -207,7 +209,9 @@ def test_identifier_with_data_collection(target_history: TargetHistory, required
     contents = [("foo", "text for foo element"), ("bar", "more text for bar element")]
     hdca = target_history.with_list(contents)
     execute = required_tool.execute().with_inputs({"input1": hdca.src_dict})
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("foo\nbar")
+    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped(
+        "identifier foo\nsafe_identifier foo\nidentifier bar\nsafe_identifier bar"
+    )
 
 
 @requires_tool_id("identifier_in_actions")

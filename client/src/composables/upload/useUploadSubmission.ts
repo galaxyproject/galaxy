@@ -188,6 +188,12 @@ export function useUploadSubmission() {
                 if (itemSignal?.aborted) {
                     continue;
                 }
+                // Copies after this one never start, so they fail with it.
+                const errorMessage = errorMessageAsString(err);
+                markTrackedError(uploadState, libraryUploads.slice(index), errorMessage);
+                if (batchId) {
+                    uploadState.setBatchError(batchId, errorMessage);
+                }
                 throw err;
             }
             if (copied && "id" in copied && copied.id) {
@@ -283,9 +289,11 @@ export function useUploadSubmission() {
                 const signalByUploadId = new Map(allUploadIds.map((id, i) => [id, signals?.[i]]));
                 const apiSignals = apiIds.map((id) => signalByUploadId.get(id));
                 const librarySignals = libraryUploads.map((t) => signalByUploadId.get(t.id));
+                // Library copies run alongside the fetch and record their own outcome.
+                const apiTrackedUploads = trackedUploads.filter((tracked) => apiIds.includes(tracked.id));
 
                 await Promise.all([
-                    processApiUploads(prepared, apiIds, datasets, trackedUploads, {
+                    processApiUploads(prepared, apiIds, datasets, apiTrackedUploads, {
                         directCollectionCreation,
                         onProgress,
                         targetObjectStoreId,

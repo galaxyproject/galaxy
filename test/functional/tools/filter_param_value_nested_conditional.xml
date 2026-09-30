@@ -1,0 +1,69 @@
+<tool id="filter_param_value_nested_conditional" name="filter_param_value_nested_conditional" version="0.1.0">
+    <description>param_value filter referencing a sibling in a nested conditional case</description>
+    <command><![CDATA[
+        #if $outer.outer_mode == "nested" and $outer.inner.inner_mode == "selects"
+            echo '$outer.inner.select1' > '$output' &&
+            echo '$outer.inner.select2' >> '$output'
+        #else
+            echo 'no selects' > '$output'
+        #end if
+    ]]></command>
+    <inputs>
+        <!-- the case holding the dependent selects is not selected by default, so
+             the tool form must build its options from the default of select1 -->
+        <conditional name="outer">
+            <param name="outer_mode" type="select">
+                <option value="nested" selected="true">Nested</option>
+                <option value="alternate">Alternate</option>
+            </param>
+            <when value="nested">
+                <conditional name="inner">
+                    <param name="inner_mode" type="select">
+                        <option value="none" selected="true">No selects</option>
+                        <option value="selects">Selects</option>
+                    </param>
+                    <when value="none"/>
+                    <when value="selects">
+                        <param name="select1" type="select">
+                            <options from_data_table="test_fasta_indexes">
+                                <column name="value" index="0"/>
+                                <column name="name" index="2"/>
+                            </options>
+                        </param>
+                        <param name="select2" type="select">
+                            <options from_data_table="test_fasta_indexes">
+                                <column name="value" index="0"/>
+                                <column name="name" index="2"/>
+                                <filter type="param_value" column="0" ref="select1" keep="true"/>
+                            </options>
+                        </param>
+                    </when>
+                </conditional>
+            </when>
+            <when value="alternate"/>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data format="txt" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <conditional name="outer">
+                <param name="outer_mode" value="nested"/>
+                <conditional name="inner">
+                    <param name="inner_mode" value="selects"/>
+                    <param name="select1" value="mm10_value"/>
+                    <param name="select2" value="mm10_value"/>
+                </conditional>
+            </conditional>
+            <output name="output">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_line line="mm10_value"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

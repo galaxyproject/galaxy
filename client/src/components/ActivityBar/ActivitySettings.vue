@@ -10,6 +10,7 @@ import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
@@ -143,7 +144,7 @@ function executeActivity(activity: Activity) {
             </button>
         </div>
         <div v-else>
-            <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
+            <GAlert v-localize class="py-1 px-2" show> No matching activities found. </GAlert>
         </div>
     </div>
 </template>

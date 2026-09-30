@@ -32,6 +32,10 @@ from galaxy.model.database_utils import (
     database_exists,
 )
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
+from galaxy.tool_util.unittest_utils import (
+    functional_test_tool_directory,
+    functional_test_tool_path,
+)
 from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
@@ -42,6 +46,7 @@ from galaxy.util import (
     download_to_file,
     galaxy_directory,
 )
+from galaxy.util.properties import running_from_source
 from galaxy.webapps.base.api import build_route_name_index
 from galaxy.webapps.galaxy.fast_app import (
     _build_merged_openapi,
@@ -66,16 +71,15 @@ from galaxy_test.base.env import (
 )
 from .test_logging import logging_config_file
 
-galaxy_root = galaxy_directory()
 DEFAULT_CONFIG_PREFIX = "GALAXY"
-GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
+GX_IT_PROXY_STARTUP_TIMEOUT = 60
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
-TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "test_data")
-TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
-FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
-FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
-FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_tool_conf.xml")
-FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_conf.xml")
+# Shipped with galaxy-tool-util, so these resolve without a checkout. Each conf sets
+# tool_path="${tool_conf_dir}", which points at the directory it is loaded from.
+FRAMEWORK_TOOLS_DIR = functional_test_tool_directory()
+FRAMEWORK_UPLOAD_TOOL_CONF = functional_test_tool_path("upload_tool_conf.xml")
+FRAMEWORK_SAMPLE_TOOLS_CONF = functional_test_tool_path("sample_tool_conf.xml")
+FRAMEWORK_DATATYPES_CONF = functional_test_tool_path("sample_datatypes_conf.xml")
 MIGRATED_TOOL_PANEL_CONFIG = "config/migrated_tools_conf.xml"
 INSTALLED_TOOL_PANEL_CONFIGS = [os.environ.get("GALAXY_TEST_SHED_TOOL_CONF", "config/shed_tool_conf.xml")]
 DEFAULT_LOCALES = "en"
@@ -83,6 +87,14 @@ TOOL_SEARCH_INDEX_TIMEOUT = 300
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 60))
 
 log = logging.getLogger("test_driver")
+
+
+def tool_shed_test_data() -> str:
+    return os.path.join(galaxy_directory(), "lib", "tool_shed", "test", "test_data")
+
+
+def functional_test_webhooks_dir() -> str:
+    return os.path.join(galaxy_directory(), "test", "functional", "webhooks")
 
 
 # Global variable to pass database contexts around - only needed for the numbered
@@ -158,7 +170,7 @@ def setup_galaxy_config(
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
-            first_test_file_dir = os.path.join(galaxy_root, first_test_file_dir)
+            first_test_file_dir = os.path.join(galaxy_directory(), first_test_file_dir)
         library_import_dir = first_test_file_dir
         import_dir = os.path.join(first_test_file_dir, "users")
         if os.path.exists(import_dir):
@@ -169,7 +181,12 @@ def setup_galaxy_config(
         user_library_import_dir = None
         library_import_dir = None
     job_config_file = os.environ.get("GALAXY_TEST_JOB_CONFIG_FILE", default_job_config_file)
-    tool_path = os.environ.get("GALAXY_TEST_TOOL_PATH", "tools")
+    # Left unset off a checkout so GalaxyAppConfiguration resolves the bundled tools out of
+    # galaxy-app; the test webhooks only exist in a checkout.
+    tool_path = os.environ.get("GALAXY_TEST_TOOL_PATH")
+    if tool_path is None and running_from_source:
+        tool_path = "tools"
+    webhooks_dir = functional_test_webhooks_dir() if running_from_source else None
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
     default_data_manager_config = None
     for data_manager_config in ["config/data_manager_conf.xml", "data_manager_conf.xml"]:
@@ -251,7 +268,7 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
-        webhooks_dir=TEST_WEBHOOKS_DIR,
+        webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
@@ -327,7 +344,7 @@ def _resolve_relative_config_paths(config_option):
     if config_option is not None:
         resolved = []
         for path in config_option.split(","):
-            resolved.append(os.path.join(galaxy_root, path.strip()))
+            resolved.append(os.path.join(galaxy_directory(), path.strip()))
         return ",".join(resolved)
 
 
@@ -460,7 +477,12 @@ def _get_static_settings():
     This mainly consists of the filesystem locations of url-mapped
     static resources.
     """
-    static_dir = os.path.join(galaxy_root, "static")
+    if not running_from_source:
+        # build_url_map falls back to the assets in galaxy-web-apps and galaxy-web-client;
+        # naming directories here would override them with paths that do not exist.
+        return dict(static_enabled=True, static_cache_time=360)
+
+    static_dir = os.path.join(galaxy_directory(), "static")
 
     # TODO: these should be copied from config/galaxy.ini
     return dict(
@@ -703,11 +725,12 @@ class EmbeddedServerWrapper(ServerWrapper):
 
 
 class GravityServerWrapper(ServerWrapper):
-    def __init__(self, name, host, port, state_dir, stop_command):
+    def __init__(self, name, host, port, state_dir, galaxyctl, gxit_port=None):
         super().__init__(name, host, port)
         self.url_prefix = os.environ.get("GALAXY_CONFIG_GALAXY_URL_PREFIX", "/")
         self.state_dir = Path(state_dir)
-        self.stop_command = stop_command
+        self.galaxyctl = galaxyctl
+        self.gxit_port = gxit_port
 
     def wait_for_server(self):
         try:
@@ -720,6 +743,37 @@ class GravityServerWrapper(ServerWrapper):
             )
         except Exception:
             log.error("Gravity logs:\n%s", self.get_logs())
+        if self.gxit_port:
+            self._wait_for_gx_it_proxy()
+
+    def _wait_for_gx_it_proxy(self):
+        deadline = time.monotonic() + GX_IT_PROXY_STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection(("localhost", self.gxit_port), timeout=1):
+                    return
+            except OSError:
+                time.sleep(0.5)
+        message = self._gx_it_proxy_startup_failure()
+        try:
+            self.stop()
+        except subprocess.CalledProcessError as e:
+            message = f"{message}{os.linesep}Stopping gravity failed as well: {e}"
+        raise Exception(message)
+
+    def _gx_it_proxy_startup_failure(self) -> str:
+        gxit_log_path = self.state_dir / "log" / "gx-it-proxy.log"
+        gxit_logs = gxit_log_path.read_text() if gxit_log_path.exists() else f"{gxit_log_path} was not created"
+        status = self.galaxyctl("status", check=False)
+        return (
+            f"gx-it-proxy did not accept connections on localhost:{self.gxit_port} within "
+            f"{GX_IT_PROXY_STARTUP_TIMEOUT} seconds. The proxy is started with npx, which downloads "
+            "@galaxyproject/gx-it-proxy from the npm registry when it is not cached, so a log that ends "
+            "at the 'Executing:' line means npx was still fetching or installing the package; a stopped "
+            f"process with an error in the log means the proxy crashed.{os.linesep}"
+            f"galaxyctl status:{os.linesep}{status}{os.linesep}"
+            f"gx-it-proxy log:{os.linesep}{gxit_logs}"
+        )
 
     def get_logs(self):
         gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
@@ -728,7 +782,7 @@ class GravityServerWrapper(ServerWrapper):
         return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}celery logs:{os.linesep}{celery_logs}"
 
     def stop(self):
-        self.stop_command()
+        self.galaxyctl("shutdown")
 
 
 def launch_gravity(port, gxit_port=None, galaxy_config=None):
@@ -761,11 +815,19 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         supervisord_socket = socket.name
     gravity_env = os.environ.copy()
     gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
-    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "update"], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "start"], env=gravity_env)
-    return state_dir, lambda: subprocess.check_output(
-        ["galaxyctl", "--config-file", config_fh.name, "shutdown"], env=gravity_env
-    )
+
+    def galaxyctl(*args: str, check: bool = True) -> str:
+        return subprocess.run(
+            ["galaxyctl", "--config-file", config_fh.name, *args],
+            env=gravity_env,
+            check=check,
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout
+
+    galaxyctl("update")
+    galaxyctl("start")
+    return state_dir, galaxyctl, gxit_port if config["gravity"]["gx_it_proxy"]["enable"] else None
 
 
 @functools.lru_cache(maxsize=1)
@@ -963,9 +1025,9 @@ def launch_server(
         galaxy_config = interactive_tool_defaults
 
     if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
-        galaxy_config["root"] = galaxy_root
-        state_dir, stop_command = launch_gravity(port=port, galaxy_config=galaxy_config)
-        gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, stop_command)
+        galaxy_config["root"] = galaxy_directory()
+        state_dir, galaxyctl, gxit_port = launch_gravity(port=port, galaxy_config=galaxy_config)
+        gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, galaxyctl, gxit_port=gxit_port)
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 

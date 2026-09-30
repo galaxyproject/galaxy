@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -8,6 +7,7 @@ import { useInstanceTesting } from "@/components/ConfigTemplates/useConfiguratio
 import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
 import { useFileSourceInstancesStore } from "@/stores/fileSourceInstancesStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import FileSourceTypeSpan from "@/components/FileSources/FileSourceTypeSpan.vue";
@@ -57,9 +57,9 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
             :items="activeInstances">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading your user's file source instances" />
-                <BAlert v-else id="no-file-source-instances" variant="info" show>
+                <GAlert v-else id="no-file-source-instances" variant="info" show>
                     No file source instances found for your users, click the create button to configure a new one.
-                </BAlert>
+                </GAlert>
             </template>
 
             <template v-slot:cell(name)="{ item }">
