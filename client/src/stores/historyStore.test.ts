@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { MAX_RETRIES } from "@/utils/simple-error";
 
 import { emitSse, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
 import { useHistoryStore } from "./historyStore";
@@ -246,5 +247,62 @@ describe("history loading failures during user initialization", () => {
         await expect(userStore.loadUser()).rejects.toThrow();
         await expect(userStore.loadUser(false)).resolves.toBeUndefined();
         expect(userQueries.getCurrentUser).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("loading a single history", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("loads the history on a later lookup after a request fails to reach the server", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        server.use(mswHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
+        const historyStore = useHistoryStore();
+
+        expect(historyStore.getHistoryById("history-1")).toBeNull();
+        await vi.waitFor(() => expect(warn).toHaveBeenCalled());
+        await flushPromises();
+        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
+
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () =>
+                HttpResponse.json({ id: "history-1", name: "Test history" }),
+            ),
+        );
+        historyStore.getHistoryById("history-1");
+        await vi.waitFor(() => expect(historyStore.getHistoryById("history-1")?.name).toBe("Test history"));
+        expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
+    });
+
+    it("stops retrying a history that keeps failing to reach the server", async () => {
+        vi.spyOn(console, "warn").mockImplementation(() => {});
+        let requests = 0;
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () => {
+                requests += 1;
+                return HttpResponse.error();
+            }),
+        );
+        const historyStore = useHistoryStore();
+
+        for (let i = 0; i < 10; i++) {
+            historyStore.getHistoryById("history-1");
+            await flushPromises();
+            await vi.waitFor(() => expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error));
+        }
+        expect(requests).toBe(MAX_RETRIES + 1);
+    });
+
+    it("rejects and records an awaited load that fails to reach the server", async () => {
+        server.use(mswHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
+        const historyStore = useHistoryStore();
+
+        await expect(historyStore.loadHistoryById("history-1")).rejects.toThrow();
+        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
     });
 });
