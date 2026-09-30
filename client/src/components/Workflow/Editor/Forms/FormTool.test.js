@@ -56,12 +56,11 @@ describe("FormTool", () => {
                     post_job_actions: {},
                 },
             },
-            global: localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-            provide: { workflowId: "mock-workflow" },
         });
     }
 

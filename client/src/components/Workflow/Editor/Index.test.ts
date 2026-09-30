@@ -176,7 +176,7 @@ describe("Index", () => {
         }
 
         it("resolves datatypes", async () => {
-            const workflowGraph = wrapper.find(SELECTORS.WORKFLOW_GRAPH);
+            const workflowGraph = wrapper.findComponent(SELECTORS.WORKFLOW_GRAPH);
 
             expect(workflowGraph.props("datatypesMapper")).toEqual(testDatatypesMapper);
             expect(workflowGraph.props("datatypesMapper")).not.toBeNull();
@@ -207,7 +207,7 @@ describe("Index", () => {
                 workflow_outputs: [{ output_name: "out1", uuid: "22222222-2222-2222-2222-222222222222" }],
             });
 
-            wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onClone", String(sourceStep.id));
+            wrapper.findComponent(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onClone", String(sourceStep.id));
             await nextTick();
 
             const clonedStepId = Object.keys(stepStore.steps).find((stepId) => stepId !== String(sourceStep.id))!;
@@ -229,7 +229,7 @@ describe("Index", () => {
                 writable: true,
             });
 
-            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-download");
+            wrapper.findComponent(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-download");
             await flushPromises();
 
             expect(window.location.href).toBe(
@@ -344,14 +344,14 @@ describe("Index", () => {
             expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
 
             // Switching to the undo-redo activity is the one exception: readme stays open.
-            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+            (wrapper.findComponent(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
                 "workflow-undo-redo",
             );
             await nextTick();
             expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
 
             // Any other activity closes the readme editor.
-            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+            (wrapper.findComponent(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
                 "workflow-editor-tools",
             );
             await nextTick();
@@ -368,7 +368,7 @@ describe("Index", () => {
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
 
-            wrapper.find("#workflow-save-button").vm!.$emit("click");
+            wrapper.findComponent("#workflow-save-button").vm!.$emit("click");
             await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
@@ -390,7 +390,7 @@ describe("Index", () => {
             workflowAttributes.vm.$emit("update:annotationCurrent", "submitted annotation");
             await nextTick();
 
-            wrapper.find("#workflow-save-button").vm!.$emit("click");
+            wrapper.findComponent("#workflow-save-button").vm!.$emit("click");
             await nextTick();
             wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "newer annotation");
             await nextTick();
@@ -418,7 +418,7 @@ describe("Index", () => {
             wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
             await nextTick();
 
-            wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
+            wrapper.findComponent("[data-description='save-as-modal']").vm.$emit("ok");
             await flushPromises();
 
             expect(createWorkflowSpy).toHaveBeenCalledWith(
@@ -440,7 +440,7 @@ describe("Index", () => {
             wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
             await nextTick();
 
-            wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
+            wrapper.findComponent("[data-description='save-as-modal']").vm.$emit("ok");
             await flushPromises();
 
             // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
@@ -454,7 +454,7 @@ describe("Index", () => {
 
             expect(wrapper.findComponent(GFormInput).props("value")).toBe("My New Workflow");
 
-            wrapper.find("[data-description='save-as-modal']").vm.$emit("cancel");
+            wrapper.findComponent("[data-description='save-as-modal']").vm.$emit("cancel");
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("value")).toBeNull();
@@ -487,16 +487,16 @@ describe("Index", () => {
                 expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
 
                 // simulate WorkflowGraph making a change to enable the Save button
-                wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onChange");
+                wrapper.findComponent(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onChange");
                 await nextTick();
 
                 // save button is now enabled
                 expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
 
-                wrapper.find("#workflow-save-button").vm!.$emit("click");
+                wrapper.findComponent("#workflow-save-button").vm!.$emit("click");
                 await flushPromises();
 
-                const modal = wrapper.find("[data-description='workflow editor error modal']");
+                const modal = wrapper.findComponent("[data-description='workflow editor error modal']");
                 expect(modal.props("show")).toBe(true);
                 expect(modal.props("title")).toBe("Saving workflow failed...");
                 expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
@@ -509,7 +509,9 @@ describe("Index", () => {
                 modal.vm.$emit("close");
                 await nextTick();
 
-                expect(wrapper.find("[data-description='workflow editor error modal']").props("show")).toBe(false);
+                expect(wrapper.findComponent("[data-description='workflow editor error modal']").props("show")).toBe(
+                    false,
+                );
             });
         });
     });
@@ -684,7 +686,7 @@ describe("Index", () => {
          * routes to "/workflows/list" through it with no forceSave/appendVersion,
          * matching what these tests exercise. */
         async function triggerOnNavigateToList(w: VueWrapper) {
-            w.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "exit");
+            w.findComponent(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "exit");
         }
 
         beforeEach(() => {
@@ -787,7 +789,7 @@ describe("Index", () => {
 
             // "workflow-run" activity routes via `onRun()`, which calls
             // `onNavigate(..., false, false, true)` — appendVersion=true.
-            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-run");
+            wrapper.findComponent(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-run");
             await flushPromises();
 
             expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("&version="));
@@ -843,7 +845,7 @@ describe("Index", () => {
 
             // "workflow-create" activity routes via `createNewWorkflow()`, which
             // calls `onNavigate("/workflows/edit")` with no unsaved changes.
-            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-create");
+            wrapper.findComponent(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-create");
             await flushPromises();
 
             expect(mockPush).toHaveBeenCalledWith("/workflows/edit");

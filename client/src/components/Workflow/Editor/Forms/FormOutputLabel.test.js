@@ -27,9 +27,8 @@ describe("FormOutputLabel", () => {
                 name: "output-name",
                 step: stepOne,
             },
-            global: localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia,
-            provide: { workflowId: "mock-workflow" },
         });
 
         const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
@@ -38,9 +37,8 @@ describe("FormOutputLabel", () => {
                 name: "other-name",
                 step: stepTwo,
             },
-            global: localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia,
-            provide: { workflowId: "mock-workflow" },
         });
         stepStore = useWorkflowStepStore("mock-workflow");
         stepStore.addStep(stepOne);
