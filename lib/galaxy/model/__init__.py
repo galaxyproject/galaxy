@@ -5006,6 +5006,10 @@ class Dataset(Base, StorableObject, Serializable):
     def _extra_files_rel_path(self):
         return self._extra_files_path or self.extra_files_path_name
 
+    def extra_file_object_store_path_kwargs(self, name: str) -> dict[str, Any]:
+        """Where the extra file ``name`` sits in this dataset's object store, as ``get_filename`` takes it."""
+        return dict(extra_dir=self._extra_files_rel_path, alt_name=name)
+
     def _calculate_size(self) -> int:
         if self.external_filename:
             try:

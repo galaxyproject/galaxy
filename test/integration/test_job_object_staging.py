@@ -16,6 +16,8 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 TEST_INPUT_TEXT = "test input content\n"
+EXTRA_FILE_NAME = "sub/extra file.txt"
+EXTRA_FILE_TEXT = "extra file content\n"
 
 
 class TestJobObjectStagingIntegration(integration_util.IntegrationTestCase):
@@ -66,11 +68,35 @@ class TestJobObjectStagingIntegration(integration_util.IntegrationTestCase):
         response = requests.get(url)
         api_asserts.assert_status_code_is(response, 403)
 
-    def _input_url(self, job):
+    def test_get_serves_an_extra_file_of_the_input(self):
+        self._store_extra_file(EXTRA_FILE_NAME, EXTRA_FILE_TEXT)
+        job = self._running_job_with_input()
+        response = requests.get(self._input_url(job, "extra_file", path=EXTRA_FILE_NAME))
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == EXTRA_FILE_TEXT
+
+    def test_head_reports_the_size_of_an_extra_file(self):
+        self._store_extra_file(EXTRA_FILE_NAME, EXTRA_FILE_TEXT)
+        job = self._running_job_with_input()
+        response = requests.head(self._input_url(job, "extra_file", path=EXTRA_FILE_NAME))
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.headers["content-length"] == str(len(EXTRA_FILE_TEXT))
+
+    def _input_url(self, job, kind="dataset", path=""):
         dataset = self.input_hda.dataset
         assert dataset is not None
         expires = int(time.time()) + 3600
-        return input_url(self._app.security, self.url.rstrip("/"), job.id, "dataset", dataset.id, expires)
+        return input_url(self._app.security, self.url.rstrip("/"), job.id, kind, dataset.id, expires, path=path)
+
+    def _store_extra_file(self, name, text):
+        dataset = self.input_hda.dataset
+        assert dataset is not None
+        source = os.path.join(self._tempdir, "extra_file_source")
+        with open(source, "w") as f:
+            f.write(text)
+        self._app.object_store.update_from_file(
+            dataset, file_name=source, create=True, **dataset.extra_file_object_store_path_kwargs(name)
+        )
 
     def _running_job_with_input(self):
         """A job whose handler is unknown, so its state stays as set here."""
