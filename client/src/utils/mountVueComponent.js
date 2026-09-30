@@ -8,8 +8,8 @@ import Vue from "vue";
 
 import { localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
 import { vGTooltip } from "@/directives/vGTooltip";
-import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
+import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
 
 // Load Pinia
 Vue.use(PiniaVuePlugin);

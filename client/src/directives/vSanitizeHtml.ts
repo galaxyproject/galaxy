@@ -10,7 +10,7 @@
 
 import type { DirectiveBinding, ObjectDirective } from "vue";
 
-import { type SanitizeHtmlProfile, sanitizeHtml } from "./sanitizeHtml";
+import { sanitizeHtml, type SanitizeHtmlProfile } from "./sanitizeHtml";
 
 export type SanitizeHtmlBinding = string | null | undefined;
 
