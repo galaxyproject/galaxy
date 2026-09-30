@@ -11,6 +11,7 @@ from galaxy.tool_util.provided_metadata import (
     ToolProvidedMetadata,
 )
 from galaxy.tools import create_tool_from_source
+from galaxy.util.rst_to_html import _cached_publish
 
 XML_TOOL = """
 <tool id="tool_id" name="xml tool" version="1" profile="26.1"/>
@@ -122,6 +123,11 @@ USER_DEFINED_TOOL_WITH_METADATA_DISCOVERY = USER_DEFINED_TOOL.replace(
     discover_datasets:
       - discover_via: tool_provided_metadata""",
 )
+USER_DEFINED_TOOL_WITH_RST_HELP = USER_DEFINED_TOOL + """help:
+  format: restructuredtext
+  content: "**user tool help**"
+"""
+XML_TOOL_WITH_RST_HELP = XML_TOOL.replace("/>", "><help>**xml tool help**</help></tool>")
 USER_DEFINED_TOOL_SPOOFING_UPLOAD = USER_DEFINED_TOOL.replace("id: samtools-reference", "id: upload1")
 
 
@@ -355,6 +361,21 @@ def test_user_defined_tool_cannot_enable_tool_provided_metadata(tool_app, tmp_pa
     assert not tool.tool_source.allows_tool_provided_metadata()
     assert not tool.uses_tool_provided_metadata
     assert isinstance(metadata, NullToolProvidedMetadata)
+
+
+def test_user_defined_tool_help_html_is_not_cached(tool_app):
+    tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=USER_DEFINED_TOOL_WITH_RST_HELP)
+    before = _cached_publish.cache_info().currsize
+    assert "<strong>user tool help</strong>" in tool.help_html
+    assert _cached_publish.cache_info().currsize == before
+
+
+def test_xml_tool_help_html_is_cached(tool_app):
+    tool = _deserialize(tool_app, tool_source_class="XmlToolSource", raw_tool_source=XML_TOOL_WITH_RST_HELP)
+    assert "<strong>xml tool help</strong>" in tool.help_html
+    hits = _cached_publish.cache_info().hits
+    assert "<strong>xml tool help</strong>" in tool.help_html
+    assert _cached_publish.cache_info().hits == hits + 1
 
 
 def test_deserialize_cwl_tool(tool_app):

@@ -66,13 +66,21 @@ def get_publisher(error=False):
 _publish_lock = threading.Lock()
 
 
-@functools.lru_cache(maxsize=None)
-def rst_to_html(s, error=False):
-    if docutils is None:
-        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
-
+def _publish(s, error):
     with _publish_lock:
         publisher = get_publisher(error=error)
         publisher.set_source(s, None)
         publisher.set_destination(None, None)
         return publisher.publish(enable_exit_status=False)
+
+
+_cached_publish = functools.lru_cache(maxsize=1024)(_publish)
+
+
+def rst_to_html(s, error=False, cache=True):
+    if docutils is None:
+        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
+
+    if cache:
+        return _cached_publish(s, error)
+    return _publish(s, error)

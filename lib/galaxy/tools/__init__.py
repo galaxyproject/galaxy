@@ -998,6 +998,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
+    cache_help_html = True
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
@@ -2040,7 +2041,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         assert help_content
         assert help_content.format == "restructuredtext"
         try:
-            return rst_to_html(help_content.content)
+            return rst_to_html(help_content.content, cache=self.cache_help_html)
         except Exception:
             log.warning("Exception while parsing help for tool with id '%s'", self.id, exc_info=True)
             return ""
@@ -3428,6 +3429,9 @@ class OutputParameterJSONTool(Tool):
 class UserDefinedTool(Tool):
     tool_type = "user_defined"
     requires_js_runtime = True
+    # Help is author text, including help sent to the unstored build endpoint;
+    # caching it would let authors fill the cache and evict toolbox help.
+    cache_help_html = False
 
 
 class ExpressionTool(Tool):
