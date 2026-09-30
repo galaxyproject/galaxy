@@ -14,6 +14,7 @@ from typing import (
     Any,
     Literal,
 )
+from urllib.parse import quote
 
 from galaxy import exceptions
 from galaxy.model import (
@@ -31,7 +32,7 @@ from galaxy.security.staging_signer import StagingUrlSigner
 
 log = logging.getLogger(__name__)
 
-StagedInputKind = Literal["dataset", "metadata_file"]
+StagedInputKind = Literal["dataset", "metadata_file", "extra_file"]
 
 # The staging URLs a runner receives must outlive the job's wait in a queue; the
 # job leaving Job.non_ready_states ends them sooner.
@@ -62,20 +63,24 @@ def input_url(
     object_id: int,
     expires: int,
     redirect: bool = False,
+    path: str = "",
 ) -> str:
     """A signed URL for one input of a job, answered by ``JobObjectStagingManager.staged_input``.
 
     With ``redirect``, the runner may be sent to a presigned object store URL; only ask for that when
     the runner can reach the store and follows redirects. The flag is not signed: it only changes how
-    the job receives its own input.
+    the job receives its own input. An ``extra_file`` is the file at ``path`` among the extra files of
+    dataset ``object_id``.
     """
-    signature = StagingUrlSigner(security.id_secret).sign(job_id, kind, object_id, "", expires)
+    signature = StagingUrlSigner(security.id_secret).sign(job_id, kind, object_id, path, expires)
     encoded_job_id = security.encode_id(job_id)
     encoded_object_id = security.encode_id(object_id)
     url = (
         f"{galaxy_url}/api/jobs/{encoded_job_id}/staging/inputs/{kind}/{encoded_object_id}"
         f"?exp={expires}&sig={signature}"
     )
+    if path:
+        url = f"{url}&path={quote(path, safe='')}"
     return f"{url}&redirect=1" if redirect else url
 
 
@@ -96,13 +101,14 @@ class JobObjectStagingManager:
         signature: str,
         head: bool = False,
         redirect: bool = False,
+        path: str = "",
     ) -> StagedInput:
-        if not self._signer.verify(job_id, kind, object_id, "", expires, signature):
+        if not self._signer.verify(job_id, kind, object_id, path, expires, signature):
             raise exceptions.ItemAccessibilityException("Invalid or expired staging URL.")
         job = self._sa_session.get(Job, job_id)
         if job is None or job.state not in Job.non_ready_states:
             raise exceptions.ItemAccessibilityException("Attempting to stage an input of a job that is not active.")
-        obj, dataset, path_kwargs = self._input_object(job, kind, object_id)
+        obj, dataset, path_kwargs = self._input_object(job, kind, object_id, path)
         if dataset.purged:
             raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
         # Stores report a missing object's size as 0, and presign or stream it as if it were empty.
@@ -123,18 +129,19 @@ class JobObjectStagingManager:
         return StagedInput(size=size, path=self._object_store.get_filename(obj, **path_kwargs))
 
     def _input_object(
-        self, job: Job, kind: StagedInputKind, object_id: int
+        self, job: Job, kind: StagedInputKind, object_id: int, path: str
     ) -> tuple[Dataset | MetadataFile, Dataset, dict[str, Any]]:
         """The object to read, the dataset it belongs to, and where it sits in that dataset's store."""
         input_associations = [
             *(assoc.dataset for assoc in job.input_datasets),
             *(assoc.dataset for assoc in job.input_library_datasets),
         ]
-        if kind == "dataset":
+        if kind in ("dataset", "extra_file"):
             for association in input_associations:
                 dataset = association.dataset if association is not None else None
                 if dataset is not None and dataset.id == object_id:
-                    return dataset, dataset, {}
+                    path_kwargs = dataset.extra_file_object_store_path_kwargs(path) if kind == "extra_file" else {}
+                    return dataset, dataset, path_kwargs
         elif kind == "metadata_file":
             metadata_file = self._sa_session.get(MetadataFile, object_id)
             if metadata_file is not None:

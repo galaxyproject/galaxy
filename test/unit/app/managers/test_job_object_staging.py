@@ -67,9 +67,9 @@ def _running_job(app, *inputs) -> Job:
     return job
 
 
-def _signed(app, job, kind, object_id, expires=LATER, redirect=False):
+def _signed(app, job, kind, object_id, expires=LATER, redirect=False, path=""):
     """What a runner's request carries, read back from the URL the manager issues."""
-    url = urlparse(input_url(app.security, GALAXY_URL, job.id, kind, object_id, expires, redirect=redirect))
+    url = urlparse(input_url(app.security, GALAXY_URL, job.id, kind, object_id, expires, redirect=redirect, path=path))
     query = parse_qs(url.query)
     return dict(
         job_id=job.id,
@@ -78,6 +78,7 @@ def _signed(app, job, kind, object_id, expires=LATER, redirect=False):
         expires=int(query["exp"][0]),
         signature=query["sig"][0],
         redirect=query.get("redirect") == ["1"],
+        path=query.get("path", [""])[0],
     )
 
 
@@ -250,3 +251,55 @@ def test_metadata_file_of_a_dataset_that_is_not_an_input_is_refused(app, manager
     job = _running_job(app, hda)
     with pytest.raises(exceptions.ItemAccessibilityException):
         manager.staged_input(**_signed(app, job, "metadata_file", metadata_file.id))
+
+
+def _stored_extra_files(app, hda, files) -> dict[str, bytes]:
+    dataset = _dataset(hda)
+    for name, content in files.items():
+        _store(app, dataset, content, extra_dir=dataset.extra_files_path_name, alt_name=name)
+    return files
+
+
+EXTRA_FILES = {"Sequences": b"sequences", "sub/deep.txt": b"deep"}
+
+
+@pytest.mark.parametrize("name", EXTRA_FILES)
+def test_input_extra_file_is_served_from_its_path_within_the_dataset(app, manager, name):
+    hda = _stored_hda(app)
+    _stored_extra_files(app, hda, EXTRA_FILES)
+    job = _running_job(app, hda)
+    staged = manager.staged_input(**_signed(app, job, "extra_file", _dataset(hda).id, path=name))
+    with open(staged.path, "rb") as f:
+        assert f.read() == EXTRA_FILES[name]
+    assert staged.size == len(EXTRA_FILES[name])
+
+
+def test_input_extra_file_is_presigned_at_its_path_within_the_dataset(app, manager):
+    hda = _stored_hda(app)
+    _stored_extra_files(app, hda, EXTRA_FILES)
+    job = _running_job(app, hda)
+    with mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/extra") as presign:
+        staged = manager.staged_input(
+            **_signed(app, job, "extra_file", _dataset(hda).id, redirect=True, path="sub/deep.txt")
+        )
+    assert staged.redirect_url == "https://s3/extra"
+    assert presign.call_args.args[0] is _dataset(hda)
+    path_kwargs = dict(extra_dir=_dataset(hda).extra_files_path_name, alt_name="sub/deep.txt")
+    assert path_kwargs.items() <= presign.call_args.kwargs.items()
+
+
+def test_extra_file_url_serves_only_the_file_it_was_issued_for(app, manager):
+    hda = _stored_hda(app)
+    _stored_extra_files(app, hda, EXTRA_FILES)
+    job = _running_job(app, hda)
+    request = {**_signed(app, job, "extra_file", _dataset(hda).id, path="Sequences"), "path": "sub/deep.txt"}
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.staged_input(**request)
+
+
+def test_extra_file_of_a_dataset_that_is_not_an_input_is_refused(app, manager):
+    hda, not_an_input = _stored_hda(app), _stored_hda(app)
+    _stored_extra_files(app, not_an_input, EXTRA_FILES)
+    job = _running_job(app, hda)
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.staged_input(**_signed(app, job, "extra_file", _dataset(not_an_input).id, path="Sequences"))
