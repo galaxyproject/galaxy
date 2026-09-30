@@ -40,13 +40,6 @@ from galaxy.schema.agents import (
 )
 
 
-def _fake_ops(agent: TeachingAssistantAgent) -> Any:
-    """Give a test a spec'd operations double instead of assigning bare methods (which mypy rejects)."""
-    ops = mock.create_autospec(AgentOperationsManager, instance=True)
-    agent.ops = ops
-    return ops
-
-
 def _fake_ctx(run_id: str | None, messages: list[Any]) -> RunContext[GalaxyAgentDependencies]:
     """Build a RunContext-shaped double; _render_tutorial_references only reads run_id and messages."""
     return cast(RunContext[GalaxyAgentDependencies], SimpleNamespace(run_id=run_id, messages=messages))
@@ -160,18 +153,18 @@ class TestTeachingAssistantAgent:
     async def test_error_analysis_passes_stderr_to_specialist(self, log_prefix, monkeypatch):
         agent = TeachingAssistantAgent(self.deps)
         stderr = log_prefix + "No index found"
-        ops = _fake_ops(agent)
-        ops.get_job_status.return_value = {
-            "job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": stderr}
-        }
+        get_job_status = mock.Mock(
+            return_value={"job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": stderr}}
+        )
+        monkeypatch.setattr(agent.ops, "get_job_status", get_job_status)
+        monkeypatch.setattr(agent.ops, "get_job_parameters", mock.Mock(side_effect=ValueError("tool not installed")))
         delegate = mock.AsyncMock(return_value="Check which reference index was selected.")
         monkeypatch.setattr(agent, "_call_agent_from_tool", delegate)
-        ops.get_job_parameters.side_effect = ValueError("tool not installed")
         ctx = mock.Mock()
 
         result = (await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")).return_value
 
-        ops.get_job_status.assert_called_once_with("encoded-job", full=True)
+        get_job_status.assert_called_once_with("encoded-job", full=True)
         assert "No index found" in result
         delegated_query = delegate.call_args.args[1]
         assert "No index found" in delegated_query
@@ -184,26 +177,32 @@ class TestTeachingAssistantAgent:
     async def test_error_analysis_reports_settings_by_form_label(self, monkeypatch):
         # Without the real settings the tutor invented a "Column" parameter and a "Header" option for Filter1.
         agent = TeachingAssistantAgent(self.deps)
-        ops = _fake_ops(agent)
-        ops.get_job_status.return_value = {
-            "job": {"tool_id": "Filter1", "state": "error", "exit_code": 1, "stderr": "IndexError"}
-        }
-        ops.get_job_parameters.return_value = {
-            "parameters": [
-                {"label": "Filter", "value": "HID 3: counts.tabular", "depth": 1},
-                {"label": "With following condition", "value": "c7>100", "depth": 1},
-                {"label": "Advanced", "value": None, "depth": 1},
-                {"label": "Number of header lines to skip", "value": "1", "depth": 2},
-            ],
-            "has_parameter_errors": False,
-        }
+        monkeypatch.setattr(
+            agent.ops,
+            "get_job_status",
+            mock.Mock(
+                return_value={"job": {"tool_id": "Filter1", "state": "error", "exit_code": 1, "stderr": "IndexError"}}
+            ),
+        )
+        get_job_parameters = mock.Mock(
+            return_value={
+                "parameters": [
+                    {"label": "Filter", "value": "HID 3: counts.tabular", "depth": 1},
+                    {"label": "With following condition", "value": "c7>100", "depth": 1},
+                    {"label": "Advanced", "value": None, "depth": 1},
+                    {"label": "Number of header lines to skip", "value": "1", "depth": 2},
+                ],
+                "has_parameter_errors": False,
+            }
+        )
+        monkeypatch.setattr(agent.ops, "get_job_parameters", get_job_parameters)
         delegate = mock.AsyncMock(return_value="The condition names a missing column.")
         monkeypatch.setattr(agent, "_call_agent_from_tool", delegate)
 
         result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
         result = result.return_value
 
-        ops.get_job_parameters.assert_called_once_with("encoded-job")
+        get_job_parameters.assert_called_once_with("encoded-job")
         assert "- Filter: HID 3: counts.tabular" in result
         assert "- With following condition: c7>100" in result
         assert "- Advanced\n  - Number of header lines to skip: 1" in result
@@ -219,13 +218,15 @@ class TestTeachingAssistantAgent:
     )
     async def test_error_analysis_records_the_failing_tool(self, tool_id, tool_name, expected, monkeypatch):
         agent = TeachingAssistantAgent(self.deps)
-        ops = _fake_ops(agent)
-        ops.get_job_status.return_value = {"job": {"tool_id": tool_id, "state": "error"}}
-        ops.get_job_parameters.side_effect = ValueError("no summary")
+        monkeypatch.setattr(
+            agent.ops, "get_job_status", mock.Mock(return_value={"job": {"tool_id": tool_id, "state": "error"}})
+        )
+        monkeypatch.setattr(agent.ops, "get_job_parameters", mock.Mock(side_effect=ValueError("no summary")))
         if tool_name:
-            ops.get_tool_details.return_value = {"name": tool_name}
+            get_tool_details = mock.Mock(return_value={"name": tool_name})
         else:
-            ops.get_tool_details.side_effect = ValueError("not installed")
+            get_tool_details = mock.Mock(side_effect=ValueError("not installed"))
+        monkeypatch.setattr(agent.ops, "get_tool_details", get_tool_details)
         monkeypatch.setattr(agent, "_call_agent_from_tool", mock.AsyncMock(return_value=""))
 
         result = await agent.agent._function_toolset.tools["analyze_error"].function(mock.Mock(), "encoded-job")
@@ -321,12 +322,11 @@ class TestTeachingAssistantAgent:
             # Logged so a live run can show the check fired, since the retry never reaches the answer.
             assert any("off-topic tutorial" in r.getMessage() for r in caplog.records)
 
-    async def test_history_summary_gives_failed_items_a_job_id(self):
+    async def test_history_summary_gives_failed_items_a_job_id(self, monkeypatch):
         # Without a job ID the tutor could only send the learner off to dig out the error themselves.
         agent = TeachingAssistantAgent(self.deps)
         self.mock_trans.get_history.return_value = mock.Mock(id=7)
-        ops = _fake_ops(agent)
-        ops.get_history_contents.return_value = {
+        history_contents = {
             "contents": [
                 {"id": "ds-ok", "hid": 1, "name": "reads.fastq", "state": "ok", "history_content_type": "dataset"},
                 {
@@ -346,17 +346,19 @@ class TestTeachingAssistantAgent:
             ],
             "pagination": {"total_items": 2},
         }
-        ops.get_job_details.return_value = {"job_id": "encoded-failed-job"}
+        monkeypatch.setattr(agent.ops, "get_history_contents", mock.Mock(return_value=history_contents))
+        get_job_details = mock.Mock(return_value={"job_id": "encoded-failed-job"})
+        monkeypatch.setattr(agent.ops, "get_job_details", get_job_details)
 
         result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
 
-        ops.get_job_details.assert_called_once_with("ds-bad")
+        get_job_details.assert_called_once_with("ds-bad")
         failed_line = next(line for line in result.splitlines() if "HID 2" in line)
         assert "encoded-failed-job" in failed_line
         assert "job" not in next(line for line in result.splitlines() if "HID 1" in line)
         assert "job" not in next(line for line in result.splitlines() if "HID 3" in line)
 
-    async def test_history_summary_keeps_recent_failures_in_long_histories(self):
+    async def test_history_summary_keeps_recent_failures_in_long_histories(self, monkeypatch):
         # A learner asks about the job that just failed, which is the newest item, not the oldest.
         agent = TeachingAssistantAgent(self.deps)
         self.mock_trans.get_history.return_value = mock.Mock(id=7)
@@ -372,9 +374,8 @@ class TestTeachingAssistantAgent:
             ordered = sorted(items, key=lambda item: int(item["hid"]), reverse=order == "hid-dsc")
             return {"contents": ordered[offset : offset + limit], "pagination": {"total_items": len(items)}}
 
-        ops = _fake_ops(agent)
-        ops.get_history_contents.side_effect = contents
-        ops.get_job_details.return_value = {"job_id": "encoded-failed-job"}
+        monkeypatch.setattr(agent.ops, "get_history_contents", contents)
+        monkeypatch.setattr(agent.ops, "get_job_details", mock.Mock(return_value={"job_id": "encoded-failed-job"}))
 
         result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
 
@@ -651,11 +652,9 @@ class TestTeachingAssistantWiring:
     def test_real_dependencies_importable(self):
         """The real operations manager and GTN search the tutor wires to must exist."""
         from galaxy.agents.gtn import GTNSearchDB  # noqa: F401
-        from galaxy.agents.operations import AgentOperationsManager  # noqa: F401
 
     def test_agent_uses_real_operations_manager(self):
         """The tutor should construct the real AgentOperationsManager, not a stub."""
-        from galaxy.agents.operations import AgentOperationsManager
 
         agent = TeachingAssistantAgent(self.deps)
         assert isinstance(agent.ops, AgentOperationsManager)
