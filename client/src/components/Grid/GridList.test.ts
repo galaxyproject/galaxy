@@ -200,14 +200,8 @@ describe("GridList", () => {
         });
         await flushPromises();
 
-        // BPagination is globally stubbed. Its real render function builds click
-        // handlers via bootstrap-vue's legacy raw-VNode-data event syntax
-        // (`on: { '!click': ... }`), which doesn't reach the DOM as an actual
-        // listener under compat here, so driving it through a real click isn't
-        // possible -- go through its v-model contract instead (the same "input"
-        // event a real click would eventually trigger via BPagination's v-model).
-        const pagination = wrapper.findComponent({ name: "BPagination" });
-        pagination.vm.$emit("input", 3);
+        const pageLinks = wrapper.findAll(".page-link");
+        await pageLinks[4]!.trigger("click");
         await flushPromises();
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
         expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-6");
