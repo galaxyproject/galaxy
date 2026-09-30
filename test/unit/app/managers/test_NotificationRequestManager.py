@@ -14,6 +14,7 @@ from galaxy.exceptions import (
     ServerNotConfiguredForRequest,
 )
 from galaxy.managers.notification_requests import NotificationRequestManager
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -66,7 +67,9 @@ class TestNotificationRequestManager(BaseTestCase):
         self.config.config_value_for_host.side_effect = lambda option, host: self.per_host_flags.get(
             host, getattr(self.config, option)
         )
-        self.request_manager = NotificationRequestManager(self.config, self.user_manager, WorkflowsManager(self.app))
+        self.request_manager = NotificationRequestManager(
+            self.config, self.user_manager, WorkflowsManager(self.app, DynamicToolManager(self.app))
+        )
         # Request bodies carry encoded ids, decoded through the process-global Security.security.
         self._security_patch = patch.object(Security, "security", self.trans.security, create=True)
         self._security_patch.start()
