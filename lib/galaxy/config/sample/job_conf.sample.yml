@@ -936,6 +936,8 @@ execution:
        # Pulsar (0.15.16 or later) to a presigned URL when the object store has
        # enable_direct_download set, and streams otherwise. Use 'redirect' only
        # if Pulsar can reach the object store. Requires rewrite_parameters.
+       # Extra files of composite inputs are listed in the object store, which
+       # irods, pithos, rucio and onedata stores cannot do.
        # Each input's URL is signed in its query string and works until the
        # job finishes, and a presigned URL for 15 minutes, so keep query
        # strings out of access logs, as for the job_key of job files URLs.

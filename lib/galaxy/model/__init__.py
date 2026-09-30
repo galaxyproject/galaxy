@@ -4960,14 +4960,16 @@ class Dataset(Base, StorableObject, Serializable):
         assert self.object_store is not None, "Object Store has not been initialized"
         return self.object_store
 
-    def get_extra_files_path(self) -> str:
+    def get_extra_files_path(self, sync_cache: bool = True) -> str:
         # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
             object_store = self._assert_object_store_set()
             if object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
-                return object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
+                return object_store.get_filename(
+                    self, dir_only=True, extra_dir=self._extra_files_rel_path, sync_cache=sync_cache
+                )
             return object_store.construct_path(self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True)
         else:
             return os.path.abspath(self.external_extra_files_path)
@@ -5009,6 +5011,10 @@ class Dataset(Base, StorableObject, Serializable):
     def extra_file_object_store_path_kwargs(self, name: str) -> dict[str, Any]:
         """Where the extra file ``name`` sits in this dataset's object store, as ``get_filename`` takes it."""
         return dict(extra_dir=self._extra_files_rel_path, alt_name=name)
+
+    def list_extra_files(self) -> list[str]:
+        """Names of this dataset's extra files, relative to its extra files directory, without pulling them."""
+        return self._assert_object_store_set().list_files(self, extra_dir=self._extra_files_rel_path)
 
     def _calculate_size(self) -> int:
         if self.external_filename:

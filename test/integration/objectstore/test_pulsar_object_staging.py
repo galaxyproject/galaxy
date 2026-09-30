@@ -10,8 +10,11 @@ import base64
 import os
 import string
 import time
+from collections.abc import Iterator
+from pathlib import Path
 from unittest import mock
 
+import pytest
 import requests
 from sqlalchemy import select
 
@@ -19,6 +22,8 @@ from galaxy import model
 from galaxy.managers import job_object_staging
 from galaxy.managers.job_object_staging import input_url
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.unittest_utils.zarr_fixtures import write_zarr_v3_store
+from galaxy.util.unittest_utils.test_http_server import serve_directory
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.integration_util import docker_rm
@@ -61,6 +66,26 @@ tools:
 """)
 
 INPUT_CONTENT = "staged input\n"
+SEQUENCES_CONTENT = "sequences content\n"
+VELVET_UPLOAD = {
+    "src": "composite",
+    "ext": "velvet",
+    "composite": {
+        "items": [
+            {"src": "pasted", "paste_content": SEQUENCES_CONTENT},
+            {"src": "pasted", "paste_content": "roadmaps content\n"},
+            {"src": "pasted", "paste_content": "log content\n"},
+        ]
+    },
+}
+
+
+@pytest.fixture
+def zarr_store_url(tmp_path: Path) -> Iterator[str]:
+    """A consolidated Zarr v3 store served over plain HTTP, to be read as a deferred directory dataset."""
+    write_zarr_v3_store(tmp_path / "store.zarr")
+    with serve_directory(tmp_path) as base_url:
+        yield f"{base_url}/store.zarr"
 
 
 @integration_util.skip_unless_docker()
@@ -153,6 +178,31 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
         assert output == INPUT_CONTENT
         assert self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)["state"] == "deferred"
 
+    def test_deferred_directory_input_is_materialized_for_the_job_and_staged(self, zarr_store_url):
+        # As for a deferred dataset, its extra files are materialized into the job directory.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.create_deferred_hda(history_id, zarr_store_url, ext="zarr")
+
+        inputs = {"input": {"src": "hda", "id": hda["id"]}}
+        run = self.dataset_populator.run_tool("directory_listing", inputs, history_id)
+        self.dataset_populator.wait_for_job(run["jobs"][0]["id"], assert_ok=True)
+
+        listing = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
+        assert listing.splitlines() == ["./arr/c/0", "./arr/zarr.json", "./zarr.json"]
+
+    def test_composite_input_extra_files_are_staged(self):
+        # The composite tool reads $input.extra_files_path/Sequences.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.fetch_hda(history_id, VELVET_UPLOAD, wait=True)
+        self._reset_cache()
+
+        run = self.dataset_populator.run_tool("composite", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_job(run["jobs"][0]["id"], assert_ok=True)
+
+        output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
+        assert output == SEQUENCES_CONTENT
+        assert self._cached_files_of(hda) == []
+
     def _hda(self, hda_dict) -> model.HistoryDatasetAssociation:
         hda = self._app.model.session.get(model.HistoryDatasetAssociation, self._app.security.decode_id(hda_dict["id"]))
         assert hda is not None and hda.dataset is not None
@@ -160,6 +210,13 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
 
     def _cache_path(self, hda_dict):
         return self._app.object_store.get_filename(self._hda(hda_dict).dataset, sync_cache=False)
+
+    def _cached_files_of(self, hda_dict):
+        """Cached files of the dataset, its primary file and extra files alike (stored by uuid)."""
+        dataset = self._hda(hda_dict).dataset
+        assert dataset is not None
+        cached = (os.path.join(root, f) for root, _, files in os.walk(self.object_store_cache_path) for f in files)
+        return [path for path in cached if str(dataset.uuid) in path]
 
     def _reset_cache(self):
         for root, _, files in os.walk(self.object_store_cache_path):
