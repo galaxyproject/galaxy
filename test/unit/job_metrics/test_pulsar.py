@@ -7,6 +7,7 @@ import pytest
 from galaxy.job_metrics import (
     JobInstrumenter,
     JobMetrics,
+    RawMetric,
 )
 from galaxy.job_metrics.instrumenters.pulsar import (
     POSTPROCESS,
@@ -137,14 +138,25 @@ def test_read_target_version(tmpdir):
     assert read_target_version(str(tmpdir)) == "0.14.0"
 
 
-def test_version_metrics_are_only_for_admins():
-    plugin = PulsarPlugin()
-    assert plugin.safety("preprocess_seconds") == Safety.SAFE
-    assert plugin.safety("server_version") == Safety.POTENTIALLY_SENSITVE
-    assert PulsarPlugin.default_safety == Safety.POTENTIALLY_SENSITVE
+@pytest.mark.parametrize("configured", [[{"type": "pulsar"}], [{"type": "core"}]])
+def test_version_metrics_are_only_for_admins(configured):
+    # Also when pulsar is only configured per destination, not in the global config.
+    metrics = JobMetrics(conf_dict=configured)
+    raw = [RawMetric("preprocess_seconds", 2.5, "pulsar"), RawMetric("server_version", "0.15.16", "pulsar")]
+    assert [m.name for m in metrics.dictifiable_metrics(raw, Safety.SAFE)] == ["preprocess_seconds"]
+    assert [m.name for m in metrics.dictifiable_metrics(raw, Safety.POTENTIALLY_SENSITVE)] == [
+        "preprocess_seconds",
+        "server_version",
+    ]
 
 
 def test_version_formatting():
     formatter = PulsarPlugin.formatter
     assert formatter.format("client_version", "0.15.16") == ("Pulsar Client Version", "0.15.16")
     assert formatter.format("server_version_source", "status") == ("Pulsar Server Version Source", "status")
+
+
+def test_unreadable_target_version_is_treated_as_missing(tmpdir):
+    # A metric file must not fail the job it describes.
+    tmpdir.join("__instrument_pulsar_version_target").write('{"target_ver')
+    assert read_target_version(str(tmpdir)) is None

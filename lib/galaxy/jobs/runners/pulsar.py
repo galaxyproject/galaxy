@@ -1026,7 +1026,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def __client_outputs(
         self, client: "BaseJobClient", job_wrapper: "MinimalJobWrapper", pulsar_version: Version
     ) -> ClientOutputs:
-        metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        metadata_directory = _job_metrics_directory(job_wrapper)
         metadata_strategy = job_wrapper.get_destination_configuration("metadata_strategy", None)
         assert job_wrapper.tool is not None
         tool = job_wrapper.tool
