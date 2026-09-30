@@ -21,6 +21,15 @@ BLOCK_FENCE_END = re.compile(r"```[\s]*")
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 
+# Cell types the client renders (SectionWrapper.vue).
+GALAXY_MARKDOWN_CELL_TYPES = ("galaxy", "markdown", "vega", "visualization", "vitessce")
+# What JS trim() strips; str.strip() differs (e.g. keeps U+FEFF).
+JS_TRIM_CHARACTERS = (
+    "\t\n\v\f\r \u00a0\u1680"
+    "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
+
 # The directive registry imported above (DynamicArguments, VALID_ARGUMENTS,
 # EMBED_CAPABLE_DIRECTIVES, SHARED_ARGUMENTS) is generated from
 # client/src/components/Markdown/directives.yml by scripts/markdown_directives_doc.py.
@@ -47,6 +56,8 @@ EMBED_DIRECTIVE_REGEX_ANY = re.compile(r"\$\{galaxy\s+.*\}")
 
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
+
+    _check_fence_types(galaxy_markdown)
 
     expecting_container_close_for = None
     last_line_no = 0
@@ -118,6 +129,23 @@ def _invalid_line(template: str, line_no: int, **kwd):
     if "line" in kwd:
         kwd["line"] = kwd["line"].rstrip("\r\n")
     raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
+
+
+def _check_fence_types(galaxy_markdown: str) -> None:
+    # Mirrors the client's parseMarkdown, which starts a cell at any ``` line.
+    for line_no, line in enumerate(galaxy_markdown.split("\n")):
+        stripped = line.strip(JS_TRIM_CHARACTERS)
+        if not stripped.startswith("```"):
+            continue
+        fence_type = stripped[3:]
+        if fence_type and fence_type not in GALAXY_MARKDOWN_CELL_TYPES:
+            _invalid_line(
+                "Unsupported fenced block type [{fence_type}]. Fenced blocks must be one of {cell_types}; "
+                "for a plain code block, use ~~~ fences instead of ```",
+                line_no,
+                fence_type=fence_type,
+                cell_types=", ".join(GALAXY_MARKDOWN_CELL_TYPES),
+            )
 
 
 def _validate_arg(arg_str: str, valid_args, line_no: int):
