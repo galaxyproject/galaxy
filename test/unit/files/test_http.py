@@ -107,6 +107,37 @@ def test_file_source_http_decodes_content_encoding():
     assert_realizes_as(file_sources, test_url, content.decode(), user_context=user_context)
 
 
+@responses.activate
+def test_file_source_http_leaves_reused_fd_open(tmp_path):
+    test_url = "https://www.elsewhere.org/myfile.txt"
+    target = tmp_path / "realized"
+    sentinel_path = tmp_path / "sentinel"
+    sentinel_fds = []
+    real_close = os.close
+
+    def close_and_reuse_fd(fd):
+        real_close(fd)
+        # Another thread opening a file now receives the freed descriptor number.
+        sentinel_fds.append(os.open(sentinel_path, os.O_WRONLY | os.O_CREAT))
+
+    responses.add(responses.GET, test_url, body="hello generic world")
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    with mock.patch.object(os, "close", new=close_and_reuse_fd):
+        file_source_pair.file_source.realize_to(file_source_pair.path, str(target), user_context=user_context_fixture())
+
+    try:
+        for fd in sentinel_fds:
+            os.fstat(fd)
+    finally:
+        for fd in sentinel_fds:
+            try:
+                real_close(fd)
+            except OSError:
+                pass
+    assert target.read_text() == "hello generic world"
+
+
 def test_file_source_ftp_url():
     test_url = "ftp://ftp.gnu.org/README"
 

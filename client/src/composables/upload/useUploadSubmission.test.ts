@@ -151,9 +151,18 @@ describe("useUploadSubmission", () => {
         expect(useUploadState().activeItems.value.every((item) => item.datasetIds.length === 1)).toBe(true);
     });
 
-    it("marks all tracked uploads as errored when the fetch request fails", async () => {
+    it("marks only the fetched uploads as errored when the fetch request fails", async () => {
         server.use(
-            http.post("/api/tools/fetch", () => HttpResponse.json({ err_msg: "upload failed" }, { status: 500 })),
+            http.post("/api/tools/fetch", async () => {
+                // Fail the fetch only once the library copy running beside it has succeeded.
+                await vi.waitFor(() => {
+                    expect(useUploadState().activeItems.value[1]?.status).toBe("processing");
+                });
+                return HttpResponse.json({ err_msg: "upload failed" }, { status: 500 });
+            }),
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ id: "hda_2", name: "copied library", hid: 2 }),
+            ),
         );
 
         const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/broken.txt" });
@@ -165,15 +174,43 @@ describe("useUploadSubmission", () => {
         await flushPromises();
 
         await wrapper.find(SELECTORS.RUN).trigger("click");
+        await vi.waitFor(() => {
+            expect(wrapper.find(SELECTORS.ERROR).text()).toContain("upload failed");
+        });
+
+        const [apiUpload, libraryUpload] = useUploadState().activeItems.value;
+        expect(apiUpload?.status).toBe("error");
+        expect(apiUpload?.error).toBe("upload failed");
+        expect(libraryUpload?.status).toBe("processing");
+        expect(libraryUpload?.datasetIds).toEqual(["hda_2"]);
+    });
+
+    it("marks the failed and remaining library copies as errored when a copy request fails", async () => {
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+            ),
+        );
+
+        const wrapper = mountHarness({
+            apiItems: [],
+            uploadItems: [
+                makeLibraryItem({ name: "first.txt", lddaId: "ldda_1" }),
+                makeLibraryItem({ name: "second.txt", lddaId: "ldda_2" }),
+            ],
+        });
         await flushPromises();
 
-        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("upload failed");
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("Action requires account activation.");
 
         const state = useUploadState();
         expect(state.activeItems.value).toHaveLength(2);
         for (const item of state.activeItems.value) {
             expect(item.status).toBe("error");
-            expect(item.error).toBe("upload failed");
+            expect(item.error).toBe("Action requires account activation.");
         }
     });
 
@@ -331,6 +368,27 @@ describe("useUploadSubmission", () => {
         expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_lib_1");
         expect(batch?.datasetIds).toEqual(["hda_lib_1"]);
+    });
+
+    it("fails the collection batch when a library copy fails", async () => {
+        suppressExpectedErrorMessages(["Action requires account activation."]);
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+            ),
+        );
+
+        const prepared = buildPreparedUpload([makeLibraryItem()], makeSubmissionCollectionConfig());
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        const batch = useUploadState().activeBatches.value[0];
+        expect(batch?.status).toBe("error");
+        expect(batch?.error).toBe("Action requires account activation.");
+        expect(batch?.collectionId).toBeUndefined();
     });
 
     it("creates a two-step collection for mixed api and library uploads", async () => {

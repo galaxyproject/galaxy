@@ -23,8 +23,10 @@ from starlette.routing import Route
 from tuspyserver import create_tus_router
 
 from galaxy.exceptions import TooManyRequestsException
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
+from galaxy.web_stack import on_drain_start
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_raw_context_middlewares,
@@ -353,6 +355,8 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_tus(app, gx_app)
     app.state.route_name_index = build_route_name_index(app)
     include_mcp(app, gx_app, mcp_app)
+    # Event streams never end by themselves; end them as the worker starts draining.
+    gx_app.haltables.append(("SSE drain callback", on_drain_start(gx_app[SSEConnectionManager].begin_shutdown)))
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         # The ASGI server only runs the lifespan of the app it is handed, and

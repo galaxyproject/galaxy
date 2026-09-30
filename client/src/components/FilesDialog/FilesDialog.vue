@@ -386,8 +386,8 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
     const result = {
         id: entry.uri,
         label: entry.name,
-        time: entry.class === "File" ? entry.ctime : "",
-        details: entry.class === "File" ? entry.ctime : "",
+        time: entry.class === "File" ? (entry.ctime ?? "") : "",
+        details: entry.class === "File" ? (entry.ctime ?? "") : "",
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,

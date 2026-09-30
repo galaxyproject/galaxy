@@ -16,6 +16,7 @@ from galaxy.files.models import (
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFileHash,
+    RemoteFileTimestamp,
 )
 
 try:
@@ -100,7 +101,7 @@ class HuggingFaceFilesSource(
         # Remove leading slash for HF compatibility
         return path.lstrip("/")
 
-    def _extract_timestamp(self, info: dict) -> str | None:
+    def _extract_timestamp(self, info: dict) -> RemoteFileTimestamp:
         """Extract timestamp from Hugging Face file info to use it in the RemoteFile entry."""
         last_commit: dict = info.get("last_commit") or {}
         return last_commit.get("date")
