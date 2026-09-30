@@ -9,6 +9,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import ExportForGalaxyLink from "@/components/History/Content/ExportForGalaxyLink.vue";
 import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 
 const route = useRoute();
@@ -43,6 +44,12 @@ const sheetUrl = computed(() => `/collection/${props.dsc.id}/sheet`);
                     <FontAwesomeIcon fixed-width :icon="faDownload" />
                     <span>Download</span>
                 </GButton>
+                <ExportForGalaxyLink
+                    v-if="!disableDownload"
+                    label="Galaxy Link"
+                    :history-id="props.dsc.history_id"
+                    content-type="dataset_collection"
+                    :content-id="props.dsc.id" />
                 <GButton
                     v-if="showCollectionDetailsUrl"
                     class="collection-job-details-btn"

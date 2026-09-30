@@ -13,6 +13,7 @@ import type { ItemUrls } from ".";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
+import ExportForGalaxyLink from "@/components/History/Content/ExportForGalaxyLink.vue";
 
 interface Props {
     item: HDADetailed;
@@ -108,6 +109,12 @@ function onRerun() {
                 </GButton>
 
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
+
+                <ExportForGalaxyLink
+                    v-if="showDownloads"
+                    :history-id="item.history_id"
+                    content-type="dataset"
+                    :content-id="item.id" />
 
                 <GButton
                     v-if="showDownloads"
