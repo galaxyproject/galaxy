@@ -1,4 +1,4 @@
-"""The module describes the ``pulsar_transfer`` job metrics plugin.
+"""The module describes the ``pulsar`` job metrics plugin.
 
 Unlike every other plugin here, this one injects nothing into the job script. The work it
 measures -- Pulsar staging a job's inputs in and its outputs back out -- happens either side
@@ -36,7 +36,7 @@ SECONDS_KEY = "seconds"
 KEYS = (FILES_KEY, BYTES_KEY, SECONDS_KEY)
 
 
-class PulsarTransferPluginFormatter(JobMetricFormatter):
+class PulsarPluginFormatter(JobMetricFormatter):
     def format(self, key: str, value: Any) -> FormattedMetric | None:
         phase, _, metric = key.partition("_")
         if phase not in PHASES or metric not in KEYS:
@@ -58,11 +58,11 @@ def _format_seconds(value: float) -> str:
     return seconds_to_str(int(value))
 
 
-class PulsarTransferPlugin(InstrumentPlugin):
+class PulsarPlugin(InstrumentPlugin):
     """Report how long Pulsar spent staging a job's files, and how much it moved."""
 
-    plugin_type = "pulsar_transfer"
-    formatter = PulsarTransferPluginFormatter()
+    plugin_type = "pulsar"
+    formatter = PulsarPluginFormatter()
     default_safety = Safety.SAFE
 
     def __init__(self, **kwargs: Any) -> None:
@@ -78,7 +78,7 @@ class PulsarTransferPlugin(InstrumentPlugin):
         return properties
 
     def __read_phase(self, job_directory: str, phase: str) -> dict[str, Any]:
-        path = self._instrument_file_path(job_directory, phase)
+        path = self._instrument_file_path(job_directory, f"transfer_{phase}")
         try:
             with open(path) as fh:
                 recorded: dict[str, Any] = json.load(fh)
@@ -90,4 +90,4 @@ class PulsarTransferPlugin(InstrumentPlugin):
 
 
 # Only the plugin class - plugin discovery walks __all__ looking for one.
-__all__ = ("PulsarTransferPlugin",)
+__all__ = ("PulsarPlugin",)

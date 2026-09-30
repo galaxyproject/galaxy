@@ -173,14 +173,14 @@ comma-separated string of cgroup parameter names.
 
 The cgroup plugin works on Linux only.
 
-pulsar_transfer
-~~~~~~~~~~~~~~~
+pulsar
+~~~~~~
 
 .. code-block:: yaml
 
-    - type: pulsar_transfer
+    - type: pulsar
 
-The pulsar_transfer plugin reports how long Pulsar spent staging a job's files, how many
+The pulsar plugin reports how long Pulsar spent staging a job's files, how many
 files it moved and how many bytes, separately for inputs (staged in before the job runs) and
 outputs (staged back out afterwards).
 
