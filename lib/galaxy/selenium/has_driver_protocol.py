@@ -480,6 +480,23 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """Switch back to main page content from iframe."""
         ...
 
+    @abstractmethod
+    def visit_new_window(self) -> AbstractContextManager[None]:
+        """
+        Return a context manager focused on the window or tab the page just opened.
+
+        Waits for the new window to appear, so it may be called after the click
+        that opens it. Closing it and returning to the original window happens on
+        exit, whether or not the block raised.
+
+        Usage:
+            driver.click_selector("a[target=_blank]")
+            with driver.visit_new_window():
+                assert driver.current_url == expected
+            # The new window is closed and the original is focused again
+        """
+        ...
+
     # JavaScript execution
     @abstractmethod
     def execute_script(self, script: str, *args):

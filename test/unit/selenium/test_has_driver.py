@@ -1254,6 +1254,33 @@ class TestCurrentUrl:
         assert "pushed=1" in has_driver_instance.current_url
 
 
+class TestVisitNewWindow:
+    """Test visit_new_window."""
+
+    def test_visit_new_window_focuses_then_closes_it(self, has_driver_instance, base_url):
+        """A link that opens a tab is visited, then closed, leaving the original focused."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#open-new-window")
+        with has_driver_instance.visit_new_window():
+            assert "opened=1" in has_driver_instance.current_url
+
+        assert "opened=1" not in has_driver_instance.current_url
+        # The original window is usable again, not merely current.
+        assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+    def test_visit_new_window_closes_it_when_the_block_raises(self, has_driver_instance, base_url):
+        """The new window is not left open by a failing assertion inside the block."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#open-new-window")
+
+        with pytest.raises(AssertionError):
+            with has_driver_instance.visit_new_window():
+                raise AssertionError("as a test would")
+
+        assert "opened=1" not in has_driver_instance.current_url
+        assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+
 class TestPageTitle:
     """Test page_title property."""
 
