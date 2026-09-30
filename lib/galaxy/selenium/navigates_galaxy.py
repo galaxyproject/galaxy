@@ -1759,6 +1759,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflows.workflow_cards.wait_for_visible()
         return self.components.workflows.workflow_card.all()
 
+    def curated_workflow_card_titles(self) -> list[str]:
+        self.components.workflows.curated_workflow_card.wait_for_visible()
+        return [title.text for title in self.components.workflows.curated_workflow_card_title.all()]
+
     def workflow_card_element(self, workflow_index=0):
 
         @retry_index_during_transitions()
