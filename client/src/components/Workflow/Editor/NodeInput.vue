@@ -218,6 +218,7 @@ watch(
         <div
             :id="id"
             ref="dropTarget"
+            v-g-tooltip="{ title: reason, show: showTooltip }"
             class="input-terminal prevent-zoom"
             :class="{
                 'input-active': isDragging,
@@ -230,9 +231,6 @@ watch(
             :input-name="input.name"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <b-tooltip v-if="reason" :target="id" :show="showTooltip">
-                {{ reason }}
-            </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
         </div>
         <button
