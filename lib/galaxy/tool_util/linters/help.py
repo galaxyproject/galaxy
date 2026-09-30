@@ -125,7 +125,7 @@ def rst_invalid(text: str) -> Union[bool, str]:
     """
     invalid_rst: Union[bool, str] = False
     try:
-        rst_to_html(text, error=True, cache=False)
+        rst_to_html(text, error=True)
     except Exception as e:
         invalid_rst = unicodify(e)
     return invalid_rst
