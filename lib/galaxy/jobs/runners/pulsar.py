@@ -45,6 +45,11 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_metrics.instrumenters.pulsar import (
+    read_target_version,
+    write_version_status,
+    write_version_target,
+)
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.job_destination import JobDestination
@@ -96,6 +101,10 @@ FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitori
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
+
+
+def _job_metrics_directory(job_wrapper: "MinimalJobWrapper") -> str:
+    return os.path.join(job_wrapper.working_directory, "metadata")
 
 
 def _tool_provided_metadata_client_outputs(
@@ -430,6 +439,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if not command_line:
             return
 
+        pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
+        write_version_target(
+            _job_metrics_directory(job_wrapper),
+            client_version=pulsar.__version__,
+            target_version=str(pulsar_version),
+            source=remote_job_config.get("pulsar_version_source", "unreported"),
+        )
+
         try:
             dependencies_description = PulsarJobRunner.__dependencies_description(client, job_wrapper)
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
@@ -506,7 +523,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 command_line=command_line,
                 input_files=input_files,
                 client_inputs=client_inputs,  # Only one of these input defs should be non-None
-                client_outputs=self.__client_outputs(client, job_wrapper, remote_job_config),
+                client_outputs=self.__client_outputs(client, job_wrapper, pulsar_version),
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
                 tool=job_wrapper.tool if job_wrapper.tool and job_wrapper.tool.tool_dir else None,
@@ -810,8 +827,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
             cleanup_job = job_wrapper.cleanup_job
-            # Pass run_results as remote_job_config for version detection
-            client_outputs = self.__client_outputs(client, job_wrapper, run_results)
+            job_metrics_directory = _job_metrics_directory(job_wrapper)
+            # Describe outputs as at submission - the remote collected them that way.
+            submitted_pulsar_version = PulsarJobRunner.submitted_pulsar_version(job_metrics_directory, run_results)
+            client_outputs = self.__client_outputs(client, job_wrapper, submitted_pulsar_version)
             finish_args = dict(
                 client=client,
                 job_completed_normally=completed_normally,
@@ -820,6 +839,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 pulsar_outputs=pulsar_outputs,
             )
             failed = pulsar_finish_job(**finish_args)
+            if run_results.get("pulsar_version"):
+                write_version_status(job_metrics_directory, run_results["pulsar_version"])
             if failed:
                 job_wrapper.fail(
                     "Failed to find or download one or more job outputs from remote server.", exception=True
@@ -835,7 +856,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_stdout=job_stdout,
             job_stderr=job_stderr,
             remote_metadata_directory=remote_metadata_directory,
-            job_metrics_directory=os.path.join(job_wrapper.working_directory, "metadata"),
+            job_metrics_directory=_job_metrics_directory(job_wrapper),
         )
         self._complete_staged_job(
             job_wrapper,
@@ -1003,7 +1024,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return job_state
 
     def __client_outputs(
-        self, client: "BaseJobClient", job_wrapper: "MinimalJobWrapper", remote_job_config
+        self, client: "BaseJobClient", job_wrapper: "MinimalJobWrapper", pulsar_version: Version
     ) -> ClientOutputs:
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration("metadata_strategy", None)
@@ -1017,7 +1038,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         dataset_collector_descriptions = []
 
         # Check if Pulsar version supports dataset collector descriptions (>= 0.15.13)
-        pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         supports_dataset_collectors = pulsar_version >= MINIMUM_PULSAR_VERSIONS["dataset_collector_descriptions"]
         if supports_dataset_collectors:
             log.debug(f"Pulsar version {pulsar_version} supports dataset collector descriptions")
@@ -1085,9 +1105,18 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return client_outputs
 
     @staticmethod
-    def pulsar_version(remote_job_config):
+    def pulsar_version(remote_job_config) -> Version:
         pulsar_version = Version(remote_job_config.get("pulsar_version", "0.6.0"))
         return pulsar_version
+
+    @staticmethod
+    def submitted_pulsar_version(job_metrics_directory: str, run_results) -> Version:
+        """The version a job was submitted for, so finishing it makes the same decisions."""
+        target_version = read_target_version(job_metrics_directory)
+        if target_version:
+            return Version(target_version)
+        # Submitted before Galaxy recorded it.
+        return PulsarJobRunner.pulsar_version(run_results)
 
     @staticmethod
     def check_job_config(remote_job_config, check_features=None):

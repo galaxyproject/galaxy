@@ -7,8 +7,10 @@ from typing import (
 )
 
 import pytest
+from packaging.version import Version
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.job_metrics.instrumenters.pulsar import write_version_target
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -65,6 +67,22 @@ def test_rewrite_container_noop_without_container():
     # Should not raise when there is no resolved container.
     compute_environment = _ComputeEnvironment({IMAGE: REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(None, compute_environment)
+
+
+def test_finishing_uses_the_version_the_job_was_submitted_for(tmp_path):
+    write_version_target(
+        str(tmp_path), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image"
+    )
+    # Polling coexecution status comes from the platform and carries no version at all.
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {}) == Version("0.15.0.dev1")
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {"pulsar_version": "0.16.0"}) == Version(
+        "0.15.0.dev1"
+    )
+
+
+def test_finishing_a_job_submitted_before_versions_were_recorded(tmp_path):
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {"pulsar_version": "0.15.13"}) == Version("0.15.13")
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {}) == Version("0.6.0")
 
 
 class RecordingClient:

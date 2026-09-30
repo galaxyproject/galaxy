@@ -1,22 +1,31 @@
 """The module describes the ``pulsar`` job metrics plugin.
 
-Unlike every other plugin here, this one injects nothing into the job script. The work it
-measures -- Pulsar staging a job's inputs in and its outputs back out -- happens either side
-of the job script, in the Pulsar application, so Pulsar writes the metrics files itself and
-this plugin only reads them.
+Unlike every other plugin here, this one injects nothing into the job script. What it
+reports happens either side of the job script, so its files are written by Pulsar and by
+Galaxy's Pulsar runner, and this plugin only reads them. Each is a JSON object named by the
+usual instrumentation convention (``__instrument_pulsar_<name>``):
 
-The file is named by the usual instrumentation convention
-(``__instrument_pulsar_transfer_<phase>``), which is also what gets Pulsar to stage it back
-into Galaxy's metrics directory. Its contents are a JSON object of the keys below. Pulsar
-writes that file in ``pulsar/managers/staging/metrics.py``; the two ends have to keep
-agreeing on this shape.
+- ``transfer_<phase>`` - Pulsar staging a job's inputs in and its outputs back out, keys
+  below. The prefix is also what gets Pulsar to stage it back into Galaxy's metrics directory.
+- ``version`` - the version of the Pulsar that staged the job, also written by Pulsar.
+- ``version_target`` / ``version_status`` - written by the Pulsar runner: the version it made
+  its decisions for at submission (and where that came from), and the version the remote
+  reported when the job finished.
+
+Pulsar writes its files in ``pulsar/managers/staging/metrics.py``; the two ends have to keep
+agreeing on these shapes.
 """
 
 import json
+import logging
+import os
 from typing import Any
 
 from galaxy.util import nice_size
-from . import InstrumentPlugin
+from . import (
+    INSTRUMENT_FILE_PREFIX,
+    InstrumentPlugin,
+)
 from ..formatting import (
     FormattedMetric,
     JobMetricFormatter,
@@ -35,9 +44,26 @@ BYTES_KEY = "bytes"
 SECONDS_KEY = "seconds"
 KEYS = (FILES_KEY, BYTES_KEY, SECONDS_KEY)
 
+PLUGIN_TYPE = "pulsar"
+VERSION = "version"
+VERSION_TARGET = "version_target"
+VERSION_STATUS = "version_status"
+
+VERSION_LABELS = {
+    "client_version": "Pulsar Client Version",
+    "target_version": "Pulsar Target Version",
+    "target_version_source": "Pulsar Target Version Source",
+    "server_version": "Pulsar Server Version",
+    "server_version_source": "Pulsar Server Version Source",
+}
+
+log = logging.getLogger(__name__)
+
 
 class PulsarPluginFormatter(JobMetricFormatter):
     def format(self, key: str, value: Any) -> FormattedMetric | None:
+        if key in VERSION_LABELS:
+            return FormattedMetric(VERSION_LABELS[key], str(value))
         phase, _, metric = key.partition("_")
         if phase not in PHASES or metric not in KEYS:
             return super().format(key, value)
@@ -59,34 +85,84 @@ def _format_seconds(value: float) -> str:
 
 
 class PulsarPlugin(InstrumentPlugin):
-    """Report how long Pulsar spent staging a job's files, and how much it moved."""
+    """Report how long Pulsar spent staging a job's files and how much it moved, and which
+    Pulsar versions were involved."""
 
-    plugin_type = "pulsar"
+    plugin_type = PLUGIN_TYPE
     formatter = PulsarPluginFormatter()
-    default_safety = Safety.SAFE
+    # Server versions are only of interest to admins; transfer figures are fine to show.
+    default_safety = Safety.POTENTIALLY_SENSITVE
 
     def __init__(self, **kwargs: Any) -> None:
         pass
 
+    def safety(self, metric_name: str) -> Safety:
+        if metric_name in VERSION_LABELS:
+            return self.default_safety
+        return Safety.SAFE
+
     def job_properties(self, job_id: int, job_directory: str) -> dict[str, Any]:
         properties: dict[str, Any] = {}
         for phase in PHASES:
-            recorded = self.__read_phase(job_directory, phase)
+            recorded = _read(job_directory, f"transfer_{phase}")
             for key, value in recorded.items():
                 if key in KEYS:
                     properties[f"{phase}_{key}"] = value
+        target = _read(job_directory, VERSION_TARGET)
+        for key in ("client_version", "target_version", "target_version_source"):
+            if key in target:
+                properties[key] = target[key]
+        for name, source in ((VERSION_STATUS, "status"), (VERSION, "job_files")):
+            server_version = _read(job_directory, name).get("version")
+            if server_version:
+                properties["server_version"] = server_version
+                properties["server_version_source"] = source
+                break
         return properties
 
-    def __read_phase(self, job_directory: str, phase: str) -> dict[str, Any]:
-        path = self._instrument_file_path(job_directory, f"transfer_{phase}")
-        try:
-            with open(path) as fh:
-                recorded: dict[str, Any] = json.load(fh)
-                return recorded
-        except FileNotFoundError:
-            # Pulsar did not report this phase - an older Pulsar, a job that ran somewhere
-            # else entirely, or outputs that never made it back.
-            return {}
+
+def write_version_target(job_directory: str, client_version: str, target_version: str, source: str) -> None:
+    """Record the Pulsar version a job was submitted for, and how it was determined."""
+    _write(
+        job_directory,
+        VERSION_TARGET,
+        {"client_version": client_version, "target_version": target_version, "target_version_source": source},
+    )
+
+
+def write_version_status(job_directory: str, server_version: str) -> None:
+    """Record the version the remote Pulsar reported when the job finished."""
+    _write(job_directory, VERSION_STATUS, {"version": server_version})
+
+
+def read_target_version(job_directory: str) -> str | None:
+    """The version recorded by write_version_target, if the job has one."""
+    return _read(job_directory, VERSION_TARGET).get("target_version")
+
+
+def _path(job_directory: str, name: str) -> str:
+    return os.path.join(job_directory, f"{INSTRUMENT_FILE_PREFIX}_{PLUGIN_TYPE}_{name}")
+
+
+def _read(job_directory: str, name: str) -> dict[str, Any]:
+    try:
+        with open(_path(job_directory, name)) as fh:
+            recorded: dict[str, Any] = json.load(fh)
+            return recorded
+    except FileNotFoundError:
+        # Not reported - an older Pulsar or Galaxy, a job that ran somewhere else entirely,
+        # or files that never made it back.
+        return {}
+
+
+def _write(job_directory: str, name: str, recorded: dict[str, Any]) -> None:
+    # Best effort - a metric is never worth failing a job over.
+    try:
+        os.makedirs(job_directory, exist_ok=True)
+        with open(_path(job_directory, name), "w") as fh:
+            json.dump(recorded, fh)
+    except Exception:
+        log.warning("Failed to record Pulsar job metrics file %s", name, exc_info=True)
 
 
 # Only the plugin class - plugin discovery walks __all__ looking for one.
