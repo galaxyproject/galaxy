@@ -395,6 +395,7 @@ def test_host_metadata_does_not_resolve_container(config):
 STAGING_SECRET = "1234567890abcdef"
 INPUT_CACHE_PATH = "/galaxy/cache/0/00/dataset_5.dat"
 METADATA_CACHE_PATH = "/galaxy/cache/_metadata_files/0/00/metadata_9.dat"
+EXTRA_FILES_CACHE_PATH = "/galaxy/cache/0/00/dataset_5_files"
 
 
 class _RecordingJobIO:
@@ -423,23 +424,26 @@ def _staging_job_wrapper(dataset_id=5):
     return SimpleNamespace(job_id=7, job_io=_RecordingJobIO([input_path]))
 
 
-def _staging_compute_environment(staging, metadata_file_ids=None):
+def _staging_compute_environment(staging, metadata_file_ids=None, extra_files_datasets=None):
     metadata_file_ids = metadata_file_ids or {}
+    extra_files_datasets = extra_files_datasets or {}
     return SimpleNamespace(
         object_store_staging=staging,
         materialized_objects={},
-        path_rewrites_input_extra={},
+        path_rewrites_input_extra={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in extra_files_datasets},
         path_rewrites_input_metadata={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in metadata_file_ids},
         input_metadata_file_ids=metadata_file_ids,
+        input_extra_files_datasets=extra_files_datasets,
     )
 
 
-def _assert_signed_input_url(url, kind, object_id, redirect):
+def _assert_signed_input_url(url, kind, object_id, redirect, path=""):
     security = IdEncodingHelper(id_secret=STAGING_SECRET)
     parsed = urlparse(url)
     assert parsed.path == f"/api/jobs/{security.encode_id(7)}/staging/inputs/{kind}/{security.encode_id(object_id)}"
     query = parse_qs(parsed.query)
-    assert StagingUrlSigner(STAGING_SECRET).verify(7, kind, object_id, "", int(query["exp"][0]), query["sig"][0])
+    assert query.get("path", [""]) == [path]
+    assert StagingUrlSigner(STAGING_SECRET).verify(7, kind, object_id, path, int(query["exp"][0]), query["sig"][0])
     assert (query.get("redirect") == ["1"]) is redirect
 
 
@@ -478,6 +482,31 @@ def test_input_metadata_files_are_staged_from_signed_urls():
     _assert_signed_input_url(metadata_input.url, "metadata_file", 9, redirect=False)
 
 
+def _dataset_with_extra_files(*names):
+    return SimpleNamespace(id=5, list_extra_files=lambda: list(names))
+
+
+def test_input_extra_files_are_staged_from_signed_urls():
+    runner = _staging_runner()
+    dataset = _dataset_with_extra_files("Sequences", "sub/deep.txt")
+    compute_environment = _staging_compute_environment("stream", extra_files_datasets={EXTRA_FILES_CACHE_PATH: dataset})
+    client_inputs = runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
+    extra_files_input = next(i for i in client_inputs if i.path == EXTRA_FILES_CACHE_PATH)
+    assert list(extra_files_input.extra_files) == ["Sequences", "sub/deep.txt"]
+    for name, url in extra_files_input.extra_files.items():
+        _assert_signed_input_url(url, "extra_file", 5, redirect=False, path=name)
+
+
+def test_input_without_extra_files_stages_no_extra_files_directory():
+    # There is no directory on Galaxy's disk for Pulsar to fall back to.
+    runner = _staging_runner()
+    compute_environment = _staging_compute_environment(
+        "stream", extra_files_datasets={EXTRA_FILES_CACHE_PATH: _dataset_with_extra_files()}
+    )
+    client_inputs = runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
+    assert [i.path for i in client_inputs] == [INPUT_CACHE_PATH]
+
+
 def test_materialized_inputs_keep_path_staging():
     # A deferred input materialized into the job directory has no object store identity.
     runner = _staging_runner()
@@ -505,6 +534,8 @@ def _staging_compute_environment_for_rewrites(staging):
     )
     compute_environment.path_rewrites_input_metadata = {}
     compute_environment.input_metadata_file_ids = {}
+    compute_environment.path_rewrites_input_extra = {}
+    compute_environment.input_extra_files_datasets = {}
     return compute_environment
 
 
@@ -553,3 +584,15 @@ def test_input_metadata_rewrite_records_nothing_for_a_path_that_is_no_metadata_f
     compute_environment = _staging_compute_environment_for_rewrites("stream")
     compute_environment.input_metadata_rewrite(hda, str(tmp_path / "not_a_metadata_file.dat"))
     assert compute_environment.input_metadata_file_ids == {}
+
+
+def test_input_extra_files_rewrite_records_which_dataset_the_directory_belongs_to():
+    app = GalaxyDataTestApp()
+    hda = HistoryDatasetAssociation(extension="velvet", create_dataset=True, sa_session=app.model.session)
+    app.model.session.add(hda)
+    app.model.session.commit()
+
+    compute_environment = _staging_compute_environment_for_rewrites("stream")
+    remote_path = compute_environment.input_extra_files_rewrite(hda)
+    assert remote_path == "/pulsar/inputs/dataset_5_files"
+    assert compute_environment.input_extra_files_datasets == {hda.extra_files_path: hda.dataset}
