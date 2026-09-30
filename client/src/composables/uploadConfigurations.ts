@@ -3,7 +3,9 @@ import { computed, ref, watch } from "vue";
 
 import type { CompositeFileInfo } from "@/api/datatypes";
 import { AUTO_EXTENSION, DEFAULT_EXTENSION, getUploadDatatypes, getUploadDbKeys } from "@/components/Upload/utils";
+import { Toast } from "@/composables/toast";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useConfig } from "./config";
 
@@ -53,14 +55,20 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
     const listExtensions = ref<ExtensionDetails[]>([]);
     const extensionsSet = ref(false);
     async function loadExtensions() {
-        listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
-        extensionsSet.value = true;
+        try {
+            listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
+            extensionsSet.value = true;
+        } catch (error) {
+            Toast.error(errorMessageAsString(error), "Unable to load upload formats");
+        }
     }
     loadExtensions();
 
     const datatypesMapperStore = useDatatypesMapperStore();
     const { datatypesMapper, loading: datatypesMapperLoading } = storeToRefs(datatypesMapperStore);
-    datatypesMapperStore.createMapper();
+    datatypesMapperStore.createMapper().catch((error) => {
+        Toast.error(errorMessageAsString(error), "Unable to load upload datatypes");
+    });
 
     const effectiveExtensions = computed(() => {
         if (extensions?.length && datatypesMapper.value && !datatypesMapperLoading.value) {
@@ -85,8 +93,12 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
     const listDbKeys = ref<DbKey[]>([]);
     const dbKeysSet = ref(false);
     async function loadDbKeys() {
-        listDbKeys.value = await getUploadDbKeys(config.value?.default_genome || "");
-        dbKeysSet.value = true;
+        try {
+            listDbKeys.value = await getUploadDbKeys(config.value?.default_genome || "");
+            dbKeysSet.value = true;
+        } catch (error) {
+            Toast.error(errorMessageAsString(error), "Unable to load upload genomes");
+        }
     }
 
     watch(
