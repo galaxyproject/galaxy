@@ -1125,6 +1125,43 @@ class TestScreenshots:
         # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
         assert screenshot_bytes[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_highlight_element(self, has_driver_instance, base_url):
+        """Test the border is applied inside the block and restored after it."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with has_driver_instance.highlight_element(element):
+            border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+            assert "red" in border.lower()
+            assert "3px" in border
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_on_exception(self, has_driver_instance, base_url):
+        """Test the border is restored when the block raises."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with pytest.raises(ValueError):
+            with has_driver_instance.highlight_element(element):
+                raise ValueError("Test exception")
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_existing_border(self, has_driver_instance, base_url):
+        """Test an element's own border survives being highlighted."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+        has_driver_instance.execute_script("arguments[0].style.border = '2px solid blue';", element)
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        with has_driver_instance.highlight_element(element):
+            assert "red" in has_driver_instance.execute_script("return arguments[0].style.border;", element).lower()
+
+        restored = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored == original_border
+        assert "blue" in restored.lower()
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
