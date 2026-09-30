@@ -451,6 +451,17 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def list_files(self, obj, extra_dir: str) -> list[str]:
+        """Return the files in the directory ``extra_dir`` of `obj` (e.g. its extra files), recursively.
+
+        Names are sorted and relative to the directory, so each one addresses its file as ``alt_name``
+        with the same ``extra_dir``. Lists what the backing store holds without pulling anything into
+        the cache; a missing directory has no files. Stores that cannot list a directory raise
+        NotImplementedError.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_concrete_store_name(self, obj):
         """Return a display name or title of the objectstore corresponding to obj.
 
@@ -859,6 +870,12 @@ class BaseObjectStore(ObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
         return None
+
+    def list_files(self, obj, extra_dir: str) -> list[str]:
+        return self._invoke("list_files", obj, extra_dir=extra_dir)
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        raise NotImplementedError(f"{type(self).__name__} cannot list the files in a directory")
 
     def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
         return self._invoke("get_concrete_store_backends")
@@ -1348,6 +1365,16 @@ class DiskObjectStore(ConcreteObjectStore):
             raise ObjectNotFound
         return path
 
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        """Override `ObjectStore`'s stub by walking the directory on disk."""
+        try:
+            path = self._get_filename(obj, dir_only=True, extra_dir=extra_dir)
+        except ObjectNotFound:
+            return []
+        return sorted(
+            os.path.relpath(os.path.join(root, name), path) for root, _, files in safe_walk(path) for name in files
+        )
+
     def _update_from_file(
         self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
     ) -> None:
@@ -1499,6 +1526,10 @@ class NestedObjectStore(BaseObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         """For the first backend that has this `obj`, stream it from that backend."""
         return self._call_method("_get_data_stream", obj, None, False, **kwargs)
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        """For the first backend that has this directory of `obj`, list its files."""
+        return self._call_method("_list_files", obj, [], False, dir_only=True, extra_dir=extra_dir)
 
     def _get_concrete_store_backends(self, **kwargs):
         backends = []

@@ -331,6 +331,10 @@ class Cloud(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path) as tmp:
                 self._download_to(obj, tmp)
 
+    def _list_remote_keys(self, rel_path):
+        # iter() (unlike list()) pages through the full result set.
+        return (obj.name for obj in self.bucket.objects.iter(prefix=rel_path))
+
     def _download_to(self, key, local_destination: str) -> None:
         key.download_to_file(local_destination, config=self._transfer_config("download"))
 

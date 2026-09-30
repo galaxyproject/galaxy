@@ -411,6 +411,9 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             with self._atomic_download(local_file_path, obj.size) as tmp:
                 obj.get_contents_to_filename(tmp)
 
+    def _list_remote_keys(self, rel_path):
+        return (obj.key for obj in self._bucket.list(prefix=rel_path))
+
     def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)

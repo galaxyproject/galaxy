@@ -1407,6 +1407,111 @@ def test_stream_remote_s3_returns_none_for_a_missing_key():
         assert object_store._stream_remote("000/dataset_1.dat") is None
 
 
+EXTRA_FILES_DIR = "dataset_1_files"
+EXTRA_FILES = ["Sequences", "sub/deep.txt"]
+# Remote keys around dataset 1's extra files: its primary file, a directory marker, and a
+# neighbouring dataset whose directory name shares dataset 1's as a prefix.
+REMOTE_KEYS = [
+    "000/dataset_1.dat",
+    "000/dataset_1_files/",
+    "000/dataset_1_files/Sequences",
+    "000/dataset_1_files/sub/deep.txt",
+    "000/dataset_10_files/Other",
+]
+
+
+def test_disk_store_lists_the_files_in_a_directory_of_the_object():
+    with TestConfig(DISK_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        for name in EXTRA_FILES:
+            source = directory.write(name, f"job_working_directory1/{name}")
+            object_store.update_from_file(
+                dataset, extra_dir=EXTRA_FILES_DIR, alt_name=name, file_name=source, create=True
+            )
+        directory.write("other", "files1/000/dataset_10_files/Other")
+
+        assert object_store.list_files(dataset, extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+def test_disk_store_lists_no_files_for_a_missing_directory():
+    with TestConfig(DISK_TEST_CONFIG_YAML) as (directory, object_store):
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == []
+
+
+def test_distributed_store_lists_the_files_from_the_backend_holding_the_object():
+    with TestConfig(DISTRIBUTED_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        object_store.create(dataset)
+        for name in EXTRA_FILES:
+            source = directory.write(name, f"tmp/{name}")
+            object_store.update_from_file(
+                dataset, extra_dir=EXTRA_FILES_DIR, alt_name=name, file_name=source, create=True
+            )
+
+        assert object_store.list_files(dataset, extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+def test_hierarchical_store_lists_the_files_from_the_backend_holding_the_directory():
+    with TestConfig(HIERARCHICAL_TEST_CONFIG_YAML) as (directory, object_store):
+        for name in EXTRA_FILES:
+            directory.write(name, f"files2/000/{EXTRA_FILES_DIR}/{name}")
+
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+@patch_object_stores_to_skip_initialize
+def test_boto3_store_lists_the_files_in_a_directory_of_the_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+
+        def paginate(Bucket, Prefix, **kwargs):
+            return [{"Contents": [{"Key": key, "Size": 1} for key in REMOTE_KEYS if key.startswith(Prefix)]}]
+
+        object_store._client = MagicMock()
+        object_store._client.get_paginator.return_value.paginate.side_effect = paginate
+
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_store_lists_the_files_in_a_directory_of_the_object():
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        object_store._bucket = MagicMock()
+        object_store._bucket.list.side_effect = lambda prefix: [
+            SimpleNamespace(key=key, size=1) for key in REMOTE_KEYS if key.startswith(prefix)
+        ]
+
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_lists_the_files_in_a_directory_of_the_object():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        bucket = _cloud_bucket()
+        bucket.objects = _FakePagedObjectContainer([_fake_remote_key(key) for key in REMOTE_KEYS], page_size=2)
+        object_store.bucket = bucket
+
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_store_lists_the_files_in_a_directory_of_the_object():
+    with TestConfig(AZURE_BLOB_TEST_CONFIG_YAML) as (directory, object_store):
+        object_store.service = MagicMock()
+        object_store.service.get_container_client.return_value.list_blobs.side_effect = lambda name_starts_with: [
+            SimpleNamespace(name=key) for key in REMOTE_KEYS if key.startswith(name_starts_with)
+        ]
+
+        assert object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR) == EXTRA_FILES
+
+
+@patch_object_stores_to_skip_initialize
+def test_store_that_cannot_list_says_so_rather_than_listing_nothing():
+    # An empty listing would stage a composite input without its files.
+    with TestConfig(PITHOS_TEST_CONFIG_YAML) as (directory, object_store):
+        with pytest.raises(NotImplementedError):
+            object_store.list_files(MockDataset(1), extra_dir=EXTRA_FILES_DIR)
+
+
 @patch_object_stores_to_skip_initialize
 def test_config_parse_boto3_custom_connection():
     for config_str in [get_example("boto3_custom_connection.xml"), get_example("boto3_custom_connection.yml")]:
@@ -1778,7 +1883,8 @@ class _FakePagedObjectContainer:
 
         class _Container(BasePageableObjectMixin):
             def list(self, limit=None, marker=None, prefix=None):
-                return ClientPagedResultList(provider, keys, limit=limit, marker=marker)
+                matching = [key for key in keys if prefix is None or key.name.startswith(prefix)]
+                return ClientPagedResultList(provider, matching, limit=limit, marker=marker)
 
         self._container = _Container()
 

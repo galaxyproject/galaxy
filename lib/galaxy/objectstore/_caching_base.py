@@ -4,6 +4,7 @@ import shutil
 from collections.abc import (
     Callable,
     Generator,
+    Iterable,
     Iterator,
 )
 from contextlib import (
@@ -467,6 +468,20 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         # Azure and Cloud object stores to fix those object stores. New
         # object stores should definitely override this.
         pass
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        # Ends with "/", so a neighbouring directory sharing this one's name as a prefix is excluded.
+        rel_path = self._construct_path(obj, dir_only=True, extra_dir=extra_dir)
+        return sorted(
+            key[len(rel_path) :]
+            for key in self._list_remote_keys(rel_path)
+            # A key ending with "/" marks a directory rather than holding a file.
+            if key.startswith(rel_path) and not key.endswith("/")
+        )
+
+    def _list_remote_keys(self, rel_path: str) -> Iterable[str]:
+        """Keys of the remote objects whose key starts with ``rel_path``."""
+        raise NotImplementedError(f"{type(self).__name__} cannot list the files in a directory")
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)

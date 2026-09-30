@@ -277,6 +277,9 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path) as tmp:
                 self._download_to_file(key, tmp)
 
+    def _list_remote_keys(self, rel_path):
+        return (blob.name for blob in self._blobs_from(rel_path))
+
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
             self._blob_client(rel_path).upload_blob(from_string, overwrite=True)
