@@ -25,8 +25,9 @@ export const MAX_CACHED_JOBS = 40;
 /**
  * The Job store for managing job data and tool-run responses.
  *
- * - Caches fetched jobs, capped at `MAX_CACHED_JOBS` via LRU (Least Recently Used) eviction.
- *   Once over the cap, the longest-untouched job is dropped first.
+ * - Caches fetched jobs, capping the number of *non-terminal* ones via LRU (Least Recently Used)
+ *   eviction at `MAX_CACHED_JOBS`. Once over the cap, the longest-untouched non-terminal job is
+ *   dropped first.
  * - Allows both base and full requests for the same job id to be tracked independently, but merges
  *   the full response into the cached job rather than overwriting it entirely.
  * - Polls a job until it reaches a terminal state, deduped so multiple callers watching the same
@@ -139,13 +140,19 @@ export const useJobStore = defineStore("jobStore", () => {
         lruOrder.set(id, true);
     }
 
-    /** Evicts the oldest cached jobs (skipping any still being polled) until under the cap. */
+    function isTerminal(id: string): boolean {
+        const job = storedJobs.value[id];
+        return !!job && TERMINAL_STATES.indexOf(job.state) !== -1;
+    }
+
+    /** Evicts the oldest cached *non-terminal* jobs that aren't being polled, until under the cap.
+     * Terminal jobs are never evicted by this because their data never changes again. */
     function evictIfOverCap() {
         for (const id of lruOrder.keys()) {
             if (lruOrder.size <= MAX_CACHED_JOBS) {
                 break;
             }
-            if (activePolls.has(id)) {
+            if (activePolls.has(id) || isTerminal(id)) {
                 continue;
             }
             lruOrder.delete(id);

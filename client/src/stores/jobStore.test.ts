@@ -438,41 +438,47 @@ describe("useJobStore eviction", () => {
         vi.clearAllTimers();
     });
 
-    it("evicts the least-recently-touched terminal job once the cache exceeds its cap", async () => {
+    it("never evicts a terminal job, but does evict a stale non-terminal one, once over cap", async () => {
         const callCounts: Record<string, number> = {};
         server.use(
             http.get("/api/jobs/{job_id}", ({ response, params }) => {
                 const id = params.job_id as string;
                 callCounts[id] = (callCounts[id] ?? 0) + 1;
-                return response(200).json(buildJob(id, "ok"));
+                return response(200).json(buildJob(id, id === "stale-running" ? "running" : "ok"));
             }),
         );
 
         const store = useJobStore();
 
-        // Fill the cache to exactly its cap. job-0 is the oldest entry, never touched again below.
+        // "stale-running" is polled, then that poll is stopped while the job is still running.
+        // It's the oldest entry, and (being non-terminal) is still eligible for eviction.
+        const { stopWatchingJob } = store.pollJobUntilTerminal({ id: "stale-running" });
+        await flushPromises();
+        expect(callCounts["stale-running"]).toBe(1);
+        stopWatchingJob();
+
         await pollManyJobs(
             store,
-            Array.from({ length: MAX_CACHED_JOBS }, (_, i) => `job-${i}`),
+            Array.from({ length: MAX_CACHED_JOBS + 1 }, (_, i) => `job-${i}`),
         );
-        expect(callCounts["job-0"]).toBe(1);
 
-        // One more distinct job pushes the cache over the cap.
-        store.pollJobUntilTerminal({ id: "job-overflow" });
-        await flushPromises();
-        expect(callCounts["job-overflow"]).toBe(1);
-
-        // job-0 was the least-recently-touched entry and should have been evicted -- reading it
-        // again now must trigger a fresh fetch rather than being satisfied by the (removed) cache
-        // entry, since a cached+terminal job would otherwise never be re-fetched.
+        // "job-0" is terminal, so its data never changes again and evicting it would just cause a
+        // wasted re-fetch, therefore, it must still be cached, unevicted, despite being the oldest terminal entry.
         store.pollJobUntilTerminal({ id: "job-0" });
         await flushPromises();
-        expect(callCounts["job-0"]).toBe(2);
+        expect(callCounts["job-0"]).toBe(1);
 
-        // The most recently added (still-cached) job, by contrast, is not re-fetched.
-        store.pollJobUntilTerminal({ id: `job-${MAX_CACHED_JOBS - 1}` });
+        // "stale-running" is non-terminal and was the least-recently-touched such
+        // entry, so it should have been evicted and reading it again must trigger a fresh fetch.
+        const { stopWatchingJob: rePollStop } = store.pollJobUntilTerminal({ id: "stale-running" });
         await flushPromises();
-        expect(callCounts[`job-${MAX_CACHED_JOBS - 1}`]).toBe(1);
+        expect(callCounts["stale-running"]).toBe(2);
+        rePollStop();
+
+        // The most recently added (still-cached, terminal) job is not re-fetched.
+        store.pollJobUntilTerminal({ id: `job-${MAX_CACHED_JOBS}` });
+        await flushPromises();
+        expect(callCounts[`job-${MAX_CACHED_JOBS}`]).toBe(1);
     });
 
     it("never evicts a job that is still actively being polled", async () => {
@@ -491,7 +497,7 @@ describe("useJobStore eviction", () => {
 
         // Start a poll for a non-terminal job first, so it's the oldest entry once the cache
         // fills up with terminal jobs after it.
-        store.pollJobUntilTerminal({ id: "still-running" });
+        const { stopWatchingJob } = store.pollJobUntilTerminal({ id: "still-running" });
         await flushPromises();
         expect(runningJobCallCount).toBe(1);
 
@@ -507,5 +513,7 @@ describe("useJobStore eviction", () => {
 
         await advanceTimersAndFlush(1000);
         expect(runningJobCallCount).toBe(2);
+
+        stopWatchingJob();
     });
 });
