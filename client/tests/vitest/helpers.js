@@ -86,7 +86,6 @@ export function getLocalVue(instrumentLocalization = false) {
             BCollapse: true,
             BFormGroup: true,
             BTable: true,
-            BPagination: true,
             BTabs: true,
             BTab: true,
             BOverlay: true,
