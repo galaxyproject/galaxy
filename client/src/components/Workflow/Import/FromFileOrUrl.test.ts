@@ -18,7 +18,6 @@ vi.mock("axios", () => ({
 }));
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 const sharedUrl = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow";
 const sharedUrlTrailingSlash = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/";

@@ -13,7 +13,6 @@ vi.mock("components/History/model/queries");
 setupSelectableMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 describe("GenericElement", () => {

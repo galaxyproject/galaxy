@@ -37,7 +37,6 @@ vi.mock("@/composables/confirmDialog", () => ({
 }));
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 describe("UserPreferences.vue", () => {
     const mockPreferences = (passwordDisabled: boolean) => {

@@ -10,7 +10,6 @@ import { waitOnJob } from "@/components/JobStates/wait";
 import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const router = new VueRouter();
 
 const TEST_JOB_ID = "job123789";

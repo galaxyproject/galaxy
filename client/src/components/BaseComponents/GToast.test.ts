@@ -13,7 +13,6 @@ const SELECTORS = {
 } as const;
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 const { toasts, addToast, clearToasts } = useToast();
 
 afterEach(() => {

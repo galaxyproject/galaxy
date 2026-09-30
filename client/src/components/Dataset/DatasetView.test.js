@@ -32,7 +32,6 @@ vi.mock("@/stores/datatypeVisualizationsStore", () => ({
 
 const DATASET_ID = "dataset_id";
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 // Mock dataset
 const mockDataset = {

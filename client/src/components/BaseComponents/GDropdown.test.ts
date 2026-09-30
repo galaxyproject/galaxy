@@ -18,7 +18,6 @@ vi.mock("@floating-ui/dom", async (importOriginal) => {
 });
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 let wrapper: VueWrapper | undefined;
 

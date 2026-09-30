@@ -6,7 +6,6 @@ import VueRouter from "vue-router";
 import GButton from "./GButton.vue";
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 function mountGButton(props: object) {
     return mount(GButton as object, { propsData: props, localVue });
