@@ -56,9 +56,6 @@ async function mountCreator(initialElements: HDASummary[]) {
         },
         localVue,
         pinia,
-        stubs: {
-            DefaultBox: true,
-        },
     });
 
     await flushPromises();

@@ -209,7 +209,7 @@ watch(
                     </div>
                 </div>
             </GTab>
-            <GTab :title-link-attributes="{ 'data-description': 'collection create tab upload' }">
+            <GTab lazy :title-link-attributes="{ 'data-description': 'collection create tab upload' }">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
