@@ -23,7 +23,6 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TSV,
 )
-from galaxy.util.template import fill_template
 
 ROOT = Path(__file__).resolve().parents[4]
 CONVERTERS = ROOT / "lib/galaxy/datatypes/converters"
@@ -109,11 +108,11 @@ def test_tsv_read_restores_csv_field_limit_on_success_and_failure(tmp_path):
     previous = csv.field_size_limit(128)
     try:
         source.write_text("name\n" + "x" * 1000 + "\n", encoding="utf-8")
-        assert to_parquet.read_table(source, input_format="tsv").num_rows == 1
+        assert to_parquet.read_table(source, input_format="tsv", header_mode="first").num_rows == 1
         assert csv.field_size_limit() == 128
         source.write_text('name\n"unterminated\n', encoding="utf-8")
         with pytest.raises(csv.Error):
-            to_parquet.read_table(source, input_format="tsv")
+            to_parquet.read_table(source, input_format="tsv", header_mode="first")
         assert csv.field_size_limit() == 128
     finally:
         csv.field_size_limit(previous)
@@ -284,7 +283,7 @@ def test_quoted_tsv_round_trip_preserves_cells_and_headers(tmp_path):
     with tsv.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.reader(handle, dialect="excel-tab"))
     assert rows == [table.column_names] + [list(row) for row in zip(*table.to_pydict().values())]
-    to_parquet.convert(tsv, destination, input_format="tsv")
+    to_parquet.convert(tsv, destination, input_format="tsv", header_mode="first")
     assert parquet.read_table(destination).equals(table)
 
 
@@ -315,7 +314,7 @@ def test_scalar_parquet_round_trip_preserves_inferred_columns(tmp_path, output_f
         "--input-format",
         output_format,
         "--header-mode",
-        "first" if output_format == "tabular" else "auto",
+        "first",
     )
     actual = parquet.read_table(restored)
     assert actual.num_rows == table.num_rows
@@ -324,7 +323,7 @@ def test_scalar_parquet_round_trip_preserves_inferred_columns(tmp_path, output_f
 
 
 @pytest.mark.parametrize("output_format", ["tabular", "tsv"])
-@pytest.mark.parametrize("header_mode", ["auto", "first"], ids=["headerless", "explicit_commented_header"])
+@pytest.mark.parametrize("header_mode", ["none", "first"], ids=["headerless", "explicit_commented_header"])
 def test_plain_tabular_round_trip_preserves_all_data_rows(tmp_path, output_format, header_mode):
     names = (
         ["#CHROM", "mixed", "identifier", "float", "large_decimal", "literal"]
@@ -364,7 +363,7 @@ def test_plain_tabular_round_trip_preserves_all_data_rows(tmp_path, output_forma
         "--input-format",
         output_format,
         "--header-mode",
-        "first" if output_format == "tabular" else "auto",
+        "first",
     )
     assert parquet.read_table(restored).equals(expected)
 
@@ -383,7 +382,7 @@ def test_scalar_round_trip_documents_reinference_and_empty_string_loss(tmp_path,
         "--input-format",
         output_format,
         "--header-mode",
-        "first" if output_format == "tabular" else "auto",
+        "first",
     )
     # Text export cannot distinguish null from empty or recover a numeric column's
     # original string type. Assert the documented new inference, not schema recovery.
@@ -406,7 +405,10 @@ def test_generic_tabular_comments_and_blank_lines(tmp_path):
     source.write_text("# comment\n\n1\tapple\n\n\t\n2\tpear\n", encoding="utf-8")
     assert to_parquet.read_table(source).to_pydict() == {"column1": [1, None, 2], "column2": ["apple", None, "pear"]}
     source.write_text("label\tvalue\n#literal\t1\n", encoding="utf-8")
-    assert to_parquet.read_table(source, input_format="tsv").to_pydict() == {"label": ["#literal"], "value": [1]}
+    assert to_parquet.read_table(source, input_format="tsv", header_mode="first").to_pydict() == {
+        "label": ["#literal"],
+        "value": [1],
+    }
 
 
 def test_nested_uuid_export(tmp_path):
@@ -464,7 +466,7 @@ def test_nested_temporal_binary_decimal_and_map_export(tmp_path):
         ("1\t2\n3\t4\t5\n", "none"),
         ("a\ta\n1\t2\n", "first"),
         ("\ta\n1\t2\n", "first"),
-        ("", "auto"),
+        ("", "none"),
     ],
 )
 def test_invalid_input_is_rejected_instead_of_losing_data(tmp_path, text, header_mode):
@@ -472,35 +474,6 @@ def test_invalid_input_is_rejected_instead_of_losing_data(tmp_path, text, header
     source.write_text(text, encoding="utf-8")
     with pytest.raises(ValueError):
         to_parquet.read_table(source, header_mode=header_mode)
-
-
-@pytest.mark.parametrize(
-    "extension, parser_format",
-    [("tabular", "tabular"), ("bed", "tabular"), ("tsv", "tsv"), ("intermine_tabular", "tsv")],
-)
-def test_input_subtypes_use_the_correct_parser(extension, parser_format):
-    class Input:
-        ext = extension
-
-        def __str__(self):
-            return "input.dat"
-
-        def is_of_type(self, datatype):
-            assert datatype == "tsv"
-            return extension in ("tsv", "intermine_tabular")
-
-    tool = ElementTree.parse(CONVERTERS / "tabular_to_parquet_converter.xml")
-    command = fill_template(
-        tool.find("command").text,
-        context={
-            "input": Input(),
-            "output": "output.parquet",
-            "header_mode": "auto",
-            "__tool_directory__": str(CONVERTERS),
-        },
-    )
-    assert f"--input-format '{parser_format}'" in command
-    assert "--header-mode 'auto'" in command
 
 
 def test_converter_commands_and_datatype_registration(tmp_path):
@@ -517,7 +490,7 @@ def test_converter_commands_and_datatype_registration(tmp_path):
             "--input-format",
             "tabular",
             "--header-mode",
-            "auto",
+            "none",
         ],
         check=True,
     )
@@ -532,7 +505,7 @@ def test_converter_commands_and_datatype_registration(tmp_path):
         ],
         check=True,
     )
-    assert to_parquet.read_table(tsv, input_format="tsv").equals(parquet.read_table(binary))
+    assert to_parquet.read_table(tsv, input_format="tsv", header_mode="first").equals(parquet.read_table(binary))
     tool = ElementTree.parse(CONVERTERS / "parquet_to_tabular_converter.xml")
     assert tool.getroot().get("id") == "CONVERTER_parquet_to_tabular"
     assert tool.find("outputs/data").get("format") == "tabular"
@@ -554,7 +527,7 @@ def test_converter_commands_and_datatype_registration(tmp_path):
         == "tsv"
     )
     assert (
-        registry.find(".//datatype[@extension='tsv']/converter[@file='tabular_to_parquet_converter.xml']") is not None
+        registry.find(".//datatype[@extension='tsv']/converter[@file='tsv_to_parquet_converter.xml']") is not None
     )
 
 

@@ -55,10 +55,10 @@ def _safe_float(text, number):
     return exact.copy_abs() <= 2**53
 
 
-def read_table(infile, input_format="tabular", header_mode="auto"):
-    if input_format not in ("tabular", "tsv") or header_mode not in ("auto", "first", "none"):
+def read_table(infile, input_format="tabular", header_mode="none"):
+    if input_format not in ("tabular", "tsv") or header_mode not in ("first", "none"):
         raise ValueError("Unsupported input format or header mode")
-    has_header = header_mode == "first" or (header_mode == "auto" and input_format == "tsv")
+    has_header = header_mode == "first"
     with open(infile, encoding="utf-8", newline="") as handle:
         if input_format == "tsv":
             previous_limit = csv.field_size_limit(sys.maxsize)
@@ -90,7 +90,7 @@ def read_table(infile, input_format="tabular", header_mode="auto"):
     return pa.Table.from_arrays(arrays, names=names)
 
 
-def convert(infile, outfile, input_format="tabular", header_mode="auto"):
+def convert(infile, outfile, input_format="tabular", header_mode="none"):
     parquet.write_table(read_table(infile, input_format=input_format, header_mode=header_mode), outfile)
 
 
@@ -99,7 +99,7 @@ def __main__():
     parser.add_argument("infile")
     parser.add_argument("outfile")
     parser.add_argument("--input-format", choices=("tabular", "tsv"), default="tabular")
-    parser.add_argument("--header-mode", choices=("auto", "first", "none"), default="auto")
+    parser.add_argument("--header-mode", choices=("first", "none"), default="none")
     args = parser.parse_args()
     try:
         convert(args.infile, args.outfile, input_format=args.input_format, header_mode=args.header_mode)
