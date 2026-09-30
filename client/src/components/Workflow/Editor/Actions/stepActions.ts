@@ -11,26 +11,9 @@ import type { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Connection } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
-
-// structuredClone can't copy reactive proxies, and toRaw() only unwraps the
-// outermost one -- the elements of an array from the step store are still
-// proxies. Unwrap all the way down before cloning.
-function unwrapDeep(value: unknown): unknown {
-    const raw = toRaw(value);
-    if (Array.isArray(raw)) {
-        return raw.map(unwrapDeep);
-    }
-    if (raw && typeof raw === "object" && Object.getPrototypeOf(raw) === Object.prototype) {
-        return Object.fromEntries(Object.entries(raw).map(([key, item]) => [key, unwrapDeep(item)]));
-    }
-    return raw;
-}
-
-function cloneRaw<T>(value: T): T {
-    return structuredClone(unwrapDeep(value)) as T;
-}
 
 export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;

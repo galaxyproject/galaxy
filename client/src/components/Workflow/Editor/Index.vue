@@ -46,6 +46,7 @@ import type { NewStep, PostJobActions, Step } from "@/stores/workflowStepStore";
 import type { WorkflowTransform } from "@/utils/geometry";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { cloneRaw } from "@/utils/toRawDeep";
 import { textify } from "@/utils/utils";
 
 import { getWorkflowFull } from "../workflows.services";
@@ -308,7 +309,7 @@ const tags = ref<string[]>(props.workflowTags || []);
  * creating a new version, meaning we don't need to queue an undo/redo action for them.
  */
 function setTags(newTags: string[]) {
-    tags.value = structuredClone(newTags);
+    tags.value = cloneRaw(newTags);
 }
 
 // ---------------------------------------------------------------------------

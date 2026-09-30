@@ -1,4 +1,4 @@
-import { computed, ref, toRaw } from "vue";
+import { computed, ref } from "vue";
 
 import type { Color } from "@/components/Workflow/Editor/Comments/colors";
 import { assertDefined } from "@/utils/assertions";
@@ -12,6 +12,7 @@ import {
     vecSubtract,
     type Vector,
 } from "@/utils/geometry";
+import { cloneRaw } from "@/utils/toRawDeep";
 import { hasKeys, match } from "@/utils/utils";
 
 import { defineScopedStore } from "./scopedStore";
@@ -111,7 +112,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         select = false,
     ) => {
         commentsArray.forEach((comment) => {
-            const newComment = structuredClone(toRaw(comment));
+            const newComment = cloneRaw(comment);
             newComment.position[0] += defaultPosition[0];
             newComment.position[1] += defaultPosition[1];
 
