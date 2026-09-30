@@ -86,7 +86,7 @@ index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..5c72e6746a86413868fcff2fc0e7a152
          var patchedH = function patchedH(tag, dataObjOrChildren, rawSlots) {
            var slots = rawSlots === undefined ? [] : [Array.isArray(rawSlots) ? rawSlots.filter(Boolean) : rawSlots];
            var isTag = typeof tag === 'string' && !KNOWN_COMPONENTS.includes(tag);
-@@ -58,21 +63,54 @@ if (isVue3) {
+@@ -58,21 +63,62 @@ if (isVue3) {
 
            var attrs = dataObjOrChildren.attrs,
                props = dataObjOrChildren.props,
@@ -128,7 +128,15 @@ index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..5c72e6746a86413868fcff2fc0e7a152
 +          if (on) {
 +            for (var evt in on) {
 +              if (Object.prototype.hasOwnProperty.call(on, evt)) {
-+                var handlerKey = 'on' + evt.charAt(0).toUpperCase() + evt.slice(1);
++                // Vue 2 marks modifiers with key prefixes ('!click' is a capture
++                // listener); Vue 3 wants them as suffixes (onClickCapture).
++                var eventName = evt;
++                var modifiers = '';
++                while (/^[&~!]/.test(eventName)) {
++                  modifiers += { '&': 'Passive', '~': 'Once', '!': 'Capture' }[eventName.charAt(0)];
++                  eventName = eventName.slice(1);
++                }
++                var handlerKey = 'on' + eventName.charAt(0).toUpperCase() + eventName.slice(1) + modifiers;
 +                if (!(handlerKey in flatData)) {
 +                  flatData[handlerKey] = on[evt];
 +                }
