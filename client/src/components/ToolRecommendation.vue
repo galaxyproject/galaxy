@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as d3 from "d3";
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 
 import { getDatatypesMapper } from "@/components/Datatypes";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
@@ -8,6 +8,11 @@ import { getCompatibleRecommendations, type PredictedToolChild } from "@/compone
 import { useToolRouting } from "@/composables/route";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
+
+/** Vertical space to give each leaf row, so the tree stays readable regardless of the
+ * container's measured height (which may be 0 before the SVG has any content). */
+const LEAF_ROW_HEIGHT = 12;
+const MIN_TREE_HEIGHT = 80;
 
 /** Shape of the (currently mocked) `getToolPredictions` response. */
 interface ToolPredictionsResponse {
@@ -66,6 +71,7 @@ async function loadRecommendations() {
                         name: predData.name,
                         children: compatibleTools,
                     };
+                    await nextTick();
                     renderD3Tree(filteredData);
                 }
             }
@@ -81,7 +87,8 @@ function renderD3Tree(predictedTools: PredictedTools) {
     let i = 0;
     const duration = 750;
     const maxTextLength = 20;
-    const clientH = toolRecommendation.value?.clientHeight ?? 0;
+    const leafCount = Math.max(predictedTools.children?.length ?? 0, 1);
+    const clientH = Math.max(leafCount * LEAF_ROW_HEIGHT, MIN_TREE_HEIGHT);
     const clientW = toolRecommendation.value?.clientWidth ?? 0;
     const svg = d3.select(toolRecommendation.value).append("svg").attr("class", "tree-size").append("g");
     const svgElem = svg.node()?.parentElement;
