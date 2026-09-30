@@ -50,4 +50,34 @@ describe("useTutorMode", () => {
         const { fetchTutorState } = useTutorMode();
         await expect(fetchTutorState()).rejects.toBeTruthy();
     });
+
+    it("shows a toggle right away and puts it back when the server refuses", async () => {
+        let reject: (reason: unknown) => void = () => {};
+        mockPOST.mockReturnValue(new Promise((_, r) => (reject = r)));
+        const { tutorModeEnabled, loading, setTutorMode } = useTutorMode();
+
+        const pending = setTutorMode(true);
+        // The switch has already moved, so it has to move back if the request fails.
+        expect(tutorModeEnabled.value).toBe(true);
+        expect(loading.value).toBe(true);
+
+        reject(new Error("offline"));
+        await expect(pending).rejects.toBeTruthy();
+        expect(tutorModeEnabled.value).toBe(false);
+        expect(loading.value).toBe(false);
+    });
+
+    it("does not let a slow initial fetch undo a toggle", async () => {
+        let resolveGet: (value: unknown) => void = () => {};
+        mockGET.mockReturnValue(new Promise((r) => (resolveGet = r)));
+        mockPOST.mockResolvedValue({ data: { enabled: true, state: { tutor_mode_enabled: true } }, error: undefined });
+        const { tutorModeEnabled, fetchTutorState, setTutorMode } = useTutorMode();
+
+        const fetching = fetchTutorState();
+        await setTutorMode(true);
+        resolveGet({ data: { tutor_mode_enabled: false, scaffolding_level: 3 }, error: undefined });
+        await fetching;
+
+        expect(tutorModeEnabled.value).toBe(true);
+    });
 });
