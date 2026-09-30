@@ -284,8 +284,10 @@ class TestTeachingAssistantAgent:
             assert "Here is the fix." in _render_tutorial_references(ctx, content)
         else:
             with caplog.at_level("INFO", logger="galaxy.agents.teaching_assistant"):
-                with pytest.raises(pydantic_ai.ModelRetry, match="failing tool"):
+                with pytest.raises(pydantic_ai.ModelRetry, match="failing tool") as retry:
                     _render_tutorial_references(ctx, content)
+            # In the live run the model otherwise dropped the learner's question about tutorials entirely.
+            assert "found none focused on this tool" in str(retry.value)
             # Logged so a live run can show the check fired, since the retry never reaches the answer.
             assert any("off-topic tutorial" in r.getMessage() for r in caplog.records)
 

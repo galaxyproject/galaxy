@@ -149,7 +149,8 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
         )
         raise ModelRetry(
             f"For a failed job, cite only a tutorial whose title or stated objectives name the failing tool "
-            f"({', '.join(job_tools)}). Remove the other tutorial markers; citing none is fine."
+            f"({', '.join(job_tools)}). Remove the other tutorial markers; citing none is fine. "
+            "If the learner asked for a tutorial, tell them the search found none focused on this tool."
         )
 
     def render(match: re.Match) -> str:
