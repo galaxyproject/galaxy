@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { BFormCheckbox } from "bootstrap-vue";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import FormBoolean from "./FormBoolean.vue";
@@ -19,9 +20,9 @@ describe("FormBoolean", () => {
     });
 
     it("check initial value and value change", async () => {
-        const switchComponent = wrapper.findComponent(".custom-switch");
+        const switchComponent = wrapper.findComponent(BFormCheckbox);
         const input = wrapper.find("input[type='checkbox']");
-        expect(switchComponent.props().value).toBe(false);
+        expect(switchComponent.props().checked).toBe(false);
         await wrapper.setProps({ value: "true" });
         expect(wrapper.emitted().input[0][0]).toBe(true);
         await wrapper.setProps({ value: "false" });

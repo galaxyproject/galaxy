@@ -59,23 +59,23 @@ describe("FormText", () => {
         const v = "something";
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual(v);
+        expect(el.element.value).toEqual(v);
     });
 
     it("should be able to accept an array as value", async () => {
         const v = ["field_1", "field_2", "field_3"];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("field_1");
+        expect(el.element.value).toEqual("field_1");
         await wrapper.setProps({ multiple: true });
         const elMultiple = wrapper.find("textarea");
-        expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3");
+        expect(elMultiple.element.value).toEqual("field_1\nfield_2\nfield_3");
     });
 
     it("should be able to accept an empty array as value", async () => {
         const v = [];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("");
+        expect(el.element.value).toEqual("");
     });
 });

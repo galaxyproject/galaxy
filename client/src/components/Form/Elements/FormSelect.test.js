@@ -26,7 +26,17 @@ const defaultOptions = [
     ["label_4", 99],
 ];
 
-function testDefaultOptions(wrapper) {
+// vue-multiselect only renders its option list (and thus the SELECTED_VALUE /
+// option-list queries below) while its dropdown is open, so tests need to
+// open it before reading those.
+async function openMultiselect(wrapper) {
+    if (!wrapper.find(".multiselect__content-wrapper").exists()) {
+        await wrapper.find(".multiselect__select").trigger("mousedown");
+    }
+}
+
+async function testDefaultOptions(wrapper) {
+    await openMultiselect(wrapper);
     const target = wrapper.findComponent(MountTarget);
     const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
@@ -40,7 +50,7 @@ describe("FormSelect", () => {
         const wrapper = createTarget({
             options: defaultOptions,
         });
-        testDefaultOptions(wrapper);
+        await testDefaultOptions(wrapper);
         const noValue = wrapper.find(".multiselect__option--selected");
         expect(noValue.exists()).toBe(false);
         expect(wrapper.emitted().input[0][0]).toBe("value_1");
@@ -54,6 +64,7 @@ describe("FormSelect", () => {
             options: defaultOptions,
             optional: true,
         });
+        await openMultiselect(wrapper);
         const target = wrapper.findComponent(MountTarget);
         const options = target.findAll("li > span > div");
         expect(options.length).toBe(5);
@@ -67,6 +78,8 @@ describe("FormSelect", () => {
         const nullValue = wrapper.emitted().input[0][0];
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });
+        // Picking an option closes the dropdown, which removes the option list.
+        await openMultiselect(wrapper);
         const unselectDefault = wrapper.find(".multiselect__option--selected");
         expect(unselectDefault.text()).toBe("Nothing selected");
     });
@@ -78,6 +91,7 @@ describe("FormSelect", () => {
             options: defaultOptions,
             value: ["value_1"],
         });
+        await openMultiselect(wrapper);
         const selected = wrapper.findAll(".multiselect__option--selected");
         expect(selected.length).toBe(1);
         selected.at(0).trigger("click");
@@ -92,7 +106,7 @@ describe("FormSelect", () => {
             options: defaultOptions,
             value: ["value_1", "", 99],
         });
-        testDefaultOptions(wrapper);
+        await testDefaultOptions(wrapper);
         const selectedValue = wrapper.findAll(".multiselect__option--selected");
         expect(selectedValue.length).toBe(3);
         expect(selectedValue.at(0).text()).toBe("label_1");

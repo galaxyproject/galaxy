@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { BProgressBar } from "bootstrap-vue";
 import { describe, expect, it } from "vitest";
 
 import { JobStateSummary } from "./JobStateSummary";
@@ -7,6 +8,14 @@ import { JobStateSummary } from "./JobStateSummary";
 import CollectionProgress from "./CollectionProgress.vue";
 
 const localVue = getLocalVue();
+
+// BProgress/BProgressBar are globally stubbed in the test setup, so the real
+// `.progress`/`.bg-*` DOM classes never render -- read the value off the
+// BProgressBar stub's `variant` prop instead.
+function progressBarValue(wrapper, variant) {
+    const bar = wrapper.findAllComponents(BProgressBar).find((b) => b.props("variant") === variant);
+    return bar?.props("value");
+}
 
 describe("CollectionProgress", () => {
     let wrapper;
@@ -21,7 +30,7 @@ describe("CollectionProgress", () => {
             global: localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
+        expect(progressBarValue(wrapper, "warning")).toBe(3);
     });
 
     it("should correctly display states", async () => {
@@ -34,9 +43,9 @@ describe("CollectionProgress", () => {
             global: localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
-        expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("1");
-        expect(wrapper.find(".progress").find(".bg-danger").attributes("aria-valuenow")).toBe("1");
+        expect(progressBarValue(wrapper, "warning")).toBe(3);
+        expect(progressBarValue(wrapper, "success")).toBe(1);
+        expect(progressBarValue(wrapper, "danger")).toBe(1);
     });
 
     it("should update as dataset states change", async () => {
@@ -49,14 +58,14 @@ describe("CollectionProgress", () => {
             global: localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
+        expect(progressBarValue(wrapper, "warning")).toBe(3);
         dsc["job_state_summary"]["ok"] = 2;
         dsc["job_state_summary"]["running"] = 1;
         jobStateSummary = new JobStateSummary(dsc);
         await wrapper.setProps({ summary: jobStateSummary });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("1");
-        expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("2");
+        expect(progressBarValue(wrapper, "warning")).toBe(1);
+        expect(progressBarValue(wrapper, "success")).toBe(2);
     });
 
     it("should be visible when all jobs are queued", async () => {
@@ -69,6 +78,6 @@ describe("CollectionProgress", () => {
             global: localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".bg-secondary").attributes("aria-valuenow")).toBe("3");
+        expect(progressBarValue(wrapper, "secondary")).toBe(3);
     });
 });

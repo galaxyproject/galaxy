@@ -24,7 +24,10 @@ describe("FormUpload", () => {
     it("should not display text box if file has not been selected", async () => {
         const wrapper = mountFormUpload({ value: null });
         const el = wrapper.find("textarea");
-        expect(el.isVisible()).toBe(false);
+        // happy-dom's getComputedStyle doesn't reflect inline styles reliably, so
+        // isVisible() (which relies on it) can't be used here -- check the v-show
+        // style directly instead.
+        expect(el.element.style.display).toBe("none");
         expect(el.text()).toBe("");
         const noInput = wrapper.find("label");
         expect(noInput.text()).toBe("No file chosen");

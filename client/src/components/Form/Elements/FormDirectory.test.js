@@ -65,7 +65,10 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await input.setValue(path);
         expect(input.element.value).toBe(path);
 
-        input.trigger("keyup.enter");
+        // VTU2's ".enter" modifier shorthand sets event.key to the literal
+        // string "enter" rather than the real DOM value "Enter", so the
+        // component's `key === "Enter"` check never matches -- pass it explicitly.
+        await input.trigger("keyup", { key: "Enter" });
         return input;
     };
 

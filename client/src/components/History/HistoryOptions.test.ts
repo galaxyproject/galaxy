@@ -190,7 +190,9 @@ describe("History Navigation", () => {
 
     it("calls deleteHistory with purge=true when purge checkbox is manually checked", async () => {
         const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        wrapper.find('[data-description="delete history checkbox"]').vm.$emit("input", true);
+        // BFormCheckbox is stubbed under shallowMount, so there's no real
+        // checkbox input to interact with -- drive it through its stub instead.
+        wrapper.findComponent('[data-description="delete history checkbox"]').vm.$emit("input", true);
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
