@@ -10,7 +10,11 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
-from time import sleep
+from functools import partial
+from time import (
+    sleep,
+    time,
+)
 from typing import (
     Any,
     Optional,
@@ -43,6 +47,7 @@ from pulsar.client.staging.up import submit_job as pulsar_submit_job
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
@@ -56,7 +61,12 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.managers.job_object_staging import (
+    input_url,
+    INPUT_URL_LIFETIME_SECONDS,
+)
 from galaxy.model.base import check_database_connection
+from galaxy.model.metadata import FileParameter
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
@@ -91,7 +101,9 @@ MINIMUM_PULSAR_VERSIONS = {
     "remote_metadata": Version("0.8.0"),
     "remote_container_handling": Version("0.9.1.dev0"),  # probably 0.10 ultimately?
     "dataset_collector_descriptions": Version("0.15.13.dev0"),  # Support for directory-aware pattern matching
+    "object_store_staging_redirect": Version("0.15.16"),  # curl transport follows redirects
 }
+OBJECT_STORE_STAGING_MODES = ("stream", "redirect")
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
@@ -458,35 +470,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 path_rewrites_unstructured = compute_environment.path_rewrites_unstructured
                 output_names = compute_environment.output_names()
 
-                client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
-                    compute_environment.materialized_objects
-                ):
-                    # str here to resolve false_path if set on a DatasetPath object.
-                    path = str(input_dataset_wrapper)
-                    object_store_ref = {
-                        "dataset_id": input_dataset_wrapper.dataset_id,
-                        "dataset_uuid": str(input_dataset_wrapper.dataset_uuid),
-                        "object_store_id": input_dataset_wrapper.object_store_id,
-                    }
-                    client_inputs_list.append(
-                        ClientInput(path, CLIENT_INPUT_PATH_TYPES.INPUT_PATH, object_store_ref=object_store_ref)
-                    )
-
-                for input_extra_path in compute_environment.path_rewrites_input_extra.keys():
-                    # TODO: track dataset for object_Store_ref...
-                    client_inputs_list.append(
-                        ClientInput(input_extra_path, CLIENT_INPUT_PATH_TYPES.INPUT_EXTRA_FILES_PATH)
-                    )
-
-                for input_metadata_path in compute_environment.path_rewrites_input_metadata.keys():
-                    # TODO: track dataset for object_Store_ref...
-                    client_inputs_list.append(
-                        ClientInput(input_metadata_path, CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH)
-                    )
-
                 input_files = None
-                client_inputs = ClientInputs(client_inputs_list)
+                client_inputs = self._client_inputs(job_wrapper, compute_environment, remote_job_config)
             else:
                 input_files = self.get_input_files(job_wrapper)
                 client_inputs = None
@@ -753,6 +738,63 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # back to the Galaxy id when nothing was ever recorded.
         external_id = job_wrapper.get_job().get_job_runner_external_id()
         return self.get_client(job_destination_params, job_id, external_id=external_id)
+
+    def _client_inputs(self, job_wrapper, compute_environment, remote_job_config) -> ClientInputs:
+        """Describe a job's inputs for the Pulsar client.
+
+        With ``object_store_staging``, each input kept in the object store carries a signed URL that
+        Galaxy answers from the store by identity, so Galaxy need not pull the input into its own
+        cache and no Galaxy host needs to share its disk with the one answering Pulsar.
+        """
+        issue_url = None
+        staging = compute_environment.object_store_staging
+        if staging is not None and staging not in OBJECT_STORE_STAGING_MODES:
+            raise ConfigurationError(
+                f"object_store_staging must be one of {OBJECT_STORE_STAGING_MODES}, not {staging!r}"
+            )
+        if staging in OBJECT_STORE_STAGING_MODES:
+            redirect = (
+                staging == "redirect"
+                and self.pulsar_version(remote_job_config) >= MINIMUM_PULSAR_VERSIONS["object_store_staging_redirect"]
+            )
+            expires = int(time()) + INPUT_URL_LIFETIME_SECONDS
+            # Called with (kind, object_id).
+            issue_url = partial(
+                input_url, self.app.security, self.galaxy_url, job_wrapper.job_id, expires=expires, redirect=redirect
+            )
+
+        client_inputs_list = []
+        for input_dataset_wrapper in job_wrapper.job_io.get_input_paths(
+            compute_environment.materialized_objects, sync_cache=issue_url is None
+        ):
+            # str here to resolve false_path if set on a DatasetPath object.
+            path = str(input_dataset_wrapper)
+            object_store_ref = {
+                "dataset_id": input_dataset_wrapper.dataset_id,
+                "dataset_uuid": str(input_dataset_wrapper.dataset_uuid),
+                "object_store_id": input_dataset_wrapper.object_store_id,
+            }
+            url = None
+            # A deferred input materialized into the job directory has no object store identity.
+            if issue_url and input_dataset_wrapper.dataset_id is not None:
+                url = issue_url("dataset", input_dataset_wrapper.dataset_id)
+            client_inputs_list.append(
+                ClientInput(path, CLIENT_INPUT_PATH_TYPES.INPUT_PATH, object_store_ref=object_store_ref, url=url)
+            )
+
+        for input_extra_path in compute_environment.path_rewrites_input_extra.keys():
+            # TODO: track dataset for object_Store_ref...
+            client_inputs_list.append(ClientInput(input_extra_path, CLIENT_INPUT_PATH_TYPES.INPUT_EXTRA_FILES_PATH))
+
+        for input_metadata_path in compute_environment.path_rewrites_input_metadata.keys():
+            url = None
+            metadata_file_id = compute_environment.input_metadata_file_ids.get(input_metadata_path)
+            if issue_url and metadata_file_id is not None:
+                url = issue_url("metadata_file", metadata_file_id)
+            client_inputs_list.append(
+                ClientInput(input_metadata_path, CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH, url=url)
+            )
+        return ClientInputs(client_inputs_list)
 
     def get_client(
         self,
@@ -1398,6 +1440,16 @@ class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 
+def _metadata_file_with_path(dataset, path) -> model.MetadataFile | None:
+    """The metadata file of ``dataset`` stored at ``path``: tool evaluation hands the runner only the path."""
+    for name, spec in dataset.metadata.spec.items():
+        if isinstance(spec.param, FileParameter):
+            value = dataset.metadata.get(name)
+            if isinstance(value, model.MetadataFile) and value.get_file_name(sync_cache=False) == path:
+                return value
+    return None
+
+
 class PulsarComputeEnvironment(ComputeEnvironment):
     def __init__(self, pulsar_client, job_wrapper, remote_job_config):
         self.pulsar_client = pulsar_client
@@ -1407,6 +1459,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.path_rewrites_unstructured = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
+        # Inputs are staged by object store identity; metadata file ids are keyed by local path.
+        self.object_store_staging = pulsar_client.destination_params.get("object_store_staging")
+        self.input_metadata_file_ids: dict[str, int] = {}
 
         # job_wrapper.prepare is going to expunge the job backing the following
         # computations, so precalculate these paths.
@@ -1428,11 +1483,15 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return self.job_wrapper.job_io.get_output_basenames()
 
     def input_path_rewrite(self, dataset):
-        local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)
-        if local_input_path_rewrite is not None:
-            local_input_path = local_input_path_rewrite
+        if self.object_store_staging in OBJECT_STORE_STAGING_MODES:
+            # Staged by identity: only the input's path is needed here, not its bytes.
+            local_input_path = str(self.job_wrapper.job_io.get_input_path(dataset, sync_cache=False))
         else:
-            local_input_path = dataset.get_file_name()
+            local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)
+            if local_input_path_rewrite is not None:
+                local_input_path = local_input_path_rewrite
+            else:
+                local_input_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
         return remote_path
 
@@ -1465,6 +1524,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if remote_input_path:
             log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
+            if self.object_store_staging in OBJECT_STORE_STAGING_MODES:
+                metadata_file = _metadata_file_with_path(dataset, metadata_val)
+                if metadata_file is not None:
+                    self.input_metadata_file_ids[metadata_val] = metadata_file.id
             return remote_input_path
 
         # No rewrite...
