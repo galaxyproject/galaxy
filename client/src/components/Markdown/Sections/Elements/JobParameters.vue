@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
 import { computed, toRef, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
@@ -63,12 +64,12 @@ watch(
 </script>
 
 <template>
-    <b-card nobody>
-        <b-card-title v-if="title">
+    <BCard nobody>
+        <BCardTitle v-if="title">
             <b>{{ title }}</b>
             <FontAwesomeIcon ref="info" :icon="faInfoCircle" size="sm" />
             <ToolLinkPopover :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
-        </b-card-title>
+        </BCardTitle>
         <JobSelection
             v-model="selectedJob"
             :job-id="jobId"
@@ -76,8 +77,8 @@ watch(
             :select-job-options="selectJobOptions">
             <JobParameters class="job-parameters" :job-id="targetJobId" :param="param" :include-title="false" />
         </JobSelection>
-        <b-card-footer v-if="footer">
+        <BCardFooter v-if="footer">
             {{ footer }}
-        </b-card-footer>
-    </b-card>
+        </BCardFooter>
+    </BCard>
 </template>

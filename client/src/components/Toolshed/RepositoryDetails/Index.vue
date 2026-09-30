@@ -1,6 +1,7 @@
 <script setup>
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCard, BLink } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { useResourceWatcher } from "@/composables/resourceWatcher";
@@ -216,10 +217,10 @@ function stopWatchingRepository() {
 </script>
 
 <template>
-    <b-card>
+    <BCard>
         <div class="mb-1">{{ repo.long_description }}</div>
         <div class="mb-3">
-            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
+            <BLink :href="repo.repository_url" target="_blank">Show additional details and dependencies.</BLink>
         </div>
         <div>
             <LoadingSpan v-if="loading" message="Loading repository details" />
@@ -270,7 +271,7 @@ function stopWatchingRepository() {
                 </div>
             </div>
         </div>
-    </b-card>
+    </BCard>
 </template>
 
 <style lang="scss">

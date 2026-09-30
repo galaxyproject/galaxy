@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BCardGroup } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { useConfig } from "@/composables/config";
@@ -73,14 +74,14 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             <h4 class="mb-3">
                 <b>{{ category.name }}</b>
             </h4>
-            <b-card-group deck>
+            <BCardGroup deck>
                 <CleanupOperationSummary
                     v-for="operation in category.operations"
                     :key="operation.id"
                     :operation="operation"
                     :refresh-operation-id="refreshOperationId"
                     @onReviewItems="onReviewItems" />
-            </b-card-group>
+            </BCardGroup>
         </div>
 
         <ReviewCleanupDialog

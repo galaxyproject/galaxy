@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BSpinner } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
@@ -68,7 +69,7 @@ export default {
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
         <div v-if="storageInfo.quota && storageInfo.quota.enabled">
-            <b-spinner v-if="isLoadingUsage" />
+            <BSpinner v-if="isLoadingUsage" />
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </div>
         <div v-else>Galaxy has no quota configured for this storage.</div>

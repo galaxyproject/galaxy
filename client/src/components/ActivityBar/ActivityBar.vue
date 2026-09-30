@@ -2,6 +2,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
+import { BNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -310,7 +311,7 @@ defineExpose({
                 :title="props.headerTitle"
                 :is-side-bar-open="isSideBarOpen"
                 @close-sidebar="activityStore.closeSideBar" />
-            <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
+            <BNav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     v-model="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
@@ -387,9 +388,9 @@ defineExpose({
                         </div>
                     </div>
                 </draggable>
-            </b-nav>
+            </BNav>
             <ActivityBarSeparator />
-            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+            <BNav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -468,7 +469,7 @@ defineExpose({
                     :tooltip="props.exitActivity.tooltip"
                     :variant="props.exitActivity.variant"
                     @click="onActivityClicked(props.exitActivity)" />
-            </b-nav>
+            </BNav>
         </div>
         <FlexPanel
             v-if="isSideBarOpen && !hidePanel"

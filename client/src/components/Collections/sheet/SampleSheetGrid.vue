@@ -2,7 +2,7 @@
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, ValueSetterParams } from "ag-grid-community";
-import { BCol, BInputGroup, BLink, BRow } from "bootstrap-vue";
+import { BCol, BFormInput, BInputGroup, BLink, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {

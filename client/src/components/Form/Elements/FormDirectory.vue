@@ -11,22 +11,22 @@
                 :require-writable="true"
                 :is-open="isModalShown" />
         </div>
-        <b-breadcrumb v-if="url" class="mb-0">
-            <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
+        <BBreadcrumb v-if="url" class="mb-0">
+            <BBreadcrumbItem title="Select another folder" class="align-items-center" @click="reset">
                 <GButton class="pathname" color="blue">
                     <FontAwesomeIcon :icon="faFolderOpen" /> {{ url.protocol }}
                 </GButton>
-            </b-breadcrumb-item>
-            <b-breadcrumb-item
+            </BBreadcrumbItem>
+            <BBreadcrumbItem
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center">
                 <GButton class="regular-path-chunk" :disabled="!editable" @click="removePath(index)">
                     {{ decodeURIComponent(pathChunk) }}
                 </GButton>
-            </b-breadcrumb-item>
-            <b-breadcrumb-item class="directory-input-field align-items-center">
-                <b-input
+            </BBreadcrumbItem>
+            <BBreadcrumbItem class="directory-input-field align-items-center">
+                <BFormInput
                     id="path-input-breadcrumb"
                     v-model="currentDirectoryName"
                     aria-describedby="input-live-help input-live-feedback"
@@ -37,8 +37,8 @@
                     @keydown.capture="onSlashKeydown"
                     @keydown.backspace.capture="removeLastPath"
                     @blur="handleBlur" />
-            </b-breadcrumb-item>
-        </b-breadcrumb>
+            </BBreadcrumbItem>
+        </BBreadcrumb>
 
         <div v-if="value" class="px-2" data-description="directory full path">
             <span v-localize>Directory Path:</span>
@@ -50,6 +50,7 @@
 <script>
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBreadcrumb, BBreadcrumbItem, BFormInput } from "bootstrap-vue";
 
 import { FilesDialog } from "@/components/FilesDialog";
 import { Toast } from "@/composables/toast";
@@ -67,6 +68,9 @@ const getDefaultValues = () => ({
 
 export default {
     components: {
+        BBreadcrumb,
+        BBreadcrumbItem,
+        BFormInput,
         FontAwesomeIcon,
         FilesDialog,
         GButton,

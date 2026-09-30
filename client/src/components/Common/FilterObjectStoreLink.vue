@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { UserConcreteObjectStoreModel } from "@/api";
@@ -47,7 +48,7 @@ const selectionText = computed(() => {
         <GModal v-model:show="showModal" size="small" title="Select a storage source to filter by">
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
         </GModal>
-        <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>
+        <BLink href="#" @click="showModal = true">{{ selectionText }}</BLink>
         <span v-if="value" v-g-tooltip.hover title="Remove Filter">
             <FontAwesomeIcon :icon="faTimes" @click="onSelect(undefined)" />
         </span>
