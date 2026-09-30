@@ -22,6 +22,12 @@ function isRouter(plugin: any): boolean {
     return plugin && typeof plugin === "object" && "currentRoute" in plugin && "push" in plugin;
 }
 
+// Normalize a stub key the way VTU matches component names ("b-card" -> "BCard").
+function stubName(key: string): string {
+    const camelized = key.replace(/-(\w)/g, (_, char: string) => char.toUpperCase());
+    return camelized.charAt(0).toUpperCase() + camelized.slice(1);
+}
+
 function adaptMountOptions(options: Record<string, any> = {}): Record<string, any> {
     const normalized = { ...options };
     const pluginsToAdd: any[] = [];
@@ -58,7 +64,14 @@ function adaptMountOptions(options: Record<string, any> = {}): Record<string, an
     // VTU v1 had top-level stubs; v2 expects them inside global.
     if (normalized.stubs) {
         normalized.global = normalized.global ?? {};
-        normalized.global.stubs = { ...(normalized.global.stubs ?? {}), ...normalized.stubs };
+        // VTU uses the first stub whose name matches in any casing, so drop the
+        // defaults an override refers to, or `stubs: { BCard: false }` would
+        // lose to a default registered as "b-card".
+        const overrideNames = new Set(Object.keys(normalized.stubs).map(stubName));
+        const defaults = Object.entries(normalized.global.stubs ?? {}).filter(
+            ([key]) => !overrideNames.has(stubName(key)),
+        );
+        normalized.global.stubs = { ...Object.fromEntries(defaults), ...normalized.stubs };
         delete normalized.stubs;
     }
 
