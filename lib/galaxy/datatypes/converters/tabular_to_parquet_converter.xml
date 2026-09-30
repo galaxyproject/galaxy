@@ -3,10 +3,17 @@
     <requirements>
         <requirement type="package" version="24.0.0">pyarrow</requirement>
     </requirements>
-    <command>python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output' --input-format tabular --header-mode '$header_mode'</command>
+    <command><![CDATA[
+#if str($header_mode) in ('first', 'none')
+    #set $effective_header_mode = $header_mode
+#else
+    #set $effective_header_mode = 'none'
+#end if
+python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output' --input-format tabular --header-mode '$effective_header_mode'
+    ]]></command>
     <inputs>
         <param name="input" type="data" format="tabular" label="Tabular file"/>
-        <param name="header_mode" type="select" label="Column names">
+        <param name="header_mode" type="select" label="Column names" optional="true">
             <option value="first">This file has a header row: use the first row as column names</option>
             <option value="none" selected="true">This file has no header row: generate column names (column1, column2, ...)</option>
         </param>
