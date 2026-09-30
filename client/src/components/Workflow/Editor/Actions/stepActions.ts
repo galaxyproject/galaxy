@@ -14,6 +14,24 @@ import { assertDefined } from "@/utils/assertions";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
+// structuredClone can't copy reactive proxies, and toRaw() only unwraps the
+// outermost one -- the elements of an array from the step store are still
+// proxies. Unwrap all the way down before cloning.
+function unwrapDeep(value: unknown): unknown {
+    const raw = toRaw(value);
+    if (Array.isArray(raw)) {
+        return raw.map(unwrapDeep);
+    }
+    if (raw && typeof raw === "object" && Object.getPrototypeOf(raw) === Object.prototype) {
+        return Object.fromEntries(Object.entries(raw).map(([key, item]) => [key, unwrapDeep(item)]));
+    }
+    return raw;
+}
+
+function cloneRaw<T>(value: T): T {
+    return structuredClone(unwrapDeep(value)) as T;
+}
+
 export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;
     fromValue: Step[K];
@@ -142,9 +160,9 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     ) {
         const step = stepStore.getStep(stepId);
         assertDefined(step);
-        const fromOutputs = structuredClone(toRaw(step.workflow_outputs));
+        const fromOutputs = cloneRaw(step.workflow_outputs);
 
-        super(stepStore, stepId, "workflow_outputs", fromOutputs, structuredClone(toRaw(toOutputs)));
+        super(stepStore, stepId, "workflow_outputs", fromOutputs, cloneRaw(toOutputs));
 
         this.fromLabel = fromValue;
         this.toLabel = toValue;
@@ -238,8 +256,8 @@ export class SetDataAction extends UpdateStepAction {
             const otherValue = to[key as keyof Step] as any;
 
             if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
-                fromPartial[key as keyof Step] = structuredClone(toRaw(value));
-                toPartial[key as keyof Step] = structuredClone(toRaw(otherValue));
+                fromPartial[key as keyof Step] = cloneRaw(value);
+                toPartial[key as keyof Step] = cloneRaw(otherValue);
             }
         });
 
@@ -327,7 +345,7 @@ export class RemoveStepAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.connectionStore = connectionStore;
-        this.step = structuredClone(toRaw(step));
+        this.step = cloneRaw(step);
         const connections = this.connectionStore.getConnectionsForStep(this.step.id);
         // Deep clone to avoid proxy issues
         this.connections = JSON.parse(JSON.stringify(toRaw(connections)));
@@ -344,7 +362,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(toRaw(this.step)), false, false);
+        this.stepStore.addStep(cloneRaw(this.step), false, false);
         this.connections.forEach((connection) => {
             // Ensure connection is a plain object
             const plainConnection = JSON.parse(JSON.stringify(connection));
@@ -385,7 +403,7 @@ export class CopyStepAction extends UndoRedoAction {
     }
 
     run() {
-        const newStep = this.stepStore.addStep(structuredClone(toRaw(this.step)));
+        const newStep = this.stepStore.addStep(cloneRaw(this.step));
         this.stepId = newStep.id;
         this.stateStore.hasChanges = true;
     }
@@ -684,7 +702,7 @@ export function useStepActions(
         const fromPartial: Partial<Step> = {};
 
         Object.keys(toPartial).forEach((key) => {
-            fromPartial[key as keyof Step] = structuredClone(toRaw(fromStep[key as keyof Step])) as any;
+            fromPartial[key as keyof Step] = cloneRaw(fromStep[key as keyof Step]) as any;
         });
 
         const action = new UpdateStepAction(stepStore, stateStore, id, fromPartial, toPartial);
