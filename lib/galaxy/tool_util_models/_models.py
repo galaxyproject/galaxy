@@ -43,7 +43,7 @@ from ._base import (
 )
 from .assertions import assertions
 from .parameters import ToolParameterT
-from .runtime_environment import RuntimeEnvironmentVariable
+from .runtime_environment import RuntimeEnvironmentVariable as RuntimeEnvironmentVariable
 from .test_job import Job
 from .tool_outputs import (
     IncomingToolOutput,
