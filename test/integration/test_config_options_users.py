@@ -97,6 +97,20 @@ class TestAccountInterfaceDisabledIntegration(integration_util.IntegrationTestCa
             response = self._put(f"users/{user_id}", data={"username": "renamedviaupdate"}, json=True)
             self._assert_config_does_not_allow(response)
 
+    def test_update_email_rejected_for_non_admin(self):
+        with self._different_user("accountiface-email@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}", data={"email": "changedviaupdate@bx.psu.edu"}, json=True)
+            self._assert_config_does_not_allow(response)
+            assert self._get("users/current").json()["email"] == "accountiface-email@bx.psu.edu"
+
+    def test_update_display_name_rejected_for_non_admin(self):
+        with self._different_user("accountiface-displayname@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}", data={"display_name": "Changed Via Update"}, json=True)
+            self._assert_config_does_not_allow(response)
+            assert self._get("users/current").json()["display_name"] is None
+
     def test_update_non_identity_preference_still_allowed_for_non_admin(self):
         # preferred_object_store_id is an operational preference rather than account data, so
         # disabling the account interface must not lock users out of it.
@@ -123,3 +137,43 @@ class TestAccountInterfaceDisabledIntegration(integration_util.IntegrationTestCa
         self._assert_status_code_is(response, 200)
         updated = self._get(f"users/{user['id']}/information/inputs", admin=True).json()
         assert updated["username"] == "renamedbyadmin"
+
+
+class TestLocalAccountsDisabledIntegration(integration_util.IntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["disable_local_accounts"] = True
+
+    def _assert_config_does_not_allow(self, response):
+        self._assert_status_code_is(response, 403)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+
+    def test_update_email_rejected_for_non_admin(self):
+        with self._different_user("localdisabled-update@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}", data={"email": "claimed-update@bx.psu.edu"}, json=True)
+            self._assert_config_does_not_allow(response)
+            assert self._get("users/current").json()["email"] == "localdisabled-update@bx.psu.edu"
+
+    def test_set_information_email_rejected_for_non_admin(self):
+        with self._different_user("localdisabled-information@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(
+                f"users/{user_id}/information/inputs", data={"email": "claimed-information@bx.psu.edu"}, json=True
+            )
+            self._assert_config_does_not_allow(response)
+            assert self._get("users/current").json()["email"] == "localdisabled-information@bx.psu.edu"
+
+    def test_update_display_name_still_allowed_for_non_admin(self):
+        with self._different_user("localdisabled-displayname@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}", data={"display_name": "Ada Lovelace"}, json=True)
+            self._assert_status_code_is(response, 200)
+            assert response.json()["display_name"] == "Ada Lovelace"
+
+    def test_admins_can_still_change_email(self):
+        user = self._setup_user("localdisabled-admintarget@bx.psu.edu")
+        response = self._put(f"users/{user['id']}", data={"email": "changedbyadmin@bx.psu.edu"}, json=True, admin=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "changedbyadmin@bx.psu.edu"
