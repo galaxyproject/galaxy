@@ -109,7 +109,9 @@ onBeforeUnmount(() => {
 });
 
 function showModal() {
-    dialog.value?.showModal();
+    if (dialog.value && !dialog.value.open) {
+        dialog.value.showModal();
+    }
 }
 
 let isOk = false;
