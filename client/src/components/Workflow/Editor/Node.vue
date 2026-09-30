@@ -166,12 +166,7 @@
 <script setup lang="ts">
 import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-// "vue" resolves to @vue/compat at build time, but vue-tsc types it against the
-// real vue package, which has no default export; import the compat Vue directly
-// so Vue.use keeps its type.
-import Vue from "@vue/compat";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
-import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import { computed, reactive, ref } from "vue";
 
@@ -205,8 +200,6 @@ import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-
-Vue.use(BootstrapVue);
 
 const props = defineProps({
     id: { type: Number, required: true },
