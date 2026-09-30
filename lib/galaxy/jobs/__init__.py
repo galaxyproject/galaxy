@@ -188,7 +188,9 @@ def config_exception(e, file):
     return Exception(message)
 
 
-def _warn_on_container_native_job_env(destination_id: str, runner_load: str, *, job_env_configured: bool) -> None:
+def _warn_on_container_native_job_env(
+    destination_id: str | None, runner_load: str, *, job_env_configured: bool
+) -> None:
     """Warn that container-native runners expose job_env to the tool."""
     if not job_env_configured:
         return

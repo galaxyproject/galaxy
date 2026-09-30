@@ -280,7 +280,7 @@ def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> Re
 
 def _runtime_environment_variable_names(job_directory: str) -> list[str]:
     """Read only variable names recorded after the job environment was set up."""
-    names = []
+    names: list[str] = []
     for directory in ("outputs", "metadata"):
         path = Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE
         if path.is_file():
