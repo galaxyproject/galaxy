@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -219,7 +219,7 @@ describe("WorkflowExtractionForm", () => {
 
         it("auto-populates newName for input jobs from output name", async () => {
             const wrapper = await mountForm();
-            const inputCard = wrapper.findAllComponents(WorkflowExtractionCard).at(1);
+            const inputCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 1);
             expect(inputCard.props("job").newName).toBe("myfile.txt");
         });
 
@@ -267,14 +267,14 @@ describe("WorkflowExtractionForm", () => {
 
         it("opens RenameModal when rename is emitted from an input card", async () => {
             const wrapper = await mountForm();
-            wrapper.findAllComponents(WorkflowExtractionCard).at(1).vm.$emit("rename");
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
             await flushPromises();
             expect(wrapper.findComponent(RenameModal).exists()).toBe(true);
         });
 
         it("closes RenameModal when the modal emits close", async () => {
             const wrapper = await mountForm();
-            wrapper.findAllComponents(WorkflowExtractionCard).at(1).vm.$emit("rename");
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
             await flushPromises();
             wrapper.findComponent(RenameModal).vm.$emit("close");
             await flushPromises();
@@ -310,7 +310,7 @@ describe("WorkflowExtractionForm", () => {
         it("submits output_labels only after an output is starred", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
@@ -323,7 +323,7 @@ describe("WorkflowExtractionForm", () => {
         it("does not submit starred outputs from unchecked tool rows", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("select");
             await wrapper.vm.$nextTick();
@@ -337,7 +337,7 @@ describe("WorkflowExtractionForm", () => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT]));
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
             const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
@@ -347,7 +347,7 @@ describe("WorkflowExtractionForm", () => {
         it("does not submit a starred output with an empty label", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("rename-output", 0);
             await flushPromises();
@@ -454,7 +454,7 @@ describe("WorkflowExtractionForm", () => {
         }
 
         function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
-            return wrapper.findAllComponents(WorkflowExtractionCard).at(index);
+            return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
         }
 
         it("de-duplicates colliding input names so the UI reflects what will be created", async () => {

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -174,7 +174,7 @@ describe("FilterMenu", () => {
 
         // First 4 filters are normal, non ranged input fields
         expectedFilters.forEach((expectedFilter, i) => {
-            const label = labels.at(i);
+            const label = nth(labels, i);
             expect(label.text()).toBe(expectedFilter.label);
             if (i < 4) {
                 const filterInput = wrapper.find(`[placeholder='${expectedFilter.placeholder}']`);

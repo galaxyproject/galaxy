@@ -2,7 +2,7 @@ import "@tests/vitest/mockHelpPopovers";
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
+import { dispatchEvent, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -100,8 +100,8 @@ describe("FormData", () => {
         };
         const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(4);
-        expect(options.at(0).classes()).toContain("g-pressed");
-        expect(options.at(0).attributes("title")).toBe("Single dataset");
+        expect(nth(options, 0).classes()).toContain("g-pressed");
+        expect(nth(options, 0).attributes("title")).toBe("Single dataset");
         expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("dceName4 (as dataset)");
@@ -114,7 +114,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
-        await elements_0.at(2).find("span").trigger("click");
+        await nth(elements_0, 2).find("span").trigger("click");
         expect(wrapper.emitted()!.input!.length).toEqual(2);
         expect(wrapper.emitted()!.input![1]![0]).toEqual(value_1);
         await wrapper.setProps({ value: value_2 });
@@ -165,8 +165,8 @@ describe("FormData", () => {
         });
         const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(0).classes()).toContain("g-pressed");
-        expect(options.at(0).attributes("title")).toBe("Multiple datasets");
+        expect(nth(options, 0).classes()).toContain("g-pressed");
+        expect(nth(options, 0).attributes("title")).toBe("Multiple datasets");
         expect(wrapper.emitted()!.input![0]![0]).toEqual({
             batch: false,
             product: false,
@@ -179,8 +179,8 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(1).text()).toContain("3: hdaName3");
+        expect(nth(selectedValues, 0).text()).toContain("2: hdaName2");
+        expect(nth(selectedValues, 1).text()).toContain("3: hdaName3");
         const value_0 = {
             batch: false,
             product: false,
@@ -190,7 +190,7 @@ describe("FormData", () => {
             ],
         };
         expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
-        await selectedValues.at(0).trigger("click");
+        await nth(selectedValues, 0).trigger("click");
         const value_1 = {
             batch: false,
             product: false,
@@ -198,7 +198,7 @@ describe("FormData", () => {
         };
         expect(wrapper.emitted()!.input![1]![0]).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
-        await selectedValues.at(1).trigger("click");
+        await nth(selectedValues, 1).trigger("click");
         const value_2 = {
             batch: false,
             product: false,
@@ -228,10 +228,10 @@ describe("FormData", () => {
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(3);
         // the values in the multiselect are sorted by hid ASC
-        expect(selectedValues.at(0).text()).toContain("1: hdaName1");
-        expect(selectedValues.at(1).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(2).text()).toContain("3: hdaName3");
-        await selectedValues.at(0).trigger("click");
+        expect(nth(selectedValues, 0).text()).toContain("1: hdaName1");
+        expect(nth(selectedValues, 1).text()).toContain("2: hdaName2");
+        expect(nth(selectedValues, 2).text()).toContain("3: hdaName3");
+        await nth(selectedValues, 0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
@@ -277,12 +277,12 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(5);
-        expect(selectedValues.at(0).text()).toContain("dceName4 (as dataset)");
-        expect(selectedValues.at(1).text()).toContain("dceName3 (as dataset)");
-        expect(selectedValues.at(2).text()).toContain("dceName2 (as dataset)");
-        expect(selectedValues.at(3).text()).toContain("1: hdaName1");
-        expect(selectedValues.at(4).text()).toContain("2: hdaName2");
-        await selectedValues.at(0).trigger("click");
+        expect(nth(selectedValues, 0).text()).toContain("dceName4 (as dataset)");
+        expect(nth(selectedValues, 1).text()).toContain("dceName3 (as dataset)");
+        expect(nth(selectedValues, 2).text()).toContain("dceName2 (as dataset)");
+        expect(nth(selectedValues, 3).text()).toContain("1: hdaName1");
+        expect(nth(selectedValues, 4).text()).toContain("2: hdaName2");
+        await nth(selectedValues, 0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
@@ -311,7 +311,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName1 (as dataset)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName1 (as dataset)");
     });
 
     it("dataset collection element as hdca without map_over_type", async () => {
@@ -325,7 +325,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName2 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName2 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to batch field", async () => {
@@ -343,7 +343,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName3 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName3 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to non-batch field", async () => {
@@ -362,7 +362,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName3 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName3 (as dataset collection)");
     });
 
     it("dataset collection mapped to non-batch field", async () => {
@@ -381,7 +381,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("5: hdcaName5");
+        expect(nth(selectedValues, 0).text()).toContain("5: hdcaName5");
     });
 
     it("multiple dataset collection elements (as hdas)", async () => {
@@ -496,7 +496,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
-        await elements_0.at(3).find("span").trigger("click");
+        await nth(elements_0, 3).find("span").trigger("click");
         const value_0 = {
             batch: true,
             product: false,
@@ -504,7 +504,7 @@ describe("FormData", () => {
         };
         expect(wrapper.emitted()!.input![2]![0]).toEqual(value_0);
         await wrapper.setProps({ value: value_0 });
-        await elements_0.at(0).find("span").trigger("click");
+        await nth(elements_0, 0).find("span").trigger("click");
         const value_1 = {
             batch: true,
             product: false,
@@ -545,8 +545,8 @@ describe("FormData", () => {
         await wrapper.vm.$nextTick();
         const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(1).classes()).toContain("g-pressed");
-        expect(options.at(1).attributes("title")).toBe("Dataset collection");
+        expect(nth(options, 1).classes()).toContain("g-pressed");
+        expect(nth(options, 1).attributes("title")).toBe("Dataset collection");
         for (const i of [0, 1]) {
             expect(wrapper.emitted()!.input![i]![0]).toEqual({
                 batch: false,
@@ -558,9 +558,9 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
+        expect(nth(selectedValues, 0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(options.at(0).classes()).toContain("g-pressed");
+        expect(nth(options, 0).classes()).toContain("g-pressed");
         expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
     });
 
@@ -579,7 +579,7 @@ describe("FormData", () => {
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("999: OldDataset");
+        expect(nth(selectedValues, 0).text()).toContain("999: OldDataset");
     });
 
     it("tagging filter", async () => {
@@ -590,8 +590,8 @@ describe("FormData", () => {
         await openMultiselect(wrapper_0);
         const select_0 = wrapper_0.findAll(SELECT_OPTIONS);
         expect(select_0.length).toBe(4);
-        expect(select_0.at(2).text()).toContain("1: hdaName1");
-        expect(select_0.at(3).text()).toContain("2: hdaName2");
+        expect(nth(select_0, 2).text()).toContain("1: hdaName1");
+        expect(nth(select_0, 3).text()).toContain("2: hdaName2");
         const wrapper_1 = createTarget({
             tag: "tag2",
             options: defaultOptions,
@@ -599,8 +599,8 @@ describe("FormData", () => {
         await openMultiselect(wrapper_1);
         const select_1 = wrapper_1.findAll(SELECT_OPTIONS);
         expect(select_1.length).toBe(4);
-        expect(select_1.at(2).text()).toContain("2: hdaName2");
-        expect(select_1.at(3).text()).toContain("3: hdaName3");
+        expect(nth(select_1, 2).text()).toContain("2: hdaName2");
+        expect(nth(select_1, 3).text()).toContain("3: hdaName3");
         const wrapper_2 = createTarget({
             tag: "tag3",
             options: defaultOptions,
@@ -608,6 +608,6 @@ describe("FormData", () => {
         await openMultiselect(wrapper_2);
         const select_2 = wrapper_2.findAll(SELECT_OPTIONS);
         expect(select_2.length).toBe(3);
-        expect(select_2.at(2).text()).toContain("3: hdaName3");
+        expect(nth(select_2, 2).text()).toContain("3: hdaName3");
     });
 });

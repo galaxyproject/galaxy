@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -25,7 +25,7 @@ describe("ObjectStoreBadges", () => {
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges.at(0).attributes("size")).toBe("lg");
+        expect(nth(badges, 0).attributes("size")).toBe("lg");
     });
 
     it("should pass along size attributes", async () => {
@@ -37,6 +37,6 @@ describe("ObjectStoreBadges", () => {
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges.at(0).attributes("size")).toBe("2x");
+        expect(nth(badges, 0).attributes("size")).toBe("2x");
     });
 });

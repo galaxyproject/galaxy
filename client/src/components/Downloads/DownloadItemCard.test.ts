@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -197,7 +197,7 @@ describe("DownloadItemCard.vue", () => {
         await goToButton.trigger("click");
 
         expect(wrapper.emitted("onGoTo")).toBeTruthy();
-        expect(wrapper.emitted("onGoTo")?.[0][0]).toContain(baseMonitoringData.request.object.id);
+        expect(nth(wrapper.emitted("onGoTo"), 0)[0]).toContain(baseMonitoringData.request.object.id);
     });
 
     it("emits onDownload when Download is clicked", async () => {
@@ -212,7 +212,7 @@ describe("DownloadItemCard.vue", () => {
         await downloadButton.trigger("click");
 
         expect(wrapper.emitted("onDownload")).toBeTruthy();
-        expect(wrapper.emitted("onDownload")?.[0][0]).toContain(fakeTaskId);
+        expect(nth(wrapper.emitted("onDownload"), 0)[0]).toContain(fakeTaskId);
     });
 
     it("emits onDelete when Remove is clicked", async () => {
@@ -230,7 +230,7 @@ describe("DownloadItemCard.vue", () => {
         // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
         // same object reference as `baseMonitoringData.request` even though its
         // contents are identical.
-        expect(wrapper.emitted("onDelete")?.[0][0]).toEqual(baseMonitoringData.request);
+        expect(nth(wrapper.emitted("onDelete"), 0)[0]).toEqual(baseMonitoringData.request);
     });
 
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {

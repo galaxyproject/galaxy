@@ -1,4 +1,4 @@
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -54,12 +54,12 @@ describe("ChangePassword", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const firstPwdField = inputs.at(0);
+        const firstPwdField = nth(inputs, 0);
         expect(firstPwdField.attributes("type")).toBe("password");
 
         await firstPwdField.setValue("test_first_pwd");
 
-        const secondPwdField = inputs.at(1);
+        const secondPwdField = nth(inputs, 1);
         expect(secondPwdField.attributes("type")).toBe("password");
 
         await secondPwdField.setValue("test_second_pwd");

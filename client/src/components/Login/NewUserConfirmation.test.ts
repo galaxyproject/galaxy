@@ -1,4 +1,4 @@
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -65,7 +65,7 @@ describe("NewUserConfirmation", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(1);
 
-        const checkField = inputs.at(0);
+        const checkField = nth(inputs, 0);
         expect(checkField.attributes("type")).toBe("checkbox");
 
         const submitButton = wrapper.find("button[name='confirm']");

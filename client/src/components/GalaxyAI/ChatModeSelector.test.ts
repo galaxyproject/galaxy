@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,14 +67,14 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             await nextTick();
-            expect(getButtons(wrapper).at(0).props("pressed")).toBe(true);
+            expect(nth(getButtons(wrapper), 0).props("pressed")).toBe(true);
         });
 
         it("full view button is not pressed when not on galaxyai route", async () => {
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             await nextTick();
-            expect(getButtons(wrapper).at(0).props("pressed")).toBe(false);
+            expect(nth(getButtons(wrapper), 0).props("pressed")).toBe(false);
         });
 
         it("side panel button is pressed when right panel is open", async () => {
@@ -82,7 +82,7 @@ describe("ChatModeSelector", () => {
             store.chatLocation = "right";
             store.chatVisible = true;
             await nextTick();
-            expect(getButtons(wrapper).at(1).props("pressed")).toBe(true);
+            expect(nth(getButtons(wrapper), 1).props("pressed")).toBe(true);
         });
 
         it("side panel button is not pressed when right panel is closed", async () => {
@@ -90,7 +90,7 @@ describe("ChatModeSelector", () => {
             store.chatLocation = "right";
             store.chatVisible = false;
             await nextTick();
-            expect(getButtons(wrapper).at(1).props("pressed")).toBe(false);
+            expect(nth(getButtons(wrapper), 1).props("pressed")).toBe(false);
         });
 
         it("bottom panel button is pressed when bottom panel is open", async () => {
@@ -98,7 +98,7 @@ describe("ChatModeSelector", () => {
             store.chatLocation = "bottom";
             store.chatVisible = true;
             await nextTick();
-            expect(getButtons(wrapper).at(2).props("pressed")).toBe(true);
+            expect(nth(getButtons(wrapper), 2).props("pressed")).toBe(true);
         });
 
         it("bottom panel button is not pressed when bottom panel is closed", async () => {
@@ -106,7 +106,7 @@ describe("ChatModeSelector", () => {
             store.chatLocation = "bottom";
             store.chatVisible = false;
             await nextTick();
-            expect(getButtons(wrapper).at(2).props("pressed")).toBe(false);
+            expect(nth(getButtons(wrapper), 2).props("pressed")).toBe(false);
         });
     });
 
@@ -137,27 +137,27 @@ describe("ChatModeSelector", () => {
     describe("openCenterChat", () => {
         it("calls setLocation('center')", async () => {
             const { wrapper, store } = mountComponent();
-            await getButtons(wrapper).at(0).trigger("click");
+            await nth(getButtons(wrapper), 0).trigger("click");
             expect(store.setLocation).toHaveBeenCalledWith("center");
         });
 
         it("calls hideChat", async () => {
             const { wrapper, store } = mountComponent();
-            await getButtons(wrapper).at(0).trigger("click");
+            await nth(getButtons(wrapper), 0).trigger("click");
             expect(store.hideChat).toHaveBeenCalled();
         });
 
         it("routes to /galaxyai/{id} when activeChatId is set", async () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = "chat-42";
-            await getButtons(wrapper).at(0).trigger("click");
+            await nth(getButtons(wrapper), 0).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/galaxyai/chat-42");
         });
 
         it("routes to /galaxyai when activeChatId is null", async () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = null;
-            await getButtons(wrapper).at(0).trigger("click");
+            await nth(getButtons(wrapper), 0).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/galaxyai");
         });
     });
@@ -168,21 +168,21 @@ describe("ChatModeSelector", () => {
         it("pushes '/' when on /galaxyai root route", async () => {
             mockRoute = { path: "/galaxyai", params: {}, query: {} };
             const { wrapper } = mountComponent();
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("pushes '/' when on /galaxyai/:id route", async () => {
             mockRoute = { path: "/galaxyai/chat-1", params: { exchangeId: "chat-1" }, query: {} };
             const { wrapper } = mountComponent();
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("does not navigate when on an unrelated route", async () => {
             mockRoute = { path: "/histories", params: {}, query: {} };
             const { wrapper } = mountComponent();
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(mockPush).not.toHaveBeenCalled();
         });
     });
@@ -193,14 +193,14 @@ describe("ChatModeSelector", () => {
         it("calls dockChat with 'right' for side panel button", async () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = "active-chat";
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "active-chat");
         });
 
         it("calls dockChat with 'bottom' for bottom panel button", async () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = "active-chat";
-            await getButtons(wrapper).at(2).trigger("click");
+            await nth(getButtons(wrapper), 2).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("bottom", "active-chat");
         });
 
@@ -208,7 +208,7 @@ describe("ChatModeSelector", () => {
             mockRoute = { path: "/galaxyai/routed-chat", params: { exchangeId: "routed-chat" }, query: {} };
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "routed-chat");
         });
 
@@ -217,7 +217,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             store.activeChatId = "active-chat";
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "active-chat");
         });
 
@@ -225,7 +225,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.chatLocation = "right";
             store.activeChatId = "active-chat";
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "active-chat");
         });
 
@@ -233,7 +233,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = null;
             store.chatHistory = [{ id: "hist-1" } as ChatHistoryItem, { id: "hist-2" } as ChatHistoryItem];
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "hist-1");
         });
 
@@ -241,7 +241,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = null;
             store.chatHistory = [];
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", null);
         });
 
@@ -249,7 +249,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.activeChatId = "active-chat";
             store.chatHistory = [{ id: "hist-1" } as ChatHistoryItem];
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "active-chat");
         });
 
@@ -258,7 +258,7 @@ describe("ChatModeSelector", () => {
             const { wrapper, store } = mountComponent();
             store.chatLocation = "right";
             store.activeChatId = "active-chat";
-            await getButtons(wrapper).at(1).trigger("click");
+            await nth(getButtons(wrapper), 1).trigger("click");
             expect(store.dockChat).toHaveBeenCalledWith("right", "active-chat");
             expect(store.dockChat).not.toHaveBeenCalledWith("right", "some-chat");
         });

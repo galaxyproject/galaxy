@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -197,7 +197,7 @@ describe("CommandPalette", () => {
         await type("workflows");
         const options = wrapper.findAll("[role='option']");
         expect(options.length).toBeGreaterThan(0);
-        expect(options.at(0).text()).toContain("Workflows");
+        expect(nth(options, 0).text()).toContain("Workflows");
     });
 
     it("scopes to actions with the '>' prefix", async () => {
@@ -248,7 +248,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("lab notes");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         await press("Enter", { shiftKey: true });
         expect(push).toHaveBeenCalledWith("/pages/editor?id=p1");
@@ -259,7 +259,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("> upload");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
         expect(hint("secondary").text()).toContain("pick a method");
 
         await press("Enter", { shiftKey: true });
@@ -280,7 +280,7 @@ describe("CommandPalette", () => {
         useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
 
         await type("> run workflow");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Run workflow");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Run workflow");
 
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
@@ -384,7 +384,7 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("Actions");
         expect(inputValue()).toBe("Upload data");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
     });
 
     it("documents every binding in the help keys section", async () => {
@@ -455,7 +455,7 @@ describe("CommandPalette", () => {
         expect(hint("open").classes()).not.toContain("hint-active");
         // only the selected row previews what shift + enter would do
         expect(secondaryHints().length).toBe(1);
-        expect(secondaryHints().at(0).text()).toContain("pick a method");
+        expect(nth(secondaryHints(), 0).text()).toContain("pick a method");
 
         await holdKey("Shift", false);
         expect(hint("secondary").classes()).not.toContain("hint-active");
@@ -925,7 +925,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("lab notes");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         // the switch to the actions list is debounced, so enter lands while the
         // page row is still on screen and must not run it
@@ -937,7 +937,7 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
 
         await settle();
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
 
         await press("Enter", { shiftKey: true });
         expect(badge().text()).toContain("Upload data");
@@ -976,7 +976,7 @@ describe("CommandPalette", () => {
         vi.mocked(useHistoryStore().createNewHistory).mockRejectedValue(new Error("history quota exceeded"));
 
         await type("> new history");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Create new history");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Create new history");
 
         await press("Enter");
 
@@ -997,7 +997,7 @@ describe("CommandPalette", () => {
         } as never;
         vi.mocked(Toast.error).mockClear();
         await type("h: target");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Target history");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Target history");
         await press("Enter", { shiftKey: true });
         expect(store.setCurrentHistory).toHaveBeenCalledWith("target");
         expect(Toast.error).toHaveBeenCalledWith(

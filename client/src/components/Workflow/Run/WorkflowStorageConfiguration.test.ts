@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -77,7 +77,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             // Find the first WorkflowSelectPreferredObjectStore component and emit its updated event
             const selectComponents = wrapper.findAllComponents(WorkflowSelectPreferredObjectStore);
             expect(selectComponents.length).toBeGreaterThan(0);
-            selectComponents.at(0).vm.$emit("updated", "storage123");
+            nth(selectComponents, 0).vm.$emit("updated", "storage123");
             await flushPromises();
 
             const emitted = wrapper.emitted();
@@ -97,7 +97,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             // Find the WorkflowSelectPreferredObjectStore components (there are 2, we want the 2nd one for intermediate)
             const selectComponents = wrapper.findAllComponents(WorkflowSelectPreferredObjectStore);
             expect(selectComponents.length).toBe(2);
-            selectComponents.at(1).vm.$emit("updated", "storage123");
+            nth(selectComponents, 1).vm.$emit("updated", "storage123");
             await flushPromises();
 
             const emitted = wrapper.emitted();

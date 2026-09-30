@@ -175,6 +175,23 @@ expect.extend({
     },
 });
 
+/**
+ * The item at `index`, failing with a clear message when it's missing. Use it
+ * for `findAll()` results and `emitted()` lists instead of a bare `[i]`/`.at(i)`,
+ * which is typed as possibly undefined and fails later with a vaguer error.
+ * @template T
+ * @param {ArrayLike<T> | undefined} items
+ * @param {number} index
+ * @returns {T}
+ */
+export function nth(items, index) {
+    const item = items?.[index < 0 ? items.length + index : index];
+    if (item === undefined) {
+        throw new Error(`Expected an item at index ${index}, but there are ${items?.length ?? 0}.`);
+    }
+    return item;
+}
+
 export function dispatchEvent(wrapper, type, props = {}) {
     const event = new Event(type, { bubbles: true });
     Object.assign(event, props);

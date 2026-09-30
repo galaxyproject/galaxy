@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { describe, expect, test, vi } from "vitest";
@@ -64,7 +64,7 @@ describe("ToolSection", () => {
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
-        expect($names.at(1).text()).toBe("name");
+        expect(nth($names, 1).text()).toBe("name");
         const $label = wrapper.find(".title-link");
         expect($label.text()).toBe("tool_section");
         await $sectionName.trigger("click");
