@@ -1,4 +1,12 @@
-from galaxy.managers.markdown_parse import validate_galaxy_markdown
+import re
+from pathlib import Path
+
+from galaxy.managers.markdown_parse import (
+    GALAXY_MARKDOWN_CELL_TYPES,
+    validate_galaxy_markdown,
+)
+
+SECTION_WRAPPER_RELATIVE_PATH = Path("client/src/components/Markdown/Sections/SectionWrapper.vue")
 
 
 def assert_markdown_valid(markdown):
@@ -446,3 +454,98 @@ history_link(hid=1)
 """,
         at_line=2,
     )
+
+
+def test_markdown_validation_fence_types():
+    for cell_type in ["galaxy", "markdown", "vega", "visualization", "vitessce"]:
+        body = "job_metrics(job_id=THISFAKEID)" if cell_type == "galaxy" else "{}"
+        assert_markdown_valid(f"\n```{cell_type}\n{body}\n```\n")
+    assert_markdown_valid("\n```vega   \n{}\n```  \n")
+    # tilde fences render as plain code blocks
+    assert_markdown_valid("""
+~~~python
+print("hello")
+~~~
+""")
+    assert_markdown_invalid(
+        """
+```loom-job
+job_id: 12345
+```
+""",
+        at_line=1,
+    )
+    assert_markdown_invalid(
+        """
+Some text.
+
+```python
+print("hello")
+```
+""",
+        at_line=3,
+    )
+    assert_markdown_invalid(
+        """
+- a list item
+
+  ```yaml
+  a: b
+  ```
+""",
+        at_line=3,
+    )
+    # the client keeps the space, so the type is " galaxy"
+    assert_markdown_invalid(
+        """
+``` galaxy
+job_metrics(job_id=THISFAKEID)
+```
+""",
+        at_line=1,
+    )
+    assert_markdown_invalid(
+        """
+````
+nested
+````
+""",
+        at_line=1,
+    )
+    assert_markdown_invalid("\n```Vega\n{}\n```\n", at_line=1)
+
+
+def test_markdown_validation_fence_types_inside_blocks():
+    assert_markdown_invalid("```\ncode\n```python\n", at_line=2)
+    assert_markdown_invalid("```galaxy\n```python\n```\n", at_line=1)
+    assert_markdown_invalid("~~~\n```python\n~~~\n", at_line=1)
+    assert_markdown_invalid("text\n\n    ```python\n    x = 1\n", at_line=2)
+
+
+def test_markdown_validation_fence_types_match_client_line_handling():
+    assert_markdown_valid("text\r\n```vega\r\n{}\r\n```\r\n")
+    assert_markdown_invalid("text\r\n```python\r\nx\r\n```\r\n", at_line=1)
+    assert_markdown_invalid("\ufeff```python\nx\n```\n", at_line=0)
+    assert_markdown_valid("text\u2028```python\n")
+
+
+def test_markdown_cell_types_match_client_renderer():
+    root = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / SECTION_WRAPPER_RELATIVE_PATH).is_file()
+    )
+    section_wrapper = (root / SECTION_WRAPPER_RELATIVE_PATH).read_text()
+    client_cell_types = re.findall(r"name === '(\w+)'", section_wrapper)
+    assert sorted(client_cell_types) == sorted(GALAXY_MARKDOWN_CELL_TYPES)
+
+
+def test_markdown_validation_fence_type_error_message():
+    try:
+        validate_galaxy_markdown("```loom-job\njob_id: 1\n```\n")
+    except ValueError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected loom-job fence to fail validation")
+    assert "Invalid line 1" in message
+    assert "[loom-job]" in message
+    assert "vitessce" in message
+    assert "~~~" in message

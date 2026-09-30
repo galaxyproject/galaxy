@@ -470,6 +470,14 @@ steps:
         self._assert_status_code_is(page_response, 400)
         self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_CONTENTS"])
 
+    def test_400_on_unsupported_markdown_fence(self):
+        page_request = self._test_page_payload(slug="unsupported-markdown-fence", content_format="markdown")
+        page_request["content"] = """# Notes\n\n```loom-job\njob_id: 12345\n```\n"""
+        page_response = self._post("pages", page_request, json=True)
+        self._assert_status_code_is(page_response, 400)
+        self._assert_error_code_is(page_response, error_codes.error_codes_by_name["MALFORMED_CONTENTS"])
+        assert "Unsupported fenced block type [loom-job]" in page_response.json()["err_msg"]
+
     def test_show(self):
         response_json = self._create_valid_page_with_slug("pagetoshow")
         show_response = self._get(f"pages/{response_json['id']}")
