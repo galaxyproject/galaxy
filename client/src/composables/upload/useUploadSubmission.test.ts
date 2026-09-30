@@ -151,9 +151,18 @@ describe("useUploadSubmission", () => {
         expect(useUploadState().activeItems.value.every((item) => item.datasetIds.length === 1)).toBe(true);
     });
 
-    it("marks all tracked uploads as errored when the fetch request fails", async () => {
+    it("marks only the fetched uploads as errored when the fetch request fails", async () => {
         server.use(
-            http.post("/api/tools/fetch", () => HttpResponse.json({ err_msg: "upload failed" }, { status: 500 })),
+            http.post("/api/tools/fetch", async () => {
+                // Fail the fetch only once the library copy running beside it has succeeded.
+                await vi.waitFor(() => {
+                    expect(useUploadState().activeItems.value[1]?.status).toBe("processing");
+                });
+                return HttpResponse.json({ err_msg: "upload failed" }, { status: 500 });
+            }),
+            http.post("/api/histories/hist_1/contents/datasets", () =>
+                HttpResponse.json({ id: "hda_2", name: "copied library", hid: 2 }),
+            ),
         );
 
         const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/broken.txt" });
@@ -165,16 +174,15 @@ describe("useUploadSubmission", () => {
         await flushPromises();
 
         await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
+        await vi.waitFor(() => {
+            expect(wrapper.find(SELECTORS.ERROR).text()).toContain("upload failed");
+        });
 
-        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("upload failed");
-
-        const state = useUploadState();
-        expect(state.activeItems.value).toHaveLength(2);
-        for (const item of state.activeItems.value) {
-            expect(item.status).toBe("error");
-            expect(item.error).toBe("upload failed");
-        }
+        const [apiUpload, libraryUpload] = useUploadState().activeItems.value;
+        expect(apiUpload?.status).toBe("error");
+        expect(apiUpload?.error).toBe("upload failed");
+        expect(libraryUpload?.status).toBe("processing");
+        expect(libraryUpload?.datasetIds).toEqual(["hda_2"]);
     });
 
     it("marks the failed and remaining library copies as errored when a copy request fails", async () => {
