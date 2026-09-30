@@ -11365,6 +11365,19 @@ class MetadataFile(Base, StorableObject, Serializable):
                 alt_name=os.path.basename(self.get_file_name()),
             )
 
+    def object_store_path_kwargs(self) -> dict[str, Any]:
+        """Locate this file in its dataset's object store: pass these with `self` to the store."""
+        da = self.history_dataset or self.library_dataset
+        assert da is not None
+        assert da.dataset is not None
+        object_store = da.dataset.object_store
+        assert object_store is not None
+        store_by = object_store.get_store_by(da.dataset)
+        if store_by == "id" and self.id is None:
+            self.flush()  # type: ignore[unreachable]
+        identifier = getattr(self, store_by)
+        return dict(extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=f"metadata_{identifier}.dat")
+
     def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
@@ -11375,21 +11388,10 @@ class MetadataFile(Base, StorableObject, Serializable):
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             assert object_store is not None
-            store_by = object_store.get_store_by(da.dataset)
-            if store_by == "id" and self.id is None:
-                self.flush()  # type: ignore[unreachable]
-            identifier = getattr(self, store_by)
-            alt_name = f"metadata_{identifier}.dat"
-            if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
-                object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
-            path = object_store.get_filename(
-                self,
-                extra_dir="_metadata_files",
-                extra_dir_at_root=True,
-                alt_name=alt_name,
-                sync_cache=sync_cache,
-                auth=auth,
-            )
+            path_kwargs = self.object_store_path_kwargs()
+            if not object_store.exists(self, **path_kwargs):
+                object_store.create(self, **path_kwargs)
+            path = object_store.get_filename(self, sync_cache=sync_cache, auth=auth, **path_kwargs)
             return path
         except (AssertionError, AttributeError):
             assert (
