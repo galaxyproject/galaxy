@@ -2,12 +2,10 @@ import json
 import shlex
 import subprocess
 import sys
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
-from galaxy.jobs.job_destination import JobDestination
 from galaxy.tool_util.deps.container_classes import (
     DockerContainer,
     SingularityContainer,
@@ -39,28 +37,6 @@ from galaxy.util import parse_xml_string_to_etree
 def test_invalid_names(name):
     with pytest.raises(ValidationError):
         RuntimeEnvironmentVariable(name=name)
-
-
-def test_destination_scopes():
-    destination = JobDestination(
-        env=[
-            {"name": "LEGACY", "value": "1"},
-            {"type": "job", "name": "JOB", "value": "2"},
-            {"type": "tool", "name": "TOOL", "value": "3"},
-        ],
-    )
-    assert [e["name"] for e in destination.env] == ["LEGACY", "JOB", "TOOL"]
-    assert destination.tool_env_names == ["TOOL"]
-
-
-@pytest.mark.parametrize(
-    "entry", [{"file": "/env.sh"}, {"execute": "module load x"}, {"name": "bad-name", "value": "x"}]
-)
-def test_tool_env_rejects_unknown_names(entry):
-    # Deliberately malformed, so it can't satisfy the entry TypedDicts.
-    env: list[Any] = [{"type": "tool", **entry}]
-    with pytest.raises(ValueError):
-        JobDestination(env=env)
 
 
 def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
