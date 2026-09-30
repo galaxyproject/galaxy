@@ -205,6 +205,14 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
 
+    @skip_without_tool("bibtex")
+    def test_no_panel_index_returns_raw_tool_help(self):
+        index = self._get("tools", data=dict(in_panel=False, tool_help=True))
+        self._assert_status_code_is_ok(index)
+        tool = next(t for t in index.json() if t["id"] == "bibtex")
+        assert tool["help_format"] == "restructuredtext"
+        assert "**WARNING:**" in tool["help"]
+
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
         requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)
