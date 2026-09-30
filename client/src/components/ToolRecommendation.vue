@@ -64,7 +64,7 @@ async function loadRecommendations() {
         const predData = responsePred.predicted_data;
         deprecated.value = predData.is_deprecated;
         deprecatedMessage.value = predData.message;
-        if (predData.children.length > 0) {
+        if (!deprecated.value && predData.children.length > 0) {
             const compatibleTools = getCompatibleRecommendations(
                 predData.children,
                 predData.o_extensions,
@@ -239,11 +239,15 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-labelledby="tool-recommendation-heading">
-        <GAlert v-if="errorMessage" variant="warning" show>
-            Tool recommendations could not be loaded: {{ errorMessage }}
-        </GAlert>
-        <div v-else-if="!deprecated && showMessage">
+    <GAlert v-if="errorMessage" variant="warning" show>
+        Tool recommendations could not be loaded: {{ errorMessage }}
+    </GAlert>
+    <div v-else aria-labelledby="tool-recommendation-heading">
+        <div v-if="deprecated" class="warningmessagelarge">
+            <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
+            You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
+        </div>
+        <template v-else-if="showMessage">
             <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
             <div>
                 You have used {{ getShortToolId(props.toolId) }} tool. For further analysis, you could try using the
@@ -252,11 +256,7 @@ onMounted(() => {
                 than the ones at the bottom. Please click on one of the following/recommended tools to open its
                 definition.
             </div>
-        </div>
-        <div v-else-if="deprecated" class="warningmessagelarge">
-            <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
-            You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
-        </div>
-        <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
+            <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
+        </template>
     </div>
 </template>
