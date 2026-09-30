@@ -62,7 +62,7 @@ def _visible_links(content: str) -> set[str]:
                 label = ""
             elif child.type == "link_close":
                 if destination and label.strip():
-                    links.update(_urls(destination))
+                    links.update(_urls(str(destination)))
                 destination = None
             elif destination and child.type in {"text", "code_inline"}:
                 label += child.content

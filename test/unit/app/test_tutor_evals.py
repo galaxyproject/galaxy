@@ -4,6 +4,11 @@ import asyncio
 import json
 from dataclasses import dataclass
 from types import SimpleNamespace
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -54,13 +59,18 @@ from pydantic_evals.reporting import EvaluationReport
 
 from galaxy.agents.base import GalaxyAgentDependencies
 
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
+
 
 def tutor_deps(model_function):
+    # _fixture_deps swaps in its own trans, user, config and get_agent; these only need the right shape.
+    config = SimpleNamespace(ai_api_key=None, ai_model=None, ai_api_base_url=None, inference_services={})
     return GalaxyAgentDependencies(
-        trans=None,
-        user=None,
-        config=SimpleNamespace(ai_api_key=None, ai_model=None, ai_api_base_url=None, inference_services={}),
-        get_agent=None,
+        trans=MagicMock(),
+        user=MagicMock(),
+        config=cast("GalaxyAppConfiguration", config),
+        get_agent=MagicMock(),
         model_factory=lambda: FunctionModel(model_function),
     )
 

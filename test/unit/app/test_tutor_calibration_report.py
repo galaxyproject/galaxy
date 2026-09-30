@@ -6,6 +6,7 @@ from test.evals.calibration_report import (
 from pydantic_evals.evaluators import (
     EvaluationResult,
     EvaluatorFailure,
+    EvaluatorSpec,
 )
 from pydantic_evals.reporting import (
     EvaluationReport,
@@ -13,9 +14,11 @@ from pydantic_evals.reporting import (
     ReportCaseFailure,
 )
 
+SYNTHETIC_SOURCE = EvaluatorSpec(name="synthetic", arguments=None)
+
 
 def result(name, value):
-    return EvaluationResult(name=name, value=value, reason="synthetic", source=None)
+    return EvaluationResult(name=name, value=value, reason="synthetic", source=SYNTHETIC_SOURCE)
 
 
 def case(
@@ -257,7 +260,7 @@ def test_missing_judgment_and_execution_failures_are_incomplete():
         labels={"AnswerVerdict": result("AnswerVerdict", "pass")},
     )
     case_evaluator_failure.evaluator_failures.append(
-        EvaluatorFailure(name="judge", error_message="judge error", error_stacktrace="trace", source=None)
+        EvaluatorFailure(name="judge", error_message="judge error", error_stacktrace="trace", source=SYNTHETIC_SOURCE)
     )
     summary = summarize_calibration(report(missing, case_evaluator_failure, failures=[failure]))
     assert summary["totals"]["known_good"]["incomplete"] == 2
@@ -346,7 +349,7 @@ def test_report_evaluator_failures_are_reported_and_zero_rates_are_na():
         name="summary",
         error_message="report evaluator error",
         error_stacktrace="trace",
-        source=None,
+        source=SYNTHETIC_SOURCE,
     )
     result = report(only_unresolved)
     result.report_evaluator_failures.append(evaluator_failure)

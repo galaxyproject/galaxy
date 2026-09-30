@@ -39,6 +39,8 @@ import yaml
 from pydantic_evals.reporting import (
     EvaluationReport,
     EvaluationReportAdapter,
+    ReportCase,
+    ReportCaseFailure,
 )
 
 from galaxy.agents.base import GalaxyAgentDependencies
@@ -328,6 +330,10 @@ def _outcome_label(bucket: dict[str, Any]) -> str:
     return " ".join(parts)
 
 
+def _required_assertions(case: ReportCase | ReportCaseFailure) -> list[str]:
+    return (case.metadata or {}).get("required_assertions", [])
+
+
 def _render_dataset_section(results: list[DatasetResult]) -> str:
     """Render one markdown section per (dataset, models...) tuple."""
     if not results:
@@ -354,12 +360,8 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
     lines.append("| " + " | ".join(overall) + " |")
 
     assertion_names = sorted(
-        {
-            name
-            for r in results
-            for c in [*r.report.cases, *r.report.failures]
-            for name in [*(c.metadata or {}).get("required_assertions", []), *getattr(c, "assertions", {})]
-        }
+        {name for r in results for c in r.report.cases for name in [*_required_assertions(c), *c.assertions]}
+        | {name for r in results for f in r.report.failures for name in _required_assertions(f)}
     )
     for name in assertion_names:
         row = [name]

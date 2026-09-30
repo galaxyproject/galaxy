@@ -154,7 +154,8 @@ def _record_machine_metrics(report: EvaluationReport[Any, Any, Any]) -> dict[str
 def summarize_calibration(report: EvaluationReport[Any, Any, Any]) -> dict[str, Any]:
     """Summarize reference classes, judge verdicts, and dimension outcomes."""
     totals = {name: _class_totals() for name in _KNOWN_CLASSES}
-    unresolved_reference = {"total": 0, "verdicts": dict.fromkeys(_VERDICTS, 0)}
+    unresolved_verdicts = dict.fromkeys(_VERDICTS, 0)
+    unresolved_reference: dict[str, Any] = {"total": 0, "verdicts": unresolved_verdicts}
     dimensions: dict[str, dict[str, dict[str, int]]] = {}
     critical = {"applicable": 0, "detected": 0, "missed": 0, "unresolved": 0, "incomplete": 0}
     semantic_counts = dict.fromkeys(_VERDICTS, 0)
@@ -168,7 +169,7 @@ def summarize_calibration(report: EvaluationReport[Any, Any, Any]) -> dict[str, 
 
         if expected == "unresolved":
             unresolved_reference["total"] += 1
-            unresolved_reference["verdicts"][verdict] += 1
+            unresolved_verdicts[verdict] += 1
         elif expected == "fail":
             target = totals["known_bad"]
             target["total"] += 1

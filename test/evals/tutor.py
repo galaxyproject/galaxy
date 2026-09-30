@@ -5,7 +5,11 @@ from collections.abc import Callable
 from dataclasses import replace
 from importlib.metadata import version
 from types import SimpleNamespace
-from typing import Any
+from typing import (
+    Any,
+    cast,
+    TYPE_CHECKING,
+)
 from unittest.mock import patch
 
 from pydantic_ai import capture_run_messages
@@ -14,8 +18,15 @@ from galaxy.agents.base import (
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
+from galaxy.agents.gtn import GTNSearchDB
+from galaxy.agents.operations import AgentOperationsManager
 from galaxy.agents.teaching_assistant import TeachingAssistantAgent
 from galaxy.managers.learning_state import LearningStateManager
+
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
+    from galaxy.model import User
+    from galaxy.work.context import SessionRequestContext
 
 QC_URL = "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html"
 JOB_ID = "eval-failed-job"
@@ -39,7 +50,7 @@ class _Tutorial:
 class _Search:
     def __init__(self, scenario: str):
         self.scenario = scenario
-        self.retrieved_materials = []
+        self.retrieved_materials: list[dict[str, Any]] = []
 
     def search(self, query: str, limit: int):
         results = [_Tutorial()] if self.scenario == "search_qc" else []
@@ -78,8 +89,10 @@ def _unavailable_agent(*args, **kwargs):
 class _FixtureTutor(TeachingAssistantAgent):
     def __init__(self, deps: GalaxyAgentDependencies, scenario: str):
         self.learning_state_manager = LearningStateManager()
-        self.ops = _Operations(scenario)
-        self.gtn_db = None if scenario in {"search_unavailable", "command_line"} else _Search(scenario)
+        # The fixtures are structural stand-ins for the operations manager and GTN search.
+        self.ops = cast(AgentOperationsManager, _Operations(scenario))
+        self.search = None if scenario in {"search_unavailable", "command_line"} else _Search(scenario)
+        self.gtn_db = cast(GTNSearchDB | None, self.search)
         # Keep the production prompt, registered tools, and process path without constructing live services.
         BaseGalaxyAgent.__init__(self, deps)
 
@@ -98,7 +111,13 @@ def _fixture_deps(deps: GalaxyAgentDependencies) -> GalaxyAgentDependencies:
         inference_services=deps.config.inference_services,
         tutor_allow_tool_execution=False,
     )
-    return replace(deps, trans=trans, user=user, config=config, get_agent=_unavailable_agent)
+    return replace(
+        deps,
+        trans=cast("SessionRequestContext", trans),
+        user=cast("User", user),
+        config=cast("GalaxyAppConfiguration", config),
+        get_agent=_unavailable_agent,
+    )
 
 
 def _tool_calls(messages: list) -> list[dict[str, Any]]:
@@ -139,8 +158,8 @@ async def run_tutor_case(
 
     async def recording_run(*args, **kwargs):
         attempt: dict[str, Any] = {"completed": False}
-        if tutor.gtn_db is not None:
-            tutor.gtn_db.retrieved_materials.clear()
+        if tutor.search is not None:
+            tutor.search.retrieved_materials.clear()
         with capture_run_messages() as messages:
             try:
                 result = await original_run(*args, **kwargs)
@@ -156,7 +175,7 @@ async def run_tutor_case(
                     part.content for message in messages for part in message.parts if part.part_kind == "text"
                 ]
                 attempt["retrieved_materials"] = (
-                    list(tutor.gtn_db.retrieved_materials) if tutor.gtn_db is not None else []
+                    list(tutor.search.retrieved_materials) if tutor.search is not None else []
                 )
                 attempts.append(attempt)
 

@@ -317,8 +317,8 @@ def assessment_checks(
     lookup = {block["id"]: block["text"] for block in blocks}
     reference_ids = {"reference:" + fact["id"] for fact in facts["facts"]}
     allowed = set(evidence) | reference_ids
-    reasons = {dimension: [] for dimension in DIMENSIONS}
-    uncertain = {dimension: [] for dimension in DIMENSIONS}
+    reasons: dict[str, list[str]] = {dimension: [] for dimension in DIMENSIONS}
+    uncertain: dict[str, list[str]] = {dimension: [] for dimension in DIMENSIONS}
     for block in assessment.blocks:
         if not block.claims and not block.nonfactual_reason.strip():
             claim_errors.append(f"Block {block.block_id} has neither claims nor a nonfactual explanation.")
@@ -328,7 +328,7 @@ def assessment_checks(
             if any(identifier not in allowed for identifier in claim.evidence_ids):
                 claim_errors.append(f"Unknown evidence ID for claim: {claim.quote}")
             if verification is None:
-                dimensions = set(claim.dimensions)
+                dimensions: set[str] = set(claim.dimensions)
                 if claim.verdict == "unsupported":
                     dimensions.add("Grounding")
                 for dimension in dimensions:
@@ -343,11 +343,11 @@ def assessment_checks(
     if verification is not None:
         verification_errors = _verification_errors(verification, blocks, candidates or [], evidence, facts)
         effective_verification = verification.model_dump()
-        for block in verification.blocks:
+        for proposition_block in verification.blocks:
             effective_block = next(
-                item for item in effective_verification["blocks"] if item["block_id"] == block.block_id
+                item for item in effective_verification["blocks"] if item["block_id"] == proposition_block.block_id
             )
-            for index, proposition in enumerate(block.propositions):
+            for index, proposition in enumerate(proposition_block.propositions):
                 dimensions = set(proposition.dimensions)
                 verdict = proposition.verdict
                 deterministic_reason = None
