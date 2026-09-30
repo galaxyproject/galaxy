@@ -6,6 +6,7 @@ import {
     autoPairWithCommonFilters,
     guessInitialFilterType,
     guessNameForPair,
+    isValidFilter,
     splitIntoPairedAndUnpaired,
 } from "./pairing";
 
@@ -118,6 +119,21 @@ describe("splitIntoPairedAndUnpaired", () => {
         // we cannot deduce forward from reverse
         const summary = splitIntoPairedAndUnpaired([B1, M1, F1, F2, B2, L1, L2, E1, E2], "", "", true);
         expect(summary.pairs).toHaveLength(0);
+    });
+
+    test("a filter that is not a valid regular expression matches nothing", () => {
+        const elements = [B1, M1, F1, F2, B2];
+        const summary = splitIntoPairedAndUnpaired(elements, "_1 (R1", "_2", true);
+        expect(summary.pairs).toHaveLength(0);
+        expect(summary.unpaired).toEqual(elements);
+    });
+});
+
+describe("isValidFilter", () => {
+    test("accepts regular expressions and rejects unterminated groups", () => {
+        expect(isValidFilter("_1")).toBe(true);
+        expect(isValidFilter("_1 (R1 paired)")).toBe(true);
+        expect(isValidFilter("_1 (R1")).toBe(false);
     });
 });
 
