@@ -24,20 +24,25 @@ export function useTutorMode() {
         scaffoldingLevel.value = typeof state.scaffolding_level === "number" ? state.scaffolding_level : null;
     }
 
+    // Bumped by every toggle, so a state fetch that started earlier can't overwrite it.
+    let toggles = 0;
+
     async function fetchTutorState() {
-        loading.value = true;
-        try {
-            const { data, error } = await GalaxyApi().GET("/api/chat/tutor/state");
-            if (error) {
-                rethrowSimple(error);
-            }
+        const startedAt = toggles;
+        const { data, error } = await GalaxyApi().GET("/api/chat/tutor/state");
+        if (error) {
+            rethrowSimple(error);
+        }
+        if (startedAt === toggles) {
             applyState(data as Record<string, unknown>);
-        } finally {
-            loading.value = false;
         }
     }
 
     async function setTutorMode(enabled: boolean) {
+        toggles += 1;
+        const previous = tutorModeEnabled.value;
+        // The switch moves as soon as it is clicked; setting the ref here lets a failure move it back.
+        tutorModeEnabled.value = enabled;
         loading.value = true;
         try {
             const { data, error } = await GalaxyApi().POST("/api/chat/tutor/mode", { body: { enabled } });
@@ -47,6 +52,9 @@ export function useTutorMode() {
             const result = data as { enabled?: boolean; state?: Record<string, unknown> };
             tutorModeEnabled.value = Boolean(result?.enabled);
             applyState(result?.state);
+        } catch (e) {
+            tutorModeEnabled.value = previous;
+            throw e;
         } finally {
             loading.value = false;
         }

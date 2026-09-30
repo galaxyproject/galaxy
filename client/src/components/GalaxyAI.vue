@@ -114,7 +114,15 @@ const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
-const { tutorModeEnabled, scaffoldingLevel, fetchTutorState, setTutorMode } = useTutorMode();
+const { tutorModeEnabled, scaffoldingLevel, loading: tutorModeSaving, fetchTutorState, setTutorMode } = useTutorMode();
+
+async function onTutorModeChange(enabled: boolean) {
+    try {
+        await setTutorMode(enabled);
+    } catch (e) {
+        Toast.error(`Could not change Learning mode: ${errorMessageAsString(e)}`);
+    }
+}
 const { config } = useConfig(true);
 const learningModeAvailable = computed(() => Boolean(config.value?.enable_learning_mode));
 // Config may arrive after mount; the saved preference only matters once the server offers the feature.
@@ -688,7 +696,13 @@ watch(currentChatId, async (newId) => {
                 v-if="learningModeAvailable"
                 data-description="learning mode toggle"
                 :data-tutor-mode="tutorModeEnabled ? 'on' : 'off'">
-                <BFormCheckbox :checked="tutorModeEnabled" switch size="sm" class="tutor-toggle" @change="setTutorMode">
+                <BFormCheckbox
+                    :checked="tutorModeEnabled"
+                    :disabled="tutorModeSaving"
+                    switch
+                    size="sm"
+                    class="tutor-toggle"
+                    @change="onTutorModeChange">
                     <FontAwesomeIcon :icon="faLightbulb" fixed-width />
                     Learning mode
                     <span
