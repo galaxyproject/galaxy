@@ -29,6 +29,9 @@ const baseRules = {
     "vue/no-ref-as-operand": "error",
     "vue/no-v-for-template-key-on-child": "error",
     "vue/require-explicit-emits": "warn",
+    // Bootstrap-vue isn't registered globally, so its components have to be
+    // imported where they're used. Only checks bootstrap-vue names.
+    "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
 
     // Downgrade the severity of some rules to warnings as a transition measure.
     // For example, vue/multi-word-component names is considered an error,
