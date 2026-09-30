@@ -85,9 +85,11 @@ class TutorAnalyticsManager:
         for state in states:
             if state.get("tutor_mode_enabled"):
                 tutor_enabled_users += 1
-            total_interactions += state.get("interaction_count", 0)
-            total_demonstrations += state.get("demonstrations_count", 0)
-            level = state.get("scaffolding_level", DEFAULT_LEARNING_STATE["scaffolding_level"])
+            total_interactions += _count(state.get("interaction_count"))
+            total_demonstrations += _count(state.get("demonstrations_count"))
+            level = state.get("scaffolding_level")
+            if not isinstance(level, int):
+                level = DEFAULT_LEARNING_STATE["scaffolding_level"]
             scaffolding_distribution[level] = scaffolding_distribution.get(level, 0) + 1
 
         return {
@@ -148,7 +150,14 @@ class TutorAnalyticsManager:
         states: list[dict[str, Any]] = []
         for pref in prefs:
             try:
-                states.append(json.loads(pref.value))
+                state = json.loads(pref.value)
             except (json.JSONDecodeError, TypeError):
                 continue
+            if isinstance(state, dict):
+                states.append(state)
         return states
+
+
+def _count(value: Any) -> int:
+    # Preferences are free-form JSON, so a hand-edited or corrupted counter shouldn't break the totals.
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0

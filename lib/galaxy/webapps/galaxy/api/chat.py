@@ -584,6 +584,7 @@ class ChatAPI:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> dict[str, Any]:
         """Aggregate tutor usage analytics across all users (admin only)."""
+        self._ensure_learning_mode_enabled()
         manager = TutorAnalyticsManager()
         return manager.get_analytics(trans)
 
