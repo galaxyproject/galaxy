@@ -204,12 +204,15 @@ Galaxy registers the following agent types:
 | `page_assistant`      | Assists with Galaxy page editing                                 |
 | `teaching_assistant`  | Socratic "learning mode" that guides users instead of answering  |
 
-All registered agents are enabled when the AI system is active.
+All registered agents are enabled when the AI system is active, except `teaching_assistant`, which also needs `enable_learning_mode`.
 
 ### Tutor (learning) mode
 
 The `teaching_assistant` agent powers an opt-in "learning mode" in the Galaxy AI
-panel. With it off (the default), the panel answers questions directly. With it on,
+panel. It is off for the whole server unless an admin sets `enable_learning_mode: true`;
+until then the agent is not registered, the Learning mode switch is hidden, and the
+`/api/chat/tutor/*` state endpoints refuse requests. Once it is enabled, each user
+chooses for themselves. With their switch off (the default), the panel answers questions directly. With it on,
 the agent uses Socratic questioning and scaffolded hints, grounds its answers in GTN
 training material, and stores scaffolding preferences and interaction/demonstration
 counts as user preferences. It does not infer expertise or track tutorial completion.
@@ -232,6 +235,8 @@ dependence or mastery.
 
 ```yaml
 galaxy:
+    # Offer Learning Mode to users (off by default).
+    enable_learning_mode: true
     # Allow the tutor to run tools on the user's data when demonstrating a concept.
     tutor_allow_tool_execution: false
 ```

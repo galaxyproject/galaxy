@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
 import { useToast } from "@/composables/toast";
@@ -114,6 +115,19 @@ const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
 const { tutorModeEnabled, scaffoldingLevel, fetchTutorState, setTutorMode } = useTutorMode();
+const { config } = useConfig(true);
+const learningModeAvailable = computed(() => Boolean(config.value?.enable_learning_mode));
+// Config may arrive after mount; the saved preference only matters once the server offers the feature.
+// Non-critical (and unavailable to anonymous users), so failures fall back to the default off state.
+watch(
+    learningModeAvailable,
+    (available) => {
+        if (available) {
+            fetchTutorState().catch(() => {});
+        }
+    },
+    { immediate: true },
+);
 // The server applies the saved learning preference after checking notebook context.
 const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
@@ -141,9 +155,6 @@ const {
 } = usePageProposals(activeContext);
 
 onMounted(async () => {
-    // Load persisted learning state so the toggle reflects the user's saved preference.
-    // Non-critical (and unavailable to anonymous users), so failures fall back to the default off state.
-    fetchTutorState().catch(() => {});
     if (props.exchangeId && props.exchangeId !== "new") {
         await fetchConversation(props.exchangeId);
     } else if (props.exchangeId === "new") {
@@ -673,7 +684,10 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
-            <div data-description="learning mode toggle" :data-tutor-mode="tutorModeEnabled ? 'on' : 'off'">
+            <div
+                v-if="learningModeAvailable"
+                data-description="learning mode toggle"
+                :data-tutor-mode="tutorModeEnabled ? 'on' : 'off'">
                 <BFormCheckbox :checked="tutorModeEnabled" switch size="sm" class="tutor-toggle" @change="setTutorMode">
                     <FontAwesomeIcon :icon="faLightbulb" fixed-width />
                     Learning mode

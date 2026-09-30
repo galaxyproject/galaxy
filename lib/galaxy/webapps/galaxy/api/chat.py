@@ -21,6 +21,7 @@ from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     ConfigurationError,
     MessageException,
     ObjectNotFound,
@@ -531,6 +532,7 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, Any]:
         """Get the user's current learning state for the cognitive tutor."""
+        self._ensure_learning_mode_enabled()
         manager = LearningStateManager()
         return manager.get_learning_state(trans)
 
@@ -548,6 +550,7 @@ class ChatAPI:
         demonstrations_count, ...) are intentionally rejected here so a user cannot inject
         prompt content or forge their own progress.
         """
+        self._ensure_learning_mode_enabled()
         updates: dict[str, Any] = {}
         if "tutor_mode_enabled" in payload:
             updates["tutor_mode_enabled"] = bool(payload["tutor_mode_enabled"])
@@ -567,6 +570,7 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, Any]:
         """Toggle tutor mode on or off."""
+        self._ensure_learning_mode_enabled()
         manager = LearningStateManager()
         if payload.enabled:
             state = manager.enable_tutor_mode(trans)
@@ -582,6 +586,10 @@ class ChatAPI:
         """Aggregate tutor usage analytics across all users (admin only)."""
         manager = TutorAnalyticsManager()
         return manager.get_analytics(trans)
+
+    def _ensure_learning_mode_enabled(self):
+        if not self.config.enable_learning_mode:
+            raise ConfigDoesNotAllowException("Learning Mode is not enabled on this Galaxy server.")
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

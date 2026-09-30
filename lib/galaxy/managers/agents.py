@@ -132,7 +132,7 @@ class AgentService:
         A failed lookup falls through to normal routing rather than breaking the
         query -- this is a preference, not a precondition.
         """
-        if trans.user is None:
+        if trans.user is None or not getattr(self.config, "enable_learning_mode", False):
             return False
         try:
             state = LearningStateManager().get_learning_state(trans)

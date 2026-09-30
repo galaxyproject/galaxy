@@ -4527,6 +4527,17 @@ mapping:
           on-demand fetching with the same hour TTL, and the curated workflows
           tab will refresh its projection lazily on first use. Requires celery.
 
+      enable_learning_mode:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable Learning Mode, the opt-in teaching assistant in the Galaxy AI
+          panel. When enabled, users see a Learning mode switch and, with it on,
+          their Galaxy AI questions go to a tutor that guides them with questions,
+          hints and GTN training material instead of answering outright. Requires
+          the AI agents to be configured. Off by default.
+
       tutor_allow_tool_execution:
         type: bool
         default: false

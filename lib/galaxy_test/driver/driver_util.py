@@ -335,6 +335,7 @@ backends:
     )
     if os.path.exists(static_agents_path):
         config["inference_services"] = {"static_responses": static_agents_path}
+        config["enable_learning_mode"] = True
 
     return config
 
