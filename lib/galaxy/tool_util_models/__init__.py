@@ -59,6 +59,7 @@ from .tool_source import (
     ContainerRequirement,
     HelpContent,
     JavascriptRequirement,
+    MarkdownHelpContent,
     OutputCompareType,
     PackageRequirement,
     ResourceRequirement,
@@ -420,6 +421,14 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # Pydantic intentionally narrows the mutable base-model list so the
     # user-tool schema exposes only dataset and collection outputs.
     outputs: UserToolOutputs  # type: ignore[assignment]
+    # User-defined tool help is author text, so it is limited to Markdown, which
+    # the client renders without raw HTML.
+    help: Annotated[
+        Optional[MarkdownHelpContent],
+        Field(
+            description="Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`."
+        ),
+    ] = None
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the

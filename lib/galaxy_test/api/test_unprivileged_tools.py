@@ -1,6 +1,4 @@
 # Test tools API.
-import os
-import tempfile
 from uuid import uuid4
 
 from galaxy.tool_util_models import UserToolSource
@@ -11,8 +9,6 @@ from galaxy_test.base.populators import (
 )
 from ._framework import ApiTestCase
 from .test_tools import TestsTools
-
-RST_FILE_MARKER = "rst-file-insertion-marker"
 
 
 class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
@@ -74,22 +70,18 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
         assert response
 
-    def test_build_rst_help_cannot_insert_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            marker_path = os.path.join(tmpdir, "marker.txt")
-            with open(marker_path, "w") as f:
-                f.write(RST_FILE_MARKER)
-            help_content = f".. include:: {marker_path}\n\n**visible**\n"
-            representation = UserToolSource(
-                **{**TOOL_WITH_SHELL_COMMAND, "help": {"format": "restructuredtext", "content": help_content}}
+    def test_build_rejects_rst_help(self):
+        representation = {**TOOL_WITH_SHELL_COMMAND, "help": {"format": "restructuredtext", "content": "**help**"}}
+        payload = {"src": "representation", "representation": representation}
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            response = self.dataset_populator._post(
+                f"unprivileged_tools/build?history_id={history_id}", data=payload, json=True
             )
-            with (
-                self.dataset_populator.test_history() as history_id,
-                self.dataset_populator.user_tool_execute_permissions(),
-            ):
-                response = self.dataset_populator.build_unprivileged_tool(representation, history_id=history_id)
-        assert "<strong>visible</strong>" in response["help"]
-        assert RST_FILE_MARKER not in response["help"]
+        assert response.status_code == 400, response.text
+        assert "markdown" in response.text
 
     def test_build_runtime_model(self):
         with self.dataset_populator.user_tool_execute_permissions():

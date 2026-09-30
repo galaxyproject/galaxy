@@ -244,6 +244,26 @@ cases:
       citations: null
     valid: true
 
+  - name: markdown_help_accepted
+    doc:
+      help: {format: markdown, content: "**bold**"}
+    valid: true
+
+  - name: restructuredtext_help_rejected
+    doc:
+      help: {format: restructuredtext, content: "**bold**"}
+    expected_errors:
+      - loc: help.format
+        code: literal_error
+        msg_contains: markdown
+
+  - name: plain_text_help_rejected
+    doc:
+      help: {format: plain_text, content: bold}
+    expected_errors:
+      - loc: help.format
+        code: literal_error
+
   - name: format_validation_errors_distillation
     # Exact distilled bullet text used by ``format_validation_errors`` so
     # downstream UIs (the agent's bullet list, API 4xx bodies) have a

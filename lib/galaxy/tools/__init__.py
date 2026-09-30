@@ -1461,7 +1461,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.raw_help = None
 
         if self.app.is_webapp:
-            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
+            self.raw_help = self._parse_help(tool_source)
             self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
@@ -2061,6 +2061,9 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         If multiple bio.tools references are found, return just the first one.
         """
         return biotools_reference(self.xrefs)
+
+    def _parse_help(self, tool_source: ToolSource) -> Optional[HelpContent]:
+        return self.__get_help_with_images(tool_source.parse_help())
 
     def __get_help_with_images(self, help_content: Optional[HelpContent]) -> Optional[HelpContent]:
         if help_content and help_content.format == "restructuredtext":
@@ -3432,6 +3435,14 @@ class UserDefinedTool(Tool):
     # Help is author text, including help sent to the unstored build endpoint;
     # caching it would let authors fill the cache and evict toolbox help.
     cache_help_html = False
+
+    def _parse_help(self, tool_source: ToolSource) -> Optional[HelpContent]:
+        # Help is author text and is only ever rendered as Markdown, including
+        # stored tools whose help declares another format.
+        help_content = tool_source.parse_help()
+        if help_content and help_content.format != "markdown":
+            help_content = HelpContent(format="markdown", content=help_content.content)
+        return help_content
 
 
 class ExpressionTool(Tool):

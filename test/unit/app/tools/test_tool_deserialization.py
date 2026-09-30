@@ -10,6 +10,7 @@ from galaxy.tool_util.provided_metadata import (
     NullToolProvidedMetadata,
     ToolProvidedMetadata,
 )
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import create_tool_from_source
 from galaxy.util.rst_to_html import _cached_publish
 
@@ -363,11 +364,9 @@ def test_user_defined_tool_cannot_enable_tool_provided_metadata(tool_app, tmp_pa
     assert isinstance(metadata, NullToolProvidedMetadata)
 
 
-def test_user_defined_tool_help_html_is_not_cached(tool_app):
+def test_user_defined_tool_rst_help_is_markdown(tool_app):
     tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=USER_DEFINED_TOOL_WITH_RST_HELP)
-    before = _cached_publish.cache_info().currsize
-    assert "<strong>user tool help</strong>" in tool.help_html
-    assert _cached_publish.cache_info().currsize == before
+    assert tool.raw_help == HelpContent(format="markdown", content="**user tool help**")
 
 
 def test_xml_tool_help_html_is_cached(tool_app):

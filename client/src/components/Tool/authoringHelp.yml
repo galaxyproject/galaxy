@@ -232,7 +232,7 @@ sections:
 
       | Field | Details | Required |
       | --- | --- | --- |
-      | `format` | One of `markdown`, `restructuredtext`, or `plain_text`. | Yes |
+      | `format` | Must be `markdown`. | Yes |
       | `content` | Help shown to the user. | Yes |
 
       ```yaml

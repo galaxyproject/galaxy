@@ -259,6 +259,10 @@ class HelpContent(ToolSourceBaseModel):
     content: str
 
 
+class MarkdownHelpContent(HelpContent):
+    format: Literal["markdown"]
+
+
 StdioExitCodeRangeValue = Union[int, float, Literal["-inf", "inf"]]
 
 
