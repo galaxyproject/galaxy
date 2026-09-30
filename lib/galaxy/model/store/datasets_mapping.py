@@ -9,11 +9,11 @@ serialized dictionaries and are supplied by the caller.
 
 import csv
 import os
+from collections.abc import Iterable
 from typing import (
     Any,
     NamedTuple,
 )
-from collections.abc import Iterable
 
 from galaxy import model
 from galaxy.util.path import StrPath

@@ -21,7 +21,6 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.util.path import StrPath
-
 from .datasets_mapping import DATASETS_MAPPING_FILENAME
 
 logger = logging.getLogger(__name__)
