@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -121,15 +122,17 @@ describe("ContentItem", () => {
         expect(selector.attributes("data-icon")).toBe("square");
         selector.trigger("click");
 
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.emitted()["update:selected"][0][0]).toBe(true);
 
         await wrapper.setProps({ selected: true });
-        selector.trigger("click");
+        // The icon re-renders as a new <svg>, so look it up again.
+        const checkedSelector = wrapper.find(".selector > svg");
+        expect(checkedSelector.attributes("data-icon")).toBe("check-square");
+        checkedSelector.trigger("click");
 
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
-        expect(selector.attributes("data-icon")).toBe("check-square");
     });
 });

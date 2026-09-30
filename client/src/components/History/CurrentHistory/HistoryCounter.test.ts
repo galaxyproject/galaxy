@@ -70,6 +70,14 @@ function setEnableSse(enabled: boolean): void {
     useUserStore().currentUser = { id: "user-1", email: "u@example.com" } as RegisteredUser;
 }
 
+// `getLocalVue()` bakes its own pinia into `localVue.plugins` at module-load
+// time, which is a different instance than the one `beforeEach` below makes
+// active. Mounting with just `localVue` would install that stale pinia, so
+// the component would never see store state set up via `setEnableSse()` /
+// `useUserStore()` in the tests. Pass the per-test pinia explicitly -- the
+// adapter lets an explicit `pinia` option win over `localVue`'s default.
+let pinia: ReturnType<typeof createPinia>;
+
 function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}, deep = false) {
     const options = {
         propsData: {
@@ -78,6 +86,7 @@ function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }>
             isWatching: props.isWatching ?? true,
         },
         localVue,
+        pinia,
     };
     // Stub for prop assertions; real mount so clicks reach GButton's handler.
     return deep
@@ -91,7 +100,8 @@ function refreshButton(wrapper: ReturnType<typeof shallowMount>) {
 
 describe("HistoryCounter — refresh button", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        pinia = createPinia();
+        setActivePinia(pinia);
         sseState.connect.mockClear();
         sseState.disconnect.mockClear();
         // sseMockFactory lazily creates these refs on first call; reset to a

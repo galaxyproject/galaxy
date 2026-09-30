@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import TargetHistorySelector from "./TargetHistorySelector.vue";
 
@@ -52,6 +53,11 @@ async function mountWithHistory(history: HistorySummary) {
             return response(200).json(history);
         }),
     );
+
+    // The warning message is read from the store without triggering a fetch
+    // (TargetHistoryLink, which would normally load it, is stubbed below), so
+    // seed the store directly with the history under test.
+    useHistoryStore().setHistories([history]);
 
     const wrapper = mount(TargetHistorySelector as object, {
         propsData: {

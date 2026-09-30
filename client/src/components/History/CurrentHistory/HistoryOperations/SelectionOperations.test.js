@@ -77,7 +77,9 @@ describe("History Selection Operations", () => {
         describe("Dropdown Menu", () => {
             it("should not render if there is nothing selected", async () => {
                 await wrapper.setProps({ selectionSize: 0 });
-                expect(wrapper.html()).toBe("");
+                // root is `<section v-if="...">`; when false, VTU2 renders it as
+                // a comment node rather than empty markup.
+                expect(wrapper.find("section").exists()).toBe(false);
             });
 
             it("should display the total number of items to apply the operation", async () => {

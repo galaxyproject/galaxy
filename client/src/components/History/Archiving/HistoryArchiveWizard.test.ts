@@ -41,9 +41,11 @@ async function mountComponentWithHistory(history?: HistorySummary) {
     setActivePinia(pinia);
     const historyStore = useHistoryStore(pinia);
 
-    // the mocking method described in the pinia docs does not work in vue2
-    // this is a work-around
-    vi.spyOn(historyStore, "getHistoryById").mockImplementation((_history_id: string) => history as HistorySummary);
+    // getHistoryById is a computed getter, not a plain method, so it can't be
+    // spied on directly -- seed the store's cache instead, which is all it reads.
+    if (history) {
+        historyStore.setHistories([history]);
+    }
 
     const wrapper = shallowMount(HistoryArchiveWizard as object, {
         props: { historyId: TEST_HISTORY_ID },
@@ -67,7 +69,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(false);
+        expect(optionTabs.length).toBe(0);
     });
 
     it("should render both archival modes when writeable file sources and celery tasks are available", async () => {
@@ -95,7 +97,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(true);
+        expect(optionTabs.length).toBeGreaterThan(0);
 
         const keepStorageOption = wrapper.find("#keep-storage-tab");
         expect(keepStorageOption.exists()).toBe(true);
@@ -108,7 +110,7 @@ describe("HistoryArchiveWizard.vue", () => {
         const wrapper = await mountComponentWithHistory(ARCHIVED_TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.exists()).toBe(false);
+        expect(optionTabs.length).toBe(0);
 
         const successMessage = wrapper.find("#history-archived-alert");
         expect(successMessage.exists()).toBe(true);
