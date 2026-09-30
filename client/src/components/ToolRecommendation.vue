@@ -6,7 +6,6 @@ import { getDatatypesMapper } from "@/components/Datatypes";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
 import { getCompatibleRecommendations, type PredictedToolChild } from "@/components/Workflow/Editor/modules/utilities";
 import { useToolRouting } from "@/composables/route";
-import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
 
 /** Vertical space to give each leaf row, so the tree stays readable regardless of the
@@ -44,7 +43,7 @@ const { routeToTool } = useToolRouting();
 
 const deprecated = ref(false);
 const deprecatedMessage = ref("");
-const errorMessage = ref<string | null>(null);
+const hasError = ref<boolean>(false);
 const showMessage = ref(false);
 const toolRecommendation = ref<HTMLDivElement | null>(null);
 
@@ -77,9 +76,10 @@ async function loadRecommendations() {
             }
         }
 
-        errorMessage.value = null;
+        hasError.value = false;
     } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
+        hasError.value = true;
+        console.error(error);
     }
 }
 
@@ -234,7 +234,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!errorMessage" aria-labelledby="tool-recommendation-heading">
+    <div v-if="!hasError" aria-labelledby="tool-recommendation-heading">
         <div v-if="deprecated" class="warningmessagelarge">
             <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
             You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
