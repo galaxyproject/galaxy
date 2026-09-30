@@ -107,12 +107,10 @@ describe("HistoryDatasetDisplay", () => {
     });
 
     it("should render header with embedded true", async () => {
-        // BCardHeader is globally stubbed, so it renders as `b-card-header-stub`
-        // rather than gaining the real component's own `.card-header` class.
         await mountTarget(textDatasetId, textMetaData, text);
-        expect(wrapper.find("b-card-header-stub").exists()).toBe(true);
+        expect(wrapper.find(".card-header").exists()).toBe(true);
         await wrapper.setProps({ embedded: true });
-        expect(wrapper.find("b-card-header-stub").exists()).toBe(false);
+        expect(wrapper.find(".card-header").exists()).toBe(false);
     });
 
     it("should expand dataset", async () => {

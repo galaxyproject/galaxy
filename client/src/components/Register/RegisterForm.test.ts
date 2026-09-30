@@ -50,9 +50,7 @@ describe("RegisterForm", () => {
     });
 
     it("basics", async () => {
-        // BCardHeader is globally stubbed, so it renders as `b-card-header-stub`
-        // rather than gaining the real component's own `.card-header` class.
-        const cardHeader = wrapper.find("b-card-header-stub");
+        const cardHeader = wrapper.find(".card-header");
         // Type assertion needed: custom matcher types not recognized with explicit vitest imports
         (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
 

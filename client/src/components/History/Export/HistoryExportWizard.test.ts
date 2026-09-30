@@ -243,10 +243,8 @@ describe("HistoryExportWizard.vue", () => {
 
             const zenodoCard = wrapper.find('[data-history-export-destination="zenodo-repository"]');
             if (zenodoCard.exists()) {
-                // Should show user-defined Zenodo label. BCard is globally
-                // stubbed, and `header` is a prop (not a slot), so it's only
-                // reflected as an attribute on the stub, not in its text.
-                expect(zenodoCard.attributes("header")).toBe("My Zenodo");
+                // Should show user-defined Zenodo label
+                expect(zenodoCard.text()).toContain("My Zenodo");
             }
         });
     });
@@ -267,13 +265,10 @@ describe("HistoryExportWizard.vue", () => {
                 await nextButton.trigger("click");
             }
 
-            // Select remote source. BCard is globally stubbed (for compat-mode
-            // safety), and VTU2 stubs don't forward native DOM events like
-            // click, so drive the click through the stub's component emit.
-            const remoteCard = wrapper.findComponent('[data-history-export-destination="remote-source"]');
+            // Select remote source
+            const remoteCard = wrapper.find('[data-history-export-destination="remote-source"]');
             if (remoteCard.exists()) {
-                remoteCard.vm.$emit("click");
-                await flushPromises();
+                await remoteCard.trigger("click");
             }
 
             // Navigate to setup step
@@ -283,11 +278,8 @@ describe("HistoryExportWizard.vue", () => {
                 await flushPromises();
             }
 
-            // Check that the setup step is rendered with directory selection.
-            // BFormGroup is globally stubbed, so its `description` prop text
-            // ("Select a 'repository' to export history to.") isn't in the
-            // rendered DOM -- check for the directory input it wraps instead.
-            expect(wrapper.find(selectors.directoryInput).exists()).toBe(true);
+            // Check that the setup step is rendered with directory selection
+            expect(wrapper.text()).toContain("Select a 'repository' to export history to.");
         });
     });
 
@@ -309,12 +301,10 @@ describe("HistoryExportWizard.vue", () => {
                 await nextButton.trigger("click");
             }
 
-            // Step 2: Select remote source to require file name. BCard is
-            // globally stubbed, so drive the click through the stub's emit.
-            const remoteCard = wrapper.findComponent('[data-history-export-destination="remote-source"]');
+            // Step 2: Select remote source to require file name
+            const remoteCard = wrapper.find('[data-history-export-destination="remote-source"]');
             if (remoteCard.exists()) {
-                remoteCard.vm.$emit("click");
-                await flushPromises();
+                await remoteCard.trigger("click");
             }
 
             // Step 3: Navigate to setup step
@@ -393,12 +383,10 @@ describe("HistoryExportWizard.vue", () => {
                 await nextButton.trigger("click");
             }
 
-            // Navigate to remote source setup. BCard is globally stubbed, so
-            // drive the click through the stub's emit.
-            const remoteCard = wrapper.findComponent('[data-history-export-destination="remote-source"]');
+            // Navigate to remote source setup
+            const remoteCard = wrapper.find('[data-history-export-destination="remote-source"]');
             if (remoteCard.exists()) {
-                remoteCard.vm.$emit("click");
-                await flushPromises();
+                await remoteCard.trigger("click");
             }
 
             // Navigate to setup step
@@ -430,12 +418,10 @@ describe("HistoryExportWizard.vue", () => {
                 await nextButton.trigger("click");
             }
 
-            // Select remote source. BCard is globally stubbed, so drive the
-            // click through the stub's emit.
-            const remoteCard = wrapper.findComponent('[data-history-export-destination="remote-source"]');
+            // Select remote source
+            const remoteCard = wrapper.find('[data-history-export-destination="remote-source"]');
             if (remoteCard.exists()) {
-                remoteCard.vm.$emit("click");
-                await flushPromises();
+                await remoteCard.trigger("click");
             }
 
             // Navigate to setup step
