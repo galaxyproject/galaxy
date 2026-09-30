@@ -13,6 +13,7 @@ import json
 import logging
 import re
 import sqlite3
+import subprocess
 import sys
 from dataclasses import (
     dataclass,
@@ -87,6 +88,18 @@ class GTNDatabaseBuilder:
         self.output_path = output_path or Path("gtn_search.db")
         self.tutorials: list[Tutorial] = []
         self.faqs: list[FAQ] = []
+        self.gtn_commit = self._checkout_commit(gtn_path)
+
+    @staticmethod
+    def _checkout_commit(gtn_path: Path) -> str:
+        """The training-material commit being indexed, or "" when it isn't a git checkout."""
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(gtn_path), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+        return result.stdout.strip()
 
     def build(self):
         """Build the complete database."""
@@ -275,6 +288,11 @@ class GTNDatabaseBuilder:
                 content_hash=content_hash,
                 last_modified=last_modified,
                 zenodo_link=str(frontmatter.get("zenodo_link", "") or ""),
+                gtn_commit=self.gtn_commit,
+                workflows=sorted(
+                    workflow.relative_to(self.gtn_path).as_posix()
+                    for workflow in (tutorial_file.parent / "workflows").glob("*.ga")
+                ),
             )
 
             return tutorial
@@ -589,6 +607,7 @@ class GTNDatabaseBuilder:
                 "faq_count": str(len(self.faqs)),
                 "gtn_repository": "https://github.com/galaxyproject/training-material",
                 "builder_version": DB_VERSION,
+                "gtn_commit": self.gtn_commit,
             }
 
             for key, value in metadata.items():
