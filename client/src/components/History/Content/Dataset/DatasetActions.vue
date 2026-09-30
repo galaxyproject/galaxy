@@ -34,6 +34,8 @@ const router = useRouter();
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
+// A hidden dataset would be imported out of sight on the other Galaxy, and one in error has no data to move.
+const showGalaxyLink = computed(() => props.item.visible && props.item.state === "ok");
 const showError = computed(() => {
     return props.item.state === "error" || props.item.state === "failed_metadata";
 });
@@ -111,7 +113,7 @@ function onRerun() {
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
 
                 <ExportForGalaxyLink
-                    v-if="showDownloads"
+                    v-if="showDownloads && showGalaxyLink"
                     :history-id="item.history_id"
                     content-type="dataset"
                     :content-id="item.id" />

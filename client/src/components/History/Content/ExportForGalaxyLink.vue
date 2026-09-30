@@ -4,9 +4,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onUnmounted, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { useConfig } from "@/composables/config";
+import { useShortTermStorage } from "@/composables/shortTermStorage";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { copy as sendToClipboard } from "@/utils/clipboard";
-import { absPath, withPrefix } from "@/utils/redirect";
+import { absPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -20,15 +22,17 @@ const props = defineProps<{
 }>();
 
 // The export task's own state, not the storage's: a failed export still marks its storage ready.
-const { waitForTask, stopWaitingForTask, isCompleted, hasFailed, failureReason, requestHasFailed } = useTaskMonitor();
+const { waitForTask, stopWaitingForTask, isRunning, isCompleted, hasFailed, failureReason, requestHasFailed } =
+    useTaskMonitor();
+const { getDownloadObjectUrl } = useShortTermStorage();
+const { config } = useConfig(true);
 const showDialog = ref(false);
+const isStarting = ref(false);
 const storageRequestId = ref<string>();
 const startError = ref<string>();
 
 const link = computed(() =>
-    isCompleted.value && storageRequestId.value
-        ? absPath(withPrefix(`/api/short_term_storage/${storageRequestId.value}`))
-        : undefined,
+    isCompleted.value && storageRequestId.value ? absPath(getDownloadObjectUrl(storageRequestId.value)) : undefined,
 );
 const errorMessage = computed(() => {
     if (startError.value) {
@@ -42,6 +46,11 @@ const errorMessage = computed(() => {
 
 async function onExport() {
     showDialog.value = true;
+    // Each export archives every file again, so reopen the link while it is still good.
+    if (isStarting.value || isRunning.value || link.value) {
+        return;
+    }
+    isStarting.value = true;
     startError.value = undefined;
     storageRequestId.value = undefined;
     const { data, error } = await GalaxyApi().POST(
@@ -51,6 +60,7 @@ async function onExport() {
             body: { model_store_format: "tar.gz", include_files: true, include_deleted: false, include_hidden: false },
         },
     );
+    isStarting.value = false;
     if (error) {
         startError.value = errorMessageAsString(error);
         return;
@@ -63,7 +73,7 @@ onUnmounted(stopWaitingForTask);
 </script>
 
 <template>
-    <span class="export-for-galaxy-link">
+    <span v-if="config.enable_celery_tasks" class="export-for-galaxy-link">
         <GButton
             class="px-1"
             title="Link for another Galaxy"
