@@ -1,4 +1,4 @@
-import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 
 export function helpHtml(activeList = "my", isAnonymous = false) {
     let extra = "";
@@ -67,14 +67,18 @@ export function helpHtml(activeList = "my", isAnonymous = false) {
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
             </dd>
+            <dt><code>tool_id:____</code></dt>
+            <dd>
+                Shows workflows that contain at least one step with the given tool ID.
+            </dd>
             ${extra}
         </dl>
     </div>`;
     return conditionalHelpHtml;
 }
 
-export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
-    const commonFilters = {
+export function getWorkflowFilters(activeList = "my", isAnonymous = false): Filtering<string | boolean | undefined> {
+    const commonFilters: Record<string, ValidFilter<string>> = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
         tag: {
@@ -84,7 +88,21 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
-    } as const;
+        tool_id: {
+            placeholder: "tool ID",
+            type: String,
+            handler: contains("tool_id"),
+            menuItem: true,
+            disablesFilters: { tool_name: null },
+        },
+        tool_name: {
+            placeholder: "tool name",
+            type: String,
+            handler: contains("tool_name"),
+            menuItem: true,
+            disablesFilters: { tool_id: null },
+        },
+    };
 
     if (activeList === "my") {
         return new Filtering(
@@ -152,7 +170,7 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
             false,
         );
     } else {
-        const publishedFilters: Record<string, any> = {
+        const publishedFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
             ...commonFilters,
             user: {
                 placeholder: "owner",

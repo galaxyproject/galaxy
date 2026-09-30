@@ -95,7 +95,7 @@ describe("FilterMenu", () => {
         );
     });
 
-    function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
+    function setUpWrapper<T>(name: string, placeholder: string, filterClass: Filtering<T>) {
         wrapper = mount(FilterMenu as object, {
             propsData: {
                 name: name,
@@ -118,7 +118,7 @@ describe("FilterMenu", () => {
         await searchButton.trigger("click");
     }
 
-    async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
+    async function expectCorrectEmits<T>(filterText: string, filterClass: Filtering<T>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
             const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
             expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
