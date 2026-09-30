@@ -11854,6 +11854,11 @@ class MetadataFile(Base, StorableObject, Serializable):
         identifier = getattr(self, store_by)
         return object_store, f"metadata_{identifier}.dat"
 
+    def object_store_path_kwargs(self) -> dict[str, Any]:
+        """Locate this file in its dataset's object store: pass these with `self` to the store."""
+        _, alt_name = self._object_store_and_alt_name()
+        return dict(extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
+
     def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
