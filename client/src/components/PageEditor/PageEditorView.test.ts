@@ -410,7 +410,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const errorAlert = wrapper.find("galert-stub[variant='danger']");
+            const errorAlert = wrapper.find("g-alert-stub[variant='danger']");
             expect(errorAlert.exists()).toBe(true);
             expect(errorAlert.text()).toContain("Save failed");
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(true);
