@@ -59,6 +59,13 @@ const modulesToTransform = [
     "vue-router",
     "pinia",
     "@pinia/testing",
+    // @vueuse reaches Vue through vue-demi's `export * from "vue"`.
+    "vue-demi",
+    "@vueuse",
+    // The `vue` alias below points at compat's ESM build; inline it too so it's
+    // one transformed module (with plugin-vue's feature-flag defines) rather
+    // than a second copy Node loads on its own.
+    "@vue/compat",
     // Vue-component libraries that mix a component's own Vue internals
     // (mixins, emits) into ours at runtime; same reasoning as above.
     "@johmun/vue-tags-input",
@@ -133,8 +140,11 @@ export default defineConfig({
             "@vue/test-utils": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-test-utils-adapter.ts"),
             // Vue Router adapter - provides both VR3 (default export, constructor) and VR4 APIs
             "vue-router": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-router-adapter.ts"),
-            // Use @vue/compat for Vue 3 compatibility mode
-            vue: "@vue/compat",
+            // Use @vue/compat for Vue 3 compatibility mode. Point at its ESM build:
+            // the package's Node entry is CJS, which re-export-all modules like
+            // vue-demi can't see through. The full build, since some tests
+            // compile templates at runtime.
+            vue: path.resolve(__dirname, "node_modules/@vue/compat/dist/vue.esm-bundler.js"),
             // Use ESM version of bootstrap-vue so Vite can transform its imports
             "bootstrap-vue": path.resolve(__dirname, "node_modules/bootstrap-vue/esm/index.js"),
             // Mock portal-vue for Vue 3 compatibility (used by bootstrap-vue)
