@@ -30,6 +30,7 @@ router = Router(tags=["remote files"])
 INPUT_PATH = "/api/jobs/{job_id}/staging/inputs/{kind}/{object_id}"
 EXPIRES = Query(description="Expiry of the staging URL, in seconds since the epoch.")
 SIGNATURE = Query(description="Signature Galaxy issued for this job, input and expiry.")
+PATH = Query("", description="For an extra file, its path within the dataset's extra files.")
 
 
 @router.cbv
@@ -45,8 +46,9 @@ class FastAPIJobObjectStaging:
         exp: int = EXPIRES,
         sig: str = SIGNATURE,
         redirect: bool = Query(False, description="Allow a redirect to a presigned object store URL."),
+        path: str = PATH,
     ) -> Response:
-        staged = self.manager.staged_input(job_id, kind, object_id, exp, sig, redirect=redirect)
+        staged = self.manager.staged_input(job_id, kind, object_id, exp, sig, redirect=redirect, path=path)
         if staged.redirect_url is not None:
             return RedirectResponse(staged.redirect_url, status_code=302)
         if staged.stream is not None:
@@ -63,7 +65,8 @@ class FastAPIJobObjectStaging:
         object_id: DecodedDatabaseIdField,
         exp: int = EXPIRES,
         sig: str = SIGNATURE,
+        path: str = PATH,
     ) -> Response:
         # Answered here rather than by redirect: a presigned GET URL rejects HEAD.
-        staged = self.manager.staged_input(job_id, kind, object_id, exp, sig, head=True)
+        staged = self.manager.staged_input(job_id, kind, object_id, exp, sig, head=True, path=path)
         return Response(headers={"Content-Length": str(staged.size)})
