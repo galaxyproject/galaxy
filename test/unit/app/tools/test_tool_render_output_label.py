@@ -56,6 +56,15 @@ class TestToolRenderOutputLabel(TestCase, tools_support.UsesTools):
     def test_user_tool_label_reads_tool_state_not_cheetah_context(self):
         tool = create_tool_from_source(self.app, YamlToolSource(USER_TOOL))
         assert isinstance(tool, UserDefinedTool)
+        self._assert_label_reads_tool_state(tool)
+
+    def test_admin_yaml_tool_label_reads_tool_state_not_cheetah_context(self):
+        tool = create_tool_from_source(self.app, YamlToolSource({**USER_TOOL, "class": "GalaxyTool"}))
+        assert not isinstance(tool, UserDefinedTool)
+        assert not tool.is_unprivileged_tool
+        self._assert_label_reads_tool_state(tool)
+
+    def _assert_label_reads_tool_state(self, tool: Tool):
         cheetah_context: dict[str, Any] = {"n": 3}
         label = tool.render_output_label(self._label(tool), cheetah_context, "dataset 1", tool_state={"n": 4})
         assert label == "n=4 ${1 + 1}"

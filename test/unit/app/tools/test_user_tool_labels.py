@@ -4,7 +4,7 @@ import pytest
 
 from galaxy import model
 from galaxy.tool_util_models.tool_outputs import MAX_USER_TOOL_LABEL_LENGTH
-from galaxy.tools.expressions.labels import render_user_tool_label
+from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
     RuntimeValue,
@@ -16,7 +16,7 @@ def _hda(name: str, extension: str = "txt") -> model.HistoryDatasetAssociation:
 
 
 def _render(label: str, state: dict[str, Any], on_string: str = "data 1") -> str:
-    return render_user_tool_label(label, state.keys(), state, on_string)
+    return render_yaml_tool_label(label, state.keys(), state, on_string)
 
 
 STATE: dict[str, Any] = {
@@ -48,11 +48,11 @@ def test_references_filled_in(label, expected):
 
 
 def test_only_declared_inputs_filled_in():
-    assert render_user_tool_label("$(inputs.n)", ["input"], STATE, None) == "$(inputs.n)"
+    assert render_yaml_tool_label("$(inputs.n)", ["input"], STATE, None) == "$(inputs.n)"
 
 
 def test_on_string_without_value_kept_as_written():
-    assert render_user_tool_label("$(runtime.on_string)", [], {}, None) == "$(runtime.on_string)"
+    assert render_yaml_tool_label("$(runtime.on_string)", [], {}, None) == "$(runtime.on_string)"
 
 
 def test_label_cut_to_limit():

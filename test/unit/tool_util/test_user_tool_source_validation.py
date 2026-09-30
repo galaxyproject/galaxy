@@ -27,6 +27,7 @@ from galaxy.tool_util_models import (
     format_validation_errors,
     UserToolSource,
     UserToolSourceAuthoringView,
+    YamlToolSource,
 )
 from galaxy.util.resources import resource_string
 
@@ -144,3 +145,14 @@ def test_canonical_model_stays_lenient_about_inputs_and_outputs() -> None:
     )
     assert tool.inputs == []
     assert tool.outputs == []
+
+
+def test_admin_yaml_tool_rejects_label_referencing_undeclared_input() -> None:
+    doc = {
+        **VALID_TOOL,
+        "class": "GalaxyTool",
+        "outputs": [{"type": "data", "name": "out", "from_work_dir": "out.txt", "label": "$(inputs.missing.name)"}],
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        YamlToolSource(**doc)
+    assert [error["type"] for error in exc_info.value.errors()] == ["dynamic_tool.undeclared_input_ref"]

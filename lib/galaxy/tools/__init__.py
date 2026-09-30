@@ -163,7 +163,7 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
-from galaxy.tools.expressions.labels import render_user_tool_label
+from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
@@ -997,8 +997,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     tool_type = "default"
     requires_setting_metadata = True
     produces_entry_points = False
-    # Whether render_output_label reads tool_state, so callers know to build it.
-    output_labels_read_tool_state = False
     default_tool_action = DefaultToolAction
     tool_action: ToolAction
     tool_type_local = False
@@ -2057,6 +2055,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         help_html = help_html.replace("${host_url}", host_url)
         return help_html
 
+    @property
+    def output_labels_read_tool_state(self) -> bool:
+        """Whether render_output_label reads tool_state, so callers know to build it.
+
+        YAML tools, admin and user-defined alike, fill in only parameter references, the
+        same ``$(inputs.<name>)`` syntax their commands use. Other tools fill labels as Cheetah.
+        """
+        return self.tool_source.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+
     def render_output_label(
         self,
         label: str,
@@ -2064,13 +2071,17 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         on_text: Optional[str],
         tool_state: Optional[Mapping[str, Any]] = None,
     ) -> str:
-        """Render an output ``label`` as a Cheetah template.
+        """Render an output ``label``.
 
-        ``cheetah_context`` gains ``tool`` and ``on_string``. ``tool_state`` is the tool state the
-        context was built from, for tool classes that render labels without Cheetah.
+        A YAML tool fills in the parameter references of ``label`` from ``tool_state``. Any other
+        tool fills ``label`` as a Cheetah template, and ``cheetah_context`` gains ``tool`` and
+        ``on_string``.
         """
+        if self.output_labels_read_tool_state:
+            # The Cheetah context holds wrappers labels can't read.
+            return render_yaml_tool_label(label, self.inputs, tool_state or {}, on_text)
         if self.is_unprivileged_tool:
-            # Unprivileged tools are UserDefinedTool, which never fills labels as Cheetah.
+            # Unprivileged tools are YAML tools, which never fill labels as Cheetah.
             raise exceptions.ConfigurationError("Output labels of unprivileged tools are never Cheetah templates")
         cheetah_context["tool"] = self
         cheetah_context["on_string"] = on_text
@@ -3459,19 +3470,6 @@ class OutputParameterJSONTool(Tool):
 class UserDefinedTool(Tool):
     tool_type = "user_defined"
     requires_js_runtime = True
-
-    output_labels_read_tool_state = True
-
-    def render_output_label(
-        self,
-        label: str,
-        cheetah_context: dict[str, Any],
-        on_text: Optional[str],
-        tool_state: Optional[Mapping[str, Any]] = None,
-    ) -> str:
-        # Output labels are untrusted author text: they only resolve parameter references,
-        # never Cheetah or JavaScript. The Cheetah context holds wrappers labels can't read.
-        return render_user_tool_label(label, self.inputs, tool_state or {}, on_text)
 
 
 class ExpressionTool(Tool):

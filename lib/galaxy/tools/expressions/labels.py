@@ -1,4 +1,4 @@
-"""Filling in output labels of user-defined tools.
+"""Filling in output labels of YAML tools, admin and user-defined alike.
 
 A label is text with references matching ``USER_TOOL_LABEL_REFERENCE_RE``. ``$(inputs.<name>)``
 reads the tool state, through conditionals and sections, and for a dataset or collection
@@ -28,7 +28,7 @@ from galaxy.tool_util_models.tool_outputs import (
 )
 
 
-def render_user_tool_label(
+def render_yaml_tool_label(
     label: str, input_names: Container[str], state: Mapping[str, Any], on_string: Optional[str]
 ) -> str:
     def fill(match: re.Match) -> str:

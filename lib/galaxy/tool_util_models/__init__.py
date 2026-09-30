@@ -282,7 +282,10 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
         referenced: Set[str] = _command_input_refs(self.shell_command)
         for configfile in self.configfiles or []:
             referenced |= _command_input_refs(configfile.content)
-        referenced |= self._label_input_refs()
+        for output in self.outputs:
+            for match in USER_TOOL_LABEL_REFERENCE_RE.finditer(output.label or ""):
+                if match["input"]:
+                    referenced.add(match["input"])
         undeclared = sorted(referenced - declared_inputs)
         if undeclared:
             joined = "; ".join(
@@ -293,10 +296,6 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
                 joined,
             )
         return self
-
-    def _label_input_refs(self) -> Set[str]:
-        # Admin tools fill output labels as Cheetah templates.
-        return set()
 
     @model_validator(mode="after")
     def _check_output_claims(self) -> "_DynamicToolSourceBase":
@@ -451,14 +450,6 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
                 "container must not be empty",
             )
         return value
-
-    def _label_input_refs(self) -> Set[str]:
-        return {
-            match["input"]
-            for output in self.outputs
-            for match in USER_TOOL_LABEL_REFERENCE_RE.finditer(output.label or "")
-            if match["input"]
-        }
 
     @model_serializer(mode="wrap")
     def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):

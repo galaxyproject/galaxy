@@ -38,6 +38,16 @@ LABEL_TOOL: dict[str, Any] = {
 }
 
 
+def _expected_label_tool_names(dataset: dict[str, Any]) -> dict[str, str]:
+    return {
+        "history_name": "from reads.txt",
+        "on_string": f"dataset {dataset['hid']} filtered",
+        "scalar": "n=7",
+        "conditional": "suffix trimmed",
+        "optional": "[]",
+    }
+
+
 def _user_tool(**overrides: Any) -> UserToolSource:
     return UserToolSource(**{**TOOL_WITH_SHELL_COMMAND, **overrides})
 
@@ -81,17 +91,25 @@ class TestUnprivilegedToolsLabelsApi(ApiTestCase):
             dataset = self._reads(history_id)
             run = self._run(history_id, UserToolSource(**LABEL_TOOL), {"input": {"src": "hda", "id": dataset["id"]}})
             display = self._get(f"jobs/{run['jobs'][0]['id']}/parameters_display").json()
-        expected = {
-            "history_name": "from reads.txt",
-            "on_string": f"dataset {dataset['hid']} filtered",
-            "scalar": "n=7",
-            "conditional": "suffix trimmed",
-            "optional": "[]",
-        }
+        expected = _expected_label_tool_names(dataset)
         assert {output["output_name"]: output["name"] for output in run["outputs"]} == expected
         # The job parameters page has no input description to fill in on_string with.
         expected["on_string"] = LABELS["on_string"]
         assert {name: outputs[0]["label"] for name, outputs in display["outputs"].items()} == expected
+
+    def test_admin_yaml_tool_labels_match_user_defined_tool_labels(self):
+        dynamic_tool = self.dataset_populator.create_tool({**LABEL_TOOL, "class": "GalaxyTool"})
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self._reads(history_id)
+            response = self.dataset_populator.run_tool_raw(
+                tool_id=None,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                history_id=history_id,
+            )
+            self._assert_status_code_is(response, 200)
+        outputs = response.json()["outputs"]
+        assert {output["output_name"]: output["name"] for output in outputs} == _expected_label_tool_names(dataset)
 
     def test_collection_output_label_resolves_parameter_references(self):
         output = {
