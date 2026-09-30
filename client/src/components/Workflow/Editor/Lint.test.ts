@@ -46,9 +46,8 @@ describe("Lint", () => {
                 datatypesMapper: testDatatypesMapper,
                 hasChanges: false,
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia,
-            provide: { workflowId: "mock-workflow" },
         });
 
         stepStore = useWorkflowStepStore("mock-workflow");

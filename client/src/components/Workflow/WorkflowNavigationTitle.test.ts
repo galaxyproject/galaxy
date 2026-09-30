@@ -117,7 +117,13 @@ async function mountWorkflowNavigationTitle(
             invocation,
             workflowId,
         },
-        global: localVue,
+        global: {
+            ...localVue,
+            // Render for real so the heading and actions passed into its named
+            // slots (title/actions) actually show up; everything it renders
+            // (GButton, AsyncButton, ...) stays shallow-stubbed.
+            stubs: { ...localVue.stubs, NavigationTitle: false },
+        },
         pinia,
     });
 
@@ -192,7 +198,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show a confirmation dialog when the import is successful", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
         await importButton.props().action();
@@ -206,7 +212,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show an error dialog when the import fails", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
         await importButton.props().action();

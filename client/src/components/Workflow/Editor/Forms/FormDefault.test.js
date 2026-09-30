@@ -39,11 +39,8 @@ describe("FormDefault", () => {
                     outputs,
                 },
             },
-            global: localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            provide: {
-                workflowId: "mock-workflow",
-            },
         });
     });
 
@@ -62,9 +59,8 @@ describe("FormDefault", () => {
         };
         const collectionWrapper = mount(FormDefault, {
             propsData: { datatypes: [], step: collectionStep },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-            provide: { workflowId: "mock-workflow" },
         });
         const collectionTypeField = () =>
             collectionWrapper.findComponent(FormInputCollection).findComponent(FormCollectionType);

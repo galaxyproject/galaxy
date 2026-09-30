@@ -73,9 +73,8 @@ describe("NodeOutput", () => {
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
             props: propsData,
-            global: localVue,
+            global: { ...localVue, provide: { transform, workflowId: "mock-workflow" } },
             pinia,
-            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
     });
@@ -96,9 +95,8 @@ describe("NodeOutput", () => {
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
             props: propsData,
-            global: localVue,
+            global: { ...localVue, provide: { transform, workflowId: "mock-workflow" } },
             pinia,
-            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".mapped-over").exists()).toBe(false);
         inputTerminal.connect(outputTerminal);
