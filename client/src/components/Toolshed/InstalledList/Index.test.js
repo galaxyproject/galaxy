@@ -57,10 +57,8 @@ describe("InstalledList", () => {
         expect(names.at(1).text()).toBe("name_1");
         const links = wrapper.findAllComponents(GLink);
         expect(links.length).toBe(3);
-        // BBadge is globally stubbed, so it renders as `b-badge-stub` rather than
-        // gaining the real component's own `.badge` class.
-        const badge = links.at(1).find("b-badge-stub");
+        const badge = links.at(1).find(".badge");
         expect(badge.text()).toBe("Newer version available!");
-        expect(wrapper.vm.fields.some((field) => field.key === "tool_shed")).toBe(true);
+        expect(wrapper.findAll("thead th").map((th) => th.text())).toContain("Tool Shed");
     });
 });

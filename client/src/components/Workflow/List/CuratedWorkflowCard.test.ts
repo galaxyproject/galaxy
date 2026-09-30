@@ -103,8 +103,6 @@ function mountCard(workflow: CuratedWorkflow, isAnonymous = false) {
         localVue,
         router,
         pinia,
-        // The global BBadge stub drops GCard's `@click.stop` badge listener.
-        stubs: { BBadge: false },
     });
     return wrapper;
 }

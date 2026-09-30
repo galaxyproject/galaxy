@@ -118,10 +118,7 @@ describe("ToolCard", () => {
         const badge = wrapper.find("[data-description='newer tool version']");
         expect(badge.text()).toBe("Newer version available");
 
-        // BBadge is a stubbed legacy component, so a real DOM click on its stub root
-        // doesn't reach the (never-forwarded) click listener -- emit on the component
-        // instance instead.
-        wrapper.findComponent("[data-description='newer tool version']").vm.$emit("click");
+        await badge.trigger("click");
         await flushPromises();
 
         expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");

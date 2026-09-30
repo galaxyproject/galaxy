@@ -59,7 +59,7 @@ describe("WorkflowDisplay", () => {
     it("basics", async () => {
         const wrapper = mountDefault();
         await flushPromises();
-        const cardHeader = wrapper.find("b-card-header-stub");
+        const cardHeader = wrapper.find(".card-header");
         expect(cardHeader.text()).toBe("Workflow:workflow_name");
         const downloadUrl = wrapper.find("[data-description='workflow download']");
         expect(downloadUrl.attributes("href")).toBe("/api/workflows/workflow_id/download?format=json-download");

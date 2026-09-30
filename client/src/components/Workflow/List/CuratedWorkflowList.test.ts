@@ -98,8 +98,6 @@ async function mountList() {
         localVue,
         pinia,
         router,
-        // The global BBadge stub drops GCard's `@click.stop` badge listener.
-        stubs: { BBadge: false },
     });
 
     await flushPromises();

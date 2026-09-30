@@ -64,67 +64,17 @@ export function getLocalVue(instrumentLocalization = false) {
     const config = {
         plugins,
         // Render the default slot of stubbed components so tests can still
-        // interact with content placed inside layout / wrapper components
-        // (BInputGroup, BCard, etc.) that we stub for compat-mode safety.
+        // interact with content placed inside the components they stub.
         renderStubDefaultSlot: true,
         directives: {
             "b-tooltip": mockedDirective,
             "b-popover": mockedDirective,
         },
         stubs: {
-            // Stub common bootstrap-vue components. VTU matches stub names across
-            // kebab/PascalCase, so one key per component is enough -- and a second
-            // key would shadow per-test overrides like `stubs: { BCard: false }`.
-            BButton: true,
-            BModal: true,
-            BCard: true,
-            BDropdown: true,
-            BDropdownItem: true,
-            BAlert: true,
-            BBadge: true,
-            BSpinner: true,
-            BCollapse: true,
-            BFormGroup: true,
-            BTable: true,
-            BTabs: true,
-            BTab: true,
-            BOverlay: true,
-            BPopover: true,
-            BTooltip: true,
-            BFormRow: true,
-            BInputGroup: true,
-            BInputGroupAppend: true,
-            BInputGroupPrepend: true,
-            BInputGroupText: true,
-            // BFormInput, BFormCheckbox, BFormRadio*, BFormSelect, BFormTextarea,
-            // BFormFile, BFormDate/TimePicker, BFormTags, BLink, BNav and BNavItem are NOT
-            // stubbed here so tests can interact with the real form-control
-            // inputs they render (via the bootstrap-vue compat shim, which now
-            // works after the h-fallback / data-flatten patches).
-            BIcon: true,
-            BIconstack: true,
-            BImg: true,
-            BImgLazy: true,
-            BListGroup: true,
-            BListGroupItem: true,
-            BProgress: true,
-            BProgressBar: true,
-            BButtonGroup: true,
-            BButtonToolbar: true,
-            BButtonClose: true,
-            BCardBody: true,
-            BCardHeader: true,
-            BCardFooter: true,
-            BCardTitle: true,
-            BCardSubTitle: true,
-            BCardText: true,
-            BCardGroup: true,
-            BContainer: true,
-            BRow: true,
-            BCol: true,
-            BMedia: true,
-            BMediaAside: true,
-            BMediaBody: true,
+            // bootstrap-vue components render for real (through the compat shim in
+            // patches/bootstrap-vue), so tests assert on the markup users get.
+            // Stubbing them hid real bugs, like pagination links with no click
+            // listener.
             Portal: true,
             PortalTarget: true,
         },
