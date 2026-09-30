@@ -1,6 +1,7 @@
 """Unit tests for the Teaching Assistant agent and learning state management."""
 
 import json
+import re
 from types import SimpleNamespace
 from unittest import mock
 
@@ -326,6 +327,33 @@ class TestTeachingAssistantAgent:
         assert "encoded-failed-job" in failed_line
         assert "job" not in next(line for line in result.splitlines() if "HID 1" in line)
         assert "job" not in next(line for line in result.splitlines() if "HID 3" in line)
+
+    async def test_history_summary_keeps_recent_failures_in_long_histories(self):
+        # A learner asks about the job that just failed, which is the newest item, not the oldest.
+        agent = TeachingAssistantAgent(self.deps)
+        self.mock_trans.get_history.return_value = mock.Mock(id=7)
+        items = [
+            {"id": f"ds-{hid}", "hid": hid, "name": f"step {hid}", "state": "ok", "history_content_type": "dataset"}
+            for hid in range(1, 40)
+        ]
+        items.append(
+            {"id": "ds-40", "hid": 40, "name": "Filter on 39", "state": "error", "history_content_type": "dataset"}
+        )
+
+        def contents(history_id, limit=100, offset=0, order="hid-asc", **kwargs):
+            ordered = sorted(items, key=lambda item: item["hid"], reverse=order == "hid-dsc")
+            return {"contents": ordered[offset : offset + limit], "pagination": {"total_items": len(items)}}
+
+        agent.ops.get_history_contents = contents
+        agent.ops.get_job_details = mock.Mock(return_value={"job_id": "encoded-failed-job"})
+
+        result = await agent.agent._function_toolset.tools["check_user_context"].function(mock.Mock())
+
+        assert "encoded-failed-job" in next(line for line in result.splitlines() if "HID 40" in line)
+        hids = [int(m) for m in re.findall(r"HID (\d+)", result)]
+        assert hids == sorted(hids), "items still read oldest to newest"
+        assert "HID 1:" not in result
+        assert "40 datasets" in result
 
     def test_prompt_excludes_internal_routing_state(self):
         agent = TeachingAssistantAgent(self.deps)
