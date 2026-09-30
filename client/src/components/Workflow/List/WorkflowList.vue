@@ -49,7 +49,9 @@ const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
 const offset = ref(0);
-const loading = ref(true);
+const fetching = ref(true);
+// My workflows are filtered by owner, so keep loading until the user is known
+const loading = computed(() => fetching.value || (props.activeList === "my" && !userStore.currentUser));
 const overlay = ref(false);
 const filterText = ref("");
 const totalWorkflows = ref(0);
@@ -58,7 +60,12 @@ const listHeader = ref<any>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
-const workflowsLoaded = ref<WorkflowSummary[]>([]);
+const workflowsFetched = ref<WorkflowSummary[]>([]);
+const workflowsLoaded = computed(() =>
+    props.activeList === "my"
+        ? workflowsFetched.value.filter((w) => userStore.matchesCurrentUsername(w.owner))
+        : workflowsFetched.value,
+);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -165,7 +172,7 @@ async function load(overlayLoading = false, silent = false) {
         if (overlayLoading) {
             overlay.value = true;
         } else {
-            loading.value = true;
+            fetching.value = true;
         }
     }
 
@@ -184,7 +191,7 @@ async function load(overlayLoading = false, silent = false) {
     } else {
         // there are invalid filters, so we don't want to search
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
         return;
     }
 
@@ -199,20 +206,14 @@ async function load(overlayLoading = false, silent = false) {
             skipStepCounts: true,
         });
 
-        let filteredWorkflows = data;
-
-        if (props.activeList === "my") {
-            filteredWorkflows = filteredWorkflows.filter((w: any) => userStore.matchesCurrentUsername(w.owner));
-        }
-
-        workflowsLoaded.value = filteredWorkflows;
+        workflowsFetched.value = data;
 
         totalWorkflows.value = totalMatches;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
     }
 }
 
