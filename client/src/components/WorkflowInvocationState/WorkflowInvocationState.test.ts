@@ -21,7 +21,7 @@ vi.mock("vue-router", async (importOriginal) => {
 
 const selectors = {
     invocationSummary: ".invocation-overview",
-    gAlertStub: "galert-stub",
+    gAlertStub: "g-alert-stub",
     spanElement: "span",
     invocationDebugTab: ".invocation-debug-tab",
     invocationReportTab: ".invocation-report-tab",

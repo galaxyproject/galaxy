@@ -18,7 +18,7 @@ const SELECTORS = {
     EMPTY_STATE: ".empty-state",
     PAGE_ITEMS: ".page-items",
     PAGE_ITEM: "[data-description='page item']",
-    UNOWNED_ALERT: "galert-stub",
+    UNOWNED_ALERT: "g-alert-stub",
 };
 
 setupMockHistoryBreadcrumbs();
