@@ -98,4 +98,27 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
             ACTIVE_ITS.slice(0, 2).map((entryPoint) => entryPoint.target),
         );
     });
+
+    it("should open a single active tool in a new tab", async () => {
+        testPinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                entryPointStore: {
+                    entryPoints: ACTIVE_ITS,
+                },
+            },
+        });
+        setActivePinia(testPinia);
+        wrapper = mount(ToolEntryPoints, {
+            propsData: {
+                jobId: "b887d74393f85b6d",
+            },
+            localVue,
+            pinia: testPinia,
+            router,
+        });
+        const link = wrapper.find(`a[href='${ACTIVE_ITS[2].target}']`);
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("target")).toBe("_blank");
+    });
 });

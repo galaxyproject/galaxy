@@ -699,6 +699,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 :size="sizeToGSize(pa.size || 'sm')"
                                                 :to="pa.to"
                                                 :href="pa.href"
+                                                :target="pa.externalLink ? '_blank' : undefined"
                                                 :class="[
                                                     'mt-1',
                                                     {
