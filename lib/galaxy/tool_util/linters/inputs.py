@@ -9,6 +9,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from Cheetah.Template import Template
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
@@ -280,6 +281,32 @@ class InputsNameValid(Linter):
             if param_name != "" and not is_valid_cheetah_placeholder(param_name):
                 lint_ctx.warn(
                     f"Param input [{param_name}] is not a valid Cheetah placeholder.", linter=cls.name(), node=param
+                )
+
+
+class InputsNameReserved(Linter):
+    """Warn about top-level input names that shadow Cheetah template members."""
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        # Nested inputs are resolved through their parent group, not the template's search list.
+        for input_node in tool_xml.findall("./inputs/*"):
+            if input_node.tag == "param":
+                if "name" not in input_node.attrib and "argument" not in input_node.attrib:
+                    continue
+                name = _parse_name(input_node.get("name"), input_node.get("argument"))
+            elif input_node.tag in ("section", "repeat", "conditional"):
+                name = input_node.get("name")
+            else:
+                continue
+            if name in Template.Reserved_SearchList:
+                lint_ctx.warn(
+                    f"Input [{name}] uses a reserved Cheetah template name and may not be accessible in the command template.",
+                    linter=cls.name(),
+                    node=input_node,
                 )
 
 
