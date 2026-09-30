@@ -191,6 +191,30 @@ The figures cover the transfers Pulsar itself performs. A destination configured
 *Galaxy* pushes and pulls the files (the ``transfer`` file action rather than
 ``remote_transfer``) leaves Pulsar with little to do and will report close to zero.
 
+It also records which Pulsar versions a job involved. These are only shown to admins (or
+with ``expose_potentially_sensitive_job_metrics``):
+
+``client_version``
+    Galaxy's own Pulsar client library (``pulsar-galaxy-lib``).
+``target_version``
+    The remote Pulsar version Galaxy made its decisions for when submitting the job.
+``target_version_source``
+    How Galaxy knew ``target_version``: ``remote`` (the remote Pulsar reported it),
+    ``destination`` (the environment's ``remote_pulsar_version``), ``container_image`` (a
+    published Pulsar staging image), ``client`` (not known, so the client library's version
+    stands in and a current Pulsar is assumed - set ``remote_pulsar_version``), or
+    ``unreported`` (a Pulsar client library too old to say).
+``server_version``
+    The Pulsar version that actually ran the job.
+``server_version_source``
+    How Galaxy learned ``server_version``: ``status`` (reported when the job finished) or
+    ``job_files`` (written by Pulsar into the job's files - the only report from polling
+    Kubernetes, TES, GCP Batch, and AWS Batch runners, which need Pulsar 0.15.16 or newer
+    for it). Absent if the job never reported it.
+
+A ``target_version`` that differs from ``server_version`` means Galaxy submitted the job for
+a Pulsar other than the one that ran it.
+
 Overriding the Global Job Metrics Configuration
 -----------------------------------------------
 

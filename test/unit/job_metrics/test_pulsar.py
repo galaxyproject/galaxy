@@ -12,7 +12,11 @@ from galaxy.job_metrics.instrumenters.pulsar import (
     POSTPROCESS,
     PREPROCESS,
     PulsarPlugin,
+    read_target_version,
+    write_version_status,
+    write_version_target,
 )
+from galaxy.job_metrics.safety import Safety
 
 PREPROCESS_FILE = "__instrument_pulsar_transfer_preprocess"
 POSTPROCESS_FILE = "__instrument_pulsar_transfer_postprocess"
@@ -98,3 +102,49 @@ def test_formatting():
     assert formatter.format("postprocess_bytes", 1024) == ("Pulsar Output Staging Size", "1.0 KB")
     assert formatter.format("postprocess_files", 3) == ("Pulsar Outputs Staged", "3")
     assert formatter.format("something_else", 3) == ("something_else", "3")
+
+
+def test_reads_versions_galaxy_recorded(tmpdir):
+    write_version_target(str(tmpdir), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image")
+    write_version_status(str(tmpdir), "0.15.0.dev1")
+    properties = PulsarPlugin().job_properties(1, str(tmpdir))
+    assert properties == {
+        "client_version": "0.15.16",
+        "target_version": "0.15.0.dev1",
+        "target_version_source": "container_image",
+        "server_version": "0.15.0.dev1",
+        "server_version_source": "status",
+    }
+
+
+def test_server_version_from_the_file_pulsar_staged_back(tmpdir):
+    tmpdir.join("__instrument_pulsar_version").write(json.dumps({"version": "0.15.16"}))
+    properties = PulsarPlugin().job_properties(1, str(tmpdir))
+    assert properties == {"server_version": "0.15.16", "server_version_source": "job_files"}
+
+
+def test_status_version_wins_over_the_staged_back_file(tmpdir):
+    tmpdir.join("__instrument_pulsar_version").write(json.dumps({"version": "0.15.15"}))
+    write_version_status(str(tmpdir), "0.15.16")
+    properties = PulsarPlugin().job_properties(1, str(tmpdir))
+    assert properties["server_version"] == "0.15.16"
+    assert properties["server_version_source"] == "status"
+
+
+def test_read_target_version(tmpdir):
+    assert read_target_version(str(tmpdir)) is None
+    write_version_target(str(tmpdir), client_version="0.15.16", target_version="0.14.0", source="destination")
+    assert read_target_version(str(tmpdir)) == "0.14.0"
+
+
+def test_version_metrics_are_only_for_admins():
+    plugin = PulsarPlugin()
+    assert plugin.safety("preprocess_seconds") == Safety.SAFE
+    assert plugin.safety("server_version") == Safety.POTENTIALLY_SENSITVE
+    assert PulsarPlugin.default_safety == Safety.POTENTIALLY_SENSITVE
+
+
+def test_version_formatting():
+    formatter = PulsarPlugin.formatter
+    assert formatter.format("client_version", "0.15.16") == ("Pulsar Client Version", "0.15.16")
+    assert formatter.format("server_version_source", "status") == ("Pulsar Server Version Source", "status")
