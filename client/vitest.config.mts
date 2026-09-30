@@ -66,9 +66,6 @@ const modulesToTransform = [
     // one transformed module (with plugin-vue's feature-flag defines) rather
     // than a second copy Node loads on its own.
     "@vue/compat",
-    // Vue-component libraries that mix a component's own Vue internals
-    // (mixins, emits) into ours at runtime; same reasoning as above.
-    "@johmun/vue-tags-input",
 ];
 
 export default defineConfig({
