@@ -35,7 +35,7 @@ steps:
       postclick: true
 
     - title: Deferred Setting.
-      component: upload_activity.paste_links_row_deferred_checkbox(row=1)
+      component: upload_activity.paste_links_row_deferred_label(row=1)
       intro: By enabling deferred mode, only URLs will be stored in Galaxy and the dataset will only be fetched if and when needed by Galaxy to run tools or workflows.
       postclick: true
 
