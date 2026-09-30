@@ -106,6 +106,7 @@
 
 <script>
 import { matchCase } from "@/components/Form/utilities";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
 import FormCard from "./FormCard.vue";
@@ -206,7 +207,7 @@ export default {
             return matchCase(input, input.test_param.value) == caseId;
         },
         repeatInsert(input) {
-            const newInputs = structuredClone(input.inputs);
+            const newInputs = cloneRaw(input.inputs);
 
             input.cache = input.cache ?? [];
             input.cache.push(newInputs);
@@ -218,7 +219,7 @@ export default {
             this.onChangeForm();
         },
         repeatClone(input, cacheId) {
-            const clonedInputs = structuredClone(input.cache[cacheId]);
+            const clonedInputs = cloneRaw(input.cache[cacheId]);
 
             input.cache = input.cache ?? [];
             input.cache.splice(cacheId + 1, 0, clonedInputs);
