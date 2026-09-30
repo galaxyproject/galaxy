@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from pathlib import PurePosixPath
 from typing import (
     List,
     Optional,
@@ -9,6 +10,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
     with_config,
 )
@@ -192,6 +194,22 @@ class YamlTemplateConfigFile(TemplateConfigFile):
     model_config = ConfigDict(extra="forbid")
 
     eval_engine: Literal["ecmascript"] = "ecmascript"
+
+    @field_validator("filename", mode="after")
+    @classmethod
+    def _check_relative_filename(cls, filename: Optional[str]) -> Optional[str]:
+        # The file is linked below the job working directory, so the name must be a
+        # relative path that names a file and cannot climb out of that directory.
+        if filename is None:
+            return filename
+        path = PurePosixPath(filename)
+        if "\0" in filename or path.is_absolute() or not path.parts or ".." in path.parts:
+            raise PydanticCustomError(
+                "dynamic_tool.configfile_filename_invalid",
+                "configfile filename '{filename}' must be a relative path without '..' components",
+                {"filename": filename},
+            )
+        return filename
 
 
 # DOI: '10.<registrant>/<suffix>' per Crossref's published shape.
