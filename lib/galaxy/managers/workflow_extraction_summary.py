@@ -13,13 +13,17 @@ producing jobs as ``seeded`` and the referenced outputs as ``exposed``.
 
 import logging
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import (
     dataclass,
     field,
 )
 from typing import (
+    Any,
     cast,
     Literal,
+    Optional,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -55,7 +59,15 @@ from galaxy.workflow.extract import (
     summarize,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
+
+# The job-like keys and dataset lists of :func:`galaxy.workflow.extract.summarize`.
+# Keys are Jobs or the FakeJob / DatasetCollectionCreationJob stand-ins for inputs.
+SummaryJob = Any
+SummaryDatasets = list[tuple[str | None, HistoryItem]]
 
 SEED_AS_INPUT_WARNING = (
     "Referenced by a notebook job directive, but its tool is not a workflow step "
@@ -89,11 +101,15 @@ def _content_key(content: HistoryItem) -> ContentRef:
 
 def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryItem | None:
     kind, id_ = ref
-    model_class = HistoryDatasetCollectionAssociation if kind == "hdca" else HistoryDatasetAssociation
-    return trans.sa_session.get(model_class, id_)
+    content: HistoryItem | None
+    if kind == "hdca":
+        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, id_)
+    else:
+        content = trans.sa_session.get(HistoryDatasetAssociation, id_)
+    return content
 
 
-def _tool_for_job(trans: ProvidesHistoryContext, job: Job):
+def _tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
     try:
         return trans.app.toolbox.tool_for_job(job, user=trans.user)
     except InsufficientPermissionsException:
@@ -266,7 +282,9 @@ def _backward_job_closure(
     return result
 
 
-def _icj_assoc_by_job_id(trans: ProvidesHistoryContext, jobs) -> dict:
+def _icj_assoc_by_job_id(
+    trans: ProvidesHistoryContext, jobs: Iterable[SummaryJob]
+) -> dict[int, ImplicitCollectionJobsJobAssociation]:
     representative_job_ids = [job.id for job in jobs if isinstance(job, Job)]
     if not representative_job_ids:
         return {}
@@ -325,8 +343,8 @@ def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str 
 
 def _input_extraction_row(
     trans: ProvidesHistoryContext,
-    job,
-    datasets: list,
+    job: SummaryJob,
+    datasets: SummaryDatasets,
     *,
     seeded: bool,
     tool_name: str | None,
@@ -353,9 +371,9 @@ def _input_extraction_row(
 
 def _extraction_row(
     trans: ProvidesHistoryContext,
-    job,
-    datasets: list,
-    icj_assoc_by_job_id: dict,
+    job: SummaryJob,
+    datasets: SummaryDatasets,
+    icj_assoc_by_job_id: dict[int, ImplicitCollectionJobsJobAssociation],
     closure: ClosureResult | None,
 ) -> WorkflowExtractionJob:
     referenced = closure.referenced_output_refs if closure else set()

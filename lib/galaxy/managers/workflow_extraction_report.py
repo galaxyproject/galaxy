@@ -27,25 +27,34 @@ from galaxy.managers.markdown_util import (
     ENCODED_ID_PATTERN,
     GalaxyInternalMarkdownDirectiveHandler,
     referenced_content_ids,
+    ReferencedContent,
 )
 from galaxy.managers.workflow_extraction_naming import (
     normalize_label,
     suggested_output_name,
 )
 from galaxy.model import (
+    History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     HistoryItem,
+    Job,
     Page,
+    StoredWorkflow,
+    WorkflowInvocation,
     WorkflowStep,
 )
 from galaxy.workflow.extract import (
     _original_hda,
     _original_hdca,
     ExtractionLabelIndex,
+    OutputLabelKind,
 )
 
 log = logging.getLogger(__name__)
+
+# A directive handler's result: the rewritten line and whether the line was dropped.
+DirectiveResult = tuple[str, bool]
 
 
 def reconcile_and_build_report(
@@ -102,127 +111,135 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     values, visualizations) pass through unchanged.
     """
 
-    def __init__(self, label_index):
+    def __init__(self, label_index: ExtractionLabelIndex) -> None:
         self.index = label_index
         self.warnings: list[str] = []
 
-    def _rewrite(self, line, arg, description):
+    def _rewrite(self, line: str, arg: str | None, description: str) -> DirectiveResult:
         if arg is None:
             self.warnings.append(f"Dropped a {description} from the report: it has no workflow-relative label.")
             return ("", True)
         return (ENCODED_ID_PATTERN.sub(lambda _match: arg, line, count=1), False)
 
-    def _drop_unportable(self, line, description):
+    def _drop_unportable(self, line: str, description: str) -> DirectiveResult:
         self.warnings.append(f"Dropped a {description} from the report: it cannot be expressed relative to a workflow.")
         return ("", True)
 
-    def _content(self, line, content_kind, content):
+    def _content(self, line: str, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveResult:
         return self._rewrite(line, self.index.content_label_arg(content_kind, content), "dataset reference")
 
-    def handle_dataset_display(self, line, hda):
+    def handle_dataset_display(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_as_image(self, line, hda):
+    def handle_dataset_as_image(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_as_table(self, line, hda):
+    def handle_dataset_as_table(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_peek(self, line, hda):
+    def handle_dataset_peek(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_embedded(self, line, hda):
+    def handle_dataset_embedded(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_info(self, line, hda):
+    def handle_dataset_info(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_name(self, line, hda):
+    def handle_dataset_name(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_type(self, line, hda):
+    def handle_dataset_type(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
 
-    def handle_dataset_collection_display(self, line, hdca):
+    def handle_dataset_collection_display(
+        self, line: str, hdca: HistoryDatasetCollectionAssociation
+    ) -> DirectiveResult:
         return self._content(line, "hdca", hdca)
 
-    def _job(self, line, job):
+    def _job(self, line: str, job: Job) -> DirectiveResult:
         return self._rewrite(line, self.index.job_label_arg(job), "job reference")
 
-    def handle_tool_stdout(self, line, job):
+    def handle_tool_stdout(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
-    def handle_tool_stderr(self, line, job):
+    def handle_tool_stderr(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
-    def handle_job_metrics(self, line, job):
+    def handle_job_metrics(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
-    def handle_job_parameters(self, line, job):
+    def handle_job_parameters(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
     # Id-bearing directives with no workflow-relative form -> dropped with a warning.
-    def handle_history_link(self, line, history):
+    def handle_history_link(self, line: str, history: History) -> DirectiveResult:
         return self._drop_unportable(line, "history link")
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
+    def handle_workflow_display(
+        self, line: str, stored_workflow: StoredWorkflow, workflow_version: int | None
+    ) -> DirectiveResult:
         return self._drop_unportable(line, "workflow display")
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
+    def handle_workflow_image(
+        self, line: str, stored_workflow: StoredWorkflow, workflow_version: int | None
+    ) -> DirectiveResult:
         return self._drop_unportable(line, "workflow image")
 
-    def handle_workflow_license(self, line, stored_workflow):
+    def handle_workflow_license(self, line: str, stored_workflow: StoredWorkflow) -> DirectiveResult:
         return self._drop_unportable(line, "workflow license")
 
-    def handle_invocation_time(self, line, invocation):
+    def handle_invocation_time(self, line: str, invocation: WorkflowInvocation) -> DirectiveResult:
         return self._drop_unportable(line, "invocation time")
 
-    def handle_invocation_inputs(self, line, invocation):
+    def handle_invocation_inputs(self, line: str, invocation: WorkflowInvocation) -> DirectiveResult:
         return self._drop_unportable(line, "invocation inputs")
 
-    def handle_invocation_outputs(self, line, invocation):
+    def handle_invocation_outputs(self, line: str, invocation: WorkflowInvocation) -> DirectiveResult:
         return self._drop_unportable(line, "invocation outputs")
 
     # Id-less directives pass through unchanged (the line carries no instance id).
-    def handle_generate_galaxy_version(self, line, galaxy_version):
+    def handle_generate_galaxy_version(self, line: str, galaxy_version: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_generate_time(self, line, date):
+    def handle_generate_time(self, line: str, date: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_access_link(self, line, url):
+    def handle_instance_access_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_resources_link(self, line, url):
+    def handle_instance_resources_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_help_link(self, line, url):
+    def handle_instance_help_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_support_link(self, line, url):
+    def handle_instance_support_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_citation_link(self, line, url):
+    def handle_instance_citation_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_citation_bibtex(self, line, url):
+    def handle_instance_citation_bibtex(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_terms_link(self, line, url):
+    def handle_instance_terms_link(self, line: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_instance_organization_link(self, line, title, url):
+    def handle_instance_organization_link(self, line: str, title: str, url: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_visualization(self, line):
+    def handle_visualization(self, line: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_error(self, container, line, error):
+    def handle_error(self, container: str, line: str, error: str) -> DirectiveResult:
         self.warnings.append(f"Dropped a [{container}] directive from the report: {error}")
         return ("", True)
 
 
-def reconcile_report_labels(trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced) -> None:
+def reconcile_report_labels(
+    trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced: ReferencedContent
+) -> None:
     """Ensure every item the page references resolves to a label.
 
     A referenced tool output the user did not star is exposed as a workflow
@@ -238,8 +255,8 @@ def reconcile_report_labels(trans: ProvidesHistoryContext, index: ExtractionLabe
         content = _resolve_content(trans, kind, content_id)
         if content is None:
             continue
-        original_id = _original_id(kind, content)
-        pair = index.step_for_content(kind, original_id)
+        content_kind: OutputLabelKind = "hdca" if kind == "hdca" else "hda"
+        pair = index.step_for_content(content_kind, _original_id(kind, content))
         if pair is None:
             continue
         step, output_name = pair
@@ -258,17 +275,17 @@ def reconcile_report_labels(trans: ProvidesHistoryContext, index: ExtractionLabe
         _label_step(index.icj_to_step.get(icj_id), used)
 
 
-def _label_step(step: WorkflowStep | None, used: set) -> None:
+def _label_step(step: WorkflowStep | None, used: set[str]) -> None:
     if step is None or step.label:
         return
     step.label = _generate_label(_tool_base_name(step), used)
 
 
-def _used_labels(index: ExtractionLabelIndex) -> set:
-    steps: set = {step for step, _ in index.content_to_step.values()}
+def _used_labels(index: ExtractionLabelIndex) -> set[str]:
+    steps: set[WorkflowStep] = {step for step, _ in index.content_to_step.values()}
     steps.update(index.job_to_step.values())
     steps.update(index.icj_to_step.values())
-    used: set = set()
+    used: set[str] = set()
     for step in steps:
         if step.label:
             used.add(step.label)
@@ -283,7 +300,7 @@ def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -
     return suggested.name if suggested else None
 
 
-def _generate_label(base: str | None, used: set) -> str:
+def _generate_label(base: str | None, used: set[str]) -> str:
     label = normalize_label(base) or "label"
     candidate = label
     suffix = 2
@@ -301,8 +318,12 @@ def _tool_base_name(step: WorkflowStep) -> str:
 
 
 def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) -> HistoryItem | None:
-    model_class = HistoryDatasetCollectionAssociation if kind == "hdca" else HistoryDatasetAssociation
-    return trans.sa_session.get(model_class, content_id)
+    content: HistoryItem | None
+    if kind == "hdca":
+        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
+    else:
+        content = trans.sa_session.get(HistoryDatasetAssociation, content_id)
+    return content
 
 
 def _original_id(kind: str, content: HistoryItem) -> int:
