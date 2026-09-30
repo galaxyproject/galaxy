@@ -3,6 +3,7 @@ import os
 import tempfile
 
 import pytest
+from Cheetah.Template import Template
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.lint import (
@@ -1606,6 +1607,81 @@ def test_inputs_reserved_names(lint_ctx_xpath, input_xml, name, tag):
     message = next(m for m in lint_ctx_xpath.message_list if m.linter == "InputsNameReserved")
     assert message.xpath == f"/tool/inputs/{tag}"
     assert not lint_ctx_xpath.error_messages
+
+
+def test_inputs_reserved_names_match_cheetah():
+    # Python's class attributes vary across supported interpreter versions.
+    class TemplateAttributeBaseline:
+        pass
+
+    cheetah_reserved_names = {
+        "NonNumericInputError",
+        "_CHEETAH_cacheCompilationResults",
+        "_CHEETAH_cacheDirForModuleFiles",
+        "_CHEETAH_cacheModuleFilesForTracebacks",
+        "_CHEETAH_cacheRegionClass",
+        "_CHEETAH_cacheStore",
+        "_CHEETAH_cacheStoreClass",
+        "_CHEETAH_cacheStoreIdPrefix",
+        "_CHEETAH_compileCache",
+        "_CHEETAH_compileLock",
+        "_CHEETAH_compilerClass",
+        "_CHEETAH_compilerInstance",
+        "_CHEETAH_compilerSettings",
+        "_CHEETAH_defaultBaseclassForTemplates",
+        "_CHEETAH_defaultClassNameForTemplates",
+        "_CHEETAH_defaultMainMethodName",
+        "_CHEETAH_defaultMainMethodNameForTemplates",
+        "_CHEETAH_defaultModuleGlobalsForTemplates",
+        "_CHEETAH_defaultModuleNameForTemplates",
+        "_CHEETAH_defaultPreprocessorClass",
+        "_CHEETAH_generatedModuleCode",
+        "_CHEETAH_keepRefToGeneratedCode",
+        "_CHEETAH_preprocessors",
+        "_CHEETAH_requiredCheetahClassAttributes",
+        "_CHEETAH_requiredCheetahClassMethods",
+        "_CHEETAH_requiredCheetahMethods",
+        "_CHEETAH_useCompilationCache",
+        "_addCheetahPlumbingCodeToClass",
+        "_compile",
+        "_createCacheRegion",
+        "_getCacheStore",
+        "_getCacheStoreIdPrefix",
+        "_getCompilerClass",
+        "_getCompilerSettings",
+        "_getTemplateAPIClassForIncludeDirectiveCompilation",
+        "_handleCheetahInclude",
+        "_initCheetahInstance",
+        "_normalizePreprocessorArg",
+        "_normalizePreprocessorSettings",
+        "_preprocessSource",
+        "_updateSettingsWithPreprocessTokens",
+        "application",
+        "compile",
+        "errorCatcher",
+        "generatedClassCode",
+        "generatedModuleCode",
+        "getCacheRegion",
+        "getCacheRegions",
+        "getFileContents",
+        "getVar",
+        "hasVar",
+        "i18n",
+        "refreshCache",
+        "request",
+        "respond",
+        "runAsMainProgram",
+        "searchList",
+        "serverSidePath",
+        "session",
+        "shutdown",
+        "sleep",
+        "subclass",
+        "transaction",
+        "varExists",
+        "webInput",
+    }
+    assert Template.Reserved_SearchList == cheetah_reserved_names | set(dir(TemplateAttributeBaseline))
 
 
 def test_inputs_reserved_name_command_collision(lint_ctx):
