@@ -184,8 +184,8 @@ The pulsar plugin reports how long Pulsar spent staging a job's files, how many
 files it moved and how many bytes, separately for inputs (staged in before the job runs) and
 outputs (staged back out afterwards).
 
-It has no options. It requires Pulsar 0.15.16 or newer; jobs that did not run on Pulsar
-record nothing.
+It has no options. The transfer figures require Pulsar 0.15.16 or newer; jobs that did not
+run on Pulsar record nothing.
 
 The figures cover the transfers Pulsar itself performs. A destination configured so that
 *Galaxy* pushes and pulls the files (the ``transfer`` file action rather than

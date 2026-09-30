@@ -96,9 +96,10 @@ class PulsarPlugin(InstrumentPlugin):
     def __init__(self, **kwargs: Any) -> None:
         pass
 
-    def safety(self, metric_name: str) -> Safety:
+    @classmethod
+    def safety(cls, metric_name: str) -> Safety:
         if metric_name in VERSION_LABELS:
-            return self.default_safety
+            return cls.default_safety
         return Safety.SAFE
 
     def job_properties(self, job_id: int, job_directory: str) -> dict[str, Any]:
@@ -136,8 +137,13 @@ def write_version_status(job_directory: str, server_version: str) -> None:
 
 
 def read_target_version(job_directory: str) -> str | None:
-    """The version recorded by write_version_target, if the job has one."""
-    return _read(job_directory, VERSION_TARGET).get("target_version")
+    """The version recorded by write_version_target, if the job has one and it's readable."""
+    try:
+        return _read(job_directory, VERSION_TARGET).get("target_version")
+    except (ValueError, AttributeError):
+        # _write is best effort, so this may be a partial write - finishing falls back instead.
+        log.warning("Unreadable Pulsar target version in %s", job_directory, exc_info=True)
+        return None
 
 
 def _path(job_directory: str, name: str) -> str:
