@@ -1,9 +1,5 @@
-// configureCompat is a compat-build-only API, not part of the real "vue" package's
-// types that vue-tsc now checks against; import it from @vue/compat, which "vue"
-// resolves to at build time anyway.
-import { configureCompat } from "@vue/compat";
 import { createPinia } from "pinia";
-import { createApp } from "vue";
+import { configureCompat, createApp } from "vue";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
@@ -43,7 +39,6 @@ window.addEventListener("load", async () => {
     Galaxy.router = router;
 
     // Initialize globals
-    initSentry(Galaxy, router);
     await initWebhooks(Galaxy);
 
     // When initializing the primary app we bind the routing back to Galaxy for
@@ -56,5 +51,6 @@ window.addEventListener("load", async () => {
     app.use(router);
     app.use(pinia);
     installAppPlugins(app);
+    initSentry(Galaxy, router, app);
     app.mount("#app");
 });

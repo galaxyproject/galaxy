@@ -1,9 +1,4 @@
 <script setup lang="ts">
-// "vue" resolves to @vue/compat at build time, but vue-tsc types it against the
-// real vue package, which has no default export; import the compat Vue directly
-// so Vue.use keeps its type.
-import Vue from "@vue/compat";
-import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -16,8 +11,6 @@ import MarkdownSelector from "./MarkdownSelector.vue";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
 import BasicSelectionDialog from "@/components/SelectionDialog/BasicSelectionDialog.vue";
 import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
-
-Vue.use(BootstrapVue);
 
 interface MarkdownDialogProps {
     argumentName?: string;
