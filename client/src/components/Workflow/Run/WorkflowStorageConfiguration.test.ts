@@ -80,9 +80,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             nth(selectComponents, 0).vm.$emit("updated", "storage123");
             await flushPromises();
 
-            const emitted = wrapper.emitted();
-            expect(emitted["updated"]?.[0]?.[0]).toEqual("storage123");
-            expect(emitted["updated"]?.[0]?.[1]).toEqual(false);
+            expect(wrapper.emitted("updated")).toEqual([["storage123", false]]);
         });
 
         it("should fire an update event when intermediate selection is updated", async () => {
@@ -100,9 +98,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             nth(selectComponents, 1).vm.$emit("updated", "storage123");
             await flushPromises();
 
-            const emitted = wrapper.emitted();
-            expect(emitted["updated"]?.[0]?.[0]).toEqual("storage123");
-            expect(emitted["updated"]?.[0]?.[1]).toEqual(true);
+            expect(wrapper.emitted("updated")).toEqual([["storage123", true]]);
         });
     });
 });

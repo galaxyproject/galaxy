@@ -1,5 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -89,6 +89,6 @@ describe("CopyModal", () => {
         await wrapper.vm.$nextTick();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
-        expect(wrapper.emitted()["update:show-modal"]?.at(-1)?.[0]).toBe(false);
+        expect(emittedArg(wrapper, "update:show-modal", -1)).toBe(false);
     });
 });

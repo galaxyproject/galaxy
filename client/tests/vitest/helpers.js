@@ -192,6 +192,23 @@ export function nth(items, index) {
     return item;
 }
 
+/**
+ * The first argument of the `index`-th emission of `event` (negative counts
+ * from the end), failing with a clear message when it wasn't emitted that often.
+ * @param {{ emitted: (event: string) => unknown[][] | undefined }} wrapper
+ * @param {string} event
+ * @param {number} [index]
+ * @returns {unknown}
+ */
+export function emittedArg(wrapper, event, index = 0) {
+    const emissions = wrapper.emitted(event) ?? [];
+    const args = emissions[index < 0 ? emissions.length + index : index];
+    if (args === undefined) {
+        throw new Error(`Expected "${event}" emission ${index}, but it was emitted ${emissions.length} times.`);
+    }
+    return args[0];
+}
+
 export function dispatchEvent(wrapper, type, props = {}) {
     const event = new Event(type, { bubbles: true });
     Object.assign(event, props);

@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -29,8 +29,7 @@ async function init(wrapper, data) {
 }
 
 async function validateLatestEmittedPath(wrapper, expectedPath) {
-    const latestEmitIndex = wrapper.emitted()["input"].length - 1;
-    const latestPath = wrapper.emitted()["input"][latestEmitIndex][0];
+    const latestPath = emittedArg(wrapper, "input", -1);
     expect(latestPath).toBe(expectedPath);
 
     // also manually change prop value to be able to test the value being displayed

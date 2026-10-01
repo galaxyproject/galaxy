@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -96,8 +96,7 @@ describe("SelectPreferredStore.vue", () => {
         expect(putRequests.length).toBe(1);
         expect(putRequests[0]?.data.preferred_object_store_id).toEqual(null);
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
+        expect(emittedArg(wrapper, "updated")).toEqual(null);
     });
 
     it("updates object store to on non-null selection", async () => {
@@ -121,8 +120,7 @@ describe("SelectPreferredStore.vue", () => {
         expect(putRequests.length).toBe(1);
         expect(putRequests[0]?.data.preferred_object_store_id).toEqual("object_store_2");
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");
+        expect(emittedArg(wrapper, "updated")).toEqual("object_store_2");
     });
 
     it("keeps the modal open and shows a toast when the storage update request fails", async () => {
@@ -155,7 +153,7 @@ describe("SelectPreferredStore.vue", () => {
         await flushPromises();
 
         expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-        expect(wrapper.emitted()["update:show"]?.at(-1)?.[0]).not.toBe(false);
+        expect(emittedArg(wrapper, "update:show", -1)).not.toBe(false);
         expect(Toast.error).toHaveBeenCalledWith("failed to update", "Failed to update history storage location");
     });
 
@@ -172,6 +170,6 @@ describe("SelectPreferredStore.vue", () => {
 
         await flushPromises();
 
-        expect(wrapper.emitted()["update:show"]?.at(-1)?.[0]).toBe(false);
+        expect(emittedArg(wrapper, "update:show", -1)).toBe(false);
     });
 });

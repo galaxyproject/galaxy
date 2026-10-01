@@ -1,4 +1,4 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { DOMWrapper, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { nextTick } from "vue";
@@ -227,11 +227,11 @@ describe("HeadlessMultiselect", () => {
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
+            expect(emittedArg(wrapper, "input")).toEqual(["name:named"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            expect(emittedArg(wrapper, "input", 1)).toEqual(["name:named_2"]);
             await close(wrapper);
         });
 
@@ -244,11 +244,11 @@ describe("HeadlessMultiselect", () => {
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
+            expect(emittedArg(wrapper, "input")).toEqual(["name:named_2", "name:named_3"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            expect(emittedArg(wrapper, "input", 1)).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });
 
@@ -262,7 +262,7 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("123");
             await keyPress(input, "Enter");
 
-            expect(wrapper.emitted()["addOption"]?.[0]?.[0]).toBe("123");
+            expect(emittedArg(wrapper, "addOption")).toBe("123");
             await close(wrapper);
         });
 
@@ -276,10 +276,10 @@ describe("HeadlessMultiselect", () => {
             const options = findAllOptions();
 
             await nth(options, 0).trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
+            expect(emittedArg(wrapper, "input")).toEqual(["name:named"]);
 
             await nth(options, 1).trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            expect(emittedArg(wrapper, "input", 1)).toEqual(["name:named_2"]);
             await close(wrapper);
         });
 
@@ -293,10 +293,10 @@ describe("HeadlessMultiselect", () => {
             const options = findAllOptions();
 
             await nth(options, 0).trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
+            expect(emittedArg(wrapper, "input")).toEqual(["name:named_2", "name:named_3"]);
 
             await nth(options, 1).trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            expect(emittedArg(wrapper, "input", 1)).toEqual(["name:named", "name:named_3"]);
             await close(wrapper);
         });
     });

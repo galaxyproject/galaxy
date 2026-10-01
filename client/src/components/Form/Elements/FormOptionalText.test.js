@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -21,9 +21,9 @@ describe("FormOptionalText", () => {
         const elText = wrapper.find("input[type='text']");
         expect(elText.element.value).toEqual(v);
         await el.setChecked(false);
-        expect(wrapper.emitted().input[0][0]).toEqual(null);
+        expect(emittedArg(wrapper, "input")).toEqual(null);
         await el.setChecked(true);
-        expect(wrapper.emitted().input[1][0]).toEqual("");
+        expect(emittedArg(wrapper, "input", 1)).toEqual("");
     });
 
     it("should initialize with null if value does not exist", async () => {

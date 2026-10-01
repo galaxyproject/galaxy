@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -35,7 +35,7 @@ describe("FormRadio", () => {
             await inputs.at(i).setChecked();
             expect(labels.at(i).text()).toBe(`label_${i}`);
             expect(inputs.at(i).attributes("value")).toBe(`value_${i}`);
-            expect(wrapper.emitted()["input"][i][0]).toBe(`value_${i}`);
+            expect(emittedArg(wrapper, "input", i)).toBe(`value_${i}`);
         }
     });
 });

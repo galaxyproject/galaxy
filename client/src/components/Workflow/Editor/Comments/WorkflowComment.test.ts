@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { suppressErrorForCustomIcons } from "@tests/vitest/helpers";
+import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -188,7 +188,7 @@ describe("WorkflowComment", () => {
         const textComment = wrapper.findComponent(TextComment);
 
         textComment.vm.$emit("pan-by", { x: 50, y: 50 });
-        expect(wrapper.emitted()["pan-by"]?.[0]?.[0]).toEqual({ x: 50, y: 50 });
+        expect(emittedArg(wrapper, "pan-by")).toEqual({ x: 50, y: 50 });
     });
 
     describe("rendering comment text", () => {

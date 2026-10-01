@@ -1,4 +1,4 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -154,8 +154,8 @@ describe("PageRevisionList", () => {
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
             await nth(items, 1).trigger("click");
 
-            expect(wrapper.emitted().select).toBeTruthy();
-            expect(wrapper.emitted().select![0]![0]).toBe("rev-2");
+            expect(wrapper.emitted("select")).toBeTruthy();
+            expect(emittedArg(wrapper, "select")).toBe("rev-2");
         });
 
         it("emits 'restore' with revision id when restore button is clicked", async () => {
@@ -166,8 +166,8 @@ describe("PageRevisionList", () => {
             const restoreBtn = nth(wrapper.findAll(SELECTORS.RESTORE_BUTTON), 0);
             await restoreBtn.trigger("click");
 
-            expect(wrapper.emitted().restore).toBeTruthy();
-            expect(wrapper.emitted().restore![0]![0]).toBe("rev-older");
+            expect(wrapper.emitted("restore")).toBeTruthy();
+            expect(emittedArg(wrapper, "restore")).toBe("rev-older");
         });
 
         it("restore button click does not also emit 'select' (click.stop)", async () => {
@@ -178,8 +178,8 @@ describe("PageRevisionList", () => {
             const restoreBtn = nth(wrapper.findAll(SELECTORS.RESTORE_BUTTON), 0);
             await restoreBtn.trigger("click");
 
-            expect(wrapper.emitted().restore).toBeTruthy();
-            expect(wrapper.emitted().select).toBeFalsy();
+            expect(wrapper.emitted("restore")).toBeTruthy();
+            expect(wrapper.emitted("select")).toBeFalsy();
         });
     });
 

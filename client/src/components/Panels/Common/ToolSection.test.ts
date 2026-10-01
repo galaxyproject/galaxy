@@ -36,7 +36,7 @@ describe("ToolSection", () => {
         const nameElement = wrapper.findAll(".name");
         expect(nameElement[0]?.text()).toBe("name");
         nameElement[0]?.trigger("click");
-        expect(wrapper.emitted().onClick).toBeDefined();
+        expect(wrapper.emitted("onClick")).toBeDefined();
     });
 
     test("test tool section title", async () => {

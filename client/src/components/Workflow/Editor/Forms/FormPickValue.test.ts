@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -44,12 +44,11 @@ function mountPickValue(step?: Step): VueWrapper {
 }
 
 function getLastEmittedState(wrapper: VueWrapper): EmittedState {
-    const events = wrapper.emitted().onChange!;
-    return events[events.length - 1]![0] as EmittedState;
+    return emittedArg(wrapper, "onChange", -1) as EmittedState;
 }
 
 function getEmittedCount(wrapper: VueWrapper): number {
-    return wrapper.emitted().onChange!.length;
+    return wrapper.emitted("onChange")!.length;
 }
 
 describe("FormPickValue", () => {

@@ -5,7 +5,7 @@ import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
-import type { SelectOption } from "./worker/selectMany";
+import type { SelectOption, SelectValue } from "./worker/selectMany";
 
 import FormSelectMany from "./FormSelectMany.vue";
 
@@ -14,7 +14,7 @@ const localVue = getLocalVue();
 
 vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
-function mountSelectMany(props: Partial<PropType<typeof FormSelectMany>>) {
+function mountSelectMany(props: Partial<InstanceType<typeof FormSelectMany>["$props"]>) {
     return mount(FormSelectMany as any, {
         props: { options: [], value: [], ...props },
         pinia,
@@ -56,13 +56,13 @@ function generateOptionsFromArrays(matrix: Array<Array<string>>): SelectOption[]
 
 /** gets the latest input event value and reflects it to props */
 async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
-    const emittedEvents = wrapper.emitted()?.["input"];
+    const emittedEvents = wrapper.emitted("input");
 
     if (!emittedEvents) {
         return undefined;
     }
 
-    const latestValue = emittedEvents[emittedEvents.length - 1]?.[0];
+    const latestValue = emittedEvents.at(-1)?.[0] as SelectValue[] | undefined;
 
     if (latestValue === undefined) {
         return undefined;
@@ -140,11 +140,11 @@ describe("FormSelectMany", () => {
         {
             const selectedOptions = wrapper.findAll(selectors.selectedOptions);
             expect(selectedOptions.length).toBe(3);
-            expect(nth(selectedOptions, 2).text()).toBe(emitted[2]);
+            expect(nth(selectedOptions, 2).text()).toBe(nth(emitted, 2));
 
             const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
             unselectedOptions.forEach((unselectedOption) => {
-                expect(unselectedOption.text()).not.toBe(emitted[2]);
+                expect(unselectedOption.text()).not.toBe(nth(emitted, 2));
             });
         }
     });
