@@ -118,29 +118,82 @@ class VisualizationPackageManager:
 
         self.save_config(config)
 
+    def install_package(self, viz_id: str, package: str, version: str) -> dict:
+        """Install a new package into the managed store and record it in the config."""
+        self.validate_viz_id(viz_id)
+        if self.get_package_info(viz_id) or self.is_package_installed(viz_id):
+            raise exceptions.Conflict(f"Package '{viz_id}' is already installed")
+
+        install_result = self.install_npm_package(package, version, self.get_package_path(viz_id))
+        self.add_package_to_config(viz_id, package, version, enabled=True)
+        log.info(f"Successfully installed visualization package {viz_id} ({package}@{version})")
+        return install_result
+
+    def update_package(self, viz_id: str, version: str) -> dict:
+        """Safe update: install new version to temp, swap on success, keep old on failure."""
+        self.validate_viz_id(viz_id)
+        info = self.get_package_info(viz_id)
+        if not info:
+            raise exceptions.ObjectNotFound(f"Visualization package '{viz_id}' not found")
+        package = info["package"]
+        enabled = info.get("enabled", True)
+        target_dir = self.get_package_path(viz_id)
+
+        with tempfile.TemporaryDirectory() as staging_dir:
+            new_pkg_dir = os.path.join(staging_dir, viz_id)
+            try:
+                install_result = self.install_npm_package(package, version, new_pkg_dir)
+            except Exception:
+                log.warning(f"Failed to install {package}@{version}, keeping existing version")
+                raise
+
+            backup_dir = os.path.join(staging_dir, f"{viz_id}_backup")
+            if os.path.exists(target_dir):
+                shutil.move(target_dir, backup_dir)
+
+            try:
+                shutil.move(new_pkg_dir, target_dir)
+            except Exception:
+                if os.path.exists(backup_dir):
+                    shutil.move(backup_dir, target_dir)
+                raise
+
+        self.add_package_to_config(viz_id, package, version, enabled=enabled)
+        log.info(f"Successfully updated visualization package {viz_id} to version {version}")
+        return {**install_result, "enabled": enabled}
+
+    def uninstall_package(self, viz_id: str) -> None:
+        self.validate_viz_id(viz_id)
+        if not self.get_package_info(viz_id):
+            raise exceptions.ObjectNotFound(f"Package '{viz_id}' not found")
+        self.remove_package_from_config(viz_id)
+        self.cleanup_package_files(viz_id)
+        log.info(f"Successfully uninstalled visualization package {viz_id}")
+
+    def _run_npm_install(self, package_spec: str, prefix: str) -> None:
+        """Run ``npm install`` for one package into ``prefix``; the only place npm is invoked."""
+        cmd = [
+            "npm",
+            "install",
+            package_spec,
+            "--prefix",
+            prefix,
+            "--no-audit",
+            "--no-fund",
+            "--production",
+        ]
+        log.info(f"Installing npm package: {package_spec}")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=prefix)
+        if result.returncode != 0:
+            log.error(f"npm install failed: {result.stderr}")
+            raise exceptions.InternalServerError(f"Package installation failed: {result.stderr}")
+
     def install_npm_package(self, package: str, version: str, target_dir: str) -> dict:
         """Install an npm package to a target directory."""
         self.validate_npm_inputs(package, version)
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
-                package_spec = f"{package}@{version}"
-                cmd = [
-                    "npm",
-                    "install",
-                    package_spec,
-                    "--prefix",
-                    temp_dir,
-                    "--no-audit",
-                    "--no-fund",
-                    "--production",
-                ]
-
-                log.info(f"Installing npm package: {package_spec}")
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=temp_dir)
-
-                if result.returncode != 0:
-                    log.error(f"npm install failed: {result.stderr}")
-                    raise exceptions.InternalServerError(f"Package installation failed: {result.stderr}")
+                self._run_npm_install(f"{package}@{version}", temp_dir)
 
                 # Scoped packages live under node_modules/@scope/name
                 if package.startswith("@"):
@@ -173,10 +226,7 @@ class VisualizationPackageManager:
 
         except subprocess.TimeoutExpired:
             raise exceptions.InternalServerError("Package installation timed out")
-        except (
-            exceptions.InternalServerError,
-            exceptions.RequestParameterInvalidException,
-        ):
+        except (exceptions.MessageException, exceptions.ConfigurationError):
             raise
         except Exception as e:
             log.error(f"Failed to install npm package {package}@{version}: {e}")
@@ -358,6 +408,8 @@ class VisualizationPackageManager:
                 "errors": errors,
             }
 
+        except (exceptions.MessageException, exceptions.ConfigurationError):
+            raise
         except Exception as e:
             log.error(f"Failed to stage visualizations: {e}")
             raise exceptions.InternalServerError(f"Failed to stage visualizations: {e}")
@@ -375,7 +427,7 @@ class VisualizationPackageManager:
                 "size": self.get_directory_size(stage_spec["target_path"]),
             }
 
-        except exceptions.ObjectNotFound:
+        except (exceptions.MessageException, exceptions.ConfigurationError):
             raise
         except Exception as e:
             log.error(f"Failed to stage visualization {viz_id}: {e}")

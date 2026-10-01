@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 from unittest.mock import (
     MagicMock,
     patch,
@@ -8,71 +7,106 @@ from unittest.mock import (
 
 import pytest
 
+from galaxy import exceptions
 from galaxy.managers.visualization_admin import VisualizationPackageManager
 from galaxy.webapps.galaxy.services.admin_visualizations import AdminVisualizationsService
 
 
-def _write_package(package_dir: str, package_name: str, version: str) -> None:
-    shutil.rmtree(package_dir, ignore_errors=True)
-    static_dir = os.path.join(package_dir, "static")
-    os.makedirs(static_dir, exist_ok=True)
-    with open(os.path.join(package_dir, "package.json"), "w") as f:
-        json.dump({"name": package_name, "version": version}, f)
-    plugin_name = os.path.basename(package_dir)
-    with open(os.path.join(static_dir, f"{plugin_name}.xml"), "w") as f:
-        f.write(f"<visualization name='{plugin_name}' />")
-    with open(os.path.join(static_dir, "index.html"), "w") as f:
-        f.write(version)
+def _fake_npm_install(package_spec: str, prefix: str) -> None:
+    package, version = package_spec.rsplit("@", 1)
+    pkg_path = os.path.join(prefix, "node_modules", *package.split("/"))
+    os.makedirs(pkg_path, exist_ok=True)
+    with open(os.path.join(pkg_path, "package.json"), "w") as f:
+        json.dump({"name": package, "version": version}, f)
 
 
 @pytest.fixture()
-def service(tmp_path):
-    app = MagicMock()
+def manager(tmp_path, monkeypatch):
     config = MagicMock()
     config.root = str(tmp_path / "galaxy")
     config.visualization_packages_config_file = str(tmp_path / "managed" / "visualization_packages.yml")
     config.visualization_packages_dir = str(tmp_path / "managed" / "visualization_packages")
     manager = VisualizationPackageManager(config)
-    service = AdminVisualizationsService(security=MagicMock(), app=app, package_manager=manager)
-    return service, manager
+    monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install)
+    return manager
 
 
-def test_update_package_restores_previous_version_on_swap_failure(service):
-    service, manager = service
-    viz_id = "circster"
-    package_name = "@galaxyproject/circster"
-    target_dir = manager.get_package_path(viz_id)
-    _write_package(target_dir, package_name, "1.0.0")
-    manager.add_package_to_config(viz_id, package_name, "1.0.0", enabled=True)
-
-    def fake_install(package: str, version: str, destination: str):
-        _write_package(destination, package, version)
-        return {"package": package, "version": version, "size": 1}
-
-    real_move = shutil.move
-    swap_failed = False
-
-    def flaky_move(src: str, dst: str, *args, **kwargs):
-        nonlocal swap_failed
-        if not swap_failed and src != target_dir and dst == target_dir:
-            swap_failed = True
-            raise OSError("swap failed")
-        return real_move(src, dst, *args, **kwargs)
-
-    with patch.object(manager, "install_npm_package", side_effect=fake_install):
-        with patch("galaxy.webapps.galaxy.services.admin_visualizations.shutil.move", side_effect=flaky_move):
-            with pytest.raises(OSError, match="swap failed"):
-                service.update_package(MagicMock(), viz_id, "2.0.0")
-
-    with open(os.path.join(target_dir, "package.json")) as f:
-        metadata = json.load(f)
-
-    assert metadata["version"] == "1.0.0"
-    assert manager.load_config()[viz_id]["version"] == "1.0.0"
+@pytest.fixture()
+def app():
+    return MagicMock()
 
 
-def test_reload_registry_reloads_locally_and_broadcasts(service):
-    service, _ = service
+@pytest.fixture()
+def service(manager, app):
+    return AdminVisualizationsService(security=MagicMock(), app=app, package_manager=manager)
+
+
+def test_install_then_show(service):
+    installed = service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
+    assert installed.installed is True
+    assert installed.size > 0
+
+    shown = service.show(MagicMock(), "circster")
+    assert shown.package == "@galaxyproject/circster"
+    assert shown.version == "1.0.0"
+    assert shown.metadata == {"name": "@galaxyproject/circster", "version": "1.0.0"}
+
+
+def test_install_invalid_package_is_rejected_before_npm(service, manager):
+    with patch.object(manager, "_run_npm_install") as npm:
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            service.install_package(MagicMock(), "circster", "../escape", "1.0.0")
+    npm.assert_not_called()
+    assert manager.get_package_info("circster") is None
+
+
+def test_update_reports_new_version_and_existing_enabled_flag(service, manager):
+    service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
+    service.toggle_package(MagicMock(), "circster", False)
+
+    updated = service.update_package(MagicMock(), "circster", "2.0.0")
+
+    assert updated.package == "@galaxyproject/circster"
+    assert updated.version == "2.0.0"
+    assert updated.enabled is False
+    assert manager.get_package_info("circster")["version"] == "2.0.0"
+
+
+def test_manager_errors_keep_their_type(service):
+    # These used to be rewrapped as InternalServerError by the service
+    with pytest.raises(exceptions.ObjectNotFound):
+        service.update_package(MagicMock(), "missing", "1.0.0")
+    with pytest.raises(exceptions.ObjectNotFound):
+        service.stage_visualization(MagicMock(), "missing")
+
+
+def test_reload_registry_reloads_locally_and_broadcasts(service, app):
     service.reload_registry(MagicMock())
-    service.app.visualizations_registry.reload.assert_called_once_with()
-    service.app.queue_worker.send_control_task.assert_called_once_with("reload_visualizations", noop_self=True)
+    app.visualizations_registry.reload.assert_called_once_with()
+    app.queue_worker.send_control_task.assert_called_once_with("reload_visualizations", noop_self=True)
+
+
+def test_available_packages_maps_registry_results(service, manager):
+    registry_result = [
+        {
+            "name": "@galaxyproject/circster",
+            "description": "Circster",
+            "version": "1.2.3",
+            "keywords": ["visualization"],
+            "author": {},
+            "maintainers": [],
+            "links": {},
+            "date": "2026-01-01",
+            "score": {},
+        }
+    ]
+    with patch.object(manager, "query_npm_registry", return_value=registry_result):
+        available = service.get_available_packages(MagicMock())
+    assert [(pkg.name, pkg.version) for pkg in available.root] == [("@galaxyproject/circster", "1.2.3")]
+
+
+def test_package_versions_passthrough(service, manager):
+    with patch.object(manager, "get_package_versions", return_value=["2.0.0", "1.0.0"]):
+        versions = service.get_package_versions(MagicMock(), "@galaxyproject/circster")
+    assert versions.package == "@galaxyproject/circster"
+    assert versions.versions == ["2.0.0", "1.0.0"]
