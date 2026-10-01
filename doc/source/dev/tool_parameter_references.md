@@ -6,7 +6,9 @@ intended for Galaxy developers evaluating new features or changes to existing fe
 
 Start with [At a Glance](#at-a-glance), then use [Tool Syntax](#tool-syntax), [API](#api) or
 [Workflows](#workflows) for the relevant interface. For how parameter _values_ are represented and
-validated, see [Tool State](tool_state.md).
+validated, see [Tool State](tool_state.md). Collapsed verification notes identify supporting tests
+and source inspection for selected behaviors; [Verification Gaps](#verification-gaps) lists the
+remaining checks.
 
 ## Running Example
 
@@ -235,6 +237,18 @@ echo $adv.size $cond.sel
 - The `OutputsFormatSourceReference` linter warns when an unqualified name matches a nested
   parameter. It does not model repeats, so a name inside a repeat counts as top level and passes.
 
+<details><summary>Verification</summary>
+
+- **Tested:** [`test_default_identifier_source_map_over`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_tools.py) uses
+  [`identifier_source.xml`](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/identifier_source.xml) to assert that each
+  output inherits identifiers from the selected mapped-over input. Its inputs are top level;
+  it does not establish repeat-path support.
+- **Source-inspected:** [`_structure_for_output`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/execute.py) looks up
+  `default_identifier_source` in `collection_info.collections` by exact key.
+- **Unverified:** repeat-indexed identifier sources need the mapped execution check listed below.
+
+</details>
+
 #### `structured_like`
 
 ```xml
@@ -325,7 +339,7 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
 
 - References are **bare leaf names in lexical scope**, resolved through `ExpressionContext` chains.
   The lookup checks the parameter's own level first, then each enclosing level outward.
-- At parse time, `parse_param_elem` asserts that each dependency was **already declared**.
+- At parse time, `_from_input_source_galaxy` asserts that each dependency was **already declared**.
   - You cannot reach into a sibling or child grouping: `data_ref="input1"` fails from the top level,
     and `cond.input1` and `cond|input1` fail too.
   - Forward references fail.
@@ -365,6 +379,18 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
   - **Profile edge case:** a profile between the two, such as `24.1.1`, gets neither: bare names are no
     longer matched, and the validation that would report them is skipped.
 - Test `<output>` and `<output_collection>` names refer to outputs, not parameters.
+
+<details><summary>Verification</summary>
+
+- **Tested:** [`test_parameter_test_cases.py`](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/tool_util/test_parameter_test_cases.py)
+  includes `test_legacy_features_fail_validation_with_24_2` for the profile gate and
+  `test_nested_conditional_duplicate_short_names_are_distinct_when_qualified` for qualified paths.
+  These are parsing/state-conversion checks, not job executions.
+- **Test tool fixtures:** the XML definitions under `test/functional/tools` supply the declared
+  inputs and test cases used by these checks. An embedded test is evidence for its assertions,
+  not for every reference style the tool contains.
+
+</details>
 
 #### Not References
 
@@ -491,6 +517,18 @@ As a file-flavor tool, the example has to drop `adv`. Its repeat looks like this
       format: txt
 ```
 
+<details><summary>Verification</summary>
+
+- **Tested:** [`test_repeat_of_data` and `test_section_recurses`](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/tool_util/test_yaml_parameters.py)
+  validate authoring models and call `to_internal()`. They establish model conversion, not loading
+  through `YamlToolSource`.
+- **Source-inspected:** [`YamlInputSource`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/parser/yaml.py) reads repeat
+  children from `blocks:`; [`_from_input_source_galaxy`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/parameters/factory.py)
+  rejects an unknown leaf type such as `section`.
+- **Unverified:** add a parser/loading regression test that crosses this model/parser boundary.
+
+</details>
+
 #### JavaScript Expressions
 
 `shell_command`, the `content` of each `configfiles` entry, and the `arguments` that follow
@@ -528,6 +566,20 @@ Validation and runtime caveats:
 - `configfiles` always use JavaScript. A file-flavor tool that pairs Cheetah `command:` with
   `configfiles` evaluates them against a Cheetah `param_dict` that has no `inputs` key. This
   combination is untested.
+
+<details><summary>Verification</summary>
+
+- **Test tool fixtures:** [`simple_constructs.yml`](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/simple_constructs.yml)
+  exercises conditional and repeat references in a JavaScript command;
+  [`configfile_user_defined.yml`](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/configfile_user_defined.yml)
+  asserts the contents produced by a JavaScript configfile paired with `shell_command`.
+  Neither establishes that Cheetah `command:` works with JavaScript configfiles.
+- **Source-inspected:** [`UserToolEvaluator.build_param_dict`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/evaluation.py)
+  selects `runtimeify` when validated job state exists, otherwise `to_cwl`.
+- **Unverified:** runtime-shape parity between those paths and the mixed-language configfile case
+  need execution checks.
+
+</details>
 
 #### Output Source Attributes
 
@@ -637,6 +689,18 @@ parameters differently in its validation errors (see
 [Parameter Names in Responses](#parameter-names-in-responses)). Parameter _values_ and their
 validation are covered in [Tool State](tool_state.md); this section covers only how parameters are
 addressed.
+
+<details><summary>Verification</summary>
+
+- **Tested:** [`test_multi_run_in_repeat`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_tool_execute.py)
+  submits a batch inside a repeat and asserts job/output results. Tests requesting
+  [`tool_input_format`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/conftest.py) are parametrized over legacy flat,
+  legacy nested and request inputs; this does not extend to tests that omit the fixture.
+- **Source-inspected:** [`GalaxyInteractorApi.run_tool`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/verify/interactor.py)
+  appends flat job-resource keys after preparing test inputs. Request-API execution with these
+  injected keys remains a verification gap.
+
+</details>
 
 ### Legacy Tool API
 
@@ -930,6 +994,20 @@ A native workflow keys connections by pipe path and stores state as nested JSON:
 - `post_job_actions` keys are `action_type + output_name`. Arguments name outputs, never parameters,
   except for the [rename syntax](#rename-post-job-action).
 
+<details><summary>Verification</summary>
+
+- **Tested:** [`test_nested_key_to_path`](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/app/tools/test_parameter_parsing.py)
+  checks conversion of a nested-repeat pipe path into dictionary keys and list indexes. It does
+  not test creating repeat instances or connecting a workflow.
+- **Tested:** [`test_inputs_to_steps`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_workflows_from_yaml.py)
+  invokes a workflow with a top-level repeat connection. It does not cover nested-repeat
+  augmentation.
+- **Source-inspected:** [`augment_tool_state_for_input_connections`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/workflow/modules.py)
+  begins with a repeat prefix and looks up that repeat in root tool inputs. Its nested-repeat
+  branch is explicitly marked untested.
+
+</details>
+
 ### Format2 (gxformat2)
 
 gxformat2 uses pipe paths in `in:` and nested state in `state:`:
@@ -1040,3 +1118,23 @@ pipe-path `input_name`. Upgrade and fill-defaults messages report `input_name` t
 schema documents the format as `'cond|repeat_0|input'`. `extract_untyped_parameter` rewrites
 `${name}` in rename PJAs and connects, by its pipe path, every tool input whose value is exactly
 `${name}`.
+
+## Verification Gaps
+
+Verification notes use **Tested** for behavior asserted by a named regression test,
+**Source-inspected** for behavior inferred from the implementation, and **Unverified** for an
+unsettled outcome. They describe the evidence available in the repository, not a claim that every
+listed test was run for this documentation change. Test-tool fixtures provide executable examples;
+model validation, parser/loading checks and job execution establish different things.
+
+These are focused checks within this reference's existing scope. Close a gap by adding or locating
+a test that asserts the outcome, then update the relevant claim and verification note.
+
+| Behavior                                    | Check needed to close the gap                                                                                                                                                      | Test level                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Repeat-indexed `default_identifier_source`  | Map over `queries_0\|input2` and assert output element identifiers; also assert the behavior for an unmatched source                                                               | API execution with an XML test tool |
+| Modelled YAML groupings                     | Pass section and repeat definitions through model validation and actual tool loading; assert the parser/model mismatch, then update the compatibility warning if support changes   | Parser/loading regression           |
+| Legacy YAML runtime state                   | Execute the same conditional/repeat file-flavor tool through legacy and request submission; assert the values and paths exposed to JavaScript                                      | API execution with a YAML test tool |
+| Cheetah command with JavaScript configfiles | Load a file-flavor tool combining `command:` and a configfile that reads `inputs`; assert the resulting content or explicit failure                                                | Tool execution                      |
+| Job resources through `/api/jobs`           | Configure injected resource inputs and submit a tool test with resource overrides through the request API; assert both acceptance and the applied values                           | Integration/API execution           |
+| Workflow repeat augmentation                | Import and invoke connections to nested repeats and repeats beneath sections/conditionals, starting without the required instances; distinguish path lookup from instance creation | Workflow API execution              |
