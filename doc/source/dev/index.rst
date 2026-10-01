@@ -23,6 +23,7 @@ A multi-hour long video playlist covering these slides can be found at
   data_source
   data_types
   tool_source_storage
+  tool_state
   ga4gh_wes
   faq
   writing_tests
