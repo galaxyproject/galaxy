@@ -78,10 +78,13 @@ importers:
         version: 2.11.8
       '@sentry/vue':
         specifier: ^10.45.0
-        version: 10.57.0(pinia@3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
+        version: 10.57.0(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
       '@vue/compat':
         specifier: 3.5.43
         version: 3.5.43(patch_hash=3c17256baf827d47ff3f8021577b9396f4c7745d92c74ab1fb952cc416d397ae)(vue@3.5.43(typescript@5.8.3))
+      '@vue/devtools-api':
+        specifier: ^8.2.1
+        version: 8.2.1
       '@vueuse/core':
         specifier: ^11.3.0
         version: 11.3.0(vue@3.5.43(typescript@5.8.3))
@@ -239,14 +242,14 @@ importers:
         specifier: ^0.17.0
         version: 0.17.0
       pinia:
-        specifier: ^3.0.4
-        version: 3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
+        specifier: ^4.0.3
+        version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
       popper.js:
         specifier: ^1.16.1
         version: 1.16.1
       postcss:
         specifier: ^8.4.6
-        version: 8.5.26
+        version: 8.5.28
       pretty-bytes:
         specifier: ^6.1.1
         version: 6.1.1
@@ -348,8 +351,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(rollup@4.60.1)(vite@8.0.16(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))
       '@pinia/testing':
-        specifier: ^1.0.3
-        version: 1.0.3(pinia@3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))
+        specifier: ^2.0.1
+        version: 2.0.1(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))
       '@rollup/plugin-inject':
         specifier: ^5.0.5
         version: 5.0.5(rollup@4.60.1)
@@ -406,7 +409,7 @@ importers:
         version: 0.7.0(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
       autoprefixer:
         specifier: 10.5.0
-        version: 10.5.0(postcss@8.5.26)
+        version: 10.5.0(postcss@8.5.28)
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1422,10 +1425,10 @@ packages:
     resolution: {integrity: sha512-dfUnCxiN9H4ap84DvD2ubjw+3vUNpstxa0TneY/Paat8a3R4uQZDLSvWjmznAY/DoahqTHl9V46HF/Zs3F29pg==}
     engines: {node: '>= 10.0.0'}
 
-  '@pinia/testing@1.0.3':
-    resolution: {integrity: sha512-g+qR49GNdI1Z8rZxKrQC3GN+LfnGTNf5Kk8Nz5Cz6mIGva5WRS+ffPXQfzhA0nu6TveWzPNYTjGl4nJqd3Cu9Q==}
+  '@pinia/testing@2.0.1':
+    resolution: {integrity: sha512-pQ4a4SCzdiLrhM4yv/TQG2ufNmktNlLZjjN6X/qMhXvZIiDN3L4L4WrChmcufX2LIarbl/ZPWOty1RB5KZIb2A==}
     peerDependencies:
-      pinia: '>=3.0.4'
+      pinia: '>=4.0.2'
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -2215,14 +2218,14 @@ packages:
   '@vue/devtools-api@6.6.4':
     resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
 
-  '@vue/devtools-api@7.7.10':
-    resolution: {integrity: sha512-KxtEpUOOpFz/qOGRrAwA36QF7DqIA+FXgCYit9mk9wjbaZt0sXOFz81ElOZtKA4HbWHUdwNjZHBFsFFyp5BZiA==}
+  '@vue/devtools-api@8.2.1':
+    resolution: {integrity: sha512-6u4vXBlIBAC1wMplIZgpyPn7uh/s4Bf6F5bMzvLv+EdJ0aHs/+4B7Ygv864EStQSjRbsRzTko/kUG1A1IejQ3A==}
 
-  '@vue/devtools-kit@7.7.10':
-    resolution: {integrity: sha512-3WNi2Kq4tbpVbmhml7RiphmAt0279oh3fKNeWMQIrltfX8Q91b4i5PL8DtyNKdwmcsGrV4fg+erwWOmD05CLIw==}
+  '@vue/devtools-kit@8.2.1':
+    resolution: {integrity: sha512-FIGIuq3AWReEpbAHY/cRGeHDfI0qOb8OCQ3YjbEAX04uaxIDbGc9rhkbVcG7rnfHPXE3RsU5KrWOu9V/okd8AQ==}
 
-  '@vue/devtools-shared@7.7.10':
-    resolution: {integrity: sha512-wOPslzB8vTvpxwdaOcR2qAbwmuSP0L+rhpoC6Cf56V3Jip+HWb7PQQXOUPgBNQARpXsbQX/+mvi8kKucmBGRwQ==}
+  '@vue/devtools-shared@8.2.1':
+    resolution: {integrity: sha512-Fkac7lUdGReh6pVOi3AYPRGe82LQqRmAfThW7RRligOAP0ZA/Z1z9XLHDM9dv34pV2HRc79DK8uKPeG2fLnA/g==}
 
   '@vue/language-core@2.2.12':
     resolution: {integrity: sha512-IsGljWbKGU1MZpBPN+BvPAdr55YPkj2nB/TBNGNC32Vy2qLG25DYu/NBN2vNtZqdRbTRjaoYrahLrToim2NanA==}
@@ -2702,10 +2705,6 @@ packages:
 
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
-    engines: {node: '>=18'}
-
-  copy-anything@4.1.4:
-    resolution: {integrity: sha512-/LLeW0CtsoSybVkEpYjifB2Pis8DUSuwY7QD9FiR98fWkdbdrACw3ilckfnAHMecQ+RFEdZlRt6eCXhYHJbl/g==}
     engines: {node: '>=18'}
 
   core-js-pure@3.49.0:
@@ -3831,7 +3830,7 @@ packages:
 
   jquery@2.2.4:
     resolution: {integrity: sha512-lBHj60ezci2u1v2FqnZIraShGgEXq35qCzMv4lITyHGppTnA13rwR0MgwyNJh9TnDs3aXUvd1xjAotfraMHX/Q==}
-    deprecated: This version is deprecated. Please upgrade to the latest version or find support at https://www.herodevs.com/support/jquery-nes.
+    deprecated: This version is deprecated. Please upgrade to the latest version or find support at https://www.herodevs.com/support/jquery-nes or https://tuxcare.com/lp/click-jquery-support/.
 
   jquery@3.6.0:
     resolution: {integrity: sha512-JVzAR/AjBvVt2BmYhxRCSYysDsPcssdmTFnzyLEts9qNwmjmu4JTAMYubEfwVOSwpQ1I1sKKFcxhZCI2buerfw==}
@@ -4395,6 +4394,9 @@ packages:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
 
+  nostics@1.3.0:
+    resolution: {integrity: sha512-wzRsrJwNlFbqIRQt8aCeL2WE8USip/uuvGSOZV1D02CxX8ABTMbw8IywKjH7yWHETMXbWJI4OBpihg9rmz2Vyg==}
+
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
 
@@ -4578,8 +4580,8 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
-  perfect-debounce@1.0.0:
-    resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
+  perfect-debounce@2.1.0:
+    resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -4607,10 +4609,11 @@ packages:
   pikaday@1.5.1:
     resolution: {integrity: sha512-JpGs4DM+DrwhGx/deyi2pUcrUtTcyegR6XOIbFkjSaJp0yYp5d8Bvzlgtl8eaX1gNEqsqJZFIsRMEzdRA1xbDQ==}
 
-  pinia@3.0.4:
-    resolution: {integrity: sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw==}
+  pinia@4.0.3:
+    resolution: {integrity: sha512-XMQqpvjgG7LMqVhhFUzKLT4KEbsYbfZZ0CZU9PgdFm1O2VKBmIkykL8+SfNhOaT7sR0wT6BEgKT0YNDYWgmVRA==}
     peerDependencies:
-      typescript: '>=4.5.0'
+      '@vue/devtools-api': ^8.1.5
+      typescript: '>=5.6.0'
       vue: 3.5.43
     peerDependenciesMeta:
       typescript:
@@ -4667,10 +4670,6 @@ packages:
 
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
-    engines: {node: ^10 || ^12 || >=14}
-
-  postcss@8.5.26:
-    resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.28:
@@ -5041,10 +5040,6 @@ packages:
     resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
     engines: {node: '>= 12'}
 
-  speakingurl@14.0.1:
-    resolution: {integrity: sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ==}
-    engines: {node: '>=0.10.0'}
-
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
@@ -5127,10 +5122,6 @@ packages:
     resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
-
-  superjson@2.2.6:
-    resolution: {integrity: sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==}
-    engines: {node: '>=16'}
 
   supports-color@10.2.2:
     resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
@@ -6715,9 +6706,10 @@ snapshots:
       '@parcel/watcher-win32-x64': 2.5.1
     optional: true
 
-  '@pinia/testing@1.0.3(pinia@3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))':
+  '@pinia/testing@2.0.1(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))':
     dependencies:
-      pinia: 3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
+      nostics: 1.3.0
+      pinia: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -6971,13 +6963,13 @@ snapshots:
 
   '@sentry/core@10.57.0': {}
 
-  '@sentry/vue@10.57.0(pinia@3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))':
+  '@sentry/vue@10.57.0(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))':
     dependencies:
       '@sentry/browser': 10.57.0
       '@sentry/core': 10.57.0
       vue: 3.5.43(typescript@5.8.3)
     optionalDependencies:
-      pinia: 3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
+      pinia: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
 
   '@socket.io/component-emitter@3.1.2': {}
 
@@ -7501,23 +7493,18 @@ snapshots:
 
   '@vue/devtools-api@6.6.4': {}
 
-  '@vue/devtools-api@7.7.10':
+  '@vue/devtools-api@8.2.1':
     dependencies:
-      '@vue/devtools-kit': 7.7.10
+      '@vue/devtools-kit': 8.2.1
 
-  '@vue/devtools-kit@7.7.10':
+  '@vue/devtools-kit@8.2.1':
     dependencies:
-      '@vue/devtools-shared': 7.7.10
+      '@vue/devtools-shared': 8.2.1
       birpc: 2.9.0
       hookable: 5.5.3
-      mitt: 3.0.1
-      perfect-debounce: 1.0.0
-      speakingurl: 14.0.1
-      superjson: 2.2.6
+      perfect-debounce: 2.1.0
 
-  '@vue/devtools-shared@7.7.10':
-    dependencies:
-      rfdc: 1.4.1
+  '@vue/devtools-shared@8.2.1': {}
 
   '@vue/language-core@2.2.12(typescript@5.8.3)':
     dependencies:
@@ -7757,13 +7744,13 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  autoprefixer@10.5.0(postcss@8.5.26):
+  autoprefixer@10.5.0(postcss@8.5.28):
     dependencies:
       browserslist: 4.28.2
       caniuse-lite: 1.0.30001799
       fraction.js: 5.3.4
       picocolors: 1.1.1
-      postcss: 8.5.26
+      postcss: 8.5.28
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.5: {}
@@ -8053,8 +8040,6 @@ snapshots:
 
   cookie@1.1.1:
     optional: true
-
-  copy-anything@4.1.4: {}
 
   core-js-pure@3.49.0: {}
 
@@ -9956,6 +9941,8 @@ snapshots:
 
   normalize-path@3.0.0: {}
 
+  nostics@1.3.0: {}
+
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
@@ -10146,7 +10133,7 @@ snapshots:
 
   pathe@2.0.3: {}
 
-  perfect-debounce@1.0.0: {}
+  perfect-debounce@2.1.0: {}
 
   picocolors@1.1.1: {}
 
@@ -10164,9 +10151,10 @@ snapshots:
     optionalDependencies:
       moment: 2.29.4
 
-  pinia@3.0.4(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)):
+  pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)):
     dependencies:
-      '@vue/devtools-api': 7.7.10
+      '@vue/devtools-api': 8.2.1
+      nostics: 1.3.0
       vue: 3.5.43(typescript@5.8.3)
     optionalDependencies:
       typescript: 5.8.3
@@ -10206,12 +10194,6 @@ snapshots:
   postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
-  postcss@8.5.26:
-    dependencies:
-      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -10688,8 +10670,6 @@ snapshots:
 
   source-map@0.7.6: {}
 
-  speakingurl@14.0.1: {}
-
   stackback@0.0.2: {}
 
   stackframe@1.3.4: {}
@@ -10788,10 +10768,6 @@ snapshots:
       pirates: 4.0.7
       tinyglobby: 0.2.15
       ts-interface-checker: 0.1.13
-
-  superjson@2.2.6:
-    dependencies:
-      copy-anything: 4.1.4
 
   supports-color@10.2.2: {}
 
