@@ -213,9 +213,9 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
         await openShareModal(wrapper);
-        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
 
         // Instead we already have a singular toast with the link copied message
         expect(raisedToasts()).toEqual([{ variant: "info", message: CLIPBOARD_MSG }]);
