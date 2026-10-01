@@ -463,7 +463,7 @@ describe("Index", () => {
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("value")).toBeNull();
-            expect(wrapper.findComponent(BFormTextarea).props("value")).toBeNull();
+            expect(wrapper.findComponent({ name: "BFormTextarea" }).props("value")).toBeNull();
         });
 
         it("prevents navigation only if hasChanges", async () => {

@@ -43,7 +43,7 @@ describe("HeadlessMultiselect", () => {
         invalid: ".headless-multiselect__option.invalid",
     } as const;
 
-    async function keyPress(wrapper: ReturnType<typeof mountWithProps>, key: string) {
+    async function keyPress(wrapper: DOMWrapper<Element>, key: string) {
         wrapper.trigger("keydown", {
             key,
             code: key,

@@ -1,4 +1,5 @@
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { nth } from "@tests/vitest/helpers";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -25,7 +26,7 @@ function initWrapper(value: DataUri) {
     return wrapper;
 }
 
-function assertLocationIsFound(wrapper: VueWrapper, uriData: DataUri | DataUriCollectionElement) {
+function assertLocationIsFound(wrapper: VueWrapper | DOMWrapper<Element>, uriData: DataUri | DataUriCollectionElement) {
     if (!("location" in uriData)) {
         throw new Error("The DataUri type does not have a url property");
     }
@@ -34,7 +35,7 @@ function assertLocationIsFound(wrapper: VueWrapper, uriData: DataUri | DataUriCo
 }
 
 function assertIdentifierIsFound(
-    wrapper: VueWrapper,
+    wrapper: VueWrapper | DOMWrapper<Element>,
     uriData: DataUri | DataUriCollectionElement,
     hasIdentifier = false,
     expectIdentifier = "File",
@@ -80,7 +81,7 @@ describe("FormDataUri", () => {
         expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
 
         for (let i = 0; i < collectionElements.length; i++) {
-            const element = collectionElements.at(i);
+            const element = nth(collectionElements, i);
             const expectedElement = testUriDataCollection.elements[i];
             if (!expectedElement) {
                 throw new Error("No element found");
