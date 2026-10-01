@@ -8,11 +8,15 @@ import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
+import type { Connection } from "@/stores/workflowStoreTypes";
 
 import { mockOffset } from "./test_fixtures";
 
 import Node from "./Node.vue";
+import NodeInput from "./NodeInput.vue";
+import NodeOutput from "./NodeOutput.vue";
 
 vi.mock("@/app", () => ({
     getGalaxyInstance: vi.fn(() => ({
@@ -37,9 +41,26 @@ const TOOL_STEP = {
     position: { top: 0, left: 0 },
 };
 
-function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}) {
+const MISSING_TOOL_STEP = {
+    ...TOOL_STEP,
+    errors: "Tool is not installed",
+};
+
+const MISSING_TOOL_CONNECTIONS: Connection[] = [
+    {
+        input: { stepId: 0, name: "input1", connectorType: "input" },
+        output: { stepId: 1, name: "output", connectorType: "output" },
+    },
+    {
+        input: { stepId: 2, name: "input1", connectorType: "input" },
+        output: { stepId: 0, name: "out_file1", connectorType: "output" },
+    },
+];
+
+function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}, connections: Connection[] = []) {
     const testingPinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(testingPinia);
+    useConnectionStore("mock-workflow").$patch({ stepToConnections: { 0: connections } });
 
     const wrapper = mounter(Node as any, {
         propsData: {
@@ -55,7 +76,7 @@ function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}) 
         },
         localVue,
         pinia: testingPinia,
-        provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity) },
+        provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity), isDragging: ref(false) },
     });
 
     return { wrapper, inspectorStore: useWorkflowNodeInspectorStore() };
@@ -78,6 +99,30 @@ describe("Node", () => {
 
         const workflowTitle = wrapper.find(".node-title");
         expect(workflowTitle.text()).toBe("step label");
+    });
+
+    describe("step with errors", () => {
+        it("renders terminals for connections of a missing tool", async () => {
+            const { wrapper } = mountNode(mount, { step: MISSING_TOOL_STEP }, MISSING_TOOL_CONNECTIONS);
+            await flushPromises();
+
+            expect(wrapper.find(".node-error").text()).toBe("Tool is not installed");
+            expect(wrapper.find(".node-error").classes()).not.toContain("rounded-bottom");
+            const inputs = wrapper.findAllComponents(NodeInput);
+            expect(inputs).toHaveLength(1);
+            expect(inputs.at(0).props("input")).toMatchObject({ name: "input1", valid: false });
+            const outputs = wrapper.findAllComponents(NodeOutput);
+            expect(outputs).toHaveLength(1);
+            expect(outputs.at(0).props("output")).toMatchObject({ name: "out_file1", valid: false });
+        });
+
+        it("renders only the error for a missing tool without connections", async () => {
+            const { wrapper } = mountNode(mount, { step: MISSING_TOOL_STEP });
+            await flushPromises();
+
+            expect(wrapper.find(".node-error").classes()).toContain("rounded-bottom");
+            expect(wrapper.find(".node-body").exists()).toBe(false);
+        });
     });
 
     describe("double click", () => {

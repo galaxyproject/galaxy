@@ -1378,12 +1378,20 @@ steps:
     label: first_cat
     state:
       foo: bar
+    in:
+      input1: input1
+  - tool_id: cat1
+    label: second_cat
+    in:
+      input1: first_cat/out_file1
 """)
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
         self.workflow_editor_dismiss_state_upgrade_modal()
+        self.assert_connection_invalid("input1#output", "first_cat#input1")
+        self.assert_connection_invalid("first_cat#out_file1", "second_cat#input1")
 
     def tab_to(self, aria_label, direction="forward"):
         modifiers = [Key.SHIFT] if direction == "backwards" else []
