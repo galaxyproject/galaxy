@@ -15,7 +15,7 @@ export interface StoreFirstList {
     fetchListing(): Promise<unknown>;
     /** The cached listing as rows, in the order an empty query shows them */
     cachedItems(): PaletteItem[];
-    /** Whether the cache is everything the backend has, so it answers any query alone */
+    /** Whether the unfiltered total is known and the cache covers it, so it answers any query alone; else `false` */
     isComplete(): boolean;
     /** Backend search for `query`; rows the store merges into the listing come back through the cache */
     searchItems?(query: string): Promise<PaletteItem[]>;
