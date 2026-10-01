@@ -58,7 +58,8 @@
     ],
     "patchedDependencies": {
       "@vue/compat@3.5.43": "patches/@vue__compat@3.5.43.patch",
-      "bootstrap-vue@2.23.1": "patches/bootstrap-vue@2.23.1.patch"
+      "bootstrap-vue@2.23.1": "patches/bootstrap-vue@2.23.1.patch",
+      "vue-multiselect@3.5.0": "patches/vue-multiselect@3.5.0.patch"
     }
   },
   "dependencies": {
