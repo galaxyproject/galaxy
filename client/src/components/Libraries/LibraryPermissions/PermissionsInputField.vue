@@ -17,7 +17,7 @@
                         label="name"
                         track-by="id"
                         :internal-search="false"
-                        @input="valueChanged"
+                        @update:model-value="valueChanged"
                         @search-change="searchChanged">
                         <template v-slot:afterList>
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">

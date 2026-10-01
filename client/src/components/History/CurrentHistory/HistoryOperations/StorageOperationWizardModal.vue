@@ -265,7 +265,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                     <Multiselect
                         v-else
                         id="storage-target-select"
-                        :value="selectedTargetObjectStore"
+                        :model-value="selectedTargetObjectStore"
                         :options="storageTargetOptions"
                         :allow-empty="false"
                         :searchable="false"
@@ -274,7 +274,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                         label="name"
                         placeholder="Select target storage location"
                         class="w-100 multiselect--soft-option-highlight"
-                        @input="onTargetStoreSelected"
+                        @update:model-value="onTargetStoreSelected"
                         @open="dropdownOpen = true"
                         @close="dropdownOpen = false">
                         <template v-slot:singleLabel="{ option }">

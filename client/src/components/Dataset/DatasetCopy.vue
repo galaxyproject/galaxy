@@ -199,7 +199,7 @@ defineExpose({
                     track-by="id"
                     deselect-label=""
                     select-label=""
-                    @input="loadContents" />
+                    @update:model-value="loadContents" />
                 <span class="text-sm mt-1">Select Datasets and Collections:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <LoadingSpan v-if="loading" />
@@ -237,7 +237,7 @@ defineExpose({
                     track-by="id"
                     deselect-label=""
                     select-label=""
-                    @input="
+                    @update:model-value="
                         newHistoryName = '';
                         targetMultiSelections = {};
                     " />
