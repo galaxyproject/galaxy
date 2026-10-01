@@ -55,8 +55,27 @@ const toolStore = useToolStore();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const userStore = useUserStore();
 
-// the machine needs the context to reject scope tokens the user may not use;
-// `buildContext` is a hoisted declaration, so it is safe to hand over here
+const paletteContext = computed<PaletteContext>(() => ({
+    canUseUnprivilegedTools: unprivilegedToolStore.canUseUnprivilegedTools ?? false,
+    config: {
+        allow_local_account_creation: config.value?.allow_local_account_creation,
+        // an unset list arrives as null, so it is normalized once here
+        command_palette_disabled_providers: config.value?.command_palette_disabled_providers ?? [],
+        enable_notification_system: config.value?.enable_notification_system,
+        interactivetools_enable: config.value?.interactivetools_enable,
+        llm_api_configured: config.value?.llm_api_configured,
+    },
+    isAnonymous: userStore.isAnonymous,
+    navigate: (to: string) => {
+        router.push(to).catch(() => {
+            // duplicate navigation to the current route is fine
+        });
+    },
+    startNewChat,
+    uploadMethods: uploadMethods.value,
+}));
+
+// the machine needs the context to reject scope tokens the user may not use
 const {
     badgeLabel,
     category: activeCategory,
@@ -70,7 +89,7 @@ const {
     selectCategory: narrowToCategory,
     setText,
     text,
-} = usePaletteMachine(buildContext);
+} = usePaletteMachine(() => paletteContext.value);
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -118,8 +137,7 @@ const loginPromptSection = computed<ResultSection | undefined>(() => {
         return undefined;
     }
     const parsed = parsePaletteQuery(text.value);
-    const ctx = buildContext();
-    if (parsed.type !== "scope" || !isScopeLoginGated(parsed.scope, ctx)) {
+    if (parsed.type !== "scope" || !isScopeLoginGated(parsed.scope, paletteContext.value)) {
         return undefined;
     }
     const items: PaletteItem[] = [
@@ -164,7 +182,7 @@ const {
     visibleSections,
 } = usePaletteSearch({
     activeCategory,
-    buildContext,
+    getContext: () => paletteContext.value,
     helpHandlers: { enterScope, popMode, setText },
     leadingSection: loginPromptSection,
     mode,
@@ -175,7 +193,7 @@ const {
 
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
 
-const paletteCategories = computed(() => availableCategories(buildContext()));
+const paletteCategories = computed(() => availableCategories(paletteContext.value));
 
 const activeCategoryId = computed(() => activeCategory.value?.id ?? ALL_CATEGORY.id);
 
@@ -245,28 +263,6 @@ function optionIndex(sectionIndex: number, itemIndex: number) {
     return offset + itemIndex;
 }
 
-function buildContext(): PaletteContext {
-    return {
-        canUseUnprivilegedTools: unprivilegedToolStore.canUseUnprivilegedTools ?? false,
-        config: {
-            allow_local_account_creation: config.value?.allow_local_account_creation,
-            // an unset list arrives as null, so it is normalized once here
-            command_palette_disabled_providers: config.value?.command_palette_disabled_providers ?? [],
-            enable_notification_system: config.value?.enable_notification_system,
-            interactivetools_enable: config.value?.interactivetools_enable,
-            llm_api_configured: config.value?.llm_api_configured,
-        },
-        isAnonymous: userStore.isAnonymous,
-        navigate: (to: string) => {
-            router.push(to).catch(() => {
-                // duplicate navigation to the current route is fine
-            });
-        },
-        startNewChat,
-        uploadMethods: uploadMethods.value,
-    };
-}
-
 /**
  * Remembers an opened entity so its provider can offer it in a "Recent"
  * section next time. Only items declaring an `mru` identity are recorded —
@@ -317,7 +313,7 @@ function runHandler(run: PaletteItemRun | undefined, label: string) {
         return;
     }
     try {
-        void Promise.resolve(run(buildContext())).catch((error) => reportFailedRun(error, label));
+        void Promise.resolve(run(paletteContext.value)).catch((error) => reportFailedRun(error, label));
     } catch (error) {
         reportFailedRun(error, label);
     }
