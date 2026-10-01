@@ -7,7 +7,7 @@ import { getPersistentKey, type MonitoringData, type MonitoringRequest } from "@
 
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";
 
-type ComponentUnderTestProps = Partial<PropType<typeof PersistentTaskProgressMonitorAlert>>;
+type ComponentUnderTestProps = Partial<InstanceType<typeof PersistentTaskProgressMonitorAlert>["$props"]>;
 
 const selectors = {
     ProgressAlert: ".progress-monitor-alert",

@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -464,8 +464,8 @@ class Utils {
         expect(this.getOkButton().attributes("aria-disabled")).toBeFalsy();
     }
 
-    getSelectAllCheckbox(): VueWrapper<any> {
-        const checkbox = this.wrapper.find("input[id^='g-table-select-all-']");
+    getSelectAllCheckbox(): DOMWrapper<HTMLInputElement> {
+        const checkbox = this.wrapper.find<HTMLInputElement>("input[id^='g-table-select-all-']");
         expect(checkbox.exists()).toBe(true);
         return checkbox;
     }
