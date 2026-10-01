@@ -7,7 +7,7 @@ import { interactiveToolsProvider } from "./interactiveTools";
 import { invocationsProvider } from "./invocations";
 import { navigationProvider } from "./navigation";
 import { reportsProvider } from "./reports";
-import { isProviderEnabled } from "./scopes";
+import { isProviderAvailable } from "./scopes";
 import { toolsProvider } from "./tools";
 import { visualizationsProvider } from "./visualizations";
 import { workflowsProvider } from "./workflows";
@@ -38,12 +38,12 @@ export function findPaletteProvider(providerId: string): CommandPaletteProvider 
 }
 
 /**
- * The providers this instance left on, in registry order — what the unscoped
- * fan-out asks. A provider named in `command_palette_disabled_providers` is
- * never searched, and neither its scopes nor its category are offered.
+ * The providers the current user may search, in registry order — what the
+ * unscoped fan-out asks. A provider named in `command_palette_disabled_providers`
+ * is never searched, and neither are login-only ones for an anonymous user.
  */
 export function enabledPaletteProviders(ctx: PaletteContext): CommandPaletteProvider[] {
-    return paletteProviders.filter((provider) => isProviderEnabled(provider.id, ctx));
+    return paletteProviders.filter((provider) => isProviderAvailable(provider.id, ctx));
 }
 
 export { parsePaletteQuery, rankPaletteItems };

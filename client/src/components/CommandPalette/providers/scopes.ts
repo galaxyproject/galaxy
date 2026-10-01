@@ -74,6 +74,17 @@ export function isProviderEnabled(providerId: string, ctx: PaletteContext): bool
     return !(ctx.config.command_palette_disabled_providers ?? []).includes(providerId);
 }
 
+/** Whether every scope of a provider needs an account; one without scopes (actions) serves everyone */
+function providerRequiresLogin(providerId: string): boolean {
+    const scopes = PALETTE_SCOPES.filter((scope) => scope.providerId === providerId);
+    return scopes.length > 0 && scopes.every((scope) => scope.requiresLogin);
+}
+
+/** Whether the palette may search a provider for the current user: left on, and not login-only for an anonymous one */
+export function isProviderAvailable(providerId: string, ctx: PaletteContext): boolean {
+    return isProviderEnabled(providerId, ctx) && !(ctx.isAnonymous && providerRequiresLogin(providerId));
+}
+
 /** Whether a scope may be used by the current user on this Galaxy instance */
 export function isScopeAvailable(scope: ScopeDefinition, ctx: PaletteContext): boolean {
     // a scope is only a way into its provider, so a disabled one has none: this

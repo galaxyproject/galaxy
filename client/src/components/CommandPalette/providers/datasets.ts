@@ -5,7 +5,7 @@ import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
+import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
 import { recentPaletteItems, type RecentRows } from "./recent";
@@ -132,24 +132,18 @@ export const datasetsProvider: CommandPaletteProvider = {
     id: "datasets",
     title: "Datasets",
     /** Datasets opened through the palette before, most recent first */
-    emptyQueryItems(ctx: PaletteContext) {
-        if (ctx.isAnonymous) {
-            return [];
-        }
+    emptyQueryItems() {
         return recentItems("");
     },
     /** Root mode fan-out, filtering the cached summaries without a request */
-    async search(query: string, ctx: PaletteContext) {
-        if (ctx.isAnonymous || !query) {
+    async search(query: string) {
+        if (!query) {
             return [];
         }
         const found = (await matchingDatasets(query, true)).map(datasetToItem);
         return rankPaletteItems(found, query).slice(0, SECTION_CAP);
     },
-    async searchScoped(_scope, query: string, ctx: PaletteContext) {
-        if (ctx.isAnonymous) {
-            return [];
-        }
+    async searchScoped(_scope, query: string) {
         const recent = recentItems(query);
         if (!query) {
             const datasetListStore = useDatasetListStore();

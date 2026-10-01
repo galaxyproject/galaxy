@@ -177,13 +177,4 @@ describe("datasetsProvider", () => {
         expect(items.map((i) => i.id)).toEqual(["datasets:d2"]);
         expect(loadDatasets).not.toHaveBeenCalled();
     });
-
-    it("returns nothing for anonymous users", async () => {
-        mockLoadDatasets();
-        const ctx = makeCtx({ isAnonymous: true });
-        expect(await datasetsProvider.search("alpha", ctx)).toEqual([]);
-        expect(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", ctx)).toEqual([]);
-        expect(datasetsProvider.emptyQueryItems?.(ctx)).toEqual([]);
-        expect(loadDatasets).not.toHaveBeenCalled();
-    });
 });
