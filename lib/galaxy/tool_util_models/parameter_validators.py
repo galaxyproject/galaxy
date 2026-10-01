@@ -408,6 +408,7 @@ class NoOptionsParameterValidatorModel(StaticValidatorModel):
         Negate,
         Field(description="Require the select parameter to have no available options instead."),
     ] = NEGATE_DEFAULT
+    _safe: bool = PrivateAttr(True)
 
     @staticmethod
     def no_options_validate(value: Any, validator: "ValidatorDescription"):
@@ -444,6 +445,7 @@ class EmptyFieldParameterValidatorModel(StaticValidatorModel):
         Negate,
         Field(description="Require the value to be empty or null instead."),
     ] = NEGATE_DEFAULT
+    _safe: bool = PrivateAttr(True)
 
     @staticmethod
     def empty_validate(value: Any, validator: "ValidatorDescription"):

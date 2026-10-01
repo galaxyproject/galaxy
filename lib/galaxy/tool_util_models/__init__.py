@@ -9,6 +9,8 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    FrozenSet,
+    get_args,
     List,
     Optional,
     Set,
@@ -68,7 +70,10 @@ from .tool_source import (
     XrefDict,
     YamlTemplateConfigFile,
 )
-from .yaml_parameters import YamlGalaxyToolParameter
+from .yaml_parameters import (
+    YamlGalaxyParameterT,
+    YamlGalaxyToolParameter,
+)
 
 UserToolInputs = Annotated[
     List[YamlGalaxyToolParameter],
@@ -562,8 +567,11 @@ DynamicToolSources = Annotated[Union[UserToolSource, YamlToolSource], Field(disc
 # `container` regex). `lift_user_tool_source` validates against the strict
 # schema and:
 #   - on success: returns ("ok", parsed_model, []).
-#   - on `extra_forbidden`-only failure: strips the offending paths and
-#     re-validates. Returns ("lifted", parsed_model, dropped_paths).
+#   - on failure, first drops input validators whose type the parameter no
+#     longer accepts (e.g. the Python `expression` validator older rows could
+#     store on text inputs), then, on `extra_forbidden`-only failure, strips
+#     the offending paths and re-validates. Returns ("lifted", parsed_model,
+#     dropped_paths); a dropped validator's entry also names its type and input.
 #   - on any other failure: returns ("invalid", original_dict, error_summary).
 #     The endpoint exposes this so legacy/broken rows don't crash the API -- e.g.
 #     a stored row that predates the required `version` comes back as the raw dict
@@ -614,6 +622,58 @@ def _strip_path(value: dict, loc: tuple) -> bool:
     return False
 
 
+def _validator_types_by_parameter_type() -> Dict[str, FrozenSet[str]]:
+    allowed: Dict[str, FrozenSet[str]] = {}
+    for parameter_model in get_args(YamlGalaxyParameterT):
+        validators_field = parameter_model.model_fields.get("validators")
+        if validators_field is None:
+            continue
+        (parameter_type,) = get_args(parameter_model.model_fields["type"].annotation)
+        (validator_union,) = get_args(validators_field.annotation)
+        validator_models = get_args(validator_union) or (validator_union,)
+        allowed[parameter_type] = frozenset(model.model_fields["type"].default for model in validator_models)
+    return allowed
+
+
+# Validator types each user-defined tool parameter type accepts.
+_USER_TOOL_VALIDATOR_TYPES = _validator_types_by_parameter_type()
+
+
+def _drop_unsupported_validators(parameters: Any, path: str, dropped: List[str]) -> None:
+    """Remove, in place, validators a parameter type does not accept, recording each one."""
+    if not isinstance(parameters, list):
+        return
+    for index, parameter in enumerate(parameters):
+        if isinstance(parameter, dict):
+            _drop_parameter_validators(parameter, f"{path}.{index}", dropped)
+
+
+def _drop_parameter_validators(parameter: Dict[str, Any], path: str, dropped: List[str]) -> None:
+    allowed = _USER_TOOL_VALIDATOR_TYPES.get(str(parameter.get("type")))
+    validators = parameter.get("validators")
+    if allowed is not None and isinstance(validators, list):
+        kept = []
+        for index, validator in enumerate(validators):
+            validator_type = validator.get("type") if isinstance(validator, dict) else None
+            # Only a well-formed validator of an unsupported type is dropped; malformed
+            # values stay in place so schema validation reports them.
+            if isinstance(validator_type, str) and validator_type not in allowed:
+                dropped.append(
+                    f"{path}.validators.{index} (unsupported '{validator_type}' validator on input "
+                    f"'{parameter.get('name')}')"
+                )
+            else:
+                kept.append(validator)
+        parameter["validators"] = kept
+    if isinstance(test_parameter := parameter.get("test_parameter"), dict):
+        _drop_parameter_validators(test_parameter, f"{path}.test_parameter", dropped)
+    if isinstance(whens := parameter.get("whens"), list):
+        for index, when in enumerate(whens):
+            if isinstance(when, dict):
+                _drop_unsupported_validators(when.get("parameters"), f"{path}.whens.{index}.parameters", dropped)
+    _drop_unsupported_validators(parameter.get("parameters"), f"{path}.parameters", dropped)
+
+
 def lift_user_tool_source(
     value: dict,
 ) -> Tuple[LiftStatus, Union["UserToolSource", Dict[str, Any]], List[str]]:
@@ -627,22 +687,31 @@ def lift_user_tool_source(
     except ValidationError as e:
         errors = e.errors()
 
+    stripped = copy.deepcopy(value)
+    dropped_validators: List[str] = []
+    _drop_unsupported_validators(stripped.get("inputs"), "inputs", dropped_validators)
+    if dropped_validators:
+        try:
+            return ("lifted", UserToolSource.model_validate(stripped), dropped_validators)
+        except ValidationError as e:
+            errors = e.errors()
+
+    dropped = list(dropped_validators)
+
     extra_forbidden = [err for err in errors if err.get("type") == "extra_forbidden"]
     other = [err for err in errors if err.get("type") != "extra_forbidden"]
     if extra_forbidden and not other:
-        stripped = copy.deepcopy(value)
-        dropped: List[str] = []
         for err in extra_forbidden:
             loc = tuple(err["loc"])
             if _strip_path(stripped, loc):
-                dropped.append(_format_loc(value, loc))
+                dropped.append(_format_loc(stripped, loc))
         try:
             return ("lifted", UserToolSource.model_validate(stripped), dropped)
         except ValidationError as e2:
             errors = e2.errors()
 
-    summary = [f"{_format_loc(value, tuple(err['loc']))}: {err.get('msg', err.get('type', ''))}" for err in errors]
-    return ("invalid", value, summary)
+    summary = [f"{_format_loc(stripped, tuple(err['loc']))}: {err.get('msg', err.get('type', ''))}" for err in errors]
+    return ("invalid", value, dropped_validators + summary)
 
 
 class ParsedTool(ToolSourceBaseModel):
