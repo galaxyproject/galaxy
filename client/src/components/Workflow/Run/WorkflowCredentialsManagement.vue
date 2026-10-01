@@ -174,7 +174,7 @@ function onSelectCredentials(): void {
                     :source-version="ti.toolVersion"
                     :service-definition="sd"
                     @update-current-group="
-                        (groupId) => onToolServiceCurrentGroupChange(ti.toolId, ti.toolVersion, sd, groupId)
+                        (groupId?: string) => onToolServiceCurrentGroupChange(ti.toolId, ti.toolVersion, sd, groupId)
                     ">
                 </ServiceCredentials>
             </div>
