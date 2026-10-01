@@ -195,6 +195,53 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert open(path).read() == "some initial text data"
 
+    def test_write_with_query_params(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        params = {"path": path, "job_key": job_key, "file_type": "output"}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, params=params, files={"file": io.StringIO("some initial text data")})
+        api_asserts.assert_status_code_is_ok(response)
+        assert open(path).read() == "some initial text data"
+
+    def test_write_appends_to_tool_streams(self):
+        job, _, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        for stream in ["tool_stdout", "tool_stderr"]:
+            path = os.path.join(working_directory, "outputs", stream)
+            params = {"path": path, "job_key": job_key}
+            for i in range(5):
+                response = requests.post(post_url, params=params, files={"file": io.StringIO(f"{stream} {i}\n")})
+                api_asserts.assert_status_code_is_ok(response)
+            assert open(path).read() == "".join(f"{stream} {i}\n" for i in range(5))
+
+    def test_write_replaces_other_files(self):
+        job, _, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = os.path.join(working_directory, "work")
+        params = {"path": path, "job_key": job_key}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        for content in ["first", "second"]:
+            response = requests.post(post_url, params=params, files={"file": io.StringIO(content)})
+            api_asserts.assert_status_code_is_ok(response)
+        assert open(path).read() == "second"
+
+    def test_missing_params(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        for params in [{"path": path}, {"job_key": job_key}]:
+            response = requests.get(url, params=params)
+            _assert_missing_attribute(response)
+            response = requests.post(url, params=params, files={"file": io.StringIO("some initial text data")})
+            _assert_missing_attribute(response)
+        assert open(path).read() == ""
+
     def test_write_protection(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
@@ -253,3 +300,8 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 def _assert_insufficient_permissions(response):
     api_asserts.assert_status_code_is(response, 403)
     api_asserts.assert_error_code_is(response, 403002)
+
+
+def _assert_missing_attribute(response):
+    api_asserts.assert_status_code_is(response, 400)
+    api_asserts.assert_error_code_is(response, 400005)
