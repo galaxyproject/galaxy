@@ -1,16 +1,18 @@
 # Tool Parameter References
 
-Galaxy has grown organically over decades and has used conflicting syntaxes for referencing nested
-tool parameters. Legacy tool syntaxes and APIs will continue to be supported, but they are inherently
-inconsistent. This document is a concise, quick look at how these references differ, aimed at Galaxy
-developers evaluating new features and changes to existing features.
+Galaxy uses several syntaxes to reference nested tool parameters. This reference compares the
+syntax, supported groupings and legacy behavior of tool definitions, APIs and workflows. It is
+intended for Galaxy developers evaluating new features or changes to existing features.
 
-For how parameter _values_ are represented and validated, see [Tool State](tool_state.md).
+Start with [At a Glance](#at-a-glance), then use [Tool Syntax](#tool-syntax), [API](#api) or
+[Workflows](#workflows) for the relevant interface. For how parameter _values_ are represented and
+validated, see [Tool State](tool_state.md).
 
 ## Running Example
 
-Every example below references parameters of this tool, which has a top-level input and one
-input inside each kind of grouping: a section, a conditional, and a repeat.
+Most examples use the following parameter names: a top-level input and inputs inside a section,
+a conditional and a repeat. Some examples introduce additional parameters to illustrate specific
+features.
 
 ```xml
 <inputs>
@@ -39,13 +41,13 @@ input inside each kind of grouping: a section, a conditional, and a repeat.
 Galaxy names a nested parameter in five basic styles. Every feature in this document uses one of
 them, and several features use more than one.
 
-| Style                | Running example                                                                       | Used by                                                                                                                                                                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pipe path** (flat) | `adv\|size`, `cond\|input1`, `queries_0\|input2`                                      | XML and YAML output attributes (`format_source`, `metadata_source`, `structured_like`, ...); XML tool tests; the legacy tool API; `/build` responses and legacy errors; `.ga` `input_connections`; gxformat2 `in:`; invocation `parameters`; the refactor API; workflow editor terminals |
-| **Nested state**     | `{"adv": {"size": 3}, "cond": {"sel": "a", "input1": …}, "queries": [{"input2": …}]}` | The legacy API with `input_format: "21.01"`; the tool request API; stored `tool_state`; gxformat2 `state:`; YAML tool tests                                                                                                                                                              |
-| **Dotted path**      | `$cond.input1`, `inputs.cond.input1`, `cond.sel`, `#{cond.input1}`                    | Cheetah templates; JavaScript expressions in YAML tools and workflow `when`; XML `<actions>` and `change_format`; rename post-job actions; tool request API error locations (`cond.a.input1`)                                                                                            |
-| **Python subscript** | `cond['sel']`                                                                         | XML output `<filter>`                                                                                                                                                                                                                                                                    |
-| **Bare leaf name**   | `input1`                                                                              | Dependent parameters (`data_ref`, `<options>` filter `ref`); legacy fallbacks: Cheetah's name search, the `format_source` legacy alias, `structured_like` below profile 26.0, XML tests up to profile 24.1, the rename action's suffix match                                             |
+| Style                | Example                                                                               | Used by                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pipe path** (flat) | `adv\|size`, `cond\|input1`, `queries_0\|input2`                                      | [Output attributes](#pipe-paths); [XML tests](#tool-tests); [legacy API](#legacy-tool-api); [workflow connections](#workflows)                                            |
+| **Nested state**     | `{"adv": {"size": 3}, "cond": {"sel": "a", "input1": …}, "queries": [{"input2": …}]}` | [Request API](#tool-request-api); [legacy API (`21.01`)](#legacy-tool-api); stored tool state; [gxformat2 state](#format2-gxformat2); [YAML tests](#test-inputs)          |
+| **Dotted path**      | `$cond.input1`, `inputs.cond.input1`, `cond.sel`, `#{cond.input1}`                    | [Templates](#cheetah-templates); [JavaScript](#javascript-expressions); [output actions](#output-actions); [rename actions](#rename-post-job-action); API error locations |
+| **Python subscript** | `cond['sel']`                                                                         | [XML output filters](#output-filters)                                                                                                                                     |
+| **Bare leaf name**   | `input1`                                                                              | [Dependent parameters](#dependent-parameters) and legacy lookup fallbacks                                                                                                 |
 
 Terms used throughout:
 
@@ -64,13 +66,13 @@ Terms used throughout:
 
 Repeats are where the styles diverge the most:
 
-| Style                | Repeat instance                                  | Not reachable from                 |
-| -------------------- | ------------------------------------------------ | ---------------------------------- |
-| Pipe path            | `queries_0\|input2` (index is part of the name)  | `structured_like` when mapped over |
-| Nested state         | list position                                    | nothing                            |
-| Cheetah / JavaScript | `$queries[0].input2`, `inputs.queries[0].input2` | Cheetah's bare-name fallback       |
-| XML `<actions>`      | only `param_attribute="first.…"`                 | everything else in `<actions>`     |
-| Request API errors   | `queries.0.input2`                               | nothing                            |
+| Interface            | Repeat reference                                 | Restriction                                                                  |
+| -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Pipe path            | `queries_0\|input2`                              | Mapped-over `structured_like` cannot traverse repeats                        |
+| Nested state         | `queries: [{input2: …}]`                         | List position identifies the instance                                        |
+| Cheetah / JavaScript | `$queries[0].input2`, `inputs.queries[0].input2` | Cheetah’s bare-name fallback does not search repeats                         |
+| XML `<actions>`      | `param_attribute="first.input2.ext"`             | Only `first` traversal through the resolved value; no indexed parameter path |
+| Request API errors   | `queries.0.input2`                               | Validation location, not submission syntax                                   |
 
 Traps that fail **silently** rather than with an error, each described in detail below:
 
@@ -78,7 +80,7 @@ Traps that fail **silently** rather than with an error, each described in detail
   when it is. The parameters take their defaults ([Other Accepted Forms](#other-accepted-forms)).
 - A gxformat2 `in:` key written `adv/size` connects to nothing ([Format2](#format2-gxformat2)).
 - An XML `change_format` `<when input="cond|sel">` never matches ([Cheetah](#cheetah-templates)).
-- An XML output `<filter>` that raises keeps the output ([Output Filters](#output-filters)).
+- An XML output `<filter>` that raises still creates the output ([Output Filters](#output-filters)).
 - The `format_source` legacy alias works when the job is created, but not during later dataset
   discovery ([Pipe Paths](#pipe-paths)).
 - YAML output attributes such as `format_source` are not checked against the declared inputs
@@ -87,26 +89,42 @@ Traps that fail **silently** rather than with an error, each described in detail
 ## Tool Syntax
 
 XML and YAML tools mostly share one set of resolvers: the YAML parser hands output attributes such
-as `format_source` to the same code as XML, unchanged. The table lists every tool feature that
-references a parameter. The scope columns describe the resolver; YAML tools are further limited by
-which groupings they can declare (see [YAML](#yaml)).
+as `format_source` to the same code as XML, unchanged. The tables summarize tool features that
+reference parameters. The grouping-support table describes the resolver; YAML tools are further
+limited by which groupings they can declare (see [YAML](#yaml)).
 
 In this and later tables, ✓ means the grouping is reachable, ✗ means it is not, `?` means
 unverified, and n/a means not applicable.
 
-| Feature                            | XML                                                                                             | YAML                                                                                                                           | Section                | Conditional                        | Repeat                                       | Notes                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------- | ---------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| Command and config templates       | Cheetah `$cond.input1` in `<command>`, `<configfile>`, `<environment_variable>`, output `label` | JavaScript `$(inputs.cond.input1.path)` in `shell_command`, `configfiles`, `arguments`; Cheetah `command:` in file flavor only | ✓                      | ✓                                  | ✓ `$queries[0].input2` / `inputs.queries[0]` | Cheetah also resolves a bare `$input1` by searching every level except repeats |
-| `format_source`, `metadata_source` | `cond\|input1`                                                                                  | same                                                                                                                           | ✓                      | ✓                                  | ✓ `queries_0\|input2`                        | Legacy alias works only at job creation                                        |
-| `structured_like`                  | `cond\|input1`                                                                                  | same                                                                                                                           | ✓                      | ✓                                  | unmapped only                                | When mapped over below profile 26.0, a bare name is searched recursively       |
-| `type_source`                      | `adv\|…`                                                                                        | `collection_type_source`, same                                                                                                 | ✓                      | mapped only                        | unmapped only                                | Unmapped, a path into a conditional raises `AttributeError`                    |
-| `default_identifier_source`        | `cond\|input1`                                                                                  | same, file flavor only                                                                                                         | ✓                      | ✓                                  | `?`                                          | Exact match, no alias                                                          |
-| `change_format`                    | `input="cond.sel"` (Cheetah), `input_dataset="cond\|input1"`                                    | not supported                                                                                                                  | ✓                      | ✓                                  | ✓                                            | Errors are swallowed                                                           |
-| Output `<filter>`                  | `cond['sel']`                                                                                   | not supported                                                                                                                  | ✓                      | ✓                                  | ✓                                            | Python `eval`; an exception keeps the output                                   |
-| Output `<actions>`                 | `cond.sel`                                                                                      | not supported                                                                                                                  | ✓                      | ✓                                  | ✗                                            | Dotted walk from the root                                                      |
-| Dependent parameters               | `data_ref="input1"`, `<options>` `<filter ref>`                                                 | `data_ref` only, file flavor only                                                                                              | own or enclosing level | own or enclosing level (not `sel`) | own or enclosing level                       | Bare leaf name in lexical scope, declared earlier                              |
-| Tool tests                         | nested elements, or `cond\|input1`                                                              | nested dicts only                                                                                                              | ✓                      | ✓                                  | ✓                                            | XML bare names allowed up to profile 24.1                                      |
-| Validators, sanitizers             | none                                                                                            | none                                                                                                                           | n/a                    | n/a                                | n/a                                          | See only their own parameter's value                                           |
+| Feature                            | XML syntax                                                                                      | YAML syntax                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Command and config templates       | Cheetah `$cond.input1` in `<command>`, `<configfile>`, `<environment_variable>`, output `label` | JavaScript `$(inputs.cond.input1.path)` in `shell_command`, `configfiles`, `arguments`; Cheetah `command:` in file flavor only |
+| `format_source`, `metadata_source` | `cond\|input1`                                                                                  | same                                                                                                                           |
+| `structured_like`                  | `cond\|input1`                                                                                  | same                                                                                                                           |
+| `type_source`                      | `adv\|…`                                                                                        | `collection_type_source`, same                                                                                                 |
+| `default_identifier_source`        | `cond\|input1`                                                                                  | same, file flavor only                                                                                                         |
+| `change_format`                    | `input="cond.sel"` (Cheetah), `input_dataset="cond\|input1"`                                    | not supported                                                                                                                  |
+| Output `<filter>`                  | `cond['sel']`                                                                                   | not supported                                                                                                                  |
+| Output `<actions>`                 | `cond.sel`                                                                                      | not supported                                                                                                                  |
+| Dependent parameters               | `data_ref="input1"`, `<options>` `<filter ref>`                                                 | `data_ref` only, file flavor only                                                                                              |
+| Tool tests                         | nested elements, or `cond\|input1`                                                              | nested dicts only                                                                                                              |
+| Validators, sanitizers             | none                                                                                            | none                                                                                                                           |
+
+Grouping support and resolver restrictions:
+
+| Feature                            | Sections               | Conditionals                       | Repeats                                      | Restrictions                                                                   |
+| ---------------------------------- | ---------------------- | ---------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| Command and config templates       | ✓                      | ✓                                  | ✓ `$queries[0].input2` / `inputs.queries[0]` | Cheetah also resolves a bare `$input1` by searching every level except repeats |
+| `format_source`, `metadata_source` | ✓                      | ✓                                  | ✓ `queries_0\|input2`                        | Legacy alias works only at job creation                                        |
+| `structured_like`                  | ✓                      | ✓                                  | unmapped only                                | When mapped over below profile 26.0, a bare name is searched recursively       |
+| `type_source`                      | ✓                      | mapped only                        | unmapped only                                | Unmapped, a path into a conditional raises `AttributeError`                    |
+| `default_identifier_source`        | ✓                      | ✓                                  | `?`                                          | Exact match, no alias                                                          |
+| `change_format`                    | ✓                      | ✓                                  | ✓                                            | Errors are swallowed                                                           |
+| Output `<filter>`                  | ✓                      | ✓                                  | ✓                                            | Python `eval`; on error, the output is still created                           |
+| Output `<actions>`                 | ✓                      | ✓                                  | ✗                                            | Dotted walk from the root                                                      |
+| Dependent parameters               | own or enclosing level | own or enclosing level (not `sel`) | own or enclosing level                       | Bare leaf name in lexical scope, declared earlier                              |
+| Tool tests                         | ✓                      | ✓                                  | ✓                                            | XML bare names allowed up to profile 24.1                                      |
+| Validators, sanitizers             | n/a                    | n/a                                | n/a                                          | See only their own parameter's value                                           |
 
 ### Differences Between XML and YAML Tools
 
@@ -119,7 +137,7 @@ the expression language.
 | ---------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Groupings                                | sections, conditionals, repeats                                                        | file flavor: conditionals and repeats (`blocks:`); modelled: conditionals only; sections: neither                |
 | Command language                         | Cheetah, dotted path with a bare-name fallback                                         | JavaScript dotted path over `inputs` (modelled tools require it); Cheetah `command:` in file flavor only         |
-| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                         | the same pipe paths, inside a JavaScript-style tool, checked by nothing                                          |
+| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                         | the same pipe paths, inside a JavaScript-style tool, not validated against declared inputs                       |
 | Features absent from YAML                | n/a                                                                                    | `change_format`, `<filter>`, `<actions>`, environment variables, dynamic options; `data_ref` in file flavor only |
 | Test inputs                              | nested elements or flat `cond\|input1`; bare names up to profile 24.1                  | nested dicts only; flat and bare keys rejected (unless `expect_failure`)                                         |
 | Default profile                          | `16.01`, so legacy behavior applies                                                    | `24.2`, so `structured_like: input1` still resolves                                                              |
@@ -150,13 +168,13 @@ leaf name, while an `<actions>` `<filter ref="cond.input1">` is a dotted path.
 #### Cheetah Templates
 
 ```xml
-<command>
+<command><![CDATA[
 cat '$input' '$cond.input1' > '$out' &&
 echo $adv.size $cond.sel
 #for $q in $queries
   && cat '$q.input2'
 #end for
-</command>
+]]></command>
 <data name="out" format="txt" label="${tool.name} on ${on_string} (${cond.sel})">
     <change_format>
         <when input="cond.sel" value="b" format="tabular" />
@@ -175,8 +193,8 @@ echo $adv.size $cond.sel
     nested one.
 - `change_format` `input` is plain Cheetah with `$` prepended. Any exception skips that `<when>`
   silently.
-  - A pipe path does not raise. `input="cond|sel"` renders as `"{'sel': 'a'}|sel"` and simply never
-    matches.
+  - A pipe path is not interpreted as nesting: `input="cond|sel"` evaluates `$cond` followed
+    by literal `|sel`, rather than the selector.
 - `<configfile><inputs name="…"/>` is not a reference. It dumps the whole nested state as JSON.
 - A `<configfile name="…">` defines a new template variable. It is not a reference either.
 
@@ -195,11 +213,12 @@ echo $adv.size $cond.sel
   pre-23.1 key working as an alias. That key is the visitor's `prefix + name`, which drops **only the
   innermost section or conditional**:
 
-  | Parameter path       | Alias                        |
-  | -------------------- | ---------------------------- |
-  | `cond\|input1`       | `input1`                     |
-  | `adv\|deep\|input3`  | `adv\|input3` (not `input3`) |
-  | anything in a repeat | none                         |
+  | Parameter path            | Alias                        |
+  | ------------------------- | ---------------------------- |
+  | `cond\|input1`            | `input1`                     |
+  | `adv\|deep\|input3`       | `adv\|input3` (not `input3`) |
+  | direct child of a repeat  | no shorter alias             |
+  | `queries_0\|cond\|input1` | `queries_0\|input1`          |
 
   A real key always beats an alias. A `multiple="true"` data parameter creates numbered keys: if
   `input` were multiple, it would create `input`, `input1`, `input2` and so on, and
@@ -339,11 +358,11 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
   accepted at every profile.
 - Up to profile 24.1, bare leaf names (`input1`, `size`, `sel`) are also matched, by trying each
   suffix of the pipe path.
-  - **Gotcha:** a bare `input2` given twice fills the repeat in reverse order (`queries_0` gets the
+  - **Legacy behavior:** a bare `input2` given twice fills the repeat in reverse order (`queries_0` gets the
     second value), because the matcher takes the last match.
 - From profile 24.2, bare names are rejected ("Invalid parameter name found") and test cases are
   validated as `test_case_xml` [tool state](tool_state.md).
-  - **Gotcha:** a profile between the two, such as `24.1.1`, gets neither: bare names are no
+  - **Profile edge case:** a profile between the two, such as `24.1.1`, gets neither: bare names are no
     longer matched, and the validation that would report them is skipped.
 - Test `<output>` and `<output_collection>` names refer to outputs, not parameters.
 
@@ -386,25 +405,29 @@ section covers only how a YAML tool refers to its parameters by name.
 
 YAML tools use four of the five styles:
 
-1. **Dotted path** in JavaScript over the runtime state: `inputs.cond.input1`,
-   `inputs.queries[0].input2`. This style covers `shell_command`, `configfiles`, `arguments` and the
-   tool editor's type hints. It is the only style the authoring docs teach.
-2. **Pipe path**, passed to the XML resolution code unchanged: `cond|input1`, or `queries_0|input2`
-   with a repeat index. This style covers `format_source`, `metadata_source`, `structured_like`,
-   `collection_type_source` and `default_identifier_source`. The YAML parser copies these strings
-   without interpreting them, so every XML rule applies, including the legacy alias and other
-   bare-name fallbacks.
-3. **Dotted path** in Cheetah: `command` in file-flavor tools, using the same wrapped parameter
-   namespace as XML.
-4. **Nested state** for test `inputs`. The parser then flattens them to pipe paths (`cond|sel`,
-   `cond|input1`, `queries_0|input2`) for the shared test-case code.
-
-`data_ref` is the one outlier: a **bare leaf name** in lexical scope, as in XML.
+- **Dotted paths:** JavaScript over the runtime state (`inputs.cond.input1`,
+  `inputs.queries[0].input2`) in `shell_command`, `configfiles`, `arguments` and the tool editor's
+  type hints. File-flavor Cheetah `command:` uses the same wrapped namespace as XML.
+- **Pipe paths:** output attributes (`format_source`, `metadata_source`, `structured_like`,
+  `collection_type_source` and `default_identifier_source`) use `cond|input1` or
+  `queries_0|input2`. The shared XML resolvers apply, including legacy aliases and bare-name
+  fallbacks.
+- **Nested state:** test `inputs`, subsequently flattened to pipe paths for the shared test-case
+  code.
+- **Bare leaf names:** file-flavor dependencies such as `data_ref`, resolved in lexical scope as
+  in XML.
 
 #### Running Example in YAML
 
-Here is the running example in the modelled shape, the one the tool editor and the authoring docs
-describe:
+The following example shows how the models represent the running example. It is illustrative
+and cannot currently be loaded:
+
+```{warning}
+The parser has no `section` input type (`Unknown Galaxy parameter type section`). It also reads
+repeat children from `blocks:`, which the models forbid, so a modelled repeat fails with
+`KeyError: 'blocks'`. Modelled YAML tools currently support only conditionals among the groupings;
+file-flavor tools support conditionals and repeats (`blocks:`). Neither supports sections.
+```
 
 ```yaml
 class: GalaxyUserTool
@@ -457,16 +480,6 @@ outputs:
     from_work_dir: out.txt
 ```
 
-```{warning}
-This tool passes pydantic validation but does not load. The parser has no `section` input type:
-it reports `Unknown Galaxy parameter type section`. It also reads a repeat's children from
-`blocks:`, which the model forbids, so a modelled repeat fails with `KeyError: 'blocks'`. In
-practice, **modelled YAML tools support only conditionals among the groupings**. File-flavor
-tools support conditionals and repeats (`blocks:`). Neither flavor supports sections. Unit tests
-only round-trip the models through `to_internal()`, never through the parser, which is why the
-mismatch goes unnoticed. The [Tool Syntax](#tool-syntax) table describes what the resolvers support.
-```
-
 As a file-flavor tool, the example has to drop `adv`. Its repeat looks like this:
 
 ```yaml
@@ -503,7 +516,7 @@ shell_command: |
   cat '$(inputs.cond.input1.path)' $(inputs.queries.map((q) => `'${q.input2.path}'`).join(" ")) > out.txt
 ```
 
-Gotchas:
+Validation and runtime caveats:
 
 - At validation time, modelled tools check only the identifier directly after `inputs.` against the
   top-level input names. `inputs.cond.input1` and `inputs.cond.nope` both pass. Aliased access such
@@ -594,17 +607,26 @@ Galaxy has two job-submission APIs. The legacy tool API (`POST /api/tools`) acce
 shapes, chosen by the `input_format` field: pipe paths (`legacy`, the default) and nested state
 (`21.01`). Each shape silently ignores the other's syntax. The tool request API (`POST /api/jobs`)
 accepts only nested state, validated against the tool's pydantic request model, and rejects
-anything else with a 400. The API tests run every case in all three shapes through the
-`tool_input_format` fixture (`lib/galaxy_test/api/conftest.py`).
+anything else with a 400. Tests using the `tool_input_format` fixture exercise all three shapes
+(`lib/galaxy_test/api/conftest.py`).
 
-| API / form            | Endpoint                                                 | Nested syntax                                  | Section         | Conditional                                              | Repeat                  | Data refs                                                              | Batch                                                                               | Notes                                                                                                      |
-| --------------------- | -------------------------------------------------------- | ---------------------------------------------- | --------------- | -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Legacy, flat          | `POST /api/tools` (`input_format` omitted or `"legacy"`) | `\|` between levels, `_N` for repeat index     | ✓ `adv\|size`   | ✓ `cond\|sel`, `cond\|input1`                            | ✓ `queries_0\|input2`   | `{"src","id"}`, bare id, `{"values": [...]}`, string encodings         | ✓ `{"batch": true, "values", "linked"}`, any parameter type                         | Nested dicts are ignored without an error; the tool form's fallback path uses this                         |
-| Legacy, nested        | `POST /api/tools` with `"input_format": "21.01"`         | dicts and lists                                | ✓ `adv: {size}` | ✓ `cond: {sel, input1}`                                  | ✓ `queries: [{input2}]` | same as flat                                                           | ✓ same wrapper, placed in the nested position                                       | Flat `\|` keys are ignored without an error; `__current_case__` and `__index__` are overwritten or dropped |
-| Tool request          | `POST /api/jobs` (`strict` defaults to true)             | dicts and lists only                           | ✓               | ✓ `sel` optional; when omitted, the default case is used | ✓ list                  | `{"src": "hda"\|"ldda"\|"dce"\|"url", ...}`; plain list for `multiple` | ✓ `{"__class__": "Batch", "values", "linked"}`, data and collection parameters only | Rejects flat keys, `__current_case__`, `__index__`, inactive-case parameters, and `"3"` for an integer     |
-| Tool request, relaxed | `POST /api/jobs` with `"strict": false`                  | same as strict                                 | ✓               | ✓                                                        | ✓                       | same                                                                   | same                                                                                | Addressing is the same as strict; only null and default handling for text differs                          |
-| Form build            | `GET`/`POST /api/tools/{id}/build`                       | flat in; nested `state_inputs` out             | ✓               | ✓                                                        | ✓                       | same as legacy                                                         | n/a                                                                                 | Input is parsed like legacy flat; errors are keyed by pipe paths                                           |
-| Rerun build           | `GET /api/jobs/{id}/build_for_rerun`                     | stored job state flattened back into pipe keys | ✓               | ✓                                                        | ✓                       | remapped to current history                                            | n/a                                                                                 | Same response model as `/build`                                                                            |
+| Interface             | Endpoint                                                 | Parameter addressing                                                |
+| --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| Legacy, flat          | `POST /api/tools` (`input_format` omitted or `"legacy"`) | Pipe paths: `adv\|size`, `cond\|sel`, `queries_0\|input2`           |
+| Legacy, nested        | `POST /api/tools` with `"input_format": "21.01"`         | Nested dicts and lists: `adv: {size}`, `queries: [{input2}]`        |
+| Tool request          | `POST /api/jobs` (`strict` defaults to true)             | Nested dicts and lists only                                         |
+| Tool request, relaxed | `POST /api/jobs` with `"strict": false`                  | Same addressing as strict requests                                  |
+| Form build            | `GET`/`POST /api/tools/{id}/build`                       | Flat inputs; nested `state_inputs` and pipe-path errors in response |
+| Rerun build           | `GET /api/jobs/{id}/build_for_rerun`                     | Stored state flattened to pipe paths; same response as `/build`     |
+
+Submission values and validation:
+
+| Submission format     | Data references                                                        | Batch wrapper                                                                       | Validation                                                                                                 |
+| --------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Legacy, flat          | `{"src","id"}`, bare id, `{"values": [...]}`, string encodings         | ✓ `{"batch": true, "values", "linked"}`, any parameter type                         | Nested dicts are ignored without an error; the tool form's fallback path uses this                         |
+| Legacy, nested        | same as flat                                                           | ✓ same wrapper, placed in the nested position                                       | Flat `\|` keys are ignored without an error; `__current_case__` and `__index__` are overwritten or dropped |
+| Tool request          | `{"src": "hda"\|"ldda"\|"dce"\|"url", ...}`; plain list for `multiple` | ✓ `{"__class__": "Batch", "values", "linked"}`, data and collection parameters only | Rejects flat keys, `__current_case__`, `__index__`, inactive-case parameters, and `"3"` for an integer     |
+| Tool request, relaxed | same                                                                   | same                                                                                | Addressing is the same as strict; only null and default handling for text differs                          |
 
 **Patterns.** In the legacy API, a key in the other shape's syntax is dropped and its parameters
 take their default values. Usually the only symptom is a later "required parameter missing" error,
@@ -836,32 +858,44 @@ name use **pipe paths** (`cond|input1`, `queries_0|input2`). Stored and authored
 actions use a dotted path because `|` is already taken there, and gxformat2 keeps `/` for
 `step/output` sources, never for parameter paths.
 
-| Feature                       | Where                                     | Nested syntax                                                           | Section                | Conditional                             | Repeat                           | Notes                                                                             |
-| ----------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- | ---------------------- | --------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
-| Step connections              | `.ga` `input_connections` keys            | pipe path, `_N`                                                         | `adv\|size`            | `cond\|input1`                          | `queries_0\|input2`              | nested repeat `a_0\|b_1\|x` (augmentation untested)                               |
-| Step input defaults           | `.ga` / format2 step `in`                 | pipe path                                                               | `adv\|size`            | `cond\|input1`                          | `queries_0\|input2`              | `{"default": ...}` per pipe path                                                  |
-| Stored tool state             | `.ga` `tool_state`, DB                    | nested JSON                                                             | `adv: {size}`          | `cond: {sel, __current_case__, input1}` | `queries: [{__index__, input2}]` | `.ga` holds a JSON string; the editor API JSON-encodes each top-level value again |
-| Connected / runtime markers   | inside `tool_state`                       | `{"__class__": "ConnectedValue"}` / `"RuntimeValue"` at the nested spot | ✓                      | ✓                                       | ✓                                | `RuntimeValue` isn't accepted by the `workflow_step*` pydantic models             |
-| Legacy step `inputs` list     | `.ga` tool step                           | top-level name only                                                     | `adv`                  | `cond`                                  | ✗                                | lists runtime params only; core code doesn't use it                               |
-| Format2 `in:`                 | gxformat2 step                            | pipe path copied verbatim                                               | `adv\|size`            | `cond\|input1`                          | `queries_0\|input2`              | `adv/size` isn't translated and silently matches nothing                          |
-| Format2 `state:` + `$link`    | gxformat2 step                            | nested YAML, no markers                                                 | ✓                      | ✓ (`__current_case__` optional)         | list, no `__index__`             | `$link` becomes `ConnectedValue` plus a pipe-path connection key                  |
-| Format2 `tool_state:`         | gxformat2 step / export                   | native nested state, markers kept                                       | ✓                      | ✓                                       | ✓                                | export default when no state encoder is configured                                |
-| Format2 `runtime_inputs:`     | gxformat2 step                            | top-level only                                                          | ✗                      | ✗                                       | ✗                                | `cond\|sel` becomes a bogus literal top-level key                                 |
-| `when` expression             | step `when` (CWL JS)                      | dotted path over nested state, or brackets                              | `inputs.adv.size`      | `inputs.cond.input1`                    | `inputs.queries[0].input2`       | extra inputs stay flat (`inputs.when`); flat tool names are hidden since 26.2     |
-| Editor terminals              | `get_all_inputs` → step `inputs[].name`   | pipe path                                                               | ✓                      | ✓                                       | ✓                                | labels add only `Query 1 > `; sections and conditionals add nothing               |
-| Editor tool form              | `build_module` `inputs`                   | pipe-path form keys                                                     | ✓                      | ✓                                       | ✓                                | the server nests them with `populate_state`                                       |
-| Invocation `parameters`       | `POST /api/workflows/{id}/invocations`    | step key → nested dict or pipe paths                                    | ✓                      | ✓                                       | pipe path only                   | the run form sends pipe paths with `parameters_normalized: true`                  |
-| Subworkflow `parameters`      | same, on a subworkflow step               | `"<inner order_index>\|<pipe path>"`                                    | ✓                      | ✓                                       | ✓                                | needs `parameters_normalized`; one level deep                                     |
-| Subworkflow connections       | `input_connections` on a subworkflow step | inner input step **label**                                              | n/a                    | n/a                                     | n/a                              | unlabelled: `"<order_index>:<name>"`; no character checks on labels               |
-| `replacement_params` / `${x}` | run request; PJA args; text values        | free name, not a path                                                   | n/a                    | n/a                                     | n/a                              | server substitutes only into rename `newname`                                     |
-| Rename PJA `#{...}`           | `RenameDatasetAction` `newname`           | dotted path, `.` → `\|`                                                 | `#{adv.x}` (data only) | `#{cond.input1}`                        | `#{queries_0.input2}`            | `\|` starts filters (`#{x \| basename}`); bare `#{input1}` matches by suffix      |
-| Refactor API                  | `input_name` in actions and messages      | pipe path                                                               | ✓                      | `cond\|input1`                          | `queries_0\|input2`              | documented in the schema as `'cond\|repeat_0\|input'`                             |
+**Connections and state**
+
+| Feature                     | Parameter syntax                                            | Restrictions                                                                                                      |
+| --------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Step connections            | Pipe path (`cond\|input1`, `queries_0\|input2`)             | Repeat indexes are part of the key: `a_0\|b_1\|x`; nested-repeat augmentation is untested                         |
+| Step input defaults         | Pipe path (`cond\|input1`, `queries_0\|input2`)             | `{"default": ...}` per pipe path                                                                                  |
+| Stored tool state           | nested JSON                                                 | Carries `__current_case__` and `__index__`; `.ga` stores a JSON string, editor encodes each top-level value again |
+| Connected / runtime markers | Nested `{"__class__": "ConnectedValue"}` / `"RuntimeValue"` | `RuntimeValue` is rejected by the `workflow_step*` models                                                         |
+| Legacy step `inputs` list   | top-level name only                                         | Top-level runtime parameters only; repeats unsupported; core code does not use this list                          |
+| Format2 `in:`               | Pipe path (`cond\|input1`, `queries_0\|input2`)             | `adv/size` isn't translated and silently matches nothing                                                          |
+| Format2 `state:` + `$link`  | nested YAML, no markers                                     | `$link` creates a `ConnectedValue` and a pipe-path connection; no bookkeeping markers required                    |
+| Format2 `tool_state:`       | native nested state, markers kept                           | export default when no state encoder is configured                                                                |
+| Format2 `runtime_inputs:`   | top-level only                                              | Top-level only; `cond\|sel` becomes a literal top-level key                                                       |
+
+**Execution and invocation**
+
+| Feature                       | Parameter syntax                           | Restrictions                                                                                |
+| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `when` expression             | dotted path over nested state, or brackets | Extra inputs remain flat (`inputs.when`); pipe-path aliases for tool inputs removed in 26.2 |
+| Invocation `parameters`       | step key → nested dict or pipe paths       | Repeats require pipe paths; run form uses `parameters_normalized: true`                     |
+| Subworkflow `parameters`      | `"<inner order_index>\|<pipe path>"`       | Requires `parameters_normalized`; one subworkflow level deep                                |
+| Subworkflow connections       | inner input step **label**                 | unlabelled: `"<order_index>:<name>"`; no character checks on labels                         |
+| `replacement_params` / `${x}` | free name, not a path                      | server substitutes only into rename `newname`                                               |
+| Rename PJA `#{...}`           | dotted path, `.` → `\|`                    | Data inputs only; repeat syntax `#{queries_0.input2}`; bare names match by suffix           |
+
+**Editor and refactor**
+
+| Feature          | Parameter syntax                                | Restrictions                                                        |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------------- |
+| Editor terminals | Pipe path (`cond\|input1`, `queries_0\|input2`) | labels add only `Query 1 > `; sections and conditionals add nothing |
+| Editor tool form | Pipe path (`cond\|input1`, `queries_0\|input2`) | the server nests them with `populate_state`                         |
+| Refactor API     | Pipe path (`cond\|input1`, `queries_0\|input2`) | documented in the schema as `'cond\|repeat_0\|input'`               |
 
 **Patterns.** The pipe path is what `visit_input_values` produces as `prefixed_name`. The nested
 shape matches the tool's own state. Native state carries `__current_case__` and `__index__`.
 Format2 `state:` and the `workflow_step*` models in `galaxy.tool_util.parameters` leave them out,
-and those models reject both markers and pipe-path keys. No shared path helper exists; each
-conversion is written separately:
+and those models reject both markers and pipe-path keys. Conversions are spread across several
+helpers and call sites:
 
 - Nested to flat: gxformat2 `$link` and `_flatten_step_params` (invocation `parameters`).
 - Flat to nested: `populate_state` (the editor tool form), `visit_input_values` matching pipe paths
@@ -919,9 +953,8 @@ steps:
 - A `$link` path is built with `|` for dicts and `_i` for list items. An item that is itself a
   `$link` collapses onto the parent key, which is how `multiple="true"` inputs are linked.
 - `runtime_inputs: [num_lines]` works only for top-level parameters.
-- Galaxy imports through `gxformat2.python_to_workflow` (`managers/workflows.py`). There is no
-  `lib/galaxy/workflow/format2.py`. Export without a state encoder writes `tool_state:` verbatim,
-  markers included.
+- Galaxy imports through `gxformat2.python_to_workflow` (`managers/workflows.py`). Export without
+  a state encoder writes `tool_state:` verbatim, markers included.
 
 ### `when` Expressions
 
@@ -967,10 +1000,16 @@ dicts flattened on the way in:
 
 ```json
 {
-  "inputs": {"0": {"src": "hda", "id": "..."}},
+  "inputs": { "0": { "src": "hda", "id": "..." } },
   "inputs_by": "step_index|step_uuid",
-  "parameters": {"3": {"adv": {"size": 5}, "cond|sel": "a", "queries_0|input2": {"values": [...]}}},
-  "replacement_params": {"suffix": "final"}
+  "parameters": {
+    "3": {
+      "adv": { "size": 5 },
+      "cond|sel": "a",
+      "queries_0|input2": { "src": "hda", "id": "..." }
+    }
+  },
+  "replacement_params": { "suffix": "final" }
 }
 ```
 
