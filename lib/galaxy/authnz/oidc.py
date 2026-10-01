@@ -16,6 +16,11 @@ import logging
 from pkce import generate_pkce_pair
 from social_core.backends.open_id_connect import OpenIdConnectAuth
 
+from .oidc_utils import (
+    PKCE_CODE_VERIFIER_SESSION_KEY,
+    PKCECodeVerifierMissing,
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -60,7 +65,7 @@ class GalaxyOpenIdConnect(OpenIdConnectAuth):
             params["code_challenge"] = code_challenge
             params["code_challenge_method"] = "S256"
             # Store verifier in session for later use
-            self.strategy.session_set("pkce_code_verifier", code_verifier)
+            self.strategy.session_set(PKCE_CODE_VERIFIER_SESSION_KEY, code_verifier)
 
         return params
 
@@ -72,14 +77,10 @@ class GalaxyOpenIdConnect(OpenIdConnectAuth):
 
         # Add PKCE code verifier if it was used
         if self.PKCE_ENABLED:
-            code_verifier = self.strategy.session_get("pkce_code_verifier")
-            if code_verifier:
-                params["code_verifier"] = code_verifier
-                # Clean up the session
-                try:
-                    self.strategy.session_pop("pkce_code_verifier")
-                except NotImplementedError:
-                    # Strategy.session_pop is not implemented, that's ok
-                    pass
+            code_verifier = self.strategy.session_pop(PKCE_CODE_VERIFIER_SESSION_KEY)
+            # Galaxy refuses the login itself, so it never depends on the IdP enforcing PKCE.
+            if not code_verifier:
+                raise PKCECodeVerifierMissing(self)
+            params["code_verifier"] = code_verifier
 
         return params
