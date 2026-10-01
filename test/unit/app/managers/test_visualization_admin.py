@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 from unittest.mock import (
     MagicMock,
@@ -237,45 +238,45 @@ class TestPackageValidation:
 # --- npm install (mocked subprocess) ---
 
 
+def _fake_npm_install(package_spec, prefix):
+    """Stand-in for ``npm install`` that lays the package out the way npm does."""
+    package, version = package_spec.rsplit("@", 1)
+    pkg_path = os.path.join(prefix, "node_modules", *package.split("/"))
+    os.makedirs(os.path.join(pkg_path, "static"), exist_ok=True)
+    with open(os.path.join(pkg_path, "package.json"), "w") as f:
+        json.dump({"name": package, "version": version}, f)
+    with open(os.path.join(pkg_path, "static", "index.html"), "w") as f:
+        f.write(version)
+
+
+@pytest.fixture()
+def fake_npm(manager, monkeypatch):
+    monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install)
+    return manager
+
+
 class TestNpmInstall:
-    @patch("galaxy.managers.visualization_admin.subprocess.run")
-    def test_install_scoped_package(self, mock_run, manager):
+    def test_install_scoped_package(self, fake_npm):
         """Scoped packages resolve to node_modules/@scope/name."""
-        target_dir = manager.get_package_path("circster")
-
-        def side_effect(cmd, **kwargs):
-            # Simulate npm creating the scoped package directory
-            pkg_path = os.path.join(kwargs["cwd"], "node_modules", "@galaxyproject", "circster")
-            os.makedirs(pkg_path, exist_ok=True)
-            with open(os.path.join(pkg_path, "package.json"), "w") as f:
-                json.dump({"name": "@galaxyproject/circster", "version": "1.0.0"}, f)
-            result = MagicMock()
-            result.returncode = 0
-            return result
-
-        mock_run.side_effect = side_effect
-
-        result = manager.install_npm_package("@galaxyproject/circster", "1.0.0", target_dir)
+        target_dir = fake_npm.get_package_path("circster")
+        result = fake_npm.install_npm_package("@galaxyproject/circster", "1.0.0", target_dir)
         assert result["package"] == "@galaxyproject/circster"
+        with open(os.path.join(target_dir, "package.json")) as f:
+            assert json.load(f)["name"] == "@galaxyproject/circster"
+
+    def test_install_unscoped_package(self, fake_npm):
+        target_dir = fake_npm.get_package_path("some_viz")
+        result = fake_npm.install_npm_package("some-viz-package", "2.0.0", target_dir)
+        assert result["version"] == "2.0.0"
         assert os.path.exists(os.path.join(target_dir, "package.json"))
 
-    @patch("galaxy.managers.visualization_admin.subprocess.run")
-    def test_install_unscoped_package(self, mock_run, manager):
-        target_dir = manager.get_package_path("some_viz")
+    def test_install_rejects_package_without_package_json(self, manager, monkeypatch):
+        def npm_without_package_json(package_spec, prefix):
+            os.makedirs(os.path.join(prefix, "node_modules", "@galaxyproject", "broken"))
 
-        def side_effect(cmd, **kwargs):
-            pkg_path = os.path.join(kwargs["cwd"], "node_modules", "some-viz-package")
-            os.makedirs(pkg_path, exist_ok=True)
-            with open(os.path.join(pkg_path, "package.json"), "w") as f:
-                json.dump({"name": "some-viz-package", "version": "2.0.0"}, f)
-            result = MagicMock()
-            result.returncode = 0
-            return result
-
-        mock_run.side_effect = side_effect
-
-        result = manager.install_npm_package("some-viz-package", "2.0.0", target_dir)
-        assert result["version"] == "2.0.0"
+        monkeypatch.setattr(manager, "_run_npm_install", npm_without_package_json)
+        with pytest.raises(exceptions.ConfigurationError, match="package.json"):
+            manager.install_npm_package("@galaxyproject/broken", "1.0.0", manager.get_package_path("broken"))
 
     @patch("galaxy.managers.visualization_admin.subprocess.run")
     def test_install_npm_failure(self, mock_run, manager):
@@ -292,86 +293,110 @@ class TestNpmInstall:
             manager.install_npm_package("@galaxyproject/slow", "1.0.0", target_dir)
 
 
-# --- Install/uninstall/reinstall lifecycle ---
+# --- Install/update/uninstall lifecycle ---
+
+
+def _installed_version(manager, viz_id):
+    with open(os.path.join(manager.get_package_path(viz_id), "package.json")) as f:
+        return json.load(f)["version"]
 
 
 class TestInstallLifecycle:
-    @patch("galaxy.managers.visualization_admin.subprocess.run")
-    def _mock_install(self, manager, viz_id, package, version, mock_run):
-        """Helper that mocks npm and performs an install."""
+    def test_install_then_uninstall(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        assert fake_npm.is_package_installed("my_viz")
+        assert fake_npm.get_package_info("my_viz") == {
+            "package": "@galaxyproject/my-viz",
+            "version": "1.0.0",
+            "enabled": True,
+        }
 
-        def side_effect(cmd, **kwargs):
-            parts = package.split("/") if package.startswith("@") else [package]
-            pkg_path = os.path.join(kwargs["cwd"], "node_modules", *parts)
-            os.makedirs(pkg_path, exist_ok=True)
-            with open(os.path.join(pkg_path, "package.json"), "w") as f:
-                json.dump({"name": package, "version": version}, f)
-            return MagicMock(returncode=0)
+        fake_npm.uninstall_package("my_viz")
+        assert not fake_npm.is_package_installed("my_viz")
+        assert fake_npm.get_package_info("my_viz") is None
 
-        mock_run.side_effect = side_effect
-        return manager.install_npm_package(package, version, manager.get_package_path(viz_id))
+    def test_install_twice_conflicts(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        with pytest.raises(exceptions.Conflict):
+            fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "2.0.0")
+        assert _installed_version(fake_npm, "my_viz") == "1.0.0"
 
-    def test_install_then_uninstall(self, manager):
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
+    def test_install_then_uninstall_then_reinstall(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.uninstall_package("my_viz")
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        assert fake_npm.is_package_installed("my_viz")
 
-        assert manager.is_package_installed("my_viz")
-        assert manager.get_package_info("my_viz") is not None
+    def test_uninstall_unknown_raises(self, manager):
+        with pytest.raises(exceptions.ObjectNotFound):
+            manager.uninstall_package("never_installed")
 
-        manager.remove_package_from_config("my_viz")
-        manager.cleanup_package_files("my_viz")
+    def test_update_swaps_version_and_keeps_enabled_flag(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.toggle_package_enabled("my_viz", False)
 
-        assert not manager.is_package_installed("my_viz")
-        assert manager.get_package_info("my_viz") is None
+        result = fake_npm.update_package("my_viz", "2.0.0")
 
-    def test_install_then_uninstall_then_reinstall(self, manager):
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        assert result["enabled"] is False
+        assert _installed_version(fake_npm, "my_viz") == "2.0.0"
+        assert fake_npm.get_package_info("my_viz") == {
+            "package": "@galaxyproject/my-viz",
+            "version": "2.0.0",
+            "enabled": False,
+        }
 
-        manager.remove_package_from_config("my_viz")
-        manager.cleanup_package_files("my_viz")
-        assert not manager.is_package_installed("my_viz")
+    def test_update_keeps_old_version_when_install_fails(self, fake_npm, monkeypatch):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
 
-        # Reinstall
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
-        assert manager.is_package_installed("my_viz")
+        def failing_npm(package_spec, prefix):
+            raise exceptions.InternalServerError("Package installation failed: boom")
 
-    def test_install_then_upgrade(self, manager):
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        monkeypatch.setattr(fake_npm, "_run_npm_install", failing_npm)
+        with pytest.raises(exceptions.InternalServerError):
+            fake_npm.update_package("my_viz", "2.0.0")
 
-        assert manager.load_config()["my_viz"]["version"] == "1.0.0"
+        assert _installed_version(fake_npm, "my_viz") == "1.0.0"
+        assert fake_npm.get_package_info("my_viz")["version"] == "1.0.0"
 
-        # Upgrade by installing new version over old
-        manager.cleanup_package_files("my_viz")
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "2.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "2.0.0")
+    def test_update_keeps_old_version_when_swap_fails(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        target_dir = fake_npm.get_package_path("my_viz")
+        real_move = shutil.move
 
-        assert manager.load_config()["my_viz"]["version"] == "2.0.0"
-        metadata = manager.get_package_metadata("my_viz")
-        assert metadata["version"] == "2.0.0"
+        def flaky_move(src, dst, *args, **kwargs):
+            if src != target_dir and dst == target_dir and not os.path.exists(target_dir):
+                if "_backup" not in src:
+                    raise OSError("swap failed")
+            return real_move(src, dst, *args, **kwargs)
 
-    def test_install_then_stage_then_verify(self, manager):
+        with patch("galaxy.managers.visualization_admin.shutil.move", side_effect=flaky_move):
+            with pytest.raises(OSError, match="swap failed"):
+                fake_npm.update_package("my_viz", "2.0.0")
+
+        assert _installed_version(fake_npm, "my_viz") == "1.0.0"
+        assert fake_npm.get_package_info("my_viz")["version"] == "1.0.0"
+
+    def test_update_unknown_raises(self, manager):
+        with pytest.raises(exceptions.ObjectNotFound):
+            manager.update_package("never_installed", "1.0.0")
+
+    def test_install_then_stage_then_verify(self, fake_npm):
         """Full flow: install from npm, then stage so Galaxy can serve it."""
-        self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
-        manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
-        static_dir = os.path.join(manager.get_package_path("my_viz"), "static")
-        os.makedirs(static_dir, exist_ok=True)
-        with open(os.path.join(static_dir, "my_viz.xml"), "w") as f:
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        with open(os.path.join(fake_npm.get_package_path("my_viz"), "static", "my_viz.xml"), "w") as f:
             f.write("<visualization name='my_viz' />")
-        with open(os.path.join(static_dir, "index.html"), "w") as f:
-            f.write("<html>viz content</html>")
 
-        result = manager.stage_visualization("my_viz")
+        result = fake_npm.stage_visualization("my_viz")
         assert result["visualization_id"] == "my_viz"
 
-        # Verify the static content is now in the serving directory
-        staged_dir = manager.static_path
-        staged_file = os.path.join(staged_dir, "my_viz", "static", "index.html")
-        assert os.path.exists(staged_file)
+        staged_file = os.path.join(fake_npm.static_path, "my_viz", "static", "index.html")
         with open(staged_file) as f:
-            assert "viz content" in f.read()
+            assert f.read() == "1.0.0"
+
+    def test_stage_managed_package_missing_config_is_client_error(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        with pytest.raises(exceptions.ConfigurationError):
+            fake_npm.stage_visualization("my_viz")
 
 
 # --- Staging (migration from old install mechanisms) ---

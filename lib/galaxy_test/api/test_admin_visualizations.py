@@ -1,8 +1,5 @@
 """API tests for admin visualization management endpoints."""
 
-import uuid
-from unittest.mock import patch
-
 from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
@@ -25,59 +22,21 @@ class TestAdminVisualizationsApi(ApiTestCase):
         assert_status_code_is(response, 403)
 
     @requires_admin
-    @patch("galaxy.managers.visualization_admin.VisualizationPackageManager.query_npm_registry")
-    def test_available(self, mock_query):
-        mock_query.return_value = [
-            {
-                "name": "@galaxyproject/circster",
-                "description": "Circster",
-                "version": "1.2.3",
-                "keywords": ["visualization"],
-                "author": {},
-                "maintainers": [],
-                "links": {},
-                "date": "2026-01-01",
-                "score": {},
-            }
-        ]
-        response = self._get("admin/visualizations/available", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert isinstance(data, list)
-
-    @requires_admin
     def test_available_non_admin_rejected(self):
         response = self._get("admin/visualizations/available")
         assert_status_code_is(response, 403)
 
     @requires_admin
-    @patch("galaxy.managers.visualization_admin.VisualizationPackageManager.install_npm_package")
-    def test_install(self, mock_install):
-        viz_id = f"api_install_test_viz_{uuid.uuid4().hex[:8]}"
-        mock_install.return_value = {
-            "package": "@galaxyproject/api-install-test-viz",
-            "version": "1.2.3",
-            "size": 123,
-        }
+    def test_install_rejects_invalid_package(self):
         response = self._post(
-            f"admin/visualizations/{viz_id}/install",
-            data={"package": "@galaxyproject/api-install-test-viz", "version": "1.2.3"},
+            "admin/visualizations/api_install_test_viz/install",
+            data={"package": "../not-a-package", "version": "1.2.3"},
             admin=True,
             json=True,
         )
-        assert_status_code_is(response, 201)
-        data = response.json()
-        assert_has_keys(data, "id", "package", "version", "installed", "message")
-
-    @requires_admin
-    @patch("galaxy.managers.visualization_admin.VisualizationPackageManager.get_package_versions")
-    def test_package_versions(self, mock_versions):
-        mock_versions.return_value = ["2.0.0", "1.0.0"]
-        response = self._get("admin/visualizations/versions/@galaxyproject/circster", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert_has_keys(data, "package", "versions")
-        assert data["versions"] == ["2.0.0", "1.0.0"]
+        assert_status_code_is(response, 400)
+        response = self._get("admin/visualizations/api_install_test_viz", admin=True)
+        assert_status_code_is(response, 404)
 
     @requires_admin
     def test_show_nonexistent(self):
