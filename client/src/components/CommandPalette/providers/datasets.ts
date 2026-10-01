@@ -17,9 +17,6 @@ export const DATASET_RECENT_TYPE = "dataset";
 /** Identity of the cached list in the palette's refresh bookkeeping */
 const REFRESH_KEY = "datasets:latest";
 
-/** Maximum number of rows rendered per section */
-const SECTION_CAP = 6;
-
 /** Router location of a dataset preview */
 function datasetRoute(id: string): string {
     return `/datasets/${id}/preview`;
@@ -94,15 +91,19 @@ async function ensureLatestHydrated(): Promise<void> {
 async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASummary[]> {
     const datasetListStore = useDatasetListStore();
     if (cacheOnly) {
-        return datasetListStore.searchCachedDatasets(query, SECTION_CAP);
+        return datasetListStore.searchCachedDatasets(query, PALETTE_LIMITS.section);
     }
     await ensureLatestHydrated();
-    const cached = datasetListStore.searchCachedDatasets(query, SECTION_CAP);
-    if (cached.length >= SECTION_CAP || query.length < PALETTE_LIMITS.minBackendQuery || cacheHoldsEveryDataset()) {
+    const cached = datasetListStore.searchCachedDatasets(query, PALETTE_LIMITS.section);
+    if (
+        cached.length >= PALETTE_LIMITS.section ||
+        query.length < PALETTE_LIMITS.minBackendQuery ||
+        cacheHoldsEveryDataset()
+    ) {
         return cached;
     }
-    await datasetListStore.fetchDatasets({ search: query, limit: SECTION_CAP });
-    return datasetListStore.searchCachedDatasets(query, SECTION_CAP);
+    await datasetListStore.fetchDatasets({ search: query, limit: PALETTE_LIMITS.section });
+    return datasetListStore.searchCachedDatasets(query, PALETTE_LIMITS.section);
 }
 
 function recentItems(query: string): PaletteItem[] {
@@ -115,7 +116,7 @@ function recentItems(query: string): PaletteItem[] {
             to: datasetRoute(entry.id),
         }),
     };
-    return recentPaletteItems(rows, query, SECTION_CAP);
+    return recentPaletteItems(rows, query, PALETTE_LIMITS.recent);
 }
 
 /** Drops items already shown in an earlier section */
@@ -141,7 +142,7 @@ export const datasetsProvider: CommandPaletteProvider = {
             return [];
         }
         const found = (await matchingDatasets(query, true)).map(datasetToItem);
-        return rankPaletteItems(found, query).slice(0, SECTION_CAP);
+        return rankPaletteItems(found, query).slice(0, PALETTE_LIMITS.rootSection);
     },
     async searchScoped(_scope, query: string) {
         const recent = recentItems(query);
@@ -153,7 +154,7 @@ export const datasetsProvider: CommandPaletteProvider = {
                 { id: "recent", items: recent, title: localize("Recent") },
                 {
                     id: "latest",
-                    items: withoutItems(latest, recent).slice(0, SECTION_CAP),
+                    items: withoutItems(latest, recent).slice(0, PALETTE_LIMITS.section),
                     title: localize("Latest datasets"),
                 },
             ]);
@@ -161,7 +162,11 @@ export const datasetsProvider: CommandPaletteProvider = {
         const found = rankPaletteItems((await matchingDatasets(query)).map(datasetToItem), query);
         return toSections([
             { id: "recent", items: recent, title: localize("Recent") },
-            { id: "results", items: withoutItems(found, recent).slice(0, SECTION_CAP), title: localize("Datasets") },
+            {
+                id: "results",
+                items: withoutItems(found, recent).slice(0, PALETTE_LIMITS.section),
+                title: localize("Datasets"),
+            },
         ]);
     },
 };

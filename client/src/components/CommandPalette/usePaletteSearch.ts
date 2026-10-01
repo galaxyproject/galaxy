@@ -7,18 +7,13 @@ import { helpSections, type PaletteHelpHandlers } from "./paletteHelp";
 import { enabledPaletteProviders, findPaletteProvider } from "./providers";
 import { categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
+import { PALETTE_LIMITS } from "./providers/limits";
 import { isProviderAvailable, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { type PaletteMode, paletteModeIdentity, paletteModeSubject } from "./usePaletteMachine";
 import { isScopeTokenLike, scorePaletteItems } from "./utilities";
 
 const SEARCH_DEBOUNCE = 150;
-/** Cap per section on an empty query so defaults stay scannable */
-const MAX_EMPTY_QUERY_ITEMS = 8;
-/** Cap per section of the "All" fan-out, so every provider stays visible */
-const MAX_ROOT_SECTION_ITEMS = 5;
-/** Cap per section once a single category narrows the results */
-const MAX_CATEGORY_SECTION_ITEMS = 15;
 /** `selectedIndex` value selecting the category row instead of a result */
 export const CATEGORY_ROW_INDEX = -1;
 
@@ -106,7 +101,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
             providerId,
             () =>
                 !query.value && provider.emptyQueryItems
-                    ? provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS)
+                    ? provider.emptyQueryItems(ctx).slice(0, PALETTE_LIMITS.section)
                     : provider.search(query.value, ctx, { localOnly }),
             [],
         );
@@ -169,7 +164,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         // what this fan-out is answering; the input may have moved on by the time a
         // provider lands, and its rows are still the results of this query
         const searched = query.value;
-        const limit = searched ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
+        const limit = searched ? PALETTE_LIMITS.rootSection : PALETTE_LIMITS.section;
         const providers = enabledPaletteProviders(ctx);
         let pending = providers.length;
         // a keystroke is not a new search subject: whatever a provider answered the
@@ -241,7 +236,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         if (!category) {
             return [];
         }
-        return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
+        return limitSections(await categorySections(category, ctx), PALETTE_LIMITS.categorySection);
     }
 
     /** Search of the provider a category narrows to, through the category's scope */

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PaletteItem } from "../types";
 import { PaletteFetchError } from "./errors";
+import { PALETTE_LIMITS } from "./limits";
 import { resetListRefreshTracking } from "./refresh";
 import { rootListItems, storeFirstItems } from "./storeFirst";
 
@@ -95,6 +96,14 @@ describe("rootListItems", () => {
         expect(items.map((item) => item.title).sort()).toEqual(["alpaca", "alpha", "alpine"]);
         expect(own.fetchListing).toHaveBeenCalledTimes(1);
         expect(failing).toHaveBeenCalledWith("alp");
+    });
+
+    it("caps the answer at the rows a fan-out section shows", async () => {
+        const many = Array.from({ length: 10 }, (_, index) => row(`m${index}`, `alpine ${index}`));
+
+        const items = await rootListItems("alp", undefined, [async () => many, async () => many.slice(5)]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.rootSection);
     });
 
     it("skips the listing searches for a short or local-only query", async () => {
