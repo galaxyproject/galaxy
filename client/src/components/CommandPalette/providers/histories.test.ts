@@ -7,7 +7,7 @@ import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx } from "../test-utils";
+import { makeCtx, renderedSections } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
@@ -159,7 +159,7 @@ function signIn(username = "me") {
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {
-    return (await historiesProvider.searchScoped?.(scope, query, makeCtx())) ?? [];
+    return renderedSections(await historiesProvider.searchScoped?.(scope, query, makeCtx()));
 }
 
 describe("historiesProvider", () => {

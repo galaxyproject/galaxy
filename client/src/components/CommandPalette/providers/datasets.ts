@@ -5,7 +5,7 @@ import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
-import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
+import type { CommandPaletteProvider, PaletteItem } from "../types";
 import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
 import { recentPaletteItems, type RecentRows } from "./recent";
@@ -125,10 +125,6 @@ function withoutItems(items: PaletteItem[], shown: PaletteItem[]): PaletteItem[]
     return items.filter((item) => !shownIds.has(item.id));
 }
 
-function toSections(sections: ScopedSection[]): ScopedSection[] {
-    return sections.filter((section) => section.items.length > 0);
-}
-
 export const datasetsProvider: CommandPaletteProvider = {
     id: "datasets",
     title: "Datasets",
@@ -150,23 +146,23 @@ export const datasetsProvider: CommandPaletteProvider = {
             const datasetListStore = useDatasetListStore();
             await ensureLatestHydrated();
             const latest = [...datasetListStore.latestDatasets].sort(byUpdateTimeDesc).map(datasetToItem);
-            return toSections([
+            return [
                 { id: "recent", items: recent, title: localize("Recent") },
                 {
                     id: "latest",
                     items: withoutItems(latest, recent).slice(0, PALETTE_LIMITS.section),
                     title: localize("Latest datasets"),
                 },
-            ]);
+            ];
         }
         const found = rankPaletteItems((await matchingDatasets(query)).map(datasetToItem), query);
-        return toSections([
+        return [
             { id: "recent", items: recent, title: localize("Recent") },
             {
                 id: "results",
                 items: withoutItems(found, recent).slice(0, PALETTE_LIMITS.section),
                 title: localize("Datasets"),
             },
-        ]);
+        ];
     },
 };

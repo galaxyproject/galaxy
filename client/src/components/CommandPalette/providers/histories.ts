@@ -7,13 +7,7 @@ import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore"
 import { useUserStore } from "@/stores/userStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
 
-import type {
-    CommandPaletteProvider,
-    PaletteContext,
-    PaletteItem,
-    PaletteSearchOptions,
-    ScopedSection,
-} from "../types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, PaletteSearchOptions } from "../types";
 import { PALETTE_LIMITS } from "./limits";
 import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
@@ -222,10 +216,6 @@ function resultsTitle(scope: ScopeDefinition, query: string): string {
     return scope.variant ? scope.label : "Histories";
 }
 
-function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {
-    return items.length ? [{ id, items, title }] : [];
-}
-
 export const historiesProvider: CommandPaletteProvider = {
     id: "histories",
     title: "Histories",
@@ -256,8 +246,8 @@ export const historiesProvider: CommandPaletteProvider = {
         const variant = listVariant(scope.variant);
         const results = await storeFirstItems(historyList(variant), query, PALETTE_LIMITS.section);
         return [
-            ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
-            ...section(variant, resultsTitle(scope, query), results),
+            { id: "recent", items: variant === "my" ? recentItems(query) : [], title: "Recent" },
+            { id: variant, items: results, title: resultsTitle(scope, query) },
         ];
     },
 };

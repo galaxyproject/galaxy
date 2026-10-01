@@ -6,7 +6,7 @@ import { loadWorkflows } from "@/api/workflows";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx } from "../test-utils";
+import { makeCtx, renderedSections } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -95,7 +95,7 @@ function signIn(username = "me") {
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {
-    return (await workflowsProvider.searchScoped?.(scope, query, makeCtx())) ?? [];
+    return renderedSections(await workflowsProvider.searchScoped?.(scope, query, makeCtx()));
 }
 
 describe("workflowsProvider", () => {

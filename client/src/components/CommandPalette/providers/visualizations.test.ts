@@ -6,7 +6,7 @@ import { loadVisualizations, type VisualizationSummary } from "@/api/visualizati
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
-import { makeCtx } from "../test-utils";
+import { makeCtx, renderedSections } from "../test-utils";
 import { resetListRefreshTracking } from "./refresh";
 import { visualizationsProvider } from "./visualizations";
 
@@ -121,7 +121,9 @@ describe("visualizationsProvider", () => {
         await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
         vi.mocked(loadVisualizations).mockClear();
 
-        const sections = await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "genome", makeCtx());
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "genome", makeCtx()),
+        );
 
         expect(sections).toEqual([]);
         expect(loadVisualizations).not.toHaveBeenCalled();
@@ -134,7 +136,9 @@ describe("visualizationsProvider", () => {
 
         // a later palette session, past the refresh interval
         resetListRefreshTracking();
-        const sections = (await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx())) ?? [];
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx()),
+        );
 
         expect(sections[0]?.items.map((item) => item.id)).toEqual(["visualizations:viz-1"]);
         expect(loadVisualizations).toHaveBeenCalledTimes(1);
@@ -170,7 +174,9 @@ describe("visualizationsProvider", () => {
         mockList();
         recentEntries.push({ type: "visualization", id: "viz-7", name: "Old chart", to: "/visualizations/edit?id=7" });
 
-        const sections = await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx()),
+        );
 
         expect(sections?.map((section) => section.title)).toEqual(["Recent"]);
         expect(sections?.[0]?.items[0]).toMatchObject({

@@ -100,7 +100,7 @@ export interface PaletteItem {
     to?: string;
 }
 
-/** A titled group of items returned by a scoped provider search */
+/** A titled group of items returned by a scoped provider search; the palette drops empty ones */
 export interface ScopedSection {
     /** Unique within the provider, e.g. "recent" */
     id: string;

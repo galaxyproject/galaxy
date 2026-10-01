@@ -2,13 +2,7 @@ import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
 import { useWorkflowStore, type WorkflowListVariant } from "@/stores/workflowStore";
 
-import type {
-    CommandPaletteProvider,
-    PaletteContext,
-    PaletteItem,
-    PaletteSearchOptions,
-    ScopedSection,
-} from "../types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, PaletteSearchOptions } from "../types";
 import { PALETTE_LIMITS } from "./limits";
 import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
@@ -56,10 +50,6 @@ function resultsTitle(scope: ScopeDefinition, query: string): string {
     return scope.variant ? scope.label : "Workflows";
 }
 
-function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {
-    return items.length ? [{ id, items, title }] : [];
-}
-
 export const workflowsProvider: CommandPaletteProvider = {
     id: "workflows",
     title: "Workflows",
@@ -91,9 +81,9 @@ export const workflowsProvider: CommandPaletteProvider = {
             storeFirstItems(workflowList(variant), query, PALETTE_LIMITS.section),
         ]);
         return [
-            ...section("bookmarked", "Bookmarked", bookmarked),
-            ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
-            ...section(variant, resultsTitle(scope, query), results),
+            { id: "bookmarked", items: bookmarked, title: "Bookmarked" },
+            { id: "recent", items: variant === "my" ? recentItems(query) : [], title: "Recent" },
+            { id: variant, items: results, title: resultsTitle(scope, query) },
         ];
     },
 };

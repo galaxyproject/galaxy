@@ -103,10 +103,6 @@ function recentInvocationItems(): PaletteItem[] {
     return recentPaletteItems(rows, "", PALETTE_LIMITS.section);
 }
 
-function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {
-    return items.length ? [{ id, items: items.slice(0, PALETTE_LIMITS.section), title }] : [];
-}
-
 export const invocationsProvider: CommandPaletteProvider = {
     id: "invocations",
     title: "Invocations",
@@ -135,8 +131,13 @@ export const invocationsProvider: CommandPaletteProvider = {
             const recent = recentInvocationItems();
             const recentIds = new Set(recent.map((item) => item.id));
             const latest = list.cachedItems().filter((item) => !recentIds.has(item.id));
-            return [...section("recent", "Recent", recent), ...section("latest", "Latest", latest)];
+            return [
+                { id: "recent", items: recent, title: "Recent" },
+                { id: "latest", items: latest.slice(0, PALETTE_LIMITS.section), title: "Latest" },
+            ];
         }
-        return section("results", "Invocations", await storeFirstItems(list, query, PALETTE_LIMITS.section));
+        return [
+            { id: "results", items: await storeFirstItems(list, query, PALETTE_LIMITS.section), title: "Invocations" },
+        ];
     },
 };

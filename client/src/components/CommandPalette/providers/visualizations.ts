@@ -79,10 +79,6 @@ function recentItems(limit = PALETTE_LIMITS.recent): PaletteItem[] {
     return recentPaletteItems(rows, "", limit);
 }
 
-function sectionsWithItems(sections: ScopedSection[]): ScopedSection[] {
-    return sections.filter((section) => section.items.length > 0);
-}
-
 export const visualizationsProvider: CommandPaletteProvider = {
     id: "visualizations",
     title: "Visualizations",
@@ -100,12 +96,12 @@ export const visualizationsProvider: CommandPaletteProvider = {
     async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
         if (!query) {
             await ensureListHydrated(visualizationList());
-            return sectionsWithItems([
+            return [
                 { id: "recent", items: recentItems(), title: "Recent" },
                 { id: "latest", items: latestItems(), title: "Latest visualizations" },
-            ]);
+            ];
         }
         const items = await storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section);
-        return sectionsWithItems([{ id: "results", items, title: "Visualizations" }]);
+        return [{ id: "results", items, title: "Visualizations" }];
     },
 };
