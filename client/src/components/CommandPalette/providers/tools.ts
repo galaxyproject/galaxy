@@ -10,7 +10,7 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { rankPaletteItems } from "../utilities";
+import { BACKEND_RANKED_SCORE, rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
 import type { ScopeDefinition } from "./scopes";
 
@@ -105,6 +105,8 @@ function section(id: string, title: string, items: PaletteItem[]): ScopedSection
 export const toolsProvider: CommandPaletteProvider = {
     id: "tools",
     title: "Tools",
+    // the backend ranks tool search results, so a local score would misjudge them
+    rootScore: BACKEND_RANKED_SCORE,
     /** Recently used tools; only those already hydrated in the tool store */
     emptyQueryItems() {
         return recentToolItems();
