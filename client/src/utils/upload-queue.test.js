@@ -180,6 +180,31 @@ describe("UploadQueue", () => {
         expect(q.encountedErrors).toBeFalsy();
     });
 
+    test("removing a file that was already submitted is a noop", () => {
+        const fileEntries = {};
+        const q = instrumentedUploadQueue({
+            get: (index) => fileEntries[index],
+            announce: (index, file) => {
+                fileEntries[index] = {
+                    fileMode: file.mode,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileContent: "fileContent",
+                    fileData: new File(["test content"], file.name, { type: "text/plain" }),
+                    targetHistoryId: "mockhistoryid",
+                };
+            },
+        });
+        q._processSubmit = vi.fn(() => q._process());
+        q.add([StubFile("a", 1), StubFile("b", 2)]);
+        q.start();
+        expect(q.size).toEqual(0);
+        expect(() => q.remove("0")).not.toThrow();
+        q.add([StubFile("a", 1)]);
+        expect(q.size).toEqual(1);
+        expect(q.encountedErrors).toBeFalsy();
+    });
+
     test("removing a file via _processIndex, obeys FIFO protocol", () => {
         const q = instrumentedUploadQueue();
         q.add([StubFile("a"), StubFile("b")]);

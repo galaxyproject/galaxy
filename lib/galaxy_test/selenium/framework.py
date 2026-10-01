@@ -52,6 +52,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
 )
 from galaxy.util.unittest_utils import skip_if_github_down
+from galaxy.util.unittest_utils.test_http_server import TestHttpServer
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
@@ -70,7 +71,6 @@ from galaxy_test.base.populators import (
     load_data_dict,
     stage_inputs,
 )
-from galaxy_test.base.test_http_server import TestHttpServer
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:

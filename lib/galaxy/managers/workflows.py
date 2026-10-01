@@ -70,6 +70,7 @@ from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import (
     History,
     StoredWorkflow,
+    StoredWorkflowAnnotationAssociation,
     StoredWorkflowTagAssociation,
     StoredWorkflowUserShareAssociation,
     to_json,
@@ -81,6 +82,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
+    owner_annotation_exists_filter,
     raw_text_column_filter,
     tag_exists_filter,
     text_column_filter,
@@ -123,6 +125,7 @@ from galaxy.util.search import (
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.curated import parse_curated_search
 from galaxy.workflow.modules import (
+    ConnectedInputName,
     module_factory,
     PickValueModule,
     SubWorkflowModule,
@@ -390,8 +393,17 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         # Collections are an IWC grouping; nothing curated here belongs to one.
                         stmt = stmt.where(false())
                 elif isinstance(term, RawTextTerm):
+                    owner_annotation_exists = owner_annotation_exists_filter(
+                        StoredWorkflowAnnotationAssociation,
+                        StoredWorkflowAnnotationAssociation.stored_workflow_id,
+                        StoredWorkflow.id,
+                        StoredWorkflow.user_id,
+                        term.text,
+                    )
                     stmt = stmt.where(
-                        raw_text_column_filter([StoredWorkflow.name, w_tag_exists(term.text, False)], term)
+                        raw_text_column_filter(
+                            [StoredWorkflow.name, w_tag_exists(term.text, False), owner_annotation_exists], term
+                        )
                     )
 
         # Counted before the eager-load options go on, so the count statement is
@@ -2162,6 +2174,11 @@ class WorkflowContentsManager(UsesAnnotations):
             step.label = step_dict["label"]
 
         module = module_factory.from_dict(trans, step_dict, detached=dry_run, **kwds)
+        connected_input_names = [name for name, conns in step_dict.get("input_connections", {}).items() if conns]
+        if connected_input_names and isinstance(module, ToolModule) and module.tool:
+            # Descriptions may carry no state for connected inputs (e.g. format2 `in:`), which
+            # recovering state fills with RuntimeValue - mark them connected before saving.
+            module.add_dummy_datasets(connections=[ConnectedInputName(name) for name in connected_input_names])
         self.__set_default_label(step, module, step_dict.get("tool_state"))
         module.save_to_step(step, detached=dry_run)
 

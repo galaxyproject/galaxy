@@ -15,7 +15,7 @@ function mountExtReg(cfg: object) {
         pinia,
         propsData: { idpsWithRegistration },
         stubs: {
-            BAlert: true,
+            GAlert: true,
             GButton: true,
             BForm: true,
             BFormCheckbox: true,

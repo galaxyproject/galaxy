@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 
 import BroadcastsList from "@/components/admin/Notifications/BroadcastsList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
@@ -53,9 +53,9 @@ function goToCreateNewBroadcast() {
 
             <BroadcastsList class="mt-2" />
         </div>
-        <BAlert v-else variant="warning" show>
+        <GAlert v-else variant="warning" show>
             The notification system is disabled. To enable it, set the
             <code>enable_notification_system</code> option to <code>true</code> in the Galaxy configuration file.
-        </BAlert>
+        </GAlert>
     </div>
 </template>

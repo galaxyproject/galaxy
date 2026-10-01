@@ -1,0 +1,118 @@
+<tool id="collection_format_source_discover" name="collection_format_source_discover" version="0.1.0">
+  <command>
+    echo 'A' > A.fastq;
+    echo 'B' > B.fastq;
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" />
+    <param name="input_multiple" type="data" multiple="true" label="Multiple input" />
+    <conditional name="conditional_name">
+      <param name="cond_selector" type="select" label="Select">
+        <option value="blah" selected="true">Blah</option>
+      </param>
+      <when value="blah">
+        <param name="input_collection" type="data_collection" collection_type="list:list" label="Input collection"/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <!-- discovered elements take the format of format_source -->
+    <collection name="from_input" type="list" label="From input" format_source="input1">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+    <!-- a discovered extension overrides format_source -->
+    <collection name="discovered_ext" type="list" label="Discovered extension" format_source="input1">
+      <discover_datasets pattern="__name_and_ext__" visible="false" />
+    </collection>
+    <!-- a discovery rule's format overrides format_source -->
+    <collection name="rule_format" type="list" label="Rule format" format_source="input1">
+      <discover_datasets pattern="__designation__" format="tabular" visible="false" />
+    </collection>
+    <!-- format_source may name a multiple="true" input -->
+    <collection name="from_multiple" type="list" label="From multiple" format_source="input_multiple">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+    <!-- format_source may name a collection input -->
+    <collection name="from_collection" type="list" label="From collection" format_source="conditional_name|input_collection">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+  </outputs>
+  <tests>
+    <!-- inputs are txt so format_source is distinguishable from both the
+         data fallback and the fastq filename extension -->
+    <test>
+      <param name="input1" value="1.fastq" ftype="txt" />
+      <param name="input_multiple" value="1.fastq,2.fastq" ftype="txt" />
+      <param name="input_collection">
+        <collection type="list:list">
+          <element name="i1">
+            <collection type="list">
+              <element name="1" value="1.fastq" ftype="txt"/>
+              <element name="2" value="2.fastq" ftype="txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output_collection name="from_input" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="discovered_ext" type="list">
+        <element name="A" ftype="fastq">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B" ftype="fastq">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="rule_format" type="list">
+        <element name="A.fastq" ftype="tabular">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="tabular">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="from_multiple" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="from_collection" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

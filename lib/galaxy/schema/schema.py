@@ -16,6 +16,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AfterValidator,
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
@@ -45,6 +46,7 @@ from galaxy.schema.fields import (
     is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
+    message_rule_validator,
     ModelClassField,
 )
 from galaxy.schema.states import (
@@ -58,6 +60,7 @@ from galaxy.schema.states import (
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
+    OmittableNotNull,
     RelativeUrl,
 )
 from galaxy.tool_util_models.sample_sheet import (
@@ -69,6 +72,16 @@ from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    canonicalize_email,
+    DISPLAY_NAME_MAX_LEN,
+    EMAIL_MAX_LEN,
+    PUBLICNAME_MAX_LEN,
+    validate_display_name_str,
+    validate_email_str,
+    validate_publicname_str,
+)
 
 MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
@@ -251,6 +264,22 @@ ContentsUrlField = Annotated[
 
 UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
+
+
+def _canonicalize_email_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str schema to reject.
+    return canonicalize_email(value) if isinstance(value, str) else value
+
+
+# An email address as a client may submit it, checked for format only. Whether
+# it is taken, banned or on an allowed domain depends on the server's
+# configuration and database, so the managers check that.
+EmailAddress = Annotated[
+    Annotated[str, Field(max_length=EMAIL_MAX_LEN)],
+    BeforeValidator(_canonicalize_email_input),
+    AfterValidator(message_rule_validator(validate_email_str)),
+]
+
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
 UserDisplayNameField = Field(
@@ -259,8 +288,36 @@ UserDisplayNameField = Field(
     description=(
         "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
     ),
-    max_length=255,
 )
+
+
+def _canonicalize_display_name_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str | None schema to reject.
+    return canonicalize_display_name(value) if isinstance(value, str) else value
+
+
+# A display name as a client may submit it. The length limit applies to the
+# canonical form, so padding a name does not push it over, and a blank name
+# arrives as None, which clears the field.
+DisplayName = Annotated[
+    Annotated[str, Field(max_length=DISPLAY_NAME_MAX_LEN)] | None,
+    BeforeValidator(_canonicalize_display_name_input),
+    AfterValidator(message_rule_validator(validate_display_name_str)),
+]
+
+
+# A username for a new account, checked for format only. Whether it is taken
+# depends on the database, so the managers check that.
+NewUsername = Annotated[
+    Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)],
+    AfterValidator(message_rule_validator(validate_publicname_str)),
+]
+
+# A username as an update may carry it. Accounts created under older rules can
+# hold names the format check would refuse, and must be able to send them back
+# unchanged, so the managers check the format only when the name changes.
+StoredUsername = Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)]
+
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -367,18 +424,32 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
+    # The deserializer skips keys it does not know, so without this a misspelt
+    # field, or one this route cannot change (`is_admin`, `password`), would
+    # be dropped and the request would still succeed.
+    model_config = ConfigDict(extra="forbid")
+
     active: Annotated[
-        bool | None,
+        OmittableNotNull[bool],
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
-    username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
-    display_name: Annotated[str | None, UserDisplayNameField] = None
+    username: Annotated[
+        OmittableNotNull[StoredUsername],
+        Field(
+            title="Username",
+            description=(
+                "The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; "
+                "the current name is accepted as stored."
+            ),
+        ),
+    ] = None
+    display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
     # deactivation, not on a stale activation. UserDeserializer only lets an
     # administrator set `active`, so this ordering is belt and braces.
     email: Annotated[
-        str | None,
+        OmittableNotNull[EmailAddress],
         Field(
             title="Email",
             description=(
@@ -419,12 +490,12 @@ class UserExtraPreferencesUpdated(Model):
 
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
-    email: str = UserEmailField
-    username: str = UserNameField
+    email: Annotated[EmailAddress, UserEmailField]
+    username: Annotated[NewUsername, UserNameField]
 
 
 class RemoteUserCreationPayload(Model):
-    remote_user_email: str = UserEmailField
+    remote_user_email: Annotated[EmailAddress, UserEmailField]
 
 
 class UserPasswordResetPayload(Model):
@@ -2772,17 +2843,35 @@ class SubworkflowStep(WorkflowStepBase):
     )
 
 
-class Creator(Model):
+class Thing(Model):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this thing.")
+    name: str | None = Field(None, title="Name", description="The name of the thing.")
+    alternate_name: str | None = Field(
+        None,
+        alias="alternateName",
+        title="Alternate Name",
+    )
+    description: str | None = Field(
+        None,
+        title="Description",
+    )
+    identifier: str | None = Field(None, title="Identifier")
+    image: AnyHttpUrl | None = Field(
+        None,
+        title="Image URL",
+    )
+    url: AnyHttpUrl | None = Field(
+        None,
+        title="URL",
+    )
+
+
+class Creator(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
     name: str | None = Field(None, title="Name", description="The name of the creator.")
     address: str | None = Field(
         None,
         title="Address",
-    )
-    alternate_name: str | None = Field(
-        None,
-        alias="alternateName",
-        title="Alternate Name",
     )
     email: str | None = Field(
         None,
@@ -2794,17 +2883,9 @@ class Creator(Model):
         title="Fax Number",
     )
     identifier: str | None = Field(None, title="Identifier", description="Identifier (typically an orcid.org ID)")
-    image: AnyHttpUrl | None = Field(
-        None,
-        title="Image URL",
-    )
     telephone: str | None = Field(
         None,
         title="Telephone",
-    )
-    url: AnyHttpUrl | None = Field(
-        None,
-        title="URL",
     )
 
 
@@ -2843,6 +2924,13 @@ class Person(Creator):
         None,
         alias="jobTitle",
         title="Job Title",
+    )
+
+
+class Grant(Thing):
+    class_: str = Field(
+        "Grant",
+        alias="class",
     )
 
 

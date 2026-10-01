@@ -858,7 +858,14 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
     # Update email and keep private role in sync only when changed
     if details and details.get("email") and user.email != details["email"]:
         try:
-            manager.update_email(trans, user, details["email"], commit=False, send_activation_email=False)
+            manager.update_email(
+                trans,
+                user,
+                details["email"],
+                commit=False,
+                send_activation_email=False,
+                asserted_by_identity_provider=True,
+            )
             updates.append("email")
         except galaxy_exceptions.MessageException as exc:
             log.warning("OIDC email sync skipped for user %s: %s", user.id, exc)

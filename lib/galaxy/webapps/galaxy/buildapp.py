@@ -16,10 +16,10 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
 from galaxy import util
-from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.util.user_input import VALID_PUBLICNAME_RE
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware

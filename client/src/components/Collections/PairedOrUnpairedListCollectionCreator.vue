@@ -2,7 +2,7 @@
 import { faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
-import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
+import { BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 
@@ -34,6 +34,7 @@ import {
 
 import AutoPairing from "./common/AutoPairing.vue";
 import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -309,6 +310,7 @@ function syncRowDataToRowPairing() {
 
 function initialize() {
     discardedIds.clear();
+    userUnpairedIds.clear();
     if (currentForwardFilter.value === undefined) {
         const summary = autoPairWithCommonFilters(props.initialElements, true);
         const { forwardFilter, reverseFilter } = summary;
@@ -338,6 +340,9 @@ function initialize() {
  */
 const discardedIds = new Set<string>();
 
+/** IDs of elements whose pair the user broke up; new arrivals must not auto-pair them again. */
+const userUnpairedIds = new Set<string>();
+
 function knownRowIds(): Set<string> {
     const ids = new Set<string>();
     for (const row of rowData.value) {
@@ -363,10 +368,20 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
     }
 
     if (!flatLists.value) {
+        // Mates can arrive in separate history updates (e.g. uploads finishing one at a time),
+        // so new elements are paired against unpaired rows still waiting for a partner too.
+        const waiting: HistoryItemSummary[] = [];
+        for (const row of rowData.value) {
+            if ("unpaired" in row.datasets && !userUnpairedIds.has(row.datasets.unpaired.id)) {
+                waiting.push(row.datasets.unpaired);
+            }
+        }
+        const candidates = [...waiting, ...newElements];
+
         // Filters may not have been detected yet if the creator first initialized with
         // no elements (e.g. an empty history) so try again now that new elements arrived.
         if (!currentForwardFilter.value || !currentReverseFilter.value) {
-            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(newElements, removeExtensions.value);
+            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(candidates, removeExtensions.value);
             if (forwardFilter !== undefined && reverseFilter !== undefined) {
                 currentForwardFilter.value = forwardFilter;
                 currentReverseFilter.value = reverseFilter;
@@ -375,16 +390,30 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
 
         if (currentForwardFilter.value && currentReverseFilter.value) {
             const { pairs, unpaired } = splitIntoPairedAndUnpaired(
-                newElements,
+                candidates,
                 currentForwardFilter.value,
                 currentReverseFilter.value,
                 removeExtensions.value,
             );
+            const newIds = new Set(newElements.map((el) => el.id));
             for (const pair of pairs) {
-                rowData.value.push(pairedRow(pair));
+                // a pair completing a waiting row takes that row's place in the grid
+                let targetIndex: number | null = null;
+                for (const el of [pair.forward, pair.reverse]) {
+                    if (!newIds.has(el.id)) {
+                        targetIndex = onRemove({ unpaired: el }, false, false);
+                    }
+                }
+                if (targetIndex === null) {
+                    rowData.value.push(pairedRow(pair));
+                } else {
+                    rowData.value.splice(targetIndex, 0, pairedRow(pair));
+                }
             }
             for (const el of unpaired) {
-                rowData.value.push(unpairedRow(el));
+                if (newIds.has(el.id)) {
+                    rowData.value.push(unpairedRow(el));
+                }
             }
             return;
         }
@@ -739,6 +768,8 @@ function _refresh() {
 }
 
 function onUnpair(pair: GenericPair<HistoryItemSummary>) {
+    userUnpairedIds.add(pair.forward.id);
+    userUnpairedIds.add(pair.reverse.id);
     const targetIndex = onRemove(pair, false, false) || 0;
     rowData.value.splice(targetIndex, 0, unpairedRow(pair.forward), unpairedRow(pair.reverse));
     _refresh();
@@ -783,6 +814,10 @@ function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh
         }
     } else {
         rowId = unpairedRowId(item.unpaired.id);
+        if (activeUnpairedTarget.value?.unpaired.id === item.unpaired.id) {
+            activeUnpairedTarget.value = null;
+            pairingTargetsStore.resetUnpairedTarget();
+        }
         if (discard) {
             discardedIds.add(item.unpaired.id);
         }
@@ -911,17 +946,17 @@ export default {
                 <div>
                     <BRow v-if="!flatLists">
                         <BCol>
-                            <BAlert show variant="info" dismissible>
+                            <GAlert show variant="info" dismissible>
                                 {{ summaryText }}
                                 If this isn't correct,
                                 <BLink style="font-weight: bold" @click="goToAutoPairing">configure auto-pairing</BLink
                                 >.
-                            </BAlert>
+                            </GAlert>
                         </BCol>
                     </BRow>
                     <BRow v-if="unpairedProblemDatasetCount > 0">
                         <BCol>
-                            <BAlert show variant="warning" dismissible>
+                            <GAlert show variant="warning" dismissible>
                                 {{ unpairedProblemDatasetCount }} unmatched datasets, these should be either dismissed
                                 or paired off.
                                 <BLink
@@ -930,7 +965,7 @@ export default {
                                     @click="dismissUnmatchedDatasets"
                                     >Click here to discard all remaining unpaired datasets.</BLink
                                 >
-                            </BAlert>
+                            </GAlert>
                         </BCol>
                     </BRow>
                     <div class="d-flex justify-content-end mb-1">

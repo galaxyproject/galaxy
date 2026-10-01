@@ -19,6 +19,7 @@ from urllib import parse
 from galaxy import model
 from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
+from galaxy.util.user_input import validate_publicname_str
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
 
@@ -282,8 +283,6 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         assert response.json()["email"] == "rincewind@galaxy.org"
 
         username = response.json()["username"]
-        from galaxy.security.validate_user_input import validate_publicname_str
-
         error = validate_publicname_str(username)
         assert error == "", f"OIDC-created username '{username}' is invalid: {error}"
         assert "(" not in username, f"Username '{username}' should not contain parentheses"

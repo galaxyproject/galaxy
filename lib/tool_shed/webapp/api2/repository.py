@@ -205,8 +205,6 @@ class FastAPILegacyInstall:
         image_file: str,
     ) -> FileResponse:
         repository = get_repository_in_tool_shed(self.app, repository_id)
-        if not repository:
-            raise ObjectNotFound("Repository not found.")
         repo_files_dir = repository.repo_path(self.app)
         path_to_file = get_absolute_path_to_file_in_repository(repo_files_dir, image_file)
         if not path_to_file or not os.path.exists(path_to_file):

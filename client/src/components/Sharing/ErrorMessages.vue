@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { getAppRoot } from "@/onload";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     messages: string[];
@@ -25,7 +26,7 @@ function splitLoginString(string: string) {
 
 <template>
     <div>
-        <BAlert
+        <GAlert
             v-for="(message, index) in props.messages"
             :key="message"
             show
@@ -41,6 +42,6 @@ function splitLoginString(string: string) {
                 </span>
             </span>
             <span v-else> {{ message }} </span>
-        </BAlert>
+        </GAlert>
     </div>
 </template>

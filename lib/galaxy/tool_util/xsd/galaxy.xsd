@@ -84,6 +84,9 @@ List of behavior changes associated with profile versions:
   `discover_via="tool_provided_metadata"` in YAML tool definitions).
 - An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
   value stays distinct from an explicit false. Older profiles keep reporting `False`.
+- Test output assertions that count columns (e.g. `has_n_columns`) and do not declare a `sep` split on the
+  delimiter the datatype recorded for the output dataset - a comma for `csv` - instead of always splitting on
+  tabs. Older profiles keep the tab default.
 
 ### Examples
 
@@ -118,6 +121,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
         <xs:element name="creator" type="Creator" minOccurs="0"/>
+        <xs:element name="funding" type="Funding" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0">
           <!-- Ensure unique credentials names across all credentials elements -->
           <xs:unique name="uniqueCredentialsNames">
@@ -477,6 +481,18 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
         <xs:documentation xml:lang="en">[schema.org/image](https://schema.org/image)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="alternateName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/description](https://schema.org/description)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="PersonOrOrganizationContact">
     <xs:attribute name="address" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/address](https://schema.org/address)</xs:documentation>
@@ -497,11 +513,6 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
         <xs:documentation xml:lang="en">[schema.org/faxNumber](https://schema.org/faxNumber)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="alternateName" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
   </xs:attributeGroup>
   <xs:complexType name="Person">
     <xs:annotation>
@@ -510,6 +521,7 @@ Describes a person. Tries to stay close to [schema.org/Person](https://schema.or
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
+    <xs:attributeGroup ref="PersonOrOrganizationContact"/>
     <xs:attribute name="givenName" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/givenName](https://schema.org/givenName)</xs:documentation>
@@ -543,6 +555,7 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
+    <xs:attributeGroup ref="PersonOrOrganizationContact"/>
   </xs:complexType>
   <xs:group name="PersonOrOrganization">
     <xs:choice>
@@ -556,6 +569,26 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Grant">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        A grant, typically financial or otherwise quantifiable, of resources. See [schema.org/Grant](https://schema.org/Grant).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="Thing"/>
+  </xs:complexType>
+
+  <xs:complexType name="Funding">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        Grants that directly or indirectly provide funding or sponsorship for this item. See [schema.org/funding](https://schema.org/funding).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="grant" type="Grant" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="RequiredFiles">
@@ -2740,9 +2773,11 @@ For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first lin
 Number of columns can optionally also be specified with ``delta``. Alternatively the
 range of expected occurrences can be specified by ``min`` and/or ``max``.
 
-Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
+Optionally a column separator (``sep``) and comment character(s)
 can be specified (``comment``, default is empty string). The first non-comment
-line is used for determining the number of columns.
+line is used for determining the number of columns. For tools with profile >= 26.2,
+the default separator is the delimiter the datatype recorded for the dataset - a comma
+for csv, a tab for tabular and for datasets that declare no delimiter.
 
 $attribute_list::5]]></xs:documentation>
         </xs:annotation>
@@ -2769,7 +2804,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="sep" type="xs:string" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Separator defining columns, default: tab]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Separator defining columns, default: tab (for tools with profile >= 26.2, the dataset's delimiter metadata, e.g. comma for csv)]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="comment" type="xs:string" use="optional">
@@ -4284,6 +4319,35 @@ appropriate command line variable.
 ```xml
 <param name="interval_file" type="data" format="interval" label="near intervals in"/>
 ```
+
+In a command block or configfile, ``$interval_file`` is replaced by Galaxy's
+internal filename. Sometimes a tool instead needs a meaningful name or a
+filename extension. Dataset wrappers expose ``element_identifier`` (the
+collection element identifier, or the dataset name), ``ext`` (Galaxy's
+datatype identifier), ``file_ext`` (the filename extension, honoring any
+export alias), and ``safe_element_identifier``. Use ``ext`` for datatype
+comparisons and ``file_ext`` when constructing a filename. For example, a
+compressed VCF dataset has ``ext`` equal to ``vcf_bgzip`` but ``file_ext``
+equal to ``vcf.gz``.
+
+``safe_element_identifier`` is a deterministic, non-empty, portable filename
+component. It keeps ASCII letters, numbers, ``-``, ``_``, and ``.``; replaces
+other characters with ``_``; removes leading ``.`` and ``-`` characters; and
+protects Windows reserved names. For dataset inputs, it also reserves enough
+of the usual 255-character component limit for ``.file_ext``, so use the two
+together when constructing a filename. Collection wrappers without an element
+name return ``None`` for ``safe_element_identifier``. Shell quoting is still
+required, as in this example:
+
+```bash
+ln -s '$interval_file' '${interval_file.safe_element_identifier}.${interval_file.file_ext}'
+```
+
+The sanitized value is not guaranteed to be unique. For example, the
+identifiers ``a/b`` and ``a:b`` both become ``a_b``. When creating several
+sibling files, include an index or another stable unique value in each name.
+For bulk or nested collection staging, prefer a configfile using
+``data_style="staging_path_and_source_path"``.
 
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.
@@ -6301,7 +6365,11 @@ discovered data sets on Galaxy versions prior to 24.0 and should be specified us
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+For collections (Galaxy 26.1 and later) this is the default format for discovered elements; a ``format`` on
+``<discover_datasets>`` or an extension captured from the filename takes precedence.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">

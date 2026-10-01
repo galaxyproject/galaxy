@@ -51,6 +51,7 @@ def make_workflow(
     hidden: bool = False,
     update_time: datetime | None = None,
     tags: list[str] | None = None,
+    annotation: str | None = None,
 ) -> model.StoredWorkflow:
     stored_workflow = model.StoredWorkflow()
     stored_workflow.user = user
@@ -66,6 +67,8 @@ def make_workflow(
         association.user_tname = tag
         association.user = user
         stored_workflow.tags.append(association)
+    if annotation is not None:
+        add_annotation(stored_workflow, user, annotation)
     trans.sa_session.add(stored_workflow)
     trans.sa_session.commit()
     if update_time is not None:
@@ -74,6 +77,13 @@ def make_workflow(
         stored_workflow.update_time = update_time
         trans.sa_session.commit()
     return stored_workflow
+
+
+def add_annotation(stored_workflow: model.StoredWorkflow, user: model.User, annotation: str) -> None:
+    association = model.StoredWorkflowAnnotationAssociation()
+    association.user = user
+    association.annotation = annotation
+    stored_workflow.annotations.append(association)
 
 
 def query_rows(manager: WorkflowsManager, trans: MockTrans, owners: list[str], **payload_kwds: Any):
@@ -230,6 +240,29 @@ def test_raw_text_search_matches_name_or_tag(manager: WorkflowsManager, trans: M
     names, total_matches = query(manager, trans, [CURATED_OWNER], search="genomics")
     assert sorted(names) == ["Matched by name: genomics", "Matched by tag"]
     assert total_matches == 2
+
+
+def test_raw_text_search_matches_owner_annotation(manager: WorkflowsManager, trans: MockTrans) -> None:
+    owner = make_user(trans, CURATED_OWNER)
+    make_workflow(trans, owner, "Described", annotation="Calls variants from haploid genomes")
+    make_workflow(trans, owner, "Undescribed")
+
+    names, total_matches = query(manager, trans, [CURATED_OWNER], search="haploid")
+    assert names == ["Described"]
+    assert total_matches == 1
+
+
+def test_raw_text_search_ignores_annotations_by_other_users(manager: WorkflowsManager, trans: MockTrans) -> None:
+    """The card shows only the owner's annotation, so a stranger's must not make a workflow match."""
+    owner = make_user(trans, CURATED_OWNER)
+    stranger = make_user(trans, "stranger")
+    stored_workflow = make_workflow(trans, owner, "Annotated by a stranger")
+    add_annotation(stored_workflow, stranger, "haploid")
+    trans.sa_session.commit()
+
+    names, total_matches = query(manager, trans, [CURATED_OWNER], search="haploid")
+    assert names == []
+    assert total_matches == 0
 
 
 def test_search_never_leaks_workflows_from_other_owners(manager: WorkflowsManager, trans: MockTrans) -> None:

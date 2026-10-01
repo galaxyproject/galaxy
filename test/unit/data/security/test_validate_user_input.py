@@ -5,11 +5,9 @@ from galaxy.security import validate_user_input
 from galaxy.security.validate_user_input import (
     extract_domain,
     is_email_banned,
-    validate_display_name_str,
     validate_email_domain_name,
-    validate_email_str,
-    validate_publicname_str,
 )
+from galaxy.util import user_input
 
 
 @pytest.fixture()
@@ -35,58 +33,25 @@ def test_validate_email_domain_name():
     assert validate_email_domain_name("this is an invalid domain!") != ""
 
 
-def test_validate_username():
-    assert validate_publicname_str("testuser") == ""
-    assert validate_publicname_str("test.user") == ""
-    assert validate_publicname_str("test-user") == ""
-    assert validate_publicname_str("test@user") != ""
-    assert validate_publicname_str("test user") != ""
-
-
-def test_validate_display_name_str():
-    # Free-form across scripts: anything a person might actually be called.
-    assert validate_display_name_str("Ada Lovelace") == ""
-    assert validate_display_name_str("Zoë Müller") == ""
-    assert validate_display_name_str("محمد") == ""
-    assert validate_display_name_str("张伟") == ""
-    assert validate_display_name_str("Ada 🧬") == ""
-    # Unlike a username, a display name may collide with anything.
-    assert validate_display_name_str("admin") == ""
-    # Empty means "unset", which is a legitimate value rather than an error.
-    assert validate_display_name_str("") == ""
-    assert validate_display_name_str(None) == ""
-
-
-def test_validate_display_name_str_length():
-    assert validate_display_name_str("N" * 255) == ""
-    assert validate_display_name_str("N" * 256) != ""
-
-
-def test_validate_display_name_str_rejects_invisible_characters():
-    assert validate_display_name_str("Ada\nLovelace") != ""  # C0 control
-    assert validate_display_name_str("Ada\x7fLovelace") != ""  # DEL
-    assert validate_display_name_str("Ada\u009fLovelace") != ""  # C1 control
-    assert validate_display_name_str("Ada\u200bLovelace") != ""  # zero-width space
-    assert validate_display_name_str("Ada\u200dLovelace") != ""  # zero-width joiner
-    assert validate_display_name_str("Ada\u202eLovelace") != ""  # right-to-left override
-    assert validate_display_name_str("Ada\u2066Lovelace") != ""  # left-to-right isolate
-    assert validate_display_name_str("Ada\ufeffLovelace") != ""  # zero-width no-break space
-
-
-def test_validate_email_str():
-    assert validate_email_str("test@foo.com") == ""
-    assert validate_email_str("test-dot.user@foo.com") == ""
-    assert validate_email_str("test-plus+user@foo.com") == ""
-    assert validate_email_str("test-ünicode-user@foo.com") == ""
-    assert validate_email_str("test@ünicode-domain.com") == ""
-    assert validate_email_str("test-missing-domain@") != ""
-    assert validate_email_str("@test-missing-local") != ""
-    assert validate_email_str("test-invalid-local\\character@foo.com") != ""
-    assert validate_email_str("test@invalid-domain-character!com") != ""
-    assert validate_email_str("test@newlines.in.address.are.invalid\n\n.com") != ""
-    assert validate_email_str('"i-like-to-break-email-valid@tors"@foo.com') != ""
-    too_long_email = "N" * 255 + "@foo.com"
-    assert validate_email_str(too_long_email) != ""
+@pytest.mark.parametrize(
+    "name",
+    [
+        "EMAIL_MAX_LEN",
+        "FILL_CHAR",
+        "is_valid_email_str",
+        "PASSWORD_MIN_LEN",
+        "PUBLICNAME_MAX_LEN",
+        "transform_publicname",
+        "VALID_EMAIL_RE",
+        "VALID_PUBLICNAME_RE",
+        "VALID_PUBLICNAME_SUB",
+        "validate_email_str",
+        "validate_password_str",
+        "validate_publicname_str",
+    ],
+)
+def test_value_rules_importable_from_previous_home(name):
+    assert getattr(validate_user_input, name) is getattr(user_input, name)
 
 
 class TestIsEmailBanned:

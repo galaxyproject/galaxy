@@ -119,6 +119,7 @@ from typing import (
 from playwright.sync_api import (
     Browser,
     ElementHandle,
+    Error as PlaywrightError,
     Frame,
     FrameLocator,
     Page,
@@ -211,12 +212,15 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
     _current_frame: Frame | FrameLocator | None = None
+    _visiting_page: Page | None = None
     _playwright_resources: PlaywrightResources
 
     @property
     def page(self) -> Page:
         """Access the Playwright Page from resources."""
-        return self._playwright_resources.page
+        # PlaywrightResources is a NamedTuple, so a visit to another window is
+        # tracked here rather than by swapping the page it holds.
+        return self._visiting_page or self._playwright_resources.page
 
     @property
     def backend_type(self) -> BackendType:
@@ -279,10 +283,19 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         Get the current page URL.
 
+        page.url is a local mirror that only advances while a Playwright call
+        pumps the event loop, so a Python poll reading nothing else never sees a
+        history.pushState land. Ask the page, as Selenium's current_url does.
+
         Returns:
             The current URL
         """
-        return self.page.url
+        try:
+            return str(self.page.evaluate("window.location.href"))
+        except PlaywrightError:
+            # Mid-navigation the execution context is gone; the mirror is then
+            # the best available answer.
+            return self.page.url
 
     @property
     def page_source(self) -> str:
@@ -980,6 +993,43 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         This exits any iframe/frame context and returns to the top-level page.
         """
         self._current_frame = None
+
+    def visit_new_window(self):
+        """
+        Focus the window or tab the page just opened, closing it on exit.
+
+        See HasDriverProtocol.visit_new_window. Playwright surfaces a new window
+        as another Page on the same BrowserContext; expect_page() would have to
+        be armed before the click, so the page that is already there is polled
+        for instead.
+        """
+        original = self.page
+        context = original.context
+
+        def opened_page() -> Page | None:
+            return next((page for page in context.pages if page is not original), None)
+
+        def pump(seconds: float) -> None:
+            # context.pages only grows while the sync driver is pumped, so the
+            # poll has to sleep through Playwright rather than time.sleep.
+            original.wait_for_timeout(seconds * 1000)
+
+        try:
+            new_page = wait_on(opened_page, "new window to open", timeout=self._timeout_in_ms() / 1000, sleep_=pump)
+        except TimeoutAssertionError as e:
+            raise PlaywrightTimeoutException(self._timeout_message("new window to open")) from e
+        new_page.wait_for_load_state()
+        self._visiting_page = new_page
+
+        @contextmanager
+        def _visit_new_window_context():
+            try:
+                yield
+            finally:
+                self._visiting_page = None
+                new_page.close()
+
+        return _visit_new_window_context()
 
     @property
     def _frame_or_page(self):

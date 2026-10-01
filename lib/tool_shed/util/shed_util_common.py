@@ -95,7 +95,7 @@ def get_categories(app: "ToolShedApp"):
     return sa_session.scalars(stmt).all()
 
 
-def get_category(app: "ToolShedApp", id: str):
+def get_category(app: "ToolShedApp", id: str) -> model.Category | None:
     """Get a category from the database."""
     sa_session = app.model.session
     return sa_session.get(model.Category, app.security.decode_id(id))

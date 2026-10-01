@@ -102,20 +102,6 @@ from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
-_information_inputs_deprecation_warned = False
-
-
-def _warn_information_inputs_deprecated() -> None:
-    """Log once per process, so a busy instance does not fill its log with this."""
-    global _information_inputs_deprecation_warned
-    if not _information_inputs_deprecation_warned:
-        _information_inputs_deprecation_warned = True
-        log.warning(
-            "/api/users/{id}/information/inputs is deprecated and will be removed in a future release. "
-            "Use /api/users/{user_id} for email, username and display name, and "
-            "/api/users/{user_id}/extra_preferences/inputs for administrator-defined extra preferences."
-        )
-
 
 router = Router(tags=["users"])
 
@@ -173,7 +159,10 @@ UserCreationBody = Body(default=..., title="Create User", description="The value
 AnyUserModel = DetailedUserModel | AnonUserModel
 
 # Disable changing these when enable_account_interface is false.
-ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "username"})
+ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "display_name", "email", "username"})
+# The UserUpdatePayload fields that stay writable when enable_account_interface is false. They are
+# operational preferences rather than account data. Every payload field belongs to exactly one set.
+ACCOUNT_INTERFACE_EXEMPT_FIELDS = frozenset({"preferred_object_store_id"})
 
 
 def ensure_account_modification_allowed(trans: ProvidesUserContext, message: str) -> None:
@@ -883,7 +872,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         :param id: the encoded id of the user
         :type  id: str
         """
-        _warn_information_inputs_deprecated()
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -898,7 +886,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             and not trans.app.config.use_remote_user
             and not trans.app.config.disable_local_accounts
         )
-        if allow_profile_edit or not is_galaxy_app:
+        if not is_galaxy_app or (allow_profile_edit and not self.user_manager.logins_resolve_accounts_by_email()):
             inputs.append(
                 {
                     "id": "email_input",
@@ -1020,20 +1008,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         :param payload: data with new settings
         :type  payload: dict
         """
-        _warn_information_inputs_deprecated()
         payload = payload or {}
         user = self._get_user(trans, id)
         ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         # Update email
         if "email" in payload:
             email = payload.get("email")
-            self.user_manager.update_email(
-                trans,
-                user,
-                email,
-                commit=False,
-                send_activation_email=True,  # commit at the end of the handler
-            )
+            # Committed at the end of the handler, or earlier by send_activation_email once the mail is sent.
+            self.user_manager.update_email(trans, user, email, commit=False, send_activation_email=True)
         # Update public name
         if "username" in payload:
             username = payload.get("username")
@@ -1068,14 +1050,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     address_dicts[index] = address_dicts.get(index) or {}
                     address_dicts[index][attribute] = payload[item]
                     address_count = max(address_count, index + 1)
+            existing_addresses = {address.id: address for address in user.addresses}
             user.addresses = []
             for index in range(0, address_count):
                 d = address_dicts[index]
                 if d.get("id"):
-                    try:
-                        user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
-                    except Exception as e:
-                        raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
+                    # Only the user's own addresses can be updated; any other id is treated as unknown.
+                    user_address = existing_addresses.get(trans.security.decode_id(d["id"]))
+                    if user_address is None:
+                        raise exceptions.ObjectNotFound(f"User address ({d['id']}) not found.")
                 else:
                     user_address = UserAddress()
                     trans.log_event("User address added")

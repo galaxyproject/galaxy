@@ -14,6 +14,7 @@ export { dropdownHideKey } from "./components/dropdownContext";
 export { default as GForm } from "./components/Form/GForm.vue";
 export { default as GFormInput } from "./components/Form/GFormInput.vue";
 export { default as GFormLabel } from "./components/Form/GFormLabel.vue";
+export { default as GAlert } from "./components/GAlert.vue";
 export { default as GButton } from "./components/GButton.vue";
 export { default as GButtonGroup } from "./components/GButtonGroup.vue";
 export { default as GCheckbox } from "./components/GCheckbox.vue";

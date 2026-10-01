@@ -1,11 +1,11 @@
 <template>
-    <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-    <BAlert v-else-if="!currentHistoryId || isLoading" variant="info" show>
+    <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+    <GAlert v-else-if="!currentHistoryId || isLoading" variant="info" show>
         <LoadingSpan message="Please wait" />
-    </BAlert>
-    <BAlert v-else-if="options.length === 0" variant="warning" show>
+    </GAlert>
+    <GAlert v-else-if="options.length === 0" variant="warning" show>
         No datasets found in your current history that are compatible. Please upload a compatible dataset.
-    </BAlert>
+    </GAlert>
     <div
         v-else
         :class="droppable && dragState && `ui-dragover-${dragState}`"
@@ -29,7 +29,6 @@
 </template>
 
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
@@ -49,6 +48,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import type { OptionType } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const DEFAULT_NAME = "...";

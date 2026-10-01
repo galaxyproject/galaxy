@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCardGroup, BLink } from "bootstrap-vue";
+import { BCardGroup, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 
@@ -40,6 +40,7 @@ import SourceFromPastedData from "./wizard/SourceFromPastedData.vue";
 import SourceFromRemoteFiles from "./wizard/SourceFromRemoteFiles.vue";
 import SourceFromWorkbook from "./wizard/SourceFromWorkbook.vue";
 import UploadSampleSheet from "./wizard/UploadSampleSheet.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -444,12 +445,12 @@ async function download() {
                 @workbookContents="handleUploadFromWizard" />
         </div>
         <div v-else-if="wizard.isCurrent('fill-grid') && currentHistoryId" style="width: 100%">
-            <BAlert v-if="collectionCreateError" show dismissible @dismissed="collectionCreateError = undefined">
+            <GAlert v-if="collectionCreateError" show dismissible @dismissed="collectionCreateError = undefined">
                 Failed to create sample sheet collection for supplied input. {{ collectionCreateError }}.
-            </BAlert>
+            </GAlert>
             <div v-if="collectionCreated">
-                <BAlert variant="success" data-description="collection created" show
-                    >Sample sheet collection successfully created!</BAlert
+                <GAlert variant="success" data-description="collection created" show
+                    >Sample sheet collection successfully created!</GAlert
                 >
             </div>
             <div v-else-if="waitingOnFetch">

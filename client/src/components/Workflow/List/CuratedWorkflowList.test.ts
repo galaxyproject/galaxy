@@ -9,6 +9,7 @@ import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
+import { curatedHelpHtml } from "@/components/Workflow/List/curatedFilters";
 import { useUserStore } from "@/stores/userStore";
 
 import CuratedWorkflowList from "./CuratedWorkflowList.vue";
@@ -444,6 +445,31 @@ describe("CuratedWorkflowList", () => {
         expect(wrapper.find("#curated-workflow-collections").exists()).toBe(false);
     });
 
+    it("offers the collection filter in the advanced menu only for the iwc catalog", async () => {
+        const menuHasCollection = (wrapper: Awaited<ReturnType<typeof mountList>>) =>
+            wrapper.findComponent(FilterMenu).props("filterClass").validFilters.collection.menuItem;
+
+        const iwcWrapper = await mountCuratedList(iwcPage(["a"]));
+        expect(menuHasCollection(iwcWrapper)).toBe(true);
+
+        configSource = "local";
+        const localWrapper = await mountCuratedList({
+            source: "local",
+            total_matches: 1,
+            workflows: [localWorkflow()],
+        });
+        expect(menuHasCollection(localWrapper)).toBe(false);
+    });
+
+    it("still accepts a typed collection filter in local mode", async () => {
+        configSource = "local";
+        const wrapper = await mountCuratedList({ source: "local", total_matches: 0, workflows: [] });
+
+        await setFilterText(wrapper, "collection:variant");
+
+        expect(catalogQueries.at(-1)!.get("search")).toBe("collection:variant");
+    });
+
     it("offers no Recommended sort in local mode, where the server default is newest first", async () => {
         configSource = "local";
         const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
@@ -458,5 +484,12 @@ describe("CuratedWorkflowList", () => {
 
         expect(catalogQueries[1]!.get("sort_by")).toBe("update_time");
         expect(catalogQueries[1]!.get("sort_desc")).toBe("false");
+    });
+});
+
+describe("curatedHelpHtml", () => {
+    it("documents the collection filter only for the iwc catalog", () => {
+        expect(curatedHelpHtml(true)).toContain("collection:");
+        expect(curatedHelpHtml(false)).not.toContain("collection");
     });
 });

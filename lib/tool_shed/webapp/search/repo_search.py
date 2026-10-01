@@ -1,7 +1,10 @@
 """Module for searching the toolshed repositories"""
 
 import logging
-from typing import Any
+from typing import (
+    Any,
+    NamedTuple,
+)
 
 import whoosh.index
 from whoosh import scoring
@@ -16,6 +19,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh.query import (
     And,
     Every,
+    Query,
     Term,
 )
 
@@ -25,6 +29,17 @@ from galaxy.util.search import parse_filters
 from tool_shed.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
+
+
+class RepoBoosts(NamedTuple):
+    repo_name_boost: float
+    repo_description_boost: float
+    repo_long_description_boost: float
+    repo_homepage_url_boost: float
+    repo_remote_repository_url_boost: float
+    categories_boost: float
+    repo_owner_username_boost: float
+
 
 schema = Schema(
     id=NUMERIC(stored=True),
@@ -74,7 +89,9 @@ class RepoWeighting(scoring.BM25F):  # type: ignore[misc]  # whoosh is untyped
 
 
 class RepoSearch:
-    def search(self, trans: ProvidesAppContext, search_term, page, page_size, boosts):
+    def search(
+        self, trans: ProvidesAppContext, search_term: str, page: int, page_size: int, boosts: RepoBoosts
+    ) -> dict[str, Any]:
         """
         Perform the search on the given search_term
 
@@ -170,7 +187,7 @@ class RepoSearch:
         else:
             raise exceptions.InternalServerError("The search index file is missing.")
 
-    def _parse_reserved_filters(self, search_term):
+    def _parse_reserved_filters(self, search_term: str) -> tuple[Query, str]:
         """
         Support github-like filters for narrowing the results.
         Order of chunks does not matter, only recognized

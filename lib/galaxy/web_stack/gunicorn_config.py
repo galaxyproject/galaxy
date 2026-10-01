@@ -3,8 +3,11 @@ Gunicorn config file based on https://gist.github.com/hynek/ba655c8756924a5febc5
 """
 
 import gc
+import logging
 import os
 import sys
+
+log = logging.getLogger(__name__)
 
 
 def is_preload_app():
@@ -76,3 +79,22 @@ def post_fork(server, worker):
         from galaxy.web_stack import GunicornApplicationStack
 
         GunicornApplicationStack.late_postfork_event.set()
+
+
+def worker_abort(worker):
+    """
+    Log what the worker was serving when the arbiter aborted it.
+
+    Reached when a worker misses ``timeout``, usually because a graceful drain never
+    finished. The summary is logged at ERROR so that it reaches Sentry (Galaxy's
+    Sentry client turns ERROR log records into events) with the stack dump alongside
+    it as a breadcrumb.
+    """
+    summarize = getattr(worker, "in_flight_summary", None)
+    if summarize is None:
+        return
+    try:
+        log.warning("Worker aborted by arbiter, stacks follow\n%s", worker.in_flight_stacks())
+        log.error("Worker aborted by arbiter (worker timeout)\n%s", summarize())
+    except Exception:
+        log.exception("Failed to report in-flight requests for aborted worker")

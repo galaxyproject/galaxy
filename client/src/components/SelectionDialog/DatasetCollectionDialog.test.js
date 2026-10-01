@@ -1,5 +1,4 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import { BAlert } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,6 +6,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 vi.mock("app");
@@ -49,7 +49,7 @@ describe("DatasetCollectionDialog.vue", () => {
 
         await flushPromises();
 
-        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
+        expect(wrapper.findComponent(GAlert).exists()).toBe(false);
         expect(wrapper.findComponent(GTable).exists()).toBe(true);
     });
 
@@ -64,6 +64,6 @@ describe("DatasetCollectionDialog.vue", () => {
             localVue: localVue,
         });
         await flushPromises();
-        expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");
+        expect(wrapper.findComponent(GAlert).text()).toBe("Bad error");
     });
 });

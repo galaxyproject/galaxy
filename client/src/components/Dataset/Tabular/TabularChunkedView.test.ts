@@ -25,7 +25,12 @@ class VisibleIntersectionObserver {
     disconnect() {}
 }
 
-function mountChunkedView(fileExt: string) {
+function mountChunkedView(fileExt: string, ckData?: string) {
+    if (ckData !== undefined) {
+        vi.mocked(axios.get).mockResolvedValueOnce({
+            data: { ck_data: ckData, offset: ckData.length, data_line_offset: 0 },
+        });
+    }
     return shallowMount(TabularChunkedView as object, {
         localVue,
         propsData: {
@@ -36,6 +41,12 @@ function mountChunkedView(fileExt: string) {
             },
         },
     });
+}
+
+async function renderedItems(fileExt: string, ckData: string) {
+    const wrapper = mountChunkedView(fileExt, ckData);
+    await vi.waitFor(() => expect(wrapper.findComponent(GTable).props("items")).not.toHaveLength(0));
+    return wrapper.findComponent(GTable).props("items");
 }
 
 describe("TabularChunkedView", () => {
@@ -76,5 +87,22 @@ describe("TabularChunkedView", () => {
         await vi.waitFor(() => expect(wrapper.text()).toContain("chunk request failed"));
         await new Promise((resolve) => setTimeout(resolve, 250));
         expect(axios.get).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps a comma inside a quoted CSV cell", async () => {
+        expect(await renderedItems("csv", 'a,"b,c"\n')).toEqual([{ column_0: "a", column_1: "b,c" }]);
+    });
+
+    it("keeps a tab inside a quoted tabular cell", async () => {
+        expect(await renderedItems("tabular", 'a\t"b\tc"\n')).toEqual([{ column_0: "a", column_1: "b\tc" }]);
+    });
+
+    it("falls back to per-line parsing when the chunk has ragged records", async () => {
+        // Parsing the chunk as a whole raises CSV_RECORD_INCONSISTENT_FIELDS_LENGTH, so each line is
+        // parsed on its own and the extra field is folded into the last column.
+        expect(await renderedItems("csv", "a,b\nc,d,e\n")).toEqual([
+            { column_0: "a", column_1: "b" },
+            { column_0: "c", column_1: "d\te" },
+        ]);
     });
 });

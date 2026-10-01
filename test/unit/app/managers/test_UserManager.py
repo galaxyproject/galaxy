@@ -25,6 +25,7 @@ from galaxy.managers import (
     histories,
     users,
 )
+from galaxy.schema.schema import UserUpdatePayload
 from galaxy.security.passwords import check_password
 from galaxy.util import now
 from .base import BaseTestCase
@@ -377,6 +378,78 @@ class TestUserManager(BaseTestCase):
         assert refreshed.activation_token is not None
         assert refreshed.active is False
 
+    def test_update_email_strips_whitespace(self):
+        user = self.user_manager.create(email="original@example.com", username="updater")
+        self.user_manager.update_email(self.trans, user, "  updated@example.com  ", send_activation_email=False)
+        assert user.email == "updated@example.com"
+
+    def test_update_email_is_refused_for_non_admins_when_the_identity_is_external(self):
+        user = self.user_manager.create(**user2_data)
+        taken = self.user_manager.create(**user3_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        for option in ("use_remote_user", "disable_local_accounts", "fixed_delegated_auth"):
+            setattr(self.app.config, option, True)
+            for new_email in ("changed@example.com", taken.email):
+                with pytest.raises(exceptions.ConfigDoesNotAllowException):
+                    self.user_manager.update_email(self.trans, user, new_email)
+            setattr(self.app.config, option, False)
+        assert user.email == user2_data["email"]
+
+    def test_update_email_by_admins_or_identity_providers_when_the_identity_is_external(self):
+        self.app.config.use_remote_user = True
+        self.app.config.disable_local_accounts = True
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        self.user_manager.update_email(self.trans, user, "from-idp@example.com", asserted_by_identity_provider=True)
+        assert user.email == "from-idp@example.com"
+
+        self.trans.set_user(self.admin_user)
+        self.mock_trans.user_is_admin = True
+        self.user_manager.update_email(self.trans, user, "from-admin@example.com")
+        assert user.email == "from-admin@example.com"
+
+    def test_update_email_for_non_admins_with_local_accounts(self):
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+        self.user_manager.update_email(self.trans, user, "changed@example.com")
+        assert user.email == "changed@example.com"
+
+    def test_update_email_to_an_admin_address_requires_an_admin_or_identity_provider(self):
+        self.app.config.admin_users_list = [
+            *self.app.config.admin_users_list,
+            "first-admin@example.com",
+            "second-admin@example.com",
+        ]
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_email(self.trans, user, "First-Admin@example.com")
+        assert user.email == user2_data["email"]
+
+        self.user_manager.update_email(self.trans, user, "first-admin@example.com", asserted_by_identity_provider=True)
+        assert user.email == "first-admin@example.com"
+
+        self.trans.set_user(self.admin_user)
+        self.mock_trans.user_is_admin = True
+        self.user_manager.update_email(self.trans, user, "second-admin@example.com")
+        assert user.email == "second-admin@example.com"
+
+    def test_update_email_changes_only_the_case(self):
+        user = self.user_manager.create(**user2_data)
+        self.user_manager.update_email(self.trans, user, user2_data["email"].upper())
+        assert user.email == user2_data["email"].upper()
+
+    def test_update_email_rejects_another_users_address_in_any_case(self):
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_email(self.trans, user3, user2.email.upper())
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
@@ -431,6 +504,10 @@ class TestUserManager(BaseTestCase):
         self.log("surrounding whitespace should be stripped rather than rejected")
         self.user_manager.update_display_name(user, "  Ada Lovelace  ")
         assert_user_display_name_is(user, "Ada Lovelace")
+
+        self.log("composed and decomposed spellings should be stored alike")
+        self.user_manager.update_display_name(user, "Zoe\u0308 Mu\u0308ller")
+        assert_user_display_name_is(user, "Zo\u00eb M\u00fcller")
 
         self.log("an empty display name should clear the field")
         self.user_manager.update_display_name(user, "")
@@ -629,6 +706,23 @@ class TestUserDeserializer(BaseTestCase):
         new_user = self.user_manager.by_id(user.id)
         assert new_user is not None
         assert new_user.username == new_name
+
+    def test_legacy_username_update(self):
+        user = self.user_manager.create(email="legacy@example.com", username="Legacy User")
+
+        self.log("a username from before the current rule can be sent back unchanged with other updates")
+        payload = UserUpdatePayload.model_validate({"username": "Legacy User", "email": "renamed@example.com"})
+        self.deserializer.deserialize(user, payload.model_dump(exclude_unset=True), trans=self.trans)
+        assert user.username == "Legacy User"
+        assert user.email == "renamed@example.com"
+
+        self.log("but the rule applies to any new username")
+        payload = UserUpdatePayload.model_validate({"username": "Other User"})
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(user, payload.model_dump(exclude_unset=True), trans=self.trans)
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_username(self.trans, user, "Other User")
+        assert user.username == "Legacy User"
 
     def test_display_name_validation(self):
         user = self.user_manager.create(**user2_data)

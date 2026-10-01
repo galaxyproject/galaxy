@@ -173,7 +173,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
         # Used by get_filename in tool shed's testcase
         if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
-            os.environ["TOOL_SHED_TEST_FILE_DIR"] = driver_util.TOOL_SHED_TEST_DATA
+            os.environ["TOOL_SHED_TEST_FILE_DIR"] = driver_util.tool_shed_test_data()
 
         # ---- Optionally start up a Galaxy instance ------------------------------------------------------
         if "TOOL_SHED_TEST_OMIT_GALAXY" not in os.environ:

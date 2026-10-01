@@ -8,6 +8,7 @@ import { useFetchJobMonitor } from "@/composables/fetch";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import FetchGrids from "./FetchGrids.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -72,11 +73,11 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
         </template>
         <template v-slot>
             <LoadingSpan v-if="!currentHistoryId" />
-            <BAlert v-else-if="fetchComplete" variant="success" show> Data imported successfully. </BAlert>
-            <BAlert v-else-if="fetchError" variant="danger" show> Error importing data: {{ fetchError }} </BAlert>
-            <BAlert v-else-if="waitingOnFetch" variant="info" show>
+            <GAlert v-else-if="fetchComplete" variant="success" show> Data imported successfully. </GAlert>
+            <GAlert v-else-if="fetchError" variant="danger" show> Error importing data: {{ fetchError }} </GAlert>
+            <GAlert v-else-if="waitingOnFetch" variant="info" show>
                 <LoadingSpan message="Importing data" />
-            </BAlert>
+            </GAlert>
             <FetchGrids v-else ref="fetchGrids" :targets="props.targets" />
         </template>
     </FormCardSticky>

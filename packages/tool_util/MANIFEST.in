@@ -1,0 +1,3 @@
+# Agent configuration that happens to sit in the sample tool directory.
+exclude src/galaxy/tool_util/unittest_utils/functional_tools/CLAUDE.md
+prune src/galaxy/tool_util/unittest_utils/functional_tools/.claude

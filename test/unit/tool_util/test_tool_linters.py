@@ -963,6 +963,27 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 </tool>
 """
 
+TESTS_EXPECT_FAILURE_INVALID_INPUTS = """
+<tool id="id" name="name" profile="24.2">
+    <inputs>
+        <param name="taxid" type="text" value="1">
+            <validator type="regex" message="Enter numeric tax IDs">^\\d+$</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="test"/>
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+            <param name="taxid" value="f5"/>
+        </test>
+        <test expect_failure="true">
+            <param name="taxidd" value="f5"/>
+        </test>
+    </tests>
+</tool>
+"""
+
 ASSERTS = """
 <tool id="id" name="name">
     <outputs>
@@ -2234,6 +2255,15 @@ def test_tests_expect_failure_output(lint_ctx):
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 3
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_tests_expect_failure_invalid_inputs(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_INVALID_INPUTS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    case_errors = [str(m) for m in lint_ctx.error_messages if m.linter == "TestsCaseValidation"]
+    assert len(case_errors) == 1
+    assert "Test 2: failed to validate test parameters" in case_errors[0]
+    assert "Invalid parameter name found taxidd" in case_errors[0]
 
 
 def test_tests_without_expectations(lint_ctx):

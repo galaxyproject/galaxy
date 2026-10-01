@@ -1,5 +1,6 @@
 import binascii
 import json
+from typing import Any
 
 from galaxy.util import (
     smart_str,
@@ -30,11 +31,9 @@ def tool_shed_decode(value):
     return values
 
 
-def tool_shed_encode(val):
-    if isinstance(val, dict) or isinstance(val, list):
-        value = json.dumps(val)
-    else:
-        value = val
-    a = hmac_new(b"ToolShedAndGalaxyMustHaveThisSameKey", value)
-    b = unicodify(binascii.hexlify(smart_str(value)))
+def tool_shed_encode(val: bytes | str | Any) -> str:
+    if not isinstance(val, (bytes, str)):
+        val = json.dumps(val)
+    a = hmac_new(b"ToolShedAndGalaxyMustHaveThisSameKey", val)
+    b = unicodify(binascii.hexlify(smart_str(val)))
     return f"{a}:{b}"

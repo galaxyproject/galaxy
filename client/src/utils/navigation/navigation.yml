@@ -51,6 +51,7 @@ masthead:
     preferences: '#user .dropdown-menu [data-description="user preferences"]'
     login_masthead_button: '[data-description="login masthead button"]'
     register_masthead_button: '[data-description="register masthead button"]'
+    search: '[data-description="masthead search button"]'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
@@ -60,6 +61,18 @@ masthead:
       selector: '//a[contains(text(), "Signed in as")]'
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
+
+command_palette:
+
+  selectors:
+    _: 'dialog.command-palette'
+
+    badge: '[data-description="palette badge"]'
+    category: '[data-description="palette category ${category}"]'
+    input: '[data-description="palette input"]'
+    option: '[data-description="palette option"]'
+    option_title: '[data-description="palette option"] .item-title'
+    section: '[data-description="palette section ${section}"]'
 
 preferences:
   selectors:
@@ -521,7 +534,7 @@ histories:
     advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
     advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
     history_cards: '.history-card-list .g-card'
-    history_card_title: '[id^="g-card-title-link-history-"]'
+    history_card_title: '.history-card-list [id^="g-card-title-history-"]'
     history_card_select: 'input[id^="g-card-select-history-"]'
     import_button: '[data-description="header action import new history"]'
     reset_input: '#history-list-filter [data-description="reset query"]'
@@ -797,6 +810,8 @@ tool_form:
     section_header: '.ui-portlet-section .portlet-header'
     reference: '.formatted-reference'
     about: '.tool-footer'
+    creator: '.tool-footer .creative-work-creator'
+    grant: '.tool-footer [itemprop="funding"]'
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
@@ -826,6 +841,11 @@ workflows:
     workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
     curated_workflow_card: '.g-card.curated-workflow-card'
+    curated_workflow_card_title: '.g-card.curated-workflow-card [id^="g-card-title-text-"]'
+    curated_workflow_not_found_message: '#no-curated-workflow-found'
+    curated_collection_chip: '.curated-workflow-collection[data-collection="${name}"]'
+    curated_advanced_search_name_input: '#curated-workflows-advanced-filter-name'
+    curated_advanced_search_collection_input: '#curated-workflows-advanced-filter-collection'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
@@ -883,7 +903,7 @@ igv:
       selector: '(//button[text()=" OK "])[1]'
     selected_genome: '[title="${title}"]'
     expand_button: '[data-description="sidebutton expand"]'
-    name_input: '.n-input__input input'
+    name_input: '[data-description="side panel title input"] input'
     save_button: '[data-description="sidebutton save"]'
     settings_tab: '.n-tabs-tab[data-name="settings"]'
 

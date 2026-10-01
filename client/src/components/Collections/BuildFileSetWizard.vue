@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCardGroup } from "bootstrap-vue";
+import { BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -36,6 +36,7 @@ import SourceFromPastedData from "./wizard/SourceFromPastedData.vue";
 import SourceFromRemoteFiles from "./wizard/SourceFromRemoteFiles.vue";
 import SourceFromWorkbook from "./wizard/SourceFromWorkbook.vue";
 import UploadFetchWorkbook from "./wizard/UploadFetchWorkbook.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 
@@ -265,14 +266,14 @@ const {
         class="rule-based-import-wizard"
         @submit="submit">
         <template v-slot:header>
-            <BAlert
+            <GAlert
                 :show="!!uploadErrorMessage"
                 variant="danger"
                 class="my-2"
                 dismissible
                 @dismissed="uploadErrorMessage = ''">
                 {{ uploadErrorMessage }}
-            </BAlert>
+            </GAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
                 <a v-g-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">

@@ -51,11 +51,11 @@ from galaxy.model.custom_types import (
     TrimmedString,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.user_input import validate_password_str
 from tool_shed.util import hg_util
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
@@ -395,8 +395,7 @@ class Repository(Base, Dictifiable):
         viewonly=True,
         order_by=lambda: desc(RepositoryMetadata.update_time),
     )
-    metadata_revisions = relationship(
-        "RepositoryMetadata",
+    metadata_revisions: Mapped[list["RepositoryMetadata"]] = relationship(
         order_by=lambda: desc(RepositoryMetadata.update_time),
         back_populates="repository",
     )
@@ -601,7 +600,7 @@ class Repository(Base, Dictifiable):
         repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view: str = "collection", value_mapper=None) -> dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if "user_id" in rval:
             rval["owner"] = self.user.username

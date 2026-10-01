@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
+import { BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
@@ -35,6 +35,7 @@ import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import WorkflowInvocationSearch from "./WorkflowInvocationSearch.vue";
 import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type InvocationViewTab = "steps" | "inputs" | "outputs" | "report" | "reports" | "export" | "metrics" | "debug";
@@ -474,9 +475,9 @@ async function onCancel() {
                     :invocation-messages="uniqueMessages" />
             </div>
             <div v-if="props.tab === 'steps'" class="steps-tab-content">
-                <BAlert v-if="isSubworkflow" variant="info" show>
+                <GAlert v-if="isSubworkflow" variant="info" show>
                     <span v-localize>Subworkflow steps are not available.</span>
-                </BAlert>
+                </GAlert>
                 <WorkflowInvocationSteps
                     v-else-if="invocation && stepsJobsSummary"
                     :invocation="invocation"
@@ -489,9 +490,9 @@ async function onCancel() {
                 :terminal="invocationAndJobTerminal"
                 :tab="props.tab" />
             <div v-if="props.tab === 'report' || props.tab === 'reports'" class="steps-tab-content">
-                <BAlert v-if="isSubworkflow" variant="info" show>
+                <GAlert v-if="isSubworkflow" variant="info" show>
                     <span v-localize>Report is not available for subworkflow.</span>
-                </BAlert>
+                </GAlert>
                 <TabsDisabledAlert
                     v-else-if="tabsDisabled"
                     :invocation-id="props.invocationId"
@@ -521,9 +522,9 @@ async function onCancel() {
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </div>
             <div v-if="props.tab === 'debug'">
-                <BAlert v-if="!canSubmitFeedback || !stepsJobsSummary" variant="info" show>
+                <GAlert v-if="!canSubmitFeedback || !stepsJobsSummary" variant="info" show>
                     <span v-localize>Debug information is not available.</span>
-                </BAlert>
+                </GAlert>
                 <WorkflowInvocationFeedback
                     v-else
                     :invocation-id="invocation.id"
@@ -533,18 +534,18 @@ async function onCancel() {
             </div>
         </div>
     </div>
-    <BAlert v-else-if="errorMessage" variant="danger" show>
+    <GAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
-    </BAlert>
-    <BAlert v-else-if="!invocationLoaded" variant="info" show>
+    </GAlert>
+    <GAlert v-else-if="!invocationLoaded" variant="info" show>
         <LoadingSpan message="Loading invocation" />
-    </BAlert>
-    <BAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>
+    </GAlert>
+    <GAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>
         {{ invocationStore.getInvocationLoadError(props.invocationId) }}
-    </BAlert>
-    <BAlert v-else variant="info" show>
+    </GAlert>
+    <GAlert v-else variant="info" show>
         <span v-localize>Invocation not found.</span>
-    </BAlert>
+    </GAlert>
 </template>
 
 <style lang="scss">

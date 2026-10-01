@@ -1,0 +1,75 @@
+<tool id="interactive_tool_tensorboard" tool_type="interactive" name="TensorBoard" version="2.21.0" profile="23.0">
+    <icon src="tensorboard.png"/>
+    <description>Visualize and explore tensorboard logs from machine/deep learning experiments</description>
+    <macros>
+        <token name="@PORT@">6006</token>
+    </macros>
+    <requirements>
+        <container type="docker">quay.io/galaxy/tensorboard:2.21.0</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="TensorBoard" requires_domain="True">
+            <port>@PORT@</port>
+        </entry_point>
+    </entry_points>
+    <stdio>
+        <regex match="WARNING" source="both" level="warning" description="TensorBoard warnings"/>
+    </stdio>
+    <command detect_errors="exit_code"><![CDATA[
+        #import re
+
+        mkdir -p logs &&
+
+        #if $input_source.source == 'single':
+            ln -s '${input_source.infile}' 'logs/events.out.tfevents.galaxy' &&
+        #else:
+            #set $used_run_names = set()
+            #for $i, $dataset in enumerate($input_source.infiles):
+                #set $run_name = re.sub('[^A-Za-z0-9._-]+', '_', str($dataset.element_identifier)).strip('._')
+                #if not $run_name:
+                    #set $run_name = 'run_%d' % $i
+                #end if
+                #if $run_name in $used_run_names:
+                    #set $run_name = '%s_%d' % ($run_name, $i)
+                #end if
+                #silent $used_run_names.add($run_name)
+                mkdir -p 'logs/${run_name}' &&
+                ln -s '${dataset}' 'logs/${run_name}/events.out.tfevents.galaxy' &&
+            #end for
+        #end if
+
+        tensorboard
+            --logdir logs
+            --host 0.0.0.0
+            --port @PORT@
+    ]]></command>
+    <inputs>
+        <conditional name="input_source">
+            <param name="source" type="select" label="TensorBoard log input">
+                <option value="single" selected="true">Single event file</option>
+                <option value="collection">Dataset collection</option>
+            </param>
+            <when value="single">
+                <param name="infile" type="data" format="tfevents" label="TensorBoard event log" help="Select a TensorBoard event file."/>
+            </when>
+            <when value="collection">
+                <param name="infiles" type="data_collection" collection_type="list" format="tfevents" label="TensorBoard event logs" help="Select a list collection of TensorBoard event files. Each collection element is displayed as a separate TensorBoard run."/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs/>
+    <help><![CDATA[
+        TensorBoard visualizes machine learning experiments, including scalar metrics,
+        graphs, histograms, and images recorded in TensorBoard event logs.
+
+        You can provide either a single TensorBoard event file or a list collection of
+        TensorBoard event files.
+
+        For list collections, each collection element is presented as a separate
+        TensorBoard run. Galaxy collection element identifiers are used as the run names.
+
+        After starting the tool, open TensorBoard from Galaxy's active interactive tools.
+        The available dashboards depend on the data recorded in your event logs.
+        Stop the interactive tool in Galaxy when you have finished exploring.
+    ]]></help>
+</tool>

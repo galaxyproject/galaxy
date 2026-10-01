@@ -89,7 +89,6 @@ keywords = ["Galaxy"]
 
 [project.optional-dependencies]
 test = [
-    "galaxy-test-base",
     "mock-ssh-server",
     "pkce",
     "pykwalify",

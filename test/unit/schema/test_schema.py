@@ -1,12 +1,21 @@
 import re
 from uuid import uuid4
 
-from pydantic import BaseModel
+import pytest
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions.utils import validation_error_to_message_exception
 from galaxy.schema.schema import (
     DatasetStateField,
     OAuth2State,
+    RemoteUserCreationPayload,
     TAG_ITEM_PATTERN,
+    UserCreationPayload,
+    UserUpdatePayload,
 )
 from galaxy.schema.tasks import (
     GenerateInvocationDownload,
@@ -85,3 +94,54 @@ def test_oauth_state():
     state_out = OAuth2State.decode(state_in.encode())
     assert state_out.route == "/file_sources/dropbox"
     assert state_out.nonce == "abcde56"
+
+
+@pytest.mark.parametrize("field", ["active", "email", "username"])
+def test_user_update_payload_rejects_null(field):
+    with pytest.raises(ValidationError):
+        UserUpdatePayload.model_validate({field: None})
+    assert "anyOf" not in UserUpdatePayload.model_json_schema()["properties"][field]
+
+
+def test_user_update_payload_null_clears():
+    payload = UserUpdatePayload.model_validate({"display_name": None, "preferred_object_store_id": None})
+    assert payload.model_dump(exclude_unset=True) == {"display_name": None, "preferred_object_store_id": None}
+
+
+@pytest.mark.parametrize(
+    "model, field, other_fields",
+    [
+        (UserUpdatePayload, "email", {}),
+        (UserCreationPayload, "email", {"username": "ada", "password": "testpass"}),
+        (RemoteUserCreationPayload, "remote_user_email", {}),
+    ],
+)
+def test_user_email_fields(model, field, other_fields):
+    payload = model.model_validate({field: "  ada@localhost  ", **other_fields})
+    assert getattr(payload, field) == "ada@localhost"
+
+    with pytest.raises(ValidationError) as exc_info:
+        model.model_validate({field: "not-an-email", **other_fields})
+    exception = validation_error_to_message_exception(exc_info.value)
+    assert isinstance(exception, RequestParameterInvalidException)
+    assert exception.err_msg == "The format of the email address is not correct."
+
+    with pytest.raises(ValidationError):
+        model.model_validate({field: "a" * 250 + "@b.org", **other_fields})
+
+
+def test_user_username_fields():
+    legacy = "Legacy User"
+    assert UserUpdatePayload.model_validate({"username": legacy}).username == legacy
+
+    creation = {"email": "ada@localhost", "password": "testpass"}
+    assert UserCreationPayload.model_validate({"username": "ada", **creation}).username == "ada"
+    with pytest.raises(ValidationError) as exc_info:
+        UserCreationPayload.model_validate({"username": legacy, **creation})
+    exception = validation_error_to_message_exception(exc_info.value)
+    assert isinstance(exception, RequestParameterInvalidException)
+    assert exception.err_msg == "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
+
+    for model, fields in ((UserUpdatePayload, {}), (UserCreationPayload, creation)):
+        with pytest.raises(ValidationError):
+            model.model_validate({"username": "a" * 256, **fields})

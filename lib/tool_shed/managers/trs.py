@@ -36,7 +36,7 @@ TRS_SERVICE_NAME = "Tool Shed TRS API"
 TRS_SERVICE_DESCRIPTION = "Serves tool shed repository tools according to the GA4GH TRS specification"
 
 
-def service_info(app: ToolShedApp, request_url: URL):
+def service_info(app: ToolShedApp, request_url: URL) -> Service:
     components = request_url.components
     hostname = components.hostname
     assert hostname

@@ -58,8 +58,6 @@ from galaxy.model.db.user import (
 )
 from galaxy.security.validate_user_input import (
     UserValidationContext,
-    VALID_EMAIL_RE,
-    validate_display_name_str,
     validate_email,
     validate_password,
     validate_preferred_object_store_id,
@@ -71,6 +69,12 @@ from galaxy.structured_app import (
 )
 from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    canonicalize_email,
+    VALID_EMAIL_RE,
+    validate_display_name_str,
+)
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -193,21 +197,34 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def update_email(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         user: User,
         new_email: str,
         *,
         commit: bool = True,
         send_activation_email: bool = True,
+        asserted_by_identity_provider: bool = False,
     ) -> None:
         """
         Update a user's email address, keeping the private role in sync and honoring activation settings.
         Raises RequestParameterInvalidException on validation errors.
+
+        Non-admins are held to the address policy below, unless the address comes from an external identity
+        provider (``asserted_by_identity_provider``) rather than from the user.
         """
-        if message := validate_email(trans, new_email, user):
-            raise exceptions.RequestParameterInvalidException(message)
+        new_email = canonicalize_email(new_email)
         if user.email == new_email:
             return
+        user_chosen = not asserted_by_identity_provider and not trans.user_is_admin
+        if user_chosen and self.logins_resolve_accounts_by_email():
+            # Refused before validation, so that the error does not reveal whether the address is registered.
+            raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
+        if message := validate_email(trans, new_email, user):
+            raise exceptions.RequestParameterInvalidException(message)
+        if user_chosen and self._is_admin_email(new_email):
+            # admin_users grants administrator rights by address alone. The message is the one for a
+            # taken address, so that it does not reveal which addresses belong to administrators.
+            raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
         private_role = trans.app.security_agent.get_private_user_role(user)
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
@@ -216,6 +233,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
+            # A token mailed to the previous address must not verify this one.
+            user.activation_token = None
             if send_activation_email:
                 if not self.send_activation_email(trans, user.email, user.username):
                     session.rollback()
@@ -245,10 +264,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's display name after validating it. Raises RequestParameterInvalidException on validation errors.
 
         Unlike the username this needs no transaction: display names are not unique, so there is nothing to look up.
-        Surrounding whitespace is stripped rather than rejected, and a name that is empty once stripped clears the
-        field - an invisible difference is a poor reason to fail a save.
+        The name is stored in the form ``canonicalize_display_name`` returns, so a blank name clears the field.
         """
-        normalized = (new_display_name or "").strip() or None
+        normalized = canonicalize_display_name(new_display_name)
         if message := validate_display_name_str(normalized):
             raise exceptions.RequestParameterInvalidException(message)
         if user.display_name == normalized:
@@ -448,6 +466,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # return True.
             return bool(trans and trans.user_is_admin)
         return self.app.config.is_admin_user(user)
+
+    def logins_resolve_accounts_by_email(self) -> bool:
+        """
+        Whether a login can land in an existing account by its email address alone, so that a self-chosen
+        address would claim the account that someone else's first login lands in. Remote user logins look
+        accounts up by email, accounts come only from external logins when local accounts are disabled, and
+        with a single OIDC provider and no other authenticators (``fixed_delegated_auth``) a first OIDC login
+        is associated with the account that has its email.
+        """
+        config = self.app.config
+        return config.use_remote_user or config.disable_local_accounts or config.fixed_delegated_auth
+
+    def _is_admin_email(self, email: str) -> bool:
+        return email.lower() in (admin_email.lower() for admin_email in self.app.config.admin_users_list)
 
     def admins(self, filters=None, **kwargs):
         """
@@ -916,12 +948,14 @@ class UserDeserializer(base.ModelDeserializer):
             raise exceptions.AdminRequiredException("Only an administrator can change whether a user is active.")
         return self.deserialize_bool(item, key, active, **context)
 
-    def deserialize_email(self, item, key, email, trans: ProvidesAppContext | None = None, **context):
+    def deserialize_email(self, item, key, email, trans: ProvidesUserContext | None = None, **context):
         if trans is None:
             raise base.ModelDeserializingError("Email addresses cannot be changed in this context.")
         # update_email keeps the private role in sync and honours user_activation_on.
-        # commit=False because ModelDeserializer.deserialize commits once at the end,
-        # which is also what lets update_email roll back if the activation mail fails.
+        # Without activation the change is committed by ModelDeserializer.deserialize.
+        # With activation, send_activation_email commits once the mail is sent, and a
+        # failed send rolls the session back, which also drops the fields this payload
+        # set before the email.
         self.manager.update_email(trans, item, email, commit=False, send_activation_email=True)
         return email
 

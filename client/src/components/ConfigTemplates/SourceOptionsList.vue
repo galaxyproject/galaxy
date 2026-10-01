@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { BAlert, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { faNetworkWired } from "font-awesome-6";
 import { computed, ref } from "vue";
@@ -9,6 +9,7 @@ import type { ObjectStoreTemplateSummaries } from "@/api/objectStores.templates"
 import type { BreadcrumbItem } from "@/components/Common/index";
 import Filtering, { type ValidFilter } from "@/utils/filtering";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
@@ -72,15 +73,15 @@ function getOptionType(type: string) {
             <ListHeader :list-id="listId" show-view-toggle />
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
+        <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading options" />
-        </BAlert>
-        <BAlert v-else-if="!filterText && filteredTemplates.length === 0" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="!filterText && filteredTemplates.length === 0" variant="info" show>
             No options found.
-        </BAlert>
-        <BAlert v-else-if="filterText && filteredTemplates.length === 0" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="filterText && filteredTemplates.length === 0" variant="info" show>
             No options found matching <span class="font-weight-bold">{{ filterText }}</span>
-        </BAlert>
+        </GAlert>
         <div v-else class="source-options-list-cards">
             <SourceOptionCard
                 v-for="tp in filteredTemplates"

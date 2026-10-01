@@ -7,9 +7,9 @@
             </GButton>
         </template>
         <div class="toolMenuContainer">
-            <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+            <GAlert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                 {{ error }}
-            </b-alert>
+            </GAlert>
             <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
             <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
             <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
@@ -49,6 +49,7 @@ import { directiveEntry } from "./directives.ts";
 
 import GButton from "../BaseComponents/GButton.vue";
 import MarkdownDialog from "./MarkdownDialog.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ToolSection from "@/components/Panels/Common/ToolSection.vue";
 
@@ -94,6 +95,7 @@ function historySharedElements(mode) {
 
 export default {
     components: {
+        GAlert,
         GButton,
         FontAwesomeIcon,
         MarkdownDialog,
