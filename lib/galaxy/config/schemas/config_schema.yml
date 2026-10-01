@@ -923,6 +923,25 @@ mapping:
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
           path begin the path with '/'.  This is a comma-separated list.
 
+      visualization_packages_config_file:
+        type: str
+        default: visualization_packages.yml
+        path_resolves_to: managed_config_dir
+        required: false
+        desc: |
+          File recording the visualization packages installed at runtime through the
+          admin interface. Must be writable by Galaxy and should not be edited by hand.
+
+      visualization_packages_dir:
+        type: str
+        default: visualization_packages
+        path_resolves_to: managed_config_dir
+        required: false
+        desc: |
+          Directory holding visualization packages installed at runtime through the
+          admin interface. Must be writable by Galaxy. Servable assets are staged from
+          here into static/plugins/visualizations.
+
       tour_config_dir:
         type: str
         default: config/plugins/tours

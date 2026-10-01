@@ -98,6 +98,8 @@ class GalaxyAppConfigurationAttributes:
     sniff_compressed_dynamic_datatypes_default: bool
     datatypes_disable_auto: bool
     visualization_plugins_directory: str
+    visualization_packages_config_file: str
+    visualization_packages_dir: str
     tour_config_dir: str
     enable_tool_generated_tours: bool
     webhooks_dir: str

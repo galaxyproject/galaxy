@@ -4,7 +4,7 @@ Galaxy can manage visualization plugins at runtime through the admin interface i
 
 ## Storage model
 
-Runtime-installed visualization packages are stored under `config/visualization_packages/`.
+Runtime-installed visualization packages are stored in the directory set by `visualization_packages_dir`, and the list of installed packages is recorded in `visualization_packages_config_file`. Both are relative to `managed_config_dir`, so when running Galaxy from source they default to `config/visualization_packages/` and `config/visualization_packages.yml`.
 
 This directory is the managed package store. It is not served directly to users.
 

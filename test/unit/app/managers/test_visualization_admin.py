@@ -2,9 +2,7 @@
 
 import json
 import os
-import shutil
 import subprocess
-import tempfile
 from unittest.mock import (
     MagicMock,
     patch,
@@ -17,16 +15,13 @@ from galaxy.managers.visualization_admin import VisualizationPackageManager
 
 
 @pytest.fixture()
-def manager():
-    """Create a VisualizationPackageManager with a temp directory as root."""
-    tmpdir = tempfile.mkdtemp()
-    app = MagicMock()
-    app.config.root = tmpdir
-
-    mgr = VisualizationPackageManager(app)
-    yield mgr
-
-    shutil.rmtree(tmpdir, ignore_errors=True)
+def manager(tmp_path):
+    """Create a VisualizationPackageManager whose managed store lives outside the Galaxy root."""
+    config = MagicMock()
+    config.root = str(tmp_path / "galaxy")
+    config.visualization_packages_config_file = str(tmp_path / "managed" / "visualization_packages.yml")
+    config.visualization_packages_dir = str(tmp_path / "managed" / "visualization_packages")
+    return VisualizationPackageManager(config)
 
 
 def _create_installed_package(manager, viz_id, package_name="@galaxyproject/test", version="1.0.0"):
@@ -55,10 +50,7 @@ def _create_runtime_viz_package(manager, viz_id, package_name="@galaxyproject/te
 def _create_viz_static(manager, viz_name, content="test"):
     """Helper to create config/plugins visualization static assets."""
     plugins_dir = os.path.join(
-        manager.app.config.root,
-        "config",
-        "plugins",
-        "visualizations",
+        manager.legacy_visualizations_path,
         viz_name,
         "static",
     )
@@ -375,7 +367,7 @@ class TestInstallLifecycle:
         assert result["visualization_id"] == "my_viz"
 
         # Verify the static content is now in the serving directory
-        staged_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        staged_dir = manager.static_path
         staged_file = os.path.join(staged_dir, "my_viz", "static", "index.html")
         assert os.path.exists(staged_file)
         with open(staged_file) as f:
@@ -394,7 +386,7 @@ class TestStaging:
         assert result["staged_count"] == 2
         assert len(result["staged_visualizations"]) == 2
 
-        static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        static_dir = manager.static_path
         assert os.path.exists(os.path.join(static_dir, "circster", "static", "index.html"))
         assert os.path.exists(os.path.join(static_dir, "trackster", "static", "index.html"))
 
@@ -417,10 +409,7 @@ class TestStaging:
     def test_stage_nested_visualization(self, manager):
         """Nested visualizations like jqplot/jqplot_bar have a two-level directory structure."""
         nested_dir = os.path.join(
-            manager.app.config.root,
-            "config",
-            "plugins",
-            "visualizations",
+            manager.legacy_visualizations_path,
             "jqplot",
             "jqplot_bar",
             "static",
@@ -432,7 +421,7 @@ class TestStaging:
         result = manager.stage_visualization("jqplot/jqplot_bar")
         assert result["visualization_id"] == "jqplot/jqplot_bar"
 
-        static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        static_dir = manager.static_path
         assert os.path.exists(os.path.join(static_dir, "jqplot", "jqplot_bar", "static", "index.html"))
 
     def test_stage_nonexistent_raises(self, manager):
@@ -446,7 +435,7 @@ class TestStaging:
         result = manager.clean_staged_assets()
         assert result["cleaned_count"] > 0
 
-        static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        static_dir = manager.static_path
         assert os.path.exists(static_dir)
         assert len(os.listdir(static_dir)) == 0
 
@@ -477,7 +466,7 @@ class TestStaging:
         assert result["errors"] == []
 
         # All should be servable now
-        static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        static_dir = manager.static_path
         for viz_name in ["circster", "trackster", "sweepster", "phyloviz"]:
             assert os.path.exists(os.path.join(static_dir, viz_name, "static", "index.html"))
 
