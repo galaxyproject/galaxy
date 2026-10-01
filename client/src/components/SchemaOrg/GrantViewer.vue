@@ -1,6 +1,8 @@
 <template>
     <span itemprop="funding" itemscope itemtype="https://schema.org/Grant">
-        <FontAwesomeIcon :id="popoverTarget" :icon="faCoins" />
+        <GLink :id="popoverTarget" dark thin type="button" title="Show grant details">
+            <FontAwesomeIcon :icon="faCoins" />
+        </GLink>
 
         <GPopover triggers="click blur" :target="popoverTarget" title="Grant">
             <GTable :items="items" :fields="fields" />
