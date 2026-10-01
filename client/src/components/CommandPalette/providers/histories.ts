@@ -160,7 +160,7 @@ function historyList(variant: HistoryVariant): StoreFirstList {
     return {
         key: `histories:${variant}`,
         isLoaded: () =>
-            variant === "my" ? historyStore.histories.length > 0 : historyStore.hasLoadedHistoryList(variant),
+            variant === "my" ? historyStore.hasLoadedOwnHistories : historyStore.hasLoadedHistoryList(variant),
         fetchListing: () =>
             variant === "my"
                 ? historyStore.fetchOwnHistories({ limit: PALETTE_LIMITS.page })
@@ -171,7 +171,8 @@ function historyList(variant: HistoryVariant): StoreFirstList {
         isComplete: () => {
             const cached = cachedHistories(variant).length;
             const total = variant === "my" ? historyStore.totalHistoryCount : 0;
-            return cached < PALETTE_LIMITS.page && cached >= total;
+            const listed = variant === "my" ? historyStore.hasLoadedOwnHistories : true;
+            return listed && cached < PALETTE_LIMITS.page && cached >= total;
         },
         async searchItems(query) {
             if (variant === "my") {
