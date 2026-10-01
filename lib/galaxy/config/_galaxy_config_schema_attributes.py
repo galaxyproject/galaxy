@@ -471,7 +471,6 @@ class GalaxyAppConfigurationAttributes:
     history_audit_monitor_poll_interval: int
     enable_notification_system: bool
     enable_command_palette: bool
-    command_palette_allow_anonymous: bool
     command_palette_disabled_providers: list[Any]
     command_palette_placeholder: str | None
     enable_mcp_server: bool

@@ -3469,11 +3469,6 @@ galaxy:
   # registered.
   #enable_command_palette: true
 
-  # Whether anonymous (not logged in) users may use the command palette.
-  # When false, the palette is only available to logged in users. This
-  # option is only relevant when ``enable_command_palette`` is true.
-  #command_palette_allow_anonymous: true
-
   # List of command palette providers to disable.
   # Valid provider ids are: ``actions``, ``navigation``, ``tools``,
   # ``workflows``, ``histories``, ``datasets``, ``visualizations``,

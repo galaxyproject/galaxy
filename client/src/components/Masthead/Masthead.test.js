@@ -116,15 +116,8 @@ describe("Masthead.vue", () => {
         expect(button().attributes("title")).toBe("Search UseGalaxy.eu (Ctrl+K)");
     });
 
-    it.each([
-        ["the palette is disabled", { enable_command_palette: false }, currentUser],
-        [
-            "an anonymous user may not use it",
-            { command_palette_allow_anonymous: false },
-            { id: "anonymous", isAnonymous: true },
-        ],
-    ])("hides the search button when %s", async (_reason, variantConfig, user) => {
-        await remount(variantConfig, user);
+    it("hides the search button when the palette is disabled", async () => {
+        await remount({ enable_command_palette: false });
 
         expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
     });

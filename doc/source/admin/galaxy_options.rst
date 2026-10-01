@@ -6359,19 +6359,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``command_palette_allow_anonymous``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Whether anonymous (not logged in) users may use the command
-    palette.
-    When false, the palette is only available to logged in users. This
-    option is only relevant when ``enable_command_palette`` is true.
-:Default: ``true``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``command_palette_disabled_providers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
