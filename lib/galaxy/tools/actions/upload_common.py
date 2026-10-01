@@ -7,6 +7,7 @@ from json import (
     dump,
     dumps,
 )
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -24,6 +25,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
+    Dataset,
     DatasetPermissions,
     FormDefinition,
     FormValues,
@@ -270,6 +272,7 @@ def new_upload(
     state=None,
     tag_list=None,
 ):
+    requested_uuid = _unused_uuid(trans, getattr(uploaded_dataset, "uuid", None))
     tag_handler = trans.tag_handler
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(
@@ -292,8 +295,28 @@ def new_upload(
                 )
     if tag_list:
         tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list, flush=False)
+    if requested_uuid is not None:
+        # Set here, not by the upload job: a job must not choose where its output's file lives.
+        upload_target_dataset_instance.dataset.uuid = requested_uuid
+        trans.sa_session.commit()
 
     return upload_target_dataset_instance
+
+
+def _unused_uuid(trans: ProvidesHistoryContext, requested: str | None) -> UUID | None:
+    """The uuid an upload requested for its dataset, if no dataset has it yet.
+
+    With datasets stored by uuid, the uuid is where the dataset's file lives.
+    """
+    if not requested:
+        return None
+    try:
+        uuid = UUID(str(requested))
+    except ValueError:
+        raise RequestParameterInvalidException(f"Invalid uuid requested for upload [{requested}].")
+    if trans.sa_session.scalars(select(Dataset.id).filter_by(uuid=uuid).limit(1)).first() is not None:
+        raise RequestParameterInvalidException(f"The uuid requested for upload is already in use [{uuid}].")
+    return uuid
 
 
 def get_uploaded_datasets(
@@ -343,10 +366,6 @@ def create_paramfile(trans: ProvidesUserContext, uploaded_datasets):
             except Exception:
                 link_data_only = "copy_files"
             try:
-                uuid_str = uploaded_dataset.uuid
-            except Exception:
-                uuid_str = None
-            try:
                 purge_source = uploaded_dataset.purge_source
             except Exception:
                 purge_source = True
@@ -365,7 +384,6 @@ def create_paramfile(trans: ProvidesUserContext, uploaded_datasets):
                 type=uploaded_dataset.type,
                 is_binary=is_binary,
                 link_data_only=link_data_only,
-                uuid=uuid_str,
                 to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
                 auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
                 purge_source=purge_source,

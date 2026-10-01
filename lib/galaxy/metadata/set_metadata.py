@@ -563,8 +563,6 @@ def set_metadata_portable(
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
-                if "uuid" in context:
-                    dataset.dataset.uuid = context["uuid"]
                 if not final_job_state == Job.states.ERROR:
                     line_count = context.get("line_count", None)
                     dataset.set_peek(line_count=line_count)

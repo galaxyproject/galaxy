@@ -1,0 +1,18 @@
+<tool id="tool_provided_metadata_uuid" name="tool_provided_metadata_uuid" version="1.0.0">
+    <!-- Set the uuid of an output dataset via galaxy.json. -->
+    <command><![CDATA[
+echo 'This is a line of text.' > '$out1' &&
+cp '$c1' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"type": "dataset", "dataset_id": $out1.dataset.dataset.id, "uuid": "$uuid"}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="uuid" type="text" label="uuid of the output dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out1" format="txt" />
+    </outputs>
+    <help>
+    </help>
+</tool>
