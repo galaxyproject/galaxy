@@ -118,6 +118,20 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert head_response.status_code == 400
         assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
 
+    def test_read_missing_file(self):
+        job = self._running_job()
+        params = {"path": os.path.join(job.working_directory, "missing"), "job_key": job.job_key}
+        api_asserts.assert_status_code_is(requests.head(job.files_url, params=params), 404)
+        response = requests.get(job.files_url, params=params)
+        api_asserts.assert_status_code_is(response, 404)
+        api_asserts.assert_error_code_is(response, 404001)
+
+    def test_read_directory(self):
+        job = self._running_job()
+        response = requests.get(job.files_url, params={"path": job.working_directory, "job_key": job.job_key})
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_code_is(response, 400008)
+
     def test_write_by_state(self):
         job = self._running_job()
         api_asserts.assert_status_code_is_ok(self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT))
