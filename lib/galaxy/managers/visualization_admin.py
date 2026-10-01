@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 from glob import glob
+from typing import Any
 
 import requests
 import yaml
@@ -54,7 +55,7 @@ class VisualizationPackageManager:
         if not viz_id or not _VIZ_ID_RE.match(viz_id) or ".." in viz_id:
             raise exceptions.RequestParameterInvalidException(f"Invalid visualization ID: {viz_id}")
 
-    def load_config(self) -> dict:
+    def load_config(self) -> dict[str, Any]:
         """Load and normalize the visualization packages config file.
 
         Legacy entries that are bare strings get normalized to dict format
@@ -77,7 +78,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to load visualization config: {e}")
             raise exceptions.InternalServerError(f"Failed to load configuration: {e}")
 
-    def save_config(self, config: dict) -> None:
+    def save_config(self, config: dict[str, Any]) -> None:
         """Save the visualization packages configuration file."""
         try:
             with open(self.config_path, "w") as f:
@@ -86,7 +87,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to save visualization config: {e}")
             raise exceptions.InternalServerError(f"Failed to save configuration: {e}")
 
-    def get_package_info(self, viz_id: str) -> dict | None:
+    def get_package_info(self, viz_id: str) -> dict[str, Any] | None:
         """Get information about a specific package from config."""
         config = self.load_config()
         return config.get(viz_id)
@@ -118,7 +119,7 @@ class VisualizationPackageManager:
 
         self.save_config(config)
 
-    def install_package(self, viz_id: str, package: str, version: str) -> dict:
+    def install_package(self, viz_id: str, package: str, version: str) -> dict[str, Any]:
         """Install a new package into the managed store and record it in the config."""
         self.validate_viz_id(viz_id)
         if self.get_package_info(viz_id) or self.is_package_installed(viz_id):
@@ -129,7 +130,7 @@ class VisualizationPackageManager:
         log.info(f"Successfully installed visualization package {viz_id} ({package}@{version})")
         return install_result
 
-    def update_package(self, viz_id: str, version: str) -> dict:
+    def update_package(self, viz_id: str, version: str) -> dict[str, Any]:
         """Safe update: install new version to temp, swap on success, keep old on failure."""
         self.validate_viz_id(viz_id)
         info = self.get_package_info(viz_id)
@@ -188,7 +189,7 @@ class VisualizationPackageManager:
             log.error(f"npm install failed: {result.stderr}")
             raise exceptions.InternalServerError(f"Package installation failed: {result.stderr}")
 
-    def install_npm_package(self, package: str, version: str, target_dir: str) -> dict:
+    def install_npm_package(self, package: str, version: str, target_dir: str) -> dict[str, Any]:
         """Install an npm package to a target directory."""
         self.validate_npm_inputs(package, version)
         try:
@@ -286,7 +287,7 @@ class VisualizationPackageManager:
             log.warning(f"Failed to calculate directory size for {path}: {e}")
         return total_size
 
-    def get_package_metadata(self, viz_id: str) -> dict:
+    def get_package_metadata(self, viz_id: str) -> dict[str, Any]:
         """Get metadata from an installed package's package.json."""
         package_path = self.get_package_path(viz_id)
         package_json_path = os.path.join(package_path, "package.json")
@@ -296,12 +297,13 @@ class VisualizationPackageManager:
 
         try:
             with open(package_json_path) as f:
-                return json.load(f)
+                metadata: dict[str, Any] = json.load(f)
+            return metadata
         except Exception as e:
             log.warning(f"Failed to read package.json for {viz_id}: {e}")
             return {}
 
-    def query_npm_registry(self, search_term: str | None = None) -> list[dict]:
+    def query_npm_registry(self, search_term: str | None = None) -> list[dict[str, Any]]:
         """Query npm registry for @galaxyproject visualization packages."""
         try:
             base_url = "https://registry.npmjs.org/-/search"
@@ -382,7 +384,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to restore config: {e}")
             raise exceptions.InternalServerError(f"Failed to restore configuration: {e}")
 
-    def stage_all_visualizations(self) -> dict:
+    def stage_all_visualizations(self) -> dict[str, Any]:
         """Stage all visualization assets from managed and legacy sources to static/plugins."""
         try:
             staged_count = 0
@@ -414,7 +416,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to stage visualizations: {e}")
             raise exceptions.InternalServerError(f"Failed to stage visualizations: {e}")
 
-    def stage_visualization(self, viz_id: str) -> dict:
+    def stage_visualization(self, viz_id: str) -> dict[str, Any]:
         """Stage assets for a specific visualization from managed or legacy sources."""
         try:
             stage_spec = self._get_stage_spec(viz_id)
@@ -433,7 +435,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to stage visualization {viz_id}: {e}")
             raise exceptions.InternalServerError(f"Failed to stage visualization: {e}")
 
-    def clean_staged_assets(self) -> dict:
+    def clean_staged_assets(self) -> dict[str, Any]:
         """Clean all staged visualization assets from static/plugins/visualizations."""
         try:
             static_viz_dir = self.static_path
@@ -453,7 +455,7 @@ class VisualizationPackageManager:
             log.error(f"Failed to clean staged assets: {e}")
             raise exceptions.InternalServerError(f"Failed to clean staged assets: {e}")
 
-    def get_staging_status(self) -> dict:
+    def get_staging_status(self) -> dict[str, Any]:
         """Get information about currently staged visualizations."""
         try:
             static_viz_dir = self.static_path
@@ -498,7 +500,7 @@ class VisualizationPackageManager:
                 return f"{parts[1]}/{parts[2]}"
         return None
 
-    def _iter_stage_specs(self) -> list[dict]:
+    def _iter_stage_specs(self) -> list[dict[str, Any]]:
         specs = []
         managed_viz_ids = set()
 
@@ -525,7 +527,7 @@ class VisualizationPackageManager:
 
         return specs
 
-    def _get_stage_spec(self, viz_id: str) -> dict:
+    def _get_stage_spec(self, viz_id: str) -> dict[str, Any]:
         package_path = self.get_package_path(viz_id)
         if os.path.isdir(package_path):
             return self._build_managed_stage_spec(viz_id, package_path)
@@ -541,7 +543,7 @@ class VisualizationPackageManager:
 
         raise exceptions.ObjectNotFound(f"Static assets not found for visualization '{viz_id}'")
 
-    def _build_managed_stage_spec(self, viz_id: str, package_path: str) -> dict:
+    def _build_managed_stage_spec(self, viz_id: str, package_path: str) -> dict[str, Any]:
         plugin_name = viz_id.split("/")[-1]
         config_file = os.path.join(package_path, "static", f"{plugin_name}.xml")
         if not os.path.isfile(config_file):
@@ -558,7 +560,7 @@ class VisualizationPackageManager:
             "relative_path": relative_path,
         }
 
-    def _build_legacy_stage_spec(self, viz_id: str, source_dir: str) -> dict:
+    def _build_legacy_stage_spec(self, viz_id: str, source_dir: str) -> dict[str, Any]:
         relative_path = os.path.relpath(source_dir, self.legacy_plugins_path)
         if not safe_relpath(relative_path):
             raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
@@ -569,7 +571,7 @@ class VisualizationPackageManager:
             "relative_path": relative_path,
         }
 
-    def _stage_spec(self, stage_spec: dict) -> None:
+    def _stage_spec(self, stage_spec: dict[str, Any]) -> None:
         source_path = stage_spec["source_path"]
         target_path = stage_spec["target_path"]
 
