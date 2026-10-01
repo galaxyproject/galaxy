@@ -383,11 +383,17 @@ async function fetchConversation(exchangeId: string) {
 
     const generation = ++conversationGeneration;
 
-    const { data: fullConversation, error } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-        params: {
-            path: { exchange_id: exchangeId },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+            params: {
+                path: { exchange_id: exchangeId },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data: fullConversation, error } = result;
 
     if (generation !== conversationGeneration) {
         // A newer conversation was loaded (or a new chat started) while this one
@@ -438,11 +444,17 @@ async function fetchConversation(exchangeId: string) {
 }
 
 async function loadLatestChat() {
-    const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-        params: {
-            query: { limit: 1 },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET("/api/chat/history", {
+            params: {
+                query: { limit: 1 },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data, error } = result;
 
     if (error) {
         Toast.error(errorMessageAsString(error), "Failed to load latest chat");
