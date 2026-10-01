@@ -3,13 +3,16 @@
 The mapping is a pure projection over the already-serialized dataset
 dictionaries written to ``datasets_attrs.txt`` (and its ``.provenance``
 companion), so the TSV can never disagree with the machine-readable
-metadata. Only ``file_size`` and ``collection_name`` are not part of the
+metadata. Only ``file_size`` and collection membership are not part of the
 serialized dictionaries and are supplied by the caller.
 """
 
 import csv
 import os
-from collections.abc import Iterable
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
 from typing import (
     Any,
     NamedTuple,
@@ -27,6 +30,7 @@ DATASETS_MAPPING_COLUMNS = (
     "extension",
     "state",
     "collection_name",
+    "element_identifier",
     "tags",
     "annotation",
     "file_size",
@@ -35,22 +39,52 @@ DATASETS_MAPPING_COLUMNS = (
 )
 
 
+class CollectionMembership(NamedTuple):
+    """A dataset's place in an exported collection.
+
+    ``element_identifier`` is the identifier path within nested collections, e.g. ``sample1/forward``.
+    """
+
+    collection_name: str
+    element_identifier: str
+
+
 class MappingEntry(NamedTuple):
     serialized: dict[str, Any]
     file_size: str
-    collection_name: str
+    collections: list[CollectionMembership]
 
 
-def collection_names_by_dataset_id(
-    included_collections: Iterable[model.DatasetCollection | model.HistoryDatasetCollectionAssociation,],
-) -> dict[int, str]:
-    names: dict[int, list[str]] = {}
+def _dataset_element_identifiers(
+    collection: model.DatasetCollection, parent_identifiers: tuple[str, ...] = ()
+) -> Iterator[tuple[model.HistoryDatasetAssociation, str]]:
+    for element in collection.elements:
+        identifiers = (*parent_identifiers, element.element_identifier or "")
+        if element.child_collection is not None:
+            yield from _dataset_element_identifiers(element.child_collection, identifiers)
+        elif element.hda is not None:
+            yield element.hda, "/".join(identifiers)
+
+
+def collection_memberships_by_hda_id(
+    included_collections: Iterable[model.DatasetCollection | model.HistoryDatasetCollectionAssociation],
+) -> dict[int, list[CollectionMembership]]:
+    memberships: dict[int, list[CollectionMembership]] = {}
     for collection in included_collections:
         if isinstance(collection, model.HistoryDatasetCollectionAssociation):
-            for hda in collection.dataset_instances:
+            for hda, element_identifier in _dataset_element_identifiers(collection.collection):
                 if hda.id is not None:
-                    names.setdefault(hda.id, []).append(collection.name or "")
-    return {dataset_id: "; ".join(sorted(set(values))) for dataset_id, values in names.items()}
+                    membership = CollectionMembership(collection.name or "", element_identifier)
+                    memberships.setdefault(hda.id, []).append(membership)
+    return memberships
+
+
+def collection_memberships_of(
+    dataset: model.DatasetInstance, memberships_by_hda_id: dict[int, list[CollectionMembership]]
+) -> list[CollectionMembership]:
+    if isinstance(dataset, model.HistoryDatasetAssociation) and dataset.id is not None:
+        return memberships_by_hda_id.get(dataset.id, [])
+    return []
 
 
 def file_size_of(dataset: model.DatasetInstance) -> str:
@@ -62,13 +96,15 @@ def file_size_of(dataset: model.DatasetInstance) -> str:
 def mapping_row(entry: MappingEntry) -> dict[str, str]:
     serialized = entry.serialized
     tags = serialized.get("tags") or []
+    collections = sorted(set(entry.collections))
     return {
         "hid": str(serialized.get("hid") or ""),
         "name": serialized.get("name") or "",
         "exported_file": serialized.get("file_name") or "",
         "extension": serialized.get("extension") or "",
         "state": str(serialized.get("state") or ""),
-        "collection_name": entry.collection_name,
+        "collection_name": "; ".join(membership.collection_name for membership in collections),
+        "element_identifier": "; ".join(membership.element_identifier for membership in collections),
         "tags": ",".join(tags),
         "annotation": serialized.get("annotation") or "",
         "file_size": entry.file_size,

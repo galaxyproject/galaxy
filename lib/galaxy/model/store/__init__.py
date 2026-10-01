@@ -117,7 +117,8 @@ from ._bco_convert_utils import (
     SoftwarePrerequisiteTracker,
 )
 from .datasets_mapping import (
-    collection_names_by_dataset_id,
+    collection_memberships_by_hda_id,
+    collection_memberships_of,
     file_size_of,
     MappingEntry,
     write_datasets_mapping,
@@ -2491,33 +2492,24 @@ class DirectoryModelExportStore(ModelExportStore):
     def _finalize(self) -> None:
         export_directory = self.export_directory
 
-        serialized_datasets: list[JsonDictT] = []
-        serialized_provenance: list[JsonDictT] = []
-        mapping_entries: list[MappingEntry] = []
-        collection_names = collection_names_by_dataset_id(self.included_collections)
+        serialized_datasets: list[tuple[model.DatasetInstance, JsonDictT]] = []
+        serialized_provenance: list[tuple[model.DatasetInstance, JsonDictT]] = []
         for dataset, include_files in self.included_datasets.values():
             serialized = cast(model.Serializable, dataset).serialize(self.security, self.serialization_options)
             if include_files:
-                serialized_datasets.append(serialized)
+                serialized_datasets.append((dataset, serialized))
             else:
-                serialized_provenance.append(serialized)
-            mapping_entries.append(
-                MappingEntry(
-                    serialized=serialized,
-                    file_size=file_size_of(dataset),
-                    collection_name=collection_names.get(dataset.id, "") if dataset.id is not None else "",
-                )
-            )
+                serialized_provenance.append((dataset, serialized))
 
         def to_json(attributes):
             return json_encoder.encode([a.serialize(self.security, self.serialization_options) for a in attributes])
 
         datasets_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_DATASETS)
         with open(datasets_attrs_filename, "w") as datasets_attrs_out:
-            datasets_attrs_out.write(json_encoder.encode(serialized_datasets))
+            datasets_attrs_out.write(json_encoder.encode([serialized for _, serialized in serialized_datasets]))
 
         with open(f"{datasets_attrs_filename}.provenance", "w") as provenance_attrs_out:
-            provenance_attrs_out.write(json_encoder.encode(serialized_provenance))
+            provenance_attrs_out.write(json_encoder.encode([serialized for _, serialized in serialized_provenance]))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
         with open(libraries_attrs_filename, "w") as libraries_attrs_out:
@@ -2643,6 +2635,15 @@ class DirectoryModelExportStore(ModelExportStore):
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
         try:
+            collection_memberships = collection_memberships_by_hda_id(self.included_collections)
+            mapping_entries = [
+                MappingEntry(
+                    serialized=serialized,
+                    file_size=file_size_of(dataset),
+                    collections=collection_memberships_of(dataset, collection_memberships),
+                )
+                for dataset, serialized in serialized_datasets + serialized_provenance
+            ]
             write_datasets_mapping(self.export_directory, mapping_entries)
         except Exception:
             log.warning("Failed to write datasets mapping file, continuing export without it.", exc_info=True)

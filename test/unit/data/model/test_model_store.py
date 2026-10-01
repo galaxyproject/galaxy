@@ -30,6 +30,7 @@ from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
 from galaxy.model.store import SessionlessContext
 from galaxy.model.store.datasets_mapping import (
+    CollectionMembership,
     DATASETS_MAPPING_FILENAME,
     mapping_row,
     MappingEntry,
@@ -789,6 +790,7 @@ def test_history_export_writes_datasets_mapping(tmp_path):
         "extension",
         "state",
         "collection_name",
+        "element_identifier",
         "tags",
         "annotation",
         "file_size",
@@ -885,6 +887,47 @@ def test_history_export_survives_mapping_failure(tmp_path, monkeypatch):
     assert not os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
 
 
+def test_history_export_maps_collection_elements(tmp_path):
+    app = _mock_app()
+    u, history, c1, c2, c3, hc1, hc2, hc3, j = _setup_simple_collection_job(app)
+    d1, d2 = (element.hda for element in c1.elements)
+    d3 = c2.elements[1].hda
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+    _, rows = _read_datasets_mapping(tmp_path)
+    rows_by_hid = {row["hid"]: row for row in rows}
+    assert rows_by_hid[str(d1.hid)]["collection_name"] == "HistoryCollectionTest1; HistoryCollectionTest2"
+    assert rows_by_hid[str(d1.hid)]["element_identifier"] == "forward; forward"
+    assert rows_by_hid[str(d2.hid)]["collection_name"] == "HistoryCollectionTest1"
+    assert rows_by_hid[str(d2.hid)]["element_identifier"] == "reverse"
+    assert rows_by_hid[str(d3.hid)]["collection_name"] == "HistoryCollectionTest2"
+    assert rows_by_hid[str(d3.hid)]["element_identifier"] == "reverse"
+
+
+def test_datasets_mapping_uses_nested_element_identifier_paths(tmp_path):
+    app = _mock_app()
+    sa_session = app.model.context
+    u = model.User(email="nested@example.com", password="password")
+    h = model.History(name="Nested", user=u)
+    forward, reverse = _create_datasets(sa_session, h, 2)
+    pair = model.DatasetCollection(collection_type="paired")
+    model.DatasetCollectionElement(collection=pair, element=forward, element_identifier="forward", element_index=0)
+    model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier="reverse", element_index=1)
+    samples = model.DatasetCollection(collection_type="list:paired")
+    model.DatasetCollectionElement(collection=samples, element=pair, element_identifier="sample1", element_index=0)
+    hdca = model.HistoryDatasetCollectionAssociation(history=h, hid=3, collection=samples, name="Samples")
+    app.add_and_commit(hdca)
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(h)
+
+    _, rows = _read_datasets_mapping(tmp_path)
+    identifiers = {row["hid"]: row["element_identifier"] for row in rows}
+    assert identifiers == {str(forward.hid): "sample1/forward", str(reverse.hid): "sample1/reverse"}
+
+
 def _serialized_hda_dict():
     return {
         "hid": 4,
@@ -901,7 +944,13 @@ def _serialized_hda_dict():
 
 
 def test_mapping_row_projects_serialized_dict():
-    row = mapping_row(MappingEntry(serialized=_serialized_hda_dict(), file_size="42", collection_name="my collection"))
+    row = mapping_row(
+        MappingEntry(
+            serialized=_serialized_hda_dict(),
+            file_size="42",
+            collections=[CollectionMembership("my collection", "sample1/forward")],
+        )
+    )
     assert row == {
         "hid": "4",
         "name": "my dataset",
@@ -909,6 +958,7 @@ def test_mapping_row_projects_serialized_dict():
         "extension": "txt",
         "state": "ok",
         "collection_name": "my collection",
+        "element_identifier": "sample1/forward",
         "tags": "tag1,tag2:value",
         "annotation": "some annotation",
         "file_size": "42",
@@ -919,7 +969,7 @@ def test_mapping_row_projects_serialized_dict():
 
 def test_mapping_row_tolerates_missing_keys():
     row = mapping_row(
-        MappingEntry(serialized={"name": "library file", "extension": "txt"}, file_size="", collection_name="")
+        MappingEntry(serialized={"name": "library file", "extension": "txt"}, file_size="", collections=[])
     )
     assert row["name"] == "library file"
     assert row["hid"] == ""
@@ -927,6 +977,8 @@ def test_mapping_row_tolerates_missing_keys():
     assert row["state"] == ""
     assert row["tags"] == ""
     assert row["annotation"] == ""
+    assert row["collection_name"] == ""
+    assert row["element_identifier"] == ""
 
 
 def test_finalize_job_state():
