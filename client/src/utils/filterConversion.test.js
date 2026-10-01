@@ -186,7 +186,7 @@ describe("validatedFilterText keeps unspecified text alongside other filters", (
 
     it("HistoryList (getHistoryListFilters)", () => {
         const hl = getHistoryListFilters("my");
-        expect(validatedFilterText(hl, "grep1 tag:foo")).toBe("tag:foo grep1");
+        expect(validatedFilterText(hl, "grep1 tag:foo")).toBe("grep1 tag:foo");
         expect(validatedFilterText(hl, "grep1")).toBe("grep1");
     });
 
@@ -201,7 +201,7 @@ describe("validatedFilterText keeps unspecified text alongside other filters", (
             true,
             "name",
         );
-        expect(validatedFilterText(cf, "grep1 tool:foo")).toBe("tool:foo grep1");
+        expect(validatedFilterText(cf, "grep1 tool:foo")).toBe("grep1 tool:foo");
         expect(validatedFilterText(cf, "grep1")).toBe("grep1");
     });
 
@@ -215,7 +215,7 @@ describe("validatedFilterText keeps unspecified text alongside other filters", (
             true,
             "name",
         );
-        expect(validatedFilterText(gf, "grep1 extension:txt")).toBe("extension:txt grep1");
+        expect(validatedFilterText(gf, "grep1 extension:txt")).toBe("grep1 extension:txt");
         expect(validatedFilterText(gf, "grep1")).toBe("grep1");
     });
 });

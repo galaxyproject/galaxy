@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getHistoryListFilters } from "@/components/History/historyList";
 import Filtering, { contains, equals } from "@/utils/filtering";
 
 const filterTexts = [
@@ -472,6 +473,31 @@ describe("quoting a keyed value never implies exact match, at any word count", (
         });
         expect(HistoryFilters.getQueryDict("name:partial name:'Exact'")).toMatchObject({
             "name-contains": "Exact",
+        });
+    });
+});
+
+describe("plain text next to a MultiTags filter (history list advanced search)", () => {
+    const filters = getHistoryListFilters("published");
+
+    test("plain text stays separate from the tag across re-serialization", () => {
+        const text = filters.getFilterText(
+            Object.fromEntries(filters.getFiltersForText("abc tag:mytag", true, false)),
+            false,
+            "abc tag:mytag",
+        );
+        expect(text).toBe("abc tag:mytag");
+        expect(Object.fromEntries(filters.getFiltersForText(text, true, false))).toEqual({
+            name: "abc",
+            tag: ["mytag"],
+        });
+    });
+
+    test("setting the name after the tag keeps both filters", () => {
+        const text = filters.setFilterValue(filters.setFilterValue("", "tag", "mytag"), "name", "abc");
+        expect(Object.fromEntries(filters.getFiltersForText(text, true, false))).toEqual({
+            name: "abc",
+            tag: ["mytag"],
         });
     });
 });
