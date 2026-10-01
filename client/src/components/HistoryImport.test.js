@@ -2,7 +2,7 @@ import { getLocalVue, wait } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { waitOnJob } from "@/components/JobStates/wait";
@@ -10,7 +10,7 @@ import { waitOnJob } from "@/components/JobStates/wait";
 import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const TEST_JOB_ID = "job123789";
 const TEST_SOURCE_URL = "http://galaxy.example/import";

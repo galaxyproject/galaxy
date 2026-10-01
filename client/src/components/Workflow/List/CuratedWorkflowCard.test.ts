@@ -5,7 +5,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { AnonymousUser } from "@/api";
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
@@ -39,7 +39,7 @@ let toastError: ReturnType<typeof vi.spyOn>;
 let routerPush: ReturnType<typeof vi.spyOn>;
 
 const localVue = getLocalVue();
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const VELOCYTO_TRS =
     "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fvelocyto%2Fmain/versions";

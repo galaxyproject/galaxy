@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import FromFile from "./FromFile.vue";
 import FromUrl from "./FromUrl.vue";
@@ -26,7 +26,7 @@ const invalidUrl = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/additional-
 
 describe("FromUrl", () => {
     it("converts shared urls to json urls", async () => {
-        const router = new VueRouter();
+        const router = createRouter({ history: createMemoryHistory(), routes: [] });
         const wrapper = mount(FromUrl as object, { localVue, router });
 
         {
@@ -73,7 +73,7 @@ describe("FromUrl", () => {
 
 describe("FromFile", () => {
     it("can mount the component", async () => {
-        const router = new VueRouter();
+        const router = createRouter({ history: createMemoryHistory(), routes: [] });
         const wrapper = mount(FromFile as object, { localVue, router });
         expect(wrapper.find("form").exists()).toBe(true);
     });

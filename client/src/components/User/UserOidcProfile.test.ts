@@ -4,7 +4,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 
@@ -34,7 +34,7 @@ function mountProfile(userOverrides = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const userStore = useUserStore(pinia);
     userStore.currentUser = getFakeRegisteredUser(userOverrides);
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
     return mount(UserOidcProfile, {
         localVue,
