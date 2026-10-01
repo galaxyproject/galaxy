@@ -51,7 +51,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         await wrapper.vm.$nextTick();
         await wrapper.vm.$nextTick();
 
-        const target = document.getElementById(wrapper.findComponent(GPopover).props("target"));
+        const target = document.getElementById(wrapper.findComponent(GPopover).props("target") as string);
 
         expect(target?.tagName).toBe("BUTTON");
         expect(target?.getAttribute("title")).toEqual(expect.stringContaining("details"));
