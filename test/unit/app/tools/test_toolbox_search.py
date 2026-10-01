@@ -7,7 +7,10 @@ from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
-from galaxy.tools.search import ToolBoxSearch
+from galaxy.tools.search import (
+    panel_view_index_dir,
+    ToolBoxSearch,
+)
 
 SEARCH_OPTIONS = (
     "tool_description_boost",
@@ -27,6 +30,20 @@ SEARCH_OPTIONS = (
 
 
 TOOL_ID = "toolbox_search_versioned_tool"
+
+
+def test_panel_view_index_dir_encodes_unsafe_characters():
+    assert panel_view_index_dir("/index", "default") == os.path.join("/index", "default")
+    assert panel_view_index_dir("/index", "ontology:edam_operations") == os.path.join(
+        "/index", "ontology%3Aedam_operations"
+    )
+    assert panel_view_index_dir("/index", "../my view") == os.path.join("/index", "%2E%2E%2Fmy%20view")
+    assert panel_view_index_dir("/index", "vue-ü") == os.path.join("/index", "vue-%C3%BC")
+
+
+def test_panel_view_index_dir_keeps_distinct_ids_distinct():
+    ids = ["ontology:edam_operations", "ontology_edam_operations", "ontology%3Aedam_operations"]
+    assert len({panel_view_index_dir("/index", panel_view_id) for panel_view_id in ids}) == len(ids)
 
 
 class TestToolBoxSearch(BaseToolBoxTestCase):
@@ -103,6 +120,17 @@ class TestToolBoxSearch(BaseToolBoxTestCase):
         assert search.wait_until_current(self.toolbox, timeout=30)
         build.join()
         assert "toolbox_search_wait_tool" in search.search("Test Tool", "default", self.app.config)
+
+    def test_panel_view_index_dirs_use_encoded_ids(self):
+        self._init_tool(filename="tool_v01.xml", version="0.1", tool_id="toolbox_search_edam_tool")
+        self._add_config("""<toolbox><tool file="tool_v01.xml" /></toolbox>""")
+        self.app.config.edam_panel_views = "operations"
+        search = self._build_search()
+        search.build_index(self.app.tool_cache, self.toolbox)
+        index_dir = self.app.config.tool_search_index_dir
+        assert "ontology%3Aedam_operations" in os.listdir(index_dir)
+        assert not any(":" in name for name in os.listdir(index_dir))
+        assert "toolbox_search_edam_tool" in search.search("Test Tool", "ontology:edam_operations", self.app.config)
 
     def _build_search(self) -> ToolBoxSearch:
         schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
