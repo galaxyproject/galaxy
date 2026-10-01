@@ -252,6 +252,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         user = trans.get_user()
 
         # Validate payload
+        _validate_slug(payload.slug)
         if page_exists(trans.sa_session, user, payload.slug):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
@@ -298,8 +299,10 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
 
         # Validate payload
-        if payload.slug != page.slug and page_exists(trans.sa_session, user, payload.slug):
-            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+        if payload.slug != page.slug:
+            _validate_slug(payload.slug)
+            if page_exists(trans.sa_session, user, payload.slug):
+                raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         # Update page attributes
         page.title = payload.title
@@ -686,6 +689,13 @@ def get_shared_pages(session: galaxy_scoped_session, user: User):
         .order_by(desc(Page.update_time))
     )
     return session.scalars(stmt)
+
+
+def _validate_slug(slug: str) -> None:
+    if not slug or not sharable.SlugBuilder.is_valid_slug(slug):
+        raise exceptions.RequestParameterInvalidException(
+            "Page identifier must consist of lowercase letters, numbers, and single '-' separators", slug=slug
+        )
 
 
 def get_page(session: galaxy_scoped_session, user: User, slug: str):
