@@ -117,9 +117,7 @@ class TestStoryArtifacts:
         class FakeHtml:
             def __init__(self, filename):
                 self.filename = filename
-                # The intermediate really exists at this point - that is the thing
-                # whose cleanup is under test.
-                assert os.path.basename(filename) == "index.html"
+                assert os.path.dirname(filename) == story_dir
                 assert os.path.exists(filename)
 
             def write_pdf(self, stylesheets=None):
@@ -134,7 +132,7 @@ class TestStoryArtifacts:
         story.finalize()
 
         assert open(os.path.join(story_dir, "story.pdf"), "rb").read() == b"%PDF-fake"
-        assert not os.path.exists(os.path.join(story_dir, "index.html"))
+        assert sorted(os.listdir(story_dir)) == ["000_a.png", "story.html", "story.md", "story.pdf"]
         with zipfile.ZipFile(f"{story_dir}.zip") as zf:
             assert "index.html" not in zf.namelist()
             assert "story.pdf" in zf.namelist()

@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 import traceback
 import unittest
 from functools import (
@@ -272,9 +273,9 @@ def managed_history(f):
 
 def run_directory(base_directory: str, name_prefix: str) -> str:
     """Create a directory for one run's artifacts, named for the test and the time."""
-    target_directory = os.path.join(base_directory, name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%s"))
-    os.makedirs(target_directory, exist_ok=True)
-    return target_directory
+    os.makedirs(base_directory, exist_ok=True)
+    prefix = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + "_"
+    return tempfile.mkdtemp(prefix=prefix, dir=base_directory)
 
 
 def dump_test_information(self, name_prefix):
@@ -352,9 +353,7 @@ def selenium_test(f):
             self.story = NoopStory()
 
         def write_story():
-            # Writing the story must never become the test result, in either
-            # direction: a failure here would otherwise be retried as though the
-            # test had failed, or replace the real exception on the way out.
+            # Artifact failures must not trigger retries or replace the test exception.
             try:
                 self.story.finalize()
                 if story_directory:
@@ -384,8 +383,6 @@ def selenium_test(f):
                         f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}."
                     )
                 else:
-                    # Write out what was collected before the failure - the last
-                    # screenshot is usually the most informative part of the story.
                     self.document("## Test Failed\n\nSee the error directory for details.")
                     write_story()
                     raise
@@ -590,12 +587,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             f.write(content)
 
     def screenshot(self, label: str, caption: str | None = None):
-        """Screenshot into the story, and into the screenshots directory as well if set.
-
-        With stories enabled ``_screenshot_path`` points into the story directory, so
-        without this a run configured for both would stop populating the screenshots
-        directory that CI collects.
-        """
+        """Capture once for the story and the configured CI screenshots directory."""
         target = self._screenshot_path(label)
         if target is None:
             return

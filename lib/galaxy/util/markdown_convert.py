@@ -56,11 +56,13 @@ def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, director
     directory_is_temp = directory is None
     if directory is None:
         directory = tempfile.mkdtemp("gxmarkdown")
-    index = os.path.join(directory, "index.html")
+    index = None
     try:
-        output_file = open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
-        output_file.write(as_html)
-        output_file.close()
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", dir=directory, encoding="utf-8", errors="xmlcharrefreplace", delete=False
+        ) as output_file:
+            index = output_file.name
+            output_file.write(as_html)
         html = weasyprint.HTML(filename=index)
         stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
         for css_path in css_paths:
@@ -74,6 +76,6 @@ def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, director
     finally:
         if directory_is_temp:
             shutil.rmtree(directory)
-        elif os.path.exists(index):
+        elif index is not None and os.path.exists(index):
             # Caller owns the directory - do not leave the intermediate HTML behind.
             os.unlink(index)

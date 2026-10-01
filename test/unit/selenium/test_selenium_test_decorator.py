@@ -4,6 +4,8 @@ Driven with a stub test case rather than a browser. Skipped where ``galaxy_test`
 is not importable - this directory is also the galaxy-selenium package's suite.
 """
 
+import datetime
+
 import pytest
 
 framework = pytest.importorskip("galaxy_test.selenium.framework")
@@ -82,8 +84,10 @@ def test_story_write_failure_does_not_fail_a_passing_test(stories_enabled, monke
     def a_test(self):
         return "result"
 
-    # Writing documentation must not turn a green test red, nor trigger a retry.
-    assert a_test(StubTestCase()) == "result"
+    monkeypatch.setattr(framework, "GALAXY_TEST_SELENIUM_RETRIES", 1)
+    case = StubTestCase()
+    assert a_test(case) == "result"
+    assert case.resets == 0
 
 
 def test_story_write_failure_does_not_replace_the_real_error(stories_enabled, monkeypatch):
@@ -130,3 +134,17 @@ def test_no_story_directory_means_a_noop_story(tmp_path, monkeypatch):
     case = StubTestCase()
     assert a_test(case) == "result"
     assert isinstance(case.story, framework.NoopStory)
+
+
+def test_run_directories_are_unique_at_the_same_time(tmp_path, monkeypatch):
+    class FrozenDatetime(datetime.datetime):
+        @classmethod
+        def now(cls):
+            return cls(2026, 10, 1, 12, 0)
+
+    monkeypatch.setattr(framework.datetime, "datetime", FrozenDatetime)
+    first = framework.run_directory(str(tmp_path), "test_example_")
+    second = framework.run_directory(str(tmp_path), "test_example_")
+
+    assert first != second
+    assert len(list(tmp_path.iterdir())) == 2

@@ -28,12 +28,13 @@ def fake_weasyprint(monkeypatch):
 
 def test_to_pdf_raw_renders_in_a_given_directory(fake_weasyprint, tmp_path):
     directory = str(tmp_path)
+    index = tmp_path / "index.html"
+    index.write_text("Caller-owned HTML")
     rendered = markdown_util.to_pdf_raw("# Hello", directory=directory).decode("utf-8")
 
     assert "<h1>Hello</h1>" in rendered
-    # The caller's directory survives; only the intermediate HTML is cleaned up.
-    assert os.path.isdir(directory)
-    assert os.listdir(directory) == []
+    assert index.read_text() == "Caller-owned HTML"
+    assert sorted(os.listdir(directory)) == ["index.html"]
 
 
 def test_to_pdf_raw_cleans_up_its_temporary_directory(fake_weasyprint, monkeypatch):
@@ -57,10 +58,13 @@ def test_to_pdf_raw_cleans_up_when_rendering_fails(fake_weasyprint, tmp_path):
             raise RuntimeError("boom")
 
     fake_weasyprint.HTML = Exploding
+    index = tmp_path / "index.html"
+    index.write_text("Caller-owned HTML")
     with pytest.raises(RuntimeError):
         markdown_util.to_pdf_raw("# Hello", directory=str(tmp_path))
 
-    assert os.listdir(str(tmp_path)) == []
+    assert index.read_text() == "Caller-owned HTML"
+    assert sorted(os.listdir(tmp_path)) == ["index.html"]
 
 
 def test_to_pdf_raw_without_weasyprint(monkeypatch, tmp_path):

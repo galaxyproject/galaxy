@@ -1,9 +1,6 @@
 """Document model for collecting screenshots and narration into a story.
 
-Independent of any test framework - usable from tests, standalone scripts and
-notebooks. Lives in ``galaxy-selenium``, which depends on ``galaxy-util`` and not
-on ``galaxy-app``, so the markdown conversion it needs comes from
-``galaxy.util.markdown``.
+Usable from tests, standalone scripts and notebooks.
 """
 
 import logging
@@ -200,11 +197,7 @@ class Story(StoryBase):
             f.write(pdf_bytes)
 
     def _create_zip(self, zip_path: str) -> None:
-        """Archive the documents and the screenshots they reference.
-
-        Deliberately not a walk of the directory: a retry leaves the discarded
-        attempt's screenshots on disk, and they must not ship as documentation.
-        """
+        """Archive documents and referenced screenshots, excluding discarded retries."""
         referenced = dict.fromkeys(
             os.path.basename(content) for element_type, content, _ in self.elements if element_type == "screenshot"
         )

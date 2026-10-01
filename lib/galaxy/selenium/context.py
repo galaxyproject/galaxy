@@ -50,14 +50,10 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         return urljoin(base, url)
 
     def screenshot(self, label: str, caption: str | None = None):
-        """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
+        """Save a screenshot when an output path is configured and add it to the story.
 
-        Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
-        directory. The above method is used for debugging failures within a specific test. This method
-        if more for creating a set of images to augment automated testing with manual human inspection
-        after a test or test suite has executed.
-
-        The screenshot is also added to the story, captioned ``caption`` or the label.
+        The caption defaults to the label. Unlike failure snapshots, these images
+        are captured during successful runs too.
         """
         target = self._screenshot_path(label)
         if target is None:
