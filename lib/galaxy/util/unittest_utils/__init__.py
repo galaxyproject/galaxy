@@ -40,6 +40,19 @@ def skip_if_site_down(url: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
     return method_wrapper
 
 
+def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
+    """Skip the test if it fails because a remote site could not be reached or timed out."""
+
+    @wraps(method)
+    def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return method(*args, **kwargs)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            raise SkipTest(f"Test depends on a remote site that could not be reached: {e}") from e
+
+    return wrapped_method
+
+
 skip_if_github_down = skip_if_site_down("https://github.com/")
 skip_if_workflowhub_down = skip_if_site_down("https://workflowhub.eu/")
 
