@@ -1,6 +1,9 @@
 import base64
 from os import environ
-from unittest import mock
+from unittest import (
+    mock,
+    SkipTest,
+)
 
 import pytest
 import yaml
@@ -190,6 +193,8 @@ def _response(status_code, text, headers=None):
 
 def _mock_get(trs_response):
     def get(url, **kwargs):
+        if url == "https://workflowhub.eu/":
+            return _response(200, "<html>WorkflowHub</html>")
         if isinstance(trs_response, Exception):
             raise trs_response
         return trs_response
@@ -218,3 +223,32 @@ def test_timeout_is_gateway_timeout():
         with pytest.raises(GatewayTimeoutException):
             server.get_tool("138")
 
+
+@pytest.mark.parametrize(
+    "trs_response",
+    [
+        _response(403, "<title>Just a moment...</title>", {"cf-mitigated": "challenge", "server": "cloudflare"}),
+        _response(503, "<h2>This website is under heavy load (queue full)</h2>"),
+        requests.exceptions.ConnectTimeout("connect timed out"),
+        requests.exceptions.ConnectionError("connection refused"),
+    ],
+)
+def test_skip_if_workflowhub_down_skips_unavailable_server(trs_response):
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+
+    with _mock_get(trs_response):
+        with pytest.raises(SkipTest):
+            fetch_tool()
+
+
+def test_skip_if_workflowhub_down_reports_other_failures():
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        tool = get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+        assert "description" in tool
+
+    with _mock_get(_response(200, '{"id": "138"}')):
+        with pytest.raises(AssertionError):
+            fetch_tool()
