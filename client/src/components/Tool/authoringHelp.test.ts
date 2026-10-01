@@ -100,7 +100,7 @@ describe("user-defined tool authoring help", () => {
 
         const expectedUsageFields = {
             collection: ["collection_type", "collection_type_source", "structured_like"],
-            data: ["format", "format_source", "metadata_source", "from_work_dir", "precreate_directory"],
+            data: ["label", "format", "format_source", "metadata_source", "from_work_dir", "precreate_directory"],
         };
         for (const outputType of Object.keys(expectedUsageFields) as Array<keyof typeof expectedUsageFields>) {
             const outputSection = outputSections.find((section) => section.id === `output-${outputType}`)!;

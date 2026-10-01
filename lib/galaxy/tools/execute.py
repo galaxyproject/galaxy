@@ -49,7 +49,11 @@ from galaxy.tools.execution_helpers import (
     on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
-from galaxy.tools.parameters.workflow_utils import is_runtime_value
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
+    NO_REPLACEMENT,
+)
 from galaxy.util.json import swap_inf_nan
 from galaxy.work.context import WorkRequestContext
 from ._types import (
@@ -556,7 +560,7 @@ class ExecutionTracker:
             )
         return self._on_text
 
-    def output_name(self, trans, history, params, output):
+    def output_name(self, trans, history, params, output, incoming: Optional[dict[str, Any]] = None):
         on_text = self.on_text
 
         try:
@@ -568,7 +572,7 @@ class ExecutionTracker:
                 trans=trans,
                 history=history,
                 params=params,
-                incoming=None,
+                incoming=incoming,
                 job_params=None,
             )
         except Exception:
@@ -691,11 +695,23 @@ class ExecutionTracker:
             return key, value
 
         example_params = remap(example_params, visit=replace_optional_runtime_values)
+        label_state = None
+        if self.tool.output_labels_read_tool_state:
+            # Populated state for labels that read tool inputs, with each mapped-over
+            # input showing the collection it was mapped over. collection_info.collections
+            # is keyed by the prefixed names visit_input_values produces.
+            label_state = remap(example_params)
+            visit_input_values(
+                self.tool.inputs,
+                label_state,
+                lambda prefixed_name, **kwargs: collection_info.collections.get(prefixed_name, NO_REPLACEMENT),
+                no_replacement_value=NO_REPLACEMENT,
+            )
 
         for output_name, output in self.tool.outputs.items():
             if filter_output(self.tool, output, example_params):
                 continue
-            output_collection_name = self.output_name(trans, history, params, output)
+            output_collection_name = self.output_name(trans, history, params, output, incoming=label_state)
             effective_structure = self._mapped_output_structure(trans, output)
             collection_instance = trans.app.dataset_collection_manager.precreate_dataset_collection_instance(
                 trans=trans,
