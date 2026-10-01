@@ -44,6 +44,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     input_hda_dict: dict[str, Any]
     input_hda: model.HistoryDatasetAssociation
+    nginx_upload_job_files_store: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -51,6 +52,8 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
         config["server_name"] = "files"
+        cls.nginx_upload_job_files_store = cls._test_driver.mkdtemp()
+        config["nginx_upload_job_files_store"] = cls.nginx_upload_job_files_store
         cls.initialized = False
 
     def setUp(self):
@@ -162,6 +165,33 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
         response = requests.post(post_url, data=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert open(path).read() == "some initial text data"
+
+    def test_write_with_nginx_upload_module(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        upload_path = os.path.join(self.nginx_upload_job_files_store, "nginx_upload")
+        with open(upload_path, "w") as f:
+            f.write("some initial text data")
+
+        data = {"path": path, "job_key": job_key, "__file_path": upload_path}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert not os.path.exists(upload_path)
+        assert open(path).read() == "some initial text data"
+
+    def test_write_with_underscored_file_param(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        data = {"path": path, "job_key": job_key}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data, files={"__file": io.StringIO("some initial text data")})
         api_asserts.assert_status_code_is_ok(response)
         assert open(path).read() == "some initial text data"
 
