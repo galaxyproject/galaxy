@@ -56,7 +56,7 @@ async function showPopover(placement: string, resolvedPlacement: string, propsDa
 
     wrapper = mount(GPopover as object, {
         attachTo: document.body,
-        propsData: { target: "trigger", placement, show: false, ...propsData },
+        props: { target: "trigger", placement, show: false, ...propsData },
         slots: { default: "body content" },
     });
 
@@ -130,7 +130,7 @@ describe("GPopover", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "dialog-trigger", show: false },
+            props: { target: "dialog-trigger", show: false },
             slots: { default: "body content" },
         });
         await wrapper.setProps({ show: true });
@@ -147,7 +147,7 @@ describe("GPopover", () => {
 
         const shortLived = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "short-lived-trigger", triggers: "hover" },
+            props: { target: "short-lived-trigger", triggers: "hover" },
         });
         shortLived.unmount();
         await nextTick();
@@ -175,7 +175,7 @@ async function mountWithTrigger(propsData: Record<string, unknown>) {
 
     wrapper = mount(GPopover as object, {
         attachTo: mountPoint,
-        propsData: { target: "interactive-trigger", ...propsData },
+        props: { target: "interactive-trigger", ...propsData },
         slots: { default: "<a href='#'>popover link</a>" },
     });
     await nextTick();
@@ -601,7 +601,7 @@ describe("GPopover focus", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -725,7 +725,7 @@ describe("GPopover escape", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -831,9 +831,9 @@ describe("GPopover escape", () => {
         dialog.showModal();
         // happy-dom does not implement :modal.
         vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
-        const insideModal = mount(GPopover as object, {
+        const insideModal: VueWrapper = mount(GPopover as object, {
             attachTo: modalMountPoint,
-            propsData: { target: "modal-trigger", triggers: "hover", show: false },
+            props: { target: "modal-trigger", triggers: "hover", show: false },
         });
         await nextTick();
         await nextTick();
@@ -850,18 +850,18 @@ describe("GPopover escape", () => {
         expect(wrapper!.emitted("update:show")).toBeUndefined();
         expect(event.defaultPrevented).toBe(true);
 
-        insideModal.destroy();
+        insideModal.unmount();
     });
 
     it("closes only the most recently opened popover", async () => {
-        const mountPopover = (id: string) => {
+        const mountPopover = (id: string): VueWrapper => {
             const target = document.createElement("button");
             target.id = id;
             const mountPoint = document.createElement("div");
             document.body.append(target, mountPoint);
             return mount(GPopover as object, {
                 attachTo: mountPoint,
-                propsData: { target: id, triggers: "hover", show: false },
+                props: { target: id, triggers: "hover", show: false },
                 slots: { default: id },
             });
         };
@@ -876,8 +876,8 @@ describe("GPopover escape", () => {
         expect(first.emitted("update:show")).toBeUndefined();
         expect(second.emitted("update:show")).toEqual([[false]]);
 
-        first.destroy();
-        second.destroy();
+        first.unmount();
+        second.unmount();
     });
 
     it("does not dismiss manual popovers", async () => {
@@ -914,7 +914,7 @@ describe("GPopover description", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: toTarget(target), triggers: "hover" },
+            props: { target: toTarget(target), triggers: "hover" },
         });
         await nextTick();
         await nextTick();
@@ -931,7 +931,7 @@ describe("GPopover description", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "described-trigger", triggers: "hover focus" },
+            props: { target: "described-trigger", triggers: "hover focus" },
         });
         await nextTick();
         await nextTick();
@@ -983,7 +983,7 @@ describe("GPopover click", () => {
 
 describe("GPopover click dialog", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -1103,7 +1103,7 @@ describe("GPopover click dialog", () => {
     it("restores the trigger's attributes when unmounted", async () => {
         const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
 
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
 
         expect(target.hasAttribute("aria-haspopup")).toBe(false);
