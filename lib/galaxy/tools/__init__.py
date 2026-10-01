@@ -3981,6 +3981,12 @@ class DataManagerTool(OutputParameterJSONTool):
         return False
 
 
+def _element_count(collection: model.DatasetCollection) -> int:
+    if collection.element_count is not None:
+        return collection.element_count
+    return len(collection.elements)
+
+
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_terminal_states = True
@@ -4035,6 +4041,14 @@ class DatabaseOperationTool(Tool):
             states = summary.states
             for state in states.keys():
                 check_dataset_state(input_key, state)
+
+    def _check_output_count(self, count: int) -> None:
+        max_outputs = self.app.config.max_discovered_files
+        if max_outputs is not None and count > max_outputs:
+            raise exceptions.RequestParameterInvalidException(
+                f"{self.name} would create {count} datasets, "
+                f"more than the maximum number ({max_outputs}) of output datasets"
+            )
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         for element_object in elements:
@@ -4112,6 +4126,7 @@ class CrossProductFlatCollectionTool(DatabaseOperationTool):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
         join_identifier = incoming["join_identifier"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -4147,6 +4162,7 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -4958,7 +4974,9 @@ class ApplyRulesTool(DatabaseOperationTool):
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
-        new_elements = self.app.dataset_collection_manager.apply_rules(hdca, rule_set, copy_dataset)
+        new_elements = self.app.dataset_collection_manager.apply_rules(
+            hdca, rule_set, copy_dataset, check_row_count=self._check_output_count
+        )
         self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())),
@@ -5113,6 +5131,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
         number = int(incoming["number"])
+        self._check_output_count(number)
         element_identifier = incoming["element_identifier"]
         elements = {
             f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(1, number + 1)

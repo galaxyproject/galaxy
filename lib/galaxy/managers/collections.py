@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from typing import (
     Any,
     Literal,
@@ -759,7 +760,7 @@ class DatasetCollectionManager:
         collection = trans.sa_session.get(DatasetCollection, collection_id)
         return collection
 
-    def apply_rules(self, hdca, rule_set, handle_dataset):
+    def apply_rules(self, hdca, rule_set, handle_dataset, check_row_count: Optional[Callable[[int], None]] = None):
         hdca_collection = hdca.collection
         collection_type = hdca_collection.collection_type
         elements = hdca_collection.elements
@@ -769,6 +770,8 @@ class DatasetCollectionManager:
             data, sources = rule_set.apply(initial_data, initial_sources)
         except RulesDSLError as e:
             raise MessageException(str(e)) from e
+        if check_row_count:
+            check_row_count(len(data))
 
         collection_type = rule_set.collection_type
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
