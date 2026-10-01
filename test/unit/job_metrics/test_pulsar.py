@@ -156,7 +156,25 @@ def test_version_formatting():
     assert formatter.format("server_version_source", "status") == ("Pulsar Server Version Source", "status")
 
 
-def test_unreadable_target_version_is_treated_as_missing(tmpdir):
+def _assert_logged_exception(caplog, message):
+    assert len(caplog.records) == 1
+    record = caplog.records[0]
+    assert record.levelno == logging.ERROR
+    assert message in record.message
+    assert record.exc_info is not None
+
+
+def test_unreadable_target_version_is_treated_as_missing(tmpdir, caplog):
     # A metric file must not fail the job it describes.
     tmpdir.join("__instrument_pulsar_version_target").write('{"target_ver')
-    assert read_target_version(str(tmpdir)) is None
+    with caplog.at_level(logging.ERROR, logger="galaxy.job_metrics"):
+        assert read_target_version(str(tmpdir)) is None
+    _assert_logged_exception(caplog, "Unreadable Pulsar target version")
+
+
+def test_failed_version_write_is_logged_without_raising(tmpdir, caplog):
+    job_directory = tmpdir.join("not_a_directory")
+    job_directory.write("")
+    with caplog.at_level(logging.ERROR, logger="galaxy.job_metrics"):
+        write_version_status(str(job_directory), "0.15.16")
+    _assert_logged_exception(caplog, "Failed to record Pulsar job metrics file version_status")

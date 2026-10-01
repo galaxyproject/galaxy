@@ -140,9 +140,9 @@ def read_target_version(job_directory: str) -> str | None:
     """The version recorded by write_version_target, if the job has one and it's readable."""
     try:
         return _read(job_directory, VERSION_TARGET).get("target_version")
-    except (ValueError, AttributeError):
+    except ValueError:
         # _write is best effort, so this may be a partial write - finishing falls back instead.
-        log.warning("Unreadable Pulsar target version in %s", job_directory, exc_info=True)
+        log.exception("Unreadable Pulsar target version in %s", job_directory)
         return None
 
 
@@ -168,7 +168,7 @@ def _write(job_directory: str, name: str, recorded: dict[str, Any]) -> None:
         with open(_path(job_directory, name), "w") as fh:
             json.dump(recorded, fh)
     except Exception:
-        log.warning("Failed to record Pulsar job metrics file %s", name, exc_info=True)
+        log.exception("Failed to record Pulsar job metrics file %s", name)
 
 
 # Only the plugin class - plugin discovery walks __all__ looking for one.
