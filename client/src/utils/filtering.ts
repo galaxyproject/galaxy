@@ -577,8 +577,14 @@ export default class Filtering<T> {
                 : undefined;
         const exactMatchKeys = this.exactMatchByKey(sourceTokens);
 
+        // plain text goes first: the parser folds plain words that follow an unquoted
+        // `key:value` token into that token's value
+        const entries = Object.entries(filters).sort(
+            ([a], [b]) => Number(b === unspecifiedTextKey) - Number(a === unspecifiedTextKey),
+        );
+
         let newFilterText = "";
-        Object.entries(filters).forEach(([key, value]) => {
+        entries.forEach(([key, value]) => {
             // this is a default filter, skip it if ALL default filters have default values
             const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;
             if (!skipDefault) {
