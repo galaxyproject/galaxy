@@ -27,6 +27,7 @@ import ResetUserPasswordForm from "@/components/admin/ResetUserPasswordForm.vue"
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
 import UserRolesGroupsForm from "@/components/admin/UserRolesGroupsForm.vue";
+import VisualizationsAdmin from "@/components/admin/Visualizations/VisualizationsAdmin.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridList from "@/components/Grid/GridList.vue";
@@ -65,6 +66,7 @@ export default [
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
+            { path: "visualizations", component: VisualizationsAdmin },
 
             // user registration route
             {
