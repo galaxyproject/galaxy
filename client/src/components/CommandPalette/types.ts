@@ -131,6 +131,8 @@ export interface PaletteSearchOptions {
  */
 export interface CommandPaletteProvider {
     id: string;
+    /** Fixed fan-out section score, for a provider whose rows the backend already ranked */
+    rootScore?: number;
     /** Items shown when the query is empty (recents, defaults) */
     emptyQueryItems?(ctx: PaletteContext): PaletteItem[];
     search(query: string, ctx: PaletteContext, options?: PaletteSearchOptions): PaletteItem[] | Promise<PaletteItem[]>;

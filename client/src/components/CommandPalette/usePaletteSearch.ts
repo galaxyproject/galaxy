@@ -10,7 +10,7 @@ import { isPaletteFetchError } from "./providers/errors";
 import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import type { PaletteMode } from "./usePaletteMachine";
-import { BACKEND_RANKED_SCORE, isScopeTokenLike, scorePaletteItems } from "./utilities";
+import { isScopeTokenLike, scorePaletteItems } from "./utilities";
 
 const SEARCH_DEBOUNCE = 150;
 /** Cap per section on an empty query so defaults stay scannable */
@@ -140,9 +140,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         if (!searched) {
             return 0;
         }
-        return provider.id === "tools"
-            ? BACKEND_RANKED_SCORE
-            : Math.max(0, ...scorePaletteItems(items, searched).map((match) => match.order));
+        return provider.rootScore ?? Math.max(0, ...scorePaletteItems(items, searched).map((match) => match.order));
     }
 
     /**
