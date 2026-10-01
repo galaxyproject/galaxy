@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { makeCtx } from "../test-utils";
 import type { PaletteItem } from "../types";
@@ -31,6 +31,21 @@ describe("paletteProviders", () => {
     it("registers each provider exactly once", () => {
         const ids = paletteProviders.map((provider) => provider.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("warns once about a disabled provider id the registry does not know", () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        try {
+            const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows", "interactive_tools"] } });
+            enabledPaletteProviders(ctx);
+            enabledPaletteProviders(ctx);
+
+            expect(warn).toHaveBeenCalledTimes(1);
+            expect(warn.mock.calls[0]?.[0]).toContain('"interactive_tools"');
+            expect(warn.mock.calls[0]?.[0]).toContain("interactiveTools");
+        } finally {
+            warn.mockRestore();
+        }
     });
 
     it("drops the providers the instance disabled, keeping the registry order", () => {

@@ -37,12 +37,26 @@ export function findPaletteProvider(providerId: string): CommandPaletteProvider 
     return paletteProviders.find((provider) => provider.id === providerId);
 }
 
+const warnedUnknownIds = new Set<string>();
+
+/** Warns once per id that names no provider, so a typo in the config does not silently disable nothing */
+function warnUnknownDisabledProviders(ctx: PaletteContext) {
+    for (const id of ctx.config.command_palette_disabled_providers ?? []) {
+        if (!warnedUnknownIds.has(id) && !findPaletteProvider(id)) {
+            warnedUnknownIds.add(id);
+            const known = paletteProviders.map((provider) => provider.id).join(", ");
+            console.warn(`command_palette_disabled_providers: unknown provider id "${id}" (known ids: ${known})`);
+        }
+    }
+}
+
 /**
  * The providers the current user may search, in registry order — what the
  * unscoped fan-out asks. A provider named in `command_palette_disabled_providers`
  * is never searched, and neither are login-only ones for an anonymous user.
  */
 export function enabledPaletteProviders(ctx: PaletteContext): CommandPaletteProvider[] {
+    warnUnknownDisabledProviders(ctx);
     return paletteProviders.filter((provider) => isProviderAvailable(provider.id, ctx));
 }
 
