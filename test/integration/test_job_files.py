@@ -18,6 +18,7 @@ API has gone too far.
 import io
 import os
 import tempfile
+from dataclasses import dataclass
 from typing import Any
 
 import requests
@@ -35,8 +36,17 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 TEST_INPUT_TEXT = "test input content\n"
-TEST_FILE_IO = io.StringIO("some initial text data")
+TEST_OUTPUT_TEXT = "some initial text data"
 TEST_TUS_CHUNK_SIZE = 1024
+
+
+@dataclass
+class RunningJob:
+    job: model.Job
+    job_key: str
+    files_url: str
+    output_path: str
+    working_directory: str
 
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
@@ -109,179 +119,102 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
 
     def test_write_by_state(self):
-        job, output_hda, working_directory = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-        data = {"path": path, "job_key": job_key}
+        job = self._running_job()
+        api_asserts.assert_status_code_is_ok(self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT))
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
-        def files():
-            return {"file": io.StringIO("some initial text data")}
-
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, data=data, files=files())
-        api_asserts.assert_status_code_is_ok(response)
-        assert open(path).read() == "some initial text data"
-
-        work_dir_file = os.path.join(working_directory, "work")
-        data = {"path": work_dir_file, "job_key": job_key}
-        response = requests.post(post_url, data=data, files=files())
-        api_asserts.assert_status_code_is_ok(response)
-        assert open(work_dir_file).read() == "some initial text data"
+        work_dir_file = os.path.join(job.working_directory, "work")
+        api_asserts.assert_status_code_is_ok(self._post_job_file(job, work_dir_file, TEST_OUTPUT_TEXT))
+        _assert_file_contents(work_dir_file, TEST_OUTPUT_TEXT)
 
         # set job state to finished and ensure the file is no longer
-        # readable
-        self._change_job_state(job, "ok")
-
-        response = requests.post(post_url, data=data, files=files())
-        _assert_insufficient_permissions(response)
+        # writable
+        self._change_job_state(job.job, "ok")
+        _assert_insufficient_permissions(self._post_job_file(job, work_dir_file, TEST_OUTPUT_TEXT))
 
     def test_write_with_tus(self):
-        # shared setup with above test
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-
-        upload_url = self._api_url(f"job_files/resumable_upload?job_key={job_key}", use_key=False)
-        headers: dict[str, str] = {}
-        my_client = client.TusClient(upload_url, headers=headers)
-
-        storage = None
-        metadata: dict[str, str] = {}
+        job = self._running_job()
+        upload_url = self._api_url(f"job_files/resumable_upload?job_key={job.job_key}", use_key=False)
+        my_client = client.TusClient(upload_url, headers={})
         t_file = tempfile.NamedTemporaryFile("w")
-        t_file.write("some initial text data")
+        t_file.write(TEST_OUTPUT_TEXT)
         t_file.flush()
 
-        input_path = t_file.name
-
-        uploader = my_client.uploader(input_path, metadata=metadata, url_storage=storage)
+        uploader = my_client.uploader(t_file.name, metadata={}, url_storage=None)
         uploader.chunk_size = TEST_TUS_CHUNK_SIZE
         uploader.upload()
         upload_session_url = uploader.url
         assert upload_session_url
         tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
-        data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, data=data)
+        response = self._post_job_file(job, job.output_path, extra={"session_id": tus_session_id})
         api_asserts.assert_status_code_is_ok(response)
-        assert open(path).read() == "some initial text data"
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
     def test_write_with_nginx_upload_module(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
+        job = self._running_job()
         upload_path = os.path.join(self.nginx_upload_job_files_store, "nginx_upload")
-        with open(upload_path, "w") as f:
-            f.write("some initial text data")
+        _write_file(upload_path, TEST_OUTPUT_TEXT)
 
-        data = {"path": path, "job_key": job_key, "__file_path": upload_path}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, data=data)
+        response = self._post_job_file(job, job.output_path, extra={"__file_path": upload_path})
         api_asserts.assert_status_code_is_ok(response)
         assert not os.path.exists(upload_path)
-        assert open(path).read() == "some initial text data"
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
     def test_write_with_nginx_upload_module_rejects_path_outside_store(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-        outside_dir = self._test_driver.mkdtemp()
-        outside_path = os.path.join(outside_dir, "outside")
-        with open(outside_path, "w") as f:
-            f.write("not an upload")
+        job = self._running_job()
+        outside_path = os.path.join(self._test_driver.mkdtemp(), "outside")
+        _write_file(outside_path, "not an upload")
         relative_outside_path = os.path.relpath(outside_path, self.nginx_upload_job_files_store)
         traversal_path = os.path.join(self.nginx_upload_job_files_store, relative_outside_path)
         assert traversal_path.startswith(self.nginx_upload_job_files_store)
-
-        data = {"path": path, "job_key": job_key, "__file_path": traversal_path}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, data=data)
-        api_asserts.assert_status_code_is(response, 400)
-        api_asserts.assert_error_code_is(response, 400008)
-        assert os.path.exists(outside_path)
-        assert open(path).read() == ""
+        self._assert_nginx_upload_rejected(job, traversal_path, outside_path)
 
     def test_write_with_nginx_upload_module_rejects_relative_path(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
+        job = self._running_job()
         with tempfile.TemporaryDirectory(dir=os.getcwd()) as outside_dir:
             outside_path = os.path.join(outside_dir, "outside")
-            with open(outside_path, "w") as f:
-                f.write("not an upload")
+            _write_file(outside_path, "not an upload")
             relative_path = os.path.relpath(outside_path)
             assert not relative_path.startswith("..")
-
-            data = {"path": path, "job_key": job_key, "__file_path": relative_path}
-            post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-            response = requests.post(post_url, data=data)
-            api_asserts.assert_status_code_is(response, 400)
-            api_asserts.assert_error_code_is(response, 400008)
-            assert os.path.exists(outside_path)
-        assert open(path).read() == ""
+            self._assert_nginx_upload_rejected(job, relative_path, outside_path)
 
     def test_write_with_underscored_file_param(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-        data = {"path": path, "job_key": job_key}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, data=data, files={"__file": io.StringIO("some initial text data")})
+        job = self._running_job()
+        response = self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT, file_param="__file")
         api_asserts.assert_status_code_is_ok(response)
-        assert open(path).read() == "some initial text data"
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
     def test_write_with_query_params(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-        params = {"path": path, "job_key": job_key, "file_type": "output"}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        response = requests.post(post_url, params=params, files={"file": io.StringIO("some initial text data")})
+        job = self._running_job()
+        response = self._post_job_file(
+            job, job.output_path, TEST_OUTPUT_TEXT, extra={"file_type": "output"}, as_params=True
+        )
         api_asserts.assert_status_code_is_ok(response)
-        assert open(path).read() == "some initial text data"
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
     def test_write_appends_to_tool_streams(self):
-        job, _, working_directory = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        job = self._running_job()
         for stream in ["tool_stdout", "tool_stderr"]:
-            path = os.path.join(working_directory, "outputs", stream)
-            params = {"path": path, "job_key": job_key}
+            path = os.path.join(job.working_directory, "outputs", stream)
             for i in range(5):
-                response = requests.post(post_url, params=params, files={"file": io.StringIO(f"{stream} {i}\n")})
-                api_asserts.assert_status_code_is_ok(response)
-            assert open(path).read() == "".join(f"{stream} {i}\n" for i in range(5))
+                api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, f"{stream} {i}\n"))
+            _assert_file_contents(path, "".join(f"{stream} {i}\n" for i in range(5)))
 
     def test_write_replaces_other_files(self):
-        job, _, working_directory = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = os.path.join(working_directory, "work")
-        params = {"path": path, "job_key": job_key}
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "work")
         for content in ["first", "second"]:
-            response = requests.post(post_url, params=params, files={"file": io.StringIO(content)})
-            api_asserts.assert_status_code_is_ok(response)
-        assert open(path).read() == "second"
+            api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, content))
+        _assert_file_contents(path, "second")
 
     def test_missing_params(self):
-        job, output_hda, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
-        path = self._app.object_store.get_filename(output_hda.dataset)
-        assert path
-        url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        for params in [{"path": path}, {"job_key": job_key}]:
-            response = requests.get(url, params=params)
+        job = self._running_job()
+        for params in [{"path": job.output_path}, {"job_key": job.job_key}]:
+            _assert_missing_attribute(requests.get(job.files_url, params=params))
+            response = requests.post(job.files_url, params=params, files={"file": io.StringIO(TEST_OUTPUT_TEXT)})
             _assert_missing_attribute(response)
-            response = requests.post(url, params=params, files={"file": io.StringIO("some initial text data")})
-            _assert_missing_attribute(response)
-        assert open(path).read() == ""
+        _assert_file_contents(job.output_path, "")
 
     def test_write_protection(self):
         job, _, _ = self.create_static_job_with_state("running")
@@ -325,6 +258,36 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         working_directory = JobWorkingDirectory(job, self._app.object_store).create()
         return job, output_hda, working_directory
 
+    def _running_job(self) -> RunningJob:
+        job, output_hda, working_directory = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        output_path = self._app.object_store.get_filename(output_hda.dataset)
+        assert output_path
+        files_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        return RunningJob(job, job_key, files_url, output_path, working_directory)
+
+    def _post_job_file(
+        self,
+        job: RunningJob,
+        path: str,
+        content: str | None = None,
+        extra: dict[str, str] | None = None,
+        file_param: str = "file",
+        as_params: bool = False,
+    ) -> requests.Response:
+        payload = {"path": path, "job_key": job.job_key, **(extra or {})}
+        files = {file_param: io.StringIO(content)} if content is not None else None
+        if as_params:
+            return requests.post(job.files_url, params=payload, files=files)
+        return requests.post(job.files_url, data=payload, files=files)
+
+    def _assert_nginx_upload_rejected(self, job: RunningJob, file_path: str, outside_path: str):
+        response = self._post_job_file(job, job.output_path, extra={"__file_path": file_path})
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_code_is(response, 400008)
+        assert os.path.exists(outside_path)
+        _assert_file_contents(job.output_path, "")
+
     def _api_job_keys(self, job):
         job_id = self._app.security.encode_id(job.id)
         job_key = self._app.security.encode_id(job.id, kind="jobs_files")
@@ -346,3 +309,13 @@ def _assert_insufficient_permissions(response):
 def _assert_missing_attribute(response):
     api_asserts.assert_status_code_is(response, 400)
     api_asserts.assert_error_code_is(response, 400005)
+
+
+def _write_file(path, content):
+    with open(path, "w") as f:
+        f.write(content)
+
+
+def _assert_file_contents(path, expected):
+    with open(path) as f:
+        assert f.read() == expected
