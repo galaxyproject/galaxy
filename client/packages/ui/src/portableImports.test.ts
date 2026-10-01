@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import { join } from "path";
+/// <reference types="vite/client" />
 import { describe, expect, it } from "vitest";
 
 /**
@@ -25,25 +24,15 @@ const VERSION_LOCKED_SPECIFIERS = [
     "vue/dist/vue.runtime.esm-bundler",
 ];
 
-const SOURCE_EXTENSIONS = [".ts", ".js", ".vue"];
-
-function sourceFiles(directory: string): string[] {
-    return readdirSync(directory).flatMap((entry) => {
-        const path = join(directory, entry);
-        if (statSync(path).isDirectory()) {
-            return sourceFiles(path);
-        }
-        if (path.endsWith(".test.ts") || path.endsWith(".test.js")) {
-            // Skip tests -- this file names the banned specifiers as data.
-            return [];
-        }
-        return SOURCE_EXTENSIONS.some((extension) => path.endsWith(extension)) ? [path] : [];
-    });
-}
+// Skip tests -- this file names the banned specifiers as data.
+const sources = import.meta.glob(["./**/*.{ts,js,vue}", "!./**/*.test.{ts,js}"], {
+    query: "?raw",
+    import: "default",
+    eager: true,
+}) as Record<string, string>;
 
 describe("galaxy-ui source portability", () => {
-    const packageSource = join(__dirname);
-    const files = sourceFiles(packageSource);
+    const files = Object.keys(sources);
 
     it("finds the package sources to check", () => {
         // An empty list would make every assertion below vacuously true.
@@ -56,10 +45,7 @@ describe("galaxy-ui source portability", () => {
         // does not read as a violation.
         const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const importPattern = new RegExp(`(?:from|import|require)\\s*\\(?\\s*["']${escaped}["']`);
-        const offenders = files.filter((file) => importPattern.test(readFileSync(file, "utf-8")));
-        expect(
-            offenders.map((file) => file.slice(packageSource.length + 1)),
-            `${specifier} resolves for only one of the supported peer versions`,
-        ).toEqual([]);
+        const offenders = files.filter((file) => importPattern.test(sources[file]!));
+        expect(offenders, `${specifier} resolves for only one of the supported peer versions`).toEqual([]);
     });
 });
