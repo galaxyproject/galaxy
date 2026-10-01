@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
@@ -9,6 +9,7 @@ import ToolEntryPoints from "./ToolEntryPoints.vue";
 describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
     const localVue = getLocalVue();
     localVue.use(PiniaVuePlugin);
+    const router = injectTestRouter(localVue);
     const INACTIVE_ITS = [
         {
             model_class: "InteractiveToolEntryPoint",
@@ -63,10 +64,14 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
             },
             localVue,
             pinia: testPinia,
+            router,
         });
-        const listItems = wrapper.findAll("li");
-        expect(listItems.length).toBe(2);
-        expect(wrapper.find("span>a").exists() === false).toBeTruthy();
+        const buttons = wrapper.findAll("[data-description='entry point button']");
+        expect(buttons.length).toBe(2);
+        buttons.wrappers.forEach((button) => {
+            expect(button.element.tagName).toBe("BUTTON");
+            expect(button.attributes("aria-disabled")).toBe("true");
+        });
     });
 
     it("should render links when tools are active", async () => {
@@ -85,8 +90,35 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
             },
             localVue,
             pinia: testPinia,
+            router,
         });
-        const links = wrapper.findAll("span>a");
+        const links = wrapper.findAll("a[data-description='entry point button']");
         expect(links.length).toBe(2);
+        expect(links.wrappers.map((link) => link.attributes("href"))).toEqual(
+            ACTIVE_ITS.slice(0, 2).map((entryPoint) => entryPoint.target),
+        );
+    });
+
+    it("should open a single active tool in a new tab", async () => {
+        testPinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                entryPointStore: {
+                    entryPoints: ACTIVE_ITS,
+                },
+            },
+        });
+        setActivePinia(testPinia);
+        wrapper = mount(ToolEntryPoints, {
+            propsData: {
+                jobId: "b887d74393f85b6d",
+            },
+            localVue,
+            pinia: testPinia,
+            router,
+        });
+        const link = wrapper.find(`a[href='${ACTIVE_ITS[2].target}']`);
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("target")).toBe("_blank");
     });
 });
