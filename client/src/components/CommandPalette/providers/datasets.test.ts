@@ -7,7 +7,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { makeCtx } from "../test-utils";
+import { makeCtx, renderedSections } from "../test-utils";
 import { datasetsProvider } from "./datasets";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -115,7 +115,7 @@ describe("datasetsProvider", () => {
 
         // queries without a single local match: the complete cache answers them
         await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe("datasetsProvider", () => {
         await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
@@ -145,7 +145,7 @@ describe("datasetsProvider", () => {
 
         // a later palette session, past the refresh interval
         resetListRefreshTracking();
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx()));
 
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["datasets:d2", "datasets:d1"]);
         expect(loadDatasets).toHaveBeenCalledTimes(1);
