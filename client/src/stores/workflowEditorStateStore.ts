@@ -1,5 +1,5 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { computed, reactive, ref, type UnwrapRef } from "vue";
+import { computed, reactive, type Ref, ref, type UnwrapRef } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
@@ -39,7 +39,8 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const inputTerminals = ref<InputTerminalPositions>({});
     const outputTerminals = ref<OutputTerminalPositions>({});
     const draggingPosition = ref<TerminalPosition | null>(null);
-    const draggingTerminal = ref<OutputTerminals | null>(null);
+    // Terminals hold their workflow stores; keep the class type instead of its deep-unwrapped form.
+    const draggingTerminal = ref(null) as Ref<OutputTerminals | null>;
     const activeNodeId = ref<number | null>(null);
     const scale = ref(1);
     const position = ref<[number, number]>([0, 0]);
