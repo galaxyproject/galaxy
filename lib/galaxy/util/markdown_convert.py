@@ -1,0 +1,79 @@
+"""Convert markdown to HTML and PDF.
+
+Separate from ``galaxy.util.markdown`` because the formatting helpers there are
+imported by ``galaxy.datatypes`` on the metadata path, and these conversions pull
+in Markdown and weasyprint. Both are optional: ``galaxy-util`` does not require
+either, and Galaxy itself treats weasyprint as a conditional dependency.
+"""
+
+import os
+import shutil
+import tempfile
+
+from galaxy.util.resources import resource_string
+from galaxy.util.sanitize_html import sanitize_html
+
+try:
+    import markdown
+except ImportError:
+    markdown = None  # type: ignore[assignment,unused-ignore]
+
+# weasyprint raises OSError, not ImportError, when its system libraries are absent.
+try:
+    import weasyprint
+except Exception:
+    weasyprint = None
+
+
+def markdown_available() -> bool:
+    return markdown is not None
+
+
+def weasyprint_available() -> bool:
+    return weasyprint is not None
+
+
+def to_html(basic_markdown: str) -> str:
+    if not markdown_available():
+        raise ImportError("markdown is required for HTML conversion - install galaxy-util[markdown-convert]")
+    # Allow data: urls so we can embed images.
+    html = sanitize_html(markdown.markdown(basic_markdown, extensions=["tables"]), allow_data_urls=True)
+    return html
+
+
+def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, directory: str | None = None) -> bytes:
+    """Convert RAW markdown with specified CSS paths into bytes of a PDF.
+
+    ``directory`` is where the intermediate HTML is written; weasyprint resolves
+    relative image references against it. Pass the directory holding the images,
+    or leave it unset for a temporary one.
+    """
+    if not weasyprint_available():
+        # Not an extra - see weasyprint in lib/galaxy/dependencies/conditional-requirements.txt.
+        raise ImportError("weasyprint is required for PDF conversion")
+    css_paths = css_paths or []
+    as_html = to_html(basic_markdown)
+    directory_is_temp = directory is None
+    if directory is None:
+        directory = tempfile.mkdtemp("gxmarkdown")
+    index = os.path.join(directory, "index.html")
+    try:
+        output_file = open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
+        output_file.write(as_html)
+        output_file.close()
+        html = weasyprint.HTML(filename=index)
+        stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
+        for css_path in css_paths:
+            with open(css_path) as f:
+                css_content = f.read()
+            css = weasyprint.CSS(string=css_content)
+            stylesheets.append(css)
+        # weasyprint ships no stubs, so pin the contract here rather than return Any.
+        pdf: bytes = html.write_pdf(stylesheets=stylesheets)
+        return pdf
+    finally:
+        if directory_is_temp:
+            shutil.rmtree(directory)
+        elif os.path.exists(index):
+            # Caller owns the directory - do not leave the intermediate HTML behind.
+            os.unlink(index)
