@@ -137,11 +137,8 @@ export const reportsProvider: CommandPaletteProvider = {
      * Published pages are public, so `rp:` serves anonymous visitors too; only
      * the own listing needs an account to hold anything.
      */
-    async searchScoped(scope: ScopeDefinition, query: string, ctx: PaletteContext) {
+    async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = variantOf(scope);
-        if (ctx.isAnonymous && variant === "my") {
-            return [];
-        }
         const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.recent) : [];
         const recentIds = new Set(recent.map((item) => item.id));
         const listed = (await storeFirstItems(reportList(variant), query, PALETTE_LIMITS.section + recentIds.size))

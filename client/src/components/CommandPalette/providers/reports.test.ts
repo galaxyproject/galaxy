@@ -151,14 +151,6 @@ describe("reportsProvider", () => {
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:new", "pages:old"]);
         });
 
-        it("returns nothing for the own scope of an anonymous user", async () => {
-            const sections =
-                (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx({ isAnonymous: true }))) ?? [];
-
-            expect(sections).toEqual([]);
-            expect(loadPages).not.toHaveBeenCalled();
-        });
-
         it("serves the published scope to anonymous users", async () => {
             mockPages([mockPage("p1")]);
 

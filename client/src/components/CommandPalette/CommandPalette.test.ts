@@ -19,9 +19,11 @@ import { useVisualizationStore } from "@/stores/visualizationStore";
 import { datasetsProvider } from "./providers/datasets";
 import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
+import { invocationsProvider } from "./providers/invocations";
 import { navigationProvider } from "./providers/navigation";
 import { reportsProvider } from "./providers/reports";
 import { toolsProvider } from "./providers/tools";
+import { visualizationsProvider } from "./providers/visualizations";
 import { workflowsProvider } from "./providers/workflows";
 import type { CommandPaletteProvider, PaletteItem } from "./types";
 
@@ -1054,6 +1056,24 @@ describe("CommandPalette", () => {
         // the offer is made of ordinary rows, so enter reaches it like any result
         await press("Enter");
         expect(push).toHaveBeenCalledWith(`/login/start?redirect=${encodeURIComponent("/")}`);
+    });
+
+    it("never asks the login-only providers for an anonymous visitor", async () => {
+        browseAnonymously();
+        const stalled = [datasetsProvider, visualizationsProvider, invocationsProvider].map(stallSearch);
+        try {
+            await type("workflows");
+
+            // a provider with nothing for a visitor would only hold a skeleton section open
+            expect(skeletons().length).toBe(0);
+            expect(inputIcons()).not.toContain("spinner");
+            expect(sectionIds()).not.toContain("palette section datasets");
+            expect(sectionIds()).not.toContain("palette section visualizations");
+            expect(sectionIds()).not.toContain("palette section invocations");
+            expect(optionRow("Workflows")).toBeDefined();
+        } finally {
+            stalled.forEach((search) => search.restore());
+        }
     });
 
     it("says nothing about a scope this instance does not offer at all", async () => {

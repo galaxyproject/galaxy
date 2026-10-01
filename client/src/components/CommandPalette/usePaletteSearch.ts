@@ -7,7 +7,7 @@ import { helpSections, type PaletteHelpHandlers } from "./paletteHelp";
 import { enabledPaletteProviders, findPaletteProvider } from "./providers";
 import { categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
-import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
+import { isProviderAvailable, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { type PaletteMode, paletteModeIdentity, paletteModeSubject } from "./usePaletteMachine";
 import { isScopeTokenLike, scorePaletteItems } from "./utilities";
@@ -96,8 +96,8 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
         const provider = findPaletteProvider(providerId);
-        // a remembered category or scope must not reach a provider turned off since
-        if (!provider || !isProviderEnabled(providerId, ctx)) {
+        // a remembered category or scope must not reach a provider turned off since, nor a login-only one anonymously
+        if (!provider || !isProviderAvailable(providerId, ctx)) {
             return [];
         }
         // an `xy:` still being typed is a filter, not a term for any backend
@@ -248,7 +248,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
     async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
         const providerId = categoryProviderId(category);
         const provider = providerId ? findPaletteProvider(providerId) : undefined;
-        if (!provider || !isProviderEnabled(provider.id, ctx)) {
+        if (!provider || !isProviderAvailable(provider.id, ctx)) {
             return [];
         }
         // scoped searches cannot run `localOnly`, so an `xy:` being typed takes the root search
@@ -270,7 +270,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Promise<ResultSection[]> {
         const provider = findPaletteProvider(scope.providerId);
-        if (provider && !isProviderEnabled(provider.id, ctx)) {
+        if (provider && !isProviderAvailable(provider.id, ctx)) {
             return [];
         }
         // a variant (shared, published, …) can only be served by a scoped search

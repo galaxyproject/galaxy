@@ -45,6 +45,15 @@ describe("paletteProviders", () => {
         );
     });
 
+    it("skips the providers whose every scope needs an account for anonymous users", () => {
+        const anonymous = enabledPaletteProviders(makeCtx({ isAnonymous: true })).map((provider) => provider.id);
+        expect(anonymous).toEqual(
+            paletteProviders
+                .map((provider) => provider.id)
+                .filter((id) => !["datasets", "visualizations", "invocations"].includes(id)),
+        );
+    });
+
     it("gives every scope variant a sectioned search", () => {
         PALETTE_SCOPES.filter((scope) => scope.variant).forEach((scope) => {
             expect(findPaletteProvider(scope.providerId)?.searchScoped).toBeTypeOf("function");
