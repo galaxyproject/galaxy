@@ -3050,7 +3050,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if assert_valid:
             self.assert_no_error_message()
 
-            xpath = f'//span[contains(text(), "{user_email}")]'
+            xpath = f'//span[text()[contains(., "{user_email}")]]'
             self.wait_for_xpath_visible(xpath)
         self.screenshot_if(screenshot_after_submit)
 
