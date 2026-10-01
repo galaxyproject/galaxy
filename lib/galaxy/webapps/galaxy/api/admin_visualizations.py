@@ -8,7 +8,6 @@ dynamically without requiring client rebuilds.
 import logging
 from typing import (
     Annotated,
-    Optional,
 )
 
 from fastapi import (
@@ -88,7 +87,7 @@ class FastAPIAdminVisualizations:
     def available(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        search: Optional[str] = Query(
+        search: str | None = Query(
             default=None,
             title="Search term",
             description="Filter available packages by name or description.",
@@ -233,7 +232,7 @@ class FastAPIAdminVisualizations:
         self,
         viz_id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> None:
         """Uninstall a visualization package and clean up its assets."""
         self.service.uninstall_package(trans, viz_id)
 

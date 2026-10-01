@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import (
+    Any,
+)
 
 from pydantic import (
     Field,
@@ -9,11 +11,11 @@ from galaxy.schema.schema import Model
 
 
 class VisualizationPackageMetadata(Model):
-    description: Optional[str] = Field(None, title="Description")
-    author: Optional[str] = Field(None, title="Author")
-    license: Optional[str] = Field(None, title="License")
-    dependencies: Optional[dict[str, str]] = Field(None, title="Dependencies")
-    homepage: Optional[str] = Field(None, title="Homepage")
+    description: str | None = Field(None, title="Description")
+    author: str | None = Field(None, title="Author")
+    license: str | None = Field(None, title="License")
+    dependencies: dict[str, str] | None = Field(None, title="Dependencies")
+    homepage: str | None = Field(None, title="Homepage")
 
 
 class InstalledVisualizationResponse(Model):
@@ -22,13 +24,13 @@ class InstalledVisualizationResponse(Model):
     version: str = Field(..., title="Version", description="The installed package version.")
     enabled: bool = Field(..., title="Enabled", description="Whether this visualization is enabled.")
     installed: bool = Field(..., title="Installed", description="Whether files are present on disk.")
-    path: Optional[str] = Field(None, title="Path", description="Filesystem path to the installed package.")
-    size: Optional[int] = Field(None, title="Size", description="Total size in bytes.")
-    metadata: Optional[dict] = Field(None, title="Metadata", description="Package metadata from package.json.")
-    message: Optional[str] = Field(None, title="Message", description="Status message.")
+    path: str | None = Field(None, title="Path", description="Filesystem path to the installed package.")
+    size: int | None = Field(None, title="Size", description="Total size in bytes.")
+    metadata: dict[str, Any] | None = Field(None, title="Metadata", description="Package metadata from package.json.")
+    message: str | None = Field(None, title="Message", description="Status message.")
 
 
-class InstalledVisualizationListResponse(RootModel):
+class InstalledVisualizationListResponse(RootModel[list[InstalledVisualizationResponse]]):
     root: list[InstalledVisualizationResponse]
 
 
@@ -37,14 +39,14 @@ class AvailableVisualizationResponse(Model):
     description: str = Field("", title="Description", description="Package description.")
     version: str = Field("", title="Version", description="Latest published version.")
     keywords: list[str] = Field(default_factory=list, title="Keywords")
-    author: Optional[dict] = Field(None, title="Author")
-    maintainers: list[dict] = Field(default_factory=list, title="Maintainers")
-    links: Optional[dict] = Field(None, title="Links", description="Homepage, repository, etc.")
-    date: Optional[str] = Field(None, title="Date", description="Last publish date.")
-    score: Optional[dict] = Field(None, title="Score", description="NPM search score.")
+    author: dict[str, Any] | None = Field(None, title="Author")
+    maintainers: list[dict[str, Any]] = Field(default_factory=list, title="Maintainers")
+    links: dict[str, Any] | None = Field(None, title="Links", description="Homepage, repository, etc.")
+    date: str | None = Field(None, title="Date", description="Last publish date.")
+    score: dict[str, Any] | None = Field(None, title="Score", description="NPM search score.")
 
 
-class AvailableVisualizationListResponse(RootModel):
+class AvailableVisualizationListResponse(RootModel[list[AvailableVisualizationResponse]]):
     root: list[AvailableVisualizationResponse]
 
 
@@ -122,4 +124,4 @@ class PackageVersionsResponse(Model):
 class UsageStatsResponse(Model):
     message: str = Field(..., title="Message")
     days: int = Field(..., title="Days")
-    stats: dict = Field(default_factory=dict, title="Stats")
+    stats: dict[str, Any] = Field(default_factory=dict, title="Stats")
