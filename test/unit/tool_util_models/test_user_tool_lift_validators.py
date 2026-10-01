@@ -135,3 +135,20 @@ def test_malformed_rows_are_reported_invalid(inputs):
     assert status == "invalid"
     assert returned == value
     assert errors
+
+
+@pytest.mark.parametrize("help_format", ["restructuredtext", "plain_text"])
+def test_help_in_another_format_is_lifted_to_markdown(help_format):
+    tool = {**_tool(), "help": {"format": help_format, "content": "**help**"}}
+    status, lifted, errors = lift_user_tool_source(tool)
+    assert status == "lifted"
+    assert isinstance(lifted, UserToolSource)
+    assert errors == [f"help.format ({help_format} help is shown as Markdown)"]
+    assert lifted.help is not None
+    assert (lifted.help.format, lifted.help.content) == ("markdown", "**help**")
+
+
+def test_help_in_an_unknown_format_is_invalid():
+    status, _, errors = lift_user_tool_source({**_tool(), "help": {"format": "html", "content": "<b>help</b>"}})
+    assert status == "invalid"
+    assert errors == ["help.format: Input should be 'markdown'"]

@@ -92,6 +92,20 @@ class TestUserDefinedToolLoading(BaseToolBoxTestCase):
         assert tool_dict["representation_status"] == "lifted"
         assert sorted(tool_dict["representation_errors"]) == ["command", "inputs.1.dynamic_options"]
 
+    def test_stored_tool_with_rst_help_loads_with_markdown_help(self):
+        owner = self._executor()
+        representation = {**REPRESENTATION, "help": {"format": "restructuredtext", "content": "**help**"}}
+        dynamic_tool = self._stored(owner, representation)
+
+        tool = self.toolbox.get_unprivileged_tool(owner, dynamic_tool.uuid)
+
+        assert tool is not None
+        assert tool.raw_help is not None
+        assert (tool.raw_help.format, tool.raw_help.content) == ("markdown", "**help**")
+        tool_dict = tool.to_dict(mock_trans())
+        assert tool_dict["representation_status"] == "lifted"
+        assert tool_dict["representation_errors"] == ["help.format (restructuredtext help is shown as Markdown)"]
+
     def test_current_tool_reports_no_dropped_fields(self):
         owner = self._executor()
         tool = self.toolbox.get_unprivileged_tool(owner, self._create(owner).uuid)
