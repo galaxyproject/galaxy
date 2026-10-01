@@ -20,7 +20,7 @@ export const CATEGORY_ROW_INDEX = -1;
 interface PaletteSearchOptions {
     /** Category narrowing the root search, unset while "All" is active */
     activeCategory: Readonly<Ref<PaletteCategory | undefined>>;
-    buildContext: () => PaletteContext;
+    getContext: () => PaletteContext;
     /** What the help rows do to the palette */
     helpHandlers: PaletteHelpHandlers;
     /** Section rendered above whatever the search found, such as the login offer */
@@ -36,7 +36,7 @@ interface PaletteSearchOptions {
 
 /** The palette's results per mode: provider sections and the selection; a new search subject clears the rows at once */
 export function usePaletteSearch(options: PaletteSearchOptions) {
-    const { activeCategory, buildContext, helpHandlers, leadingSection, mode, modifierLabel, query, text } = options;
+    const { activeCategory, getContext, helpHandlers, leadingSection, mode, modifierLabel, query, text } = options;
 
     const searching = ref(false);
     const sections = ref<ResultSection[]>([]);
@@ -317,7 +317,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     async function runSearch() {
         const epoch = ++searchEpoch;
-        const ctx = buildContext();
+        const ctx = getContext();
         // picking a category reruns the search; the row keeps the selection so the
         // next ←→ moves on to the neighboring category
         const keepCategoryRow = categoryRowSelected.value;
