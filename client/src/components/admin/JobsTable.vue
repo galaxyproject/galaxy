@@ -133,32 +133,10 @@ export default {
         innerValue(newVal) {
             this.$emit("input", newVal);
         },
-        items(newVal) {
-            this.setCellVariants(newVal);
-        },
-    },
-    created() {
-        this.setCellVariants(this.items);
     },
     methods: {
-        setCellVariants(items) {
-            items.forEach((item) => {
-                item._cellVariants = { state: this.translateState(item.state) };
-            });
-        },
         onRowClick({ toggleDetails }) {
             toggleDetails();
-        },
-        translateState(state) {
-            const translateDict = {
-                ok: "success",
-                error: "danger",
-                new: "primary",
-                queued: "secondary",
-                running: "info",
-                upload: "dark",
-            };
-            return translateDict[state] || "primary";
         },
     },
 };
