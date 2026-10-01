@@ -1,6 +1,7 @@
 """Tests for galaxy.util.markdown_convert."""
 
 import os
+import tempfile
 import types
 
 import pytest
@@ -39,14 +40,14 @@ def test_to_pdf_raw_renders_in_a_given_directory(fake_weasyprint, tmp_path):
 
 def test_to_pdf_raw_cleans_up_its_temporary_directory(fake_weasyprint, monkeypatch):
     created = []
-    real_mkdtemp = markdown_util.tempfile.mkdtemp
+    real_mkdtemp = tempfile.mkdtemp
 
     def record(*args, **kwargs):
         path = real_mkdtemp(*args, **kwargs)
         created.append(path)
         return path
 
-    monkeypatch.setattr(markdown_util.tempfile, "mkdtemp", record)
+    monkeypatch.setattr(tempfile, "mkdtemp", record)
     markdown_util.to_pdf_raw("# Hello")
 
     assert created and not os.path.exists(created[0])
