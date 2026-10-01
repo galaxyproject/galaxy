@@ -67,7 +67,7 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         const buttons = wrapper.findAll("[data-description='entry point button']");
         expect(buttons.length).toBe(2);
-        buttons.wrappers.forEach((button) => {
+        buttons.forEach((button) => {
             expect(button.element.tagName).toBe("BUTTON");
             expect(button.attributes("aria-disabled")).toBe("true");
         });
@@ -93,7 +93,7 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         const links = wrapper.findAll("a[data-description='entry point button']");
         expect(links.length).toBe(2);
-        expect(links.wrappers.map((link) => link.attributes("href"))).toEqual(
+        expect(links.map((link) => link.attributes("href"))).toEqual(
             ACTIVE_ITS.slice(0, 2).map((entryPoint) => entryPoint.target),
         );
     });
@@ -109,10 +109,10 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         setActivePinia(testPinia);
         wrapper = mount(ToolEntryPoints, {
-            propsData: {
+            props: {
                 jobId: "b887d74393f85b6d",
             },
-            localVue,
+            global: localVue,
             pinia: testPinia,
             router,
         });
