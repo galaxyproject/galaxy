@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
 
 import InstallationSettings from "./InstallationSettings.vue";
 
@@ -19,7 +21,17 @@ vi.mock("@/composables/config", () => ({
 
 const localVue = getLocalVue();
 
+const { server, http } = useServerMock();
+
 describe("InstallationSettings", () => {
+    beforeEach(() => {
+        server.use(
+            http.get("/api/configuration/dynamic_tool_confs", ({ response }) => {
+                return response(200).json([]);
+            }),
+        );
+    });
+
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
             propsData: {
