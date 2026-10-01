@@ -9,7 +9,30 @@ For how parameter _values_ are represented and validated, see [Tool State](tool_
 
 ## Running Example
 
-<!-- TODO: example tool with a section, a conditional, and a repeat, used by every section below -->
+Every example below references parameters of this tool, which has a top-level input and one
+input inside each kind of grouping: a section, a conditional, and a repeat.
+
+```xml
+<inputs>
+    <param name="input" type="data" format="tabular" />
+    <section name="adv" title="Advanced">
+        <param name="size" type="integer" value="1" />
+    </section>
+    <conditional name="cond">
+        <param name="sel" type="select">
+            <option value="a">A</option>
+            <option value="b">B</option>
+        </param>
+        <when value="a">
+            <param name="input1" type="data" format="txt" />
+        </when>
+        <when value="b" />
+    </conditional>
+    <repeat name="queries" title="Query">
+        <param name="input2" type="data" format="txt" />
+    </repeat>
+</inputs>
+```
 
 ## At a Glance
 
