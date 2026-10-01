@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -48,14 +48,13 @@ async function mountCreator(initialElements: HDASummary[]) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
-    const wrapper = mount(PairCollectionCreator as object, {
-        propsData: {
+    const wrapper = mount(PairCollectionCreator, {
+        props: {
             historyId: "history-1",
             initialElements,
             mode: "modal",
         },
-        localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     });
 
     await flushPromises();

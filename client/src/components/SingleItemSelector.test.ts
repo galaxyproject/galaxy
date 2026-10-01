@@ -13,10 +13,17 @@ const ITEMS = [
     { id: "c", text: "Gamma" },
 ];
 
-function mountComponent(propsData: object = {}) {
-    return mount(SingleItemSelector as object, {
-        propsData,
-        localVue,
+interface MountProps {
+    loading?: boolean;
+    collectionName?: string;
+    items?: { id: string; text: string }[];
+    currentItem?: { id: string; text: string };
+}
+
+function mountComponent(props: MountProps = {}) {
+    return mount(SingleItemSelector, {
+        props,
+        global: localVue,
     });
 }
 

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,16 +29,14 @@ let postRequests: PostRequest[] = [];
 let loginResponse: Record<string, unknown> = {};
 
 async function mountLoginForm() {
-    const wrapper = mount(MountTarget as object, {
+    const wrapper = mount(MountTarget, {
         props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        global: localVue,
-        router,
-        stubs: {
-            ExternalLogin: true,
+        global: {
+            ...withPlugins(localVue, testingPinia, router),
+            stubs: { ...localVue.stubs, ExternalLogin: true },
         },
-        pinia: testingPinia,
     });
 
     return wrapper;
@@ -91,17 +89,15 @@ describe("LoginForm", () => {
 
     it("prefills the password reset route with the entered email", async () => {
         const push = vi.spyOn(router, "push").mockImplementation(async () => {});
-        const wrapper = mount(MountTarget as object, {
-            propsData: {
+        const wrapper = mount(MountTarget, {
+            props: {
                 sessionCsrfToken: "sessionCsrfToken",
                 showResetLink: true,
             },
-            localVue,
-            router,
-            stubs: {
-                ExternalLogin: true,
+            global: {
+                ...withPlugins(localVue, testingPinia, router),
+                stubs: { ...localVue.stubs, ExternalLogin: true },
             },
-            pinia: testingPinia,
         });
 
         await wrapper.find("#login-form-name").setValue("test@example.com");

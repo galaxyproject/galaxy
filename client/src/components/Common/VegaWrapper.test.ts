@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import type { VisualizationSpec } from "vega-embed";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import VegaWrapper from "./VegaWrapper.vue";
@@ -20,7 +21,8 @@ vi.mock("@vueuse/core", () => ({
     useResizeObserver: vi.fn(),
 }));
 
-const defaultSpec = {
+const defaultSpec: VisualizationSpec = {
+    data: { values: [] },
     mark: "bar",
     encoding: {
         x: { field: "a", type: "nominal" },
@@ -35,9 +37,9 @@ describe("VegaWrapper", () => {
 
     it("should call vega-embed on mount", async () => {
         const embed = (await import("vega-embed")).default;
-        mount(VegaWrapper as object, {
-            localVue,
-            propsData: { spec: defaultSpec },
+        mount(VegaWrapper, {
+            global: localVue,
+            props: { spec: defaultSpec },
         });
         await flushPromises();
         expect(embed).toHaveBeenCalled();
@@ -47,9 +49,9 @@ describe("VegaWrapper", () => {
         const embed = (await import("vega-embed")).default;
         (embed as any).mockRejectedValueOnce(new Error("Invalid spec"));
 
-        const wrapper = mount(VegaWrapper as object, {
-            localVue,
-            propsData: { spec: defaultSpec },
+        const wrapper = mount(VegaWrapper, {
+            global: localVue,
+            props: { spec: defaultSpec },
         });
         await flushPromises();
 
@@ -58,9 +60,9 @@ describe("VegaWrapper", () => {
     });
 
     it("should finalize view on unmount", async () => {
-        const wrapper = mount(VegaWrapper as object, {
-            localVue,
-            propsData: { spec: defaultSpec },
+        const wrapper = mount(VegaWrapper, {
+            global: localVue,
+            props: { spec: defaultSpec },
         });
         await flushPromises();
         wrapper.unmount();
@@ -70,15 +72,15 @@ describe("VegaWrapper", () => {
 
     it("should re-embed chart when props change", async () => {
         const embed = (await import("vega-embed")).default;
-        const wrapper = mount(VegaWrapper as object, {
-            localVue,
-            propsData: { spec: defaultSpec },
+        const wrapper = mount(VegaWrapper, {
+            global: localVue,
+            props: { spec: defaultSpec },
         });
         await flushPromises();
 
         const initialCallCount = (embed as any).mock.calls.length;
 
-        await wrapper.setProps({ spec: { mark: "line" } });
+        await wrapper.setProps({ spec: { data: { values: [] }, mark: "line" } });
         await flushPromises();
 
         expect((embed as any).mock.calls.length).toBeGreaterThan(initialCallCount);

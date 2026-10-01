@@ -54,7 +54,7 @@ const SUCCESS_RESULT = () => {
     );
 };
 async function mountCleanupResultDialogWith(result?: CleanupResult) {
-    const wrapper = mount(CleanupResultDialog as object, { props: { result, show: true }, localVue });
+    const wrapper = mount(CleanupResultDialog, { props: { result }, global: localVue });
     await flushPromises();
     return wrapper;
 }

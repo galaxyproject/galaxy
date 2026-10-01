@@ -6,8 +6,8 @@ import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
 describe("CustomToolEditorWorkspace", () => {
     function mountWorkspace() {
-        return mount(CustomToolEditorWorkspace as object, {
-            propsData: {
+        return mount(CustomToolEditorWorkspace, {
+            props: {
                 documentationVisible: false,
             },
             slots: {

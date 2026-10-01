@@ -1,12 +1,12 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AnyHistory, RegisteredUser } from "@/api";
+import type { HistorySummary, RegisteredUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -45,8 +45,8 @@ const anonymousOptions = [
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
-const activeHistory = { id: "history_a", name: "Active History", deleted: false, purged: false, archived: false };
-const deletedHistory = { id: "history_b", name: "Deleted History", deleted: true, purged: false, archived: false };
+const activeHistory = getFakeHistorySummary({ id: "history_a", name: "Active History" });
+const deletedHistory = getFakeHistorySummary({ id: "history_b", name: "Deleted History", deleted: true });
 
 // options still shown for a history owned by someone else
 const unownedHistoryOptions = [
@@ -60,17 +60,22 @@ const unownedHistoryOptions = [
     "Show History Notebooks",
 ];
 
-async function createWrapper(propsData: { history: Partial<AnyHistory> }, userData?: RegisteredUser) {
+async function createWrapper(
+    propsData: { history: Partial<HistorySummary> & { user_id?: string | null } },
+    userData?: RegisteredUser,
+) {
     const pinia = createPinia();
 
-    const historyUserId = "user_id" in propsData.history ? propsData.history.user_id : userData?.id || null;
+    const historyUserId = "user_id" in propsData.history ? (propsData.history.user_id ?? null) : (userData?.id ?? null);
 
-    const wrapper = shallowMount(HistoryOptions as object, {
-        propsData: {
-            history: { ...propsData.history, user_id: historyUserId },
-        },
-        localVue,
-        pinia,
+    const history: HistorySummary & { user_id: string | null } = {
+        ...getFakeHistorySummary(propsData.history),
+        user_id: historyUserId,
+    };
+
+    const wrapper = shallowMount(HistoryOptions, {
+        props: { history },
+        global: withPlugins(localVue, pinia),
     });
 
     const userStore = useUserStore();

@@ -244,6 +244,23 @@ export function createTestRouter(routes = []) {
 }
 
 /**
+ * getLocalVue()'s global mount options with `plugins` added, where a test's own
+ * pinia or router replaces the default of the same kind. Use it as
+ * `mount(Component, { global: withPlugins(localVue, pinia) })`.
+ * @template {{ plugins?: any[] }} G
+ * @param {G} localVue
+ * @param {...any} plugins
+ * @returns {G}
+ */
+export function withPlugins(localVue, ...plugins) {
+    const isPinia = (plugin) => plugin && typeof plugin === "object" && "_s" in plugin && "_e" in plugin;
+    const isRouter = (plugin) => plugin && typeof plugin === "object" && "currentRoute" in plugin && "push" in plugin;
+    const replaced = (plugin) =>
+        plugins.some((own) => (isPinia(plugin) && isPinia(own)) || (isRouter(plugin) && isRouter(own)));
+    return { ...localVue, plugins: [...(localVue.plugins ?? []).filter((plugin) => !replaced(plugin)), ...plugins] };
+}
+
+/**
  * @deprecated Use createTestRouter() instead and pass to global.plugins
  * This function is kept for backward compatibility during migration.
  */

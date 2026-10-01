@@ -8,9 +8,12 @@ import type { JobBaseModel } from "@/api/jobs";
 import { statePlaceholders } from "@/composables/useInvocationGraph";
 
 import { TEST_JOBS_BY_STATES } from "./test/jobStepUtils";
-import TEST_JOBS_JSON from "./test/json/jobs.json";
+import TEST_JOBS_JSON_RAW from "./test/json/jobs.json";
 
 import JobStep from "./JobStep.vue";
+
+// JSON imports widen `state` to string.
+const TEST_JOBS_JSON = TEST_JOBS_JSON_RAW as JobBaseModel[];
 
 const TEST_INVOCATION_ID = "test-invocation-id";
 
@@ -26,12 +29,12 @@ const SELECTORS = {
 
 describe("Job Step", () => {
     it("shows jobs grouped by state in tables when multiple jobs", async () => {
-        const wrapper = mount(JobStep as object, {
+        const wrapper = mount(JobStep, {
             props: {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
         });
         await flushPromises();
 
@@ -75,12 +78,12 @@ describe("Job Step", () => {
     });
 
     it("reacts to job states changing when multiple jobs", async () => {
-        const wrapper = mount(JobStep as object, {
+        const wrapper = mount(JobStep, {
             props: {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
         });
         await flushPromises();
 
@@ -104,14 +107,14 @@ describe("Job Step", () => {
         expect(nth(buttons, 1).text()).toBe("1 job running");
 
         // we trigger the state change by updating the first job's state from 'new' to 'running'
-        const updatedJob = { ...TEST_JOBS_JSON[0], state: "running" };
+        const updatedJob: JobBaseModel = { ...nth(TEST_JOBS_JSON, 0), state: "running" };
         await wrapper.setProps({ jobs: [updatedJob, ...TEST_JOBS_JSON.slice(1)] });
         await flushPromises();
 
         // verify buttons have been updated
         buttons = wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
         expect(buttons.length).toBe(Object.keys(TEST_JOBS_BY_STATES).length - 1);
-        firstButton = buttons.at(0);
+        firstButton = nth(buttons, 0);
 
         // first button is now 'running' with 2 jobs
         expect(firstButton.classes()).toContain("g-pressed");
@@ -123,14 +126,14 @@ describe("Job Step", () => {
     });
 
     it("just renders the job when only one job", async () => {
-        const singleJob = TEST_JOBS_JSON.slice(0, 1)[0] as JobBaseModel;
+        const singleJob = nth(TEST_JOBS_JSON, 0);
 
-        const wrapper = shallowMount(JobStep as object, {
+        const wrapper = shallowMount(JobStep, {
             props: {
                 jobs: [singleJob],
                 invocationId: TEST_INVOCATION_ID,
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
         });
         await flushPromises();
 

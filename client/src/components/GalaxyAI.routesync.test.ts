@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
@@ -92,11 +92,12 @@ window.HTMLElement.prototype.scrollTo = vi.fn();
 function mountChat() {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const wrapper = mount(GalaxyAI as object, {
-        localVue,
-        pinia,
-        propsData: { panel: true },
-        stubs: { FontAwesomeIcon: true, BSkeleton: true },
+    const wrapper = mount(GalaxyAI, {
+        props: { panel: true },
+        global: {
+            ...withPlugins(localVue, pinia),
+            stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
+        },
     });
     const chatStore = useChatStore();
     return { wrapper, chatStore };
@@ -155,11 +156,12 @@ describe("GalaxyAI route sync", () => {
         routeMock.query = { compact: "true", q: "trim my reads" };
         const pinia = createPinia();
         setActivePinia(pinia);
-        const wrapper = mount(GalaxyAI as object, {
-            localVue,
-            pinia,
-            propsData: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
-            stubs: { FontAwesomeIcon: true, BSkeleton: true },
+        const wrapper = mount(GalaxyAI, {
+            props: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
+            global: {
+                ...withPlugins(localVue, pinia),
+                stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
+            },
         });
         await flushPromises();
 
