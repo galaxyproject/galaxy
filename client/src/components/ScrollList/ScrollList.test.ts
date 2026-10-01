@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { type ComponentPublicInstance, nextTick } from "vue";
 
 import ScrollList from "./ScrollList.vue";
 
@@ -25,6 +25,16 @@ function createTestItems(count: number): TestItem[] {
     }));
     return items;
 }
+
+/** ScrollList is generic, so vue-test-utils can't infer its props; declare the ones these tests read or set. */
+type ScrollListWrapper = VueWrapper<
+    ComponentPublicInstance<{
+        propItems?: TestItem[];
+        propTotalCount?: number;
+        adjustForTotalCountChanges?: boolean;
+        showCountInFooter?: boolean;
+    }>
+>;
 
 /** The infinite scroll callback mock, given the same name as the callback in `ScrollList`. */
 let loadItems: (() => void) | null = null;
@@ -64,7 +74,7 @@ let expectedTotalItemCount = 0;
  * @param wrapper Optional component wrapper to update the `propItems` with new items.
  */
 const testLoader = vi.fn(
-    (offset: number, limit: number, wrapper?: VueWrapper): Promise<{ items: TestItem[]; total: number }> => {
+    (offset: number, limit: number, wrapper?: ScrollListWrapper): Promise<{ items: TestItem[]; total: number }> => {
         const newItems = TEST_ITEMS.slice(offset, offset + limit);
 
         if (wrapper) {
@@ -89,7 +99,7 @@ const testLoader = vi.fn(
 );
 
 describe("ScrollList with local loader and data", () => {
-    let wrapper: VueWrapper;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(async () => {
         testLoader.mockClear();
@@ -188,7 +198,7 @@ describe("ScrollList with local loader and data", () => {
 });
 
 describe("ScrollList with prop items and no local state", () => {
-    let wrapper: VueWrapper;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();
@@ -215,7 +225,7 @@ describe("ScrollList with prop items and no local state", () => {
 
     it("renders all items without scrolling/loading", async () => {
         // Assert that `propItems` is already populated
-        expect(wrapper.props().propItems.length).toBe(TOTAL_ITEMS);
+        expect(wrapper.props().propItems?.length).toBe(TOTAL_ITEMS);
 
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(TOTAL_ITEMS);
         expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
@@ -228,7 +238,7 @@ describe("ScrollList with prop items and no local state", () => {
 });
 
 describe("ScrollList with prop items and a local state loader", () => {
-    let wrapper: VueWrapper;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();
@@ -261,7 +271,7 @@ describe("ScrollList with prop items and a local state loader", () => {
 
     it("updates the propItems on scroll", async () => {
         // Assert that `propItems` is initially empty
-        expect(wrapper.props().propItems.length).toBe(0);
+        expect(wrapper.props().propItems?.length).toBe(0);
 
         await scrollOnce();
 
@@ -269,7 +279,7 @@ describe("ScrollList with prop items and a local state loader", () => {
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE);
 
         // And the `propItems` have been updated as well
-        expect(wrapper.props().propItems.length).toBe(BUFFER_SIZE);
+        expect(wrapper.props().propItems?.length).toBe(BUFFER_SIZE);
 
         // And this happened through the loader
         expect(testLoader).toHaveBeenCalledTimes(1);
@@ -278,7 +288,7 @@ describe("ScrollList with prop items and a local state loader", () => {
         await scrollOnce();
         await scrollOnce();
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE * 3);
-        expect(wrapper.props().propItems.length).toBe(BUFFER_SIZE * 3);
+        expect(wrapper.props().propItems?.length).toBe(BUFFER_SIZE * 3);
         expect(testLoader).toHaveBeenCalledTimes(3);
     });
 

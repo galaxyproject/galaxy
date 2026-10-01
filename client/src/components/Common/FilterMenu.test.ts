@@ -132,7 +132,7 @@ describe("FilterMenu", () => {
 
     it("test generic test items filter panel search", async () => {
         setUpWrapper("Test Items", "search test items", TestFilters);
-        const validFilters = wrapper.vm.$props.filterClass.validFilters;
+        const validFilters = TestFilters.validFilters;
 
         await wrapper.setProps({ showAdvanced: true });
 

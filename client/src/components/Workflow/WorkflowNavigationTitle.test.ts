@@ -6,6 +6,7 @@ import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AnyHistory } from "@/api";
+import type AsyncButton from "@/components/Common/AsyncButton.vue";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -198,10 +199,10 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show a confirmation dialog when the import is successful", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.findComponent(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent<typeof AsyncButton>(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        await importButton.props("action")();
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
@@ -212,10 +213,10 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show an error dialog when the import fails", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.findComponent(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent<typeof AsyncButton>(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        await importButton.props("action")();
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);

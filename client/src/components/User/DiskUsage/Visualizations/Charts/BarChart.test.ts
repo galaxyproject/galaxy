@@ -86,7 +86,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             await flushPromises();
-            expect(wrapper.findComponent(VegaWrapper as any).exists()).toBe(true);
+            expect(wrapper.findComponent(VegaWrapper).exists()).toBe(true);
         });
 
         it("should not render VegaWrapper when there is no data", () => {
@@ -94,7 +94,7 @@ describe("BarChart.vue", () => {
                 title: "Test Bar Chart",
                 data: [],
             });
-            expect(wrapper.findComponent(VegaWrapper as any).exists()).toBe(false);
+            expect(wrapper.findComponent(VegaWrapper).exists()).toBe(false);
         });
 
         it("should render with the correct title", () => {
@@ -143,7 +143,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
@@ -159,7 +159,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const symbols = wrapper.findAll(".legend-symbol");
@@ -184,7 +184,7 @@ describe("BarChart.vue", () => {
                 enableSelection: false,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const item = wrapper.find(".legend-item");
@@ -199,7 +199,7 @@ describe("BarChart.vue", () => {
                 enableSelection: true,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const item = wrapper.find(".legend-item");
@@ -214,7 +214,7 @@ describe("BarChart.vue", () => {
                 enableSelection: true,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
@@ -233,7 +233,7 @@ describe("BarChart.vue", () => {
                 enableSelection: false,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper as any);
+            const vegaWrapper = wrapper.findComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const item = wrapper.find(".legend-item");
