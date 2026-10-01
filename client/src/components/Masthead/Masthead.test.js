@@ -107,15 +107,10 @@ describe("Masthead.vue", () => {
         useCommandPalette().closePalette();
     });
 
-    it("labels the search button with the phrase the instance configured", async () => {
-        const button = () => wrapper.find("[data-description='masthead search button']");
-        expect(button().find(".search-placeholder").text()).toBe("Search Galaxy");
-        expect(button().attributes("title")).toBe("Search Galaxy (Ctrl+K)");
-
-        await remount({ command_palette_placeholder: "Search UseGalaxy.eu" });
-
-        expect(button().find(".search-placeholder").text()).toBe("Search UseGalaxy.eu");
-        expect(button().attributes("title")).toBe("Search UseGalaxy.eu (Ctrl+K)");
+    it("labels the search button with the localized search phrase", () => {
+        const button = wrapper.find("[data-description='masthead search button']");
+        expect(button.find(".search-placeholder").text()).toBe("Search Galaxy");
+        expect(button.attributes("title")).toBe("Search Galaxy (Ctrl+K)");
     });
 
     it("hides the search button when the palette is disabled", async () => {

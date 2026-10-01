@@ -55,8 +55,7 @@ const subdomainSwitcherMenu = computed(() => {
 const { openPalette, paletteEnabled } = useCommandPalette();
 const eventStore = useEventStore();
 const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
-// an instance-configured phrase is admin copy, so it is used verbatim
-const searchPlaceholder = computed(() => config.value.command_palette_placeholder || localize("Search Galaxy"));
+const searchPlaceholder = localize("Search Galaxy");
 
 const { registrationTarget } = useRegistrationTarget();
 

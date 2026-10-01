@@ -4760,15 +4760,6 @@ mapping:
           Disabling a provider removes its search scopes, its category tab and its results from
           the palette.
 
-      command_palette_placeholder:
-        type: str
-        required: false
-        desc: |
-          Overrides the leading phrase of the command palette input placeholder and the text and
-          tooltip of the search button in the masthead.
-
-          When unset, the client uses a localized "Search Galaxy".
-
       enable_mcp_server:
         type: bool
         default: false

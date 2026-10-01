@@ -6374,19 +6374,6 @@
 :Type: seq
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``command_palette_placeholder``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Overrides the leading phrase of the command palette input
-    placeholder and the text and tooltip of the search button in the
-    masthead.
-    When unset, the client uses a localized "Search Galaxy".
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~
 ``enable_mcp_server``
 ~~~~~~~~~~~~~~~~~~~~~
