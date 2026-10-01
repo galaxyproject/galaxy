@@ -39,7 +39,12 @@ export function findPaletteProvider(providerId: string): CommandPaletteProvider 
 
 const warnedUnknownIds = new Set<string>();
 
-/** Warns once per id that names no provider, so a typo in the config does not silently disable nothing */
+/** Test seam: forgets which unknown ids were warned about. */
+export function resetUnknownProviderWarnings(): void {
+    warnedUnknownIds.clear();
+}
+
+/** Warns once per id that names no provider, so a typo in the config is not silently ignored */
 function warnUnknownDisabledProviders(ctx: PaletteContext) {
     for (const id of ctx.config.command_palette_disabled_providers ?? []) {
         if (!warnedUnknownIds.has(id) && !findPaletteProvider(id)) {

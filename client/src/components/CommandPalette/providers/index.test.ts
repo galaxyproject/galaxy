@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { makeCtx } from "../test-utils";
 import type { PaletteItem } from "../types";
@@ -8,6 +8,7 @@ import {
     paletteProviders,
     parsePaletteQuery,
     rankPaletteItems,
+    resetUnknownProviderWarnings,
 } from "./index";
 import { ACTIONS_SCOPE, PALETTE_SCOPES } from "./scopes";
 
@@ -22,6 +23,10 @@ function scopeKey(raw: string) {
 }
 
 describe("paletteProviders", () => {
+    beforeEach(() => {
+        resetUnknownProviderWarnings();
+    });
+
     it("serves every registered scope", () => {
         [ACTIONS_SCOPE, ...PALETTE_SCOPES].forEach((scope) => {
             expect(findPaletteProvider(scope.providerId)?.id).toBe(scope.providerId);
