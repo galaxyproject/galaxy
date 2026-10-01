@@ -4,7 +4,7 @@ import { ALL_CATEGORY, PALETTE_CATEGORIES } from "./providers/categories";
 import { ACTIONS_SCOPE, findScope } from "./providers/scopes";
 import { makeCtx } from "./test-utils";
 import type { PaletteItem } from "./types";
-import { usePaletteMachine } from "./usePaletteMachine";
+import { paletteModeIdentity, paletteModeSubject, usePaletteMachine } from "./usePaletteMachine";
 
 const WORKFLOWS = findScope("w")!;
 
@@ -263,5 +263,24 @@ describe("usePaletteMachine", () => {
         machine.setText("w: rna");
         machine.popMode();
         expect(machine.category.value).toBeUndefined();
+    });
+});
+
+describe("palette mode helpers", () => {
+    const tools = PALETTE_CATEGORIES.find((category) => category.id === "tools")!;
+
+    it("identifies the mode by its badge or category, never by the text", () => {
+        expect(paletteModeIdentity({ type: "root" })).toBe("root:all");
+        expect(paletteModeIdentity({ type: "root", category: tools })).toBe("root:tools");
+        expect(paletteModeIdentity({ type: "scoped", scope: WORKFLOWS })).toBe("scoped:w");
+        expect(paletteModeIdentity({ type: "action", action: NEW_HISTORY })).toBe("action:actions:new-history");
+        expect(paletteModeIdentity({ type: "help" })).toBe("help");
+    });
+
+    it("names what a search in the mode is of", () => {
+        expect(paletteModeSubject({ type: "root" })).toBe("the results");
+        expect(paletteModeSubject({ type: "root", category: tools })).toBe("tools");
+        expect(paletteModeSubject({ type: "scoped", scope: WORKFLOWS })).toBe("my workflows");
+        expect(paletteModeSubject({ type: "action", action: NEW_HISTORY })).toBe("create new history");
     });
 });
