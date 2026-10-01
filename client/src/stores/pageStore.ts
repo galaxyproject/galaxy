@@ -7,9 +7,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { createPage, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
-import { errorMessageAsString } from "@/utils/simple-error";
-import { slugify } from "@/utils/slug";
+import { createPageFromTitle, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
 
 /** `my` = pages owned by the current user, `published` = published (and shared) pages. */
 export type PageListVariant = "my" | "published";
@@ -29,11 +27,6 @@ export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" 
      */
     record?: boolean;
 };
-
-/** The backend rejects a slug the user already has with this message */
-function isSlugConflict(error: unknown): boolean {
-    return /must be unique/i.test(String(errorMessageAsString(error, "")));
-}
 
 export const usePageStore = defineStore("pageStore", () => {
     const summariesById = ref<Record<string, PageSummary>>({});
@@ -183,23 +176,11 @@ export const usePageStore = defineStore("pageStore", () => {
     }
 
     /**
-     * Creates a markdown page slugged from `title` (an owned slug retries once with `-2`) and heads the
-     * cached listing with it, which would otherwise miss it until the next unfiltered fetch.
+     * Creates a markdown page slugged from `title` (see `createPageFromTitle`) and heads the cached listing
+     * with it, which would otherwise miss it until the next unfiltered fetch.
      */
     async function createMarkdownPage(title: string): Promise<PageDetails> {
-        // a title made of punctuation alone would leave no slug to send
-        const slug = slugify(title, "page");
-        let page: PageDetails;
-        try {
-            page = await createPage({ title, slug, content_format: "markdown" });
-        } catch (error) {
-            if (!isSlugConflict(error)) {
-                throw error;
-            }
-            // one retry is enough: the suffixed slug is free unless the user
-            // already owns both, which is worth reporting
-            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
-        }
+        const page = await createPageFromTitle({ title, content_format: "markdown" });
         savePages("my", [page], true);
         return page;
     }
