@@ -129,10 +129,14 @@ class TestAdminVisualizationsApi(ApiTestCase):
 
     @requires_admin
     def test_clean_staged(self):
-        response = self._delete("admin/visualizations/staged", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert_has_keys(data, "message", "cleaned_count")
+        try:
+            response = self._delete("admin/visualizations/staged", admin=True)
+            assert_status_code_is(response, 200)
+            data = response.json()
+            assert_has_keys(data, "message", "cleaned_count")
+        finally:
+            # Staged assets are served from the Galaxy root, so put them back for later tests
+            self._post("admin/visualizations/stage", admin=True)
 
     @requires_admin
     def test_stage_nonexistent(self):

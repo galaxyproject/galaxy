@@ -999,6 +999,20 @@ galaxy:
   # comma-separated list.
   #visualization_plugins_directory: config/plugins/visualizations
 
+  # File recording the visualization packages installed at runtime
+  # through the admin interface. Must be writable by Galaxy and should
+  # not be edited by hand.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
+  #visualization_packages_config_file: visualization_packages.yml
+
+  # Directory holding visualization packages installed at runtime
+  # through the admin interface. Must be writable by Galaxy. Servable
+  # assets are staged from here into static/plugins/visualizations.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
+  #visualization_packages_dir: visualization_packages
+
   # Interactive tour directory: where to store interactive tour
   # definition files. Galaxy ships with several basic interface tours
   # enabled, though a different directory with custom tours can be

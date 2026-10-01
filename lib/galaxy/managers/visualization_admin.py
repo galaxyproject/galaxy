@@ -15,7 +15,7 @@ import requests
 import yaml
 
 from galaxy import exceptions
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
@@ -28,12 +28,13 @@ _VIZ_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?$")
 class VisualizationPackageManager:
     """Manager for visualization package operations."""
 
-    def __init__(self, app: MinimalManagerApp):
-        self.app = app
-        self.config_path = os.path.join(app.config.root, "config", "visualization_packages.yml")
-        self.package_store_path = os.path.join(app.config.root, "config", "visualization_packages")
-        self.static_path = os.path.join(app.config.root, "static", "plugins", "visualizations")
-        self.legacy_visualizations_path = os.path.join(app.config.root, "config", "plugins", "visualizations")
+    def __init__(self, config: GalaxyAppConfiguration) -> None:
+        self.config_path = config.visualization_packages_config_file
+        self.package_store_path = config.visualization_packages_dir
+        # Galaxy serves visualization assets from here, so it stays under the root
+        self.static_path = os.path.join(config.root, "static", "plugins", "visualizations")
+        self.legacy_plugins_path = os.path.join(config.root, "config", "plugins")
+        self.legacy_visualizations_path = os.path.join(self.legacy_plugins_path, "visualizations")
 
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         os.makedirs(self.package_store_path, exist_ok=True)
@@ -383,7 +384,7 @@ class VisualizationPackageManager:
     def clean_staged_assets(self) -> dict:
         """Clean all staged visualization assets from static/plugins/visualizations."""
         try:
-            static_viz_dir = os.path.join(self.app.config.root, "static", "plugins", "visualizations")
+            static_viz_dir = self.static_path
 
             if not os.path.exists(static_viz_dir):
                 return {"cleaned_count": 0, "message": "No staged assets to clean"}
@@ -403,7 +404,7 @@ class VisualizationPackageManager:
     def get_staging_status(self) -> dict:
         """Get information about currently staged visualizations."""
         try:
-            static_viz_dir = os.path.join(self.app.config.root, "static", "plugins", "visualizations")
+            static_viz_dir = self.static_path
 
             if not os.path.exists(static_viz_dir):
                 return {"staged_count": 0, "staged_visualizations": [], "total_size": 0}
@@ -464,7 +465,7 @@ class VisualizationPackageManager:
             for source_dir in sorted(glob(pattern)):
                 if "node_modules/.bin" in source_dir:
                     continue
-                relative_path = os.path.relpath(source_dir, os.path.join(self.app.config.root, "config", "plugins"))
+                relative_path = os.path.relpath(source_dir, self.legacy_plugins_path)
                 viz_name = self._extract_viz_name_from_path(relative_path)
                 if not viz_name or viz_name in managed_viz_ids:
                     continue
@@ -495,7 +496,7 @@ class VisualizationPackageManager:
             raise exceptions.ConfigurationError(
                 f"Runtime visualization '{viz_id}' is missing required static config: {config_file}"
             )
-        relative_path = os.path.relpath(package_path, self.app.config.root)
+        relative_path = os.path.relpath(package_path, self.package_store_path)
         if not safe_relpath(relative_path):
             raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
         return {
@@ -506,8 +507,7 @@ class VisualizationPackageManager:
         }
 
     def _build_legacy_stage_spec(self, viz_id: str, source_dir: str) -> dict:
-        plugins_base_dir = os.path.join(self.app.config.root, "config", "plugins")
-        relative_path = os.path.relpath(source_dir, plugins_base_dir)
+        relative_path = os.path.relpath(source_dir, self.legacy_plugins_path)
         if not safe_relpath(relative_path):
             raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
         return {

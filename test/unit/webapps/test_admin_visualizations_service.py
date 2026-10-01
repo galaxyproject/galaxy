@@ -1,7 +1,10 @@
 import json
 import os
 import shutil
-from unittest.mock import MagicMock, patch
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pytest
 
@@ -25,8 +28,11 @@ def _write_package(package_dir: str, package_name: str, version: str) -> None:
 @pytest.fixture()
 def service(tmp_path):
     app = MagicMock()
-    app.config.root = str(tmp_path)
-    manager = VisualizationPackageManager(app)
+    config = MagicMock()
+    config.root = str(tmp_path / "galaxy")
+    config.visualization_packages_config_file = str(tmp_path / "managed" / "visualization_packages.yml")
+    config.visualization_packages_dir = str(tmp_path / "managed" / "visualization_packages")
+    manager = VisualizationPackageManager(config)
     service = AdminVisualizationsService(security=MagicMock(), app=app, package_manager=manager)
     return service, manager
 
