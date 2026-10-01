@@ -61,11 +61,11 @@ from galaxy.util import (
     requests,
 )
 from . import IdentityProvider
-from .oidc import PKCE_CODE_VERIFIER_SESSION_KEY
 from .oidc_utils import (
     decode_access_token as decode_access_token_oidc,
     is_decodable_jwt,
     is_oidc_backend,
+    PKCE_CODE_VERIFIER_SESSION_KEY,
     verify_oidc_response,
 )
 

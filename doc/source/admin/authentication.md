@@ -50,7 +50,7 @@ For this to work:
 
 To check that PKCE is active, open the browser's developer tools before logging in. The redirect to the IdP carries `code_challenge` and `code_challenge_method=S256` in its query string, and the response to `/authnz/<provider>/login` sets the `galaxy-oidc-pkce-verifier` cookie. To make the IdP reject logins without PKCE, require it on the client there. In Keycloak this is _Clients > your client > Advanced > Proof Key for Code Exchange Code Challenge Method_ set to `S256`.
 
-If logins fail with "Authentication with `<provider>` was canceled or the authorization code has expired" while PKCE is enabled, the IdP received no verifier or the wrong one. Check that the browser accepts the `galaxy-oidc-pkce-verifier` cookie and sends it to the callback URL.
+Galaxy refuses the login itself when the callback arrives without a verifier, so it never depends on the IdP enforcing PKCE. Users then see "Login with `<provider>` could not be completed because the browser did not return Galaxy's login cookie, or the login took longer than 10 minutes". Check that the browser accepts the `galaxy-oidc-pkce-verifier` cookie and sends it to the callback URL. If the IdP rejects the verifier, users see "Authentication with `<provider>` was canceled or the authorization code has expired".
 
 ## Authentication Framework
 

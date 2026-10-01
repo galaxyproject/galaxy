@@ -181,13 +181,17 @@ class AbstractTestCases:
         def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
-        def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
+        def _login_via_keycloak(
+            self, username, password, expected_codes=None, save_cookies=False, session=None, remove_cookie=None
+        ):
 
             if expected_codes is None:
                 expected_codes = [200, 404]
             session = session or requests.Session()
             response = session.get(f"{self.url}authnz/{self.provider_name}/login")
             provider_url = response.json()["redirect_uri"]
+            if remove_cookie:
+                del session.cookies[remove_cookie]
             response = session.get(provider_url, verify=False)
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
             assert matches
@@ -467,6 +471,17 @@ class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrati
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
+
+    def test_oidc_login_without_pkce_verifier_cookie_is_refused(self):
+        _, response = self._login_via_keycloak(
+            KEYCLOAK_TEST_USERNAME,
+            KEYCLOAK_TEST_PASSWORD,
+            save_cookies=True,
+            remove_cookie=PKCE_CODE_VERIFIER_COOKIE_NAME,
+        )
+        assert "the login took longer than 10 minutes" in html.unescape(response.text)
+        response = self._get("users/current")
+        assert "id" not in response.json()
 
 
 class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
