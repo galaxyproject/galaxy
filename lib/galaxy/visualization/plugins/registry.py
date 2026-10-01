@@ -63,23 +63,30 @@ class VisualizationsRegistry:
         self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
 
+    def reload(self) -> None:
+        """Rediscover plugins on disk, replacing the loaded set."""
+        self._load_plugins()
+
     def _load_plugins(self):
         """
         Search ``self.directories`` for potential plugins, load them, and cache
         in ``self.plugins``.
         """
+        # Build into a fresh dict and swap at the end so a reload never exposes a partial set
+        plugins: dict[str, VisualizationPlugin] = {}
         for plugin_path in self._find_plugins():
             try:
                 plugin = self._load_plugin(plugin_path)
-                if plugin and plugin.name not in self.plugins:
-                    self.plugins[plugin.name] = plugin
+                if plugin and plugin.name not in plugins:
+                    plugins[plugin.name] = plugin
                     log.info("%s, loaded plugin: %s", self, plugin.name)
-                elif plugin and plugin.name in self.plugins:
+                elif plugin and plugin.name in plugins:
                     log.warning("%s, plugin with name already exists: %s. Skipping...", self, plugin.name)
             except Exception:
                 if not self.skip_bad_plugins:
                     raise
                 log.exception("Plugin loading raised exception: %s. Skipping...", plugin_path)
+        self.plugins = plugins
         return self.plugins
 
     def _find_plugins(self):

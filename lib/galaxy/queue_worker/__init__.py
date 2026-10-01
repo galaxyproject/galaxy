@@ -397,6 +397,11 @@ def reload_tour(app, **kwargs):
     log.debug("Tour reloaded")
 
 
+def reload_visualizations(app, **kwargs):
+    app.visualizations_registry.reload()
+    log.debug("Visualizations registry reloaded")
+
+
 def reload_tool_source_cache(app, **kwargs):
     """
     Reload the tool source cache/index.
@@ -588,6 +593,7 @@ control_message_to_task = {
     "rebuild_toolbox_search_index": rebuild_toolbox_search_index,
     "reconfigure_watcher": reconfigure_watcher,
     "reload_tour": reload_tour,
+    "reload_visualizations": reload_visualizations,
     "reload_core_config": reload_core_config,
     "notify_users": notify_users,
     "notify_broadcast": notify_broadcast,
