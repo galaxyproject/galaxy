@@ -1,6 +1,5 @@
 """Unit tests for importing and exporting data from model stores."""
 
-import csv
 import json
 import os
 import pathlib
@@ -767,16 +766,19 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
 
 
 def _read_datasets_mapping(directory):
+    """Read the mapping strictly as IANA TSV: one record per line, no quoting."""
     mapping_path = os.path.join(directory, DATASETS_MAPPING_FILENAME)
     with open(mapping_path, encoding="utf-8", newline="") as mapping_file:
-        reader = csv.DictReader(mapping_file, delimiter="\t")
-        return reader.fieldnames, list(reader)
+        header, *lines = mapping_file.read().splitlines()
+    fieldnames = header.split("\t")
+    rows = [dict(zip(fieldnames, line.split("\t"), strict=True)) for line in lines]
+    return fieldnames, rows
 
 
 def test_history_export_writes_datasets_mapping(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
-    d1.name = "my cool dataset, with comma"
+    d1.name = 'my "cool" dataset, with comma'
     app.commit()
 
     with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
@@ -799,7 +801,7 @@ def test_history_export_writes_datasets_mapping(tmp_path):
     ]
     assert len(rows) == 2
     rows_by_hid = {row["hid"]: row for row in rows}
-    assert rows_by_hid[str(d1.hid)]["name"] == "my cool dataset, with comma"
+    assert rows_by_hid[str(d1.hid)]["name"] == 'my "cool" dataset, with comma'
     assert rows_by_hid[str(d2.hid)]["name"] == d2.name
     for row in rows:
         assert row["exported_file"]
@@ -885,6 +887,22 @@ def test_history_export_survives_mapping_failure(tmp_path, monkeypatch):
 
     assert os.path.exists(os.path.join(tmp_path, store.ATTRS_FILENAME_HISTORY))
     assert not os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+
+
+def test_datasets_mapping_is_plain_tsv(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+    d1.name = '5" UTR\tregion'
+    d1.annotation = "first line\nsecond line"
+    app.commit()
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.add_dataset(d1)
+
+    _, rows = _read_datasets_mapping(tmp_path)
+    assert len(rows) == 1
+    assert rows[0]["name"] == '5" UTR region'
+    assert rows[0]["annotation"] == "first line second line"
 
 
 def test_history_export_maps_collection_elements(tmp_path):
@@ -979,6 +997,13 @@ def test_mapping_row_tolerates_missing_keys():
     assert row["annotation"] == ""
     assert row["collection_name"] == ""
     assert row["element_identifier"] == ""
+
+
+def test_mapping_row_replaces_tabs_and_line_breaks():
+    serialized = {**_serialized_hda_dict(), "name": 'a\tb "c"', "annotation": "line one\r\nline two"}
+    row = mapping_row(MappingEntry(serialized=serialized, file_size="", collections=[]))
+    assert row["name"] == 'a b "c"'
+    assert row["annotation"] == "line one line two"
 
 
 def test_finalize_job_state():

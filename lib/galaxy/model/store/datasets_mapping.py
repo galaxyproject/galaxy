@@ -5,10 +5,15 @@ dictionaries written to ``datasets_attrs.txt`` (and its ``.provenance``
 companion), so the TSV can never disagree with the machine-readable
 metadata. Only ``file_size`` and collection membership are not part of the
 serialized dictionaries and are supplied by the caller.
+
+The file follows the IANA ``text/tab-separated-values`` format: values are
+never quoted, and tabs or line breaks inside values are replaced with a
+single space. ``datasets_attrs.txt`` keeps the exact values.
 """
 
 import csv
 import os
+import re
 from collections.abc import (
     Iterable,
     Iterator,
@@ -37,6 +42,8 @@ DATASETS_MAPPING_COLUMNS = (
     "create_time",
     "update_time",
 )
+
+TSV_UNSAFE_WHITESPACE = re.compile(r"[\t\r\n]+")
 
 
 class CollectionMembership(NamedTuple):
@@ -93,11 +100,15 @@ def file_size_of(dataset: model.DatasetInstance) -> str:
     return ""
 
 
+def tsv_safe(value: str) -> str:
+    return TSV_UNSAFE_WHITESPACE.sub(" ", value)
+
+
 def mapping_row(entry: MappingEntry) -> dict[str, str]:
     serialized = entry.serialized
     tags = serialized.get("tags") or []
     collections = sorted(set(entry.collections))
-    return {
+    row = {
         "hid": str(serialized.get("hid") or ""),
         "name": serialized.get("name") or "",
         "exported_file": serialized.get("file_name") or "",
@@ -111,6 +122,7 @@ def mapping_row(entry: MappingEntry) -> dict[str, str]:
         "create_time": serialized.get("create_time") or "",
         "update_time": serialized.get("update_time") or "",
     }
+    return {column: tsv_safe(value) for column, value in row.items()}
 
 
 def write_datasets_mapping(export_directory: StrPath, entries: list[MappingEntry]) -> None:
@@ -125,6 +137,8 @@ def write_datasets_mapping(export_directory: StrPath, entries: list[MappingEntry
             fieldnames=list(DATASETS_MAPPING_COLUMNS),
             delimiter="\t",
             lineterminator="\n",
+            quoting=csv.QUOTE_NONE,
+            quotechar=None,
         )
         writer.writeheader()
         writer.writerows(rows)
