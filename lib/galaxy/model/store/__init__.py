@@ -2011,6 +2011,7 @@ class DirectoryModelExportStore(ModelExportStore):
         serialize_jobs: bool = True,
         user_context=None,
         ignore_errors: bool | None = False,
+        include_datasets_mapping: bool = False,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -2020,6 +2021,7 @@ class DirectoryModelExportStore(ModelExportStore):
         :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
                              will not be serialized.
         :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
+        :param include_datasets_mapping: Write a human-readable ``datasets_mapping.tsv`` for user-facing exports.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -2050,6 +2052,7 @@ class DirectoryModelExportStore(ModelExportStore):
             ignore_errors=ignore_errors,
         )
         self.export_files = export_files
+        self.include_datasets_mapping = include_datasets_mapping
         self.included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]] = {}
         self.dataset_implicit_conversions: dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation] = {}
         self.included_collections: dict[
@@ -2634,6 +2637,11 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(export_attrs_filename, "w") as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
+        if self.include_datasets_mapping:
+            self._write_datasets_mapping(serialized_datasets + serialized_provenance)
+
+    def _write_datasets_mapping(self, serialized_datasets: list[tuple[model.DatasetInstance, JsonDictT]]) -> None:
+        """Write ``datasets_mapping.tsv``; it is a convenience, so never fail the export because of it."""
         try:
             collection_memberships = collection_memberships_by_hda_id(self.included_collections)
             mapping_entries = [
@@ -2642,7 +2650,7 @@ class DirectoryModelExportStore(ModelExportStore):
                     file_size=file_size_of(dataset),
                     collections=collection_memberships_of(dataset, collection_memberships),
                 )
-                for dataset, serialized in serialized_datasets + serialized_provenance
+                for dataset, serialized in serialized_datasets
             ]
             write_datasets_mapping(self.export_directory, mapping_entries)
         except Exception:
@@ -3111,6 +3119,7 @@ def get_export_store_factory(
         "serialize_dataset_objects": False,
         "user_context": user_context,
         "ignore_errors": ignore_errors,
+        "include_datasets_mapping": True,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
@@ -3123,6 +3132,8 @@ def get_export_store_factory(
     elif download_format == "bco.json":
         export_store_class = BcoModelExportStore
         export_store_class_kwds["export_options"] = bco_export_options
+        # The BCO is a single JSON document; the export directory is discarded.
+        export_store_class_kwds["include_datasets_mapping"] = False
     elif download_format.startswith("bag."):
         bag_archiver = download_format[len("bag.") :]
         if bag_archiver not in ["zip", "tar", "tgz"]:

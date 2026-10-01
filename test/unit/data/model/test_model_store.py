@@ -781,7 +781,9 @@ def test_history_export_writes_datasets_mapping(tmp_path):
     d1.name = 'my "cool" dataset, with comma'
     app.commit()
 
-    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.export_history(history)
 
     fieldnames, rows = _read_datasets_mapping(tmp_path)
@@ -813,7 +815,9 @@ def test_history_export_tar_includes_datasets_mapping(tmp_path):
     u, history, d1, d2, j = _setup_simple_cat_job(app)
 
     tar_path = str(tmp_path / "history.tgz")
-    with store.TarModelExportStore(tar_path, app=app, export_files="copy") as export_store:
+    with store.TarModelExportStore(
+        tar_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.export_history(history)
 
     with tarfile.open(tar_path) as tar:
@@ -824,7 +828,7 @@ def test_history_ro_crate_registers_datasets_mapping(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
 
-    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app, include_datasets_mapping=True) as export_store:
         export_store.export_history(history)
 
     assert os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
@@ -836,7 +840,7 @@ def test_invocation_ro_crate_registers_datasets_mapping(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
 
-    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app, include_datasets_mapping=True) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
 
     assert os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
@@ -850,7 +854,9 @@ def test_invocation_ro_crate_archive_includes_datasets_mapping(tmp_path):
 
     crate_zip = tmp_path / "crate.zip"
     crate_directory = tmp_path / "crate"
-    with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
+    with store.ROCrateArchiveModelExportStore(
+        crate_zip, app=app, export_files="symlink", include_datasets_mapping=True
+    ) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     with CompressedFile(crate_zip) as compressed_file:
         assert compressed_file.file_type == "zip"
@@ -864,7 +870,9 @@ def test_datasets_mapping_includes_provenance_only_datasets(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
 
-    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.add_dataset(d1, include_files=False)
 
     _, rows = _read_datasets_mapping(tmp_path)
@@ -882,11 +890,36 @@ def test_history_export_survives_mapping_failure(tmp_path, monkeypatch):
         raise RuntimeError("mapping boom")
 
     monkeypatch.setattr(store, "write_datasets_mapping", fail)
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
+        export_store.export_history(history)
+
+    assert os.path.exists(os.path.join(tmp_path, store.ATTRS_FILENAME_HISTORY))
+    assert not os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+
+
+def test_datasets_mapping_is_opt_in(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
     with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
         export_store.export_history(history)
 
     assert os.path.exists(os.path.join(tmp_path, store.ATTRS_FILENAME_HISTORY))
     assert not os.path.exists(os.path.join(tmp_path, DATASETS_MAPPING_FILENAME))
+
+
+def test_export_store_factory_writes_datasets_mapping(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    tar_path = str(tmp_path / "history.tgz")
+    with store.get_export_store_factory(app, "tgz", export_files="copy")(tar_path) as export_store:
+        export_store.export_history(history)
+
+    with tarfile.open(tar_path) as tar:
+        assert DATASETS_MAPPING_FILENAME in tar.getnames()
 
 
 def test_datasets_mapping_is_plain_tsv(tmp_path):
@@ -896,7 +929,9 @@ def test_datasets_mapping_is_plain_tsv(tmp_path):
     d1.annotation = "first line\nsecond line"
     app.commit()
 
-    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.add_dataset(d1)
 
     _, rows = _read_datasets_mapping(tmp_path)
@@ -911,7 +946,9 @@ def test_history_export_maps_collection_elements(tmp_path):
     d1, d2 = (element.hda for element in c1.elements)
     d3 = c2.elements[1].hda
 
-    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.export_history(history)
 
     _, rows = _read_datasets_mapping(tmp_path)
@@ -938,7 +975,9 @@ def test_datasets_mapping_uses_nested_element_identifier_paths(tmp_path):
     hdca = model.HistoryDatasetCollectionAssociation(history=h, hid=3, collection=samples, name="Samples")
     app.add_and_commit(hdca)
 
-    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(
+        tmp_path, app=app, export_files="copy", include_datasets_mapping=True
+    ) as export_store:
         export_store.export_history(h)
 
     _, rows = _read_datasets_mapping(tmp_path)
