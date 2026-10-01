@@ -69,3 +69,10 @@ def test_update_package_restores_previous_version_on_swap_failure(service):
 
     assert metadata["version"] == "1.0.0"
     assert manager.load_config()[viz_id]["version"] == "1.0.0"
+
+
+def test_reload_registry_reloads_locally_and_broadcasts(service):
+    service, _ = service
+    service.reload_registry(MagicMock())
+    service.app.visualizations_registry.reload.assert_called_once_with()
+    service.app.queue_worker.send_control_task.assert_called_once_with("reload_visualizations", noop_self=True)

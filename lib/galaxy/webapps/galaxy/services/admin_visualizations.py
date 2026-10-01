@@ -27,7 +27,6 @@ from galaxy.schema.visualization_admin import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
@@ -205,19 +204,10 @@ class AdminVisualizationsService(ServiceBase):
         )
 
     def reload_registry(self, trans: ProvidesUserContext) -> MessageResponse:
-        """Reload the visualization registry to pick up configuration changes."""
-        try:
-            if hasattr(self.app, "visualizations_registry"):
-                self.app.visualizations_registry = VisualizationsRegistry(
-                    self.app,
-                    directories_setting=self.app.config.visualization_plugins_directory,
-                )
-
-            return MessageResponse(message="Visualization registry reloaded successfully")
-
-        except Exception as e:
-            log.error(f"Failed to reload visualization registry: {e}")
-            raise exceptions.InternalServerError(f"Failed to reload registry: {e}")
+        """Reload the visualization registry in this process and every other Galaxy process."""
+        self.app.visualizations_registry.reload()
+        self.app.queue_worker.send_control_task("reload_visualizations", noop_self=True)
+        return MessageResponse(message="Visualization registry reloaded successfully")
 
     def get_usage_stats(self, trans: ProvidesUserContext, days: int = 30) -> UsageStatsResponse:
         """Get usage statistics for visualizations."""
