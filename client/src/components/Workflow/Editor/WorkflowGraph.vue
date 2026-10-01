@@ -29,7 +29,17 @@ import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 
-const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "stepClicked"]);
+const emit = defineEmits([
+    "transform",
+    "graph-offset",
+    "onRemove",
+    "onClone",
+    "onCreate",
+    "onChange",
+    "onUpdateStepPosition",
+    "scrollTo",
+    "stepClicked",
+]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
@@ -300,7 +310,15 @@ defineExpose({
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
                     @onActivate="onActivate"
-                    @onDeactivate="onDeactivate" />
+                    @onDeactivate="onDeactivate"
+                    @onRemove="(id: number) => emit('onRemove', id)"
+                    @onClone="(id: number) => emit('onClone', id)"
+                    @onCreate="(contentId: string, name: string) => emit('onCreate', contentId, name)"
+                    @onChange="emit('onChange')"
+                    @onUpdateStepPosition="
+                        (id: number, position: { top: number; left: number }) =>
+                            emit('onUpdateStepPosition', id, position)
+                    " />
                 <WorkflowComment
                     v-for="comment in comments"
                     :id="`workflow-comment-${comment.id}`"
