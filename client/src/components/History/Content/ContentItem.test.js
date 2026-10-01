@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
@@ -92,7 +92,7 @@ describe("ContentItem", () => {
             expect(tags.at(i).text()).toBe(`tag${i + 1}`);
 
             await tags.at(i).trigger("click");
-            expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
+            expect(emittedArg(wrapper, "tag-click", i)).toBe(`tag${i + 1}`);
         }
 
         // close all tags
@@ -100,7 +100,7 @@ describe("ContentItem", () => {
             const tagRemover = wrapper.find(`.tag[data-option=tag${i + 1}] button`);
 
             await tagRemover.trigger("click");
-            expect(wrapper.emitted()["tag-change"][i][1]).not.toContain(`tag${i + 1}`);
+            expect(wrapper.emitted("tag-change")[i][1]).not.toContain(`tag${i + 1}`);
         }
 
         await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
@@ -109,7 +109,7 @@ describe("ContentItem", () => {
         // expansion button
         const $el = wrapper.find(".cursor-pointer");
         $el.trigger("click");
-        expect(wrapper.emitted()["update:expand-dataset"]).toBeDefined();
+        expect(wrapper.emitted("update:expand-dataset")).toBeDefined();
 
         // select and unselect
         const noSelector = wrapper.find(".selector > svg");
@@ -123,7 +123,7 @@ describe("ContentItem", () => {
         selector.trigger("click");
 
         await nextTick();
-        expect(wrapper.emitted()["update:selected"][0][0]).toBe(true);
+        expect(emittedArg(wrapper, "update:selected")).toBe(true);
 
         await wrapper.setProps({ selected: true });
         // The icon re-renders as a new <svg>, so look it up again.
@@ -132,7 +132,7 @@ describe("ContentItem", () => {
         checkedSelector.trigger("click");
 
         await nextTick();
-        expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
+        expect(emittedArg(wrapper, "update:selected", 1)).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
     });
 });

@@ -40,17 +40,17 @@ describe("Workflow editor SaveChangesModal", () => {
 
     it("hands the parent the proceed choice", async () => {
         await footerButtons(wrapper).at(SAVE)!.vm.$emit("click");
-        expect(wrapper.emitted()["on-proceed"]![0]).toEqual(["/workflows/list", true, false, false]);
+        expect(wrapper.emitted("on-proceed")![0]).toEqual(["/workflows/list", true, false, false]);
 
         await footerButtons(wrapper).at(DONT_SAVE)!.vm.$emit("click");
-        expect(wrapper.emitted()["on-proceed"]![1]).toEqual(["/workflows/list", false, true, false]);
+        expect(wrapper.emitted("on-proceed")![1]).toEqual(["/workflows/list", false, true, false]);
     });
 
     it("Cancel closes without proceeding", async () => {
         await footerButtons(wrapper).at(CANCEL)!.vm.$emit("click");
 
-        expect(wrapper.emitted()["update:show-modal"]![0]).toEqual([false]);
-        expect(wrapper.emitted()["on-proceed"]).toBeUndefined();
+        expect(wrapper.emitted("update:show-modal")![0]).toEqual([false]);
+        expect(wrapper.emitted("on-proceed")).toBeUndefined();
     });
 
     it("disables its buttons while the parent acts on the choice", async () => {

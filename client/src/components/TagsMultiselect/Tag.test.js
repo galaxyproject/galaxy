@@ -45,15 +45,15 @@ describe("Tag", () => {
         tag.trigger("click");
         await tag.vm.$nextTick();
 
-        expect(tag.emitted().click).toBeTruthy();
-        expect(tag.emitted().click.length).toBe(1);
-        expect(tag.emitted().click[0]).toEqual(["my_tag"]);
+        expect(tag.emitted("click")).toBeTruthy();
+        expect(tag.emitted("click")).toHaveLength(1);
+        expect(tag.emitted("click")[0]).toEqual(["my_tag"]);
 
         tag.trigger("click");
         await tag.vm.$nextTick();
 
-        expect(tag.emitted().click.length).toBe(2);
-        expect(tag.emitted().click).toStrictEqual([["my_tag"], ["my_tag"]]);
+        expect(tag.emitted("click")).toHaveLength(2);
+        expect(tag.emitted("click")).toStrictEqual([["my_tag"], ["my_tag"]]);
     });
 
     it("changes appearance when editable", async () => {
@@ -77,11 +77,11 @@ describe("Tag", () => {
         tag.find(".tag-delete-button").trigger("click");
         await tag.vm.$nextTick();
 
-        expect(tag.emitted().deleted).toBeTruthy();
-        expect(tag.emitted().deleted.length).toBe(1);
-        expect(tag.emitted().deleted[0]).toEqual(["my_tag"]);
+        expect(tag.emitted("deleted")).toBeTruthy();
+        expect(tag.emitted("deleted")).toHaveLength(1);
+        expect(tag.emitted("deleted")[0]).toEqual(["my_tag"]);
 
-        expect(tag.emitted().click).toBeFalsy();
+        expect(tag.emitted("click")).toBeFalsy();
     });
 
     it("displays named tags bold", () => {

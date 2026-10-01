@@ -25,6 +25,6 @@ describe("ServerSelection", () => {
         expect(wrapper.vm.showDropdown).toBe(true);
         const $link = wrapper.find(".dropdown-item:last-child");
         $link.trigger("click");
-        expect(wrapper.emitted().onToolshed[0]).toEqual(expect.arrayContaining(["url_1"]));
+        expect(wrapper.emitted("onToolshed")[0]).toEqual(expect.arrayContaining(["url_1"]));
     });
 });

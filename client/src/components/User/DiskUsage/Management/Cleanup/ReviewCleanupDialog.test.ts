@@ -105,10 +105,10 @@ describe("ReviewCleanupDialog.vue", () => {
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
 
         const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toBeFalsy();
         confirmationModal.vm.$emit("ok");
         await flushPromises();
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeTruthy();
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toBeTruthy();
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toHaveLength(1);
     });
 });

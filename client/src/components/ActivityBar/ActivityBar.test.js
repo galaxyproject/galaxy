@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
+import { dispatchEvent, emittedArg, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -83,7 +83,7 @@ describe("ActivityBar", () => {
         });
         const bar = wrapper.find("[data-description='activity bar']");
         dispatchEvent(bar, "dragenter");
-        const emittedEvent = wrapper.emitted()["dragstart"][0][0];
+        const emittedEvent = emittedArg(wrapper, "dragstart");
         expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
     });
 

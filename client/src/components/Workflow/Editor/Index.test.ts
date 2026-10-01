@@ -1,5 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, mockUnprivilegedToolsRequest, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
+import {
+    emittedArg,
+    getLocalVue,
+    mockUnprivilegedToolsRequest,
+    suppressExpectedErrorMessages,
+} from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
@@ -472,7 +477,7 @@ describe("Index", () => {
             expect(stateStore.hasChanges).toBeTruthy();
             await nextTick();
 
-            const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
+            const confirmationRequired = emittedArg(wrapper, "update:confirmation");
             expect(confirmationRequired).toBeTruthy();
         });
 
@@ -827,7 +832,7 @@ describe("Index", () => {
             await flushPromises();
 
             expect(mockPush).not.toHaveBeenCalled();
-            expect(wrapper.emitted().forceReload).toBeTruthy();
+            expect(wrapper.emitted("forceReload")).toBeTruthy();
         });
 
         it("does not emit forceReload when navigating to a different route", async () => {
@@ -837,7 +842,7 @@ describe("Index", () => {
             await triggerOnNavigateToList(wrapper);
             await flushPromises();
 
-            expect(wrapper.emitted().forceReload).toBeFalsy();
+            expect(wrapper.emitted("forceReload")).toBeFalsy();
         });
 
         it("createNewWorkflow routes through onNavigate and its unsaved-changes guard", async () => {

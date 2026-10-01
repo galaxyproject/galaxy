@@ -1,7 +1,7 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -53,7 +53,7 @@ describe("FormSelect", () => {
         await testDefaultOptions(wrapper);
         const noValue = wrapper.find(".multiselect__option--selected");
         expect(noValue.exists()).toBe(false);
-        expect(wrapper.emitted().input[0][0]).toBe("value_1");
+        expect(emittedArg(wrapper, "input")).toBe("value_1");
         await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
@@ -75,7 +75,7 @@ describe("FormSelect", () => {
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
         options.at(0).trigger("click");
-        const nullValue = wrapper.emitted().input[0][0];
+        const nullValue = emittedArg(wrapper, "input");
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });
         // Picking an option closes the dropdown, which removes the option list.
@@ -95,7 +95,7 @@ describe("FormSelect", () => {
         const selected = wrapper.findAll(".multiselect__option--selected");
         expect(selected.length).toBe(1);
         selected.at(0).trigger("click");
-        const emitted = wrapper.emitted().input[0][0];
+        const emitted = emittedArg(wrapper, "input");
         expect(emitted).toBe(null);
     });
 
@@ -113,19 +113,19 @@ describe("FormSelect", () => {
         expect(selectedValue.at(1).text()).toBe("label_3");
         expect(selectedValue.at(2).text()).toBe("label_4");
         selectedValue.at(0).trigger("click");
-        const newValue = wrapper.emitted().input[0][0];
+        const newValue = emittedArg(wrapper, "input");
         expect(newValue).toEqual(["", 99]);
         await wrapper.setProps({ value: newValue });
         selectedValue.at(1).trigger("click");
-        const numericValue = wrapper.emitted().input[1][0];
+        const numericValue = emittedArg(wrapper, "input", 1);
         expect(numericValue).toEqual([99]);
         await wrapper.setProps({ value: numericValue });
         selectedValue.at(2).trigger("click");
-        const nullValue = wrapper.emitted().input[2][0];
+        const nullValue = emittedArg(wrapper, "input", 2);
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: nullValue });
         selectedValue.at(0).trigger("click");
-        const finalValue = wrapper.emitted().input[3][0];
+        const finalValue = emittedArg(wrapper, "input", 3);
         expect(finalValue).toEqual(["value_1"]);
     });
 });

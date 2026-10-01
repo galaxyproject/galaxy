@@ -1,4 +1,4 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -36,10 +36,9 @@ describe("DatasetDownload", () => {
         const foundItems = wrapper.find(".dropdown-item").exists();
         expect(foundItems).toBe(false);
         await wrapper.trigger("click");
-        const emitted = wrapper.emitted()["on-download"];
-        expect(emitted?.[0]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
-        expect(emitted?.[1]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
-        expect(emitted?.[2]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
-        expect(emitted?.[3]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
+        expect(emittedArg(wrapper, "on-download")).toBe(`/api/datasets/item_id/download?to_ext=ext`);
+        expect(emittedArg(wrapper, "on-download", 1)).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
+        expect(emittedArg(wrapper, "on-download", 2)).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
+        expect(emittedArg(wrapper, "on-download", 3)).toBe(`/api/datasets/item_id/download?to_ext=ext`);
     });
 });

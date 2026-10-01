@@ -72,7 +72,7 @@ describe("FormTool", () => {
         expect(version.text()).toBe("Switch to 2.0");
         await version.trigger("click");
 
-        let state = wrapper.emitted().onSetData[0][1];
+        let state = wrapper.emitted("onSetData")[0][1];
         expect(state.tool_version).toEqual("2.0");
         expect(state.tool_id).toEqual("tool_id+2.0");
 
@@ -80,7 +80,7 @@ describe("FormTool", () => {
         expect(version.text()).toBe("Switch to 3.0");
         await version.trigger("click");
 
-        state = wrapper.emitted().onSetData[1][1];
+        state = wrapper.emitted("onSetData")[1][1];
         expect(state.tool_version).toEqual("3.0");
         expect(state.tool_id).toEqual("tool_id+3.0");
         await flushPromises();

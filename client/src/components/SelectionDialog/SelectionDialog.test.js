@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 import { nextTick } from "vue";
@@ -40,9 +40,9 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("hideModal called on click cancel", async () => {
-        expect(wrapper.emitted().onCancel).toBeFalsy();
+        expect(wrapper.emitted("onCancel")).toBeFalsy();
         wrapper.find("[data-description='selection dialog cancel']").trigger("click");
-        expect(wrapper.emitted().onCancel).toBeTruthy();
+        expect(wrapper.emitted("onCancel")).toBeTruthy();
     });
 
     it("syncs row selection state from incoming items", async () => {
@@ -103,8 +103,8 @@ describe("SelectionDialog.vue", () => {
         const rowCheckbox = wrapper.find("tbody tr[aria-rowindex='1'] .g-table-select-column input");
         await rowCheckbox.trigger("change");
 
-        expect(wrapper.emitted().onClick).toBeTruthy();
-        expect(wrapper.emitted().onClick[0][0].id).toBe("1");
+        expect(wrapper.emitted("onClick")).toBeTruthy();
+        expect(emittedArg(wrapper, "onClick").id).toBe("1");
     });
 
     it("emits onClick exactly once when a selectable row is clicked", async () => {
@@ -118,7 +118,7 @@ describe("SelectionDialog.vue", () => {
         // SelectionDialog must not toggle selection twice.
         await wrapper.find("tbody tr[aria-rowindex='1']").trigger("click");
 
-        expect(wrapper.emitted().onClick).toBeTruthy();
-        expect(wrapper.emitted().onClick.length).toBe(1);
+        expect(wrapper.emitted("onClick")).toBeTruthy();
+        expect(wrapper.emitted("onClick")).toHaveLength(1);
     });
 });

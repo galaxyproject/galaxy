@@ -1,4 +1,4 @@
-import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -253,7 +253,7 @@ describe("History Selection Operations", () => {
                 wrapper.vm.hideSelected();
                 await flushPromises();
                 expect(wrapper.emitted()).toHaveProperty("update:show-selection");
-                expect(wrapper.emitted()["update:show-selection"][0][0]).toBe(false);
+                expect(emittedArg(wrapper, "update:show-selection")).toBe(false);
             });
 
             it("should update operation-running state when running any operation that succeeds", async () => {

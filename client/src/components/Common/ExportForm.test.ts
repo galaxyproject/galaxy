@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -56,8 +56,8 @@ describe("ExportForm.vue", () => {
         await wrapper.find(".export-button").trigger("click");
 
         expect(wrapper.emitted()).toHaveProperty("export");
-        expect(wrapper.emitted()["export"][0][0]).toBe("gxfiles://");
-        expect(wrapper.emitted()["export"][0][1]).toBe("export.tar.gz");
+        expect(emittedArg(wrapper, "export")).toBe("gxfiles://");
+        expect(wrapper.emitted("export")[0][1]).toBe("export.tar.gz");
     });
 
     it("should clear the inputs (hence disabling export) after export when clearInputAfterExport is enabled", async () => {

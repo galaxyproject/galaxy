@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -55,8 +55,8 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable']").length).toEqual(1);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");
-        expect(wrapper.emitted().input[0][1]).toEqual("input");
+        expect(emittedArg(wrapper, "input")).toEqual("collapsible_value");
+        expect(wrapper.emitted("input")[0][1]).toEqual("input");
 
         await wrapper.setProps({
             collapsedEnableText: "Enable Collapsible",
@@ -66,7 +66,7 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(0);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(wrapper.emitted().input[1][0]).toEqual("default_value");
+        expect(emittedArg(wrapper, "input", 1)).toEqual("default_value");
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(0);
     });

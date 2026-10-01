@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -34,24 +34,24 @@ describe("FormDrilldown", () => {
     it("submits only the chosen option when it has descendants", async () => {
         const wrapper = mountDrilldown(true, []);
         await toggle(wrapper, "a", true);
-        expect(wrapper.emitted().input[0][0]).toEqual(["a"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["a"]);
     });
 
     it("keeps other selections when adding one", async () => {
         const wrapper = mountDrilldown(true, ["ba"]);
         await toggle(wrapper, "ab", true);
-        expect(wrapper.emitted().input[0][0]).toEqual(["ba", "ab"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["ba", "ab"]);
     });
 
     it("removes only the deselected option", async () => {
         const wrapper = mountDrilldown(true, ["a", "aa"]);
         await toggle(wrapper, "a", false);
-        expect(wrapper.emitted().input[0][0]).toEqual(["aa"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["aa"]);
     });
 
     it("emits a bare value when not multiple", async () => {
         const wrapper = mountDrilldown(false, null);
         await toggle(wrapper, "aba", true);
-        expect(wrapper.emitted().input[0][0]).toBe("aba");
+        expect(emittedArg(wrapper, "input")).toBe("aba");
     });
 });

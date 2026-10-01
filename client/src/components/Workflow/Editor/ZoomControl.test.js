@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -18,10 +18,10 @@ describe("ZoomControl", () => {
         const buttons = wrapper.findAll("button");
         expect(buttons.length).toBe(3);
         await buttons.at(0).trigger("click");
-        expect(wrapper.emitted().onZoom[0][0]).toBe(0.9);
+        expect(emittedArg(wrapper, "onZoom")).toBe(0.9);
         await buttons.at(1).trigger("click");
-        expect(wrapper.emitted().onZoom[1][0]).toBe(1);
+        expect(emittedArg(wrapper, "onZoom", 1)).toBe(1);
         await buttons.at(2).trigger("click");
-        expect(wrapper.emitted().onZoom[2][0]).toBe(1.1);
+        expect(emittedArg(wrapper, "onZoom", 2)).toBe(1.1);
     });
 });

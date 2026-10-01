@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -24,7 +24,7 @@ describe("FormInput", () => {
         expect(input.element.value).toBe("initial_value");
         await input.setValue("new_value");
         expect(input.element.value).toBe("new_value");
-        expect(wrapper.emitted().input[0][0]).toBe("new_value");
+        expect(emittedArg(wrapper, "input")).toBe("new_value");
     });
 
     it("check switching to text area", async () => {
@@ -33,6 +33,6 @@ describe("FormInput", () => {
         expect(input.element.value).toBe("initial_value");
         await input.setValue("new_value");
         expect(input.element.value).toBe("new_value");
-        expect(wrapper.emitted().input[0][0]).toBe("new_value");
+        expect(emittedArg(wrapper, "input")).toBe("new_value");
     });
 });

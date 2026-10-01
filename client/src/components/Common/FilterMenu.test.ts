@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -120,12 +120,11 @@ describe("FilterMenu", () => {
 
     async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
-            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+            const receivedShowAdvanced = emittedArg(wrapper, "update:show-advanced", -1);
+            expect(receivedShowAdvanced).toEqual(showAdvanced);
+            await wrapper.setProps({ showAdvanced: receivedShowAdvanced });
         }
-        const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
+        const receivedText = emittedArg(wrapper, "update:filter-text", -1) as string;
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
