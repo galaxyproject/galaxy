@@ -2,12 +2,17 @@
 
 import os
 import zipfile
+from pathlib import Path
 
 import pytest
 
 from galaxy.selenium.stories import (
+    link_latest,
     NoopStory,
+    run_directory,
     Story,
+    story_for_run,
+    write_story,
 )
 
 
@@ -199,3 +204,55 @@ class TestNoopStory:
         story = NoopStory()
         story.screenshot_counter += 1
         assert story.screenshot_counter == 1
+
+
+class TestStoryRuns:
+    def test_disabled_stories_are_noops(self, tmp_path):
+        story = story_for_run(None, "test_example_", "T", "")
+        write_story(story, failed=True)
+
+        assert not story.enabled
+        assert list(tmp_path.iterdir()) == []
+
+    def test_run_gets_a_fresh_directory_under_the_base(self, tmp_path):
+        story = story_for_run(str(tmp_path), "test_example_", "T", "")
+
+        assert os.path.dirname(story.output_directory) == str(tmp_path)
+        assert os.path.basename(story.output_directory).startswith("test_example_")
+        assert os.path.isdir(story.output_directory)
+
+    def test_run_directories_are_unique(self, tmp_path):
+        assert run_directory(str(tmp_path), "test_example_") != run_directory(str(tmp_path), "test_example_")
+
+    def test_write_links_latest(self, tmp_path):
+        first = story_for_run(str(tmp_path), "test_example_", "T", "")
+        write_story(first)
+        second = story_for_run(str(tmp_path), "test_example_", "T", "")
+        write_story(second)
+
+        assert (tmp_path / "latest").resolve() == Path(second.output_directory).resolve()
+        assert os.path.exists(f"{first.output_directory}.zip")
+
+    def test_failed_write_marks_the_document(self, tmp_path):
+        story = story_for_run(str(tmp_path), "test_example_", "T", "")
+        story.add_documentation("Collected narration.")
+        write_story(story, failed=True)
+
+        markdown = open(os.path.join(story.output_directory, "story.md")).read()
+        assert markdown.index("Collected narration.") < markdown.index("Test Failed")
+
+    def test_write_failure_is_swallowed_and_not_linked(self, tmp_path):
+        story = Story("T", "", str(tmp_path / "missing"))
+        write_story(story)
+
+        assert not os.path.lexists(tmp_path / "latest")
+
+    def test_link_latest_replaces_an_existing_link(self, tmp_path):
+        first = tmp_path / "first"
+        second = tmp_path / "second"
+        first.mkdir()
+        second.mkdir()
+        link_latest(str(first))
+        link_latest(str(second))
+
+        assert (tmp_path / "latest").resolve() == second.resolve()

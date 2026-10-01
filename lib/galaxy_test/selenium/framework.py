@@ -1,13 +1,11 @@
 """Basis for Selenium test framework."""
 
 import datetime
-import errno
 import inspect
 import json
 import logging
 import os
 import shutil
-import tempfile
 import traceback
 import unittest
 from functools import (
@@ -45,8 +43,11 @@ from galaxy.selenium.navigates_galaxy import (
     retry_during_transitions,
 )
 from galaxy.selenium.stories import (
+    link_latest,
     NoopStory,
-    Story,
+    run_directory,
+    story_for_run,
+    write_story,
 )
 from galaxy.tool_util.verify import (
     verify,
@@ -271,13 +272,6 @@ def managed_history(f):
     return func_wrapper
 
 
-def run_directory(base_directory: str, name_prefix: str) -> str:
-    """Create a directory for one run's artifacts, named for the test and the time."""
-    os.makedirs(base_directory, exist_ok=True)
-    prefix = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + "_"
-    return tempfile.mkdtemp(prefix=prefix, dir=base_directory)
-
-
 def dump_test_information(self, name_prefix):
     if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
         if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
@@ -320,19 +314,7 @@ def dump_test_information(self, name_prefix):
             except Exception:
                 continue
 
-        try_symlink(target_directory, os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, "latest"))
-
-
-def try_symlink(file1, file2):
-    try:
-        try:
-            os.symlink(file1, file2)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                os.remove(file2)
-                os.symlink(file1, file2)
-    except Exception:
-        pass
+        link_latest(target_directory)
 
 
 def selenium_test(f):
@@ -343,24 +325,9 @@ def selenium_test(f):
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
-        story_directory = None
-        if GALAXY_TEST_STORIES_DIRECTORY:
-            story_directory = run_directory(
-                os.path.abspath(GALAXY_TEST_STORIES_DIRECTORY), f"{self.__class__.__name__}_{test_name}_"
-            )
-            self.story = Story(test_name, test_description, story_directory)
-        else:
-            self.story = NoopStory()
-
-        def write_story():
-            # Artifact failures must not trigger retries or replace the test exception.
-            try:
-                self.story.finalize()
-                if story_directory:
-                    try_symlink(story_directory, os.path.join(os.path.dirname(story_directory), "latest"))
-            except Exception:
-                print(f"Failed to write story for [{test_name}]: {traceback.format_exc()}")
-
+        self.story = story_for_run(
+            GALAXY_TEST_STORIES_DIRECTORY, f"{self.__class__.__name__}_{test_name}_", test_name, test_description
+        )
         retry_attempts = 0
         while True:
             if retry_attempts > 0:
@@ -372,7 +339,7 @@ def selenium_test(f):
                 self.assert_baseline_accessibility()
             except unittest.SkipTest:
                 dump_test_information(self, test_name)
-                write_story()
+                write_story(self.story)
                 # Don't retry if we have purposely decided to skip the test.
                 raise
             except Exception:
@@ -383,11 +350,10 @@ def selenium_test(f):
                         f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}."
                     )
                 else:
-                    self.document("## Test Failed\n\nSee the error directory for details.")
-                    write_story()
+                    write_story(self.story, failed=True)
                     raise
             else:
-                write_story()
+                write_story(self.story)
                 return rval
 
     return func_wrapper
