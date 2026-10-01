@@ -7,11 +7,10 @@ import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore"
 import { useUserStore } from "@/stores/userStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, PaletteSearchOptions } from "../types";
+import type { PaletteItem } from "../types";
 import { PALETTE_LIMITS } from "./limits";
-import { recentPaletteItems, type RecentRows } from "./recent";
-import type { ScopeDefinition } from "./scopes";
-import { type ListingSearch, rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
+import { defineListingProvider } from "./listingProvider";
+import type { StoreFirstList } from "./storeFirst";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
 export const HISTORY_RECENT_TYPE = "history";
@@ -43,20 +42,6 @@ function toPaletteHistory(history: AnyHistory | AnyHistoryEntry): PaletteHistory
         tags: history.tags,
         update_time: history.update_time,
     };
-}
-
-/** Scope variant (`undefined` | `shared` | `published` | `archived`) to list */
-function listVariant(variant?: string): HistoryVariant {
-    switch (variant) {
-        case "shared":
-            return "shared";
-        case "published":
-            return "published";
-        case "archived":
-            return "archived";
-        default:
-            return "my";
-    }
 }
 
 function viewUrl(historyId: string): string {
@@ -183,71 +168,30 @@ function historyList(variant: HistoryVariant): StoreFirstList {
     };
 }
 
-/** Root-answer search of one listing; `record: false` keeps the matches out of the listing `hs:`/`hp:` hydrate */
-function listingSearch(variant: HistoryListVariant): ListingSearch {
-    return async (query) => {
+export const historiesProvider = defineListingProvider<HistoryListVariant>({
+    id: "histories",
+    title: "Histories",
+    variants: ["shared", "published", "archived"],
+    rootListings: { anonymous: ["published"], signedIn: ["shared", "published"] },
+    list: historyList,
+    // `record: false` keeps the matches out of the listing `hs:`/`hp:` hydrate
+    async searchListing(variant, query) {
         const found = await useHistoryStore().fetchHistoryList(variant, {
             search: query,
             limit: PALETTE_LIMITS.page,
             record: false,
         });
         return historyRows(found.map(toPaletteHistory), variant);
-    };
-}
-
-/** Histories opened through the palette before, most recently used first */
-function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
-    const historyStore = useHistoryStore();
-    const rows: RecentRows = {
-        type: HISTORY_RECENT_TYPE,
-        stored: (entry) => {
-            const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
-            return summary ? historyItem(toPaletteHistory(summary), "recent", "my") : undefined;
-        },
-        fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faHdd, to: viewUrl(entry.id) }),
-    };
-    return recentPaletteItems(rows, query, limit);
-}
-
-function resultsTitle(scope: ScopeDefinition, query: string): string {
-    if (!query) {
-        return "Latest";
-    }
-    return scope.variant ? scope.label : "Histories";
-}
-
-export const historiesProvider: CommandPaletteProvider = {
-    id: "histories",
-    title: "Histories",
-    /** Root mode: histories the palette remembers, no request needed */
-    emptyQueryItems(ctx: PaletteContext) {
-        if (ctx.isAnonymous) {
-            return [];
-        }
-        return recentItems("", PALETTE_LIMITS.rootOwn);
     },
-    /** Root mode: the cached own histories, and the shared and published listings searched */
-    search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        // an anonymous visitor has neither own nor shared-with-me histories
-        const listings: HistoryListVariant[] = ctx.isAnonymous ? ["published"] : ["shared", "published"];
-        const own = ctx.isAnonymous ? undefined : historyList("my");
-        return rootListItems(query, own, listings.map(listingSearch), options);
+    recentRows() {
+        const historyStore = useHistoryStore();
+        return {
+            type: HISTORY_RECENT_TYPE,
+            stored: (entry) => {
+                const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
+                return summary ? historyItem(toPaletteHistory(summary), "recent", "my") : undefined;
+            },
+            fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faHdd, to: viewUrl(entry.id) }),
+        };
     },
-    /**
-     * `h:` shows the palette recents on top of the user's own listing; `hs:`,
-     * `hp:` and `ha:` show their listing alone. The palette remembers one list
-     * per entity type rather than per scope, so the recents belong to the base
-     * scope only — the user's private (and unarchived) histories have no
-     * business showing up under "shared", "public" or "archived". The query
-     * filters both sections; an empty query leaves the listing showing the most
-     * recently updated histories.
-     */
-    async searchScoped(scope: ScopeDefinition, query: string) {
-        const variant = listVariant(scope.variant);
-        const results = await storeFirstItems(historyList(variant), query, PALETTE_LIMITS.section);
-        return [
-            { id: "recent", items: variant === "my" ? recentItems(query) : [], title: "Recent" },
-            { id: variant, items: results, title: resultsTitle(scope, query) },
-        ];
-    },
-};
+});
