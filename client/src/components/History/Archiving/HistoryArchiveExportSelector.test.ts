@@ -125,7 +125,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const confirmDeleteCheckbox = wrapper.find(CONFIRM_DELETE_CHECKBOX);
-        await confirmDeleteCheckbox.setChecked(false);
+        await confirmDeleteCheckbox.setValue(false);
         expect((confirmDeleteCheckbox.element as HTMLInputElement).checked).toBeFalsy();
 
         const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);
@@ -138,7 +138,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const confirmDeleteCheckbox = wrapper.find(CONFIRM_DELETE_CHECKBOX);
-        await confirmDeleteCheckbox.setChecked(true);
+        await confirmDeleteCheckbox.setValue(true);
         expect((confirmDeleteCheckbox.element as HTMLInputElement).checked).toBeTruthy();
 
         const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);

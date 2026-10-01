@@ -20,9 +20,9 @@ describe("FormOptionalText", () => {
         expect(el.element.checked).toEqual(true);
         const elText = wrapper.find("input[type='text']");
         expect(elText.element.value).toEqual(v);
-        await el.setChecked(false);
+        await el.setValue(false);
         expect(emittedArg(wrapper, "input")).toEqual(null);
-        await el.setChecked(true);
+        await el.setValue(true);
         expect(emittedArg(wrapper, "input", 1)).toEqual("");
     });
 

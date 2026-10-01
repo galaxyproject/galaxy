@@ -74,7 +74,7 @@ describe("NewUserConfirmation", () => {
 
         expect(postRequests.length).toBe(0);
 
-        await checkField.setChecked();
+        await checkField.setValue(true);
 
         await submitButton.trigger("click");
         await flushPromises();

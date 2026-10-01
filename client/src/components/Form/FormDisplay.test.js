@@ -139,10 +139,10 @@ describe("FormDisplay", () => {
 
     it("conditional switch", async () => {
         const conditionalBool = wrapper.find("[type='checkbox']");
-        await conditionalBool.setChecked(false);
+        await conditionalBool.setValue(false);
         const conditionalInputUnchecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputUnchecked.length).toEqual(0);
-        await conditionalBool.setChecked(true);
+        await conditionalBool.setValue(true);
         const conditionalInputChecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputChecked.length).toEqual(1);
         await wrapper.setProps({
