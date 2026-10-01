@@ -134,6 +134,7 @@ test = [
     "cloudbridge>=4.4.0",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
+    "galaxy-fsspec",
     "gcsfs",
     "hvac",
     "lxml!=4.2.2",
