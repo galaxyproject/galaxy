@@ -2045,8 +2045,6 @@ class MinimalJobWrapper(HasResourceParameters):
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
-        if "uuid" in context:
-            dataset.dataset.uuid = context["uuid"]
         self.__update_output(job, dataset)
         if not purged:
             collect_extra_files(self.object_store, dataset, self.working_directory, self.outputs_to_working_directory)
