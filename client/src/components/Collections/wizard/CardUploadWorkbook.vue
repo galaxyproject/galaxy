@@ -44,7 +44,10 @@ const emit = defineEmits(["workbookContents"]);
                 <FontAwesomeIcon size="xl" :icon="faUpload" />
                 Drop completed workbook here or click to upload.
             </BLink>
-            <HiddenWorkbookUploadInput ref="uploadRef" @onFileUpload="onFileUpload" />
+            <HiddenWorkbookUploadInput
+                ref="uploadRef"
+                data-description="workbook card file input"
+                @onFileUpload="onFileUpload" />
         </div>
     </BCard>
 </template>

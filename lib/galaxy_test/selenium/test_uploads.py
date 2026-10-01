@@ -249,14 +249,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("UP000052092")
         self.screenshot("rules_example_4_7_mapping_extension_and_name")
 
-        rule_builder.view_source.wait_for_and_click()
-        text_area_elem = rule_builder.source.wait_for_visible()
-
-        self.screenshot("rules_example_4_8_source")
-        self.write_screenshot_directory_file("rules_example_4_8_text", text_area_elem.get_attribute("value"))
-
-        rule_builder.main_button_ok.wait_for_and_click()
-        rule_builder.view_source.wait_for_visible()
+        source = self.rule_builder_show_and_get_source(screenshot_name="rules_example_4_8_source")
+        self.write_screenshot_directory_file("rules_example_4_8_text", source)
 
     @selenium_test
     @pytest.mark.gtn_screenshot

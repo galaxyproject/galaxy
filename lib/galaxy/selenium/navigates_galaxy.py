@@ -5,6 +5,7 @@ Implementer must provide a self.build_url method to target Galaxy.
 
 import collections
 import contextlib
+import json
 import random
 import string
 import time
@@ -1218,6 +1219,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.rule_builder_enter_source_text(json)
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_show_and_get_source(self, screenshot_name: str | None = None) -> str:
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        source_element = rule_builder.source.wait_for_visible()
+        source = source_element.get_attribute("value")
+        self.screenshot_if(screenshot_name)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+        return source
+
+    def rule_builder_show_and_get_source_as_json(self) -> dict:
+        return json.loads(self.rule_builder_show_and_get_source())
 
     def rule_builder_enter_source_text(self, json):
         rule_builder = self.components.rule_builder
@@ -3162,6 +3176,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             pw_driver._unwrap_element(element).click(modifiers=["Shift"])
         else:
             self.action_chains().move_to_element(element).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+    def set_file_input(self, file_input: WebElementProtocol, test_path: str) -> None:
+        """Attach a local file to a file input element, visible or not.
+
+        Playwright types into an element rather than setting its value, so a file
+        input there has to go through set_input_files.
+        """
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            pw_driver._unwrap_element(file_input).set_input_files(test_path)
+        else:
+            file_input.send_keys(test_path)
 
     def send_keys_to_page(self, *value: str) -> None:
         """Send keys to the currently focused element / page.
