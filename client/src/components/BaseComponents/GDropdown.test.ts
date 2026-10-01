@@ -1,10 +1,9 @@
 import type * as FloatingUI from "@floating-ui/dom";
 import { autoUpdate, computePosition } from "@floating-ui/dom";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
 
 import GDropdown from "./GDropdown.vue";
 import GDropdownForm from "./GDropdownForm.vue";
@@ -28,7 +27,7 @@ function mountTemplate(template: string, methods: Record<string, () => void> = {
             template: `<div>${template}<button id="outside">Outside</button></div>`,
             methods,
         } as object,
-        { localVue, router: new VueRouter({ mode: "history" }), attachTo: document.body },
+        { localVue, router: createTestRouter(), attachTo: document.body },
     );
     return wrapper;
 }
@@ -320,13 +319,13 @@ describe("GDropdown.vue", () => {
 
         it("do not navigate when disabled", async () => {
             const wrapper = mountDropdown(`<GDropdownItem disabled to="/histories/list">Histories</GDropdownItem>`);
-            const startPath = wrapper.vm.$router.currentRoute.fullPath;
+            const startPath = wrapper.vm.$router.currentRoute.value.fullPath;
             await openMenu(wrapper);
 
             const item = wrapper.get("a.dropdown-item");
             await item.trigger("click");
 
-            expect(wrapper.vm.$router.currentRoute.fullPath).toBe(startPath);
+            expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe(startPath);
             expect(item.attributes("href")).toBe("#");
             expect(item.attributes("aria-disabled")).toBe("true");
         });

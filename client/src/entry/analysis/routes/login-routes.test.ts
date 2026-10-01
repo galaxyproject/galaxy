@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 
 import LoginRoutes from "./login-routes";
 
 vi.mock("@/app");
-
-Vue.use(VueRouter);
 
 const LANDING_PATH = "/tool_landings/1234-5678?public=true";
 
@@ -18,7 +15,7 @@ function setUser(id: string | null) {
 
 /** Drive the real router, so this covers the route wiring and not just the guard. */
 async function navigateTo(path: string) {
-    const router = new VueRouter({ mode: "abstract", routes: LoginRoutes });
+    const router = createRouter({ history: createMemoryHistory(), routes: LoginRoutes });
     // vue-router rejects the push promise when a guard redirects; currentRoute still
     // settles on wherever the guard sent us, which is what we are asserting on.
     await router.push(path).catch(() => undefined);
