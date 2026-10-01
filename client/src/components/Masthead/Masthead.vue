@@ -9,12 +9,12 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import {
-    getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
 } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useRegistrationTarget } from "@/composables/useRegistrationTarget";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
@@ -58,25 +58,7 @@ const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
 // an instance-configured phrase is admin copy, so it is used verbatim
 const searchPlaceholder = computed(() => config.value.command_palette_placeholder || localize("Search Galaxy"));
 
-const hasOIDCRegistration = computed(() => {
-    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration) {
-        return Object.keys(oIDCIdpsWithRegistration).length > 0;
-    } else {
-        return false;
-    }
-});
-
-const hasExactlyOneOIDCRegistration = computed(() => {
-    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration) {
-        return Object.keys(oIDCIdpsWithRegistration).length === 1;
-    } else {
-        return false;
-    }
-});
+const { registrationTarget } = useRegistrationTarget();
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -89,13 +71,11 @@ async function performLogin() {
 }
 
 function performRegistration() {
-    if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
-        const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-        const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-        window.location =
-            oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    const { external, url } = registrationTarget.value;
+    if (external) {
+        window.location = url;
     } else {
-        openUrl("/register/start");
+        openUrl(url);
     }
 }
 
@@ -225,7 +205,7 @@ onMounted(() => {
                 title="Login"
                 @click="performLogin()" />
             <MastheadItem
-                v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
+                v-if="isAnonymous && registrationTarget"
                 id="user-register"
                 class="loggedout-only"
                 data-description="register masthead button"

@@ -14,11 +14,11 @@ import { useRoute, useRouter } from "vue-router/composables";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
-import { getOIDCIdpsWithRegistration } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
+import { useRegistrationTarget } from "@/composables/useRegistrationTarget";
 import { useUid } from "@/composables/utils/uid";
 import { useToolStore } from "@/stores/toolStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
@@ -106,25 +106,8 @@ const listboxId = computed(() => `${uid.value}-listbox`);
 /** Where a login has to land the user again once it is done */
 const loginRedirect = computed(() => `/login/start?redirect=${encodeURIComponent(route.fullPath)}`);
 
-/**
- * Where "Create a Galaxy account" leads, or nothing where the instance registers
- * no one. The masthead's Register button decides it the same way (see
- * `performRegistration` there): an instance that creates no local accounts still
- * registers through OIDC, and a single provider offering it is gone to directly.
- */
-const registrationTarget = computed<string | undefined>(() => {
-    if (config.value.allow_local_account_creation) {
-        return "/register/start";
-    }
-    const endpoints = Object.values(getOIDCIdpsWithRegistration(config.value.oidc ?? {})).map(
-        (idp) => idp.end_user_registration_endpoint,
-    );
-    if (endpoints.length === 0) {
-        return undefined;
-    }
-    // several providers need the form to pick one, a single one does not
-    return endpoints.length === 1 ? endpoints[0] : "/register/start";
-});
+// the masthead's Register button offers the same target
+const { registrationTarget } = useRegistrationTarget();
 
 /**
  * The way in for an anonymous visitor who typed a scope only an account reaches.
@@ -148,7 +131,6 @@ const loginPromptSection = computed<ResultSection | undefined>(() => {
             to: loginRedirect.value,
         },
     ];
-    // registering is offered exactly where the masthead offers it
     const registration = registrationTarget.value;
     if (registration) {
         items.push({
@@ -156,13 +138,13 @@ const loginPromptSection = computed<ResultSection | undefined>(() => {
             icon: faUserPlus,
             title: localize("Create a Galaxy account"),
             // an OIDC registration endpoint is off-app, so the router cannot go there
-            ...(registration.startsWith("/")
-                ? { to: registration }
-                : {
+            ...(registration.external
+                ? {
                       handler: () => {
-                          window.location.assign(registration);
+                          window.location.assign(registration.url);
                       },
-                  }),
+                  }
+                : { to: registration.url }),
         });
     }
     return { id: "login-prompt", items, title: "Log in required" };
