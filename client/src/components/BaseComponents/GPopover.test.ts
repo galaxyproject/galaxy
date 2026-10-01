@@ -596,6 +596,301 @@ describe("GPopover hover", () => {
     });
 });
 
+describe("GPopover focus", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    function outsideButton() {
+        const button = document.createElement("button");
+        document.body.appendChild(button);
+        return button;
+    }
+
+    it("opens a hover popover when its trigger gets keyboard focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        target.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("ignores the focus a mouse click leaves on a hover trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        vi.spyOn(target, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+
+        target.focus();
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("opens explicit focus triggers for any focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover focus" });
+        vi.spyOn(target, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+
+        target.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("closes when focus leaves the trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        outsideButton().focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open while focus moves into the popover", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        popoverEl().querySelector("a")!.focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("closes once the pointer leaves, even after a mouse click focused a link inside", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+
+        const link = popoverEl().querySelector("a")!;
+        vi.spyOn(link, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+        link.focus();
+        popoverEl().dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns focus to the trigger when the parent hides it with focus inside", async () => {
+        const target = await mountWithTrigger({ triggers: "hover", show: false });
+        target.focus();
+        await nextTick();
+        await wrapper!.setProps({ show: true });
+        popoverEl().querySelector("a")!.focus();
+
+        await wrapper!.setProps({ show: false });
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("leaves focus alone when it already moved elsewhere", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        const elsewhere = outsideButton();
+        elsewhere.focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(elsewhere);
+    });
+
+    it("stays open when the pointer leaves while the trigger keeps focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+});
+
+describe("GPopover escape", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    function pressEscape(on: EventTarget = document.activeElement ?? document.body) {
+        const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+        on.dispatchEvent(event);
+        return event;
+    }
+
+    it("closes a focused hover popover and leaves focus on the trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        const event = pressEscape();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    it("closes a hovered popover while focus is elsewhere", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns focus to the trigger when it was inside the popover", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+        popoverEl().querySelector("a")!.focus();
+
+        pressEscape();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("closes a popover that was mounted open", async () => {
+        await mountWithTrigger({ triggers: "hover", show: true });
+        await nextTick();
+
+        expect(wrapper!.emitted("shown")).toHaveLength(1);
+        pressEscape(document.body);
+        expect(wrapper!.emitted("update:show")).toEqual([[false]]);
+    });
+
+    it("leaves the key alone when no popover is open", async () => {
+        await mountWithTrigger({ triggers: "hover" });
+
+        expect(pressEscape(document.body).defaultPrevented).toBe(false);
+    });
+
+    it("leaves an Escape that something else already handled", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+        target.addEventListener("keydown", (event) => event.preventDefault());
+
+        pressEscape(target);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("leaves Escape to a modal dialog opened over it", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const dialog = document.createElement("dialog");
+        const dialogButton = document.createElement("button");
+        dialog.appendChild(dialogButton);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        // happy-dom does not implement :modal.
+        vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
+        dialogButton.focus();
+
+        const event = pressEscape(dialogButton);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    it("lets a popover inside a modal take Escape over one behind it that opened later", async () => {
+        const dialog = document.createElement("dialog");
+        const modalTrigger = document.createElement("button");
+        modalTrigger.id = "modal-trigger";
+        const modalMountPoint = document.createElement("div");
+        dialog.append(modalTrigger, modalMountPoint);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        // happy-dom does not implement :modal.
+        vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
+        const insideModal = mount(GPopover as object, {
+            attachTo: modalMountPoint,
+            propsData: { target: "modal-trigger", triggers: "hover", show: false },
+        });
+        await nextTick();
+        await nextTick();
+        await insideModal.setProps({ show: true });
+        // Behind the modal and opened later, as the history's storage helper can be.
+        await mountWithTrigger({ triggers: "manual hover", show: false });
+        await wrapper!.setProps({ show: true });
+        modalTrigger.focus();
+
+        const event = pressEscape(modalTrigger);
+        await nextTick();
+
+        expect(insideModal.emitted("update:show")?.at(-1)).toEqual([false]);
+        expect(wrapper!.emitted("update:show")).toBeUndefined();
+        expect(event.defaultPrevented).toBe(true);
+
+        insideModal.destroy();
+    });
+
+    it("closes only the most recently opened popover", async () => {
+        const mountPopover = (id: string) => {
+            const target = document.createElement("button");
+            target.id = id;
+            const mountPoint = document.createElement("div");
+            document.body.append(target, mountPoint);
+            return mount(GPopover as object, {
+                attachTo: mountPoint,
+                propsData: { target: id, triggers: "hover", show: false },
+                slots: { default: id },
+            });
+        };
+        const first = mountPopover("first-trigger");
+        const second = mountPopover("second-trigger");
+        await first.setProps({ show: true });
+        await second.setProps({ show: true });
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(first.emitted("update:show")).toBeUndefined();
+        expect(second.emitted("update:show")).toEqual([[false]]);
+
+        first.destroy();
+        second.destroy();
+    });
+
+    it("does not dismiss manual popovers", async () => {
+        await mountWithTrigger({ triggers: "manual", show: true });
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+});
+
 describe("GPopover description", () => {
     afterEach(() => {
         wrapper?.destroy();
@@ -684,5 +979,136 @@ describe("GPopover click", () => {
         await nextTick();
 
         expect(isShown()).toBe(false);
+    });
+});
+
+describe("GPopover click dialog", () => {
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+    });
+
+    async function openByClick() {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+        target.click();
+        await nextTick();
+        await nextTick();
+        return target;
+    }
+
+    function pressTab(on: Element, shiftKey = false) {
+        const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
+        on.dispatchEvent(event);
+        return event;
+    }
+
+    it("marks the trigger as a disclosure for a labelled dialog", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+
+        const header = popoverEl().querySelector(".popover-header")!;
+        expect(popoverEl().getAttribute("role")).toBe("dialog");
+        expect(popoverEl().getAttribute("aria-labelledby")).toBe(header.id);
+        expect(header.textContent?.trim()).toBe("Person");
+        expect(target.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(target.getAttribute("aria-controls")).toBe(popoverEl().id);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+        expect(target.hasAttribute("aria-describedby")).toBe(false);
+    });
+
+    it("names an untitled dialog after its trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur" });
+
+        expect(popoverEl().getAttribute("aria-labelledby")).toBe(target.id);
+    });
+
+    it("prefers an explicit aria-label for an untitled dialog", async () => {
+        await mountWithTrigger({ triggers: "click blur", ariaLabel: "Person details" });
+
+        expect(popoverEl().getAttribute("aria-label")).toBe("Person details");
+        expect(popoverEl().hasAttribute("aria-labelledby")).toBe(false);
+    });
+
+    it("moves focus into the popover when opened", async () => {
+        const target = await openByClick();
+
+        expect(isShown()).toBe(true);
+        expect(target.getAttribute("aria-expanded")).toBe("true");
+        expect(document.activeElement).toBe(popoverEl());
+    });
+
+    it("closes on Escape and returns focus to the trigger", async () => {
+        const target = await openByClick();
+
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("closes when focus moves somewhere else", async () => {
+        await openByClick();
+        const elsewhere = document.createElement("button");
+        document.body.appendChild(elsewhere);
+
+        elsewhere.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open when tabbing back to the trigger without blur", async () => {
+        const target = await mountWithTrigger({ triggers: "click", title: "Person" });
+        target.click();
+        await nextTick();
+        await nextTick();
+        const link = popoverEl().querySelector("a")!;
+        link.focus();
+
+        pressTab(link);
+        await nextTick();
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(true);
+    });
+
+    it("tabs from the popover container into its content", async () => {
+        await openByClick();
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(false);
+    });
+
+    it("returns to the trigger when tabbing past the end of the popover", async () => {
+        const target = await openByClick();
+        const link = popoverEl().querySelector("a")!;
+        link.focus();
+
+        expect(pressTab(link).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns to the trigger when shift-tabbing out of the popover", async () => {
+        const target = await openByClick();
+
+        expect(pressTab(popoverEl(), true).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("restores the trigger's attributes when unmounted", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+
+        wrapper?.destroy();
+        wrapper = undefined;
+
+        expect(target.hasAttribute("aria-haspopup")).toBe(false);
+        expect(target.hasAttribute("aria-expanded")).toBe(false);
+        expect(target.hasAttribute("aria-controls")).toBe(false);
     });
 });

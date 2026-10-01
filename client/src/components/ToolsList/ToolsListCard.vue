@@ -101,7 +101,6 @@ const edamOperationsBadges = computed(() => getOntologyBadges("ontology:edam_ope
 const edamTopicsBadges = computed(() => getOntologyBadges("ontology:edam_topics", props.edamTopics));
 
 const showHelp = ref(false);
-const showPopover = ref(false);
 
 /** We add double quotes to the ontology id filter as well since the backend Whoosh search
  * requires it for exact matches, and the `Filtering` class only does single quotes. */
@@ -341,13 +340,12 @@ const {
                 icon-only
                 transparent
                 inline
-                style="cursor: help"
-                @click="showPopover = !showPopover">
+                aria-label="Tool info"
+                style="cursor: help">
                 <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
             </GButton>
             <GPopover
                 v-if="props.version || !props.workflowCompatible"
-                :show.sync="showPopover"
                 custom-class="tool-info-popover"
                 boundary="window"
                 placement="topleft"
