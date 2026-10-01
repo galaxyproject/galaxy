@@ -29,6 +29,8 @@ import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 
+type StepPosition = NonNullable<Step["position"]>;
+
 const emit = defineEmits([
     "transform",
     "graph-offset",
@@ -316,8 +318,7 @@ defineExpose({
                     @onCreate="(contentId: string, name: string) => emit('onCreate', contentId, name)"
                     @onChange="emit('onChange')"
                     @onUpdateStepPosition="
-                        (id: number, position: { top: number; left: number }) =>
-                            emit('onUpdateStepPosition', id, position)
+                        (id: number, position: StepPosition) => emit('onUpdateStepPosition', id, position)
                     " />
                 <WorkflowComment
                     v-for="comment in comments"
