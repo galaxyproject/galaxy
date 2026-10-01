@@ -216,6 +216,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert tool["help_format"] == "restructuredtext"
         assert "**WARNING:**" in tool["help"]
 
+    @skip_without_tool("help_features_markdown")
+    def test_no_panel_index_tool_help_markdown(self):
+        tools_index = self._get("tools", data=dict(in_panel=False, tool_help=True)).json()
+        tool = next(t for t in tools_index if t["id"] == "help_features_markdown")
+        assert tool["help_format"] == "markdown"
+        assert "**This is bold text**" in tool["help"]
+
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
         requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)
