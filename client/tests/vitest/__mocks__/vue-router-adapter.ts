@@ -4,9 +4,9 @@
  * Provides both Vue Router 3 (default export, VueRouter constructor) and
  * Vue Router 4 (named exports, createRouter) APIs for test compatibility.
  */
-// Import from actual path to avoid circular alias resolution
+// Import the package's Node entry by path; the "vue-router" alias would otherwise resolve back here
 // @ts-ignore
-import * as VueRouterOriginal from "../../../node_modules/vue-router/dist/vue-router.mjs";
+import * as VueRouterOriginal from "../../../node_modules/vue-router/vue-router.node.mjs";
 
 const {
     createRouter: _createRouter,
