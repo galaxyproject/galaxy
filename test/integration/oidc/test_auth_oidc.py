@@ -11,14 +11,9 @@ from typing import (
     ClassVar,
     Union,
 )
-from unittest.mock import (
-    _patch,
-    patch,
-)
 from urllib import parse
 
 from galaxy import model
-from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
@@ -31,9 +26,9 @@ KEYCLOAK_HOST_PORT = 9443
 KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 
-# NOTE: redirect_uri has to include the current Galaxy
-#   port, so we set it to a dummy value initially
-#   and patch it when the tests are running
+# NOTE: redirect_uri has to include the Galaxy port, which the
+#   test driver picks when the server starts. setUpClass sets
+#   the real value on the running app.
 OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 <OIDC>
     <provider name="$provider_name">
@@ -44,6 +39,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
         <redirect_uri>dummy_url</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
         <accepted_audiences>gxyclient</accepted_audiences>
+        $extra_provider_config
     </provider>
 </OIDC>
 """
@@ -111,15 +107,12 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
+        extra_provider_config: ClassVar[str] = ""
         saved_env_vars: ClassVar[dict[str, Union[str, None]]]
-        config_patcher: ClassVar[_patch]
 
         @classmethod
         def setUpClass(cls):
             cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
-            # Patch the OIDC implementation so it can get the
-            # current Galaxy port to set the redirect_uri
-            cls.patch_oidc_config()
 
             # By default, the oidc callback must be done over a secure transport, so
             # we forcibly disable it for now
@@ -130,21 +123,20 @@ class AbstractTestCases:
             super().setUpClass()
             # Restart the test driver to parse the OIDC config file
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
-
-        @classmethod
-        def patch_oidc_config(cls):
-            """
-            Define this in subclasses to patch the relevant OIDC implementation:
-            need to supply the current host and port for the redirect_uri
-            setting
-            """
-            pass
+            server_wrapper = cls._test_driver.server_wrappers[0]
+            app = cls._test_driver.app
+            assert app and app.authnz_manager
+            backend_config = app.authnz_manager.oidc_backends_config[cls.provider_name]
+            backend_config["redirect_uri"] = (
+                f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+            )
 
         @classmethod
         def generate_oidc_config_file(cls, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
                     provider_name=provider_name,
+                    extra_provider_config=cls.extra_provider_config,
                 )
                 tmp_file.write(data)
                 return tmp_file.name
@@ -154,8 +146,6 @@ class AbstractTestCases:
             stop_keycloak_docker(cls.container_name)
             cls.restoreOauthlibHttps()
             os.remove(cls.backend_config_file)
-
-            cls.config_patcher.stop()
 
             super().tearDownClass()
 
@@ -213,29 +203,6 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        """
-        Patch PSAAuthnz to set the redirect_uri dynamically based on the test server port.
-
-        This is necessary because the redirect_uri must match the actual Galaxy URL,
-        which is only known at test runtime.
-        """
-        # Save a reference to the original init function
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            # Only patch if this is the keycloak provider
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
@@ -472,6 +439,24 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         assert "Invalid access token" in response.json()["err_msg"]
 
 
+class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    provider_name = "keycloak"
+    extra_provider_config = "<pkce_support>true</pkce_support>"
+
+    def test_oidc_login_sends_pkce_challenge(self):
+        response = requests.get(f"{self.url}authnz/{self.provider_name}/login")
+        provider_query = parse.parse_qs(parse.urlparse(response.json()["redirect_uri"]).query)
+        assert provider_query["code_challenge_method"] == ["S256"]
+        assert provider_query["code_challenge"]
+
+    def test_oidc_login_with_pkce(self):
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        assert "authorization code has expired" not in response.text
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
+
 class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
     """
     Integration tests for fixed_delegated_auth functionality.
@@ -486,21 +471,6 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     @classmethod
     def handle_galaxy_oidc_config_kwds(cls, config):
@@ -725,21 +695,6 @@ class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTes
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     @classmethod
     def handle_galaxy_oidc_config_kwds(cls, config):
