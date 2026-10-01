@@ -142,8 +142,9 @@ failOnConsole({
             if (message.includes("[Vue warn]")) {
                 return true;
             }
-            // Vue Router compat warnings (e.g. "No match found for location")
-            if (message.includes("[Vue Router warn]")) {
+            // Vue Router compat warnings (e.g. "No match found for location");
+            // since vue-router 5 they come from nostics as "[VUE_ROUTER_R0004] ..."
+            if (message.includes("[Vue Router warn]") || message.includes("[VUE_ROUTER_")) {
                 return true;
             }
             // Pinia duplicate registration during test setup
