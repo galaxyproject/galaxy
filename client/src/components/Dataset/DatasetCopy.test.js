@@ -40,7 +40,7 @@ async function setupBase(histories, contents) {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     return wrapper;
 }
 
@@ -90,7 +90,7 @@ it("copies selected items and shows success", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied/);
@@ -127,7 +127,7 @@ it("handles API error from copy call", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toContain("Copy failed");
@@ -177,7 +177,7 @@ it("shows success for single existing target", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
@@ -205,7 +205,7 @@ it("shows success for multiple target histories", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     wrapper.vm.targetMultiSelections = { h1: true, h2: true };
     await wrapper.vm.$nextTick();
     await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");

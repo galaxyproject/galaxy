@@ -27,7 +27,7 @@ function mountDrilldown(multiple, value) {
 
 async function toggle(wrapper, name, checked) {
     const input = wrapper.find(`#drilldown-option-${name}`);
-    await input.setChecked(checked);
+    await input.setValue(checked);
 }
 
 describe("FormDrilldown", () => {

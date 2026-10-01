@@ -29,9 +29,9 @@ describe("FormBoolean", () => {
         expect(emittedArg(wrapper, "input", 1)).toBe(false);
         await wrapper.setProps({ value: true });
         expect(emittedArg(wrapper, "input", 2)).toBe(true);
-        await input.setChecked(false);
+        await input.setValue(false);
         expect(emittedArg(wrapper, "input", 3)).toBe(false);
-        await input.setChecked(true);
+        await input.setValue(true);
         expect(emittedArg(wrapper, "input", 4)).toBe(true);
     });
 

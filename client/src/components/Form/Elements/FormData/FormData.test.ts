@@ -518,7 +518,7 @@ describe("FormData", () => {
             "Linked:Datasets will be run in matched order with other datasets.",
         );
         expect((checkLinked.element as HTMLInputElement).checked).toBeTruthy();
-        await checkLinked.setChecked(false);
+        await checkLinked.setValue(false);
         expect(wrapper.find(".custom-switch span").text()).toBe(
             "Unlinked:Dataset will be run against *all* other datasets.",
         );
