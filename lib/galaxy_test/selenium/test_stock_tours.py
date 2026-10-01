@@ -4,7 +4,6 @@ from typing import Any
 from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
 from galaxy.util import galaxy_root_path
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TIMEOUT_MULTIPLIER,
@@ -41,9 +40,6 @@ class TestStockToursTestCase(SeleniumTestCase):
             tour_callback=TourCallback(self),
         )
 
-    # Timeout finding tool_panel.tool_link(tool_id=cat1) after search textinsert.
-    # Tour step 18 can't find a[href$="/?tool_id=cat1&version=latest"] in Playwright.
-    @selenium_only
     @selenium_test
     def test_core_deferred(self):
         self.run_tour(

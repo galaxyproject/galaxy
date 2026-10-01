@@ -192,6 +192,9 @@ def selenium_only(reason: str = "Test requires Selenium-specific functionality")
             ...
     """
 
+    if not isinstance(reason, str):
+        raise TypeError('selenium_only takes a reason - write @selenium_only("..."), not a bare @selenium_only')
+
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -216,6 +219,9 @@ def playwright_only(reason: str = "Test requires Playwright-specific functionali
         def test_network_request_logging(self):
             ...
     """
+
+    if not isinstance(reason, str):
+        raise TypeError('playwright_only takes a reason - write @playwright_only("..."), not a bare @playwright_only')
 
     def decorator(f):
         @wraps(f)
