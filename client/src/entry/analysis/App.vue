@@ -104,7 +104,8 @@ export default {
         const { currentTheme } = storeToRefs(userStore);
 
         const confirmDialogRef = ref(null);
-        setConfirmDialogComponentRef(confirmDialogRef);
+        // Vue 3 doesn't unwrap a ref stored in a ref, so pass the instance, not the ref.
+        watch(confirmDialogRef, (instance) => setConfirmDialogComponentRef(instance));
 
         const windowManagerStore = useWindowManagerStore();
         const hasStagedUploads = useHasStagedUploads();
