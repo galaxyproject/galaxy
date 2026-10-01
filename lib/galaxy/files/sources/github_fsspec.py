@@ -146,8 +146,7 @@ if GithubFileSystem is not None:
             }
             # The Contents API requires the current blob sha to update an existing file;
             # it must be omitted when creating a new one.
-            existing_sha = self._existing_sha(rpath)
-            if existing_sha is not None:
+            if (existing_sha := self._existing_sha(rpath)) is not None:
                 payload["sha"] = existing_sha
 
             url = _PUT_URL.format(org=self.org, repo=self.repo, path=rpath)

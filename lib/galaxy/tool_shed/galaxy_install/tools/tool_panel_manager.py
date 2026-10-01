@@ -52,8 +52,7 @@ def _collect_new_tool_paths(elem_list, tool_path: str, shed_tool_conf: str) -> d
     path_guids: dict[str, str | None] = {}
 
     def _add(tool_elem) -> None:
-        relative = tool_elem.get("file")
-        if relative:
+        if relative := tool_elem.get("file"):
             path = os.path.normpath(os.path.join(resolved_base, relative))
             path_guids[path] = tool_elem.get("guid")
 

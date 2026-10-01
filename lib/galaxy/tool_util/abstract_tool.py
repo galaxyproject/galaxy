@@ -87,8 +87,7 @@ class RawToolSource(NamedTuple):
 
 def parse_tool_version_for_comparison(version: str) -> "LegacyVersion | Version":
     """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
-    suffix_marker = "+galaxy"
-    if suffix_marker in version:
+    if (suffix_marker := "+galaxy") in version:
         base, suffix = version.split(suffix_marker, 1)
         if suffix:
             version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"

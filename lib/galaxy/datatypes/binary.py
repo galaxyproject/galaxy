@@ -1383,8 +1383,7 @@ def _h5_check_dataset_size(ds: h5py.Dataset, selection: str | None) -> None:
                 "narrow the request with 'selection'."
             )
         return
-    nbytes = count * ds.dtype.itemsize
-    if nbytes > MAX_STRUCTURED_CONTENT_BYTES:
+    if (nbytes := count * ds.dtype.itemsize) > MAX_STRUCTURED_CONTENT_BYTES:
         raise RequestParameterInvalidException(
             f"The selected data holds {nbytes} bytes, exceeding the limit of {MAX_STRUCTURED_CONTENT_BYTES} bytes; "
             "narrow the request with 'selection'."
@@ -1404,8 +1403,7 @@ def _h5_check_attributes_size(entity: h5py.HLObject) -> None:
 
 
 def _h5_check_group_size(group: h5py.Group) -> None:
-    children = len(group)
-    if children > MAX_STRUCTURED_CONTENT_CHILDREN:
+    if (children := len(group)) > MAX_STRUCTURED_CONTENT_CHILDREN:
         raise RequestParameterInvalidException(
             f"The group has {children} children, exceeding the limit of {MAX_STRUCTURED_CONTENT_CHILDREN}; "
             "browse subgroups individually."

@@ -928,8 +928,7 @@ class GalaxyInteractorApi:
                 test_input_path = test_input.get("path", "")
                 if test_input_path in self.uploads:
                     return DataRequestHda(**self.uploads[test_input_path])
-                location = test_input.get("location")
-                if location:
+                if location := test_input.get("location"):
                     ext = test_input.get("filetype") or "auto"
                     return DataRequestUri(url=location, ext=ext)
                 return DataRequestHda(**self.uploads[test_input_path])

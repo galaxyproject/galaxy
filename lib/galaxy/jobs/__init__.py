@@ -1224,8 +1224,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def galaxy_virtual_env(self):
-        virtual_env = os.environ.get("VIRTUAL_ENV")
-        if virtual_env:
+        if virtual_env := os.environ.get("VIRTUAL_ENV"):
             return virtual_env
         if sys.prefix != sys.base_prefix:
             return sys.prefix
@@ -1277,8 +1276,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """Copy the upload paramfile into the working directory and use the stable path."""
         new = os.path.join(self.working_directory, "upload_params.json")
         paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
-        param_file_path = json.loads(paramfile_parameter.value)
-        if param_file_path != new:
+        if (param_file_path := json.loads(paramfile_parameter.value)) != new:
             try:
                 shutil.copy2(param_file_path, new)
             except OSError as exc:
