@@ -60,11 +60,11 @@ async function loadRecommendations() {
         if (!responsePred) {
             return;
         }
-        const datatypesMapper = await getDatatypesMapper(false);
         const predData = responsePred.predicted_data;
         deprecated.value = predData.is_deprecated;
         deprecatedMessage.value = predData.message;
         if (!deprecated.value && predData.children.length > 0) {
+            const datatypesMapper = await getDatatypesMapper(false);
             const compatibleTools = getCompatibleRecommendations(
                 predData.children,
                 predData.o_extensions,
