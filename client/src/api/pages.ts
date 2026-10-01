@@ -3,7 +3,8 @@
  * Uses the generated typed client against the /api/pages endpoints.
  */
 import { type components, GalaxyApi, type GalaxyApiPaths } from "@/api";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { slugify } from "@/utils/slug";
 
 // --- Types (generated from the backend Page/PageRevision schemas) ---
 
@@ -98,6 +99,17 @@ export async function loadPages(options: LoadPagesOptions = {}): Promise<LoadPag
     return { data, totalMatches };
 }
 
+/** Backend `err_code` of a slug the user already owns (`USER_SLUG_DUPLICATE`) */
+const USER_SLUG_DUPLICATE = 400006;
+
+/** Thrown by {@link createPage} when the user already owns a page with that slug */
+export class PageSlugConflictError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PageSlugConflictError";
+    }
+}
+
 /** Creates a standalone page and returns the created page. */
 export async function createPage({
     title,
@@ -105,7 +117,29 @@ export async function createPage({
     content_format = "markdown",
     content = "",
 }: CreatePageOptions): Promise<PageDetails> {
-    return createHistoryPage({ title, slug, content, content_format });
+    const { data, error } = await GalaxyApi().POST("/api/pages", { body: { title, slug, content, content_format } });
+    if (error) {
+        if (error.err_code === USER_SLUG_DUPLICATE) {
+            throw new PageSlugConflictError(errorMessageAsString(error));
+        }
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/** Creates a page slugged from its title; a slug the user already owns is retried once with `-2` */
+export async function createPageFromTitle(options: Omit<CreatePageOptions, "slug">): Promise<PageDetails> {
+    // a title made of punctuation alone would leave no slug to send
+    const slug = slugify(options.title, "page");
+    try {
+        return await createPage({ ...options, slug });
+    } catch (error) {
+        if (!(error instanceof PageSlugConflictError)) {
+            throw error;
+        }
+        // the suffixed slug is free unless the user owns both, which is worth reporting
+        return createPage({ ...options, slug: `${slug}-2` });
+    }
 }
 
 export async function fetchHistoryPages(historyId: string, invocationId?: string): Promise<HistoryPageSummary[]> {

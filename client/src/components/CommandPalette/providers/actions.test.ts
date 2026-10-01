@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as PagesApi from "@/api/pages";
-import { createPage } from "@/api/pages";
+import { createPageFromTitle } from "@/api/pages";
 import type { WorkflowSummary } from "@/api/workflows";
 import { loadWorkflows } from "@/api/workflows";
 import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
@@ -18,7 +18,7 @@ import { actionsProvider } from "./actions";
 
 vi.mock("@/api/pages", async (importOriginal) => ({
     ...(await importOriginal<typeof PagesApi>()),
-    createPage: vi.fn(),
+    createPageFromTitle: vi.fn(),
 }));
 
 vi.mock("@/api/workflows", () => ({
@@ -65,7 +65,7 @@ describe("actionsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
-        vi.mocked(createPage).mockResolvedValue({ id: "page-1" } as never);
+        vi.mocked(createPageFromTitle).mockResolvedValue({ id: "page-1" } as never);
         vi.mocked(loadWorkflows).mockResolvedValue({ data: [RNA_SEQ], totalMatches: 1 });
     });
 
@@ -149,15 +149,11 @@ describe("actionsProvider", () => {
 
         item?.handler?.(ctx);
         await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
-        expect(createPage).toHaveBeenCalledWith({
-            title: "My New Page",
-            slug: "my-new-page",
-            content_format: "markdown",
-        });
+        expect(createPageFromTitle).toHaveBeenCalledWith({ title: "My New Page", content_format: "markdown" });
     });
 
     it("leaves the page store untouched when the creation fails", async () => {
-        vi.mocked(createPage).mockRejectedValue(new Error("nope"));
+        vi.mocked(createPageFromTitle).mockRejectedValue(new Error("nope"));
 
         const pageStore = usePageStore();
         const navigate = vi.fn();
