@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import GButton from "./GButton.vue";
 
@@ -106,11 +106,16 @@ describe("GButton.vue click propagation", () => {
     });
 });
 
-describe("GButton.vue router-link root", () => {
-    function routerWithRoutes() {
-        return new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
-    }
+const RouteStub = { render: () => null };
 
+function routerWithRoutes(paths = ["/", "/pages/create"]) {
+    return createRouter({
+        history: createMemoryHistory(),
+        routes: paths.map((path) => ({ path, component: RouteStub })),
+    });
+}
+
+describe("GButton.vue router-link root", () => {
     // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
     // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
     // which reaches the rendered anchor.
@@ -151,7 +156,7 @@ describe("GButton.vue disabled navigation", () => {
     // reliable no-op in vue-router, so a disabled GButton renders as a plain button
     // instead and has no navigation behaviour to suppress.
     it("renders an enabled router-link button as an anchor", () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create" },
             localVue,
@@ -162,7 +167,7 @@ describe("GButton.vue disabled navigation", () => {
     });
 
     it("renders a disabled router-link button as a plain button", () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create", disabled: true, disabledTitle: "Nope" },
             localVue,
@@ -173,9 +178,9 @@ describe("GButton.vue disabled navigation", () => {
     });
 
     it("does not navigate when a disabled router-link button is clicked", async () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/start" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes(["/start", "/pages/create"]);
         await router.push("/start?keep=me");
-        const routeBeforeClick = router.currentRoute.fullPath;
+        const routeBeforeClick = router.currentRoute.value.fullPath;
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create", disabled: true },
             localVue,
@@ -184,6 +189,6 @@ describe("GButton.vue disabled navigation", () => {
 
         await wrapper.trigger("click");
 
-        expect(router.currentRoute.fullPath).toBe(routeBeforeClick);
+        expect(router.currentRoute.value.fullPath).toBe(routeBeforeClick);
     });
 });

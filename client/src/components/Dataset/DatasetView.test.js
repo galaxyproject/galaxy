@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -89,7 +89,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 
@@ -153,7 +153,7 @@ async function mountLoadingDatasetView() {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 

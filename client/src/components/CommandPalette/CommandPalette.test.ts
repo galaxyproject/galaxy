@@ -3,7 +3,7 @@ import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
@@ -77,7 +77,7 @@ function countEmptyQuerySearches(provider: CommandPaletteProvider): SearchCounte
 
 describe("CommandPalette", () => {
     let wrapper: VueWrapper;
-    let router: VueRouter;
+    let router: Router;
 
     beforeEach(async () => {
         server.use(
@@ -85,7 +85,7 @@ describe("CommandPalette", () => {
                 return response(200).json([]);
             }),
         );
-        router = new VueRouter({ mode: "abstract" });
+        router = createRouter({ history: createMemoryHistory(), routes: [] });
         wrapper = mount(MountTarget as object, {
             localVue,
             router,

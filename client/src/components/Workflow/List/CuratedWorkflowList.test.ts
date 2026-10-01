@@ -5,7 +5,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
@@ -18,7 +18,7 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const FAKE_USER = getFakeRegisteredUser();
 

@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 
@@ -16,7 +16,7 @@ const BETA_CLASS = ".breadcrumb-heading-header-beta";
 const localVue = getLocalVue();
 
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
     await router.push(routePath);
 
