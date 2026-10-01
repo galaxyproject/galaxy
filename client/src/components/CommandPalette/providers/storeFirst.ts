@@ -121,5 +121,5 @@ export async function rootListItems(
     }
     const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.rootOwn, { cacheOnly: true }) : [];
     const merged = dedupePaletteItemsByEntity([ownItems, ...(await listed)].flat());
-    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootSection);
+    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.section);
 }

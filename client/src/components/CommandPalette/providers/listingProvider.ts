@@ -26,8 +26,8 @@ export function defineListingProvider<V extends string>(config: ListingProviderC
         return config.variants.find((known) => known === variant) ?? "my";
     }
 
-    function recentItems(query: string, limit: number = PALETTE_LIMITS.recent): PaletteItem[] {
-        return recentPaletteItems(config.recentRows(), query, limit);
+    function recentItems(query: string): PaletteItem[] {
+        return recentPaletteItems(config.recentRows(), query, PALETTE_LIMITS.section);
     }
 
     return {
@@ -35,7 +35,7 @@ export function defineListingProvider<V extends string>(config: ListingProviderC
         title: config.title,
         /** Root mode: entities the palette remembers, no request needed */
         emptyQueryItems(ctx) {
-            return ctx.isAnonymous ? [] : recentItems("", PALETTE_LIMITS.rootOwn);
+            return ctx.isAnonymous ? [] : recentItems("");
         },
         /** Root mode: the cached own list, and the root listings searched */
         search(query, ctx, options = {}) {

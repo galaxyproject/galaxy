@@ -121,7 +121,7 @@ export const reportsProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous) {
             return [];
         }
-        return recentItems("", PALETTE_LIMITS.recent);
+        return recentItems("", PALETTE_LIMITS.section);
     },
     /** Root mode: the cached own pages, and the published ones searched */
     search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
@@ -140,7 +140,7 @@ export const reportsProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = variantOf(scope);
-        const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.recent) : [];
+        const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.section) : [];
         const recentIds = new Set(recent.map((item) => item.id));
         const listed = (await storeFirstItems(reportList(variant), query, PALETTE_LIMITS.section + recentIds.size))
             .filter((item) => !recentIds.has(item.id))
