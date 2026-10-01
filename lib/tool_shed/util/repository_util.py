@@ -180,6 +180,7 @@ def create_repository_admin_role(app: "ToolShedApp", repository: model.Repositor
     name.  This will ensure that the role name is unique.
     """
     sa_session = app.model.session
+    assert repository.user is not None
     name = get_repository_admin_role_name(str(repository.name), str(repository.user.username))
     description = "A user or group member with this role can administer this repository."
     role = model.Role(name=name, description=description, type=model.Role.types.SYSTEM)
@@ -226,6 +227,7 @@ def create_repository(
     # Create an admin role for the repository.
     create_repository_admin_role(app, repository)
     # Create a temporary repo_path on disk.
+    assert repository.user is not None
     repository_path = tempfile.mkdtemp(
         dir=app.config.file_path,
         prefix=f"{repository.user.username}-{repository.name}",
@@ -257,6 +259,7 @@ def generate_sharable_link_for_repository_in_tool_shed(
         base_url = web.url_for("/", qualified=True).rstrip("/")
     else:
         base_url = base_url.rstrip("/")
+    assert repository.user is not None
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
@@ -517,6 +520,7 @@ def update_validated_repository(
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
+        assert repository.user is not None
         old_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
         new_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
