@@ -18,7 +18,11 @@ API has gone too far.
 import io
 import os
 import tempfile
-from dataclasses import dataclass
+import time
+from dataclasses import (
+    dataclass,
+    replace,
+)
 from typing import Any
 
 import requests
@@ -38,6 +42,9 @@ SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 TEST_INPUT_TEXT = "test input content\n"
 TEST_OUTPUT_TEXT = "some initial text data"
 TEST_TUS_CHUNK_SIZE = 1024
+UPLOAD_BOUNDARY = "jobfilesboundary"
+LARGE_UPLOAD_CHUNK_SIZE = 1024 * 1024
+LARGE_UPLOAD_CHUNKS = 8
 
 
 @dataclass
@@ -46,6 +53,7 @@ class RunningJob:
     job_key: str
     files_url: str
     output_path: str
+    output_extra_files_path: str
     working_directory: str
 
 
@@ -146,6 +154,18 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         self._change_job_state(job.job, "ok")
         _assert_insufficient_permissions(self._post_job_file(job, work_dir_file, TEST_OUTPUT_TEXT))
 
+    def test_write_with_form_params(self):
+        job = self._running_job()
+        new_file_path_contents = set(os.listdir(self._app.config.new_file_path))
+        response = self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT, form_auth=True)
+        api_asserts.assert_status_code_is_ok(response)
+        _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
+        work_dir_file = os.path.join(job.working_directory, "work")
+        response = self._post_job_file(job, work_dir_file, TEST_OUTPUT_TEXT, form_auth=True)
+        api_asserts.assert_status_code_is_ok(response)
+        _assert_file_contents(work_dir_file, TEST_OUTPUT_TEXT)
+        assert set(os.listdir(self._app.config.new_file_path)) == new_file_path_contents
+
     def test_write_with_tus(self):
         job = self._running_job()
         upload_url = self._api_url(f"job_files/resumable_upload?job_key={job.job_key}", use_key=False)
@@ -161,7 +181,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert upload_session_url
         tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
-        response = self._post_job_file(job, job.output_path, extra={"session_id": tus_session_id})
+        response = self._post_job_file(job, job.output_path, data={"session_id": tus_session_id})
         api_asserts.assert_status_code_is_ok(response)
         _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
@@ -170,7 +190,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         upload_path = os.path.join(self.nginx_upload_job_files_store, "nginx_upload")
         _write_file(upload_path, TEST_OUTPUT_TEXT)
 
-        response = self._post_job_file(job, job.output_path, extra={"__file_path": upload_path})
+        response = self._post_job_file(job, job.output_path, data={"__file_path": upload_path})
         api_asserts.assert_status_code_is_ok(response)
         assert not os.path.exists(upload_path)
         _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
@@ -201,9 +221,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 
     def test_write_with_query_params(self):
         job = self._running_job()
-        response = self._post_job_file(
-            job, job.output_path, TEST_OUTPUT_TEXT, extra={"file_type": "output"}, as_params=True
-        )
+        response = self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT, params={"file_type": "output"})
         api_asserts.assert_status_code_is_ok(response)
         _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
 
@@ -214,6 +232,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             for i in range(5):
                 api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, f"{stream} {i}\n"))
             _assert_file_contents(path, "".join(f"{stream} {i}\n" for i in range(5)))
+        assert not _staging_dirs(job.working_directory)
 
     def test_write_replaces_other_files(self):
         job = self._running_job()
@@ -225,11 +244,36 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def test_write_and_read_path_with_percent_escapes(self):
         job = self._running_job()
         path = os.path.join(job.working_directory, "a%2Fb%20c")
-        api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, "escaped", as_params=True))
+        api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, "escaped"))
         _assert_file_contents(path, "escaped")
         response = requests.get(job.files_url, params={"path": path, "job_key": job.job_key})
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == "escaped"
+
+    def test_write_streams_working_directory_upload(self):
+        job = self._running_job()
+        self._assert_upload_streamed(job, os.path.join(job.working_directory, "large"), job.working_directory)
+
+    def test_write_streams_extra_file_upload_outside_extra_files_path(self):
+        job = self._running_job()
+        os.makedirs(job.output_extra_files_path)
+        path = os.path.join(job.output_extra_files_path, "large")
+        self._assert_upload_streamed(job, path, os.path.dirname(job.output_path))
+
+    def test_rejected_upload_leaves_no_staged_files(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "work")
+        outside_path = os.path.join(self._test_driver.mkdtemp(), "outside")
+        new_file_path_contents = set(os.listdir(self._app.config.new_file_path))
+        invalid_key_job = replace(job, job_key="invalid")
+        _assert_insufficient_permissions(self._post_job_file(invalid_key_job, path, TEST_OUTPUT_TEXT))
+        _assert_insufficient_permissions(self._post_job_file(job, outside_path, TEST_OUTPUT_TEXT))
+        _assert_insufficient_permissions(self._post_job_file(invalid_key_job, path, TEST_OUTPUT_TEXT, form_auth=True))
+        assert not _staging_dirs(job.working_directory)
+        assert not _staging_dirs(os.path.dirname(outside_path))
+        assert set(os.listdir(self._app.config.new_file_path)) == new_file_path_contents
+        assert not os.path.exists(path)
+        assert not os.path.exists(outside_path)
 
     def test_missing_params(self):
         job = self._running_job()
@@ -287,25 +331,56 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         output_path = self._app.object_store.get_filename(output_hda.dataset)
         assert output_path
         files_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
-        return RunningJob(job, job_key, files_url, output_path, working_directory)
+        extra_files_path = output_hda.dataset.extra_files_path
+        return RunningJob(job, job_key, files_url, output_path, extra_files_path, working_directory)
 
     def _post_job_file(
         self,
         job: RunningJob,
         path: str,
         content: str | None = None,
-        extra: dict[str, str] | None = None,
+        data: dict[str, str] | None = None,
+        params: dict[str, str] | None = None,
         file_param: str = "file",
-        as_params: bool = False,
+        form_auth: bool = False,
     ) -> requests.Response:
-        payload = {"path": path, "job_key": job.job_key, **(extra or {})}
+        """Post like Pulsar - path and job_key as query params - unless ``form_auth``."""
+        auth = {"path": path, "job_key": job.job_key}
+        data = {**(data or {}), **(auth if form_auth else {})}
+        params = {**(params or {}), **({} if form_auth else auth)}
         files = {file_param: io.StringIO(content)} if content is not None else None
-        if as_params:
-            return requests.post(job.files_url, params=payload, files=files)
-        return requests.post(job.files_url, data=payload, files=files)
+        return requests.post(job.files_url, params=params, data=data, files=files)
+
+    def _assert_upload_streamed(self, job: RunningJob, path: str, staging_parent: str):
+        new_file_path_contents = set(os.listdir(self._app.config.new_file_path))
+        chunk = b"x" * LARGE_UPLOAD_CHUNK_SIZE
+        staged_sizes: list[int] = []
+        extra_files_staging: list[list[str]] = []
+
+        def body():
+            yield (
+                f'--{UPLOAD_BOUNDARY}\r\nContent-Disposition: form-data; name="file"; filename="large"\r\n\r\n'
+            ).encode()
+            for _ in range(LARGE_UPLOAD_CHUNKS):
+                yield chunk
+            staged_sizes.append(
+                _wait_for_staged_upload(staging_parent, (LARGE_UPLOAD_CHUNKS - 1) * LARGE_UPLOAD_CHUNK_SIZE)
+            )
+            extra_files_staging.append(_staging_dirs(job.output_extra_files_path))
+            yield f"\r\n--{UPLOAD_BOUNDARY}--\r\n".encode()
+
+        headers = {"Content-Type": f"multipart/form-data; boundary={UPLOAD_BOUNDARY}"}
+        params = {"path": path, "job_key": job.job_key}
+        response = requests.post(job.files_url, params=params, data=body(), headers=headers)
+        api_asserts.assert_status_code_is_ok(response)
+        assert staged_sizes[0] >= (LARGE_UPLOAD_CHUNKS - 1) * LARGE_UPLOAD_CHUNK_SIZE
+        assert extra_files_staging == [[]]
+        assert os.path.getsize(path) == LARGE_UPLOAD_CHUNKS * LARGE_UPLOAD_CHUNK_SIZE
+        assert not _staging_dirs(staging_parent)
+        assert set(os.listdir(self._app.config.new_file_path)) == new_file_path_contents
 
     def _assert_nginx_upload_rejected(self, job: RunningJob, file_path: str, outside_path: str):
-        response = self._post_job_file(job, job.output_path, extra={"__file_path": file_path})
+        response = self._post_job_file(job, job.output_path, data={"__file_path": file_path})
         api_asserts.assert_status_code_is(response, 400)
         api_asserts.assert_error_code_is(response, 400008)
         assert os.path.exists(outside_path)
@@ -322,6 +397,26 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session = self.sa_session
         sa_session.add(job)
         sa_session.commit()
+
+
+def _staging_dirs(directory):
+    if not os.path.isdir(directory):
+        return []
+    return [name for name in os.listdir(directory) if name.startswith(".job_files_upload_")]
+
+
+def _wait_for_staged_upload(directory, min_size, timeout=10):
+    deadline = time.time() + timeout
+    size = 0
+    while time.time() < deadline:
+        for staging_dir in _staging_dirs(directory):
+            staging_path = os.path.join(directory, staging_dir)
+            for name in os.listdir(staging_path):
+                size = max(size, os.path.getsize(os.path.join(staging_path, name)))
+        if size >= min_size:
+            break
+        time.sleep(0.05)
+    return size
 
 
 def _assert_insufficient_permissions(response):
