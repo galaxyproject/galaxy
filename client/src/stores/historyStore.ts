@@ -119,6 +119,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
     const historiesOffset = ref(0);
     const totalHistoryCount = ref(0);
+    /** Whether an unfiltered page of own histories landed; a cached current history alone is no listing */
+    const ownHistoriesLoaded = ref(false);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
@@ -235,6 +237,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const isHistoryListLoading = computed(() => {
         return (variant: HistoryListVariant) => listedHistoriesLoading.value[variant];
     });
+
+    const hasLoadedOwnHistories = computed(() => ownHistoriesLoaded.value);
 
     /** Whether the given listing has been fetched at least once. */
     const hasLoadedHistoryList = computed(() => {
@@ -531,6 +535,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const offset = queryString ? 0 : historiesOffset.value;
             const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
             setHistories(histories);
+            if (!queryString) {
+                ownHistoriesLoaded.value = true;
+            }
             if (paginate && !queryString && historiesOffset.value == offset) {
                 await handleTotalCountChange(histories.length);
             }
@@ -599,6 +606,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const histories = (await getHistoryList(0, limit, search)) as HistorySummary[];
             // merges by id, so a page fetched here never drops what is cached
             setHistories(histories);
+            if (!search) {
+                ownHistoriesLoaded.value = true;
+            }
         } catch (error) {
             rethrowSimple(error);
         }
@@ -1028,6 +1038,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         archivedHistories,
         isHistoryListLoading,
         hasLoadedHistoryList,
+        hasLoadedOwnHistories,
         getHistoryListTotal,
         setListedHistories,
         fetchHistoryList,

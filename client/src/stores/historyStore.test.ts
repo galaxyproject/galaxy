@@ -381,6 +381,17 @@ describe("historyStore — filling the own-history cache beside the paginated li
 
         expect(requestedLimits).toContain("10");
     });
+    it("counts as the own listing only once an unfiltered page landed", async () => {
+        const store = useHistoryStore();
+        releaseCacheFill();
+
+        await store.fetchOwnHistories({ search: "name-contains=h1", limit: 25 });
+        expect(store.hasLoadedOwnHistories).toBe(false);
+
+        await store.fetchOwnHistories({ limit: 25 });
+        expect(store.hasLoadedOwnHistories).toBe(true);
+    });
+
     it("shares identical concurrent cache fills", async () => {
         const store = useHistoryStore();
         const first = store.fetchOwnHistories({ limit: 25 });

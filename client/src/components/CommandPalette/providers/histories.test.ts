@@ -210,6 +210,27 @@ describe("historiesProvider", () => {
         expect(sections[1]?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
     });
 
+    it("hydrates the own histories even when the current history is cached", async () => {
+        // a boot that loaded no listing leaves the current history cached alone
+        useHistoryStore().setHistory(RNA as never);
+        let release = () => {};
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        getHistoryList.mockImplementationOnce(async () => {
+            await pending;
+            return [RNA, VARIANTS];
+        });
+
+        const searching = scopedSections(OWN_SCOPE);
+        await flushPromises();
+        release();
+        const sections = await searching;
+
+        expect(getHistoryList).toHaveBeenCalledTimes(1);
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+    });
+
     it("opens the history view on enter and offers set-as-current for own histories", async () => {
         const [item] = (await scopedSections(OWN_SCOPE)).at(-1)?.items ?? [];
 
