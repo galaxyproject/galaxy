@@ -1,3 +1,10 @@
+"""Map user-supplied workbook column headers onto Galaxy's column target types.
+
+Headers are matched loosely so that "MD5 Sum", "MD5" and "Hash MD5" all reach
+``hash_md5``. See ``rule_target_column_specification.yml`` for the cross-language
+set of accepted spellings.
+"""
+
 import re
 from dataclasses import dataclass
 
@@ -11,16 +18,19 @@ from galaxy.model.dataset_collections.rule_target_models import (
 
 COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
     "name": "name",
+    # both spellings name the collection, not the dataset
     "listname": "collection_name",
     "collectionname": "collection_name",
     "uri": "url",
     "url": "url",
     "urldeferred": "url_deferred",
     "deferredurl": "url_deferred",
+    # genome build
     "genome": "dbkey",
     "dbkey": "dbkey",
     "genomebuild": "dbkey",
     "build": "dbkey",
+    # datatype/extension
     "filetype": "file_type",
     "extension": "file_type",
     "fileextension": "file_type",
@@ -29,6 +39,7 @@ COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
     "tag": "tags",
     "grouptag": "group_tags",
     "nametag": "name_tag",
+    # collection structure
     "listidentifier": "list_identifiers",
     "pairedidentifier": "paired_identifier",
     "hashmd5sum": "hash_md5",
@@ -54,6 +65,22 @@ COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
 
 
 def column_title_to_target_type(column_title: str) -> RuleBuilderMappingTargetKey | None:
+    """Map a raw workbook header to a target type, or None if unrecognized.
+
+    Matching ignores case, whitespace, ``()-_`` and the word "optional", and falls
+    back to prefix/suffix matching so numbered columns still resolve.
+
+    >>> column_title_to_target_type("Name")
+    'name'
+    >>> column_title_to_target_type("MD5 Sum")
+    'hash_md5'
+    >>> column_title_to_target_type("URI 1 (Forward)")
+    'url'
+    >>> column_title_to_target_type("Genome Build")
+    'dbkey'
+    >>> column_title_to_target_type("Unknown Column") is None
+    True
+    """
     normalized_title = re.sub(r"[\s\(\)\-\_]|optional", "", column_title.lower())
     if normalized_title not in COLUMN_TITLE_PREFIXES:
         for key in COLUMN_TITLE_PREFIXES.keys():
@@ -88,6 +115,7 @@ class HeaderColumn:
 
     @property
     def name(self):
+        """Internal key for this column - "url", then "url_1", "url_2" for repeats."""
         if self.type_index == 0:
             return self.type
         else:
@@ -113,6 +141,8 @@ def _column_header_to_column_target(column_header: HeaderColumn) -> ColumnTarget
 
 
 class ParsedColumn(BaseModel):
+    """Serializable form of a recognized workbook column."""
+
     type: RuleBuilderMappingTargetKey
     type_index: int
     title: str
@@ -126,6 +156,8 @@ class ParsedColumn(BaseModel):
 
 
 class InferredColumnMapping(BaseModel):
+    """Parse-log entry recording how one workbook column was interpreted."""
+
     column_index: int
     column_title: str
     parsed_column: ParsedColumn

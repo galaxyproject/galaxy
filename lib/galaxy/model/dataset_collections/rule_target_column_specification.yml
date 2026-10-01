@@ -3,6 +3,12 @@
 # to validate it both on the backend and the frontend. So having a set of tests
 # that validate what are reserved column names that we can run across both languages
 # utilities for doing this is valuable.
+#
+# Each case gives a column_header a user might type and the maps_to target type it
+# must resolve to. Matching ignores case, whitespace, ()-_ and the word "optional".
+#
+# Run by test/unit/data/dataset_collections/test_column_to_target_mapping.py and, via
+# a symlink into client/src/components/Collections/wizard/, by fetchWorkbooks.test.ts.
 
 - doc: "Name (with uppercase) maps directly to the name target type"
   column_header: "Name"
@@ -90,54 +96,54 @@
   column_header: "Paired Identifier"
   maps_to: "paired_identifier"
 
-- doc: "'MD5Sum' maps to hash_md5" 
+- doc: "'MD5Sum' maps to hash_md5"
   column_header: "MD5Sum"
   maps_to: "hash_md5"
-- doc: "'MD5' maps to hash_md5" 
+- doc: "'MD5' maps to hash_md5"
   column_header: "MD5"
   maps_to: "hash_md5"
-- doc: "'Hash MD5' maps to hash_md5" 
+- doc: "'Hash MD5' maps to hash_md5"
   column_header: "Hash MD5"
   maps_to: "hash_md5"
-- doc: "'MD5 Hash' maps to hash_md5" 
+- doc: "'MD5 Hash' maps to hash_md5"
   column_header: "MD5 Hash"
   maps_to: "hash_md5"
 
-- doc: "'SHA-1 Sum' maps to hash_sha1" 
+- doc: "'SHA-1 Sum' maps to hash_sha1"
   column_header: "SHA-1 Sum"
   maps_to: "hash_sha1"
-- doc: "'SHA1' maps to hash_sha1" 
+- doc: "'SHA1' maps to hash_sha1"
   column_header: "SHA1"
   maps_to: "hash_sha1"
-- doc: "'Hash SHA-1' maps to hash_sha1" 
+- doc: "'Hash SHA-1' maps to hash_sha1"
   column_header: "Hash SHA-1"
   maps_to: "hash_sha1"
-- doc: "'SHA-1 Hash' maps to hash_sha1" 
+- doc: "'SHA-1 Hash' maps to hash_sha1"
   column_header: "SHA-1 Hash"
   maps_to: "hash_sha1"
 
-- doc: "'SHA-256 Sum' maps to hash_sha256" 
+- doc: "'SHA-256 Sum' maps to hash_sha256"
   column_header: "SHA-256 Sum"
   maps_to: "hash_sha256"
-- doc: "'SHA256' maps to hash_sha256" 
+- doc: "'SHA256' maps to hash_sha256"
   column_header: "SHA256"
   maps_to: "hash_sha256"
-- doc: "'Hash SHA-256' maps to hash_sha256" 
+- doc: "'Hash SHA-256' maps to hash_sha256"
   column_header: "Hash SHA-256"
   maps_to: "hash_sha256"
-- doc: "'SHA-256 Hash' maps to hash_sha256" 
+- doc: "'SHA-256 Hash' maps to hash_sha256"
   column_header: "SHA-256 Hash"
   maps_to: "hash_sha256"
 
-- doc: "'SHA-512 Sum' maps to hash_sha512" 
+- doc: "'SHA-512 Sum' maps to hash_sha512"
   column_header: "SHA-512 Sum"
   maps_to: "hash_sha512"
-- doc: "'SHA512' maps to hash_sha512" 
+- doc: "'SHA512' maps to hash_sha512"
   column_header: "SHA512"
   maps_to: "hash_sha512"
-- doc: "'Hash SHA-512' maps to hash_sha512" 
+- doc: "'Hash SHA-512' maps to hash_sha512"
   column_header: "Hash SHA-512"
   maps_to: "hash_sha512"
-- doc: "'SHA-512 Hash' maps to hash_sha512" 
+- doc: "'SHA-512 Hash' maps to hash_sha512"
   column_header: "SHA-512 Hash"
   maps_to: "hash_sha512"

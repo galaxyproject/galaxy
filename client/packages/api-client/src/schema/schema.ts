@@ -16984,7 +16984,10 @@ export interface components {
             /** Message */
             message: string;
         };
-        /** InferredColumnMapping */
+        /**
+         * InferredColumnMapping
+         * @description Parse-log entry recording how one workbook column was interpreted.
+         */
         InferredColumnMapping: {
             /** Column Index */
             column_index: number;
@@ -21088,7 +21091,10 @@ export interface components {
              */
             content: string;
         };
-        /** ParsedColumn */
+        /**
+         * ParsedColumn
+         * @description Serializable form of a recognized workbook column.
+         */
         ParsedColumn: {
             /** Title */
             title: string;
