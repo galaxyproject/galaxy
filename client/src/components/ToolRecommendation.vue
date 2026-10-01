@@ -16,14 +16,13 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 const LEAF_ROW_HEIGHT = 12;
 const MIN_TREE_HEIGHT = 80;
 
-/** Shape of the (currently mocked) `getToolPredictions` response. */
 interface ToolPredictionsResponse {
     current_tool: string;
     predicted_data: {
-        is_deprecated: boolean;
-        message: string;
+        is_deprecated?: boolean;
+        message?: string;
         name: string;
-        o_extensions: string[];
+        o_extensions?: string[];
         children: PredictedToolChild[];
     };
 }
@@ -61,13 +60,13 @@ async function loadRecommendations() {
             return;
         }
         const predData = responsePred.predicted_data;
-        deprecated.value = predData.is_deprecated;
-        deprecatedMessage.value = predData.message;
+        deprecated.value = predData.is_deprecated ?? false;
+        deprecatedMessage.value = predData.message ?? "";
         if (!deprecated.value && predData.children.length > 0) {
             const datatypesMapper = await getDatatypesMapper(false);
             const compatibleTools = getCompatibleRecommendations(
                 predData.children,
-                predData.o_extensions,
+                predData.o_extensions ?? [],
                 datatypesMapper,
             );
             if (compatibleTools.length > 0 && deprecated.value === false) {
