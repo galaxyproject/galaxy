@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -206,13 +206,13 @@ describe("Tool Generated Tour Dropdown Item", () => {
 
     /** Confirms the tour is _(still)_ generating, given that the dropdown item is disabled
      * and the tour store not yet updated. */
-    function tourIsGenerating(dropdownItem: VueWrapper) {
+    function tourIsGenerating(dropdownItem: DOMWrapper<Element>) {
         expect(dropdownItem.attributes("aria-disabled")).toBe("true");
         expect(setTourMock).toHaveBeenCalledTimes(0);
     }
 
     /** Confirms the tour has been generated and the `tourStore` updated with it. */
-    function tourHasGenerated(dropdownItem: VueWrapper) {
+    function tourHasGenerated(dropdownItem: DOMWrapper<Element>) {
         // The second toast confirms the tour is ready
         expect(raisedToasts()).toContainEqual({ variant: "success", message: "You can now start the tour" });
         expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();
@@ -224,7 +224,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     /** Confirms the tour generation failed, the dropdown item is enabled, the tour store not updated
      * and the expected error is message shown in a toast.
      */
-    function tourGenerationFailedWith(dropdownItem: VueWrapper, message: string) {
+    function tourGenerationFailedWith(dropdownItem: DOMWrapper<Element>, message: string) {
         // The second toast confirms the tour generation failed
         expect(raisedToasts()).toContainEqual({ variant: "error", message });
         expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();

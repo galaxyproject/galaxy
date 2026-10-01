@@ -1,5 +1,5 @@
 import { nth } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -43,7 +43,7 @@ describe("JobParameters/JobParameters.vue", () => {
         await flushPromises();
 
         const checkTableParameter = (
-            element: VueWrapper<any>,
+            element: DOMWrapper<HTMLTableRowElement>,
             expectedTitle: string,
             expectedValue: string | { id: string; src: string },
             link?: string,
@@ -72,15 +72,15 @@ describe("JobParameters/JobParameters.vue", () => {
         const elements = tbody.findAll("tr");
         expect(elements.length).toBe(3);
 
-        checkTableParameter(elements.at(0), "Add this value", "22", undefined);
+        checkTableParameter(nth(elements, 0), "Add this value", "22", undefined);
         const firstVal = Array.isArray(linkParam.value) ? linkParam.value[0] : { id: "", src: "" };
         checkTableParameter(
-            elements.at(1),
+            nth(elements, 1),
             linkParam.text,
             { id: firstVal?.id || "", src: firstVal?.src || "" },
             undefined,
         );
-        checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
+        checkTableParameter(nth(elements, 2), "Iterate?", "NO", undefined);
     });
 
     it("should show only single parameter", async () => {

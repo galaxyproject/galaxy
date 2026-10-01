@@ -27,7 +27,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { ObjectDirective, VNode } from "vue";
+import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "@/utils/tooltipTiming";
 
@@ -127,7 +127,7 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown): Placement {
+function getPlacement(modifiers: DirectiveBinding["modifiers"], bindingValue: unknown): Placement {
     for (const [mod, placement] of Object.entries(PLACEMENT_MAP)) {
         if (modifiers[mod]) {
             return placement;
@@ -311,7 +311,7 @@ function hideTooltip(el: HTMLElement) {
     }
 }
 
-function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
+function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"], arg?: string): () => void {
     const listeners: Array<[string, EventListener, boolean]> = [];
 
     function addListener(event: string, handler: EventListener, capture = false) {
