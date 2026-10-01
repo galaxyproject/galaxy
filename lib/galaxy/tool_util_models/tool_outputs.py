@@ -18,8 +18,10 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
     Annotated,
     Literal,
@@ -27,6 +29,7 @@ from typing_extensions import (
 )
 
 from ._base import ToolSourceBaseModel
+from .tool_source import is_relative_subpath
 
 AnyT = TypeVar("AnyT")
 NotRequired = Optional[AnyT]
@@ -548,6 +551,18 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
         Optional[List[FilePatternDatasetCollectionDescription]],
         Field(description="Filename pattern used to discover additional datasets produced by the command."),
     ] = None  # type: ignore[assignment]
+
+    @field_validator("from_work_dir", mode="after")
+    @classmethod
+    def _check_from_work_dir(cls, value: Optional[str]) -> Optional[str]:
+        # The path is joined to the job working directory, so it must be a relative
+        # path that cannot climb out of that directory.
+        if value is not None and not is_relative_subpath(value):
+            raise PydanticCustomError(
+                "dynamic_tool.unsafe_from_work_dir",
+                "from_work_dir must be a relative path inside the working directory, without '..' components",
+            )
+        return value
 
 
 class IncomingUserToolOutputCollection(IncomingToolOutputCollection):
