@@ -209,7 +209,7 @@ describe("PageEditorView", () => {
             await modal.props("onSave")();
             expect(store.savePage).toHaveBeenCalled();
 
-            modal.props("onDiscard")();
+            modal.props("onDiscard")?.();
             expect(store.discardChanges).toHaveBeenCalled();
         });
     });

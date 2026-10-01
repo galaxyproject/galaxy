@@ -12,7 +12,7 @@ const CANCEL = 0;
 const DONT_SAVE = 1;
 const SAVE = 2;
 
-function footerButtons(wrapper: VueWrapper) {
+function footerButtons(wrapper: VueWrapper): VueWrapper<InstanceType<typeof GButton>>[] {
     return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 

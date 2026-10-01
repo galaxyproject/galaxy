@@ -37,7 +37,7 @@ interface GuardExpose {
     guardNavigation: (navigate: () => void) => void;
 }
 
-function footerButtons(wrapper: VueWrapper) {
+function footerButtons(wrapper: VueWrapper): VueWrapper<InstanceType<typeof GButton>>[] {
     return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 

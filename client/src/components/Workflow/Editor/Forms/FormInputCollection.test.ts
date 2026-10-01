@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,8 +27,7 @@ function stepWithCollectionType(collectionType: string | null) {
 }
 
 function lastEmittedState(wrapper: VueWrapper) {
-    const emitted = wrapper.emitted("onChange");
-    return emitted?.[emitted.length - 1]?.[0];
+    return nth(wrapper.emitted<[Record<string, unknown>]>("onChange"), -1)[0];
 }
 
 describe("FormInputCollection", () => {

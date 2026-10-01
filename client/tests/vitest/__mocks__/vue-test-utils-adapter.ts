@@ -86,7 +86,7 @@ function adaptMountOptions(options: Record<string, any> = {}): Record<string, an
         const addingPinia = pluginsToAdd.some(isPinia);
         const addingRouter = pluginsToAdd.some(isRouter);
 
-        const remainingExisting = existingPlugins.filter((plugin) => {
+        const remainingExisting = existingPlugins.filter((plugin: unknown) => {
             if (addingPinia && isPinia(plugin)) {
                 return false;
             }
