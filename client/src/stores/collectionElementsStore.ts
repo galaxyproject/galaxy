@@ -130,8 +130,9 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         let storedElements = storedCollectionElements.value[key];
 
         if (!storedElements) {
-            storedElements = initWithPlaceholderElements(collection);
-            storedCollectionElements.value[key] = storedElements;
+            storedCollectionElements.value[key] = initWithPlaceholderElements(collection);
+            // Read it back from the store so the index writes below are reactive
+            storedElements = ensureDefined(storedCollectionElements.value[key]);
         }
 
         try {
