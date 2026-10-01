@@ -1,6 +1,8 @@
 from typing import (
     Any,
+    Dict,
     Iterator,
+    List,
 )
 
 import pytest
@@ -16,11 +18,11 @@ EXPRESSION_VALIDATOR = {"type": "expression", "expression": "value == 'x'"}
 LENGTH_VALIDATOR = {"type": "length", "min": 1}
 
 
-def _text(name: str, validator: dict[str, Any]) -> dict[str, Any]:
+def _text(name: str, validator: Dict[str, Any]) -> Dict[str, Any]:
     return {"name": name, "type": "text", "validators": [validator]}
 
 
-def _conditional(test_validator: dict[str, Any], when_validator: dict[str, Any]) -> dict[str, Any]:
+def _conditional(test_validator: Dict[str, Any], when_validator: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "name": "cond",
         "type": "conditional",
@@ -34,11 +36,11 @@ def _conditional(test_validator: dict[str, Any], when_validator: dict[str, Any])
     }
 
 
-def _repeat(validator: dict[str, Any]) -> dict[str, Any]:
+def _repeat(validator: Dict[str, Any]) -> Dict[str, Any]:
     return {"name": "rep", "type": "repeat", "blocks": [_text("repeat_text", validator)]}
 
 
-def _tool(tool_class: str, inputs: list[dict[str, Any]], **extra) -> dict[str, Any]:
+def _tool(tool_class: str, inputs: List[Dict[str, Any]], **extra) -> Dict[str, Any]:
     return {
         "class": tool_class,
         "id": "trust_test",
