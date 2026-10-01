@@ -119,7 +119,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
     const historiesOffset = ref(0);
     const totalHistoryCount = ref(0);
-    /** Whether an unfiltered page of own histories landed; a cached current history alone is no listing */
+    /** Whether an unfiltered own-history fetch landed; a full scroll page or the current history alone is no listing */
     const ownHistoriesLoaded = ref(false);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
@@ -530,7 +530,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const offset = queryString ? 0 : historiesOffset.value;
             const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
             setHistories(histories);
-            if (!queryString) {
+            // a full scroll page is a partial list, so the palette must not search it as the own listing
+            if (!queryString && (limit === null || histories.length < limit)) {
                 ownHistoriesLoaded.value = true;
             }
             if (paginate && !queryString && historiesOffset.value == offset) {

@@ -2,6 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -58,6 +59,8 @@ vi.mock("@/stores/services/history.services", () => ({
     setCurrentHistoryOnServer,
     updateHistoryFields: vi.fn(),
 }));
+
+const { server, http } = useServerMock();
 
 let recent: RecentPaletteItem[] = [];
 
@@ -229,6 +232,37 @@ describe("historiesProvider", () => {
 
         expect(getHistoryList).toHaveBeenCalledTimes(1);
         expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+    });
+
+    it("does not take a partial boot page for the own listing, so `h:` finds an older history", async () => {
+        server.use(http.get("/api/histories/count", ({ response }) => response(200).json(13)));
+        const newest = ["12", "01", "09", "08", "07", "06", "05", "04", "11", "10"].map((n) =>
+            history(`h${n}`, `Alpha history ${n}`, `2026-08-${n}T10:00:00`),
+        );
+        const older = [history("h02", "Alpha history 02", "2026-07-02T10:00:00")];
+        let release = () => {};
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        getHistoryList.mockImplementation(async (_offset: number, limit: number | null, queryString = "") => {
+            if (queryString) {
+                return matching([...newest, ...older], decodeURIComponent(queryString.split("qv=")[1] ?? ""));
+            }
+            if (limit === 10) {
+                return newest;
+            }
+            await pending;
+            return [...newest, ...older];
+        });
+        // boot pages the own histories through the scroll list
+        await useHistoryStore().loadHistories(true);
+
+        const searching = scopedSections(OWN_SCOPE, "history 02");
+        await flushPromises();
+        release();
+        const titles = (await searching).flatMap((section) => section.items.map((item) => item.title));
+
+        expect(titles).toContain("Alpha history 02");
     });
 
     it("opens the history view on enter and offers set-as-current for own histories", async () => {
