@@ -112,6 +112,7 @@ function recentItems(query: string, limit: number): PaletteItem[] {
     return recentPaletteItems(rows, query, limit);
 }
 
+// not on `defineListingProvider`: unscoped row ids, its own section ids, and recents deduped out of the listing
 export const reportsProvider: CommandPaletteProvider = {
     id: "reports",
     title: "Reports",

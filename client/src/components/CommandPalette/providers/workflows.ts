@@ -1,89 +1,36 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
-import { useWorkflowStore, type WorkflowListVariant } from "@/stores/workflowStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, PaletteSearchOptions } from "../types";
 import { PALETTE_LIMITS } from "./limits";
-import { recentPaletteItems, type RecentRows } from "./recent";
-import type { ScopeDefinition } from "./scopes";
-import { type ListingSearch, rootListItems, storeFirstItems } from "./storeFirst";
+import { defineListingProvider } from "./listingProvider";
+import { storeFirstItems } from "./storeFirst";
 import { itemId, runUrl, WORKFLOW_RECENT_TYPE, workflowItem, workflowList } from "./workflowRows";
 
-/** Scope variant (`undefined` | `shared` | `published`) to store list variant */
-function listVariant(variant?: string): WorkflowListVariant {
-    switch (variant) {
-        case "shared":
-            return "shared";
-        case "published":
-            return "published";
-        default:
-            return "my";
-    }
-}
-
-/** The root answer's search of one list, answering with this query's rows alone */
-function listingSearch(variant: WorkflowListVariant): ListingSearch {
-    return async (query) => {
-        const found = await useWorkflowStore().fetchWorkflowList(variant, query, { limit: PALETTE_LIMITS.page });
-        return found.map((workflow) => workflowItem(workflow, variant));
-    };
-}
-
-/** Workflows opened through the palette before, most recently used first */
-function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
-    const workflowStore = useWorkflowStore();
-    const rows: RecentRows = {
-        type: WORKFLOW_RECENT_TYPE,
-        stored: (entry) => {
-            const summary = workflowStore.getWorkflowSummaryById(entry.id);
-            return summary ? workflowItem(summary, "recent") : undefined;
-        },
-        fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faSitemap, to: runUrl(entry.id) }),
-    };
-    return recentPaletteItems(rows, query, limit);
-}
-
-function resultsTitle(scope: ScopeDefinition, query: string): string {
-    if (!query) {
-        return "Latest";
-    }
-    return scope.variant ? scope.label : "Workflows";
-}
-
-export const workflowsProvider: CommandPaletteProvider = {
+export const workflowsProvider = defineListingProvider<"shared" | "published">({
     id: "workflows",
     title: "Workflows",
-    /** Root mode: workflows the palette remembers, no request needed */
-    emptyQueryItems(ctx: PaletteContext) {
-        if (ctx.isAnonymous) {
-            return [];
-        }
-        return recentItems("", PALETTE_LIMITS.rootOwn);
+    variants: ["shared", "published"],
+    rootListings: { anonymous: ["published"], signedIn: ["shared", "published"] },
+    list: workflowList,
+    async searchListing(variant, query) {
+        const found = await useWorkflowStore().fetchWorkflowList(variant, query, { limit: PALETTE_LIMITS.page });
+        return found.map((workflow) => workflowItem(workflow, variant));
     },
-    /** Root mode: the cached own workflows, and the shared and published lists searched */
-    search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        // an anonymous visitor has neither own nor shared-with-me workflows
-        const listings: WorkflowListVariant[] = ctx.isAnonymous ? ["published"] : ["shared", "published"];
-        const own = ctx.isAnonymous ? undefined : workflowList("my");
-        return rootListItems(query, own, listings.map(listingSearch), options);
+    recentRows() {
+        const workflowStore = useWorkflowStore();
+        return {
+            type: WORKFLOW_RECENT_TYPE,
+            stored: (entry) => {
+                const summary = workflowStore.getWorkflowSummaryById(entry.id);
+                return summary ? workflowItem(summary, "recent") : undefined;
+            },
+            fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faSitemap, to: runUrl(entry.id) }),
+        };
     },
-    /**
-     * `w:` shows bookmarks, palette recents and the user's latest workflows;
-     * `ws:`/`wp:` show the shared/published list alone. The palette recents are
-     * one list per entity type rather than per scope, so they are only offered
-     * by the base scope — a private workflow has no business showing up under
-     * "shared" or "public". The query filters every section.
-     */
-    async searchScoped(scope: ScopeDefinition, query: string) {
-        const variant = listVariant(scope.variant);
-        const [bookmarked, results] = await Promise.all([
-            variant === "my" ? storeFirstItems(workflowList("bookmarked"), query, PALETTE_LIMITS.recent) : [],
-            storeFirstItems(workflowList(variant), query, PALETTE_LIMITS.section),
-        ]);
-        return [
-            { id: "bookmarked", items: bookmarked, title: "Bookmarked" },
-            { id: "recent", items: variant === "my" ? recentItems(query) : [], title: "Recent" },
-            { id: variant, items: results, title: resultsTitle(scope, query) },
-        ];
+    // `w:` leads with the bookmarks, which only filter locally
+    async leadingSections(query) {
+        const items = await storeFirstItems(workflowList("bookmarked"), query, PALETTE_LIMITS.recent);
+        return [{ id: "bookmarked", items, title: "Bookmarked" }];
     },
-};
+});
