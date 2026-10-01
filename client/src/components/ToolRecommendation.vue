@@ -54,7 +54,6 @@ async function loadRecommendations() {
     };
     try {
         const responsePred = (await getToolPredictions(requestData)) as ToolPredictionsResponse | null | undefined;
-        const datatypesMapper = await getDatatypesMapper(false);
         if (responsePred) {
             const predData = responsePred.predicted_data;
             deprecated.value = predData.is_deprecated;
@@ -62,6 +61,7 @@ async function loadRecommendations() {
             if (!deprecated.value && predData.children.length > 0) {
                 const outputDatatypes = predData.o_extensions;
                 const children = predData.children;
+                const datatypesMapper = await getDatatypesMapper(false);
                 const compatibleTools = getCompatibleRecommendations(children, outputDatatypes, datatypesMapper);
                 if (compatibleTools.length > 0) {
                     showMessage.value = true;
