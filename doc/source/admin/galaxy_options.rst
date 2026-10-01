@@ -6369,7 +6369,9 @@
     ``workflows``, ``histories``, ``datasets``, ``visualizations``,
     ``invocations``, ``reports`` and ``interactiveTools``.
     Disabling a provider removes its search scopes, its category tab
-    and its results from the palette.
+    and its results from the palette. This only hides palette UI: the
+    API endpoints the provider searches stay available. An unknown id
+    is ignored, with a warning in the browser console.
 :Default: ``None``
 :Type: seq
 
