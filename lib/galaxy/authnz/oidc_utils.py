@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import jwt
 from social_core.backends.open_id_connect import OpenIdConnectAuth
+from social_core.exceptions import AuthMissingParameter
 from typing_extensions import TypeIs
 
 from galaxy.exceptions import MalformedContents
@@ -18,6 +19,13 @@ if TYPE_CHECKING:
     from social_core.backends.base import BaseAuth
 
 log = logging.getLogger(__name__)
+
+PKCE_CODE_VERIFIER_SESSION_KEY = "pkce_code_verifier"
+
+
+class PKCECodeVerifierMissing(AuthMissingParameter):
+    def __init__(self, backend: "BaseAuth") -> None:
+        super().__init__(backend, "code_verifier")
 
 
 def is_oidc_backend(backend: "BaseAuth") -> TypeIs[OpenIdConnectAuth]:

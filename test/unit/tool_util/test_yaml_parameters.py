@@ -696,6 +696,7 @@ def test_user_tool_output_attributes_publish_complete_examples_and_validate():
     expected_usage_fields = {
         "IncomingUserToolOutputCollection": ["collection_type", "collection_type_source", "structured_like"],
         "IncomingUserToolOutputDataset": [
+            "label",
             "format",
             "format_source",
             "metadata_source",

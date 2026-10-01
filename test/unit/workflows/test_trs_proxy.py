@@ -1,11 +1,20 @@
 import base64
 from os import environ
+from unittest import (
+    mock,
+    SkipTest,
+)
 
 import pytest
 import yaml
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    GatewayTimeoutException,
+    MessageException,
+)
+from galaxy.util import requests
 from galaxy.util.unittest_utils import skip_if_workflowhub_down
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
@@ -172,3 +181,74 @@ def test_search():
 
     response = server.get_tools(descriptorType="GALAXY")
     assert len(response) == 2
+
+
+def _response(status_code, text, headers=None):
+    response = requests.Response()
+    response.status_code = status_code
+    response._content = text.encode()
+    response.headers.update(headers or {})
+    return response
+
+
+def _mock_get(trs_response):
+    def get(url, **kwargs):
+        if url == "https://workflowhub.eu/":
+            return _response(200, "<html>WorkflowHub</html>")
+        if isinstance(trs_response, Exception):
+            raise trs_response
+        return trs_response
+
+    return mock.patch.object(requests, "get", side_effect=get)
+
+
+def test_non_trs_error_page_reports_status_without_body():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    with _mock_get(_response(503, "<h2>This website is under heavy load (queue full)</h2>")):
+        with pytest.raises(MessageException) as exc_info:
+            server.get_tool("138")
+    assert str(exc_info.value) == "TRS server https://workflowhub.eu responded with HTTP 503."
+
+
+def test_trs_error_document_is_passed_through():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    with _mock_get(_response(400, '{"code": 400, "message": "bad version"}')):
+        with pytest.raises(MessageException, match="^bad version$"):
+            server.get_tool("138")
+
+
+def test_timeout_is_gateway_timeout():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    with _mock_get(requests.exceptions.ReadTimeout("read timed out")):
+        with pytest.raises(GatewayTimeoutException):
+            server.get_tool("138")
+
+
+@pytest.mark.parametrize(
+    "trs_response",
+    [
+        _response(403, "<title>Just a moment...</title>", {"cf-mitigated": "challenge", "server": "cloudflare"}),
+        _response(503, "<h2>This website is under heavy load (queue full)</h2>"),
+        requests.exceptions.ConnectTimeout("connect timed out"),
+        requests.exceptions.ConnectionError("connection refused"),
+    ],
+)
+def test_skip_if_workflowhub_down_skips_unavailable_server(trs_response):
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+
+    with _mock_get(trs_response):
+        with pytest.raises(SkipTest):
+            fetch_tool()
+
+
+def test_skip_if_workflowhub_down_reports_other_failures():
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        tool = get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+        assert "description" in tool
+
+    with _mock_get(_response(200, '{"id": "138"}')):
+        with pytest.raises(AssertionError):
+            fetch_tool()

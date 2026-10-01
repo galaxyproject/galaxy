@@ -5,6 +5,7 @@ but the goal here is to switch to using these overtime at least for external API
 code where actual tool objects aren't created.
 """
 
+import re
 from typing import (
     Any,
     Dict,
@@ -17,8 +18,10 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
     Annotated,
     Literal,
@@ -26,6 +29,7 @@ from typing_extensions import (
 )
 
 from ._base import ToolSourceBaseModel
+from .tool_source import is_relative_subpath
 
 AnyT = TypeVar("AnyT")
 NotRequired = Optional[AnyT]
@@ -360,6 +364,22 @@ class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool]
     ] = None
 
 
+# The dataset and collection name columns hold 255 characters.
+MAX_USER_TOOL_LABEL_LENGTH = 250
+USER_TOOL_LABEL_REFERENCE_RE = re.compile(r"\$\((?:inputs\.(?P<input>\w+)(?P<keys>(?:\.\w+)*)|runtime\.on_string)\)")
+
+UserToolOutputLabel = Annotated[
+    Optional[str],
+    Field(
+        description=(
+            "Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and "
+            "`$(runtime.on_string)` references are filled in when the job is created."
+        ),
+        max_length=MAX_USER_TOOL_LABEL_LENGTH,
+    ),
+]
+
+
 class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
     """A user-defined tool dataset discovered only from files inside the job working directory."""
 
@@ -376,6 +396,27 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
                 }
             ],
             "x-usage-examples": [
+                {
+                    "field": "label",
+                    "description": (
+                        "`label` can be used to name the output after the run's inputs. When the run maps over a "
+                        "collection, `$(inputs.reads.element_identifier)` is the sample name. "
+                        "[Output labels](#output-labels) lists the references a label can use."
+                    ),
+                    "definition": {
+                        "inputs": [{"name": "reads", "type": "data", "format": ["fastqsanger"]}],
+                        "shell_command": "head -n 400 '$(inputs.reads.path)' > first.fastq",
+                        "outputs": [
+                            {
+                                "name": "first_reads",
+                                "type": "data",
+                                "format": "fastqsanger",
+                                "label": "$(inputs.reads.element_identifier) (first 400 lines)",
+                                "from_work_dir": "first.fastq",
+                            }
+                        ],
+                    },
+                },
                 {
                     "field": "format",
                     "description": (
@@ -504,11 +545,24 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
         },
     )
 
+    label: UserToolOutputLabel = None
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[
         Optional[List[FilePatternDatasetCollectionDescription]],
         Field(description="Filename pattern used to discover additional datasets produced by the command."),
     ] = None  # type: ignore[assignment]
+
+    @field_validator("from_work_dir", mode="after")
+    @classmethod
+    def _check_from_work_dir(cls, value: Optional[str]) -> Optional[str]:
+        # The path is joined to the job working directory, so it must be a relative
+        # path that cannot climb out of that directory.
+        if value is not None and not is_relative_subpath(value):
+            raise PydanticCustomError(
+                "dynamic_tool.unsafe_from_work_dir",
+                "from_work_dir must be a relative path inside the working directory, without '..' components",
+            )
+        return value
 
 
 class IncomingUserToolOutputCollection(IncomingToolOutputCollection):
@@ -630,6 +684,7 @@ class IncomingUserToolOutputCollection(IncomingToolOutputCollection):
         }
     )
 
+    label: UserToolOutputLabel = None
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[
         Optional[List[FilePatternDatasetCollectionDescription]],

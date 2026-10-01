@@ -53,7 +53,9 @@ defineProps<Props>();
                 <tr>
                     <td>Filesize</td>
 
-                    <td id="file-size" v-html="bytesToString(dataset.file_size, false)" />
+                    <td id="file-size">
+                        <strong>{{ bytesToString(dataset.file_size) }}</strong>
+                    </td>
                 </tr>
 
                 <tr v-if="'metadata_dbkey' in dataset">

@@ -34,6 +34,7 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
+from .oidc_utils import PKCECodeVerifierMissing
 from .psa_authnz import (
     BACKENDS,
     BACKENDS_NAME,
@@ -424,6 +425,14 @@ class AuthnzManager:
                 f"The account from `{provider}` is already linked to a different Galaxy user. "
                 "Please log in to the Galaxy account that is already linked to this identity, "
                 "or use a different identity provider account."
+            )
+            log.warning(msg)
+            return False, msg, (None, None)
+        except PKCECodeVerifierMissing:
+            msg = (
+                f"Login with `{provider}` could not be completed because the browser did not return Galaxy's "
+                "login cookie, or the login took longer than 10 minutes. Please allow cookies for this site "
+                "and try logging in again."
             )
             log.warning(msg)
             return False, msg, (None, None)

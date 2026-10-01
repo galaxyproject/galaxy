@@ -132,8 +132,8 @@ function onActionClick(link: string) {
             <BCol cols="auto">
                 <BRow align-v="center" no-gutters>
                     <span
-                        :class="hasExpired ? 'expired-broadcast' : ''"
-                        v-html="renderMarkdown(notification.content.message)" />
+                        v-sanitize-html:links="renderMarkdown(notification.content.message)"
+                        :class="hasExpired ? 'expired-broadcast' : ''" />
                 </BRow>
 
                 <BRow no-gutters>

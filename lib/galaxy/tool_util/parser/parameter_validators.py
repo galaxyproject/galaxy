@@ -54,7 +54,10 @@ def parse_dict_validators(validator_dicts: List[Dict[str, Any]], trusted: bool) 
         if not trusted:
             # Don't risk instantiating unsafe validators for user-defined code
             if not validator._safe:
-                raise UnsafeValidatorConfiguredInUntrustedContext()
+                raise UnsafeValidatorConfiguredInUntrustedContext(
+                    f"Validators of type '{validator.type}' are not allowed in user-defined tools "
+                    "or workflow parameters."
+                )
         validator_models.append(validator)
     return validator_models
 

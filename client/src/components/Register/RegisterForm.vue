@@ -110,8 +110,8 @@ async function submit() {
         <div class="d-flex justify-content-md-center">
             <div>
                 <BAlert :show="!!registrationWarningMessage" variant="info">
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-html="registrationWarningMessage" />
+                    <!-- eslint-disable-next-line vue/no-restricted-syntax -- every caller passes registration_warning_message from the operator's galaxy.yml -->
+                    <span v-no-sanitize-html="registrationWarningMessage" />
                 </BAlert>
 
                 <BAlert :show="!!messageText" variant="danger">

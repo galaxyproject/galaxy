@@ -27,7 +27,7 @@
             </b-col>
             <b-col>
                 <b-alert show variant="info">
-                    <div v-html="alert" />
+                    <div v-sanitize-html="alert" />
                 </b-alert>
             </b-col>
         </b-row>

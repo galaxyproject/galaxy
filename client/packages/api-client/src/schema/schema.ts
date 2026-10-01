@@ -16434,7 +16434,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**
@@ -16497,7 +16497,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**

@@ -44,5 +44,10 @@ const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 
 <template>
     <BAlert v-if="error" show variant="warning">{{ error }}</BAlert>
-    <pre v-else :class="getClass" class="m-0" v-html="attributeValue" />
+    <pre
+        v-else-if="props.name === 'history_dataset_peek'"
+        v-sanitize-html="attributeValue"
+        :class="getClass"
+        class="m-0" />
+    <pre v-else :class="getClass" class="m-0">{{ attributeValue }}</pre>
 </template>

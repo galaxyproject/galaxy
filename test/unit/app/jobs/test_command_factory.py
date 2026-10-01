@@ -16,7 +16,7 @@ MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
 TEE_REDIRECT = '> "$__out" 2> "$__err"'
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
-CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" -a -f "bar" ] ; then cp "foo" "bar" ; fi'
+CP_WORK_DIR_OUTPUTS = "; \nif [ -f foo -a -f bar ] ; then cp foo bar ; fi"
 
 
 class TestCommandFactory(TestCase):
@@ -129,7 +129,7 @@ class TestCommandFactory(TestCase):
         self.workdir_outputs = [("foo*bar", "foo_x_bar")]
         self._assert_command_is(
             self._surround_command(
-                MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" -a -f "foo_x_bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'
+                MOCK_COMMAND_LINE, "; \nif [ -f foo*bar -a -f foo_x_bar ] ; then cp foo*bar foo_x_bar ; fi"
             )
         )
 
