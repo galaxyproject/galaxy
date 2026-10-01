@@ -665,6 +665,22 @@ describe("GPopover focus", () => {
         expect(isShown()).toBe(true);
     });
 
+    it("closes once the pointer leaves, even after a mouse click focused a link inside", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+
+        const link = popoverEl().querySelector("a")!;
+        vi.spyOn(link, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+        link.focus();
+        popoverEl().dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
     it("returns focus to the trigger when the parent hides it with focus inside", async () => {
         const target = await mountWithTrigger({ triggers: "hover", show: false });
         target.focus();

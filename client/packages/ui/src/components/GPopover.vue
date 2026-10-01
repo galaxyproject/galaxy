@@ -505,9 +505,12 @@ function setupListeners() {
         });
         listen(target, "focusout", onFocusOut);
         if (popoverEl.value) {
-            listen(popoverEl.value, "focusin", () => {
-                focusInside = true;
-                closeDelay.clear();
+            // As on the trigger: focus a mouse click leaves inside a hover popover mustn't hold it open.
+            listen(popoverEl.value, "focusin", (event) => {
+                if (opensOnFocus || isKeyboardFocus(event.target)) {
+                    focusInside = true;
+                    closeDelay.clear();
+                }
             });
             listen(popoverEl.value, "focusout", onFocusOut);
         }
