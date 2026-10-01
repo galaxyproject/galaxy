@@ -84,6 +84,10 @@ describe("storeFirstItems", () => {
 });
 
 describe("rootListItems", () => {
+    beforeEach(() => {
+        resetListRefreshTracking();
+    });
+
     it("answers from the cached own rows and the searched listings, one row per entity", async () => {
         const own = fakeList();
         await own.fetchListing();
@@ -98,6 +102,26 @@ describe("rootListItems", () => {
         expect(failing).toHaveBeenCalledWith("alp");
     });
 
+    it("hydrates an unloaded own list once, so a first search finds own rows", async () => {
+        const own = fakeList();
+
+        const first = await rootListItems("alp", own, []);
+        await rootListItems("alpi", own, []);
+
+        expect(first.map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+        expect(own.fetchListing).toHaveBeenCalledTimes(1);
+        expect(own.searchItems).not.toHaveBeenCalled();
+    });
+
+    it("answers with the listings alone when the own list fails to hydrate", async () => {
+        const own = fakeList();
+        own.fetchListing.mockRejectedValue(new Error("boom"));
+
+        const items = await rootListItems("alp", own, [async () => [REMOTE]]);
+
+        expect(items.map((item) => item.title)).toEqual(["alpaca"]);
+    });
+
     it("caps the answer at the rows a fan-out section shows", async () => {
         const many = Array.from({ length: 10 }, (_, index) => row(`m${index}`, `alpine ${index}`));
 
@@ -106,11 +130,13 @@ describe("rootListItems", () => {
         expect(items).toHaveLength(PALETTE_LIMITS.rootSection);
     });
 
-    it("skips the listing searches for a short or local-only query", async () => {
+    it("skips the listing searches and the hydration for a short or local-only query", async () => {
         const listing = vi.fn(async () => [REMOTE]);
+        const own = fakeList();
 
-        expect(await rootListItems("a", undefined, [listing])).toEqual([]);
-        expect(await rootListItems("alp", undefined, [listing], { localOnly: true })).toEqual([]);
+        expect(await rootListItems("a", own, [listing])).toEqual([]);
+        expect(await rootListItems("alp", own, [listing], { localOnly: true })).toEqual([]);
         expect(listing).not.toHaveBeenCalled();
+        expect(own.fetchListing).not.toHaveBeenCalled();
     });
 });

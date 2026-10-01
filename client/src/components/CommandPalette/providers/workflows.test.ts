@@ -278,16 +278,18 @@ describe("workflowsProvider", () => {
         expect(loadWorkflows).not.toHaveBeenCalled();
     });
 
-    it("filters the cached own list in the unscoped fan-out without fetching it", async () => {
-        // nothing cached yet: the own rows are whatever the store already holds
-        expect(await workflowsProvider.search("variant", makeCtx())).toEqual([]);
+    it("hydrates the own list once for the unscoped fan-out, then filters the cache", async () => {
+        // a first-ever root search still finds own rows
+        const first = await workflowsProvider.search("variant", makeCtx());
+        expect(first.map((i) => i.title)).toEqual(["Variant calling"]);
 
-        await scopedSections(OWN_SCOPE);
         const items = await workflowsProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
-        // the own list is only ever fetched by the `w:` scope
-        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => args.filterText !== "variant")).toBe(true);
+        const calls = vi.mocked(loadWorkflows).mock.calls.map(([args]) => args.filterText);
+        expect(calls.filter((filterText) => !filterText)).toHaveLength(1);
+        // searching the own list is the `w:` scope's job
+        expect(calls).not.toContain("variant");
     });
 
     it("merges the shared and public matches into the unscoped fan-out", async () => {

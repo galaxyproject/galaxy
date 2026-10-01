@@ -84,9 +84,22 @@ export async function storeFirstItems(
     return rankPaletteItems(merged, query).slice(0, limit);
 }
 
+/** Hydrates a list the root answer reads from cache, once; refreshing it stays with its scope */
+async function hydrateOnce(list: StoreFirstList): Promise<void> {
+    if (list.isLoaded()) {
+        return;
+    }
+    try {
+        await ensureListHydrated(list);
+    } catch (error) {
+        console.debug("Command palette could not hydrate a list", list.key, error);
+    }
+}
+
 /**
- * Root answer of a listing provider: the own list from cache, other listings searched on the backend (a whole
- * page each, as their newest rows often rank away). Copies collapse into the own row; failures add nothing.
+ * Root answer of a listing provider: the own list from cache (hydrated once, so a first search finds own rows),
+ * other listings searched on the backend (a whole page each, as their newest rows often rank away). Copies
+ * collapse into the own row; failures add nothing.
  */
 export async function rootListItems(
     query: string,
@@ -103,6 +116,9 @@ export async function rootListItems(
             rankPaletteItems(await searchQuietly(() => search(query)), query).slice(0, PALETTE_LIMITS.rootListing),
         ),
     );
+    if (own && !options.localOnly) {
+        await hydrateOnce(own);
+    }
     const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.rootOwn, { cacheOnly: true }) : [];
     const merged = dedupePaletteItemsByEntity([ownItems, ...(await listed)].flat());
     return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootSection);
