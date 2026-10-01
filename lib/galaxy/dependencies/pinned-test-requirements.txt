@@ -42,7 +42,7 @@ fluent-logger==0.11.1
 fonttools==4.65.0
 frozenlist==1.8.0
 fsspec==2026.9.0
-galaxy-fsspec==0.1.0
+galaxy-fsspec==0.1.1
 gcsfs==2026.8.1
 google-api-core==2.38.0
 google-auth==2.58.0
