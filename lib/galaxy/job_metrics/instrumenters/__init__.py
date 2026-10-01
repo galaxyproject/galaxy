@@ -90,11 +90,13 @@ class InstrumentPlugin(metaclass=ABCMeta):
         """
         return cls.default_safety
 
-    def _instrument_file_name(self, name: str) -> str:
+    @classmethod
+    def _instrument_file_name(cls, name: str) -> str:
         """Provide a common pattern for naming files used by instrumentation
         plugins - to ease their staging out of remote job directories.
         """
-        return f"{INSTRUMENT_FILE_PREFIX}_{self.plugin_type}_{name}"
+        return f"{INSTRUMENT_FILE_PREFIX}_{cls.plugin_type}_{name}"
 
-    def _instrument_file_path(self, job_directory: str, name: str) -> str:
-        return os.path.join(job_directory, self._instrument_file_name(name))
+    @classmethod
+    def _instrument_file_path(cls, job_directory: str, name: str) -> str:
+        return os.path.join(job_directory, cls._instrument_file_name(name))
