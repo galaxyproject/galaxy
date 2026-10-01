@@ -1,5 +1,9 @@
 import copy
-from typing import Any
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 import pytest
 
@@ -11,7 +15,7 @@ from galaxy.tool_util_models import (
 EXPRESSION = {"type": "expression", "expression": "value == 'x'"}
 LENGTH = {"type": "length", "min": 1}
 
-BASE_TOOL: dict[str, Any] = {
+BASE_TOOL: Dict[str, Any] = {
     "class": "GalaxyUserTool",
     "id": "legacy-validators",
     "name": "Legacy validators",
@@ -22,15 +26,15 @@ BASE_TOOL: dict[str, Any] = {
 }
 
 
-def _text(name: str, *validators: dict[str, Any]) -> dict[str, Any]:
+def _text(name: str, *validators: Dict[str, Any]) -> Dict[str, Any]:
     return {"name": name, "type": "text", "validators": list(validators)}
 
 
-def _tool(*inputs: dict[str, Any]) -> dict[str, Any]:
+def _tool(*inputs: Dict[str, Any]) -> Dict[str, Any]:
     return {**BASE_TOOL, "inputs": list(inputs)}
 
 
-def _validator_types(parameter) -> list[str]:
+def _validator_types(parameter) -> List[str]:
     return [validator.type for validator in parameter.validators]
 
 
