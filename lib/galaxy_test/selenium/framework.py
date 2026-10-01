@@ -2,9 +2,11 @@
 
 import datetime
 import errno
+import inspect
 import json
 import logging
 import os
+import shutil
 import traceback
 import unittest
 from functools import (
@@ -40,6 +42,10 @@ from galaxy.selenium.navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
     retry_during_transitions,
+)
+from galaxy.selenium.stories import (
+    NoopStory,
+    Story,
 )
 from galaxy.tool_util.verify import (
     verify,
@@ -146,6 +152,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
+GALAXY_TEST_STORIES_DIRECTORY = os.environ.get("GALAXY_TEST_STORIES_DIRECTORY", None)
 # Driver backend can be ["selenium", "playwright"]
 GALAXY_TEST_DRIVER_BACKEND = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
 # Test browser can be ["CHROME", "FIREFOX"]
@@ -263,18 +270,23 @@ def managed_history(f):
     return func_wrapper
 
 
+def run_directory(base_directory: str, name_prefix: str) -> str:
+    """Create a directory for one run's artifacts, named for the test and the time."""
+    target_directory = os.path.join(base_directory, name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%s"))
+    os.makedirs(target_directory, exist_ok=True)
+    return target_directory
+
+
 def dump_test_information(self, name_prefix):
     if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
         if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
             os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
-        result_name = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
-        target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
+        target_directory = run_directory(GALAXY_TEST_ERRORS_DIRECTORY, name_prefix)
 
         def write_file(name, content, raw=False):
             with open(os.path.join(target_directory, name), "wb") as buf:
                 buf.write(content.encode("utf-8") if not raw else content)
 
-        os.makedirs(target_directory)
         write_file("stacktrace.txt", traceback.format_exc())
         for snapshot in getattr(self, "snapshots", []):
             snapshot.write_to_error_directory(write_file)
@@ -324,19 +336,44 @@ def try_symlink(file1, file2):
 
 def selenium_test(f):
     test_name = f.__name__
+    # Before Python 3.13 __doc__ keeps the source indentation, which markdown
+    # would render as a code block.
+    test_description = inspect.cleandoc(f.__doc__ or "")
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
+        story_directory = None
+        if GALAXY_TEST_STORIES_DIRECTORY:
+            story_directory = run_directory(
+                os.path.abspath(GALAXY_TEST_STORIES_DIRECTORY), f"{self.__class__.__name__}_{test_name}_"
+            )
+            self.story = Story(test_name, test_description, story_directory)
+        else:
+            self.story = NoopStory()
+
+        def write_story():
+            # Writing the story must never become the test result, in either
+            # direction: a failure here would otherwise be retried as though the
+            # test had failed, or replace the real exception on the way out.
+            try:
+                self.story.finalize()
+                if story_directory:
+                    try_symlink(story_directory, os.path.join(os.path.dirname(story_directory), "latest"))
+            except Exception:
+                print(f"Failed to write story for [{test_name}]: {traceback.format_exc()}")
+
         retry_attempts = 0
         while True:
             if retry_attempts > 0:
+                # Discard the failed attempt instead of retrying into it.
+                self.story.reset()
                 self.reset_driver_and_session()
             try:
                 rval = f(self, *args, **kwds)
                 self.assert_baseline_accessibility()
-                return rval
             except unittest.SkipTest:
                 dump_test_information(self, test_name)
+                write_story()
                 # Don't retry if we have purposely decided to skip the test.
                 raise
             except Exception:
@@ -347,7 +384,14 @@ def selenium_test(f):
                         f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}."
                     )
                 else:
+                    # Write out what was collected before the failure - the last
+                    # screenshot is usually the most informative part of the story.
+                    self.document("## Test Failed\n\nSee the error directory for details.")
+                    write_story()
                     raise
+            else:
+                write_story()
+                return rval
 
     return func_wrapper
 
@@ -475,6 +519,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def setup_selenium(self):
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
+        # selenium_test replaces this per test; setup may screenshot before then.
+        self.story = NoopStory()
         self.setup_driver_and_session()
         # Once the driver is allocated, any subsequent failure must still
         # tear it down: pytest does not call tearDown when setUp raises, so
@@ -536,16 +582,37 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         return interactor
 
     def write_screenshot_directory_file(self, label, content):
-        target = self._screenshot_path(label, ".txt")
+        target = self._screenshots_directory_path(label, ".txt")
         if target is None:
             return
 
         with open(target, "w") as f:
             f.write(content)
 
-    def _screenshot_path(self, label, extension=".png"):
-        if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
+    def screenshot(self, label: str, caption: str | None = None):
+        """Screenshot into the story, and into the screenshots directory as well if set.
+
+        With stories enabled ``_screenshot_path`` points into the story directory, so
+        without this a run configured for both would stop populating the screenshots
+        directory that CI collects.
+        """
+        target = self._screenshot_path(label)
+        if target is None:
             return
+
+        self.save_screenshot(target)
+        if self.story.enabled:
+            screenshots_target = self._screenshots_directory_path(label)
+            if screenshots_target is not None:
+                # Copy rather than capture again - the page has moved on.
+                shutil.copyfile(target, screenshots_target)
+        self.story.add_screenshot(target, caption or label)
+
+        return target
+
+    def _screenshots_directory_path(self, label, extension=".png") -> str | None:
+        if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
+            return None
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
             os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
         target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)
@@ -556,6 +623,16 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             copy += 1
 
         return target
+
+    def _screenshot_path(self, label, extension=".png"):
+        if self.story.enabled:
+            target = os.path.join(
+                self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}{extension}"
+            )
+            self.story.screenshot_counter += 1
+            return target
+
+        return self._screenshots_directory_path(label, extension)
 
     def reset_driver_and_session(self):
         self.tear_down_driver()

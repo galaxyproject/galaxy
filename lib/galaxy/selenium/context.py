@@ -9,12 +9,28 @@ from .navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
 )
+from .stories import (
+    NoopStory,
+    StoryBase,
+)
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
     url: str
     target_url_from_selenium: str
     configured_driver: ConfiguredDriver
+    _story: StoryBase | None = None
+
+    @property
+    def story(self) -> StoryBase:
+        """Story being collected. A null object unless one has been assigned."""
+        if self._story is None:
+            self._story = NoopStory()
+        return self._story
+
+    @story.setter
+    def story(self, story: StoryBase) -> None:
+        self._story = story
 
     @property
     def _driver_impl(self):
@@ -33,20 +49,27 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             base = self.url
         return urljoin(base, url)
 
-    def screenshot(self, label: str):
+    def screenshot(self, label: str, caption: str | None = None):
         """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
 
         Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
         directory. The above method is used for debugging failures within a specific test. This method
         if more for creating a set of images to augment automated testing with manual human inspection
         after a test or test suite has executed.
+
+        The screenshot is also added to the story, captioned ``caption`` or the label.
         """
         target = self._screenshot_path(label)
         if target is None:
             return
 
         self.save_screenshot(target)
+        self.story.add_screenshot(target, caption or label)
         return target
+
+    def document(self, markdown_content: str):
+        """Add markdown narration to the story, interleaved with the screenshots."""
+        self.story.add_documentation(markdown_content)
 
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> str | None:
