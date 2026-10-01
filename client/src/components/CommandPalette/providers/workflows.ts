@@ -30,7 +30,7 @@ export const workflowsProvider = defineListingProvider<"shared" | "published">({
     },
     // `w:` leads with the bookmarks, which only filter locally
     async leadingSections(query) {
-        const items = await storeFirstItems(workflowList("bookmarked"), query, PALETTE_LIMITS.recent);
+        const items = await storeFirstItems(workflowList("bookmarked"), query, PALETTE_LIMITS.section);
         return [{ id: "bookmarked", items, title: "Bookmarked" }];
     },
 });

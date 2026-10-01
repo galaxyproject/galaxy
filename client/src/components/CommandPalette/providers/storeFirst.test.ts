@@ -125,9 +125,13 @@ describe("rootListItems", () => {
     it("caps the answer at the rows a fan-out section shows", async () => {
         const many = Array.from({ length: 10 }, (_, index) => row(`m${index}`, `alpine ${index}`));
 
-        const items = await rootListItems("alp", undefined, [async () => many, async () => many.slice(5)]);
+        const items = await rootListItems(
+            "alp",
+            undefined,
+            [0, 3, 6].map((start) => async () => many.slice(start, start + 3)),
+        );
 
-        expect(items).toHaveLength(PALETTE_LIMITS.rootSection);
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
     });
 
     it("skips the listing searches and the hydration for a short or local-only query", async () => {

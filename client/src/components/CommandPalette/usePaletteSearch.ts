@@ -164,7 +164,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         // what this fan-out is answering; the input may have moved on by the time a
         // provider lands, and its rows are still the results of this query
         const searched = query.value;
-        const limit = searched ? PALETTE_LIMITS.rootSection : PALETTE_LIMITS.section;
+        const limit = PALETTE_LIMITS.section;
         const providers = enabledPaletteProviders(ctx);
         let pending = providers.length;
         // a keystroke is not a new search subject: whatever a provider answered the
@@ -236,7 +236,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         if (!category) {
             return [];
         }
-        return limitSections(await categorySections(category, ctx), PALETTE_LIMITS.categorySection);
+        return limitSections(await categorySections(category, ctx), PALETTE_LIMITS.section);
     }
 
     /** Search of the provider a category narrows to, through the category's scope */

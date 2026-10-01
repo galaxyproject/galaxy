@@ -61,7 +61,7 @@ function latestItems(limit = PALETTE_LIMITS.section): PaletteItem[] {
 }
 
 /** Visualizations opened through the palette before, most recent first */
-function recentItems(limit = PALETTE_LIMITS.recent): PaletteItem[] {
+function recentItems(limit = PALETTE_LIMITS.section): PaletteItem[] {
     const store = useVisualizationStore();
     const rows: RecentRows = {
         type: VISUALIZATION_RECENT_TYPE,

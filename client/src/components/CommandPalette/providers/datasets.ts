@@ -116,7 +116,7 @@ function recentItems(query: string): PaletteItem[] {
             to: datasetRoute(entry.id),
         }),
     };
-    return recentPaletteItems(rows, query, PALETTE_LIMITS.recent);
+    return recentPaletteItems(rows, query, PALETTE_LIMITS.section);
 }
 
 /** Drops items already shown in an earlier section */
@@ -138,7 +138,7 @@ export const datasetsProvider: CommandPaletteProvider = {
             return [];
         }
         const found = (await matchingDatasets(query, true)).map(datasetToItem);
-        return rankPaletteItems(found, query).slice(0, PALETTE_LIMITS.rootSection);
+        return rankPaletteItems(found, query).slice(0, PALETTE_LIMITS.section);
     },
     async searchScoped(_scope, query: string) {
         const recent = recentItems(query);
