@@ -14,6 +14,10 @@ from typing import (
 from urllib import parse
 
 from galaxy import model
+from galaxy.authnz.psa_authnz import (
+    PKCE_CODE_VERIFIER_COOKIE_MAX_AGE,
+    PKCE_CODE_VERIFIER_COOKIE_NAME,
+)
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
@@ -448,6 +452,14 @@ class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrati
         provider_query = parse.parse_qs(parse.urlparse(response.json()["redirect_uri"]).query)
         assert provider_query["code_challenge_method"] == ["S256"]
         assert provider_query["code_challenge"]
+        (verifier_cookie,) = (
+            cookie
+            for cookie in response.raw.headers.getlist("Set-Cookie")
+            if cookie.startswith(f"{PKCE_CODE_VERIFIER_COOKIE_NAME}=")
+        )
+        assert f"Max-Age={PKCE_CODE_VERIFIER_COOKIE_MAX_AGE}" in verifier_cookie
+        assert "SameSite=Lax" in verifier_cookie
+        assert "HttpOnly" in verifier_cookie
 
     def test_oidc_login_with_pkce(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)

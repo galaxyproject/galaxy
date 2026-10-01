@@ -40,7 +40,7 @@ The configuration is explained with provider-specific details at [User Authentic
 With PKCE enabled, each login works as follows:
 
 1. `/authnz/<provider>/login` generates a random code verifier and sends its base64url-encoded SHA-256 hash (`code_challenge`, `code_challenge_method=S256`) to the IdP with the authorization request.
-2. The verifier is stored in the `galaxy-oidc-pkce-verifier` cookie on the login response. The cookie is HttpOnly, encrypted with Galaxy's `id_secret`, and expires after one day.
+2. The verifier is stored in the `galaxy-oidc-pkce-verifier` cookie on the login response. The cookie is HttpOnly and `SameSite=Lax`, is encrypted with Galaxy's `id_secret`, and expires after ten minutes, so the sign-in at the IdP has to finish within that time.
 3. `/authnz/<provider>/callback` reads the verifier from the cookie, clears the cookie, and sends the verifier with the token request. The IdP issues tokens only when the verifier hashes to the challenge from step 1.
 
 For this to work:

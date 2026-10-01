@@ -80,6 +80,8 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 PKCE_CODE_VERIFIER_COOKIE_NAME = "galaxy-oidc-pkce-verifier"
+# Long enough to sign in at the IdP.
+PKCE_CODE_VERIFIER_COOKIE_MAX_AGE = 600
 
 
 def locate_token_expiration(extra_data):
@@ -361,8 +363,12 @@ class PSAAuthnz(IdentityProvider):
             trans.set_cookie(
                 trans.security.encode_guid(code_verifier.encode().hex()),
                 name=PKCE_CODE_VERIFIER_COOKIE_NAME,
-                age=1,
             )
+            # set_cookie counts age in days, so the lifetime is set on the cookie itself.
+            cookie = trans.response.cookies[PKCE_CODE_VERIFIER_COOKIE_NAME]
+            cookie["max-age"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
+            cookie["expires"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
+            cookie["samesite"] = "Lax"
 
     def _restore_pkce_code_verifier(self, strategy: "Strategy", trans: "GalaxyWebTransaction") -> None:
         encoded_code_verifier = trans.get_cookie(name=PKCE_CODE_VERIFIER_COOKIE_NAME)
