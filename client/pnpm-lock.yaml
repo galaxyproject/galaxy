@@ -20,6 +20,9 @@ patchedDependencies:
   bootstrap-vue@2.23.1:
     hash: 6520cf36ee58d1243c35ef0c96b26c7047ecde505686574659dc9d9e653407b2
     path: patches/bootstrap-vue@2.23.1.patch
+  vue-multiselect@3.5.0:
+    hash: 2479aaed9b25d624bf0f2a818e6b482fe4c5c46421542d86b8cc9595add82c91
+    path: patches/vue-multiselect@3.5.0.patch
 
 importers:
 
@@ -324,7 +327,7 @@ importers:
         version: 1.9.5
       vue-multiselect:
         specifier: ^3.3
-        version: 3.5.0
+        version: 3.5.0(patch_hash=2479aaed9b25d624bf0f2a818e6b482fe4c5c46421542d86b8cc9595add82c91)
       vue-observe-visibility:
         specifier: ^1.0.0
         version: 1.0.0
@@ -11725,7 +11728,7 @@ snapshots:
 
   vue-json-pretty@1.9.5: {}
 
-  vue-multiselect@3.5.0: {}
+  vue-multiselect@3.5.0(patch_hash=2479aaed9b25d624bf0f2a818e6b482fe4c5c46421542d86b8cc9595add82c91): {}
 
   vue-observe-visibility@1.0.0: {}
 
