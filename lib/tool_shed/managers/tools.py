@@ -141,6 +141,7 @@ def _shed_tool_source_for(
     tool_config = tool_version_metadata["tool_config"]
 
     repo = repository_metadata.repository.hg_repo
+    assert repository_metadata.changeset_revision is not None
     ctx = get_changectx_for_changeset(repo, repository_metadata.changeset_revision)
     work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-tool_source")
     if repository_clone_url is None:

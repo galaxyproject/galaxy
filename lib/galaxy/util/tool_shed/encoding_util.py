@@ -12,16 +12,16 @@ encoding_sep = "__esep__"
 encoding_sep2 = "__esepii__"
 
 
-def tool_shed_decode(value):
+def tool_shed_decode(value: Any) -> Any:
     # Extract and verify hash
-    value = unicodify(value)
-    a, b = value.split(":")
-    value = binascii.unhexlify(b)
-    test = hmac_new(b"ToolShedAndGalaxyMustHaveThisSameKey", value)
+    value_as_str = unicodify(value)
+    a, b = value_as_str.split(":")
+    unhexlified_b = binascii.unhexlify(b)
+    test = hmac_new(b"ToolShedAndGalaxyMustHaveThisSameKey", unhexlified_b)
     assert a == test
     # Restore from string
     values = None
-    value = unicodify(value)
+    value = unicodify(unhexlified_b)
     try:
         values = json.loads(value)
     except Exception:

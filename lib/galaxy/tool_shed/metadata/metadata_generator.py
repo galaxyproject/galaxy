@@ -751,7 +751,7 @@ class BaseMetadataGenerator:
             )
         return metadata_dict, error_message
 
-    def get_invalid_file_tups(self):
+    def get_invalid_file_tups(self) -> list[InvalidFileT]:
         return self.invalid_file_tups
 
     def get_metadata_dict(self):
