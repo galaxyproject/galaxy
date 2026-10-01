@@ -1,3 +1,4 @@
+import posixpath
 import re
 from enum import Enum
 from pathlib import PurePosixPath
@@ -23,6 +24,17 @@ from typing_extensions import (
 )
 
 from ._base import ToolSourceBaseModel
+
+
+def is_relative_subpath(path: str) -> bool:
+    """Whether ``path`` names an entry below the directory it is joined to, judged lexically."""
+    pure_path = PurePosixPath(path)
+    return (
+        "\0" not in path
+        and not pure_path.is_absolute()
+        and bool(pure_path.parts)
+        and posixpath.pardir not in pure_path.parts
+    )
 
 
 class Container(ToolSourceBaseModel):
@@ -200,10 +212,7 @@ class YamlTemplateConfigFile(TemplateConfigFile):
     def _check_relative_filename(cls, filename: Optional[str]) -> Optional[str]:
         # The file is linked below the job working directory, so the name must be a
         # relative path that names a file and cannot climb out of that directory.
-        if filename is None:
-            return filename
-        path = PurePosixPath(filename)
-        if "\0" in filename or path.is_absolute() or not path.parts or ".." in path.parts:
+        if filename is not None and not is_relative_subpath(filename):
             raise PydanticCustomError(
                 "dynamic_tool.configfile_filename_invalid",
                 "configfile filename '{filename}' must be a relative path without '..' components",
