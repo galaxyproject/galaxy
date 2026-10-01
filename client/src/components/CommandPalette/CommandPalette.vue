@@ -189,7 +189,6 @@ const { footerHints, placeholder } = usePaletteFooter({
     mode,
     modifierHeld,
     modifierLabel,
-    placeholderPhrase: computed(() => config.value?.command_palette_placeholder),
     selectedItem,
     shiftHeld,
     showCategoryRow,

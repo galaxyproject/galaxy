@@ -29,8 +29,6 @@ interface PaletteFooterOptions {
     modifierHeld: Readonly<Ref<boolean>>;
     /** The platform's "⌘" or "Ctrl+" */
     modifierLabel: Readonly<Ref<string>>;
-    /** Instance-configured leading phrase of the root placeholder */
-    placeholderPhrase: Readonly<Ref<string | undefined>>;
     selectedItem: Readonly<Ref<PaletteItem | undefined>>;
     shiftHeld: Readonly<Ref<boolean>>;
     showCategoryRow: Readonly<Ref<boolean>>;
@@ -51,17 +49,8 @@ function searchLabel(subject: string) {
 
 /** The input placeholder and the footer's key hints, both following the palette mode */
 export function usePaletteFooter(options: PaletteFooterOptions) {
-    const {
-        categoryRowSelected,
-        mode,
-        modifierHeld,
-        modifierLabel,
-        placeholderPhrase,
-        selectedItem,
-        shiftHeld,
-        showCategoryRow,
-        text,
-    } = options;
+    const { categoryRowSelected, mode, modifierHeld, modifierLabel, selectedItem, shiftHeld, showCategoryRow, text } =
+        options;
 
     const placeholder = computed(() => {
         const activeMode = mode.value;
@@ -75,9 +64,7 @@ export function usePaletteFooter(options: PaletteFooterOptions) {
         if (activeMode.type === "help") {
             return localize(HELP_PLACEHOLDER);
         }
-        // an instance-configured phrase is admin copy, so it is used verbatim
-        const phrase = placeholderPhrase.value || localize(ROOT_PLACEHOLDER_PHRASE);
-        return `${phrase}${localize(ROOT_PLACEHOLDER_HINT)}`;
+        return `${localize(ROOT_PLACEHOLDER_PHRASE)}${localize(ROOT_PLACEHOLDER_HINT)}`;
     });
 
     /** Escape steps through clearing the text, then the badge, then closing */
