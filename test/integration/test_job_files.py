@@ -184,6 +184,47 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert not os.path.exists(upload_path)
         assert open(path).read() == "some initial text data"
 
+    def test_write_with_nginx_upload_module_rejects_path_outside_store(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        outside_dir = self._test_driver.mkdtemp()
+        outside_path = os.path.join(outside_dir, "outside")
+        with open(outside_path, "w") as f:
+            f.write("not an upload")
+        relative_outside_path = os.path.relpath(outside_path, self.nginx_upload_job_files_store)
+        traversal_path = os.path.join(self.nginx_upload_job_files_store, relative_outside_path)
+        assert traversal_path.startswith(self.nginx_upload_job_files_store)
+
+        data = {"path": path, "job_key": job_key, "__file_path": traversal_path}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data)
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_code_is(response, 400008)
+        assert os.path.exists(outside_path)
+        assert open(path).read() == ""
+
+    def test_write_with_nginx_upload_module_rejects_relative_path(self):
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+        with tempfile.TemporaryDirectory(dir=os.getcwd()) as outside_dir:
+            outside_path = os.path.join(outside_dir, "outside")
+            with open(outside_path, "w") as f:
+                f.write("not an upload")
+            relative_path = os.path.relpath(outside_path)
+            assert not relative_path.startswith("..")
+
+            data = {"path": path, "job_key": job_key, "__file_path": relative_path}
+            post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+            response = requests.post(post_url, data=data)
+            api_asserts.assert_status_code_is(response, 400)
+            api_asserts.assert_error_code_is(response, 400008)
+            assert os.path.exists(outside_path)
+        assert open(path).read() == ""
+
     def test_write_with_underscored_file_param(self):
         job, output_hda, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
