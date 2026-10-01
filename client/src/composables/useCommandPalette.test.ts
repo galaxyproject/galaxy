@@ -44,25 +44,18 @@ describe("useCommandPalette", () => {
     });
 
     it.each([
-        [true, true, "a registered", REGISTERED_USER, true],
-        [true, true, "an anonymous", ANONYMOUS_USER, true],
-        [true, false, "a registered", REGISTERED_USER, true],
-        [true, false, "an anonymous", ANONYMOUS_USER, false],
-        [false, true, "a registered", REGISTERED_USER, false],
-        [false, true, "an anonymous", ANONYMOUS_USER, false],
-        [false, false, "a registered", REGISTERED_USER, false],
-        [false, false, "an anonymous", ANONYMOUS_USER, false],
-    ])("is %s with anonymous access %s for %s user: %s", (enablePalette, allowAnonymous, _who, user, expected) => {
-        setupMockConfig({
-            enable_command_palette: enablePalette,
-            command_palette_allow_anonymous: allowAnonymous,
-        });
+        [true, "a registered", REGISTERED_USER, true],
+        [true, "an anonymous", ANONYMOUS_USER, true],
+        [false, "a registered", REGISTERED_USER, false],
+        [false, "an anonymous", ANONYMOUS_USER, false],
+    ])("is %s for %s user: %s", (enablePalette, _who, user, expected) => {
+        setupMockConfig({ enable_command_palette: enablePalette });
         login(user);
 
         expect(useCommandPalette().paletteEnabled.value).toBe(expected);
     });
 
-    it("treats both options as on while they are unset", () => {
+    it("treats the option as on while it is unset", () => {
         login(ANONYMOUS_USER);
 
         expect(useCommandPalette().paletteEnabled.value).toBe(true);
@@ -83,16 +76,5 @@ describe("useCommandPalette", () => {
 
         togglePalette();
         expect(isPaletteOpen.value).toBe(false);
-    });
-
-    it("revokes access the moment the user turns anonymous", () => {
-        setupMockConfig({ command_palette_allow_anonymous: false });
-        const { paletteEnabled } = useCommandPalette();
-
-        expect(paletteEnabled.value).toBe(true);
-
-        login(ANONYMOUS_USER);
-
-        expect(paletteEnabled.value).toBe(false);
     });
 });
