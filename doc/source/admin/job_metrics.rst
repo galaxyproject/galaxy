@@ -202,8 +202,11 @@ with ``expose_potentially_sensitive_job_metrics``):
     How Galaxy knew ``target_version``: ``remote`` (the remote Pulsar reported it),
     ``destination`` (the environment's ``remote_pulsar_version``), ``container_image`` (a
     published Pulsar staging image), ``client`` (not known, so the client library's version
-    stands in and a current Pulsar is assumed - set ``remote_pulsar_version``), or
-    ``unreported`` (a Pulsar client library too old to say).
+    stands in and a current Pulsar is assumed), or ``unreported`` (a Pulsar client library
+    too old to say). A destination reporting ``client`` can declare its remote's version
+    with ``remote_pulsar_version``, once Galaxy's Pulsar client library supports it - see
+    `Pulsar's Galaxy configuration documentation
+    <https://pulsar.readthedocs.io/en/latest/galaxy_conf.html>`__.
 ``server_version``
     The Pulsar version that actually ran the job.
 ``server_version_source``

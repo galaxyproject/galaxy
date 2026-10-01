@@ -45,11 +45,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
-from galaxy.job_metrics.instrumenters.pulsar import (
-    read_target_version,
-    write_version_status,
-    write_version_target,
-)
+from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.job_destination import JobDestination
@@ -440,7 +436,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return
 
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
-        write_version_target(
+        PulsarPlugin.write_version_target(
             _job_metrics_directory(job_wrapper),
             client_version=pulsar.__version__,
             target_version=str(pulsar_version),
@@ -840,7 +836,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             )
             failed = pulsar_finish_job(**finish_args)
             if run_results.get("pulsar_version"):
-                write_version_status(job_metrics_directory, run_results["pulsar_version"])
+                PulsarPlugin.write_version_status(job_metrics_directory, run_results["pulsar_version"])
             if failed:
                 job_wrapper.fail(
                     "Failed to find or download one or more job outputs from remote server.", exception=True
@@ -1112,7 +1108,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     @staticmethod
     def submitted_pulsar_version(job_metrics_directory: str, run_results) -> Version:
         """The version a job was submitted for, so finishing it makes the same decisions."""
-        target_version = read_target_version(job_metrics_directory)
+        target_version = PulsarPlugin.read_target_version(job_metrics_directory)
         if target_version:
             return Version(target_version)
         # Submitted before Galaxy recorded it.

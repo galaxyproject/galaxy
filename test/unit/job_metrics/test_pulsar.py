@@ -13,9 +13,6 @@ from galaxy.job_metrics.instrumenters.pulsar import (
     POSTPROCESS,
     PREPROCESS,
     PulsarPlugin,
-    read_target_version,
-    write_version_status,
-    write_version_target,
 )
 from galaxy.job_metrics.safety import Safety
 
@@ -106,8 +103,10 @@ def test_formatting():
 
 
 def test_reads_versions_galaxy_recorded(tmpdir):
-    write_version_target(str(tmpdir), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image")
-    write_version_status(str(tmpdir), "0.15.0.dev1")
+    PulsarPlugin.write_version_target(
+        str(tmpdir), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image"
+    )
+    PulsarPlugin.write_version_status(str(tmpdir), "0.15.0.dev1")
     properties = PulsarPlugin().job_properties(1, str(tmpdir))
     assert properties == {
         "client_version": "0.15.16",
@@ -126,16 +125,18 @@ def test_server_version_from_the_file_pulsar_staged_back(tmpdir):
 
 def test_status_version_wins_over_the_staged_back_file(tmpdir):
     tmpdir.join("__instrument_pulsar_version").write(json.dumps({"version": "0.15.15"}))
-    write_version_status(str(tmpdir), "0.15.16")
+    PulsarPlugin.write_version_status(str(tmpdir), "0.15.16")
     properties = PulsarPlugin().job_properties(1, str(tmpdir))
     assert properties["server_version"] == "0.15.16"
     assert properties["server_version_source"] == "status"
 
 
 def test_read_target_version(tmpdir):
-    assert read_target_version(str(tmpdir)) is None
-    write_version_target(str(tmpdir), client_version="0.15.16", target_version="0.14.0", source="destination")
-    assert read_target_version(str(tmpdir)) == "0.14.0"
+    assert PulsarPlugin.read_target_version(str(tmpdir)) is None
+    PulsarPlugin.write_version_target(
+        str(tmpdir), client_version="0.15.16", target_version="0.14.0", source="destination"
+    )
+    assert PulsarPlugin.read_target_version(str(tmpdir)) == "0.14.0"
 
 
 @pytest.mark.parametrize("configured", [[{"type": "pulsar"}], [{"type": "core"}]])
@@ -168,7 +169,7 @@ def test_unreadable_target_version_is_treated_as_missing(tmpdir, caplog):
     # A metric file must not fail the job it describes.
     tmpdir.join("__instrument_pulsar_version_target").write('{"target_ver')
     with caplog.at_level(logging.ERROR, logger="galaxy.job_metrics"):
-        assert read_target_version(str(tmpdir)) is None
+        assert PulsarPlugin.read_target_version(str(tmpdir)) is None
     _assert_logged_exception(caplog, "Unreadable Pulsar target version")
 
 
@@ -176,5 +177,5 @@ def test_failed_version_write_is_logged_without_raising(tmpdir, caplog):
     job_directory = tmpdir.join("not_a_directory")
     job_directory.write("")
     with caplog.at_level(logging.ERROR, logger="galaxy.job_metrics"):
-        write_version_status(str(job_directory), "0.15.16")
+        PulsarPlugin.write_version_status(str(job_directory), "0.15.16")
     _assert_logged_exception(caplog, "Failed to record Pulsar job metrics file version_status")

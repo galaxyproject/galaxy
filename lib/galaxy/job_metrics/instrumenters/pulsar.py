@@ -22,10 +22,7 @@ import os
 from typing import Any
 
 from galaxy.util import nice_size
-from . import (
-    INSTRUMENT_FILE_PREFIX,
-    InstrumentPlugin,
-)
+from . import InstrumentPlugin
 from ..formatting import (
     FormattedMetric,
     JobMetricFormatter,
@@ -90,85 +87,81 @@ class PulsarPlugin(InstrumentPlugin):
 
     plugin_type = PLUGIN_TYPE
     formatter = PulsarPluginFormatter()
-    # Server versions are only of interest to admins; transfer figures are fine to show.
-    default_safety = Safety.POTENTIALLY_SENSITVE
+    default_safety = Safety.SAFE
 
     def __init__(self, **kwargs: Any) -> None:
         pass
 
     @classmethod
     def safety(cls, metric_name: str) -> Safety:
+        # Server versions are only of interest to admins.
         if metric_name in VERSION_LABELS:
-            return cls.default_safety
-        return Safety.SAFE
+            return Safety.POTENTIALLY_SENSITVE
+        return cls.default_safety
 
     def job_properties(self, job_id: int, job_directory: str) -> dict[str, Any]:
         properties: dict[str, Any] = {}
         for phase in PHASES:
-            recorded = _read(job_directory, f"transfer_{phase}")
+            recorded = self._read(job_directory, f"transfer_{phase}")
             for key, value in recorded.items():
                 if key in KEYS:
                     properties[f"{phase}_{key}"] = value
-        target = _read(job_directory, VERSION_TARGET)
+        target = self._read(job_directory, VERSION_TARGET)
         for key in ("client_version", "target_version", "target_version_source"):
             if key in target:
                 properties[key] = target[key]
         for name, source in ((VERSION_STATUS, "status"), (VERSION, "job_files")):
-            server_version = _read(job_directory, name).get("version")
+            server_version = self._read(job_directory, name).get("version")
             if server_version:
                 properties["server_version"] = server_version
                 properties["server_version_source"] = source
                 break
         return properties
 
+    @classmethod
+    def write_version_target(cls, job_directory: str, client_version: str, target_version: str, source: str) -> None:
+        """Record the Pulsar version a job was submitted for, and how it was determined."""
+        cls._write(
+            job_directory,
+            VERSION_TARGET,
+            {"client_version": client_version, "target_version": target_version, "target_version_source": source},
+        )
 
-def write_version_target(job_directory: str, client_version: str, target_version: str, source: str) -> None:
-    """Record the Pulsar version a job was submitted for, and how it was determined."""
-    _write(
-        job_directory,
-        VERSION_TARGET,
-        {"client_version": client_version, "target_version": target_version, "target_version_source": source},
-    )
+    @classmethod
+    def write_version_status(cls, job_directory: str, server_version: str) -> None:
+        """Record the version the remote Pulsar reported when the job finished."""
+        cls._write(job_directory, VERSION_STATUS, {"version": server_version})
 
+    @classmethod
+    def read_target_version(cls, job_directory: str) -> str | None:
+        """The version recorded by write_version_target, if the job has one and it's readable."""
+        try:
+            return cls._read(job_directory, VERSION_TARGET).get("target_version")
+        except ValueError:
+            # _write is best effort, so this may be a partial write - finishing falls back instead.
+            log.exception("Unreadable Pulsar target version in %s", job_directory)
+            return None
 
-def write_version_status(job_directory: str, server_version: str) -> None:
-    """Record the version the remote Pulsar reported when the job finished."""
-    _write(job_directory, VERSION_STATUS, {"version": server_version})
+    @classmethod
+    def _read(cls, job_directory: str, name: str) -> dict[str, Any]:
+        try:
+            with open(cls._instrument_file_path(job_directory, name)) as fh:
+                recorded: dict[str, Any] = json.load(fh)
+                return recorded
+        except FileNotFoundError:
+            # Not reported - an older Pulsar or Galaxy, a job that ran somewhere else entirely,
+            # or files that never made it back.
+            return {}
 
-
-def read_target_version(job_directory: str) -> str | None:
-    """The version recorded by write_version_target, if the job has one and it's readable."""
-    try:
-        return _read(job_directory, VERSION_TARGET).get("target_version")
-    except ValueError:
-        # _write is best effort, so this may be a partial write - finishing falls back instead.
-        log.exception("Unreadable Pulsar target version in %s", job_directory)
-        return None
-
-
-def _path(job_directory: str, name: str) -> str:
-    return os.path.join(job_directory, f"{INSTRUMENT_FILE_PREFIX}_{PLUGIN_TYPE}_{name}")
-
-
-def _read(job_directory: str, name: str) -> dict[str, Any]:
-    try:
-        with open(_path(job_directory, name)) as fh:
-            recorded: dict[str, Any] = json.load(fh)
-            return recorded
-    except FileNotFoundError:
-        # Not reported - an older Pulsar or Galaxy, a job that ran somewhere else entirely,
-        # or files that never made it back.
-        return {}
-
-
-def _write(job_directory: str, name: str, recorded: dict[str, Any]) -> None:
-    # Best effort - a metric is never worth failing a job over.
-    try:
-        os.makedirs(job_directory, exist_ok=True)
-        with open(_path(job_directory, name), "w") as fh:
-            json.dump(recorded, fh)
-    except Exception:
-        log.exception("Failed to record Pulsar job metrics file %s", name)
+    @classmethod
+    def _write(cls, job_directory: str, name: str, recorded: dict[str, Any]) -> None:
+        # Best effort - a metric is never worth failing a job over.
+        try:
+            os.makedirs(job_directory, exist_ok=True)
+            with open(cls._instrument_file_path(job_directory, name), "w") as fh:
+                json.dump(recorded, fh)
+        except Exception:
+            log.exception("Failed to record Pulsar job metrics file %s", name)
 
 
 # Only the plugin class - plugin discovery walks __all__ looking for one.
