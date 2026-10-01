@@ -7,8 +7,10 @@ import yaml
 
 from galaxy.config import Configuration
 from galaxy.exceptions import (
+    GatewayTimeoutException,
     MessageException,
     RequestParameterInvalidException,
+    UpstreamProxyError,
 )
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
@@ -151,19 +153,23 @@ class TrsServer:
         return tool_id
 
     def _get(self, url, params=None):
-        response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
+        try:
+            response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
+        except requests.exceptions.Timeout as e:
+            raise GatewayTimeoutException(f"TRS server {self._trs_url} did not respond in time.") from e
+        except requests.exceptions.ConnectionError as e:
+            raise UpstreamProxyError(f"TRS server {self._trs_url} could not be reached.") from e
         if response.ok:
             return response.json()
-        else:
+        try:
+            trs_error_dict = response.json()
+            code = int(trs_error_dict["code"])
+            message = trs_error_dict["message"]
+        except Exception:
+            # Not a TRS error document, e.g. an HTML error page from a proxy or CDN in front of the server.
             code = response.status_code
-            message = response.text
-            try:
-                trs_error_dict = response.json()
-                code = int(trs_error_dict["code"])
-                message = trs_error_dict["message"]
-            except Exception:
-                pass
-            raise MessageException.from_code(code, message)
+            message = f"TRS server {self._trs_url} responded with HTTP {code}."
+        raise MessageException.from_code(code, message)
 
     def _get_api_endpoint(self, **kwd):
         trs_url = self._trs_url
