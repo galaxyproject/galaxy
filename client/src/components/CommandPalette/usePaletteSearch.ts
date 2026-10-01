@@ -5,11 +5,11 @@ import { localize } from "@/utils/localization";
 
 import { helpSections, type PaletteHelpHandlers } from "./paletteHelp";
 import { enabledPaletteProviders, findPaletteProvider } from "./providers";
-import { ALL_CATEGORY, categoryProviderId, type PaletteCategory } from "./providers/categories";
+import { categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
 import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
-import type { PaletteMode } from "./usePaletteMachine";
+import { type PaletteMode, paletteModeIdentity, paletteModeSubject } from "./usePaletteMachine";
 import { isScopeTokenLike, scorePaletteItems } from "./utilities";
 
 const SEARCH_DEBOUNCE = 150;
@@ -78,18 +78,6 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     /** Whether the arrow keys currently move the category instead of the selection */
     const categoryRowSelected = computed(() => showCategoryRow.value && selectedIndex.value === CATEGORY_ROW_INDEX);
-
-    /** What the current search is *of*, as the error row would name it */
-    function searchSubject(activeMode: PaletteMode): string {
-        if (activeMode.type === "scoped") {
-            return localize(activeMode.scope.label).toLowerCase();
-        }
-        if (activeMode.type === "action") {
-            return localize(activeMode.action.title).toLowerCase();
-        }
-        const category = activeCategory.value;
-        return category ? localize(category.label).toLowerCase() : localize("the results");
-    }
 
     /** One provider failing must never cost the user every other section */
     function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallback: T): Promise<T> {
@@ -322,20 +310,6 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     let searchEpoch = 0;
 
-    /** Badge or category the results belong to; any change but the query invalidates them */
-    function searchIdentity(activeMode: PaletteMode): string {
-        switch (activeMode.type) {
-            case "scoped":
-                return `scoped:${activeMode.scope.key}`;
-            case "action":
-                return `action:${activeMode.action.id}`;
-            case "help":
-                return "help";
-            default:
-                return `root:${activeMode.category?.id ?? ALL_CATEGORY.id}`;
-        }
-    }
-
     /** Drops the rendered results and any search still in flight for them */
     function clearResults() {
         searchEpoch++;
@@ -377,7 +351,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
             if (epoch === searchEpoch) {
                 sections.value = [];
                 selectedIndex.value = 0;
-                failedSubject.value = searchSubject(mode.value);
+                failedSubject.value = paletteModeSubject(mode.value);
             }
         } finally {
             if (epoch === searchEpoch) {
@@ -411,7 +385,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
     }
 
     // sync so old rows never show under a new badge; reads `mode` as a sync watcher can see a stale computed
-    watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
+    watch(() => paletteModeIdentity(mode.value), clearResults, { flush: "sync" });
 
     // the category is part of the mode, so a sweep across the row shares the debounce
     watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });

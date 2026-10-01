@@ -1,5 +1,7 @@
 import { computed, shallowRef } from "vue";
 
+import { localize } from "@/utils/localization";
+
 import { ALL_CATEGORY, type PaletteCategory } from "./providers/categories";
 import { isScopeAvailable, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
@@ -14,6 +16,34 @@ export type PaletteMode =
 
 /** What the caller has to do after {@link usePaletteMachine} handled escape */
 export type EscapeResult = "cleared-text" | "popped-mode" | "close";
+
+/** Badge or category the results belong to; any change but the query invalidates them */
+export function paletteModeIdentity(mode: PaletteMode): string {
+    switch (mode.type) {
+        case "scoped":
+            return `scoped:${mode.scope.key}`;
+        case "action":
+            return `action:${mode.action.id}`;
+        case "help":
+            return "help";
+        default:
+            return `root:${mode.category?.id ?? ALL_CATEGORY.id}`;
+    }
+}
+
+/** What a search in this mode is *of*, as the error row would name it */
+export function paletteModeSubject(mode: PaletteMode): string {
+    switch (mode.type) {
+        case "scoped":
+            return localize(mode.scope.label).toLowerCase();
+        case "action":
+            return localize(mode.action.title).toLowerCase();
+        case "help":
+            return localize("the results");
+        default:
+            return mode.category ? localize(mode.category.label).toLowerCase() : localize("the results");
+    }
+}
 
 /**
  * Input state machine of the command palette: the current mode plus the text
