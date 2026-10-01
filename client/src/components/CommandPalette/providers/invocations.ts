@@ -79,7 +79,7 @@ function invocationList(): StoreFirstList {
         isLoaded: () => invocationStore.hasLoadedLatestInvocations,
         fetchListing: fetchLatestInvocationsWithNames,
         cachedItems: () => invocationStore.latestInvocations.map(invocationToItem),
-        // a page of the latest knows no total; never read, as there is no backend search
+        // no total and no backend search, so never complete
         isComplete: () => false,
     };
 }

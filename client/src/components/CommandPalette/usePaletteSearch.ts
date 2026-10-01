@@ -91,7 +91,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
         const provider = findPaletteProvider(providerId);
-        // a remembered category or scope must not reach a provider turned off since, nor a login-only one anonymously
+        // a remembered category or scope may name a provider since disabled, or a login-only one
         if (!provider || !isProviderAvailable(providerId, ctx)) {
             return [];
         }
