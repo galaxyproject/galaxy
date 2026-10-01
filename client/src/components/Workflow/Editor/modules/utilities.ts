@@ -47,8 +47,8 @@ export function getStateUpgradeMessages(data: {
 export interface PredictedToolChild {
     name: string;
     tool_id: string;
-    tool_score: number;
-    i_extensions: string[];
+    tool_score?: number;
+    i_extensions?: string[];
 }
 
 export interface CompatibleRecommendation {
@@ -64,7 +64,7 @@ export function getCompatibleRecommendations(
     const cTools: CompatibleRecommendation[] = [];
     const toolMap = new Map<string, boolean>();
     for (const child of predChild) {
-        const inputDatatypes = child.i_extensions;
+        const inputDatatypes = child.i_extensions ?? [];
         for (const outT of outputDatatypes) {
             for (const inTool of inputDatatypes) {
                 if (
