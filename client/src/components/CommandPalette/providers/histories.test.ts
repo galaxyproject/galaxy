@@ -473,19 +473,18 @@ describe("historiesProvider", () => {
         expect(getPublishedHistories).not.toHaveBeenCalled();
     });
 
-    it("filters the cached own histories in the fan-out without fetching them", async () => {
-        // nothing cached yet: the own rows are whatever the store already holds
-        expect(await historiesProvider.search("variant", makeCtx())).toEqual([]);
-        expect(getHistoryList).not.toHaveBeenCalled();
-
-        await useHistoryStore().loadHistories(false);
+    it("hydrates the own histories once for the fan-out, then filters the cache", async () => {
+        // a first-ever root search still finds own rows
+        const first = await historiesProvider.search("variant", makeCtx());
+        expect(first.map((i) => i.title)).toEqual(["Variant calling"]);
         const callsAfterHydration = getHistoryList.mock.calls.length;
 
         const items = await historiesProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
-        // the own list is only ever fetched by the `h:` scope
+        // only the unfiltered listing is fetched; searching the own list is the `h:` scope's job
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration);
+        expect(getHistoryList.mock.calls.every(([, , queryString]) => !queryString)).toBe(true);
     });
 
     it("merges the shared and public matches into the unscoped fan-out", async () => {
