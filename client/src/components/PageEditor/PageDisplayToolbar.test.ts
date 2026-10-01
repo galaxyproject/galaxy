@@ -6,6 +6,7 @@ import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistoryPageDetails, PageRevisionSummary } from "@/api/pages.js";
+import type GButton from "@/components/BaseComponents/GButton.vue";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import { PAGE_LABELS } from "../Page/constants.js";
@@ -97,8 +98,8 @@ describe("PageDisplayToolbar", () => {
         it("shows edit toolbar with Edit button pressed", async () => {
             expect(wrapper.find(SELECTORS.EDITOR_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.findComponent(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
-            expect(wrapper.findComponent(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
         });
 
         it("shows rename button and page title in toolbar", () => {
@@ -256,8 +257,8 @@ describe("PageDisplayToolbar", () => {
         it("shows display toolbar with Preview button pressed", async () => {
             expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.findComponent(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
-            expect(wrapper.findComponent(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
         });
 
         it("Edit button emits an edit event", async () => {

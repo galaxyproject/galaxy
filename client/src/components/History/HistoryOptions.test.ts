@@ -1,6 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -192,7 +193,7 @@ describe("History Navigation", () => {
         const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
         // BFormCheckbox is stubbed under shallowMount, so there's no real
         // checkbox input to interact with -- drive it through its stub instead.
-        wrapper.findComponent('[data-description="delete history checkbox"]').vm.$emit("input", true);
+        wrapper.findComponent(BFormCheckbox).vm.$emit("input", true);
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();

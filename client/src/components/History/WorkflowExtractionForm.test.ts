@@ -1,5 +1,5 @@
 import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +10,8 @@ import {
     type WorkflowExtractionSummary,
 } from "@/api/histories";
 import { Toast } from "@/composables/toast";
+
+import { type InputStep, isInputStep } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
@@ -132,6 +134,15 @@ const TOOL_JOB_OUT_B: WorkflowExtractionJob = {
     outputs: [{ ...TOOL_OUTPUT, id: "out-b", name: "shared" }],
 };
 
+/** A card's job, narrowed to an input step (only input steps carry `newName`). */
+function inputJobOf(card: VueWrapper<InstanceType<typeof WorkflowExtractionCard>>): InputStep {
+    const job = card.props("job");
+    if (!isInputStep(job)) {
+        throw new Error(`Expected an input step card, got a ${job.step_type} step.`);
+    }
+    return job;
+}
+
 const SUMMARY_WITH_JOBS = summary([TOOL_JOB, INPUT_JOB]);
 const SUMMARY_WITH_DUPLICATE_INPUT_NAMES = summary([INPUT_JOB, INPUT_JOB_DUP]);
 const SUMMARY_WITH_DUPLICATE_OUTPUT_NAMES = summary([TOOL_JOB_OUT_A, TOOL_JOB_OUT_B]);
@@ -220,7 +231,7 @@ describe("WorkflowExtractionForm", () => {
         it("auto-populates newName for input jobs from output name", async () => {
             const wrapper = await mountForm();
             const inputCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 1);
-            expect(inputCard.props("job").newName).toBe("myfile.txt");
+            expect(inputJobOf(inputCard).newName).toBe("myfile.txt");
         });
 
         it("passes warnings to WorkflowExtractionMessages", async () => {
@@ -462,7 +473,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
 
-            const names = [card(wrapper, 0).props("job").newName, card(wrapper, 1).props("job").newName];
+            const names = [inputJobOf(card(wrapper, 0)).newName, inputJobOf(card(wrapper, 1)).newName];
             expect(new Set(names)).toEqual(new Set(["myfile.txt", "myfile.txt (2)"]));
             // Names are unique, so the backend won't reject — submit is enabled.
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
@@ -479,7 +490,7 @@ describe("WorkflowExtractionForm", () => {
             (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)("myfile.txt");
             await wrapper.vm.$nextTick();
 
-            expect(card(wrapper, 1).props("job").newName).toBe("myfile.txt (2)");
+            expect(inputJobOf(card(wrapper, 1)).newName).toBe("myfile.txt (2)");
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
         });
 
