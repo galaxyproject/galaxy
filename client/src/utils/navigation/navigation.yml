@@ -24,7 +24,7 @@ _:  # global stuff
 
     confirm_button:
       type: xpath
-      selector: '//button[contains(text(), "${name}")]'
+      selector: '//button[text()[contains(., "${name}")]]'
 
   messages:
     selectors:
@@ -58,7 +58,7 @@ masthead:
     user: '#user.loggedin-only > a.nav-link'
     username:
       type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
+      selector: '//a[text()[contains(., "Signed in as")]]'
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
@@ -148,7 +148,7 @@ change_user_address:
   selectors:
     address_button:
       type: xpath
-      selector: '//span[contains(text(), "Insert Address")]'
+      selector: '//span[text()[contains(., "Insert Address")]]'
 
 dataset_details:
   selectors:
@@ -418,7 +418,7 @@ edit_collection_attributes:
     datatypes_tab: '.collection-edit-change-datatype-nav'
     data_value:
       type: xpath
-      selector: '//span[contains(text(), "${data_change}")]'
+      selector: '//span[text()[contains(., "${data_change}")]]'
     genome_select_search: '.database-dropdown input.multiselect__input'
     datatype_select_search: '.datatype-dropdown input.multiselect__input'
     save_dbkey_btn: '.save-dbkey-edit'
@@ -470,7 +470,7 @@ multi_history_panel:
       _: '.modal-dialog'
       copy_btn:
         type: xpath
-        selector: '//button[contains(text(), "Copy")]'
+        selector: '//button[text()[contains(., "Copy")]]'
 
 published_histories:
   selectors:
@@ -918,10 +918,10 @@ trs_search:
     version_select: ".workflow-version-select"
     version_option:
       type: xpath
-      selector: "//option[contains(text(), '${version}')]"
+      selector: "//option[text()[contains(., '${version}')]]"
     select_server:
       type: xpath
-      selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
+      selector: "//a[contains(@class, 'dropdown-item') and text()[normalize-space(.) = '${server}']]"
 
 trs_import:
   selectors:
@@ -929,12 +929,12 @@ trs_import:
     version_select: ".workflow-version-select"
     version_option:
       type: xpath
-      selector: "//option[contains(text(), '${version}')]"
+      selector: "//option[text()[contains(., '${version}')]]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     select_server:
       type: xpath
-      selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
+      selector: "//a[contains(@class, 'dropdown-item') and text()[normalize-space(.) = '${server}']]"
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
@@ -971,7 +971,7 @@ workflow_run:
           selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]'
         select_item:
           type: xpath
-          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[contains(text(), "${item}")]'
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[text()[contains(., "${item}")]]'
         select_collection: '[data-description="selection collection card"]'
         collection_selection: .selection-dialog-modal tr[data-pk="${id}"]
 
@@ -1019,7 +1019,7 @@ workflow_editor:
       clone: '${_} .node-clone'
       output_data_row:
         type: xpath
-        selector: '//div[@data-output-name="${output_name}"]//span[contains(text(), "(${extension})")]'
+        selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
@@ -1136,7 +1136,7 @@ workflow_editor:
     duplicate_label_error:
       type: xpath
       selector: >
-        //div[@id='form-element-__label__${output}']//span[contains(text(), 'Duplicate output label')]
+        //div[@id='form-element-__label__${output}']//span[text()[contains(., 'Duplicate output label')]]
     rename_output:
       type: xpath
       selector: >
@@ -1514,13 +1514,13 @@ libraries:
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:
         type: xpath
-        selector: '//button[contains(text(), "Continue")]'
+        selector: '//button[text()[contains(., "Continue")]]'
       import_datasets_ok_button:
         type: xpath
-        selector: '//button[contains(text(), "Import")]'
+        selector: '//button[text()[contains(., "Import")]]'
       import_datasets_cancel_button:
         type: xpath
-        selector: '//button[contains(text(), "Cancel")]'
+        selector: '//button[text()[contains(., "Cancel")]]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
@@ -1534,7 +1534,7 @@ libraries:
       empty_folder_message: '.empty-folder-message'
       btn_open_parent_folder:
         type: xpath
-        selector: '//a[contains(text(), "${folder_name}")]'
+        selector: '//a[text()[contains(., "${folder_name}")]]'
       edit_folder_btn: '.edit_folder_btn'
       description_field: '.description-field > div'
       description_field_shrinked: '.shrinked-description'
@@ -1549,11 +1549,11 @@ libraries:
         selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
       alert_not_exists_user_import_dir:
         type: xpath
-        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
+        selector: //div[contains(@class, "alert-danger") and text()[contains(normalize-space(.), "Your user import directory does not exist")]]
       select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
-        selector: '//button[contains(text(), "Import")]'
+        selector: '//button[text()[contains(., "Import")]]'
       manage_dataset_permissions_btn: 'a[title="Permissions of ${name}"]'
       make_private_btn: '#make-private'
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
@@ -1703,7 +1703,7 @@ job_details:
   selectors:
     galaxy_tool_with_id:
       type: xpath
-      selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
+      selector: '//td[@id="galaxy-tool-id"][text()[normalize-space(.) = "${tool_id}"]]'
     tool_exit_code: '#exit-code'
 
 galaxyai:
