@@ -145,10 +145,9 @@ describe("ToolPanel", () => {
         viewsList[DEFAULT_VIEW_ID]!.name = "Tools";
 
         const pinia = createPinia();
-        const wrapper = mount(ToolPanel as object, {
+        const wrapper = mount(ToolPanel, {
             props: {
                 workflow: false,
-                editorWorkflows: null,
                 useSearchWorker: false,
             },
             global: {

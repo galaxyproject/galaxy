@@ -1,4 +1,4 @@
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
@@ -37,7 +37,7 @@ describe("WorkflowAttributes", () => {
         untypedParameters.getParameter("workflow_parameter_0");
         untypedParameters.getParameter("workflow_parameter_1");
 
-        const wrapper = mount(WorkflowAttributes as object, {
+        const wrapper = mount(WorkflowAttributes, {
             props: {
                 id: "workflow_id",
                 name: TEST_NAME,
@@ -47,11 +47,10 @@ describe("WorkflowAttributes", () => {
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },
-            stubs: {
-                LicenseSelector: true,
+            global: {
+                ...withPlugins(localVue, pinia),
+                stubs: { ...localVue.stubs, LicenseSelector: true },
             },
-            global: localVue,
-            pinia,
         });
 
         await flushPromises();

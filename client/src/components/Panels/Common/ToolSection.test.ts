@@ -1,4 +1,4 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { describe, expect, test, vi } from "vitest";
@@ -24,14 +24,13 @@ function sectionIsOpened(wrapper: VueWrapper) {
 
 describe("ToolSection", () => {
     test("test tool section", () => {
-        const wrapper = mount(ToolSection as object, {
+        const wrapper = mount(ToolSection, {
             props: {
                 category: {
                     name: "name",
-                },
+                } as Tool,
             },
-            global: localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement[0]?.text()).toBe("name");
@@ -40,24 +39,25 @@ describe("ToolSection", () => {
     });
 
     test("test tool section title", async () => {
-        const wrapper = mount(ToolSection as object, {
+        const wrapper = mount(ToolSection, {
             props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "tool_section",
+                    name: "tool_section",
                     title: "tool_section",
+                    // The store types elems without labels, but ToolSection.vue renders them.
                     elems: [
-                        {
-                            name: "name",
-                        },
+                        { name: "name" } as Tool,
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
                             text: "text",
-                        },
-                    ],
+                        } as ToolSectionLabel,
+                    ] as ToolSectionType["elems"],
                 },
             },
-            global: localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
@@ -72,25 +72,25 @@ describe("ToolSection", () => {
     });
 
     test("test tool slider state", async () => {
-        const wrapper = mount(ToolSection as object, {
+        const wrapper = mount(ToolSection, {
             props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "tool_section",
+                    name: "tool_section",
                     title: "tool_section",
                     elems: [
-                        {
-                            name: "name",
-                        },
+                        { name: "name" } as Tool,
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
                             text: "text",
-                        },
-                    ],
+                        } as ToolSectionLabel,
+                    ] as ToolSectionType["elems"],
                 },
                 queryFilter: "test",
             },
-            global: localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");
@@ -116,16 +116,19 @@ describe("ToolSection element ordering", () => {
         elems: (ToolSectionType | ToolSectionLabel | Tool)[],
         propsOverrides: { sortItems?: boolean } = {},
     ) {
-        return mount(ToolSection as object, {
-            propsData: {
+        return mount(ToolSection, {
+            props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "test_section",
+                    name: "test_section",
                     title: "test_section",
-                    elems,
+                    // Labels aren't in the store's elems type; see above.
+                    elems: elems as ToolSectionType["elems"],
                 },
                 ...propsOverrides,
             },
-            localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
     }
 

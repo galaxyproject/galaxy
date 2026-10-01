@@ -1,10 +1,11 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { emittedArg, getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -14,18 +15,17 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
 
-const fakeHistory = { id: "history_1", name: "My History" };
+const fakeHistory = getFakeHistorySummary({ id: "history_1", name: "My History" });
 // history with an explicit owner id
-const ownedHistory = { id: "history_1", name: "My History", user_id: "owner_id" };
+const ownedHistory = { ...fakeHistory, user_id: "owner_id" };
 const fakeOwner = getFakeRegisteredUser({ id: "owner_id" });
 const otherUser = getFakeRegisteredUser({ id: "other_user" });
 
-function createWrapper(history = fakeHistory as object, userData = fakeOwner, showModal = true) {
+function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwner, showModal = true) {
     const pinia = createPinia();
-    const wrapper = shallowMount(CopyModal as object, {
-        propsData: { history, showModal },
-        localVue,
-        pinia,
+    const wrapper = shallowMount(CopyModal, {
+        props: { history, showModal },
+        global: withPlugins(localVue, pinia),
     });
     const userStore = useUserStore();
     userStore.currentUser = userData;
@@ -49,7 +49,7 @@ describe("CopyModal", () => {
 
     it("updates name input when history prop changes", async () => {
         const { wrapper } = createWrapper();
-        await wrapper.setProps({ history: { id: "h2", name: "Other History" } });
+        await wrapper.setProps({ history: getFakeHistorySummary({ id: "h2", name: "Other History" }) });
         expect(wrapper.findComponent(GFormInput).props("value")).toBe("Copy of 'Other History'");
     });
 

@@ -18,9 +18,9 @@ const SOMETHING_SELECTED = {
     selectionSize: 1,
 };
 
-async function mountHistorySelectionStatusWith(props: Record<string, any>) {
-    const wrapper = mount(HistorySelectionStatus as object, {
-        propsData: props,
+async function mountHistorySelectionStatusWith(props: { selectionSize: number }) {
+    const wrapper = mount(HistorySelectionStatus, {
+        props,
         global: localVue,
     });
 
