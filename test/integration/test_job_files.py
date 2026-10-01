@@ -222,6 +222,15 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, content))
         _assert_file_contents(path, "second")
 
+    def test_write_and_read_path_with_percent_escapes(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "a%2Fb%20c")
+        api_asserts.assert_status_code_is_ok(self._post_job_file(job, path, "escaped", as_params=True))
+        _assert_file_contents(path, "escaped")
+        response = requests.get(job.files_url, params={"path": path, "job_key": job.job_key})
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == "escaped"
+
     def test_missing_params(self):
         job = self._running_job()
         for params in [{"path": job.output_path}, {"job_key": job.job_key}]:

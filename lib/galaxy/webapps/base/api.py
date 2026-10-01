@@ -111,6 +111,11 @@ def _release_request_sessions(sessions: list) -> None:
             log.warning("Failed to release request-scoped DB session before streaming", exc_info=True)
 
 
+def release_request_sessions() -> None:
+    """Return this request's pooled DB connection(s) before long non-DB work, e.g. reading a large request body."""
+    _release_request_sessions(_live_request_sessions())
+
+
 class GalaxyFileResponse(FileResponse):
     """
     Augments starlette FileResponse with x-accel-redirect/x-sendfile and byte-range handling.

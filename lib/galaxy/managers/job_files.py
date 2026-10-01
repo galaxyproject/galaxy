@@ -28,6 +28,10 @@ class JobFilesManager:
     def __init__(self, app: MinimalManagerApp):
         self._app = app
 
+    @property
+    def upload_dir(self) -> str:
+        return str(self._app.config.new_file_path)
+
     def readable_path(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
         job = self._authorize(encoded_job_id, path, job_key)
         assert path is not None
