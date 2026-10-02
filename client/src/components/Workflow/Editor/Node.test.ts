@@ -74,7 +74,10 @@ function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}, 
             scroll: MOCK_SCROLL,
             ...propsData,
         },
-        global: { ...localVue, provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity), isDragging: ref(false) } },
+        global: {
+            ...localVue,
+            provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity), isDragging: ref(false) },
+        },
         pinia: testingPinia,
     });
 
@@ -109,10 +112,10 @@ describe("Node", () => {
             expect(wrapper.find(".node-error").classes()).not.toContain("rounded-bottom");
             const inputs = wrapper.findAllComponents(NodeInput);
             expect(inputs).toHaveLength(1);
-            expect(inputs.at(0).props("input")).toMatchObject({ name: "input1", valid: false });
+            expect(inputs.at(0)!.props("input")).toMatchObject({ name: "input1", valid: false });
             const outputs = wrapper.findAllComponents(NodeOutput);
             expect(outputs).toHaveLength(1);
-            expect(outputs.at(0).props("output")).toMatchObject({ name: "out_file1", valid: false });
+            expect(outputs.at(0)!.props("output")).toMatchObject({ name: "out_file1", valid: false });
         });
 
         it("renders only the error for a missing tool without connections", async () => {
