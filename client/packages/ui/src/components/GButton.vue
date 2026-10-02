@@ -113,7 +113,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :href="!props.disabled ? (props.to ?? props.href) : ''"
         :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :title="props.tooltip ? false : currentTitle"
-        :aria-disabled="props.disabled"
+        :aria-disabled="props.disabled || undefined"
         v-bind="$attrs"
         @click="onClick"
         @click.native="onClick">
