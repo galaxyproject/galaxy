@@ -107,3 +107,15 @@ def test_search_builds_distinct_panel_view_corpora(tmp_path, search_config):
         "other_mapper",
     }
     assert search.search("mapper", panel_view="restricted", config=config) == ["local_mapper"]
+
+
+def test_search_index_dirs_use_encoded_panel_view_ids(tmp_path, search_config):
+    search, config = _search(
+        str(tmp_path),
+        [ToolIndexEntry(id="local_mapper", name="Sequence mapper", version="1.0")],
+        {"ontology:edam_operations": {"local_mapper"}},
+        search_config,
+    )
+
+    assert [path.name for path in tmp_path.iterdir()] == ["ontology%3Aedam_operations"]
+    assert search.search("mapper", panel_view="ontology:edam_operations", config=config) == ["local_mapper"]
