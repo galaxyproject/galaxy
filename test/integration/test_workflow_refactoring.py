@@ -693,9 +693,30 @@ steps:
         self._app.model.session.expire_all()
         stored_workflow = self._most_recent_stored_workflow
         assert len(stored_workflow.workflows) == 2
-        # upgrade used to also rewrite the source version's steps in place
+        # the source version keeps its steps
         assert stored_workflow.get_internal_version(0).step_by_label("the_step").tool_version == "0.1"
         assert stored_workflow.get_internal_version(1).step_by_label("the_step").tool_version == "0.2"
+
+    def test_refactor_noop_of_imported_workflow_does_not_create_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.2'
+    state:
+      inttest: 0
+""")
+        sa_session = self._app.model.session
+        # as set by a URL or TRS import
+        self._latest_workflow.source_metadata = {"url": "https://example.org/the_workflow.ga"}
+        sa_session.commit()
+        name = self._most_recent_stored_workflow.name
+
+        response = self._refactor([{"action_type": "update_name", "name": name}])
+        assert not response.changed
+        sa_session.expire_all()
+        assert len(self._most_recent_stored_workflow.workflows) == 1
 
     def test_refactor_saves_only_the_new_version(self):
         # the comparison dry run build must not be committed alongside the real save
@@ -847,7 +868,7 @@ steps:
         stored_workflow = self._most_recent_stored_workflow
         assert len(stored_workflow.workflows) == 2
         source_step = stored_workflow.get_internal_version(0).step_by_label("nested_workflow")
-        # upgrade used to also rewrite the source version's steps in place
+        # the source version keeps its steps
         assert source_step.subworkflow.id == original_nested_workflow_id
         upgraded_step = stored_workflow.get_internal_version(1).step_by_label("nested_workflow")
         assert upgraded_step.subworkflow.id != original_nested_workflow_id
