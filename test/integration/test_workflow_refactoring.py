@@ -672,6 +672,31 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    state:
+      inttest: 0
+""")
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        self._dry_run(actions)
+        self._app.model.session.expire_all()
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        # upgrade used to also rewrite the source version's steps in place
+        assert stored_workflow.get_internal_version(0).step_by_label("the_step").tool_version == "0.1"
+        assert stored_workflow.get_internal_version(1).step_by_label("the_step").tool_version == "0.2"
+
     def test_refactor_saves_only_the_new_version(self):
         # the comparison dry run build must not be committed alongside the real save
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
@@ -806,6 +831,26 @@ steps:
 
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
+
+    def test_subworkflow_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        original_nested_workflow_id = nested_stored_workflow.latest_workflow.id
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="2")
+        self._app.model.session.expunge(nested_stored_workflow)
+
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        source_step = stored_workflow.get_internal_version(0).step_by_label("nested_workflow")
+        # upgrade used to also rewrite the source version's steps in place
+        assert source_step.subworkflow.id == original_nested_workflow_id
+        upgraded_step = stored_workflow.get_internal_version(1).step_by_label("nested_workflow")
+        assert upgraded_step.subworkflow.id != original_nested_workflow_id
 
     def test_subworkflow_upgrade_specified(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)

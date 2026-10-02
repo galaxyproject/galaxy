@@ -2506,19 +2506,17 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections=True)
-        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
+        # The executor uses its workflow's steps as scratch space (e.g. upgrades set
+        # tool_version / subworkflow on them), so give it a detached build, not the source.
+        scratch_workflow = self._build_detached(
+            trans, stored_workflow, raw_workflow_description, workflow_update_options
+        )
+        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, scratch_workflow, module_injector)
         action_executions = refactor_executor.refactor(refactor_request)
 
-        # Build without saving and export it like the source, so both sides of the
-        # comparison come from the same code. From a copy, since built steps share JSON
-        # values (e.g. position) with their description.
-        dry_run_workflow, _ = self.update_workflow_from_raw_description(
-            trans,
-            stored_workflow,
-            RawWorkflowDescription(
-                copy.deepcopy(raw_workflow_description.as_dict), raw_workflow_description.workflow_path
-            ),
-            workflow_update_options.model_copy(update={"dry_run": True}),
+        # Export a build like the source, so both sides of the comparison come from the same code.
+        dry_run_workflow = self._build_detached(
+            trans, stored_workflow, raw_workflow_description, workflow_update_options
         )
         changed = (
             self._refactor_comparison_dict(trans, dry_run_workflow, dry_run_workflow.stored_workflow) != source_dict
@@ -2541,6 +2539,24 @@ class WorkflowContentsManager(UsesAnnotations):
         #   it is used also. These same messages will appear in the dictified version we
         #   we send back anyway
         return refactored_workflow, action_executions, changed
+
+    def _build_detached(
+        self,
+        trans: ProvidesHistoryContext,
+        stored_workflow: StoredWorkflow,
+        raw_workflow_description: RawWorkflowDescription,
+        workflow_update_options: WorkflowUpdateOptions,
+    ) -> Workflow:
+        # From a copy, since built steps share JSON values (e.g. position) with their description.
+        workflow, _ = self.update_workflow_from_raw_description(
+            trans,
+            stored_workflow,
+            RawWorkflowDescription(
+                copy.deepcopy(raw_workflow_description.as_dict), raw_workflow_description.workflow_path
+            ),
+            workflow_update_options.model_copy(update={"dry_run": True}),
+        )
+        return workflow
 
     def _refactor_comparison_dict(
         self, trans: ProvidesHistoryContext, workflow: Workflow, stored: StoredWorkflow

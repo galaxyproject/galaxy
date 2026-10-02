@@ -1210,6 +1210,27 @@ steps:
         workflow_v1_check = self.workflow_populator.download_workflow(workflow_id, version=1)
         assert workflow_v1_check["steps"]["0"]["label"] == "v1_label"
 
+    def test_refactor_upgrade_preserves_previous_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    state:
+      inttest: 0
+""")
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+
+        previous_version = self.workflow_populator.download_workflow(workflow_id, version=0)
+        # upgrade used to also rewrite the source version's steps in place
+        assert previous_version["steps"]["0"]["tool_version"] == "0.1"
+        latest_version = self.workflow_populator.download_workflow(workflow_id, version=1)
+        assert latest_version["steps"]["0"]["tool_version"] == "0.2"
+
     def test_refactor_noop_does_not_create_version(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
