@@ -1,7 +1,7 @@
 import "@/composables/__mocks__/filter";
 
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -508,7 +508,7 @@ async function mountDefaultPanelToolBox(options: MountToolBoxOptions = {}) {
     return wrapper;
 }
 
-async function searchFor(wrapper: Wrapper<Vue>, query: string) {
+async function searchFor(wrapper: VueWrapper, query: string) {
     await wrapper.find("input.search-query").setValue(query);
     vi.advanceTimersByTime(250);
     await flushPromises();
