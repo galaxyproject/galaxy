@@ -1,7 +1,9 @@
 import axios from "axios";
 
 import { getGalaxyInstance } from "@/app";
+import { Toast } from "@/composables/toast";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 /**
  * Handles user logout.  Invalidates the current session, checks to see if we
@@ -21,11 +23,16 @@ export function userLogout(logoutAll = false) {
             // Check if we need to logout of OIDC IDP
             if (Galaxy.config.enable_oidc) {
                 const provider = localStorage.getItem("galaxy-provider");
+                let idpLogoutUrl = "/authnz/logout";
                 if (provider) {
                     localStorage.removeItem("galaxy-provider");
-                    return axios.get(withPrefix(`/authnz/logout?provider=${provider}`));
+                    idpLogoutUrl = `/authnz/logout?provider=${provider}`;
                 }
-                return axios.get(withPrefix("/authnz/logout"));
+                // The Galaxy session is already gone, so a failed IdP logout still ends on the logout page.
+                return axios.get(withPrefix(idpLogoutUrl)).catch((error) => {
+                    console.warn("Identity provider logout failed", error);
+                    return { data: {} };
+                });
             } else {
                 // Otherwise pass through the initial logout response
                 return response;
@@ -37,6 +44,9 @@ export function userLogout(logoutAll = false) {
             } else {
                 window.top.location.href = withPrefix(post_user_logout_href);
             }
+        })
+        .catch((error) => {
+            Toast.error(errorMessageAsString(error), "Logout failed");
         });
 }
 
