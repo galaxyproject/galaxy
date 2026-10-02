@@ -22,7 +22,7 @@ import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCr
 export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     const { isBusy } = storeToRefs(useUserToolsServiceCredentialsStore());
 
-    /** Map of tool credentials by tool key. */
+    /** Map of tool credentials by tool key. Shallow, so each entry keeps its computed refs unwrapped. */
     const userToolCredentialsByKey = shallowRef(new Map<string, ReturnType<typeof useUserToolCredentials>>());
 
     /** Initialize user tool credentials for each tool. */
@@ -80,28 +80,28 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     /** Whether some tools have required service credentials. */
     const someToolsHasRequiredServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.value.values()).some(
-            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials,
+            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value,
         );
     });
 
     /** Whether user has provided all service credentials for all tools. */
     const hasUserProvidedAllToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.value.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value,
         );
     });
 
     /** Whether user has provided all required service credentials for all tools. */
     const hasUserProvidedAllRequiredToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.value.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value,
         );
     });
 
     /** Whether user has provided some optional service credentials for any tools. */
     const hasUserProvidedSomeOptionalToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.value.values()).some(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value,
         );
     });
 
