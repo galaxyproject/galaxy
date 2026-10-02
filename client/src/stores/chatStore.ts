@@ -127,6 +127,8 @@ export const useChatStore = defineStore("chatStore", () => {
         newChatRequestCount.value++;
     }
 
+    const activeChatName = computed(() => chatHistory.value.find((h) => h.id === activeChatId.value)?.name ?? null);
+
     /** Returns the active chat id, falling back to the most recent history item, or null. */
     function resolveDockChatId(): string | null {
         return activeChatId.value ?? chatHistory.value[0]?.id ?? null;
@@ -143,6 +145,7 @@ export const useChatStore = defineStore("chatStore", () => {
         chatLocation,
         chatVisible,
         activeChatId,
+        activeChatName,
         isRightPanelOpen,
         isBottomPanelOpen,
         isCenterMode,
