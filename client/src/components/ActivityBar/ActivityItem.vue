@@ -162,6 +162,11 @@ const meta = computed(() => store.metaForId(props.id));
     &:deep(.variant-disabled) {
         color: $text-light;
     }
+
+    // BNavItem renders the link itself, so it doesn't carry this component's scope id
+    &:deep(.nav-link) {
+        padding: 0;
+    }
 }
 
 .nav-icon {
@@ -198,10 +203,6 @@ const meta = computed(() => store.metaForId(props.id));
 .nav-item-active {
     border-radius: $border-radius-extralarge;
     background: $gray-300;
-}
-
-.nav-link {
-    padding: 0;
 }
 
 .nav-options {
