@@ -104,7 +104,8 @@
             v-if="!!errors"
             variant="danger"
             show
-            class="node-error m-0 rounded-0 rounded-bottom"
+            class="node-error m-0 rounded-0"
+            :class="{ 'rounded-bottom': !hasTerminals }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
             @dblclick.exact="onDoubleClick"
@@ -113,7 +114,7 @@
         </GAlert>
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
-            v-else
+            v-if="!errors || hasTerminals"
             class="node-body position-relative card-body p-0 mx-2"
             :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
             @pointerdown.exact="onPointerDown"
@@ -354,6 +355,8 @@ const invocationStep = computed(() => props.step as GraphStep);
 const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
 });
+
+const hasTerminals = computed(() => inputs.value.length > 0 || outputs.value.length > 0);
 
 function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTerminals) {
     emit("onDragConnector", dragPosition, terminal);
