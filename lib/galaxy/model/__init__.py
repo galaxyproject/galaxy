@@ -4158,23 +4158,6 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             self._active_visible_datasets_and_roles = required_object_session(self).scalars(stmt).unique().all()
         return self._active_visible_datasets_and_roles
 
-    @property
-    def active_visible_dataset_collections(self):
-        if not hasattr(self, "_active_visible_dataset_collections"):
-            stmt = (
-                select(HistoryDatasetCollectionAssociation)
-                .where(HistoryDatasetCollectionAssociation.history_id == self.id)
-                .where(not_(HistoryDatasetCollectionAssociation.deleted))
-                .where(HistoryDatasetCollectionAssociation.visible)
-                .order_by(HistoryDatasetCollectionAssociation.hid.asc())
-                .options(
-                    joinedload(HistoryDatasetCollectionAssociation.collection),
-                    joinedload(HistoryDatasetCollectionAssociation.tags),
-                )
-            )
-            self._active_visible_dataset_collections = required_object_session(self).scalars(stmt).unique().all()
-        return self._active_visible_dataset_collections
-
     def paginated_active_visible_datasets(
         self,
         *,
