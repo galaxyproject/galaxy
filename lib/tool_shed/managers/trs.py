@@ -113,6 +113,7 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
     repo_metadata = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
     repository, metadata_by_version = repo_metadata
 
+    assert repository.user is not None
     repo_owner = repository.user.username
     aliases: list[str] = [guid]
     hostname = remove_protocol_and_user_from_clone_url(trans.repositories_hostname)

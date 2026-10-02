@@ -40,6 +40,7 @@ def generate_clone_url_for_repository_in_tool_shed(
 ) -> str:
     """Generate the URL for cloning a repository that is in the tool shed."""
     base_url = hostname or url_for("/", qualified=True).rstrip("/")
+    assert repository.user is not None
     return f"{base_url}/repos/{repository.user.username}/{repository.name}"
 
 

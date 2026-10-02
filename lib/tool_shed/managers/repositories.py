@@ -239,6 +239,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
     all_metadata: dict[str, Any] = {}
     for tool_id in tool_ids:
         repository = guid_to_repository(app, tool_id)
+        assert repository.user is not None
         owner = repository.user.username
         name = repository.name
         for changeset, changehash in repository.installable_revisions(app):
@@ -550,6 +551,7 @@ def reset_metadata_on_repository(
     ) -> tuple[dict[str, Any], dict[str, RepositoryMetadata]]:
         results: dict[str, Any] = dict(start_time=start_time, repository_status=[], dry_run=dry_run)
         regenerated_metadata: dict[str, RepositoryMetadata] = {}
+        assert repository.user is not None
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
                 trans,
@@ -625,6 +627,7 @@ def reset_metadata_on_repositories(
         trans: ProvidesRepositoriesContext, repository: Repository, results: dict[str, Any]
     ) -> dict[str, Any]:
         log.debug(f"Resetting metadata on repository {repository.name}")
+        assert repository.user is not None
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
                 trans,
@@ -721,7 +724,11 @@ def to_element_dict(app: ToolShedApp, repository: Repository, include_categories
     value_mapper = get_value_mapper(app)
     repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
     if include_categories:
-        repository_dict["category_ids"] = [app.security.encode_id(x.category.id) for x in repository.categories]
+        category_ids = []
+        for rca in repository.categories:
+            assert rca.category is not None
+            category_ids.append(app.security.encode_id(rca.category.id))
+        repository_dict["category_ids"] = category_ids
     return repository_dict
 
 
@@ -901,6 +908,7 @@ def add_admin_user(app: ToolShedApp, repository: Repository, username: str) -> l
 def remove_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
     """Revoke admin role from a user. Owner cannot be removed."""
     sa_session = app.model.session
+    assert repository.user is not None
     if username == repository.user.username:
         raise RequestParameterInvalidException("The repository owner cannot be removed from the admin role.")
     admin_role = repository.admin_role
