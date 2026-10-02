@@ -28,6 +28,7 @@ from .base import (
     extract_structured_output,
     extract_usage_info,
     GalaxyAgentDependencies,
+    is_url_reachable,
     normalize_llm_text,
 )
 from .gtn import GTNSearchDB
@@ -358,7 +359,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Difficulty: {difficulty}")
                 if time_estimation and time_estimation != "Unknown":
                     parts.append(f"   - Time: {time_estimation}")
-                parts.append(f"   - Link: {url}")
+                if is_url_reachable(url):
+                    parts.append(f"   - Link: {url}")
 
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
@@ -376,7 +378,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Category: {category}")
                 if area:
                     parts.append(f"   - Area: {area}")
-                parts.append(f"   - Link: {url}")
+                if is_url_reachable(url):
+                    parts.append(f"   - Link: {url}")
 
         if response_data.learning_path:
             parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")
@@ -397,28 +400,30 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         for tutorial in response_data.tutorials[:3]:
             title = tutorial.get("title", "Untitled Tutorial")
             url = tutorial.get("url", "#")
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.VIEW_EXTERNAL,
-                    description=f"Open tutorial: {title}",
-                    parameters={"url": url},
-                    confidence=ConfidenceLevel.HIGH,
-                    priority=1,
+            if is_url_reachable(url):
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.VIEW_EXTERNAL,
+                        description=f"Open tutorial: {title}",
+                        parameters={"url": url},
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
                 )
-            )
 
         for faq in response_data.faqs[:3]:
             title = faq.get("title", "Untitled FAQ")
             url = faq.get("url", "#")
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.VIEW_EXTERNAL,
-                    description=f"Open FAQ: {title}",
-                    parameters={"url": url},
-                    confidence=ConfidenceLevel.HIGH,
-                    priority=1 if not response_data.tutorials else 2,
+            if is_url_reachable(url):
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.VIEW_EXTERNAL,
+                        description=f"Open FAQ: {title}",
+                        parameters={"url": url},
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1 if not response_data.tutorials else 2,
+                    )
                 )
-            )
 
         topics: set[str] = set()
         for t in response_data.tutorials:
