@@ -269,9 +269,9 @@ function markNotificationAsSeen() {
                             <dt>Tool</dt>
                             <dd>{{ toolLabel(singleRequestedTool) }}</dd>
                         </template>
-                        <template v-for="row in singleToolDetailRows">
-                            <dt :key="`detail-dt-${row.label}`">{{ row.label }}</dt>
-                            <dd :key="`detail-dd-${row.label}`">
+                        <template v-for="row in singleToolDetailRows" :key="row.label">
+                            <dt>{{ row.label }}</dt>
+                            <dd>
                                 <span
                                     :class="{
                                         'text-break': row.breakText,
