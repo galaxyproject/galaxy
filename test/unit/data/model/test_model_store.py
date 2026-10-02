@@ -989,6 +989,31 @@ def test_import_export_composite_datasets(tmp_path):
     )
 
 
+def test_export_history_with_extra_files_but_no_primary_file(tmp_path):
+    # Regression test for https://github.com/galaxyproject/galaxy/issues/20678
+    app = _mock_app()
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+
+    d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
+    d1.state = model.Dataset.states.PAUSED
+    app.add_and_commit(h, d1)
+
+    app.write_composite_file(d1, "partial output", "child_file")
+    assert not os.path.exists(d1.get_file_name())
+    assert d1.extra_files_path_exists()
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
+        export_store.export_history(h)
+
+    import_history = model.History(name="Test History for Import", user=u)
+    app.add_and_commit(import_history)
+    _perform_import_from_directory(tmp_path, app, u, import_history)
+    assert len(import_history.datasets) == 1
+
+
 def _assert_extra_files_has_parent_directory_with_single_file_containing(
     dataset, expected_file_name, expected_contents
 ):
