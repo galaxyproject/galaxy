@@ -1,0 +1,19 @@
+- id: xrootd
+  version: 0
+  name: XRootD
+  description: |
+      Browse and import files from an XRootD server. This connection is read-only.
+      The server must be reachable from Galaxy and allow access without additional credentials.
+  variables:
+      hostid:
+          label: Server address
+          type: string
+          help: Hostname and optional port, for example localhost:1094, without root:// or a path.
+      root:
+          label: Root directory
+          type: string
+          help: Absolute directory path on the server, for example /Folder.
+  configuration:
+      type: xrootd
+      hostid: "{{ variables.hostid }}"
+      root: "{{ variables.root }}"
