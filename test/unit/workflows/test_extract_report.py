@@ -10,6 +10,7 @@ Covers the three pure pieces independently of a running server:
 The full markdown walk against real datasets/jobs is proved by the API test.
 """
 
+from datetime import datetime
 from types import SimpleNamespace
 from typing import cast
 
@@ -24,6 +25,7 @@ from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
 from galaxy.model import (
     Job,
+    StoredWorkflow,
     User,
 )
 from galaxy.workflow import extract
@@ -50,12 +52,16 @@ class FakeIndex:
         return self._job_args.get(job.id)
 
 
+def _rewriter(**index_args) -> _ReportLabelRewriter:
+    return _ReportLabelRewriter(cast(ExtractionLabelIndex, FakeIndex(**index_args)))
+
+
 def _hda(id_):
     return SimpleNamespace(id=id_)
 
 
 def test_rewrite_dataset_to_output_label():
-    rewriter = _ReportLabelRewriter(FakeIndex(content_args={("hda", 7): 'output="aligned"'}))
+    rewriter = _rewriter(content_args={("hda", 7): 'output="aligned"'})
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
     assert line == 'history_dataset_display(output="aligned")\n'
     assert whole_block is False
@@ -63,7 +69,7 @@ def test_rewrite_dataset_to_output_label():
 
 
 def test_rewrite_dataset_preserves_other_args():
-    rewriter = _ReportLabelRewriter(FakeIndex(content_args={("hda", 7): 'output="aligned"'}))
+    rewriter = _rewriter(content_args={("hda", 7): 'output="aligned"'})
     line, _ = rewriter.handle_dataset_as_table(
         'history_dataset_as_table(history_dataset_id=abc123, title="Peek")\n', _hda(7)
     )
@@ -71,7 +77,7 @@ def test_rewrite_dataset_preserves_other_args():
 
 
 def test_rewrite_collection_to_input_label():
-    rewriter = _ReportLabelRewriter(FakeIndex(content_args={("hdca", 5): 'input="samples"'}))
+    rewriter = _rewriter(content_args={("hdca", 5): 'input="samples"'})
     line, _ = rewriter.handle_dataset_collection_display(
         "history_dataset_collection_display(history_dataset_collection_id=def456)\n", _hda(5)
     )
@@ -79,13 +85,13 @@ def test_rewrite_collection_to_input_label():
 
 
 def test_rewrite_job_to_step_label():
-    rewriter = _ReportLabelRewriter(FakeIndex(job_args={9: 'step="bwa_mem"'}))
-    line, _ = rewriter.handle_job_metrics("job_metrics(job_id=abc123)\n", SimpleNamespace(id=9))
+    rewriter = _rewriter(job_args={9: 'step="bwa_mem"'})
+    line, _ = rewriter.handle_job_metrics("job_metrics(job_id=abc123)\n", cast(Job, SimpleNamespace(id=9)))
     assert line == 'job_metrics(step="bwa_mem")\n'
 
 
 def test_unresolved_content_dropped_with_warning():
-    rewriter = _ReportLabelRewriter(FakeIndex())
+    rewriter = _rewriter()
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
     assert line == ""
     assert whole_block is True
@@ -93,16 +99,18 @@ def test_unresolved_content_dropped_with_warning():
 
 
 def test_unportable_directive_dropped_with_warning():
-    rewriter = _ReportLabelRewriter(FakeIndex())
-    line, whole_block = rewriter.handle_workflow_display("workflow_display(workflow_id=abc123)\n", object(), None)
+    rewriter = _rewriter()
+    line, whole_block = rewriter.handle_workflow_display(
+        "workflow_display(workflow_id=abc123)\n", cast(StoredWorkflow, object()), None
+    )
     assert line == ""
     assert whole_block is True
     assert "cannot be expressed" in rewriter.warnings[0]
 
 
 def test_idless_directive_passthrough():
-    rewriter = _ReportLabelRewriter(FakeIndex())
-    line, whole_block = rewriter.handle_generate_time("generate_time()\n", None)
+    rewriter = _rewriter()
+    line, whole_block = rewriter.handle_generate_time("generate_time()\n", datetime.now())
     assert line == "generate_time()\n"
     assert whole_block is False
     assert rewriter.warnings == []
