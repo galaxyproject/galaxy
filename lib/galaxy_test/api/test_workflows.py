@@ -1226,7 +1226,7 @@ steps:
         refactor_response.raise_for_status()
 
         previous_version = self.workflow_populator.download_workflow(workflow_id, version=0)
-        # upgrade used to also rewrite the source version's steps in place
+        # the source version keeps its steps
         assert previous_version["steps"]["0"]["tool_version"] == "0.1"
         latest_version = self.workflow_populator.download_workflow(workflow_id, version=1)
         assert latest_version["steps"]["0"]["tool_version"] == "0.2"
@@ -1323,6 +1323,31 @@ steps:
         assert len(self._workflow_versions(workflow_id)) == 2
         assert left_offset(self.workflow_populator.download_workflow(workflow_id, version=0)) == offset
         assert left_offset(self.workflow_populator.download_workflow(workflow_id)) == offset - 3
+
+    def test_refactor_annotation_reports_changed(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+doc: the annotation
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    state:
+      inttest: 0
+""")
+        same_annotation = [{"action_type": "update_annotation", "annotation": "the annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, same_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is False
+        assert len(self._workflow_versions(workflow_id)) == 1
+
+        new_annotation = [{"action_type": "update_annotation", "annotation": "a new annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, new_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert self.workflow_populator.download_workflow(workflow_id)["annotation"] == "a new annotation"
 
     def test_refactor_noop_saves_pending_tool_substitution(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
