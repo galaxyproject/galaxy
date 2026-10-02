@@ -86,6 +86,11 @@ const styleClasses = computed(() => {
 });
 
 const baseComponent = useClickableElement(props);
+
+// Only a plain anchor takes our href. A RouterLink builds its own, including the router
+// base Galaxy may be served under, and any `href` key passed down -- even undefined --
+// replaces it.
+const anchorAttributes = computed(() => (baseComponent.value === "a" ? { href: props.href } : {}));
 const currentTitle = useCurrentTitle(props);
 
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
@@ -110,11 +115,10 @@ const buttonElementRef = useResolveElement(buttonRef);
         :data-title="currentTitle"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
-        :href="!props.disabled ? (props.to ?? props.href) : ''"
         :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled || undefined"
-        v-bind="$attrs"
+        v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick"
         @click.native="onClick">
         <slot></slot>
