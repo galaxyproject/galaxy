@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { rankBySearch } from "@/utils/searchRanking";
 import { uid } from "@/utils/utils";
 
 const props = defineProps({
@@ -41,6 +42,15 @@ const props = defineProps({
 
 const emit = defineEmits(["input"]);
 
+const searchQuery = ref("");
+
+/** Options filtered by the search query, with exact and prefix matches listed first. */
+const rankedOptions = computed(() => rankBySearch(props.options, searchQuery.value, "text"));
+
+function onSearchChange(query) {
+    searchQuery.value = query;
+}
+
 const currentValue = computed({
     get: () => props.options.find((option) => option.id === props.value),
     set(newValue) {
@@ -60,12 +70,14 @@ const currentValue = computed({
         deselect-label=""
         :disabled="disabled"
         :searchable="searchable"
+        :internal-search="false"
         label="text"
-        :options="options"
+        :options="rankedOptions"
         :placeholder="placeholder"
         select-label=""
         selected-label=""
-        track-by="id">
+        track-by="id"
+        @search-change="onSearchChange">
         <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
         <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
             {{ option.text }}
