@@ -62,6 +62,7 @@ from .tool_source import (
     ContainerRequirement,
     HelpContent,
     JavascriptRequirement,
+    MarkdownHelpContent,
     OutputCompareType,
     PackageRequirement,
     ResourceRequirement,
@@ -430,6 +431,14 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # Pydantic intentionally narrows the mutable base-model list so the
     # user-tool schema exposes only dataset and collection outputs.
     outputs: UserToolOutputs  # type: ignore[assignment]
+    # User-defined tool help is author text, so it is limited to Markdown, which
+    # the client renders without raw HTML.
+    help: Annotated[
+        Optional[MarkdownHelpContent],
+        Field(
+            description="Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`."
+        ),
+    ] = None
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
@@ -674,6 +683,17 @@ def _drop_parameter_validators(parameter: Dict[str, Any], path: str, dropped: Li
     _drop_unsupported_validators(parameter.get("parameters"), f"{path}.parameters", dropped)
 
 
+def _help_as_markdown(value: Dict[str, Any], lifted: List[str]) -> None:
+    """Relabel, in place, help in a format user-defined tools no longer accept as Markdown."""
+    help_content = value.get("help")
+    if isinstance(help_content, dict) and (help_format := help_content.get("format")) in (
+        "restructuredtext",
+        "plain_text",
+    ):
+        help_content["format"] = "markdown"
+        lifted.append(f"help.format ({help_format} help is shown as Markdown)")
+
+
 def lift_user_tool_source(
     value: dict,
 ) -> Tuple[LiftStatus, Union["UserToolSource", Dict[str, Any]], List[str]]:
@@ -688,15 +708,16 @@ def lift_user_tool_source(
         errors = e.errors()
 
     stripped = copy.deepcopy(value)
-    dropped_validators: List[str] = []
-    _drop_unsupported_validators(stripped.get("inputs"), "inputs", dropped_validators)
-    if dropped_validators:
+    rewritten: List[str] = []
+    _drop_unsupported_validators(stripped.get("inputs"), "inputs", rewritten)
+    _help_as_markdown(stripped, rewritten)
+    if rewritten:
         try:
-            return ("lifted", UserToolSource.model_validate(stripped), dropped_validators)
+            return ("lifted", UserToolSource.model_validate(stripped), rewritten)
         except ValidationError as e:
             errors = e.errors()
 
-    dropped = list(dropped_validators)
+    dropped = list(rewritten)
 
     extra_forbidden = [err for err in errors if err.get("type") == "extra_forbidden"]
     other = [err for err in errors if err.get("type") != "extra_forbidden"]
@@ -711,7 +732,7 @@ def lift_user_tool_source(
             errors = e2.errors()
 
     summary = [f"{_format_loc(stripped, tuple(err['loc']))}: {err.get('msg', err.get('type', ''))}" for err in errors]
-    return ("invalid", value, dropped_validators + summary)
+    return ("invalid", value, rewritten + summary)
 
 
 class ParsedTool(ToolSourceBaseModel):

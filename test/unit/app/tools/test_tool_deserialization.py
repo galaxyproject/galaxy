@@ -10,6 +10,7 @@ from galaxy.tool_util.provided_metadata import (
     NullToolProvidedMetadata,
     ToolProvidedMetadata,
 )
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import create_tool_from_source
 
 XML_TOOL = """
@@ -122,6 +123,10 @@ USER_DEFINED_TOOL_WITH_METADATA_DISCOVERY = USER_DEFINED_TOOL.replace(
     discover_datasets:
       - discover_via: tool_provided_metadata""",
 )
+USER_DEFINED_TOOL_WITH_RST_HELP = USER_DEFINED_TOOL + """help:
+  format: restructuredtext
+  content: "**user tool help**"
+"""
 USER_DEFINED_TOOL_SPOOFING_UPLOAD = USER_DEFINED_TOOL.replace("id: samtools-reference", "id: upload1")
 
 
@@ -355,6 +360,11 @@ def test_user_defined_tool_cannot_enable_tool_provided_metadata(tool_app, tmp_pa
     assert not tool.tool_source.allows_tool_provided_metadata()
     assert not tool.uses_tool_provided_metadata
     assert isinstance(metadata, NullToolProvidedMetadata)
+
+
+def test_user_defined_tool_rst_help_is_markdown(tool_app):
+    tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=USER_DEFINED_TOOL_WITH_RST_HELP)
+    assert tool.raw_help == HelpContent(format="markdown", content="**user tool help**")
 
 
 def test_deserialize_cwl_tool(tool_app):

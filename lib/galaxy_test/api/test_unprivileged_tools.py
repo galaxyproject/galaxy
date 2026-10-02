@@ -70,6 +70,19 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
         assert response
 
+    def test_build_rejects_rst_help(self):
+        representation = {**TOOL_WITH_SHELL_COMMAND, "help": {"format": "restructuredtext", "content": "**help**"}}
+        payload = {"src": "representation", "representation": representation}
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            response = self.dataset_populator._post(
+                f"unprivileged_tools/build?history_id={history_id}", data=payload, json=True
+            )
+        assert response.status_code == 400, response.text
+        assert "markdown" in response.text
+
     def test_build_runtime_model(self):
         with self.dataset_populator.user_tool_execute_permissions():
             response = self.dataset_populator.build_runtime_model_for_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))

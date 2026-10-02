@@ -1504,7 +1504,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.raw_help = None
 
         if self.app.is_webapp:
-            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
+            self.raw_help = self._parse_help(tool_source)
             self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
@@ -2136,6 +2136,9 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         If multiple bio.tools references are found, return just the first one.
         """
         return biotools_reference(self.xrefs)
+
+    def _parse_help(self, tool_source: ToolSource) -> Optional[HelpContent]:
+        return self.__get_help_with_images(tool_source.parse_help())
 
     def __get_help_with_images(self, help_content: Optional[HelpContent]) -> Optional[HelpContent]:
         if help_content and help_content.format == "restructuredtext":
@@ -3154,19 +3157,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
         if tool_help:
-            # create tool help
-            help_txt = ""
-            help_format = "restructuredtext"
+            # The toolbox index returns this for every tool at once, so help is
+            # returned as written rather than rendered.
             help_content = self.raw_help
-            if help_content:
-                help_format = help_content.format
-                if help_format == "restructuredtext":
-                    help_txt = self.render_help(
-                        static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
-                    )
-
-            tool_dict["help"] = help_txt
-            tool_dict["help_format"] = help_format
+            tool_dict["help"] = help_content.content if help_content else ""
+            tool_dict["help_format"] = help_content.format if help_content else "restructuredtext"
 
         return tool_dict
 
@@ -3532,6 +3527,14 @@ class UserDefinedTool(Tool):
                 f"{'; '.join(self.dropped_representation_fields)}. Edit the tool and save it again to remove them."
             )
         return tool_model
+
+    def _parse_help(self, tool_source: ToolSource) -> Optional[HelpContent]:
+        # Help is author text and is only ever rendered as Markdown, including
+        # stored tools whose help declares another format.
+        help_content = tool_source.parse_help()
+        if help_content and help_content.format != "markdown":
+            help_content = HelpContent(format="markdown", content=help_content.content)
+        return help_content
 
 
 class ExpressionTool(Tool):

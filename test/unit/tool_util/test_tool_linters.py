@@ -204,6 +204,14 @@ HELP_INVALID_RST = """
 </tool>
 """
 
+HELP_RST_INCLUDE = """
+<tool id="id" name="name">
+    <help>
+.. include:: /nonexistent/help.rst
+    </help>
+</tool>
+"""
+
 HELP_MARKDOWN_INVALID_RST = """
 <tool id="id" name="name">
     <help format="markdown">
@@ -1482,6 +1490,16 @@ def test_help_invalid_rst(lint_ctx):
     assert len(lint_ctx.valid_messages) == 1
     assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
+
+
+def test_help_rst_include_disabled(lint_ctx):
+    tool_source = get_xml_tool_source(HELP_RST_INCLUDE)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert (
+        'Invalid reStructuredText found in help - [<string>:2: (WARNING/2) "include" directive disabled.\n].'
+        in lint_ctx.warn_messages
+    )
+    assert len(lint_ctx.warn_messages) == 1
 
 
 def test_help_markdown_skips_rst_validation(lint_ctx):

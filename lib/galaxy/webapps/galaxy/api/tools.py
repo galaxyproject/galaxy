@@ -459,6 +459,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param q: if present search on the given query will be performed
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
+        :param tool_help: if true, include each tool's help as written (``help``)
+                          and its format (``help_format``)
         """
 
         # Read params.
