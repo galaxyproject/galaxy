@@ -88,7 +88,7 @@
     "@vueuse/shared": "^11.3.0",
     "ace-builds": "^1.39.0",
     "ag-grid-community": "^30",
-    "ag-grid-vue": "^30",
+    "ag-grid-vue3": "~30.2.1",
     "assert": "^2.1.0",
     "axios": "^1.6.2",
     "bootstrap": "4.6",

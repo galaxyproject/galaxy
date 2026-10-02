@@ -8,12 +8,12 @@
         :options="options"
         :multiple="multiple"
         :placeholder="placeholder || 'Select an option'"
-        :value="selectedValue"
+        :model-value="selectedValue"
         deselect-label=""
         label="text"
         select-label=""
         track-by="id"
-        @input="onInput" />
+        @update:model-value="onInput" />
 </template>
 
 <script setup>
