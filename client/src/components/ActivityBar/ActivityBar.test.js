@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, emittedArg, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useActivityStore } from "@/stores/activityStore";
@@ -27,6 +27,18 @@ vi.mock("vue-router", () => ({
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
+
+// shallowMount stubs draggable without rendering its scoped item slot, so render it ourselves.
+const draggableStub = {
+    compatConfig: { MODE: 3 },
+    props: ["modelValue"],
+    render() {
+        return h(
+            "div",
+            (this.modelValue || []).flatMap((element, index) => this.$slots.item({ element, index })),
+        );
+    },
+};
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
@@ -61,7 +73,7 @@ describe("ActivityBar", () => {
             }),
         );
         wrapper = shallowMount(mountTarget, {
-            global: localVue,
+            global: { ...localVue, stubs: { draggable: draggableStub } },
             pinia,
         });
     });
@@ -100,6 +112,7 @@ describe("ActivityBar", () => {
             mockUnprivilegedToolsRequest(server, http);
             const testWrapper = shallowMount(mountTarget, {
                 localVue,
+                stubs: { draggable: draggableStub },
                 pinia,
                 propsData: { activityBarId },
             });

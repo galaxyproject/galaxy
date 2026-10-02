@@ -6,8 +6,8 @@ import { BNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import draggable from "vuedraggable";
 
+import draggable from "@/components/Common/SortableList";
 import { useConfig } from "@/composables/config";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { convertDropData } from "@/stores/activitySetup";
@@ -314,6 +314,7 @@ defineExpose({
             <BNav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     v-model="activities"
+                    item-key="id"
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :disabled="!canDrag"
                     :force-fallback="true"
@@ -323,70 +324,69 @@ defineExpose({
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div
-                        v-for="(activity, activityIndex) in activities"
-                        :key="activityIndex"
-                        :class="{ 'activity-can-drag': canDrag }">
-                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
-                            <UploadItem
-                                v-if="activity.id === 'upload'"
-                                :id="`${activity.id}`"
-                                :key="activity.id"
-                                :activity-bar-id="props.activityBarId"
-                                :icon="activity.icon"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip" />
-                            <InteractiveItem
-                                v-else-if="activity.to && activity.id === 'interactivetools'"
-                                :id="`${activity.id}`"
-                                :key="activity.id"
-                                :activity-bar-id="props.activityBarId"
-                                :icon="activity.icon"
-                                :is-active="panelActivityIsActive(activity)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="toggleSidebar(activity.id, activity.to)" />
-                            <ActivityItem
-                                v-else-if="activity.id === 'galaxyai'"
-                                :id="`${activity.id}`"
-                                :key="activity.id"
-                                :activity-bar-id="props.activityBarId"
-                                :icon="activity.icon"
-                                :is-active="panelActivityIsActive(activity)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onChatGxyClick" />
-                            <ActivityItem
-                                v-else-if="activity.panel"
-                                :id="`${activity.id}`"
-                                :key="activity.id"
-                                :activity-bar-id="props.activityBarId"
-                                :icon="activity.icon"
-                                :indicator="activity.indicator"
-                                :indicator-variant="activity.indicatorVariant"
-                                :is-active="panelActivityIsActive(activity)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to || ''"
-                                @click="toggleSidebar(activity.id, activity.to)" />
-                            <ActivityItem
-                                v-else
-                                :id="`${activity.id}`"
-                                :key="activity.id"
-                                :indicator="activity.indicator"
-                                :indicator-variant="activity.indicatorVariant"
-                                :activity-bar-id="props.activityBarId"
-                                :icon="activity.icon"
-                                :is-active="isActiveRoute(activity.to)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to ?? undefined"
-                                :variant="activity.variant"
-                                :window-title="activity.windowTitle"
-                                @click="onActivityClicked(activity)" />
+                    <template v-slot:item="{ element: activity }">
+                        <div :class="{ 'activity-can-drag': canDrag }">
+                            <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
+                                <UploadItem
+                                    v-if="activity.id === 'upload'"
+                                    :id="`${activity.id}`"
+                                    :key="activity.id"
+                                    :activity-bar-id="props.activityBarId"
+                                    :icon="activity.icon"
+                                    :title="activity.title"
+                                    :tooltip="activity.tooltip" />
+                                <InteractiveItem
+                                    v-else-if="activity.to && activity.id === 'interactivetools'"
+                                    :id="`${activity.id}`"
+                                    :key="activity.id"
+                                    :activity-bar-id="props.activityBarId"
+                                    :icon="activity.icon"
+                                    :is-active="panelActivityIsActive(activity)"
+                                    :title="activity.title"
+                                    :tooltip="activity.tooltip"
+                                    :to="activity.to"
+                                    @click="toggleSidebar(activity.id, activity.to)" />
+                                <ActivityItem
+                                    v-else-if="activity.id === 'galaxyai'"
+                                    :id="`${activity.id}`"
+                                    :key="activity.id"
+                                    :activity-bar-id="props.activityBarId"
+                                    :icon="activity.icon"
+                                    :is-active="panelActivityIsActive(activity)"
+                                    :title="activity.title"
+                                    :tooltip="activity.tooltip"
+                                    @click="onChatGxyClick" />
+                                <ActivityItem
+                                    v-else-if="activity.panel"
+                                    :id="`${activity.id}`"
+                                    :key="activity.id"
+                                    :activity-bar-id="props.activityBarId"
+                                    :icon="activity.icon"
+                                    :indicator="activity.indicator"
+                                    :indicator-variant="activity.indicatorVariant"
+                                    :is-active="panelActivityIsActive(activity)"
+                                    :title="activity.title"
+                                    :tooltip="activity.tooltip"
+                                    :to="activity.to || ''"
+                                    @click="toggleSidebar(activity.id, activity.to)" />
+                                <ActivityItem
+                                    v-else
+                                    :id="`${activity.id}`"
+                                    :key="activity.id"
+                                    :indicator="activity.indicator"
+                                    :indicator-variant="activity.indicatorVariant"
+                                    :activity-bar-id="props.activityBarId"
+                                    :icon="activity.icon"
+                                    :is-active="isActiveRoute(activity.to)"
+                                    :title="activity.title"
+                                    :tooltip="activity.tooltip"
+                                    :to="activity.to ?? undefined"
+                                    :variant="activity.variant"
+                                    :window-title="activity.windowTitle"
+                                    @click="onActivityClicked(activity)" />
+                            </div>
                         </div>
-                    </div>
+                    </template>
                 </draggable>
             </BNav>
             <ActivityBarSeparator />

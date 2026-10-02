@@ -3,9 +3,9 @@ import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
-import draggable from "vuedraggable";
 
 import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
+import draggable from "@/components/Common/SortableList";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -642,19 +642,20 @@ function selectionAsHdaSummary(value: any): HDASummary {
 
                         <draggable
                             v-model="workingElements"
+                            item-key="id"
                             class="collection-elements scroll-container flex-row drop-zone"
                             chosen-class="bg-secondary">
-                            <DatasetCollectionElementView
-                                v-for="element in workingElements"
-                                :key="element.id"
-                                :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
-                                :element="element"
-                                has-actions
-                                :selected="getSelectedDatasetElements.includes(element.id)"
-                                :show-hid="showHid"
-                                @element-is-selected="elementSelected"
-                                @element-is-discarded="elementDiscarded"
-                                @onRename="(name: string) => (element.name = name)" />
+                            <template v-slot:item="{ element }">
+                                <DatasetCollectionElementView
+                                    :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
+                                    :element="element"
+                                    has-actions
+                                    :selected="getSelectedDatasetElements.includes(element.id)"
+                                    :show-hid="showHid"
+                                    @element-is-selected="elementSelected"
+                                    @element-is-discarded="elementDiscarded"
+                                    @onRename="(name: string) => (element.name = name)" />
+                            </template>
                         </draggable>
                     </div>
 
