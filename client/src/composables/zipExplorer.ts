@@ -11,7 +11,7 @@ import {
     ZipExplorer,
     type ZipFileEntry,
 } from "ro-crate-zip-explorer";
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { defaultModel, type FileStream } from "@/components/Upload/model";
@@ -20,7 +20,7 @@ import { buildUploadPayload, type LocalFileUploadItem, submitUpload } from "@/ut
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
-const zipExplorer = ref<IZipExplorer>();
+const zipExplorer = shallowRef<IZipExplorer>();
 const zipExplorerError = ref<string>();
 
 export function useZipExplorer() {
