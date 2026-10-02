@@ -234,6 +234,12 @@ class WebApplication:
             # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
             environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
+        # Parse the request parameters up front so that a malformed body
+        # (e.g. multipart with an empty boundary) is a 400 rather than a 500.
+        try:
+            Request(environ).params.mixed()
+        except ValueError as e:
+            raise webob.exc.HTTPBadRequest(f"Malformed request body: {e}")
         # Setup the transaction
         trans = self.transaction_factory(environ)
         trans.request_id = request_id
