@@ -76,7 +76,7 @@ describe("DatasetDetails", () => {
             server.use(
                 mswHttp.get("/api/jobs/:job_id", () => {
                     jobRequests += 1;
-                    wrapper.destroy();
+                    wrapper.unmount();
                     return HttpResponse.error();
                 }),
             );

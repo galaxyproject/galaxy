@@ -569,7 +569,7 @@ describe("Index", () => {
             return { wrapper, stepIds };
         }
 
-        function emitDataChanged(wrapper: Wrapper<Vue>, stepId: number, data: object) {
+        function emitDataChanged(wrapper: VueWrapper, stepId: number, data: object) {
             wrapper.findComponent(NodeInspector).vm.$emit("dataChanged", stepId, data);
         }
 

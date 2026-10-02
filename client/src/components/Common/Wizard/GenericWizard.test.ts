@@ -15,7 +15,7 @@ const Host = defineComponent({
         const wizard = useWizard({
             only: { label: "Only step", instructions: "Do it", isValid: () => true, isSkippable: () => false },
         });
-        return () => h(GenericWizard, { props: { use: wizard, description: props.description } });
+        return () => h(GenericWizard, { use: wizard, description: props.description });
     },
 });
 
