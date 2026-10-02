@@ -1118,6 +1118,30 @@ OUTPUTS_FORMAT_SOURCE_NESTED_DATA_MISSING = """
 </tool>
 """
 
+OUTPUTS_FORMAT_SOURCE_DISCOVERED_LEGACY = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <param name="input1" type="data" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="discovered" type="list" format_source="input1">
+            <discover_datasets pattern="__name__" />
+        </collection>
+        <collection name="static" type="paired" format_source="input1">
+            <data name="forward" />
+            <data name="reverse" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
 # tool xml for repeats linter
 REPEATS = """
 <tool id="id" name="name">
@@ -2727,6 +2751,20 @@ def test_outputs_format_source_nested_data_missing(lint_ctx):
     assert (
         "Output 'reverse' references format_source='input2' which does not match any input parameter."
         in lint_ctx.error_messages
+    )
+    assert len([m for m in lint_ctx.error_messages if "format_source" in m.message]) == 1
+
+
+def test_outputs_format_source_discovered_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_DISCOVERED_LEGACY)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'discovered' uses unqualified format_source='input1', which discovered elements cannot resolve. Use the qualified name 'cond|input1'."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Output 'static' uses unqualified format_source='input1'. Use the qualified name 'cond|input1'."
+        in lint_ctx.warn_messages
     )
     assert len([m for m in lint_ctx.error_messages if "format_source" in m.message]) == 1
 

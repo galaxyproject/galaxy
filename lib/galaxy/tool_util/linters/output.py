@@ -269,7 +269,7 @@ class OutputsStructuredLikeReference(Linter):
         if not tool_xml:
             return
         input_references = _InputReferences(tool_xml)
-        profile = Version(tool_xml.getroot().attrib.get("profile", "16.01"))
+        profile = Version(tool_source.parse_profile())
         for output in tool_xml.findall("./outputs/collection[@structured_like]"):
             _check_structured_like_reference(
                 lint_ctx, cls.name(), output, output.attrib["structured_like"], input_references, profile
@@ -393,6 +393,17 @@ def _check_format_source_reference(
     matches = input_references.qualified(normalized)
     if not matches:
         matches = [r for r in input_references.references if r.legacy == normalized]
+        if matches and node.tag == "collection" and node.find("discover_datasets") is not None:
+            # Discovered elements resolve format_source against the job's input associations,
+            # which are keyed by qualified name only.
+            qualified_names = " or ".join(f"'{name}{selector}'" for name in sorted({r.qualified for r in matches}))
+            lint_ctx.error(
+                f"Output '{_output_name(node)}' uses unqualified format_source='{ref_value}', which discovered "
+                f"elements cannot resolve. Use the qualified name {qualified_names}.",
+                linter=linter_name,
+                node=node,
+            )
+            return
         _warn_unqualified(lint_ctx, linter_name, node, ref_value, "format_source", matches, selector)
     if not matches:
         _error_unmatched(
