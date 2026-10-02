@@ -28,7 +28,7 @@
     <outputs>
         <data name="output1" format_source="cond|input1"/><!-- format_source should work for both cases -->
         <data name="output2" format_source="cond|inner_cond|input1"/><!-- format_source should only work for "extra_nesting" -->
-        <data name="output3" format_source="input1"/><!-- format_source with legacy behavior -->
+        <data name="output3" format_source="input1"/><!-- format_source with legacy behavior, remove in future profile version (#23902) -->
     </outputs>
     <tests>
         <test>
