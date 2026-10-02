@@ -992,6 +992,27 @@ OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_PROFILE_26 = """
 </tool>
 """
 
+OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_DEEP = """
+<tool id="id" name="name">
+    <inputs>
+        <section name="outer" title="Outer">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="paired">Paired</option>
+                </param>
+                <when value="paired">
+                    <param name="input1" type="data_collection" collection_type="paired" format="data" />
+                </when>
+            </conditional>
+        </section>
+    </inputs>
+    <outputs>
+        <collection name="deep_output" structured_like="input1" type="paired" inherit_format="true" />
+        <collection name="alias_output" structured_like="outer|input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
 OUTPUTS_STRUCTURED_LIKE_REPEAT = """
 <tool id="id" name="name">
     <inputs>
@@ -2677,6 +2698,20 @@ def test_outputs_structured_like_unqualified_profile_26(lint_ctx):
         "Output 'list_output' references structured_like='input1' which does not match any input parameter. Did you mean 'cond|input1'?"
         in lint_ctx.error_messages
     )
+
+
+def test_outputs_structured_like_unqualified_deep(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_DEEP)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'deep_output' references structured_like='input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Output 'alias_output' references structured_like='outer|input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert "structured_like" not in lint_ctx.warn_messages
 
 
 def test_outputs_structured_like_repeat(lint_ctx):

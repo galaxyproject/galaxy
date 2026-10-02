@@ -426,13 +426,14 @@ def _check_structured_like_reference(
     input_references: _InputReferences,
     profile: Version,
 ) -> None:
-    # Mapped-over executions resolve structured_like by walking the nested input state
-    # (execute.py sliced_input_collection_structure): qualified paths only, no repeats,
-    # and a bare name searched at any depth before profile 26.0.
+    # A reference must resolve both when mapping over (execute.py sliced_input_collection_structure:
+    # qualified paths only, no repeats, a bare name at any depth before profile 26.0) and when not
+    # (collection_prototype: qualified paths or the legacy alias). Only a bare name whose legacy
+    # alias matches satisfies both before profile 26.0.
     normalized = input_references.normalize(ref_value)
     matches = input_references.qualified(normalized)
     if not matches and "|" not in ref_value and profile < Version("26.0"):
-        matches = [r for r in input_references.references if r.name == ref_value and not r.in_repeat]
+        matches = [r for r in input_references.references if r.legacy == ref_value]
         _warn_unqualified(lint_ctx, linter_name, node, ref_value, "structured_like", matches, "")
     if not matches:
         _error_unmatched(lint_ctx, linter_name, node, ref_value, "structured_like", input_references, normalized, "")
