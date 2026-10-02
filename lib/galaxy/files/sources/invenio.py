@@ -146,8 +146,7 @@ def calculate_multipart_params(file_size: int, preferred_part_size: int | None =
     part_size = max(part_size, math.ceil(file_size / MAX_UPLOAD_PARTS))
     part_size = min(part_size, MAX_UPLOAD_PART_SIZE)
 
-    max_upload_size = MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE
-    if file_size > max_upload_size:
+    if file_size > (max_upload_size := MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE):
         raise ValueError(
             f"File size {file_size} bytes exceeds the maximum multipart upload size "
             f"of {max_upload_size} bytes ({MAX_UPLOAD_PARTS} parts x {MAX_UPLOAD_PART_SIZE} bytes)."

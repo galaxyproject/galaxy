@@ -256,8 +256,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
         if self.access_key:
             kwds["aws_access_key_id"] = self.access_key
             kwds["aws_secret_access_key"] = self.secret_key
-        config_kwargs = s3_checksum_config_kwargs(self.endpoint_url)
-        if config_kwargs:
+        if config_kwargs := s3_checksum_config_kwargs(self.endpoint_url):
             kwds["config"] = Config(**config_kwargs)
         return kwds
 

@@ -228,8 +228,7 @@ def _build_managers(data_manager_conf: str) -> list[ManagerDecl]:
 def _raw_column_spec(table_elem: Element) -> tuple[tuple[str, ...], dict[str, int]]:
     """Return ordered names and the loader's parsed name-to-index map."""
     columns, _, _ = TabularToolDataTable.parse_column_spec_element(table_elem)
-    columns_elem = table_elem.find("columns")
-    if columns_elem is not None:
+    if (columns_elem := table_elem.find("columns")) is not None:
         column_names = tuple(name.strip() for name in xml_text(columns_elem).split(","))
     else:
         column_names = tuple(

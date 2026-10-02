@@ -1303,8 +1303,7 @@ def determine_output_format(
             except Exception:
                 pass
         ext = random_input_ext
-    format_source = output.format_source
-    if format_source is not None:
+    if (format_source := output.format_source) is not None:
         ext = resolve_format_source(format_source, input_datasets, input_dataset_collections, ext, execution_cache)
 
     # process change_format tags

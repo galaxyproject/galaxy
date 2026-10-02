@@ -734,8 +734,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             "content-type": "application/octet-stream",
             "Content-Disposition": datatype.content_disposition(dataset_instance, to_ext),
         }
-        size = trans.app.object_store.size(dataset_instance.dataset)
-        if size:
+        if size := trans.app.object_store.size(dataset_instance.dataset):
             # Known up front from the store's metadata, so clients still get a progress bar.
             headers["Content-Length"] = str(size)
         # Opened last so that nothing between here and the response can fail with a read already in

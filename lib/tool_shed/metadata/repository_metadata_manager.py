@@ -598,7 +598,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             # The tool did not change through all of the changeset revisions.
             return old_id
 
-    def get_repositories_for_setting_metadata(self, my_writable=False, order=True):
+    def get_repositories_for_setting_metadata(
+        self, my_writable: bool = False, order: bool = True
+    ) -> "ScalarResult[Repository] | list[Repository]":
         """
         Return a list of repositories for resetting metadata.  The order parameter
         is used for displaying the list of repositories ordered alphabetically for display on
@@ -1099,7 +1101,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         super().set_repository(repository)
         self.repository_clone_url = relative_install_dir or common_util.generate_clone_url_for(self.trans, repository)
 
-    def set_repository_metadata(self, host, content_alert_str="", **kwd):
+    def set_repository_metadata(self, host: str, content_alert_str: str = "") -> tuple[str, str]:
         """
         Set metadata using the self.repository's current disk files, returning specific error
         messages (if any) to alert the repository owner that the changeset has problems.
@@ -1184,11 +1186,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             )
             status = "error"
         return message, status
-
-    def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):
-        """Set metadata on the tip of self.repository in the tool shed."""
-        error_message, status = self.set_repository_metadata(host, content_alert_str=content_alert_str, **kwd)
-        return status, error_message
 
 
 def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> list[str]:

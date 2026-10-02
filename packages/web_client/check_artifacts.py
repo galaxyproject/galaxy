@@ -25,8 +25,7 @@ def wheel_members(path: Path) -> list[str]:
 
 def check_members(members: list[str], prefix: str, description: str) -> list[str]:
     errors = []
-    build_hash = f"{prefix}/client_build_hash.txt"
-    if build_hash not in members:
+    if (build_hash := f"{prefix}/client_build_hash.txt") not in members:
         errors.append(f"{description} is missing {build_hash}")
     client_dir = f"{prefix}/dist/"
     # Ignore directory-only archive entries.

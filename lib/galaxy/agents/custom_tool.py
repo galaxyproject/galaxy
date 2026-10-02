@@ -735,8 +735,7 @@ class CustomToolAgent(BaseGalaxyAgent):
     def _rewrite_container(self, tool: UserToolSource, image: str) -> tuple[UserToolSource, str] | None:
         """Return ``(tool, yaml)`` with the container replaced, or None if that breaks validation."""
         updated = tool.model_copy(update={"container": image})
-        lint_errors = lint_user_tool_source(updated)
-        if lint_errors:
+        if lint_errors := lint_user_tool_source(updated):
             log.warning(
                 "CustomTool: recommended container %s failed validation (%d issue(s)); keeping original",
                 image,

@@ -2184,9 +2184,7 @@ class PickValueModule(WorkflowModule):
 
         self._ensure_inputs_ready(trans, progress, step, mode, all_inputs)
 
-        collection_info = self.plan_map_over(progress, step, all_inputs)
-
-        if collection_info:
+        if collection_info := self.plan_map_over(progress, step, all_inputs):
             output = self._execute_mapped(trans, invocation_step, mode, all_inputs, collection_info)
         else:
             # Gather replacements from each named input terminal, in order
