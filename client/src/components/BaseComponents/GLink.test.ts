@@ -36,4 +36,30 @@ describe("GLink.vue link targets", () => {
 
         expect(wrapper.get("button").attributes("href")).toBeUndefined();
     });
+
+    // Vue 3 renders `aria-disabled="false"` for a bound false, which breaks `:not([aria-disabled])` selectors.
+    it("leaves aria-disabled off an enabled anchor", () => {
+        const wrapper = mount(GLink as object, { propsData: { href: "https://example.org/data.txt" }, localVue });
+
+        expect(wrapper.get("a").attributes("aria-disabled")).toBeUndefined();
+    });
+
+    it("leaves aria-disabled off an enabled router link", () => {
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
+        });
+        const wrapper = mount(GLink as object, { propsData: { to: "/pages/create" }, localVue, router });
+
+        expect(wrapper.get("a").attributes("aria-disabled")).toBeUndefined();
+    });
+
+    it("sets aria-disabled to true on a disabled link", () => {
+        const wrapper = mount(GLink as object, {
+            propsData: { href: "https://example.org/data.txt", disabled: true },
+            localVue,
+        });
+
+        expect(wrapper.get("button").attributes("aria-disabled")).toBe("true");
+    });
 });
