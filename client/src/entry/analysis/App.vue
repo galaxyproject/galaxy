@@ -64,6 +64,7 @@ import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
+import { useHasStagedUploads } from "@/composables/upload/useUploadStaging";
 import { getAppRoot } from "@/onload";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -110,6 +111,7 @@ export default {
         setConfirmDialogComponentRef(confirmDialogRef);
 
         const windowManagerStore = useWindowManagerStore();
+        const hasStagedUploads = useHasStagedUploads();
 
         // Treat any iframe context as embedded: scratchbook pops dataset
         // displays into ``WinBox`` iframes that hit the same routes without
@@ -198,6 +200,7 @@ export default {
             embedded,
             currentTour,
             windowManagerStore,
+            hasStagedUploads,
         };
     },
     data() {
@@ -258,7 +261,7 @@ export default {
     created() {
         if (!this.embedded) {
             window.onbeforeunload = () => {
-                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
+                if (this.confirmation || this.windowManagerStore.beforeUnload() || this.hasStagedUploads) {
                     return "Are you sure you want to leave the page?";
                 }
             };
