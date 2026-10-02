@@ -396,7 +396,9 @@ steps:
         response_json = self._create_valid_page_with_slug("pagetoupdate")
         page_id = response_json["id"]
         update_response = self._update_page(page_id, "newannotation", "new.slug", "newtitle", error_code=400)
-        assert update_response["err_msg"] == "String should match pattern '^[a-z0-9-]+$' in ('body', 'slug')"
+        assert update_response["err_msg"].startswith("Page identifier must consist of")
+        update_response = self._update_page(page_id, "newannotation", "new/slug", "newtitle", error_code=400)
+        assert update_response["err_msg"] == "String should match pattern '^[^/:?#]+$' in ('body', 'slug')"
         update_response = self._update_page(page_id, "newannotation", "newslug", "", error_code=400)
         assert update_response["err_msg"] == "String should have at least 1 character in ('body', 'title')"
         update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle")
@@ -406,6 +408,24 @@ steps:
         show_response = self._get(f"pages/{page_id}")
         show_json = show_response.json()
         assert show_json["annotation"] == "newannotation"
+
+    def test_create_and_update_page_with_non_ascii_slug(self):
+        page_id = self._create_valid_page_with_slug("rapport-d-exécution")["id"]
+        update_response = self._update_page(page_id, "newannotation", "rapport-d-exécution", "newtitle")
+        assert update_response["slug"] == "rapport-d-exécution"
+        update_response = self._update_page(page_id, "newannotation", "rapport-d-exécution-2", "newtitle")
+        assert update_response["slug"] == "rapport-d-exécution-2"
+        show_response = self._get(f"pages/{page_id}")
+        self._assert_status_code_is(show_response, 200)
+        assert show_response.json()["title"] == "newtitle"
+
+    def test_show_page_with_non_ascii_slug_set_via_sharing(self):
+        page_id = self._create_valid_page_with_slug("pagetosetnonasciislug")["id"]
+        self._assert_status_code_is_ok(self._set_slug(page_id, "rapport-d-exécution-des-analyses"))
+        show_response = self._get(f"pages/{page_id}")
+        self._assert_status_code_is(show_response, 200)
+        assert show_response.json()["slug"] == "rapport-d-exécution-des-analyses"
+        assert page_id in self._index_ids()
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
