@@ -164,7 +164,7 @@
     "vue-multiselect": "^3.3",
     "vue-observe-visibility": "^1.0.0",
     "vue-router": "^5.3.1",
-    "vuedraggable": "^2.24.3",
+    "vuedraggable": "^4.1.0",
     "xml-beautifier": "^0.5.0",
     "yaml": "^2.6.1"
   },
