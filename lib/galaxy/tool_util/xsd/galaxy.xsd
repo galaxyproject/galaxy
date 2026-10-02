@@ -6368,9 +6368,7 @@ discovered data sets on Galaxy versions prior to 24.0 and should be specified us
         <xs:documentation xml:lang="en"><![CDATA[
 This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
 References to parameters in sections, conditionals or repeats should be qualified using ``|`` (e.g. ``cond|input1``),
-and repeats need an instance index (e.g. ``queries_0|input1``). Omitting the name of the innermost enclosing section
-or conditional (e.g. ``input1`` for ``cond|input1``) is a legacy form; it is ambiguous if several parameters share
-the name and is not supported for elements of discovered collections.
+and repeats need an instance index (e.g. ``queries_0|input1``).
 A single element of a collection input can be selected by index or identifier (e.g. ``input_collection['forward']``);
 without a selector the first dataset of the collection is used.
 For collections (Galaxy 26.1 and later) this is the default format for discovered elements; a ``format`` on
@@ -6421,7 +6419,7 @@ This only applies to collections that are mapped over a non-collection input and
 from the tool's input dataset to serve as default for information that cannot be detected from the output.
 One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
 References to parameters in sections, conditionals or repeats should be qualified as for ``format_source``
-(e.g. ``cond|input1``, ``queries_0|input1``); the legacy unqualified form is not supported for discovered collections.</xs:documentation>
+(e.g. ``cond|input1``, ``queries_0|input1``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
