@@ -339,7 +339,7 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
 
 - References are **bare leaf names in lexical scope**, resolved through `ExpressionContext` chains.
   The lookup checks the parameter's own level first, then each enclosing level outward.
-- At parse time, `_from_input_source_galaxy` asserts that each dependency was **already declared**.
+- At parse time, `Tool.parse_param_elem` asserts that each dependency was **already declared**.
   - You cannot reach into a sibling or child grouping: `data_ref="input1"` fails from the top level,
     and `cond.input1` and `cond|input1` fail too.
   - Forward references fail.
@@ -756,8 +756,8 @@ to `/api/jobs`; the server does not accept it.)
   `queries_1|input2` is dropped.
 - _Repeat, nested._ A list.
 - _Repeat bounds._ The two shapes handle a repeat's `min`/`max` differently. Flat input is padded
-  with default instances up to `min` and silently truncated at `max`. Nested input with too few or
-  too many instances is an error.
+  with default instances up to the larger of `default` and `min`, and silently truncated at `max`.
+  Nested input with too few or too many instances is an error.
 - _Names that look like indices._ When flat keys are converted to nested state, a grouping name
   ending in `_<digits>` can be misread as a repeat index. A name ending in `_0` is always treated as
   a repeat; other digits only when the repeat list already exists. A conditional named
@@ -983,7 +983,7 @@ A native workflow keys connections by pipe path and stores state as nested JSON:
 ```
 
 - A single connection is written as a dict and several as a list. Import accepts both.
-- A connection key ending in `_N|...` makes Galaxy grow the repeat to N+1 instances on load
+- A connection key starting with `<repeat>_N|...` makes Galaxy grow the repeat to N+1 instances on load
   (`augment_tool_state_for_input_connections`). Connections to nested repeats are untested.
 - A connection that matches no input is ignored with only a logged warning ("Failed to use input
   connections").
@@ -1109,7 +1109,8 @@ dicts flattened on the way in:
 `#{name | op | op}` takes the name of a data input. Because `|` separates the filter operations
 (`basename`, `upper`, `lower`), nesting is written as a dotted path (`#{cond.input1}`,
 `#{queries_0.input2}`) and converted to a pipe path before matching job input names. If nothing
-matches exactly, the first pipe path ending in the bare name is used (`#{input1}`).
+matches exactly, the first pipe path whose text ends with the bare name is used (`#{input1}`). This
+is a raw string suffix match, so `#{input1}` can also match `cond|xinput1`.
 
 ### Refactor API
 
