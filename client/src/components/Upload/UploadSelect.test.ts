@@ -51,4 +51,18 @@ describe("UploadSelect", () => {
 
         expect(wrapper.emitted("input")).toBeUndefined();
     });
+
+    it("lists the option whose id matches exactly first", async () => {
+        const dbKeys = [
+            { id: "hg19_rCRS", text: "Human (hg19 with rCRS)" },
+            { id: "hg19", text: "Human Feb. 2009 (GRCh37/hg19) (hg19)" },
+        ];
+        const wrapper = mountComponent({ options: dbKeys });
+
+        await wrapper.find(".multiselect").trigger("click");
+        await wrapper.find(".multiselect__input").setValue("hg19");
+
+        const multiselect = wrapper.findComponent(Multiselect);
+        expect(multiselect.props("options").map((option: { id: string }) => option.id)).toEqual(["hg19", "hg19_rCRS"]);
+    });
 });

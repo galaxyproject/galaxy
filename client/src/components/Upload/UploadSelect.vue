@@ -45,7 +45,7 @@ const emit = defineEmits(["input"]);
 const searchQuery = ref("");
 
 /** Options filtered by the search query, with exact and prefix matches listed first. */
-const rankedOptions = computed(() => rankBySearch(props.options, searchQuery.value, "text"));
+const rankedOptions = computed(() => rankBySearch(props.options, searchQuery.value, ["text", "id"]));
 
 function onSearchChange(query) {
     searchQuery.value = query;

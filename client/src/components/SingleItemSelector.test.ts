@@ -95,6 +95,20 @@ describe("SingleItemSelector", () => {
             expect(firstOption.attributes("data-id")).toBe("fasta");
         });
 
+        it("lists the item whose id matches exactly first", async () => {
+            const dbKeys = [
+                { id: "hg19_rCRS", text: "Human (hg19 with rCRS)" },
+                { id: "hg19", text: "Human Feb. 2009 (GRCh37/hg19) (hg19)" },
+            ];
+            const wrapper = mountComponent({ items: dbKeys });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect__input").setValue("hg19");
+
+            expect(multiselect.props("options").map((item: { id: string }) => item.id)).toEqual(["hg19", "hg19_rCRS"]);
+        });
+
         it("restores the full item list when the search is cleared", async () => {
             const wrapper = mountComponent({ items: EXTENSIONS });
             const multiselect = wrapper.findComponent(Multiselect);

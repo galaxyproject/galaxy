@@ -48,4 +48,12 @@ describe("rankBySearch", () => {
         ];
         expect(rankBySearch(items, "ab", "name").map((item) => item.id)).toEqual(["2", "1"]);
     });
+
+    it("ranks an item by its best matching key", () => {
+        const items = [
+            { id: "hg19_rCRS", text: "Human (hg19 with rCRS)" },
+            { id: "hg19", text: "Human Feb. 2009 (GRCh37/hg19) (hg19)" },
+        ];
+        expect(rankBySearch(items, "hg19", ["text", "id"]).map((item) => item.id)).toEqual(["hg19", "hg19_rCRS"]);
+    });
 });
