@@ -38,5 +38,5 @@ it("shows an error when the invocation graph fails to load", async () => {
     await flushPromises();
 
     const alert = wrapper.findAllComponents(GAlert).filter((w) => w.props("variant") === "danger");
-    expect(alert.at(0).text()).toContain("429 Too Many Requests");
+    expect(alert.at(0)!.text()).toContain("429 Too Many Requests");
 });

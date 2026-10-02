@@ -20,8 +20,9 @@ describe("CollectionTree", () => {
             },
         });
 
-        const child = wrapper.findAllComponents(CollectionTree).at(1);
-        const [info, peekBlock] = child.findAll("pre code").wrappers;
+        // Only the nested element has info and a peek. VTU 2 can't find the nested tree as a
+        // component, because it refers to itself by name.
+        const [info, peekBlock] = wrapper.findAll("pre code");
         expect(info.text()).toBe("<i>info</i>");
         expect(info.find("i").exists()).toBe(false);
         expect(sanitizeHtml).toHaveBeenCalledWith(peek, "default");

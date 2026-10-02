@@ -48,7 +48,7 @@ it("displays a rejected user load and clears the error after retry", async () =>
     await flushPromises();
     expect(user.loadUser).toHaveBeenCalledTimes(2);
     expect(wrapper.find("#startup-load-error").exists()).toBe(false);
-    wrapper.destroy();
+    wrapper.unmount();
 });
 
 it("displays a configuration load failure and retries only the configuration", async () => {
@@ -65,5 +65,5 @@ it("displays a configuration load failure and retries only the configuration", a
     await wrapper.find("#startup-load-error button").trigger("click");
     expect(config.loadConfig).toHaveBeenCalledOnce();
     expect(user.loadUser).toHaveBeenCalledOnce();
-    wrapper.destroy();
+    wrapper.unmount();
 });
