@@ -161,8 +161,10 @@ export const useToolStore = defineStore("toolStore", () => {
             if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                // own-property check: "constructor" must not reach filterTools from the prototype
-                const results = Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
+                // own-property check: "constructor" must not reach filterTools from the prototype;
+                // `in` comes first because Vue tracks it, so results added for `q` later trigger an update
+                const results =
+                    q in toolResults.value && Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
                 return filterTools(toolsById.value, results || []);
             }
         };
