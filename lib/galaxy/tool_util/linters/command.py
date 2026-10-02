@@ -6,17 +6,11 @@ from supplied inputs.
 
 from typing import TYPE_CHECKING
 
-from packaging.version import Version
-
 from galaxy.tool_util.lint import Linter
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser.interface import ToolSource
-
-# Profile at which a missing version_command is a warning rather than info;
-# older tools are grandfathered, see galaxyproject/planemo#286.
-VERSION_COMMAND_WARN_PROFILE = Version("26.2")
 
 
 class CommandMissing(Linter):
@@ -105,9 +99,7 @@ class VersionCommandMissing(Linter):
             return
         if not _wraps_external_software(tool_source):
             return
-        profile = Version(tool_source.parse_profile())
-        report = lint_ctx.warn if profile >= VERSION_COMMAND_WARN_PROFILE else lint_ctx.info
-        report(
+        lint_ctx.info(
             "No version_command found, tools wrapping packaged software should report its version.",
             linter=cls.name(),
             node=tool_xml.getroot(),

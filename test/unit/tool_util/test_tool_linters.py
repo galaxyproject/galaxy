@@ -1411,14 +1411,16 @@ def test_version_command_missing_modern_profile(lint_ctx):
     """A tool wrapping packaged software should report its version - planemo#286."""
     tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_MODERN_PROFILE)
     run_lint_module(lint_ctx, command, tool_source)
-    assert lint_ctx.warn_messages == [
+    assert (
         "No version_command found, tools wrapping packaged software should report its version."
-    ]
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
 def test_version_command_missing_legacy_profile(lint_ctx):
-    """Tools predating the check are grandfathered to info - planemo#286."""
+    """Older profiles get the same info message - planemo#286."""
     tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_LEGACY_PROFILE)
     run_lint_module(lint_ctx, command, tool_source)
     assert (
@@ -1433,9 +1435,11 @@ def test_version_command_missing_container(lint_ctx):
     """A container is external software worth a version too - planemo#286."""
     tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_CONTAINER)
     run_lint_module(lint_ctx, command, tool_source)
-    assert lint_ctx.warn_messages == [
+    assert (
         "No version_command found, tools wrapping packaged software should report its version."
-    ]
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
 
 
 def test_version_command_missing_no_requirements(lint_ctx):
