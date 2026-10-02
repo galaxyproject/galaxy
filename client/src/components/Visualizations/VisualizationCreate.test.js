@@ -125,7 +125,7 @@ it("renders plugin help markdown through v-sanitize-html with the links profile"
     mount(VisualizationCreate, { localVue, propsData: { visualization: "scatterplot" } });
     await flushPromises();
 
-    const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes("example.org"));
+    const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes(">docs</a>"));
     expect(call?.[1]).toBe("links");
     expect(call?.[0]).toContain('target="_blank"');
     expect(call?.[0]).toContain("&lt;b&gt;now&lt;/b&gt;");
