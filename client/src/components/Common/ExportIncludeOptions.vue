@@ -13,9 +13,9 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "update:includeFiles", value: boolean): void;
-    (e: "update:includeDeleted", value: boolean): void;
-    (e: "update:includeHidden", value: boolean): void;
+    (e: "update:include-files", value: boolean): void;
+    (e: "update:include-deleted", value: boolean): void;
+    (e: "update:include-hidden", value: boolean): void;
 }>();
 </script>
 
@@ -26,7 +26,7 @@ const emit = defineEmits<{
             :disabled="props.disabled"
             switch
             data-test-id="include-files-checkbox"
-            @change="emit('update:includeFiles', $event)">
+            @change="emit('update:include-files', $event)">
             Include Active Files
         </BFormCheckbox>
 
@@ -35,7 +35,7 @@ const emit = defineEmits<{
             :disabled="props.disabled"
             switch
             data-test-id="include-deleted-checkbox"
-            @change="emit('update:includeDeleted', $event)">
+            @change="emit('update:include-deleted', $event)">
             Include Deleted (not purged)
         </BFormCheckbox>
 
@@ -44,7 +44,7 @@ const emit = defineEmits<{
             :disabled="props.disabled"
             switch
             data-test-id="include-hidden-checkbox"
-            @change="emit('update:includeHidden', $event)">
+            @change="emit('update:include-hidden', $event)">
             Include Hidden
         </BFormCheckbox>
     </BFormGroup>
