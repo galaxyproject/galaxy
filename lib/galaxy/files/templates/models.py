@@ -61,6 +61,7 @@ FileSourceTemplateType = Literal[
     "commoncrawl",
     "gitlab",
     "arc",
+    "galaxy2galaxy",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -621,6 +622,16 @@ class ARCFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class Galaxy2GalaxyFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["galaxy2galaxy"]
+    base_url: str | TemplateExpansion
+    api_key: str | TemplateExpansion
+    show_hid_in_names: bool | TemplateExpansion = False
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class CommonCrawlFileSourceConfiguration(StrictModel):
     type: Literal["commoncrawl"]
     writable: bool = False
@@ -630,6 +641,14 @@ class ARCFileSourceConfiguration(StrictModel):
     type: Literal["arc"]
     base_url: str
     token: str | None = None
+    writable: bool = False
+
+
+class Galaxy2GalaxyFileSourceConfiguration(StrictModel):
+    type: Literal["galaxy2galaxy"]
+    base_url: str
+    api_key: str
+    show_hid_in_names: bool = False
     writable: bool = False
 
 
@@ -662,7 +681,8 @@ FileSourceTemplateConfiguration = Annotated[
     | CKANFileSourceTemplateConfiguration
     | CommonCrawlFileSourceTemplateConfiguration
     | GitLabFileSourceTemplateConfiguration
-    | ARCFileSourceTemplateConfiguration,
+    | ARCFileSourceTemplateConfiguration
+    | Galaxy2GalaxyFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -695,7 +715,8 @@ FileSourceConfiguration = Annotated[
     | CKANFileSourceConfiguration
     | CommonCrawlFileSourceConfiguration
     | GitLabFileSourceConfiguration
-    | ARCFileSourceConfiguration,
+    | ARCFileSourceConfiguration
+    | Galaxy2GalaxyFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -733,14 +754,14 @@ class FileSourceTemplate(FileSourceTemplateBase):
     environment: list[TemplateEnvironmentEntry] | None = None
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self.configuration.type
 
 
 FileSourceTemplateCatalog = RootModel[list[FileSourceTemplate]]
 
 
-class FileSourceTemplateSummaries(RootModel):
+class FileSourceTemplateSummaries(RootModel[list[FileSourceTemplateSummary]]):
     root: list[FileSourceTemplateSummary]
 
 
@@ -789,6 +810,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "commoncrawl": CommonCrawlFileSourceConfiguration,
     "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
+    "galaxy2galaxy": Galaxy2GalaxyFileSourceConfiguration,
 }
 
 
