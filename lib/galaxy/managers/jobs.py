@@ -901,12 +901,11 @@ class JobSearch:
         # Collection signatures are built from leaf datasets, so a populated collection
         # without elements can only be compared by its type.
         collection = aliased(model.DatasetCollection)
-        element = aliased(model.DatasetCollectionElement)
         return exists().where(
             collection.id == collection_id,
             collection.collection_type == collection_type,
             collection.populated_state == model.DatasetCollection.populated_states.OK,
-            ~exists().where(element.dataset_collection_id == collection.id),
+            collection.element_count == 0,
         )
 
     def _is_empty_collection(self, collection_id: int, collection_type: str) -> bool:
