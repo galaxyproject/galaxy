@@ -7,7 +7,7 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
+import { createPageFromTitle, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
 
 /** `my` = pages owned by the current user, `published` = published (and shared) pages. */
 export type PageListVariant = "my" | "published";
@@ -18,7 +18,13 @@ const VARIANT_QUERY: Record<PageListVariant, Pick<LoadPagesOptions, "showOwn" | 
 };
 
 export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" | "showPublished"> & {
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched pages make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the pages are still
+     * cached as summaries, but the variant's id list and loaded flag are left
+     * alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 };
 
@@ -139,6 +145,8 @@ export const usePageStore = defineStore("pageStore", () => {
                     }
                     set(loadedVariants.value, variant, true);
                 } else {
+                    // the pages answer this request alone, so they are cached as
+                    // summaries without joining (or completing) the listing
                     mergePageSummaries(data);
                 }
                 return data;
@@ -171,6 +179,16 @@ export const usePageStore = defineStore("pageStore", () => {
         return getPages.value(variant);
     }
 
+    /**
+     * Creates a markdown page slugged from `title` (see `createPageFromTitle`) and heads the cached listing
+     * with it, which would otherwise miss it until the next unfiltered fetch.
+     */
+    async function createMarkdownPage(title: string): Promise<PageDetails> {
+        const page = await createPageFromTitle({ title, content_format: "markdown" });
+        savePages("my", [page], true);
+        return page;
+    }
+
     return {
         // state
         summariesById,
@@ -189,5 +207,6 @@ export const usePageStore = defineStore("pageStore", () => {
         removePage,
         fetchPages,
         fetchPagesOnce,
+        createMarkdownPage,
     };
 });

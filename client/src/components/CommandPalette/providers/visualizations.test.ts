@@ -6,7 +6,7 @@ import { loadVisualizations, type VisualizationSummary } from "@/api/visualizati
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx, renderedSections } from "../test-utils";
 import { resetListRefreshTracking } from "./refresh";
 import { visualizationsProvider } from "./visualizations";
 
@@ -40,10 +40,6 @@ function mockVisualization(id: string, title: string, type = "nvd3_bar"): Visual
         tags: [],
         username: "test-user",
     } as VisualizationSummary;
-}
-
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
 }
 
 function mockList(...visualizations: VisualizationSummary[]) {
@@ -80,7 +76,11 @@ describe("visualizationsProvider", () => {
     });
 
     it("hydrates the store once and ranks the cache before merging backend hits", async () => {
-        mockList(mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot"));
+        // two of many, so the cache cannot answer every query alone
+        vi.mocked(loadVisualizations).mockResolvedValue({
+            data: [mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")],
+            totalMatches: 30,
+        });
         // hydrate through the palette, the way opening the scope does
         await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
         vi.mocked(loadVisualizations).mockClear();
@@ -102,7 +102,7 @@ describe("visualizationsProvider", () => {
     it("queries the backend when the cache cannot answer and merges results into the store", async () => {
         vi.mocked(loadVisualizations).mockResolvedValueOnce({
             data: [mockVisualization("viz-1", "ATAC peaks")],
-            totalMatches: 1,
+            totalMatches: 30,
         });
         vi.mocked(loadVisualizations).mockResolvedValueOnce({
             data: [mockVisualization("viz-9", "Genome browser")],
@@ -116,6 +116,19 @@ describe("visualizationsProvider", () => {
         expect(useVisualizationStore().getVisualizationSummary("viz-9")?.title).toBe("Genome browser");
     });
 
+    it("answers from a cache holding every visualization without searching", async () => {
+        mockList(mockVisualization("viz-1", "ATAC peaks"));
+        await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
+        vi.mocked(loadVisualizations).mockClear();
+
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "genome", makeCtx()),
+        );
+
+        expect(sections).toEqual([]);
+        expect(loadVisualizations).not.toHaveBeenCalled();
+    });
+
     it("refreshes the cached visualizations in the background once they go stale", async () => {
         mockList(mockVisualization("viz-1", "ATAC peaks"));
         await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
@@ -123,7 +136,9 @@ describe("visualizationsProvider", () => {
 
         // a later palette session, past the refresh interval
         resetListRefreshTracking();
-        const sections = (await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx())) ?? [];
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx()),
+        );
 
         expect(sections[0]?.items.map((item) => item.id)).toEqual(["visualizations:viz-1"]);
         expect(loadVisualizations).toHaveBeenCalledTimes(1);
@@ -159,7 +174,9 @@ describe("visualizationsProvider", () => {
         mockList();
         recentEntries.push({ type: "visualization", id: "viz-7", name: "Old chart", to: "/visualizations/edit?id=7" });
 
-        const sections = await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
+        const sections = renderedSections(
+            await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx()),
+        );
 
         expect(sections?.map((section) => section.title)).toEqual(["Recent"]);
         expect(sections?.[0]?.items[0]).toMatchObject({

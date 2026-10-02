@@ -1,10 +1,11 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadPages, type PageSummary } from "@/api/pages";
+import { createPageFromTitle, loadPages, type PageSummary } from "@/api/pages";
 import { usePageStore } from "@/stores/pageStore";
 
 vi.mock("@/api/pages", () => ({
+    createPageFromTitle: vi.fn(),
     loadPages: vi.fn(),
 }));
 
@@ -74,6 +75,17 @@ describe("usePageStore", () => {
                 limit: 5,
                 offset: 5,
             });
+        });
+
+        it("keeps an unrecorded search out of the listing while caching its summaries", async () => {
+            vi.mocked(loadPages).mockResolvedValue(mockResult([mockPage("p1")], 42));
+
+            const pages = await pageStore.fetchPages("published", { search: "rna", record: false });
+
+            expect(pages.map((page) => page.id)).toEqual(["p1"]);
+            expect(pageStore.getPageById("p1")?.title).toBe("Page p1");
+            expect(pageStore.publishedPages).toEqual([]);
+            expect(pageStore.isLoaded("published")).toBe(false);
         });
 
         it("merges search results into the cache without duplicating entries", async () => {
@@ -208,6 +220,20 @@ describe("usePageStore", () => {
             await pageStore.fetchPages("my");
 
             expect(pageStore.isComplete("my")).toBe(true);
+        });
+    });
+
+    describe("createMarkdownPage", () => {
+        it("creates a markdown page, ahead of the cached ones", async () => {
+            vi.mocked(createPageFromTitle).mockResolvedValue(mockPage("page-1", "My New Page") as never);
+            // a cache the `r:` scope would consider complete must still show the new page
+            pageStore.savePages("my", [mockPage("page-0")]);
+
+            const page = await pageStore.createMarkdownPage("My New Page");
+
+            expect(createPageFromTitle).toHaveBeenCalledWith({ title: "My New Page", content_format: "markdown" });
+            expect(page.id).toBe("page-1");
+            expect(pageStore.myPages.map((cached) => cached.id)).toEqual(["page-1", "page-0"]);
         });
     });
 

@@ -107,6 +107,18 @@ describe("Masthead.vue", () => {
         useCommandPalette().closePalette();
     });
 
+    it("labels the search button with the localized search phrase", () => {
+        const button = wrapper.find("[data-description='masthead search button']");
+        expect(button.find(".search-placeholder").text()).toBe("Search Galaxy");
+        expect(button.attributes("title")).toBe("Search Galaxy (Ctrl+K)");
+    });
+
+    it("hides the search button when the palette is disabled", async () => {
+        await remount({ enable_command_palette: false });
+
+        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
+    });
+
     it("should display window manager button", async () => {
         expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
         expect(windowTab._active).toBe(false);

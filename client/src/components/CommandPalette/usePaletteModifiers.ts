@@ -7,6 +7,11 @@ function isNewTabModifier(key: string) {
     return key === "Meta" || key === "Control";
 }
 
+/** Whether the key stands for a character, the way a shifted letter does */
+function isTextKey(key: string) {
+    return key.length === 1;
+}
+
 /** Window key tracking: held modifiers for the hint preview, ctrl/cmd+K for `onToggle` */
 export function usePaletteModifiers(onToggle: () => void) {
     const eventStore = useEventStore();
@@ -28,7 +33,15 @@ export function usePaletteModifiers(onToggle: () => void) {
             modifierHeld.value = true;
         }
         if (event.key === "Shift") {
-            shiftHeld.value = true;
+            // a held shift auto-repeats, and only its first press may turn the
+            // preview back on: the character below has to keep it off
+            if (!event.repeat) {
+                shiftHeld.value = true;
+            }
+        } else if (isTextKey(event.key)) {
+            // unlike ctrl/cmd, shift is how a capital is typed: the moment it
+            // produces a character it is text entry, not a `⇧↵` the user is weighing
+            shiftHeld.value = false;
         }
         const platformModifier = eventStore.isMac ? event.metaKey : event.ctrlKey;
         if (event.key.toLowerCase() === "k" && platformModifier && !event.shiftKey && !event.altKey && !event.repeat) {
