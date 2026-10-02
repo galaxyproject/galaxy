@@ -80,6 +80,33 @@ describe("SingleItemSelector", () => {
         });
     });
 
+    describe("searching", () => {
+        const EXTENSIONS = ["csfasta", "fasta", "fastq"].map((id) => ({ id, text: id }));
+
+        it("lists an exact match before partial matches", async () => {
+            const wrapper = mountComponent({ items: EXTENSIONS });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect__input").setValue("fasta");
+
+            expect(multiselect.props("options").map((item: { id: string }) => item.id)).toEqual(["fasta", "csfasta"]);
+            const firstOption = wrapper.find("[data-test-id='single-item-selector-option']");
+            expect(firstOption.attributes("data-id")).toBe("fasta");
+        });
+
+        it("restores the full item list when the search is cleared", async () => {
+            const wrapper = mountComponent({ items: EXTENSIONS });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect__input").setValue("fasta");
+            await wrapper.find(".multiselect__input").setValue("");
+
+            expect(multiselect.props("options")).toEqual(EXTENSIONS);
+        });
+    });
+
     describe("reactivity", () => {
         it("resets selection to first item when items prop changes", async () => {
             const wrapper = mountComponent({ items: ITEMS, currentItem: ITEMS[2] });
