@@ -33,3 +33,74 @@ preferences:
               label: Pass
               type: secret # It's a secret but not stored in vault
               required: True
+
+    typed_section:
+        description: Typed inputs
+        inputs:
+            - name: flag
+              label: Flag
+              type: boolean
+              required: False
+            - name: language
+              label: Language
+              type: select
+              required: False
+              options:
+                  - [English, en]
+                  - [Deutsch, de]
+            - name: note
+              label: Note
+              type: text
+              required: False
+            - name: optional_token
+              label: Optional token
+              type: secret
+              store: vault
+              required: False
+            - name: languages
+              label: Languages
+              type: select
+              multiple: True
+              required: False
+              options:
+                  - [English, en]
+                  - [Deutsch, de]
+            - name: vault_flag
+              label: Vault flag
+              type: boolean
+              store: vault
+              required: False
+            - name: vault_count
+              label: Vault count
+              type: integer
+              store: vault
+              required: False
+            - name: plain_password
+              label: Plain password
+              type: password
+              required: False
+              value: a default that must not be served
+            - name: vault_level
+              label: Vault level
+              type: select
+              store: vault
+              required: False
+              options:
+                  - [Low, 1]
+                  - [High, 2]
+            - name: untyped_choice
+              label: Untyped choice
+              options:
+                  - [One, one]
+                  - [Two, two]
+
+    empty_section:
+
+    lenient_section:
+        description: One invalid input among valid ones
+        inputs:
+            - name: valid
+              label: Valid
+              type: text
+            - label: An input without a name
+              type: text
