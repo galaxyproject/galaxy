@@ -1,8 +1,8 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { rankBySearch } from "@/utils/searchRanking";
+import { useRankedSearch } from "@/composables/useRankedSearch";
 import { uid } from "@/utils/utils";
 
 const props = defineProps({
@@ -42,14 +42,7 @@ const props = defineProps({
 
 const emit = defineEmits(["input"]);
 
-const searchQuery = ref("");
-
-/** Options filtered by the search query, with exact and prefix matches listed first. */
-const rankedOptions = computed(() => rankBySearch(props.options, searchQuery.value, ["text", "id"]));
-
-function onSearchChange(query) {
-    searchQuery.value = query;
-}
+const { rankedItems: rankedOptions, onSearchChange } = useRankedSearch(() => props.options, ["text", "id"]);
 
 const currentValue = computed({
     get: () => props.options.find((option) => option.id === props.value),
