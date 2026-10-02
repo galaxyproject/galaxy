@@ -50,9 +50,8 @@ describe("pushIgnoringNavCancel", () => {
     });
 
     it("swallows a cancelled navigation", async () => {
-        // vue-router 4 resolves push() with the NavigationFailure rather than rejecting,
-        // but the monkeypatch this stands in for re-rejects with it (see router-push.js),
-        // so that's what pushIgnoringNavCancel's `.catch()` actually sees.
+        // vue-router 4 normally resolves push() with the NavigationFailure, but a guard
+        // can still reject with one, and pushIgnoringNavCancel's `.catch()` must not report it.
         const aborted = await createCancelledNavigationError();
         const router = fakeRouter(() => Promise.reject(aborted));
 
