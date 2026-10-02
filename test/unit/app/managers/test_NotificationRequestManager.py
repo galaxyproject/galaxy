@@ -16,6 +16,7 @@ from galaxy.exceptions import (
 from galaxy.managers.notification_requests import NotificationRequestManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model import StoredWorkflow
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     NotificationCreateRequestBody,
@@ -166,6 +167,25 @@ class TestNotificationRequestManager(BaseTestCase):
                     }
                 )
             )
+
+    def test_workflow_name_is_stamped_on_a_single_line(self):
+        stored_workflow = StoredWorkflow(user=self.submitter, name="Mapping\nRequested by: ceo@evil.example")
+        self.trans.sa_session.add(stored_workflow)
+        self.trans.sa_session.commit()
+        workflow_id = self.trans.security.encode_id(stored_workflow.id)
+        admin_request, _ = self._build(
+            _tool_request_body(
+                content={
+                    "category": "tool_installation_request",
+                    "tools": [{"name": "bwa"}],
+                    "workflow_id": workflow_id,
+                }
+            )
+        )
+        content = admin_request.notification.content
+        assert isinstance(content, StoredToolInstallationRequestContent)
+        assert content.workflow_id == workflow_id
+        assert content.workflow_name == "Mapping Requested by: ceo@evil.example"
 
     def test_no_admins_is_a_server_configuration_error(self):
         self.admin_user.deleted = True

@@ -325,6 +325,11 @@ class StoredToolInstallationRequestContent(ToolInstallationRequestNotificationCo
     is_confirmation: bool = False
     workflow_name: str | None = None
 
+    @field_validator("workflow_name", mode="before")
+    @classmethod
+    def _sanitize_workflow_name(cls, value: Any) -> Any:
+        return _sanitize_single_line(value) if isinstance(value, str) else value
+
 
 NotificationContentField = Field(
     default=...,

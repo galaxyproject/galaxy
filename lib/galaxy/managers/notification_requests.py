@@ -131,13 +131,16 @@ class ToolInstallationRequestHandler:
         # stamp the requester's real email server-side (never trust the client).
         # is_confirmation is forced False on the admin-facing copy; build_confirmation
         # below decides which copy is the confirmation.
-        # model_construct reuses the already-validated field values instead of
-        # re-running every sanitizer and bound check on them.
-        return StoredToolInstallationRequestContent.model_construct(
-            **{**dict(content), "workflow_id": workflow_id},
-            requester_email=ctx.sender.email,
-            is_confirmation=False,
-            workflow_name=workflow_name,
+        # Validated so the workflow name, chosen by the workflow's author, is
+        # collapsed to a single line before it reaches the plain-text email.
+        return StoredToolInstallationRequestContent.model_validate(
+            {
+                **dict(content),
+                "workflow_id": workflow_id,
+                "requester_email": ctx.sender.email,
+                "is_confirmation": False,
+                "workflow_name": workflow_name,
+            }
         )
 
     @staticmethod
