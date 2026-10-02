@@ -33,24 +33,19 @@ function render(el: HTMLElement, binding: DirectiveBinding<SanitizeHtmlBinding>)
 }
 
 export const vSanitizeHtml: ObjectDirective<HTMLElement, SanitizeHtmlBinding> = {
-    bind(el, binding) {
+    beforeMount(el, binding) {
         render(el, binding);
     },
-    update(el, binding) {
+    beforeUpdate(el, binding) {
         // Like v-html, only touch the DOM when the content changes, so code that
         // decorates the rendered nodes after mount is not undone on every re-render.
         if (binding.value !== binding.oldValue) {
             render(el, binding);
         }
     },
-    unbind(el, _binding, _vnode, _oldVnode, isDestroy?: boolean) {
-        // Vue reuses an element across v-if/v-else branches; v-html clears its
-        // markup in that case, so do the same. Elements being destroyed keep it
-        // so leave transitions still show their content.
-        if (!isDestroy) {
-            el.innerHTML = "";
-        }
-    },
+    // No unmount cleanup: Vue 3 doesn't reuse an element across v-if/v-else
+    // branches, and an element being removed keeps its markup so leave
+    // transitions still show it.
 };
 
 export default vSanitizeHtml;
