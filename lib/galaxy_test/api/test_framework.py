@@ -1,5 +1,7 @@
 # This file doesn't test any API in particular but is meant to functionally
 # test the API framework itself.
+from requests import post
+
 from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
@@ -8,6 +10,16 @@ class TestApiFramework(ApiTestCase):
     def test_default_xframe_options(self):
         get_response = self._get("licenses")
         assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
+
+    def test_multipart_empty_boundary(self):
+        # /api/tools POST is still served by the legacy WSGI app.
+        response = post(
+            self._api_url("tools"),
+            data=b"x",
+            headers={"Content-Type": "multipart/form-data; boundary="},
+        )
+        self._assert_status_code_is(response, 400)
+        assert "Invalid boundary" in response.text
 
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):
