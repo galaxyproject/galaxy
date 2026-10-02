@@ -194,3 +194,8 @@ class TestToolInstallationRequestFormRateLimitIntegration(ToolInstallationReques
         body = responses[-1].json()
         assert "3 per 1 minute" in body["err_msg"]
         assert body["err_code"] == 429001
+
+        other_user = self._setup_user("tool_installation_request_rate_limit_other@galaxy.test")
+        with self._different_user(other_user["email"]):
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+        self._assert_status_code_is(response, 200)
