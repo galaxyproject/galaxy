@@ -51,6 +51,29 @@ zone library and can be listed with the following command:
 
     python3 -c 'import zoneinfo; list(map(print, sorted(zoneinfo.available_timezones())))'
 
+The core plugin also records ``resubmission_count``, the number of Galaxy-level job
+resubmission events, on every job; the execution attempt number is ``resubmission_count + 1``.
+It counts configured ``resubmit`` rules and runner-triggered resubmissions such as Slurm
+node-failure recovery, but not scheduler-internal requeues Galaxy never observes -- a
+deployment that lets HTCondor requeue on its own will not see those here.
+
+It is recorded on every job but only *displayed* when it is non-zero, since a zero would
+otherwise appear on every job's metrics panel. Set ``show_zero_resubmissions`` (default:
+``false``) to display it everywhere:
+
+.. code-block:: yaml
+
+    - type: core
+      show_zero_resubmissions: true
+
+Display options are read from the default metrics configuration rather than a per-destination
+one, because metrics are rendered without reference to the destination the job ran on.
+
+Only jobs that finish after this metric ships record it, so it is absent from the metrics
+panel of older jobs rather than shown as zero. The state history it counts is retained
+regardless, so the same question can still be asked of those jobs by querying
+``job_state_history`` directly.
+
 cpuinfo
 ~~~~~~~
 
@@ -149,6 +172,24 @@ list of parameter names (files in the controller directory) to capture. For lega
 comma-separated string of cgroup parameter names.
 
 The cgroup plugin works on Linux only.
+
+pulsar_transfer
+~~~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    - type: pulsar_transfer
+
+The pulsar_transfer plugin reports how long Pulsar spent staging a job's files, how many
+files it moved and how many bytes, separately for inputs (staged in before the job runs) and
+outputs (staged back out afterwards).
+
+It has no options. It requires Pulsar 0.15.16 or newer; jobs that did not run on Pulsar
+record nothing.
+
+The figures cover the transfers Pulsar itself performs. A destination configured so that
+*Galaxy* pushes and pulls the files (the ``transfer`` file action rather than
+``remote_transfer``) leaves Pulsar with little to do and will report close to zero.
 
 Overriding the Global Job Metrics Configuration
 -----------------------------------------------

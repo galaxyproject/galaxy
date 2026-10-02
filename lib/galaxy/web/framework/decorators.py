@@ -234,7 +234,9 @@ def __extract_payload_from_request(trans: "GalaxyWebTransaction", func, kwargs):
                     # note: parse_non_hex_float only needed here for single string values where something like
                     # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings
                     # in larger JSON structures where quoting prevents this (further below)
-                    payload[k] = loads(v, parse_float=parse_non_hex_float)
+                    # Encoded history IDs can contain only digits. Preserve them as strings so tool
+                    # submission does not mistake them for already-decoded database IDs.
+                    payload[k] = loads(v, parse_float=parse_non_hex_float, parse_int=str if k == "history_id" else int)
                 except Exception:
                     # may not actually be json, just continue
                     pass

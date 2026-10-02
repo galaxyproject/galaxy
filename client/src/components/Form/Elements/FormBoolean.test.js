@@ -33,4 +33,11 @@ describe("FormBoolean", () => {
         await input.setChecked(true);
         expect(wrapper.emitted().input[4][0]).toBe(true);
     });
+
+    it("renders an unset optional value without changing it", async () => {
+        const unset = mount(FormBoolean, { propsData: { value: null }, localVue });
+        await unset.vm.$nextTick();
+        expect(unset.find("input").element.checked).toBe(false);
+        expect(unset.emitted().input).toBeUndefined();
+    });
 });

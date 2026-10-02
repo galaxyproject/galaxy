@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -54,7 +52,6 @@ const emit = defineEmits<{
     (e: "onUpload"): void;
 }>();
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
 const { openUploadModal } = useUploadMethodModal();
 
 const errorMessage = ref("");
@@ -147,20 +144,7 @@ function onOpen(record: Record) {
 }
 
 /** Called when user decides to upload new data */
-function onLegacyUpload() {
-    const propsData = {
-        multiple: props.multiple,
-        format: props.format,
-        callback: props.callback,
-        modalShow: true,
-        selectable: true,
-    };
-    openGlobalUploadModal(propsData);
-    modalShow.value = false;
-    emit("onUpload");
-}
-
-async function onBetaUpload() {
+async function onUpload() {
     const result = await openUploadModal({
         formats: props.uploadModalFormats,
         multiple: props.multiple,
@@ -234,13 +218,9 @@ watch(
         @onOpen="onOpen"
         @onUndo="load()">
         <template v-slot:buttons>
-            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onLegacyUpload">
+            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 Upload
-            </GButton>
-            <GButton v-if="allowUpload" size="small" title="Try our new upload experience" @click="onBetaUpload">
-                <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>New upload<BBadge variant="warning" class="ml-1">Beta</BBadge></span>
             </GButton>
         </template>
     </SelectionDialog>

@@ -2,11 +2,14 @@
 Proteomics Datatypes
 """
 
+import json
 import logging
 import re
 from typing import (
     IO,
 )
+
+import ijson
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -27,6 +30,7 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TabularData,
 )
+from galaxy.datatypes.text import Json
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
@@ -225,6 +229,151 @@ class MzTab2(MzTab):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class MzSpecLibJson(Json):
+    """
+    mzSpecLib v1.0 is a formal standard and file format
+    to store and distribute spectral libraries/archives
+    https://github.com/HUPO-PSI/mzSpecLib
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mzspeclib.json')
+    >>> MzSpecLibJson().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mzspeclib.txt')
+    >>> MzSpecLibJson().sniff(fname)
+    False
+    """
+
+    file_ext = "mzspeclib.json"
+
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
+
+    _required_keys = {"format_version", "attributes", "spectra"}
+    _key_pattern = re.compile(r"\"(format_version|attributes|spectra)\"\s*:")
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        header = file_prefix.contents_header
+        if not header or not header.lstrip().startswith("{"):
+            return False
+
+        found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
+        if found_keys != self._required_keys:
+            return False
+
+        if not file_prefix.truncated:
+            try:
+                json.loads(header)
+            except Exception:
+                return False
+
+        return True
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _count_spectra(self, path: str) -> int:
+        """Count spectra using ijson's ItemsParser without parsing the entire JSON."""
+        count = 0
+        with open(path, "rb") as handle:
+            for _ in ijson.items(handle, "spectra.item"):
+                count += 1
+        return count
+
+
+@build_sniff_from_prefix
+class MzSpecLibTxt(Text):
+    """
+    mzSpecLib v1.0 is a formal standard and file format
+    to store and distribute spectral libraries/archives
+    https://github.com/HUPO-PSI/mzSpecLib
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mzspeclib.txt')
+    >>> MzSpecLibTxt().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mzspeclib.json')
+    >>> MzSpecLibTxt().sniff(fname)
+    False
+    """
+
+    file_ext = "mzspeclib.txt"
+
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
+
+    _format_header = "<mzSpecLib>"
+    _version_prefix = "MS:1003186|library format version="
+    _spectrum_line_re = re.compile(r"^<Spectr(?:um|a)\b")
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        saw_header = False
+        for idx, line in enumerate(file_prefix.string_io()):
+            if idx > 50:
+                break
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if not saw_header:
+                if stripped != self._format_header:
+                    return False
+                saw_header = True
+                continue
+            if stripped.startswith(self._version_prefix):
+                return True
+        return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _count_spectra(self, path: str) -> int:
+        count = 0
+        with open(path, encoding="utf-8") as handle:
+            for line in util.iter_start_of_line(handle, MAX_LINE_LEN):
+                if self._spectrum_line_re.match(line):
+                    count += 1
+        return count
 
 
 @build_sniff_from_prefix

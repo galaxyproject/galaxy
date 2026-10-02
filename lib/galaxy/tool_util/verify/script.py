@@ -24,6 +24,8 @@ from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util.verify.interactor import (
     DictClientTestConfig,
     GalaxyInteractorApi,
+    POLLING_BACKOFF,
+    POLLING_DELTA,
     verify_tool,
 )
 
@@ -417,6 +419,8 @@ def run_tests(
         "keep_outputs_dir": args.output,
         "download_attempts": get_option("download_attempts"),
         "download_sleep": get_option("download_sleep"),
+        "polling_delta": get_option("polling_delta"),
+        "polling_backoff": get_option("polling_backoff"),
         "test_data": get_option("test_data"),
     }
     tool_id = args.tool_id
@@ -594,6 +598,18 @@ def arg_parser() -> argparse.ArgumentParser:
         default=1,
         type=int,
         help="If download attempts is greater than 1, the amount to sleep between download attempts.",
+    )
+    parser.add_argument(
+        "--polling-delta",
+        default=POLLING_DELTA,
+        type=float,
+        help="Interval in seconds between checks on whether a job has finished.",
+    )
+    parser.add_argument(
+        "--polling-backoff",
+        default=POLLING_BACKOFF,
+        type=float,
+        help="Amount added to the polling interval after each check, so longer jobs are polled less often.",
     )
     parser.add_argument("--test-data", action="append", help="Add local test data path to search for missing test data")
     return parser

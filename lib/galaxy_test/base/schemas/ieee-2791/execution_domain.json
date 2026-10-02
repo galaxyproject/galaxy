@@ -1,0 +1,111 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/execution_domain.json",
+    "type": "object",
+    "title": "Execution Domain",
+    "description": "The fields required for execution of the IEEE-2791 Object are herein encapsulated together in order to clearly separate information needed for deployment, software configuration, and running applications in a dependent environment",
+    "required": [
+        "script",
+        "script_driver",
+        "software_prerequisites",
+        "external_data_endpoints",
+        "environment_variables"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "script": {
+            "type": "array",
+            "description": "points to a script object or objects that was used to perform computations for this IEEE-2791 Object instance.",
+            "items": {
+                "additionalProperties": false,
+                "properties": {
+                    "uri": {
+                        "$ref": "2791object.json#/definitions/uri"
+                    }
+                }
+			}
+        },
+        "script_driver": {
+            "type": "string",
+            "description": "Indication of the kind of executable that can be launched in order to perform a sequence of commands described in the script in order to run the pipelin",
+            "examples": [
+                "hive",
+                "cwl-runner",
+                "shell"
+            ]
+        },
+        "software_prerequisites": {
+            "type": "array",
+            "description": "Minimal necessary prerequisites, library, tool versions needed to successfully run the script to produce this IEEE-2791 Object.",
+            "items": {
+                "type": "object",
+                "description": "A necessary prerequisite, library, or tool version.",
+                "required": [
+                    "name",
+                    "version",
+                    "uri"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Names of software prerequisites",
+                        "examples": [
+                            "HIVE-hexagon"
+                        ]
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "Versions of the software prerequisites",
+                        "examples": [
+                            "babajanian.1"
+                        ]
+                    },
+                    "uri": {
+                        "$ref": "2791object.json#/definitions/uri"
+                    }
+                }
+            }
+        },
+        "external_data_endpoints": {
+            "type": "array",
+            "description": "Minimal necessary domain-specific external data source access in order to successfully run the script to produce this IEEE-2791 Object.",
+            "items": {
+                "type": "object",
+                "description": "Requirement for network protocol endpoints used by a pipeline’s scripts, or other software.",
+                "required": [
+                    "name",
+                    "url"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Description of the service that is accessed",
+                        "examples": [
+                            "HIVE",
+                            "access to e-utils"
+                        ]
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "The endpoint to be accessed.",
+                        "examples": [
+                            "https://hive.biochemistry.gwu.edu/dna.cgi?cmd=login"
+                        ]
+                    }
+                }
+            }
+        },
+        "environment_variables": {
+            "type": "object",
+            "description": "Environmental parameters that are useful to configure the execution environment on the target platform.",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^[a-zA-Z_]+[a-zA-Z0-9_]*$": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

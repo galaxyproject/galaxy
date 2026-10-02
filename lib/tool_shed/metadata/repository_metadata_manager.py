@@ -7,6 +7,7 @@ from dataclasses import (
 from typing import (
     Any,
     Literal,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -21,7 +22,6 @@ from galaxy.tool_shed.metadata.metadata_generator import (
     InvalidFileT,
 )
 from galaxy.util import inflector
-from galaxy.web.form_builder import SelectField
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
@@ -43,6 +43,13 @@ from tool_shed.webapp.model import (
 )
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed_client.schema import ChangesetMetadataStatus
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+    from sqlalchemy.orm import (
+        scoped_session,
+        Session,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -281,18 +288,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             self.sa_session.add(repository_metadata)
             session = self.sa_session()
             session.commit()
-
-    def build_repository_ids_select_field(
-        self, name="repository_ids", multiple=True, display="checkboxes", my_writable=False
-    ):
-        """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        for repository in self.get_repositories_for_setting_metadata(my_writable=my_writable, order=True):
-            owner = str(repository.user.username)
-            option_label = f"{str(repository.name)} ({owner})"
-            option_value = f"{self.app.security.encode_id(repository.id)}"
-            repositories_select_field.add_option(option_label, option_value)
-        return repositories_select_field
 
     def _clean_repository_metadata(self, changeset_revisions, dry_run: bool = False):
         assert self.repository
@@ -603,7 +598,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             # The tool did not change through all of the changeset revisions.
             return old_id
 
-    def get_repositories_for_setting_metadata(self, my_writable=False, order=True):
+    def get_repositories_for_setting_metadata(
+        self, my_writable: bool = False, order: bool = True
+    ) -> "ScalarResult[Repository] | list[Repository]":
         """
         Return a list of repositories for resetting metadata.  The order parameter
         is used for displaying the list of repositories ordered alphabetically for display on
@@ -1082,7 +1079,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         )
                         successful_count += 1
                 except Exception:
-                    log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
+                    log.exception("Error attempting to reset metadata on repository %s", repository_id)
                     unsuccessful_count += 1
             message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
@@ -1104,7 +1101,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         super().set_repository(repository)
         self.repository_clone_url = relative_install_dir or common_util.generate_clone_url_for(self.trans, repository)
 
-    def set_repository_metadata(self, host, content_alert_str="", **kwd):
+    def set_repository_metadata(self, host: str, content_alert_str: str = "") -> tuple[str, str]:
         """
         Set metadata using the self.repository's current disk files, returning specific error
         messages (if any) to alert the repository owner that the changeset has problems.
@@ -1190,11 +1187,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):
-        """Set metadata on the tip of self.repository in the tool shed."""
-        error_message, status = self.set_repository_metadata(host, content_alert_str=content_alert_str, **kwd)
-        return status, error_message
-
 
 def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> list[str]:
     changeset_revisions_that_contain_tools = []
@@ -1228,14 +1220,16 @@ def get_repository_metadata(session, repository_id):
     return session.scalars(stmt)
 
 
-def get_current_repositories(session, order=False):
+def get_current_repositories(session: "scoped_session[Session]", order: bool = False) -> "ScalarResult[Repository]":
     stmt = select(Repository).where(Repository.deleted == false())
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)
     return session.scalars(stmt)
 
 
-def get_filtered_repositories(session, repo_ids, order):
+def get_filtered_repositories(
+    session: "scoped_session[Session]", repo_ids: list[int], order: bool
+) -> "ScalarResult[Repository]":
     stmt = select(Repository).where(Repository.id.in_(repo_ids))
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)

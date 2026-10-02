@@ -485,8 +485,14 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
 </template>
 
 <style lang="scss" scoped>
+// _functions first: _form-elements pulls in blue.scss, whose $state-* vars need it
+@import "bootstrap/scss/_functions.scss";
 @import "./_form-elements.scss";
-@import "@/style/scss/base.scss";
+
+// keep Bootstrap's .alert bottom margin over .ui-form-element's
+.ui-form-element.alert {
+    margin-bottom: 1rem;
+}
 
 // Workflow Run Form
 .workflow-run-element {

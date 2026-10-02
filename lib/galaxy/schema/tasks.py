@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import Field
 
 from galaxy.util.hash_util import HashFunctionNameEnum
-from . import PdfDocumentType
+from ._common import PdfDocumentType
 from .schema import (
     BcoGenerationParametersMixin,
     DatasetSourceType,

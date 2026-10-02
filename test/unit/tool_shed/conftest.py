@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pytest
 
 from tool_shed.webapp.model import (
@@ -11,6 +13,9 @@ from ._util import (
     TestToolShedApp,
     user_fixture,
 )
+
+if TYPE_CHECKING:
+    from tool_shed.context import ProvidesRepositoriesContext
 
 
 @pytest.fixture
@@ -30,5 +35,5 @@ def new_repository(shed_app: TestToolShedApp, new_user: User) -> Repository:
 
 
 @pytest.fixture
-def provides_repositories(shed_app: TestToolShedApp, new_user: User) -> User:
+def provides_repositories(shed_app: TestToolShedApp, new_user: User) -> "ProvidesRepositoriesContext":
     return provides_repositories_fixture(shed_app, new_user)

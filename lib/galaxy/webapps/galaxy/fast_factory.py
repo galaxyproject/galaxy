@@ -41,13 +41,73 @@ with the following command-line.
 
 """
 
+from collections.abc import (
+    Callable,
+    Mapping,
+)
+from contextlib import suppress
+from dataclasses import dataclass
+from typing import Any
+
+from fastapi import FastAPI
+
+from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.main_config import (
     DEFAULT_CONFIG_SECTION,
     WebappConfigResolver,
     WebappSetupProps,
 )
+from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy.buildapp import app_pair
 from .fast_app import initialize_fast_app
+
+FastAppFactory = Callable[[Any, GalaxyUniverseApplication], FastAPI]
+
+
+@dataclass(frozen=True)
+class GalaxyWebApp:
+    """The application objects assembled for a Galaxy web process."""
+
+    galaxy_app: GalaxyUniverseApplication
+    wsgi_app: Any
+    asgi_app: FastAPI
+
+
+def build_galaxy_web_app(
+    galaxy_config: Mapping[str, Any] | None = None,
+    *,
+    global_conf: Mapping[str, Any] | None = None,
+    load_app_kwds: Mapping[str, Any] | None = None,
+    wsgi_preflight: bool = False,
+    register_shutdown_at_exit: bool = True,
+    init_fast_app: FastAppFactory = initialize_fast_app,
+) -> GalaxyWebApp:
+    """Build Galaxy's application objects from programmatic configuration.
+
+    Unlike the uvicorn ``factory`` below, this entry point does not require a
+    configuration file or environment-variable setup. It also returns the
+    underlying Galaxy application so embedding callers can own its lifecycle.
+    Application construction exceptions are allowed to propagate to the caller.
+    """
+    global_conf_dict = dict(global_conf or {})
+    app_kwds = load_app_properties(kwds=dict(galaxy_config or {}), **dict(load_app_kwds or {}))
+    app_kwds["register_shutdown_at_exit"] = register_shutdown_at_exit
+
+    galaxy_app = GalaxyUniverseApplication(global_conf=global_conf_dict, is_webapp=True, **app_kwds)
+    try:
+        wsgi_app, paired_galaxy_app = app_pair(
+            global_conf_dict,
+            app=galaxy_app,
+            wsgi_preflight=wsgi_preflight,
+            **app_kwds,
+        )
+        assert paired_galaxy_app is galaxy_app
+        asgi_app = init_fast_app(wsgi_app, galaxy_app)
+    except Exception:
+        with suppress(Exception):
+            galaxy_app.shutdown()
+        raise
+    return GalaxyWebApp(galaxy_app=galaxy_app, wsgi_app=wsgi_app, asgi_app=asgi_app)
 
 
 def factory():
@@ -60,7 +120,9 @@ def factory():
     )
     config_provider = WebappConfigResolver(props)
     config = config_provider.resolve_config()
-    gx_wsgi_webapp, gx_app = app_pair(
-        global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight
+    web_app = build_galaxy_web_app(
+        global_conf=config.global_conf,
+        load_app_kwds=config.load_app_kwds,
+        wsgi_preflight=config.wsgi_preflight,
     )
-    return initialize_fast_app(gx_wsgi_webapp, gx_app)
+    return web_app.asgi_app

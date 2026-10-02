@@ -5,6 +5,7 @@ import os
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -28,6 +29,7 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "directory"
+        config["retry_metadata_internally"] = False
         config["cleanup_job"] = "never"
 
     def test_tool_eval_failure(self):
@@ -66,10 +68,8 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
             sa_session = self._app.model.session
             job = sa_session.scalars(select(model.Job).filter_by(id=job_id_decoded)).one()
 
-            # Get the job working directory using the object store
-            job_working_directory = self._app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            # Get the job working directory
+            job_working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
             assert job_working_directory is not None, "Could not determine job working directory"
 
             # Verify that do_not_collect_me.txt does NOT exist in the Galaxy job working directory
@@ -80,6 +80,10 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
                 f"File {do_not_collect_path} should not have been collected from Pulsar, "
                 "but it exists in Galaxy's job working directory"
             )
+
+    def test_handler_metadata_runs_after_output_staging(self):
+        """Exercise Pulsar output staging followed by handler-side metadata."""
+        self._run_tool_test("metadata_columns")
 
 
 instance = integration_util.integration_module_instance(TestEmbeddedPulsarIntegrationInstance)
@@ -105,7 +109,6 @@ test_tools = integration_util.integration_tool_runner(
         "composite_output_tests",
         "detect_errors",
         "tool_directory_copy",
-        "metadata_columns",
         "create_directory_index",
         "collection_split_on_column",
     ]

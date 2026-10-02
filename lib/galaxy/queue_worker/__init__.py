@@ -179,7 +179,8 @@ class ControlTask:
 
     @property
     def exchange(self):
-        return self.queue_worker.exchange_queue.exchange
+        # Kombu clears Queue.exchange when explicit bindings are used.
+        return galaxy.queues.galaxy_exchange
 
     @property
     def declare_queues(self):
@@ -370,8 +371,7 @@ def reload_tool_data_tables(app, **kwargs):
 
 def rebuild_toolbox_search_index(app, **kwargs):
     if app.is_webapp and app.database_heartbeat.is_config_watcher:
-        if app.toolbox_search.index_count < app.toolbox._reload_count:
-            app.reindex_tool_search()
+        app.ensure_tool_search_index()
     else:
         log.debug("App is not a webapp, not building a search index")
 
@@ -599,7 +599,7 @@ control_message_to_task = {
 }
 
 
-class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
+class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):  # type: ignore[misc]  # kombu is untyped
     """
     This is a flexible worker for galaxy's queues.  Each process, web or
     handler, will have one of these used for dispatching so called 'control'
@@ -652,19 +652,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         return galaxy.queues.all_control_queues_for_declare(self.app.application_stack)
 
     def bind_publisher(self):
-        """Set up the queues needed to PUBLISH control tasks (no consumer thread).
+        """Bind producer queues without starting a consumer.
 
-        Safe to call from any process that needs to produce control messages — notably
-        Celery workers, which want to fan out SSE events to web workers but must not
-        start a consumer themselves.
-
-        Always (re)binds. A prefork call in ``GalaxyManagerApplication.__init__`` binds
-        using the parent's ``config.server_name``; under gunicorn with ``--preload``
-        the child's ``set_postfork_server_name`` mutates ``server_name`` to e.g.
-        ``main.1`` after fork. ``bind_and_start`` calls back into this so the
-        consumer's queues match what post-fork producers declare.
+        Rebind after fork: server_name changes, and is_webapp is set only after
+        the initial GalaxyManagerApplication bind.
         """
-        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(
+            self.app.config, app_type=galaxy.queues.WEBAPP_APP_TYPE if self.app.is_webapp else None
+        )
         self.control_queues = [self.exchange_queue, self.direct_queue]
 
     def bind_and_start(self):

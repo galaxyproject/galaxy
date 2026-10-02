@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItemButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
+
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItemButton from "@/components/BaseComponents/GDropdownItemButton.vue";
 
 interface Props {
     /**
@@ -35,26 +37,26 @@ const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
             switch to simple select
         </button>
 
-        <BDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
+        <GDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
             <template v-slot:button-content>
                 <FontAwesomeIcon :icon="faCaretDown" />
                 <span class="sr-only">select element preferences</span>
             </template>
-            <BDropdownItemButton
+            <GDropdownItemButton
                 :active="preferredFormSelectElement === 'none'"
                 @click="preferredFormSelectElement = 'none'">
                 No preference
-            </BDropdownItemButton>
-            <BDropdownItemButton
+            </GDropdownItemButton>
+            <GDropdownItemButton
                 :active="preferredFormSelectElement === 'multi'"
                 @click="preferredFormSelectElement = 'multi'">
                 Default to simple select
-            </BDropdownItemButton>
-            <BDropdownItemButton
+            </GDropdownItemButton>
+            <GDropdownItemButton
                 :active="preferredFormSelectElement === 'many'"
                 @click="preferredFormSelectElement = 'many'">
                 Default to column select
-            </BDropdownItemButton>
-        </BDropdown>
+            </GDropdownItemButton>
+        </GDropdown>
     </div>
 </template>

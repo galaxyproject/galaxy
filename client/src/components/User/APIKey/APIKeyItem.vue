@@ -10,6 +10,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import services from "./model/service";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -73,13 +74,13 @@ async function attemptKeyDeletion() {
                                     title="Copy key" />
                             </b-input-group-text>
 
-                            <b-button v-g-tooltip.hover title="Show/hide key" @click="hover = !hover">
+                            <GButton v-g-tooltip.hover title="Show/hide key" icon-only @click="hover = !hover">
                                 <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
-                            </b-button>
+                            </GButton>
 
-                            <b-button title="Delete api key" @click="attemptKeyDeletion">
+                            <GButton title="Delete api key" icon-only @click="attemptKeyDeletion">
                                 <FontAwesomeIcon :icon="faTrash" />
-                            </b-button>
+                            </GButton>
                         </b-input-group-append>
                     </b-input-group>
                     <span class="small text-black-50">

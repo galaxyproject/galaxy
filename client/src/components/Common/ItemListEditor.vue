@@ -6,6 +6,8 @@ import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 interface Props {
     itemName?: string;
     description?: string | null;
@@ -123,31 +125,33 @@ function resetForm() {
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
             <div v-if="props.description" v-html="description"></div>
-            <b-button variant="primary" @click="onSave">Save</b-button>
-            <b-button variant="danger" @click="onReset">Cancel</b-button>
+            <GButton color="blue" @click="onSave">Save</GButton>
+            <GButton color="red" @click="onReset">Cancel</GButton>
         </div>
         <div v-else>
             <div v-if="itemsCurrent.length > 0">
                 <div v-for="(item, index) in itemsCurrent" :key="index">
                     {{ item }}
-                    <b-button
+                    <GButton
                         v-g-tooltip.hover
                         class="inline-icon-button"
-                        variant="link"
-                        size="sm"
+                        transparent
+                        size="small"
+                        icon-only
                         :title="`Edit ${props.itemName}`"
                         @click="onEdit(index)">
                         <FontAwesomeIcon :icon="faEdit" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-g-tooltip.hover
                         class="inline-icon-button"
-                        variant="link"
-                        size="sm"
+                        transparent
+                        size="small"
+                        icon-only
                         :title="`Remove ${props.itemName}`"
                         @click="onRemove(index)">
                         <FontAwesomeIcon :icon="faTimes" />
-                    </b-button>
+                    </GButton>
                 </div>
             </div>
             <i>

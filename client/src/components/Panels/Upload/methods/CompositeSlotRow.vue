@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheck, faCloud, faEdit, faExclamation, faLaptop, faLink, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BFormInput, BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -12,6 +12,8 @@ import { bytesToString } from "@/utils/utils";
 import type { CompositeSlot, CompositeSlotMode } from "../types/uploadItem";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import RemoteFileBrowserModal from "@/components/FileBrowser/RemoteFileBrowserModal.vue";
 
 interface Props {
@@ -217,7 +219,7 @@ const display = computed(() => {
             </small>
 
             <!-- Source mode dropdown -->
-            <BDropdown
+            <GDropdown
                 size="sm"
                 :variant="isFilled ? 'secondary' : 'primary'"
                 class="mr-1 flex-shrink-0"
@@ -225,23 +227,23 @@ const display = computed(() => {
                 <template v-slot:button-content>
                     {{ dropdownLabel }}
                 </template>
-                <BDropdownItem data-test-id="composite-slot-enter-local" @click="openFileBrowser">
+                <GDropdownItem data-test-id="composite-slot-enter-local" @click="openFileBrowser">
                     <FontAwesomeIcon :icon="faLaptop" fixed-width class="mr-1" />
                     Choose local file
-                </BDropdownItem>
-                <BDropdownItem @click="showRemoteBrowser = true">
+                </GDropdownItem>
+                <GDropdownItem @click="showRemoteBrowser = true">
                     <FontAwesomeIcon :icon="faCloud" fixed-width class="mr-1" />
                     Browse remote files
-                </BDropdownItem>
-                <BDropdownItem data-test-id="composite-slot-enter-url" @click="selectMode('url')">
+                </GDropdownItem>
+                <GDropdownItem data-test-id="composite-slot-enter-url" @click="selectMode('url')">
                     <FontAwesomeIcon :icon="faLink" fixed-width class="mr-1" />
                     Enter URL
-                </BDropdownItem>
-                <BDropdownItem data-test-id="composite-slot-enter-paste" @click="selectMode('paste')">
+                </GDropdownItem>
+                <GDropdownItem data-test-id="composite-slot-enter-paste" @click="selectMode('paste')">
                     <FontAwesomeIcon :icon="faEdit" fixed-width class="mr-1" />
                     Paste content
-                </BDropdownItem>
-            </BDropdown>
+                </GDropdownItem>
+            </GDropdown>
 
             <!-- Clear button -->
             <GButton

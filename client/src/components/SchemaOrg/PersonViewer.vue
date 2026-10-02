@@ -1,10 +1,12 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <FontAwesomeIcon ref="button" :icon="faUser" />
+        <GLink :id="popoverTarget" dark thin type="button" title="Show person details">
+            <FontAwesomeIcon :icon="faUser" />
+        </GLink>
 
-        <BPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Person">
+        <GPopover triggers="click blur" :target="popoverTarget" title="Person">
             <GTable :items="items" :fields="fields" />
-        </BPopover>
+        </GPopover>
 
         <span v-if="name">
             <meta v-if="person.name" itemprop="name" :content="person.name" />
@@ -50,18 +52,20 @@
 import { faOrcid } from "@fortawesome/free-brands-svg-icons";
 import { faExternalLinkAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover } from "bootstrap-vue";
+
+import { useUid } from "@/composables/utils/uid";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        BPopover,
         FontAwesomeIcon,
         GLink,
+        GPopover,
         GTable,
     },
     mixins: [ThingViewerMixin],
@@ -75,6 +79,8 @@ export default {
             faOrcid,
             faUser,
             faExternalLinkAlt,
+            // An id, not a template ref: $refs is empty on first render and not reactive.
+            popoverTarget: useUid("person-viewer-").value,
             implicitMicrodataProperties: ["name", "givenName", "email", "familyName", "url", "identifier"],
             thing: this.person,
             fields: [

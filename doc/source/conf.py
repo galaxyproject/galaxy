@@ -40,7 +40,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["myst_parser", "sphinx.ext.intersphinx", "sphinx.ext.mathjax"]
+extensions = ["myst_parser", "sphinx.ext.intersphinx", "sphinx.ext.mathjax", "sphinxcontrib.mermaid"]
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
     extensions += ["sphinx.ext.doctest", "sphinx.ext.todo", "sphinx.ext.coverage", "sphinx.ext.autodoc"]
@@ -54,6 +54,38 @@ myst_enable_extensions = [
     "colon_fence",
 ]
 myst_heading_anchors = 5
+
+# Galaxy's brand colours (client/src/style/scss/theme/blue.scss); the RTD theme has no dark mode.
+mermaid_config = {
+    "theme": "base",
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "themeVariables": {
+        "fontFamily": "Helvetica, Arial, sans-serif",
+        "fontSize": "14px",
+        "primaryColor": "#e9eff5",
+        "primaryBorderColor": "#25537b",
+        "primaryTextColor": "#2c3143",
+        "lineColor": "#25537b",
+        "secondaryColor": "#f8f9fa",
+        "tertiaryColor": "#f8f9fa",
+        "clusterBkg": "#f8f9fa",
+        "clusterBorder": "#dee2e6",
+        "edgeLabelBackground": "#ffffff",
+        "actorBkg": "#25537b",
+        "actorBorder": "#25537b",
+        "actorTextColor": "#ffffff",
+        "actorLineColor": "#adb5bd",
+        "signalColor": "#2c3143",
+        "signalTextColor": "#2c3143",
+        "labelBoxBkgColor": "#e9eff5",
+        "labelBoxBorderColor": "#25537b",
+        "loopTextColor": "#2c3143",
+        "noteBkgColor": "#fff3cd",
+        "noteBorderColor": "#e0a800",
+    },
+}
+# Size diagrams to their content rather than a fixed-height box.
+mermaid_height = "auto"
 myst_heading_slug_func = "docutils.nodes.make_id"
 
 # Add any paths that contain templates here, relative to this directory.

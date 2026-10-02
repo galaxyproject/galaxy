@@ -724,25 +724,6 @@ div.toolSectionTitle {
 
 // @import "base_sprites";
 
-.text-and-autocomplete-select {
-    // -sprite-group: fugue;
-    // -sprite-image: fugue/control-270@extend png;
-    // -sprite-horiz-position: right;
-    background: none;
-    position: relative;
-    padding-right: 18px;
-    &:after {
-        margin-top: 6px;
-        position: absolute;
-        top: 2px;
-        right: 6px;
-        width: 10px;
-        height: 10px;
-        @include caret();
-        @include opacity(80);
-    }
-}
-
 .icon-button.general-question {
     background: url(../../assets/images/question-octagon-frame.png) no-repeat;
     float: right;

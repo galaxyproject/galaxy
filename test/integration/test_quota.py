@@ -105,6 +105,70 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         assert json_response["name"] == quota_name
         assert json_response["description"] == quota_description
 
+        put_response = self._put(f"quotas/{quota_id}", data={"name": quota_name, "description": ""}, json=True)
+        put_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        assert show_response.json()["description"] == ""
+
+    def test_update_users(self):
+        user_email = "test-update-quota-users@galaxy.test"
+        user = self.galaxy_interactor.ensure_user_with_email(user_email)
+        quota_id = self._create_quota_with_name("test-update-quota-users")["id"]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_users": [user["id"]]}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"name": "test-update-quota-users-renamed"}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_groups": []}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == [user_email]
+
+        put_response = self._put(f"quotas/{quota_id}", data={"in_users": []}, json=True)
+        put_response.raise_for_status()
+        assert self._quota_user_emails(quota_id) == []
+
+    def test_rejected_update_changes_nothing(self):
+        quota_name = "test-rejected-update-quota"
+        quota_id = self._create_quota_with_name(quota_name)["id"]
+
+        payload = {"name": f"{quota_name}-renamed", "amount": "12 foo", "operation": "="}
+        put_response = self._put(f"quotas/{quota_id}", data=payload, json=True)
+        self._assert_status_code_is(put_response, 400)
+        assert self._get(f"quotas/{quota_id}").json()["name"] == quota_name
+
+    def test_rejected_users_on_default_quota_changes_nothing(self):
+        user = self.galaxy_interactor.ensure_user_with_email("test-rejected-default-quota-users@galaxy.test")
+        quota_name = "test-rejected-default-quota-users"
+        quota_id = self._create_quota_with_name(quota_name, is_default=True)["id"]
+
+        payload = {"name": f"{quota_name}-renamed", "in_users": [user["id"]]}
+        put_response = self._put(f"quotas/{quota_id}", data=payload, json=True)
+        self._assert_status_code_is(put_response, 400)
+        quota = self._get(f"quotas/{quota_id}").json()
+        assert quota["name"] == quota_name
+        assert quota["users"] == []
+
+    def test_show_with_group(self):
+        group_name = "test-show-quota-group"
+        group_response = self._post("groups", data={"name": group_name}, json=True)
+        group_response.raise_for_status()
+        group_id = group_response.json()[0]["id"]
+        payload = self._build_quota_payload_with_name("test-show-quota-with-group")
+        payload["in_groups"].append(group_id)
+        create_response = self._post("quotas", data=payload, json=True)
+        create_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{create_response.json()['id']}")
+        show_response.raise_for_status()
+        groups = [association["group"] for association in show_response.json()["groups"]]
+        assert [(group["id"], group["name"]) for group in groups] == [(group_id, group_name)]
+
     def test_delete(self):
         quota_name = "test-delete-quota"
         quota = self._create_quota_with_name(quota_name)
@@ -240,6 +304,11 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
             "in_users": [],
             "in_groups": [],
         }
+
+    def _quota_user_emails(self, quota_id: str) -> list[str]:
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        return [association["user"]["email"] for association in show_response.json()["users"]]
 
     def _delete_and_purge(self, quota_id):
         data = {"purge": "true"}

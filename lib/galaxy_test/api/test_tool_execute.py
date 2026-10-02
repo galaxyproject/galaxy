@@ -7,7 +7,9 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+import copy
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -97,7 +99,9 @@ def test_multi_select_optional(required_tool: RequiredTool, tool_input_format: D
 def test_identifier_outside_map(target_history: TargetHistory, required_tool: RequiredTool):
     hda = target_history.with_dataset("123", named="Plain HDA")
     execute = required_tool.execute().with_inputs({"input1": hda.src_dict})
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Plain HDA")
+    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped(
+        "identifier Plain HDA\nsafe_identifier Plain_HDA"
+    )
 
 
 @requires_tool_id("identifier_multiple")
@@ -205,7 +209,9 @@ def test_identifier_with_data_collection(target_history: TargetHistory, required
     contents = [("foo", "text for foo element"), ("bar", "more text for bar element")]
     hdca = target_history.with_list(contents)
     execute = required_tool.execute().with_inputs({"input1": hdca.src_dict})
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("foo\nbar")
+    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped(
+        "identifier foo\nsafe_identifier foo\nidentifier bar\nsafe_identifier bar"
+    )
 
 
 @requires_tool_id("identifier_in_actions")
@@ -718,6 +724,34 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute.assert_creates_implicit_collection(0)
 
 
+@requires_tool_id("gx_data")
+def test_job_cache_not_used_for_datasets_with_different_extra_files(
+    target_history: TargetHistory, required_tool: RequiredTool
+) -> None:
+    velvet_upload_request: dict[str, Any] = {
+        "src": "composite",
+        "ext": "velvet",
+        "composite": {
+            "items": [
+                {"src": "pasted", "paste_content": "sequences content"},
+                {"src": "pasted", "paste_content": "roadmaps content"},
+                {"src": "pasted", "paste_content": "log content"},
+            ]
+        },
+    }
+    velvet1_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_upload_request, wait=True)
+    velvet1 = {"src": "hda", "id": velvet1_hda["id"]}
+    _ = required_tool.execute().with_inputs({"parameter": velvet1}).assert_has_single_job
+
+    # Same primary file ("sequences"), but a different extra file ("roadmaps").
+    velvet_modified_request = copy.deepcopy(velvet_upload_request)
+    velvet_modified_request["composite"]["items"][1]["paste_content"] = "roadmaps content MODIFIED"
+    velvet2_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_modified_request, wait=True)
+    velvet2 = {"src": "hda", "id": velvet2_hda["id"]}
+    job = required_tool.execute(use_cached_job=True).with_inputs({"parameter": velvet2}).assert_has_single_job
+    assert not job.final_details["copied_from_job_id"]
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the
@@ -785,6 +819,7 @@ def test_select_optional_null_by_default(required_tools: list[RequiredTool], too
 
 @requires_tool_id("gx_select_multiple")
 @requires_tool_id("gx_select_multiple_optional")
+@requires_tool_id("gx_select_multiple_no_options_validation")
 def test_select_multiple_does_not_select_first_by_default(
     required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
 ):
@@ -798,6 +833,17 @@ def test_select_multiple_does_not_select_first_by_default(
         required_tool.execute().with_inputs(null_parameter).assert_has_single_job.with_output(
             "output"
         ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_genomebuild_multiple")
+def test_genomebuild_multiple_is_optional_by_default(
+    required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    # genomebuild is a SelectToolParameter subclass, so multiple implies optional here too
+    for inputs in [tool_input_format.when.any({}), tool_input_format.when.any({"parameter": None})]:
+        required_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_contents_stripped(
+            "parameter: None"
+        )
 
 
 @requires_tool_id("gx_select_multiple_one_default")

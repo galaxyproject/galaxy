@@ -19,8 +19,8 @@
         <div role="group" class="form-group">
             <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
         </div>
-        <b-button type="submit" variant="primary">Save</b-button>
-        <b-button type="reset" variant="danger">Cancel</b-button>
+        <GButton type="submit" color="blue">Save</GButton>
+        <GButton type="reset" color="red">Cancel</GButton>
     </b-form>
 </template>
 
@@ -29,6 +29,8 @@ import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingFormMixin from "./ThingFormMixin";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const ATTRIBUTES_INFO = [
     { key: "name", label: "Name", placeholder: "name" },
@@ -46,6 +48,7 @@ const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
     },
     mixins: [ThingFormMixin],
     props: {

@@ -890,7 +890,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             return x.to_dict()
 
         tool = self.service._get_materialized_tool(trans, id, user=trans.user, materialization_reason="job_setup")
-        if hasattr(tool, "lineage"):
+        if hasattr(tool, "lineage") and tool.lineage is not None:
             lineage_dict = tool.lineage.to_dict()
         else:
             lineage_dict = None

@@ -53,10 +53,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
 
-        # importing modal should be hidden
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-
-        # assert 'user import folder was not created' warning
+        # assert 'user import folder was not created' warning is shown inside the import modal
         self.components.libraries.folder.alert_not_exists_user_import_dir.wait_for_visible()
 
     @selenium_test
@@ -100,8 +97,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         allowed_user_email = self.components.libraries.add_items_permission_field_text.wait_for_text()
         assert allowed_user_email == email
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
-        # assert that toast message is appearing
-        self.components.libraries.folder.toast_msg.wait_for_visible()
+        # the "Library created." toast may still be visible, only this one proves the save completed
+        self.components.libraries.folder.toast_msg_with_text(text="Library permissions saved.").wait_for_visible()
 
         self.logout()
         # login back to the 'regular' user account

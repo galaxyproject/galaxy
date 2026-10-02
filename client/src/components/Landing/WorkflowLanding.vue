@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 
 import { useActivityStore } from "@/stores/activityStore";
 import { useWorkflowLandingStore } from "@/stores/workflowLandingStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 
@@ -34,9 +34,9 @@ claimWorkflow(props.uuid, props.public, props.secret).then(() => {
 <template>
     <div>
         <div v-if="claimState.errorMessage">
-            <BAlert variant="danger" show>
+            <GAlert variant="danger" show>
                 {{ claimState.errorMessage }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="!claimState.workflowId">
             <LoadingSpan message="Loading workflow parameters" />

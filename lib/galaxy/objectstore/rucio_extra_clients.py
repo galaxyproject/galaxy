@@ -21,7 +21,7 @@ except ImportError:
     UploadClient = object
 
 
-class DeleteClient(UploadClient):
+class DeleteClient(UploadClient):  # type: ignore[misc]  # rucio is untyped
     def delete(self, items, forced_schemes=None, ignore_availability=False):
         for item in items:
             self._delete_item(item, forced_schemes, ignore_availability)
@@ -61,7 +61,7 @@ class DeleteClient(UploadClient):
             logger(logging.DEBUG, "Successfully deleted dataset %s", pfn)
 
 
-class InPlaceIngestClient(UploadClient):
+class InPlaceIngestClient(UploadClient):  # type: ignore[misc]  # rucio is untyped
     def __init__(self, client, register_with_checksum):
         super().__init__(client)
         self.register_with_checksum = register_with_checksum

@@ -4,7 +4,7 @@ import { computed, WritableComputedRef } from "vue"
 export function useModelWrapper<TProps, TKey extends keyof TProps>(
     props: TProps,
     emit: (event: string, value: TProps[TKey]) => void,
-    name: TKey = "modelValue" as TKey
+    name: TKey = "modelValue" as TKey,
 ): WritableComputedRef<TProps[TKey]> {
     return computed<TProps[TKey]>({
         get: () => props[name],

@@ -3,9 +3,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestHistoryExport(SeleniumTestCase):
+class TestHistoryExport(SeleniumTestCase, UsesUploadActivity):
     """Test history export wizard (requires Celery + STS enabled, the default)."""
 
     ensure_registered = True
@@ -13,7 +14,7 @@ class TestHistoryExport(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_history_native_export_to_file(self):
-        self.perform_upload_of_pasted_content("my cool content")
+        self.upload_context("paste-content").stage_paste_content("my cool content").start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.home()
@@ -45,7 +46,7 @@ class TestHistoryExport(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_history_rocrate_export_to_file(self):
-        self.perform_upload_of_pasted_content("my cool content")
+        self.upload_context("paste-content").stage_paste_content("my cool content").start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.home()

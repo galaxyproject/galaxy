@@ -1,4 +1,9 @@
-from galaxy.model import Role
+from sqlalchemy import select
+
+from galaxy.model import (
+    Role,
+    UserRoleAssociation,
+)
 from galaxy.model.db.role import (
     get_displayable_roles,
     get_npns_roles,
@@ -35,6 +40,34 @@ def test_get_private_user_role(session, make_user, make_role, make_user_role_ass
 
     role = get_private_user_role(u1, session)
     assert role is r1
+
+
+def test_get_private_user_role_with_duplicate_private_roles(session, make_user, make_role, make_user_role_association):
+    user = make_user()
+    r1 = make_role(type=Role.types.PRIVATE)
+    r2 = make_role(type=Role.types.PRIVATE)
+    make_user_role_association(user, r1)
+    make_user_role_association(user, r2)
+
+    assert len(session.scalars(_private_roles_stmt(user)).all()) == 2
+    assert get_private_user_role(user, session) is r1
+
+
+def test_attempt_create_private_role_does_not_create_a_second_private_role(session, make_user):
+    user = make_user()
+
+    user.attempt_create_private_role()
+    user.attempt_create_private_role()
+
+    assert len(session.scalars(_private_roles_stmt(user)).all()) == 1
+
+
+def _private_roles_stmt(user):
+    return (
+        select(Role)
+        .join(UserRoleAssociation, Role.id == UserRoleAssociation.role_id)
+        .where(UserRoleAssociation.user_id == user.id, Role.type == Role.types.PRIVATE)
+    )
 
 
 def test_get_roles_by_ids(session, make_role):

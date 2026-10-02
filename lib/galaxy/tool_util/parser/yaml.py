@@ -19,6 +19,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
+    ParseException,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
@@ -76,6 +77,9 @@ class YamlToolSource(ToolSource):
     def parse_class(self):
         return self.root_dict.get("class")
 
+    def allows_tool_provided_metadata(self) -> bool:
+        return self.parse_class() in (None, "GalaxyTool")
+
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
 
@@ -113,6 +117,12 @@ class YamlToolSource(ToolSource):
     def parse_xrefs(self) -> list[XrefDict]:
         xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
+
+    def parse_creator(self) -> list[dict[str, Any]]:
+        return self.root_dict.get("creator") or []
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        return [{"class": "Grant", **grant} for grant in self.root_dict.get("funding") or []]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -155,7 +165,16 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements(self):
-        mixed_requirements = self.root_dict.get("requirements", [])
+        mixed_requirements = self.root_dict.get("requirements") or []
+        if self.parse_class() == "GalaxyUserTool":
+            if not isinstance(mixed_requirements, list) or not all(
+                isinstance(requirement, dict) for requirement in mixed_requirements
+            ):
+                raise ParseException("User-defined tool requirements must be a list of mappings.")
+            if any(requirement.get("type") == "container" for requirement in mixed_requirements):
+                raise ParseException(
+                    "Container requirements are not supported for user-defined tools; set the top-level container field."
+                )
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")
         if container:
@@ -282,7 +301,9 @@ class YamlToolSource(ToolSource):
             inputs = test_dict.get("inputs", {})
             state = TestCaseJsonToolState(inputs)
             parameters = self._parse_parameters()
-            state.validate(parameters, name=f"test case json {i}")
+            if not test_dict.get("expect_failure", False):
+                # tests expecting failure may supply values the tool rejects
+                state.validate(parameters, name=f"test case json {i}")
 
             flat_inputs: dict[str, Any] = {}
             self._flatten_parameters(inputs, parameters, flat_inputs=flat_inputs)
@@ -386,7 +407,7 @@ def __parse_test_inputs(i: int, test_inputs: list | dict) -> ToolSourceTestInput
 
 def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     test_dict["inputs"] = __parse_test_inputs(i, deepcopy(test_dict["inputs"]))
-    outputs = test_dict["outputs"]
+    outputs = test_dict.get("outputs") or {}
 
     new_outputs = []
     if is_dict(outputs):

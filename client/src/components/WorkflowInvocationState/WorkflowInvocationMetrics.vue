@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
+import { BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
 import { computed, ref, watch } from "vue";
 
-import { type components, GalaxyApi } from "@/api";
+import type { WorkflowJobMetric } from "@/api/invocations";
 import { getAppRoot } from "@/onload/loadConfig";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
@@ -20,38 +23,39 @@ interface Props {
 }
 const props = defineProps<Props>();
 
+const invocationStore = useInvocationStore();
+
 const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const timing = ref<"seconds" | "minutes" | "hours">("seconds");
-const jobMetrics = ref<components["schemas"]["WorkflowJobMetric"][]>();
-const fetchError = ref<string>();
+
+// Fetch explicitly, once per `invocationId`, instead of relying on `jobMetrics`'s read to trigger it
+// via the store's fetch-if-absent accessor; that accessor only records "already fetching" state
+// after the fetch resolves, so a re-render before then (e.g. vue-router resolving async components)
+// could read it mid-flight and fire a real duplicate request.
+const hasLoadedMetricsForInvocationId = ref<string>();
+watch(
+    () => props.invocationId,
+    async (invocationId) => {
+        await invocationStore.fetchInvocationMetricsForId({ id: invocationId });
+        hasLoadedMetricsForInvocationId.value = invocationId;
+    },
+    { immediate: true },
+);
+
+// Only read the store's accessor (and let it self-refresh) once our own fetch above has resolved.
+const jobMetrics = computed(() => {
+    if (hasLoadedMetricsForInvocationId.value !== props.invocationId) {
+        return undefined;
+    }
+    return invocationStore.getInvocationMetricsById(props.invocationId) ?? undefined;
+});
 
 const attributeToLabel = {
     tool_id: "Tool ID",
     step_id: "Step",
 };
 
-async function fetchMetrics() {
-    const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/metrics", {
-        params: {
-            path: {
-                invocation_id: props.invocationId,
-            },
-        },
-    });
-    if (error) {
-        fetchError.value = errorMessageAsString(error);
-    } else {
-        jobMetrics.value = data;
-    }
-}
-
-watch(
-    () => props.invocationId,
-    () => fetchMetrics(),
-    { immediate: true },
-);
-
-function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
+function itemToX(item: WorkflowJobMetric) {
     if (groupBy.value === "tool_id") {
         return item.tool_id;
     } else if (groupBy.value === "step_id") {
@@ -99,11 +103,9 @@ interface DerivedMetric {
     step_label: string | null;
 }
 
-type AnyMetric = components["schemas"]["WorkflowJobMetric"] & DerivedMetric;
+type AnyMetric = WorkflowJobMetric & DerivedMetric;
 
-function computeAllocatedCoreTime(
-    jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined,
-): DerivedMetric[] {
+function computeAllocatedCoreTime(jobMetrics: WorkflowJobMetric[] | undefined): DerivedMetric[] {
     const walltimePerJob: Record<string, number> = {};
     const coresPerJob: Record<string, number> = {};
     const jobInfo: Record<string, JobInfo> = {};
@@ -402,27 +404,27 @@ const groupByInTitles = computed(() => {
 
 <template>
     <div>
-        <BAlert v-if="props.notTerminal" variant="warning" show>
+        <GAlert v-if="props.notTerminal" variant="warning" show>
             <LoadingSpan message="Metrics will update and change as the workflow progresses." />
-        </BAlert>
+        </GAlert>
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
-                    <BDropdown variant="outline-primary" size="sm" right :text="'Timing: ' + timingInTitles">
-                        <BDropdownItem @click="timing = 'seconds'">
+                    <GDropdown variant="outline-primary" size="sm" right :text="'Timing: ' + timingInTitles">
+                        <GDropdownItem @click="timing = 'seconds'">
                             {{ capitalizeFirstLetter("seconds") }}
-                        </BDropdownItem>
-                        <BDropdownItem @click="timing = 'minutes'">
+                        </GDropdownItem>
+                        <GDropdownItem @click="timing = 'minutes'">
                             {{ capitalizeFirstLetter("minutes") }}
-                        </BDropdownItem>
-                        <BDropdownItem @click="timing = 'hours'">
+                        </GDropdownItem>
+                        <GDropdownItem @click="timing = 'hours'">
                             {{ capitalizeFirstLetter("hours") }}
-                        </BDropdownItem>
-                    </BDropdown>
-                    <BDropdown variant="outline-primary" size="sm" right :text="'Group By: ' + groupByInTitles">
-                        <BDropdownItem @click="groupBy = 'tool_id'">Tool</BDropdownItem>
-                        <BDropdownItem @click="groupBy = 'step_id'">Workflow Step</BDropdownItem>
-                    </BDropdown>
+                        </GDropdownItem>
+                    </GDropdown>
+                    <GDropdown variant="outline-primary" size="sm" right :text="'Group By: ' + groupByInTitles">
+                        <GDropdownItem @click="groupBy = 'tool_id'">Tool</GDropdownItem>
+                        <GDropdownItem @click="groupBy = 'step_id'">Workflow Step</GDropdownItem>
+                    </GDropdown>
                 </BButtonGroup>
             </BRow>
             <BRow>

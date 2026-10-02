@@ -62,6 +62,7 @@ export default {
 <style scoped>
 .editor-container {
     width: 100%;
-    height: 600px;
+    flex: 1 1 0;
+    min-height: 0;
 }
 </style>

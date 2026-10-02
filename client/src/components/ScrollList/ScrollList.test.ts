@@ -141,6 +141,27 @@ describe("ScrollList with local loader and data", () => {
         expect(testLoader).toHaveBeenCalledTimes(Math.ceil(TOTAL_ITEMS / BUFFER_SIZE));
     });
 
+    it("stops auto-retrying on error until the user clicks Load More", async () => {
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(1);
+
+        // Next load fails
+        testLoader.mockRejectedValueOnce(new Error("Boom"));
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(2);
+
+        // Further scrolling must NOT retry automatically
+        await scrollOnce();
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(2);
+
+        // Clicking "Load More" clears the error and retries
+        await wrapper.find(LOAD_MORE_BUTTON).trigger("click");
+        await nextTick();
+        expect(testLoader).toHaveBeenCalledTimes(3);
+        expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE * 2);
+    });
+
     it("shows item count and total items", async () => {
         await scrollOnce();
         expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE} out of ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL}`);

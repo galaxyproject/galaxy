@@ -170,7 +170,11 @@ class InteractiveToolManager:
         self.dispatcher = dispatcher if dispatcher is not None else app.resolve_or_none(SSEEventDispatcher)
 
     def create_entry_points(
-        self, job: Job, tool: "Tool", entry_points=Iterable[dict[str, Any]] | None, flush: bool = True
+        self,
+        job: Job,
+        tool: "Tool",
+        entry_points: Iterable[dict[str, Any]] | None = None,
+        flush: bool = True,
     ) -> None:
         entry_points = entry_points or tool.ports
         for entry in entry_points:
@@ -283,11 +287,7 @@ class InteractiveToolManager:
         job = entry_point.job
         if job and not job.finished:
             log.debug("Stopping Job: %s for InteractiveToolEntryPoint: %s", job, entry_point)
-            job.mark_stopped(trans.app.config.track_jobs_in_database)
-            # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
-            self.job_manager.stop(job)
-            trans.sa_session.add(job)
-            trans.sa_session.commit()
+            self.job_manager.stop_without_failing(job)
 
     def remove_entry_points(self, entry_points: Iterable[InteractiveToolEntryPoint]) -> None:
         if entry_points:

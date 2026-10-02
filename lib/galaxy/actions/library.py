@@ -321,9 +321,9 @@ class LibraryActions:
         uploaded_dataset.purge_source = getattr(trans.app.config, "ftp_upload_purge", True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder
+        uploaded_dataset.uuid = uuid_str
         uploaded_dataset.data = upload_common.new_upload(trans, "api", uploaded_dataset, library_bunch)
         uploaded_dataset.link_data_only = link_data_only
-        uploaded_dataset.uuid = uuid_str
         if link_data_only == "link_to_files":
             uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))

@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, toRef } from "vue";
 
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
@@ -7,6 +6,7 @@ import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/u
 
 import { useTemplateFormData } from "./useTemplateFormData";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 
 const createUrl = "/api/file_source_instances";
@@ -45,9 +45,9 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
 <template>
     <div id="create-file-source-landing">
         <ActionSummary error-data-description="file-source-creation-error" :test-results="testResults" :error="error" />
-        <BAlert v-for="message in messages" :key="message.content" show :variant="message.variant">
+        <GAlert v-for="message in messages" :key="message.content" show :variant="message.variant">
             <ConfigurationMarkdown :markdown="message.content" :admin="true" />
-        </BAlert>
+        </GAlert>
         <InstanceForm
             :inputs="inputs"
             :title="title"

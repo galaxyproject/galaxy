@@ -80,6 +80,10 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    If you are working on the Galaxy user interface (i.e. JavaScript,
    styles, etc.), see more information in the [client README](client/README.md).
 
+   If you need to modify Galaxy's or the Tool Shed's configuration schema, or
+   add or update a Python dependency, see the relevant entries in the
+   [Galaxy Development FAQ](doc/source/dev/faq.rst).
+
 5. Galaxy contains hundreds of tests of different types and complexity and
    running each is difficult and probably not reasonable on your workstation. So
    please review the [running tests documentation](test/TESTING.md) and run any

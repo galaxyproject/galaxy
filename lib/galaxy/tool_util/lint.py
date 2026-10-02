@@ -52,21 +52,28 @@ from abc import (
 from collections.abc import Callable
 from enum import IntEnum
 from typing import (
+    Generic,
     TYPE_CHECKING,
-    TypeVar,
 )
+
+from typing_extensions import TypeVar
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.util import (
     Element,
     submodules,
+    unicodify,
 )
 
 if TYPE_CHECKING:
-    from galaxy.tool_util.parser.interface import ToolSource
     from galaxy.tool_util_models import UserToolSource
+
+# The object classified by a linter.
+LintTargetType = TypeVar("LintTargetType", default=ToolSource)
 
 
 class LintLevel(IntEnum):
@@ -78,15 +85,17 @@ class LintLevel(IntEnum):
     ALL = 0
 
 
-class Linter(ABC):
+class Linter(ABC, Generic[LintTargetType]):
     """
     a linter. needs to define a lint method and the code property.
     optionally a fix method can be given
+
+    Generic over the lint target so non-tool linters can specialize it.
     """
 
     @classmethod
     @abstractmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: LintTargetType, lint_ctx: "LintContext") -> None:
         """
         should add at most one message to the lint context
         """
@@ -105,6 +114,9 @@ class Linter(ABC):
         list the names of all linter derived from Linter
         """
         submodules.import_submodules(galaxy.tool_util.linters)
+        # Register repository linters without introducing a module-level cycle.
+        from galaxy.tool_util.data.bundles import lint as _repo_lint  # noqa: F401
+
         return [s.__name__ for s in cls.__subclasses__()]
 
     list_listers: Callable[[], list[str]]  # deprecated alias
@@ -182,9 +194,6 @@ class XMLLintMessageXPath(LintMessage):
         return rval
 
 
-LintTargetType = TypeVar("LintTargetType")
-
-
 # TODO: Nothing inherently tool-y about LintContext and in fact
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
@@ -203,6 +212,7 @@ class LintContext:
         object_name: str | None = None,
     ):
         self.skip_types = skip_types or []
+        self._reported_failures: set[str] = set()
         if isinstance(level, str):
             self.level = LintLevel[level.upper()]
         else:
@@ -243,7 +253,12 @@ class LintContext:
             self.message_list = []
 
         # call linter
-        lint_func(lint_target, self)
+        try:
+            lint_func(lint_target, self)
+        except ParseException as e:
+            # Attribute the error to parsing, not whichever linter happened to
+            # encounter the unparseable part of the tool source first.
+            self._report_failure(f"Tool could not be parsed: {unicodify(e)}", "ToolParse")
 
         if self.level < LintLevel.SILENT:
             for message in self.error_messages:
@@ -287,6 +302,14 @@ class LintContext:
 
     def info(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("info", message, linter, *args, **kwargs)
+
+    def _report_failure(self, message: str, linter: str) -> None:
+        # Several linters parse the same tool source, so an unparseable tool would
+        # otherwise report the same failure once per linter.
+        if message in self._reported_failures:
+            return
+        self._reported_failures.add(message)
+        self.error(message, linter=linter)
 
     def error(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("error", message, linter, *args, **kwargs)

@@ -183,7 +183,7 @@ describe("FilterMenu", () => {
             }
         });
         // `has_help` filter should have help modal button
-        expect(wrapper.find("[title='Value Help']").classes().includes("btn")).toBe(true);
+        expect(wrapper.find("[title='Value Help']").classes().includes("g-button")).toBe(true);
         // ranged time field (has 2 datepickers)
         const createdGtInput = wrapper.find("[placeholder='after creation time']");
         const createdLtInput = wrapper.find("[placeholder='before creation time']");

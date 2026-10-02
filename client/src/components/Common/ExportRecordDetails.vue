@@ -10,13 +10,13 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from "@/components/Common";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 
@@ -152,7 +152,7 @@ function onMessageDismissed() {
                     administrator.
                 </span>
 
-                <BAlert :show="props.record.errorMessage" variant="danger">{{ props.record.errorMessage }}</BAlert>
+                <GAlert :show="props.record.errorMessage" variant="danger">{{ props.record.errorMessage }}</GAlert>
             </span>
             <span v-if="props.record.isUpToDate" title="Up to date">
                 <FontAwesomeIcon :icon="faCheckCircle" class="text-success record-up-to-date-icon" />
@@ -181,7 +181,7 @@ function onMessageDismissed() {
                 </span>
             </span>
 
-            <BAlert
+            <GAlert
                 v-if="props.actionMessage !== undefined"
                 :variant="props.actionMessageVariant"
                 show
@@ -189,7 +189,7 @@ function onMessageDismissed() {
                 dismissible
                 @dismissed="onMessageDismissed">
                 {{ props.actionMessage }}
-            </BAlert>
+            </GAlert>
         </template>
     </GCard>
 </template>

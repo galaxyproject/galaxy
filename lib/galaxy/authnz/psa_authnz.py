@@ -2,7 +2,10 @@ import json
 import logging
 import time
 from typing import TYPE_CHECKING
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import jwt
 from jwt import InvalidTokenError
@@ -85,6 +88,7 @@ BACKENDS = {
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
+    "helmholtz": "social_core.backends.helmholtz.HelmholtzOpenIdConnect",
     "oidc": "galaxy.authnz.oidc.GalaxyOpenIdConnect",
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
@@ -102,6 +106,7 @@ BACKENDS_NAME = {
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
+    "helmholtz": "helmholtz",
     "oidc": "oidc",
     "tapis": "tapis",
     "keycloak": "keycloak",
@@ -273,6 +278,19 @@ class PSAAuthnz(IdentityProvider):
         backend = get_backend(backends, BACKENDS_NAME[self.config["provider"]])
         return backend(strategy, redirect_uri)
 
+    def _get_user_id_token(self, user):
+        if user is None:
+            return None
+
+        provider_name = BACKENDS_NAME[self.config["provider"]]
+        for social_auth in user.social_auth:
+            if social_auth.provider != provider_name:
+                continue
+            extra_data = social_auth.extra_data or {}
+            return extra_data.get("id_token")
+
+        return None
+
     def _login_user(self, backend, user, social_user):
         self.config["user"] = user
 
@@ -423,11 +441,19 @@ class PSAAuthnz(IdentityProvider):
                 end_session_endpoint = oidc_config.get("end_session_endpoint")
 
                 if end_session_endpoint:
-                    # Construct logout URL with optional redirect_uri
+                    logout_params = {}
+
+                    # Provide the current ID token so providers such as Keycloak
+                    # can complete RP-initiated logout without showing a confirmation page.
+                    if id_token := self._get_user_id_token(trans.user):
+                        logout_params["id_token_hint"] = id_token
+
                     if post_user_logout_href:
-                        logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
-                    else:
-                        logout_url = end_session_endpoint
+                        logout_params["post_logout_redirect_uri"] = post_user_logout_href
+
+                    logout_url = end_session_endpoint
+                    if logout_params:
+                        logout_url = f"{logout_url}?{urlencode(logout_params)}"
 
                     return logout_url
                 else:
@@ -832,7 +858,14 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
     # Update email and keep private role in sync only when changed
     if details and details.get("email") and user.email != details["email"]:
         try:
-            manager.update_email(trans, user, details["email"], commit=False, send_activation_email=False)
+            manager.update_email(
+                trans,
+                user,
+                details["email"],
+                commit=False,
+                send_activation_email=False,
+                asserted_by_identity_provider=True,
+            )
             updates.append("email")
         except galaxy_exceptions.MessageException as exc:
             log.warning("OIDC email sync skipped for user %s: %s", user.id, exc)

@@ -13,9 +13,11 @@ import type {
 } from "./pages";
 import {
     createHistoryPage,
+    createPage,
     deleteHistoryPage,
     fetchHistoryPage,
     fetchHistoryPages,
+    loadPages,
     savePage,
     updateHistoryPage,
 } from "./pages";
@@ -224,6 +226,153 @@ describe("pages API", () => {
 
             expect(result.content).toBe("# Agent Content");
             expect(result.edit_source).toBe("agent");
+        });
+    });
+
+    describe("loadPages", () => {
+        it("requests own pages and parses total matches by default", async () => {
+            let query: URLSearchParams | undefined;
+
+            server.use(
+                http.get("/api/pages", ({ request, response }) => {
+                    query = new URL(request.url).searchParams;
+                    return response(200).json([TEST_PAGE_SUMMARY], { headers: { total_matches: "7" } });
+                }),
+            );
+
+            const result = await loadPages();
+
+            expect(result.data).toEqual([TEST_PAGE_SUMMARY]);
+            expect(result.totalMatches).toBe(7);
+            expect(query?.get("show_own")).toBe("true");
+            expect(query?.get("show_shared")).toBe("false");
+            expect(query?.get("show_published")).toBe("false");
+            expect(query?.get("sort_by")).toBe("update_time");
+            expect(query?.get("sort_desc")).toBe("true");
+            expect(query?.get("limit")).toBe("20");
+            expect(query?.get("offset")).toBe("0");
+        });
+
+        it("passes through visibility, search, sorting and paging options", async () => {
+            let query: URLSearchParams | undefined;
+
+            server.use(
+                http.get("/api/pages", ({ request, response }) => {
+                    query = new URL(request.url).searchParams;
+                    return response(200).json([]);
+                }),
+            );
+
+            await loadPages({
+                showOwn: false,
+                showShared: true,
+                showPublished: true,
+                search: "analysis",
+                sortBy: "title",
+                sortDesc: false,
+                limit: 5,
+                offset: 10,
+            });
+
+            expect(query?.get("show_own")).toBe("false");
+            expect(query?.get("show_shared")).toBe("true");
+            expect(query?.get("show_published")).toBe("true");
+            expect(query?.get("search")).toBe("analysis");
+            expect(query?.get("sort_by")).toBe("title");
+            expect(query?.get("sort_desc")).toBe("false");
+            expect(query?.get("limit")).toBe("5");
+            expect(query?.get("offset")).toBe("10");
+        });
+
+        it("converts the is:standalone filter to the backend type filter", async () => {
+            let query: URLSearchParams | undefined;
+
+            server.use(
+                http.get("/api/pages", ({ request, response }) => {
+                    query = new URL(request.url).searchParams;
+                    return response(200).json([]);
+                }),
+            );
+
+            await loadPages({ search: "notes is:standalone" });
+
+            expect(query?.get("search")).toBe("notes type:standalone");
+        });
+
+        it("defaults total matches to zero when the header is missing", async () => {
+            server.use(
+                http.get("/api/pages", ({ response }) => {
+                    return response(200).json([]);
+                }),
+            );
+
+            const result = await loadPages();
+
+            expect(result.totalMatches).toBe(0);
+        });
+
+        it("throws on server error", async () => {
+            server.use(
+                http.get("/api/pages", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Not allowed", err_code: 403 }, { status: 403 });
+                }),
+            );
+
+            await expect(loadPages()).rejects.toThrow();
+        });
+    });
+
+    describe("createPage", () => {
+        it("creates a markdown page by default and returns it", async () => {
+            let body: Record<string, unknown> | undefined;
+
+            server.use(
+                http.post("/api/pages", async ({ request, response }) => {
+                    body = (await request.json()) as Record<string, unknown>;
+                    return response(200).json({ ...TEST_PAGE_DETAILS, title: "My Notes", slug: "my-notes" });
+                }),
+            );
+
+            const result = await createPage({ title: "My Notes", slug: "my-notes" });
+
+            expect(body).toEqual({
+                title: "My Notes",
+                slug: "my-notes",
+                content: "",
+                content_format: "markdown",
+            });
+            expect(result.id).toBe(TEST_PAGE_ID);
+            expect(result.slug).toBe("my-notes");
+        });
+
+        it("allows overriding the content format and content", async () => {
+            let body: Record<string, unknown> | undefined;
+
+            server.use(
+                http.post("/api/pages", async ({ request, response }) => {
+                    body = (await request.json()) as Record<string, unknown>;
+                    return response(200).json(TEST_PAGE_DETAILS);
+                }),
+            );
+
+            await createPage({ title: "Legacy", slug: "legacy", content_format: "html", content: "<p>hi</p>" });
+
+            expect(body).toEqual({
+                title: "Legacy",
+                slug: "legacy",
+                content: "<p>hi</p>",
+                content_format: "html",
+            });
+        });
+
+        it("throws when the slug is already taken", async () => {
+            server.use(
+                http.post("/api/pages", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Slug already exists", err_code: 400 }, { status: 400 });
+                }),
+            );
+
+            await expect(createPage({ title: "My Notes", slug: "my-notes" })).rejects.toThrow();
         });
     });
 

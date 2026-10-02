@@ -1,0 +1,7 @@
+<tables>
+    <!-- 'value' is declared twice. The parsed columns dict collapses it, so the
+         duplicate is only visible in the raw declared column list. -->
+    <table name="dup_cols" comment_char="#">
+        <columns>value, value, path</columns>
+    </table>
+</tables>

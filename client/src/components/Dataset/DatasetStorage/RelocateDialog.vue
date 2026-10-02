@@ -1,72 +1,58 @@
 <script setup lang="ts">
-import type { ConcreteObjectStoreModel, SelectableObjectStore } from "@/api";
+import type { UserConcreteObjectStoreModel } from "@/api";
 
-import ObjectStoreSelectButton from "@/components/ObjectStore/ObjectStoreSelectButton.vue";
-import ObjectStoreSelectButtonDescribePopover from "@/components/ObjectStore/ObjectStoreSelectButtonDescribePopover.vue";
+import Heading from "@/components/Common/Heading.vue";
+import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
+import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 
 interface RelocateProps {
-    fromObjectStore: ConcreteObjectStoreModel;
-    targetObjectStores: SelectableObjectStore[];
+    fromObjectStore: UserConcreteObjectStoreModel;
+    targetObjectStores: UserConcreteObjectStoreModel[];
 }
 
 defineProps<RelocateProps>();
 
 const emit = defineEmits<{
     (e: "relocate", value: string): void;
-    (e: "closeModal"): void;
 }>();
 
-function relocate(objectStoreId: string) {
-    emit("relocate", objectStoreId);
+function relocate(objectStoreId?: string | null) {
+    if (objectStoreId) {
+        emit("relocate", objectStoreId);
+    }
 }
-
-const fromWhat = "This dataset location is";
-const toWhat = "This dataset will be relocated to";
 </script>
 
 <template>
     <div>
-        <p>Currently the dataset is located in:</p>
-        <b-button-group vertical size="lg" class="select-button-group">
-            <ObjectStoreSelectButton
-                :key="fromObjectStore.object_store_id"
-                id-prefix="swap-target"
-                class="swap-target-object-store-select-button"
-                variant="info"
-                :object-store="fromObjectStore"
-                @click="emit('closeModal')" />
-        </b-button-group>
-        <p class="relocate-to">Select new Galaxy storage for the dataset:</p>
-        <b-button-group vertical size="lg" class="select-button-group">
-            <ObjectStoreSelectButton
+        <Heading size="sm" separator>Currently the dataset is located in</Heading>
+        <div class="select-card-group">
+            <SourceOptionCard :source-option="fromObjectStore" selected>
+                <template v-slot:badges>
+                    <ObjectStoreBadges :badges="fromObjectStore.badges" size="lg" />
+                </template>
+            </SourceOptionCard>
+        </div>
+        <Heading size="sm" separator>Select new Galaxy storage for the dataset</Heading>
+        <div class="select-card-group">
+            <SourceOptionCard
                 v-for="objectStore in targetObjectStores"
                 :key="objectStore.object_store_id"
-                id-prefix="swap-target"
-                class="swap-target-object-store-select-button"
-                variant="outline-primary"
-                :object-store="objectStore"
-                @click="relocate(objectStore.object_store_id)" />
-        </b-button-group>
-        <ObjectStoreSelectButtonDescribePopover
-            id-prefix="swap-target"
-            :what="fromWhat"
-            :object-store="fromObjectStore" />
-        <ObjectStoreSelectButtonDescribePopover
-            v-for="objectStore in targetObjectStores"
-            :key="objectStore.object_store_id"
-            id-prefix="swap-target"
-            :what="toWhat"
-            :object-store="objectStore" />
+                :source-option="objectStore"
+                submit-button-tooltip="Relocate the dataset to this storage location"
+                @select="relocate(objectStore.object_store_id)">
+                <template v-slot:badges>
+                    <ObjectStoreBadges :badges="objectStore.badges" size="lg" />
+                </template>
+            </SourceOptionCard>
+        </div>
     </div>
 </template>
 
 <style scoped>
-.select-button-group {
-    display: block;
+.select-card-group {
+    display: flex;
+    flex-wrap: wrap;
     margin: auto;
-    width: 400px;
-}
-.relocate-to {
-    margin-top: 2em;
 }
 </style>

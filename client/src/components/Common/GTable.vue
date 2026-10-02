@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -18,6 +18,9 @@ import type {
     TableItemClassMeta,
 } from "./GTable.types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -767,9 +770,9 @@ defineExpose({
                         <tr v-if="props.showEmpty && !props.items.length" class="g-table-empty-row">
                             <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
                                 <slot name="empty">
-                                    <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
+                                    <GAlert v-if="!loading" variant="info" show class="w-100 m-0">
                                         {{ props.emptyState?.message ?? "No data available" }}
-                                    </BAlert>
+                                    </GAlert>
                                 </slot>
                             </td>
                         </tr>
@@ -838,7 +841,7 @@ defineExpose({
                                     <!-- Actions column -->
                                     <td v-if="props.actions" class="g-table-actions-column">
                                         <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
-                                            <BDropdown
+                                            <GDropdown
                                                 v-g-tooltip.hover
                                                 no-caret
                                                 right
@@ -852,7 +855,7 @@ defineExpose({
                                                 </template>
 
                                                 <template v-for="ac in props.actions">
-                                                    <BDropdownItem
+                                                    <GDropdownItem
                                                         v-if="ac.visible ?? true"
                                                         :id="ac.id"
                                                         :key="ac.id"
@@ -869,9 +872,9 @@ defineExpose({
                                                         ">
                                                         <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
                                                         {{ ac.label }}
-                                                    </BDropdownItem>
+                                                    </GDropdownItem>
                                                 </template>
-                                            </BDropdown>
+                                            </GDropdown>
                                         </slot>
                                     </td>
                                 </tr>

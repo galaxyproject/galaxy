@@ -8,9 +8,9 @@ import string
 import sys
 from dataclasses import dataclass
 
-import requests
 import yaml
 
+from galaxy.util import requests
 from galaxy.util.resources import resource_string
 
 DESCRIPTION = """

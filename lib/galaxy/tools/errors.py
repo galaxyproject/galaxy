@@ -10,8 +10,8 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
+from galaxy.util.user_input import validate_email_str
 
 error_report_template = """
 GALAXY TOOL ERROR REPORT

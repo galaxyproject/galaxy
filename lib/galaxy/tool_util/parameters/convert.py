@@ -12,6 +12,8 @@ from typing import (
     cast,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ColorParameterModel,
@@ -49,6 +51,7 @@ from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefDict,
     JsonTestDatasetDefDict,
 )
+from galaxy.util.json import restore_inf_nan
 from .state import (
     JobInternalToolState,
     JobRuntimeToolState,
@@ -233,6 +236,29 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
 def _deferred_url_default_request(url: str) -> dict[str, Any]:
     """Build the deferred dataset request used to materialize a data param's url_default."""
     return DataRequestUri(url=url, ext="auto", deferred=True).model_dump()
+
+
+def restore_non_finite_floats(
+    internal_state: RequestInternalToolState,
+    input_models: ToolParameterBundle,
+) -> RequestInternalToolState:
+    """Decode infinity/NaN sentinel strings back into floats for float parameters.
+
+    ``galaxy.util.json.safe_dumps`` encodes non-finite floats as sentinel strings so Galaxy's
+    JSON stays valid, and that encoding is what gets persisted in a tool request. Request
+    validation accepts the sentinels but does not rewrite the state, so decode them here -
+    keyed off the parameter model so ordinary strings that merely look like a sentinel are
+    left alone.
+    """
+
+    def restore_callback(parameter: ToolParameterT, value: Any):
+        if isinstance(parameter, FloatParameterModel):
+            restored = restore_inf_nan(value)
+            if restored is not value:
+                return restored
+        return VISITOR_NO_REPLACEMENT
+
+    return RequestInternalToolState(visit_input_values(input_models, internal_state, restore_callback))
 
 
 def dereference(
@@ -471,7 +497,7 @@ def fill_static_defaults(
     declare inputs that were never requested. Pass partial=True when further defaults may stem
     from Galaxy runtime; partial=True skips final runtime validation.
     """
-    _fill_defaults(tool_state, input_models)
+    _fill_defaults(tool_state, input_models, profile)
 
     if not partial:
         internal_state = JobInternalToolState(tool_state)
@@ -479,18 +505,25 @@ def fill_static_defaults(
     return tool_state
 
 
-def _fill_defaults(tool_state: dict[str, Any], input_models: ToolParameterBundle) -> None:
+def _fill_defaults(
+    tool_state: dict[str, Any], input_models: ToolParameterBundle, profile: float | str | None = None
+) -> None:
     for parameter in input_models.parameters:
-        _fill_default_for(tool_state, parameter)
+        _fill_default_for(tool_state, parameter, profile)
 
 
-def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> None:
+def _fill_default_for(
+    tool_state: dict[str, Any], parameter: ToolParameterT, profile: float | str | None = None
+) -> None:
     parameter_name = parameter.name
     if isinstance(parameter, BooleanParameterModel):
         if parameter_name not in tool_state:
-            # even optional parameters default to false if not in the body of the request :_(
-            # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
-            tool_state[parameter_name] = parameter.value or False
+            if profile and Version(str(profile)) >= Version("26.2"):
+                tool_state[parameter_name] = parameter.value
+            else:
+                # Older profiles report an unset optional boolean as false.
+                # Both branches asserted by test_parameter_convert.test_fill_defaults.
+                tool_state[parameter_name] = parameter.value or False
 
     if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)):
         if parameter_name not in tool_state:
@@ -530,15 +563,15 @@ def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> 
         )
         test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
         when = _select_which_when(parameter, test_value, conditional_state)
-        _fill_default_for(conditional_state, test_parameter)
-        _fill_defaults(conditional_state, when)
+        _fill_default_for(conditional_state, test_parameter, profile)
+        _fill_defaults(conditional_state, when, profile)
     elif isinstance(parameter, RepeatParameterModel):
         repeat_instances = _initialize_repeat_state(parameter, tool_state)
         for instance_state in repeat_instances:
-            _fill_defaults(instance_state, parameter)
+            _fill_defaults(instance_state, parameter, profile)
     elif isinstance(parameter, SectionParameterModel):
         section_state = _initialize_section_state(parameter, tool_state)
-        _fill_defaults(section_state, parameter)
+        _fill_defaults(section_state, parameter, profile)
     elif isinstance(parameter, DataCollectionParameterModel):
         collection_parameter = parameter
         if parameter_name not in tool_state and collection_parameter.optional:

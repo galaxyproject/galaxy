@@ -8,12 +8,15 @@ tools
 from __future__ import annotations
 
 import abc
+import hashlib
 import logging
 import os
 import random
 import shutil
 import threading
 import time
+from collections import OrderedDict
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -78,6 +81,21 @@ USER_OBJECTS_SCHEME = "user_objects://"
 log = logging.getLogger(__name__)
 
 
+class DataStream(Protocol):
+    """A stream of an object's bytes that owns the read it came from.
+
+    A consumer that does not exhaust the stream must ``close()`` it: the bytes may be arriving over a
+    connection the backing store holds open, and dropping the last reference only releases it
+    whenever the garbage collector gets there.
+    """
+
+    def __iter__(self) -> Iterator[bytes]: ...
+
+    def __next__(self) -> bytes: ...
+
+    def close(self) -> None: ...
+
+
 @dataclass(frozen=True)
 class ObjectStoreAuth:
     user: User | None = None
@@ -95,6 +113,9 @@ class UserObjectStoreResolver(Protocol):
     def resolve_object_store_uri(self, uri: str) -> ConcreteObjectStore:
         pass
 
+    def object_store_from_config(self, object_store_configuration: ObjectStoreConfiguration) -> ConcreteObjectStore:
+        pass
+
 
 class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta):
     _app_config: UserObjectStoresAppConfig
@@ -105,8 +126,67 @@ class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta
         pass
 
     def resolve_object_store_uri(self, uri: str) -> ConcreteObjectStore:
-        object_store_configuration = self.resolve_object_store_uri_config(uri)
+        return self.object_store_from_config(self.resolve_object_store_uri_config(uri))
+
+    def object_store_from_config(self, object_store_configuration: ObjectStoreConfiguration) -> ConcreteObjectStore:
         return concrete_object_store(object_store_configuration, self._app_config)
+
+
+class UserObjectStoreCache:
+    """Reuse concrete user object stores while their resolved configuration is unchanged.
+
+    Building a concrete store can be expensive (e.g. a boto3 client plus a
+    ``HeadBucket`` round trip), so it happens once per distinct configuration.
+    The configuration is still resolved on every lookup: secrets live in the
+    vault and can change without touching the ``UserObjectStore`` row, and
+    comparing resolved configurations detects that in every Galaxy process
+    without any cross-process invalidation.
+    """
+
+    def __init__(self, resolver: UserObjectStoreResolver, maxsize: int = 64):
+        self._resolver = resolver
+        self._maxsize = maxsize
+        self._lock = threading.Lock()
+        self._stores: OrderedDict[str, tuple[str, ConcreteObjectStore]] = OrderedDict()
+
+    def get(self, uri: str) -> ConcreteObjectStore:
+        object_store_configuration = self._resolver.resolve_object_store_uri_config(uri)
+        config_hash = hashlib.sha256(object_store_configuration.model_dump_json().encode()).hexdigest()
+        with self._lock:
+            cached = self._stores.get(uri)
+            if cached and cached[0] == config_hash:
+                self._stores.move_to_end(uri)
+                return cached[1]
+        # Build outside the lock so a slow backend doesn't block lookups for other stores.
+        object_store = self._resolver.object_store_from_config(object_store_configuration)
+        unused: ConcreteObjectStore | None = None
+        retired: list[ConcreteObjectStore] = []
+        with self._lock:
+            cached = self._stores.get(uri)
+            if cached and cached[0] == config_hash:
+                # Another thread built the same store first; keep theirs.
+                unused = object_store
+                object_store = cached[1]
+            else:
+                if cached:
+                    retired.append(cached[1])
+                self._stores[uri] = (config_hash, object_store)
+                while len(self._stores) > self._maxsize:
+                    retired.append(self._stores.popitem(last=False)[1][1])
+            self._stores.move_to_end(uri)
+        if unused is not None:
+            unused.shutdown()
+        # Other threads may still be using a retired store.
+        for store in retired:
+            store.soft_shutdown()
+        return object_store
+
+    def shutdown(self):
+        with self._lock:
+            stores = [store for _, store in self._stores.values()]
+            self._stores.clear()
+        for store in stores:
+            store.shutdown()
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -344,6 +424,18 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_data_stream(self, obj) -> DataStream | None:
+        """Return an iterator over the bytes of `obj` read straight from the backing store.
+
+        Lets a caller start sending bytes to a client without first pulling the whole object into the
+        local cache -- the first byte is available as soon as the store responds, and objects too big
+        for the cache can be served at all. Returns None when the store cannot stream the object (it
+        is local, already cached, or the backend has no streaming read), in which case the caller
+        falls back to pulling the object into the cache and serving it from there.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_concrete_store_name(self, obj):
         """Return a display name or title of the objectstore corresponding to obj.
 
@@ -398,6 +490,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
     def get_concrete_store_by_object_store_id(self, object_store_id: str) -> ConcreteObjectStore | None:
         """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
         return None
+
+    @abc.abstractmethod
+    def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
+        """Return list of concrete objectstore backends."""
 
     @abc.abstractmethod
     def get_store_usage_percent(self):
@@ -469,6 +565,13 @@ class BaseObjectStore(ObjectStore):
     def shutdown(self):
         """Close any connections for this ObjectStore."""
         self.running = False
+
+    def soft_shutdown(self):
+        """Shut down a store that is no longer handed out but may still be in use by other threads.
+
+        Override if :meth:`shutdown` would break operations that are still in flight.
+        """
+        self.shutdown()
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -712,6 +815,16 @@ class BaseObjectStore(ObjectStore):
         # Stores that don't support direct download (or haven't opted in) get this no-op default.
         return None
 
+    def get_data_stream(self, obj) -> DataStream | None:
+        return self._invoke("get_data_stream", obj)
+
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
+        # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
+        return None
+
+    def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
+        return self._invoke("get_concrete_store_backends")
+
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
 
@@ -764,6 +877,13 @@ class BaseObjectStore(ObjectStore):
         return DeviceSourceMap()
 
 
+@dataclass
+class DiskPath:
+    file_path: str | None = None
+    object_store_cache_paths: list[str] | None = None
+    extra_dirs: dict[str, str] | None = None
+
+
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
@@ -809,6 +929,12 @@ class ConcreteObjectStore(BaseObjectStore):
         # _get_object_url returns a usable URL.
         self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
         self.badges = read_badges(config_dict)
+
+    def get_concrete_store_backends(self):
+        return [self]
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath()
 
     def to_dict(self):
         rval = super().to_dict()
@@ -962,6 +1088,9 @@ class DiskObjectStore(ConcreteObjectStore):
         as_dict = super().to_dict()
         as_dict["files_dir"] = self.file_path
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(file_path=self.file_path, extra_dirs=self.extra_dirs)
 
     def __get_filename(
         self,
@@ -1328,6 +1457,16 @@ class NestedObjectStore(BaseObjectStore):
             content_type=content_type,
         )
 
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
+        """For the first backend that has this `obj`, stream it from that backend."""
+        return self._call_method("_get_data_stream", obj, None, False, **kwargs)
+
+    def _get_concrete_store_backends(self, **kwargs):
+        backends = []
+        for backend in self.backends.values():
+            backends.extend(backend.get_concrete_store_backends())
+        return backends
+
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
 
@@ -1451,6 +1590,9 @@ class DistributedObjectStore(NestedObjectStore):
 
         self.original_weighted_backend_ids = self.weighted_backend_ids
         self.user_object_store_resolver = user_object_store_resolver
+        self._user_object_store_cache = (
+            UserObjectStoreCache(user_object_store_resolver) if user_object_store_resolver else None
+        )
         self.user_selection_allowed = user_selection_allowed
         self.allow_user_selection = bool(user_selection_allowed) or (user_object_store_resolver is not None)
         self.sleeper = None
@@ -1557,6 +1699,8 @@ class DistributedObjectStore(NestedObjectStore):
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
         super().shutdown()
+        if self._user_object_store_cache is not None:
+            self._user_object_store_cache.shutdown()
         if self.sleeper is not None:
             self.sleeper.wake()
 
@@ -1614,8 +1758,8 @@ class DistributedObjectStore(NestedObjectStore):
         try:
             return self.backends[object_store_id]
         except KeyError:
-            if is_user_object_store(object_store_id) and self.user_object_store_resolver:
-                return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
+            if is_user_object_store(object_store_id) and self._user_object_store_cache:
+                return self._user_object_store_cache.get(object_store_id)
             raise
 
     def get_quota_source_map(self) -> QuotaSourceMap:
@@ -2073,6 +2217,8 @@ class DeviceSourceMap:
             device_map = self.backends.get(object_store_id)
             if device_map:
                 return device_map.get_device_id(object_store_id)
+        elif is_user_object_store(object_store_id):
+            return object_store_id
 
         return self.default_device_id
 
@@ -2223,3 +2369,18 @@ def persist_extra_files_for_dataset(
                 create=True,
                 preserve_symlinks=True,
             )
+
+
+def get_disk_paths(objectstore: BaseObjectStore, include_extra_dirs: bool = False) -> set[str]:
+    backends = objectstore.get_concrete_store_backends()
+    paths = set()
+    for backend in backends:
+        disk_path = backend.get_disk_paths()
+        if disk_path.file_path:
+            paths.add(disk_path.file_path)
+        if disk_path.object_store_cache_paths:
+            paths.update(disk_path.object_store_cache_paths)
+        if include_extra_dirs and disk_path.extra_dirs:
+            for extra_dir in disk_path.extra_dirs.values():
+                paths.add(extra_dir)
+    return paths

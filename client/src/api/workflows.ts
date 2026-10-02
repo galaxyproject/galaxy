@@ -48,15 +48,17 @@ export interface WorkflowVersion {
 
 export type AnyWorkflow = WorkflowSummary | StoredWorkflowDetailed;
 
-type SortBy = "create_time" | "update_time" | "name";
+export type WorkflowSortBy = "create_time" | "update_time" | "name";
 
 interface LoadWorkflowsOptions {
-    sortBy: SortBy;
+    sortBy: WorkflowSortBy;
     sortDesc: boolean;
     limit: number;
     offset: number;
     filterText: string;
     showPublished: boolean;
+    /** Include workflows shared with the requesting user (required by the `is:shared_with_me` filter). */
+    showShared?: boolean;
     skipStepCounts: boolean;
 }
 
@@ -67,6 +69,7 @@ export async function loadWorkflows({
     offset = 0,
     filterText = "",
     showPublished = false,
+    showShared,
     skipStepCounts = true,
 }: LoadWorkflowsOptions): Promise<{ data: WorkflowSummary[]; totalMatches: number }> {
     const {
@@ -82,6 +85,7 @@ export async function loadWorkflows({
                 offset,
                 search: filterText,
                 show_published: showPublished,
+                show_shared: showShared,
                 skip_step_counts: skipStepCounts,
             },
         },

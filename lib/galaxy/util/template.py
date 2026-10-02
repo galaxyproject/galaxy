@@ -85,7 +85,7 @@ class InputNotFoundSyntaxError(SyntaxError):
     pass
 
 
-class FixedModuleCodeCompiler(Compiler):
+class FixedModuleCodeCompiler(Compiler):  # type: ignore[misc]  # Cheetah is untyped
     module_code = None
 
     def getModuleCode(self):
@@ -110,7 +110,7 @@ def fill_template(
     futurized=False,
     python_template_version: str | Version | None = "3",
     **kwargs,
-):
+) -> str:
     """Fill a cheetah template out for specified context.
 
     If template_text is None, an exception will be thrown, if context

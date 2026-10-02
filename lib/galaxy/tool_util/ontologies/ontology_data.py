@@ -116,7 +116,7 @@ class OntologyData(NamedTuple):
     tool_tags: list[str]
 
 
-def biotools_reference(xrefs):
+def biotools_reference(xrefs: list[XrefDict]) -> str | None:
     for xref in xrefs:
         if xref["type"] == "bio.tools":
             return xref["value"]

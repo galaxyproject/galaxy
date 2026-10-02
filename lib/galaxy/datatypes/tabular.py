@@ -894,7 +894,7 @@ class Sam(Tabular, _BamOrSam):
         headers_source = RegexLineDataProvider(dataset_source, regex_list=["^@"])
         return RegexLineDataProvider(headers_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("id-seq-qual", dict_dataprovider.settings)
+    @dataproviders.decorators.dataprovider_factory("id-seq-qual", DictDataProvider.settings)
     def id_seq_qual_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         # provided as an example of a specified column dict (w/o metadata)
         settings["indeces"] = [0, 9, 10]

@@ -10,10 +10,15 @@ from typing import (
 
 from fastapi import Path
 
+from galaxy.exceptions import AuthenticationRequired
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.schema.fields import Security
-from galaxy.schema.schema import UserModel
+from galaxy.schema.schema import (
+    ExtraPreferenceSectionDefinition,
+    UserModel,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -46,6 +51,7 @@ DecodedIdPathParam = Path(
 @router.cbv
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
+    extra_preferences_manager: ExtraPreferencesManager = depends(ExtraPreferencesManager)
 
     @router.get(
         "/api/whoami",
@@ -85,6 +91,20 @@ class FastAPIConfiguration:
     def version(self) -> dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
         return self.configuration_manager.version()
+
+    @router.get(
+        "/api/configuration/extra_preferences",
+        summary="Return the administrator-defined extra user preferences",
+        response_description="The sections and inputs users can set values for",
+    )
+    def extra_preferences(self, trans: ProvidesUserContext = DependsOnTrans) -> list[ExtraPreferenceSectionDefinition]:
+        """Return the sections and inputs configured in `user_preferences_extra_conf.yml`.
+
+        A user's values for them are at `/api/users/{user_id}/extra_preferences`.
+        """
+        if trans.anonymous:
+            raise AuthenticationRequired("Only registered users have extra preferences.")
+        return self.extra_preferences_manager.definition()
 
     @router.get(
         "/api/configuration/dynamic_tool_confs",

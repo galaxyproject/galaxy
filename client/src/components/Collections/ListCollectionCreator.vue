@@ -2,7 +2,6 @@
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
@@ -18,10 +17,9 @@ import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import HelpText from "../Help/HelpText.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
-
-const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 interface Props {
     historyId: string;
@@ -89,6 +87,7 @@ const {
     hideSourceItems,
     onUpdateHideSourceItems,
     isElementInvalid,
+    reconcileRetainedElements,
     collectionName,
     onUpdateCollectionName,
     onCollectionCreate,
@@ -124,24 +123,7 @@ function _elementsSetUp() {
     }
 
     // for inListElements, reset their values (in order) to datasets from workingElements
-    const inListElementsPrev = inListElements.value;
-    inListElements.value = [];
-    inListElementsPrev.forEach((prevElem) => {
-        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
-
-        if (matchingElem) {
-            const problem = isElementInvalid(matchingElem);
-            if (problem) {
-                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-                Toast.error(invalidMsg, localize("Invalid element"));
-            } else {
-                inListElements.value.push(matchingElem);
-            }
-        } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            Toast.error(invalidMsg, localize("Invalid element"));
-        }
-    });
+    inListElements.value = reconcileRetainedElements(inListElements.value, workingElements.value);
 
     // _ensureElementIds();
     _validateElements();
@@ -318,24 +300,25 @@ watch(
 );
 
 function addUploadedFiles(files: HDASummary[]) {
-    const returnedElements = props.fromSelection ? workingElements : inListElements;
+    const targetElements = props.fromSelection ? workingElements : inListElements;
     files.forEach((f) => {
-        const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
         const problem = isElementInvalid(f);
-        if (file && !returnedElements.value.find((e) => e.id === file.id)) {
-            returnedElements.value.push(file);
-        } else if (problem) {
+        if (problem) {
             invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
                 localize("Uploaded item is invalid"),
             );
-        } else if (!file) {
-            invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
-            Toast.error(
-                localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
-                localize("Uploaded item is invalid"),
-            );
+            return;
+        }
+
+        // Ensure the file is in workingElements (source pool for the dropdown)
+        if (!workingElements.value.find((e) => e.id === f.id)) {
+            workingElements.value.push(f);
+        }
+        // Add to the target list (workingElements for fromSelection, inListElements otherwise)
+        if (!targetElements.value.find((e) => e.id === f.id)) {
+            targetElements.value.push(f);
         }
     });
 }
@@ -373,24 +356,24 @@ function selectionAsHdaSummary(value: any): HDASummary {
 <template>
     <div class="list-collection-creator">
         <div v-if="!showDuplicateError && state == 'error'">
-            <BAlert show variant="danger">
+            <GAlert show variant="danger">
                 {{ localize("There was a problem creating the collection.") }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="fromSelection && returnInvalidElementsLength">
-                <BAlert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                </BAlert>
+                </GAlert>
             </div>
 
             <div v-if="!atLeastOneElement">
-                <BAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
+                <GAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
                     {{ localize("At least one element is needed for the list.") }}
                     <span v-if="fromSelection">
                         <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
@@ -398,11 +381,11 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </a>
                         {{ localize("and reselect new elements.") }}
                     </span>
-                </BAlert>
+                </GAlert>
             </div>
 
             <div v-if="showDuplicateError">
-                <BAlert show variant="danger">
+                <GAlert show variant="danger">
                     {{
                         localize("Collections cannot have duplicated names. The following list names are duplicated: ")
                     }}
@@ -410,7 +393,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
                     </ol>
                     {{ localize("Please fix these duplicates and try again.") }}
-                </BAlert>
+                </GAlert>
             </div>
 
             <CollectionCreator
@@ -537,26 +520,26 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 </template>
 
                 <template v-slot:middle-content>
-                    <BAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
+                    <GAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
                         {{ localize("The selected datasets have mixed formats.") }}
                         {{ localize("You can still create the list but generally") }}
                         {{ localize("dataset lists should contain datasets of the same type.") }}
                         <HelpText
                             uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
                             :text="localize('Why?')" />
-                    </BAlert>
+                    </GAlert>
                     <div v-if="noInitialElements">
-                        <BAlert show variant="warning" dismissible>
+                        <GAlert show variant="warning" dismissible>
                             {{ localize("No datasets were selected") }}
                             {{ localize("At least one element is needed for the collection. You may need to") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
-                        <BAlert v-if="!fromSelection" show variant="warning">
+                        <GAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
                                     "No elements in your history are valid for this list. \
@@ -571,8 +554,8 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                     </li>
                                 </ul>
                             </div>
-                        </BAlert>
-                        <BAlert v-else show variant="warning" dismissible>
+                        </GAlert>
+                        <GAlert v-else show variant="warning" dismissible>
                             {{ localize("The following selections could not be included due to problems:") }}
                             <ul>
                                 <li v-for="problem in returnInvalidElements" :key="problem">
@@ -584,7 +567,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload valid datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else-if="fromSelection">
                         <div class="collection-elements-controls">
@@ -648,13 +631,13 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </div>
 
                         <div v-if="noMoreValidDatasets">
-                            <BAlert show variant="warning">
+                            <GAlert show variant="warning">
                                 {{ localize("No elements left. Would you like to") }}
                                 <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
                                     {{ localize("start over") }}
                                 </a>
                                 ?
-                            </BAlert>
+                            </GAlert>
                         </div>
 
                         <draggable
@@ -701,9 +684,6 @@ function selectionAsHdaSummary(value: any): HDASummary {
 </template>
 
 <style scoped lang="scss">
-@import "@/style/scss/base.scss";
-@import "@/style/scss/theme/blue.scss";
-
 .list-collection-creator {
     .footer {
         margin-top: 8px;

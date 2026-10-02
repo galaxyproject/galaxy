@@ -14,4 +14,4 @@ const validFilters = {
     update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
     update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
-export const HistoriesFilters = new Filtering(validFilters);
+export const HistoriesFilters = new Filtering(validFilters, undefined, true, "name");

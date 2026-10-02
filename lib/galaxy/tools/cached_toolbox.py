@@ -28,6 +28,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.tool_util.abstract_tool import parse_tool_version_for_comparison
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirements,
@@ -66,7 +67,6 @@ from galaxy.util.tool_version import (
 from . import (
     create_tool_from_source,
     DataManagerTool,
-    parse_tool_version_for_comparison,
     tool_requires_galaxy_python_environment,
     ToolBox,
 )
@@ -563,7 +563,7 @@ class CachedToolBox(ToolBox):
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load or populate the index, then let the eager walk register stubs."""
         # Index-backed lineages reflect reloads and all known versions.
-        self._lineage_map = CachedLineageMap(self.app, versions_for=self._index_versions_for)
+        self._lineage_map = CachedLineageMap(self, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()
@@ -1077,8 +1077,7 @@ class CachedToolBox(ToolBox):
         ``create_tool`` and with it the stamping the job-time materialise
         depends on. Stamping off the index entry here covers both paths.
         """
-        data_manager_id = kwds.get("data_manager_id")
-        if data_manager_id:
+        if data_manager_id := kwds.get("data_manager_id"):
             entry = self._resolve_index_entry(config_file, kwds.get("guid"))
             if entry is not None:
                 self._stamp_data_manager_id(entry, data_manager_id)
@@ -1148,8 +1147,7 @@ class CachedToolBox(ToolBox):
                 "or, for a new Galaxy-internal lib tool, add it to "
                 "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
-        data_manager_id = kwds.get("data_manager_id")
-        if data_manager_id:
+        if data_manager_id := kwds.get("data_manager_id"):
             # ``DataManager._load_tool`` hands the ``<data_manager id>`` conf
             # id through ``load_hidden_tool``. Entries minted before any data
             # manager conf covered this tool (install-time self-heal) don't
@@ -1564,12 +1562,11 @@ class CachedToolBox(ToolBox):
         self._tools_by_id[tool_id] = stub  # type: ignore[assignment]
         version = entry.version
         self._tool_versions_by_id.setdefault(tool_id, {})[version or ""] = stub  # type: ignore[assignment]
-        old_id = stub.old_id
         # Register the old-id bucket even when ``old_id == tool_id`` — the
         # eager ``__add_tool`` does, and ``remove_tool_by_id`` unconditionally
         # removes from the bucket, so skipping it here would KeyError a later
         # removal of this stub.
-        if old_id:
+        if old_id := stub.old_id:
             bucket = self._tools_by_old_id.setdefault(old_id, [])
             if not any(t.id == tool_id for t in bucket):
                 bucket.append(stub)  # type: ignore[arg-type]
@@ -1739,8 +1736,7 @@ class CachedToolBox(ToolBox):
         # resurrects the uninstalled tool via the eager get_tool
         # fall-through. Scrub every object belonging to this guid, but
         # leave sibling installs (other guids, other versions) alone.
-        short_id = short_tool_id(tool_id)
-        if short_id != tool_id:
+        if (short_id := short_tool_id(tool_id)) != tool_id:
             bucket = self._tools_by_old_id.get(short_id)
             if bucket:
                 survivors = [t for t in bucket if t.id != tool_id and t.guid != tool_id]
@@ -1844,8 +1840,7 @@ class CachedToolBox(ToolBox):
 
     def resolve_search_hit(self, tool_id: str) -> Optional["Tool"]:
         """Return a registered search hit without materialising it."""
-        tool = self._tools_by_id.get(tool_id)
-        if tool is not None:
+        if (tool := self._tools_by_id.get(tool_id)) is not None:
             return tool
         if self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):

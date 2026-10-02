@@ -20,9 +20,9 @@
 
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <BAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
+                <GAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
-                </BAlert>
+                </GAlert>
             </template>
 
             <template v-slot:cell(update_time)="data">
@@ -83,8 +83,9 @@
 </template>
 
 <script>
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import JobDetails from "@/components/JobInformation/JobDetails.vue";
@@ -93,7 +94,7 @@ import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {
-        BAlert,
+        GAlert,
         BCard,
         GLink,
         GTable,

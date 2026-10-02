@@ -9,6 +9,12 @@
             url="https://galaxyproject.org/iuc/"
             name="Galaxy IUC" />
     </creator>
+    <funding>
+        <grant
+            name="EuroScienceGateway"
+            identifier="101057388"
+            url="https://cordis.europa.eu/project/id/101057388" />
+    </funding>
     <xrefs>
         <xref type="bio.tools">Citation.js</xref>
     </xrefs>
@@ -26,7 +32,7 @@ echo '$input1' > '$out_file1'
     <help><![CDATA[
 .. class:: warningmark
 
-**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format. 
+**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format.
 
     ]]></help>
     <citations>

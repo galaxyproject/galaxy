@@ -5,9 +5,9 @@ import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
@@ -36,7 +36,7 @@ import MyToolsLanding from "./MyToolsLanding.vue";
 /** Section IDs that are only valid for the workflow editor toolbox, and should be excluded from the regular toolbox. */
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
@@ -326,7 +326,7 @@ function onToolClick(tool: Tool, evt: Event) {
     if (!props.workflow) {
         if (tool.id === "upload1") {
             evt.preventDefault();
-            openGlobalUploadModal();
+            void openUploadModal();
         } else if (tool.form_style === "regular") {
             evt.preventDefault();
             // encode spaces in tool.id

@@ -22,6 +22,7 @@ from json import (
 from tempfile import mkdtemp
 from types import TracebackType
 from typing import (
+    Annotated,
     Any,
     cast,
     Literal,
@@ -29,12 +30,12 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
-from urllib.parse import urlparse
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
 )
 from rocrate.model.computationalworkflow import (
@@ -97,10 +98,8 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
-from galaxy.schema.schema import (
-    DatasetStateField,
-    ModelStoreFormat,
-)
+from galaxy.schema.schema import ModelStoreFormat
+from galaxy.schema.states import DatasetState
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -183,8 +182,14 @@ class ImportDiscardedDataType(Enum):
     FORCE = "force"
 
 
+DatasetStateImportField = Annotated[
+    DatasetState,
+    BeforeValidator(lambda value: "discarded" if value == "deleted" else value),
+]
+
+
 class DatasetAttributeImportModel(BaseModel):
-    state: DatasetStateField | None = None
+    state: DatasetStateImportField | None = None
     external_filename: str | None = None
     _extra_files_path: str | None = None
     file_size: int | None = None
@@ -263,8 +268,25 @@ def replace_metadata_file(
 ) -> dict[str, Any]:
     def remap_objects(p, k, obj):
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-            metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
-            sa_session.add(metadata_file)
+            metadata_file = None
+            if not isinstance(sa_session, SessionlessContext):
+                # Setting metadata on a dataset that already has metadata files (e.g. a set metadata job)
+                # updates those files in place and exports them with their existing uuid. Metadata files
+                # are looked up by uuid, so reuse the dataset's own row instead of inserting a duplicate.
+                metadata_file = sa_session.scalars(
+                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id).limit(1)
+                ).first()
+                if metadata_file is not None and dataset_instance not in (
+                    metadata_file.history_dataset,
+                    metadata_file.library_dataset,
+                ):
+                    # Reusing another dataset's row would make make_copy copy it, which drops the file for
+                    # a new dataset that has no data yet. Insert a row for this dataset instead; uuid lookups
+                    # still resolve to the oldest row.
+                    metadata_file = None
+            if metadata_file is None:
+                metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
+                sa_session.add(metadata_file)
             return (k, metadata_file)
         return (k, obj)
 
@@ -1325,12 +1347,19 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         # Create each job.
         history_sa_session = get_object_session(history)
         for job_attrs in jobs_attrs:
+            raw_state = job_attrs.get("state")
             if "id" in job_attrs and not self.sessionless:
                 # only thing we allow editing currently is associations for incoming jobs.
                 assert self.import_options.allow_edit
-                job = self.sa_session.get(model.Job, job_attrs["id"])
+                job_id = job_attrs["id"]
+                job = self.sa_session.get(model.Job, job_id)
                 self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)  # type: ignore[attr-defined]
-                self._set_job_attributes(job, job_attrs, force_terminal=False)  # type: ignore[attr-defined]
+                self._set_job_attributes(job, job_attrs)  # type: ignore[attr-defined]
+                if raw_state:
+                    # An existing job is still being finished by its job wrapper, which must not observe
+                    # (or let API clients observe) a terminal state before it has run its post-processing.
+                    # Report the state instead and leave applying it to the caller.
+                    object_import_tracker.job_states_by_id[job_id] = raw_state
                 # Don't edit job
                 continue
 
@@ -1342,7 +1371,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_job.imported = True
             imported_job.tool_id = job_attrs["tool_id"]
             imported_job.tool_version = job_attrs["tool_version"]
-            self._set_job_attributes(imported_job, job_attrs, force_terminal=True)  # type: ignore[attr-defined]
+            self._set_job_attributes(imported_job, job_attrs)  # type: ignore[attr-defined]
+            if raw_state:
+                if raw_state not in model.Job.terminal_states:
+                    raw_state = model.Job.states.ERROR
+                imported_job.set_state(raw_state)
 
             restore_times(imported_job, job_attrs)
             self._session_add(imported_job)
@@ -1464,6 +1497,7 @@ class ObjectImportTracker:
     hda_copied_from_sinks: dict[ObjectKeyType, ObjectKeyType]
     hdca_copied_from_sinks: dict[ObjectKeyType, ObjectKeyType]
     jobs_by_key: dict[ObjectKeyType, model.Job]
+    job_states_by_id: dict[int, str]
     requires_hid: list["HistoryItem"]
     copy_hid_for: list[tuple["HistoryItem", "HistoryItem"]]
 
@@ -1479,6 +1513,8 @@ class ObjectImportTracker:
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
+        # Final states recorded in the store for jobs that already exist and are only edited on import.
+        self.job_states_by_id = {}
         self.invocations_by_key: dict[str, model.WorkflowInvocation] = {}
         self.implicit_collection_jobs_by_key: dict[str, ImplicitCollectionJobs] = {}
         self.workflows_by_key: dict[str, model.Workflow] = {}
@@ -1683,9 +1719,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             workflow_key = name[0 : -len(".gxwf.yml")]
             yield workflow_key, os.path.join(workflows_directory, name)
 
-    def _set_job_attributes(
-        self, imported_job: model.Job, job_attrs: dict[str, Any], force_terminal: bool = False
-    ) -> None:
+    def _set_job_attributes(self, imported_job: model.Job, job_attrs: dict[str, Any]) -> None:
         ATTRIBUTES = (
             "info",
             "exit_code",
@@ -1707,11 +1741,6 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         if "stdout" in job_attrs:
             imported_job.tool_stdout = job_attrs.get("stdout")
             imported_job.tool_stderr = job_attrs.get("stderr")
-        raw_state = job_attrs.get("state")
-        if force_terminal and raw_state and raw_state not in model.Job.terminal_states:
-            raw_state = model.Job.states.ERROR
-        if raw_state:
-            imported_job.set_state(raw_state)
 
     def _read_list_if_exists(self, file_name: str, required: bool = False) -> list[dict[str, Any]]:
         file_name = os.path.join(self.archive_dir, file_name)
@@ -2789,13 +2818,13 @@ class FileSourceModelExportStore(abc.ABC, DirectoryModelExportStore):
             # upload output file to file source
             if not self.file_sources:
                 raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_uri = urlparse(str(self.file_source_uri))
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            self.file_source_uri = f"{file_source_uri.scheme}://{file_source_uri.netloc}" + file_source.write_from(
+            actual_path_or_uri = file_source.write_from(
                 file_source_path.path, self.out_file, user_context=self.user_context
             )
+            self.file_source_uri = file_source.uri_from_write_result(actual_path_or_uri)
         shutil.rmtree(self.temp_output_dir)
 
 
@@ -2888,7 +2917,7 @@ class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExpo
                                 )
                                 output_subdomain_items.append(output)
                 step_index = workflow_step.order_index
-                step_name = workflow_step.label or workflow_step.tool_id
+                step_name = workflow_step.label or workflow_step.effective_tool_id
                 pipeline_step = PipelineStep(
                     step_number=step_index,
                     name=step_name,

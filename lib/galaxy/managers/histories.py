@@ -41,9 +41,11 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    apply_sort_column,
     combine_lists,
     ModelDeserializingError,
     Serializer,
+    sort_expression,
     SortableManager,
     StorageCleanerManager,
 )
@@ -72,6 +74,8 @@ from galaxy.schema.schema import (
     ExportObjectResultMetadata,
     ExportObjectType,
     HDABasicInfo,
+    JobExportHistoryArchiveModel,
+    ObjectExportTaskResponse,
     ShareHistoryExtra,
     ShortTermStoreExportPayload,
     WriteStoreToPayload,
@@ -240,12 +244,9 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
-            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
-        if payload.sort_desc:
-            sort_column = sort_column.desc()
-        stmt = stmt.order_by(sort_column)
+        stmt = apply_sort_column(stmt, sort_column, payload.sort_desc, model.History.id)
 
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
@@ -367,9 +368,9 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         if order_by_string == "update_time-asc":
             return asc(self.model_class.update_time)
         if order_by_string in ("name", "name-asc"):
-            return asc(self.model_class.name)
+            return asc(sort_expression(self.model_class.name))
         if order_by_string == "name-dsc":
-            return desc(self.model_class.name)
+            return desc(sort_expression(self.model_class.name))
         # TODO: history columns
         if order_by_string in ("size", "size-dsc"):
             return desc(self.model_class.disk_size)
@@ -547,6 +548,44 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def make_private(self, trans: ProvidesUserContext, histories: list[model.History]) -> int:
+        """Make the datasets in ``histories`` private and set private default permissions.
+
+        Permissions live on the dataset, not on the history association, so a
+        dataset that the user cannot manage (typically one shared from another
+        user's history through an import) is left untouched. Returns the number
+        of such datasets that stayed shared.
+        """
+        user = trans.user
+        assert user
+        security_agent = self.app.security_agent
+        private_role = security_agent.get_private_user_role(user)
+        private_permissions = {
+            security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
+            security_agent.permitted_actions.DATASET_ACCESS: [private_role],
+        }
+        user_roles = user.all_roles()
+        seen_datasets: set[int] = set()
+        skipped_datasets: set[int] = set()
+
+        for history in histories:
+            security_agent.history_set_default_permissions(history, private_permissions)
+            for hda in history.datasets:
+                dataset = hda.dataset
+                assert dataset
+                if dataset.id in seen_datasets:
+                    continue
+                seen_datasets.add(dataset.id)
+                if dataset.library_associations or security_agent.dataset_is_private_to_user(trans, dataset):
+                    continue
+                if not security_agent.can_manage_dataset(user_roles, dataset):
+                    skipped_datasets.add(dataset.id)
+                    continue
+                security_agent.set_all_dataset_permissions(dataset, private_permissions, flush=False)
+
+        self.session().commit()
+        return len(skipped_datasets)
+
     def archive_history(self, history: model.History, archive_export_id: int | None):
         """Marks the history with the given id as archived and optionally associates it with the given archive export record.
 
@@ -715,7 +754,7 @@ class HistoryExportManager:
 
     def get_task_exports(
         self, trans: ProvidesHistoryContext, history_id: int, limit: int | None = None, offset: int | None = None
-    ):
+    ) -> list[ObjectExportTaskResponse]:
         """Returns task-based exports associated with this history"""
         history = self._history(trans, history_id)
         export_associations = self.export_tracker.get_object_exports(
@@ -770,7 +809,9 @@ class HistoryExportManager:
             result_data=result_data,
         )
 
-    def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
+    def _serialize_task_export(
+        self, export: model.StoreExportAssociation, history: model.History
+    ) -> ObjectExportTaskResponse:
         task_uuid = export.task_uuid
         export_date = export.create_time
         assert history.update_time is not None, "History update time must be set"
@@ -778,23 +819,25 @@ class HistoryExportManager:
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
         is_export_up_to_date = is_ready and not history_has_changed
-        return {
-            "id": export.id,
-            "ready": is_ready,
-            "preparing": export_metadata is None or export_metadata.result_data is None,
-            "up_to_date": is_export_up_to_date,
-            "task_uuid": task_uuid,
-            "create_time": export_date,
-            "export_metadata": export_metadata,
-        }
+        return ObjectExportTaskResponse(
+            id=export.id,
+            ready=is_ready,
+            preparing=export_metadata is None or export_metadata.result_data is None,
+            up_to_date=is_export_up_to_date,
+            task_uuid=task_uuid,
+            create_time=export_date,
+            export_metadata=export_metadata,
+        )
 
-    def get_exports(self, trans: ProvidesHistoryContext, history_id: int):
+    def get_exports(self, trans: ProvidesHistoryContext, history_id: int) -> list[JobExportHistoryArchiveModel]:
         """Returns job-based exports associated with this history"""
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans: ProvidesHistoryContext, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
+    def serialize(
+        self, trans: ProvidesHistoryContext, history_id: int, jeha: model.JobExportHistoryArchive
+    ) -> JobExportHistoryArchiveModel:
         rval = jeha.to_dict()
         rval["type"] = "job"
         encoded_jeha_id = Security.security.encode_id(jeha.id)
@@ -810,8 +853,7 @@ class HistoryExportManager:
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
         rval["external_download_permanent_url"] = external_permanent_url
-        rval = trans.security.encode_all_ids(rval)
-        return rval
+        return JobExportHistoryArchiveModel(**rval)
 
     def get_ready_jeha(
         self, trans: ProvidesHistoryContext, history_id: int, jeha_id: int | Literal["latest"] = "latest"

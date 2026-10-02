@@ -8,7 +8,7 @@
       Sync (POST /api/tools): an omitted discriminator selects the FIRST when
       (datasets_per_level); the unqualified repeat is mapped into it; job runs.
 
-      Async (POST tool request, GALAXY_TEST_USE_LEGACY_TOOL_API=if_needed): the
+      Async (POST tool request, GALAXY_TEST_USE_LEGACY_TOOL_API=never): the
       missing discriminator resolves to a phantom "__absent__" branch, so the
       nested required `countsFile` is reported missing and request validation
       fails:

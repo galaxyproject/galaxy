@@ -37,9 +37,9 @@
         </div>
         <template v-if="!embedded">
             <div id="dd-helper" />
-            <Toast ref="toastRef" />
+            <GToast />
+            <CommandPalette />
             <ConfirmDialog ref="confirmDialogRef" />
-            <UploadModal ref="uploadModal" />
             <BroadcastsOverlay />
             <DragGhost />
             <template v-if="showMasthead">
@@ -56,11 +56,9 @@ import { useRoute } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
-import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
-import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
-import { setToastComponentRef } from "@/composables/toast";
+import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -68,25 +66,27 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
+import GToast from "@/components/BaseComponents/GToast.vue";
+import CommandPalette from "@/components/CommandPalette/CommandPalette.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import UploadModal from "@/components/Upload/UploadModal.vue";
 import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
 export default {
     components: {
         Alert,
+        CommandPalette,
         DragGhost,
         Masthead,
         WindowManagerWindow,
-        Toast,
+        GToast,
         ConfirmDialog,
-        UploadModal,
         BroadcastsOverlay,
         TourRunner,
     },
@@ -97,17 +97,12 @@ export default {
         const tourStore = useTourStore();
         const { currentTour } = storeToRefs(tourStore);
 
+        const { error: toastError } = useToast();
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
 
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
-
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
-
-        const uploadModal = ref(null);
-        setGlobalUploadModal(uploadModal);
 
         const windowManagerStore = useWindowManagerStore();
 
@@ -141,7 +136,9 @@ export default {
                 if (embedded.value) {
                     userStore.$reset();
                 } else {
-                    userStore.loadUser();
+                    userStore.loadUser().catch((error) => {
+                        toastError(errorMessageAsString(error), "Failed to load user or histories");
+                    });
                 }
             },
             { immediate: true },
@@ -168,9 +165,7 @@ export default {
 
         return {
             confirmation,
-            toastRef,
             confirmDialogRef,
-            uploadModal,
             currentTheme,
             embedded,
             currentTour,

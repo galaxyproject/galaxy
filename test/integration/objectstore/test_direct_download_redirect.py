@@ -3,7 +3,8 @@
 Whole-file downloads of datasets stored in a backing object store with ``enable_direct_download`` set
 are served from the dedicated ``/download`` route via a 302 redirect to a URL the client fetches
 directly from the store, instead of being pulled through Galaxy's cache. The ``/display`` route keeps
-streaming through Galaxy (no redirect). Uses a boto3 object store backed by a disposable minio container.
+streaming through Galaxy (no redirect). Runs against a boto3 object store and a cloudbridge (cloud)
+object store, each backed by a disposable SeaweedFS container.
 """
 
 import os
@@ -21,7 +22,7 @@ from ._base import (
     OBJECT_STORE_HOST,
     OBJECT_STORE_PORT,
     OBJECT_STORE_SECRET_KEY,
-    start_minio,
+    start_seaweedfs,
 )
 
 BOTO3_DIRECT_DOWNLOAD_CONFIG = string.Template("""
@@ -35,16 +36,28 @@ BOTO3_DIRECT_DOWNLOAD_CONFIG = string.Template("""
 </object_store>
 """)
 
+CLOUD_DIRECT_DOWNLOAD_CONFIG = string.Template("""
+<object_store type="cloud" provider="aws" enable_direct_download="true">
+    <auth access_key="${access_key}" secret_key="${secret_key}" />
+    <bucket name="galaxy" use_reduced_redundancy="False" />
+    <connection endpoint_url="http://${host}:${port}" />
+    <cache path="${temp_directory}/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp_cloud"/>
+</object_store>
+""")
+
 
 @integration_util.skip_unless_docker()
 class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
+    object_store_config = BOTO3_DIRECT_DOWNLOAD_CONFIG
     container_name: str
     object_store_cache_path: str
 
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod
@@ -62,7 +75,7 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
         config["object_store_store_by"] = "uuid"
         with open(config_path, "w") as f:
             f.write(
-                BOTO3_DIRECT_DOWNLOAD_CONFIG.safe_substitute(
+                cls.object_store_config.safe_substitute(
                     {
                         "temp_directory": temp_directory,
                         "host": OBJECT_STORE_HOST,
@@ -155,3 +168,8 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
         for root, _, files in os.walk(self.object_store_cache_path):
             for file_ in files:
                 os.remove(os.path.join(root, file_))
+
+
+@integration_util.skip_unless_docker()
+class TestCloudDirectDownloadRedirectIntegration(TestDirectDownloadRedirectIntegration):
+    object_store_config = CLOUD_DIRECT_DOWNLOAD_CONFIG

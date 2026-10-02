@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 
 class ModelOperationToolAction(DefaultToolAction):
     produces_real_jobs: bool = False
+    file_source_uri_discovery_complete = True
 
     def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None, collection_info=None):
         if execution_cache is None:

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faExpand, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 interface Props {
@@ -33,7 +34,7 @@ const fixedHeight = computed(() =>
 
 <template>
     <div v-if="errorMessage">
-        <BAlert variant="danger" show>{{ errorMessage }}</BAlert>
+        <GAlert variant="danger" show>{{ errorMessage }}</GAlert>
     </div>
     <div v-else class="position-relative h-100">
         <div :class="`visualization-pop${expand ? 'out' : 'in'}`">
@@ -45,23 +46,25 @@ const fixedHeight = computed(() =>
                 @change="emit('change', $event)"
                 @load="emit('load')" />
         </div>
-        <BButton
+        <GButton
             class="visualization-popout-expand"
-            variant="link"
-            size="sm"
+            transparent
+            icon-only
+            size="small"
             title="Maximize"
             @click="expand = !expand">
             <FontAwesomeIcon :icon="faExpand" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="expand"
             class="visualization-popout-close"
-            variant="link"
-            size="sm"
+            transparent
+            icon-only
+            size="small"
             title="Minimize"
             @click="expand = !expand">
             <FontAwesomeIcon :icon="faWindowMaximize" />
-        </BButton>
+        </GButton>
     </div>
 </template>
 

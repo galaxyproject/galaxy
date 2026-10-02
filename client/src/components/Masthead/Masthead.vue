@@ -1,5 +1,6 @@
 <script setup>
-import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faConnectdevelop } from "@fortawesome/free-brands-svg-icons";
+import { faQuestion, faSearch, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { faGear } from "font-awesome-6";
@@ -13,6 +14,8 @@ import {
     redirectToSingleProvider,
 } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
+import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 import { userLogout } from "@/utils/logout";
 import { withPrefix } from "@/utils/redirect";
@@ -27,6 +30,30 @@ const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
+
+const subdomainSwitcherMenu = computed(() => {
+    const currentOrigin = window.location.origin;
+    return (config.value.subdomain_switcher ?? [])
+        .filter((site) => {
+            if (typeof site?.label !== "string" || !site.label.trim()) {
+                return false;
+            }
+            try {
+                const { protocol, origin } = new URL(site.url);
+                return (protocol === "http:" || protocol === "https:") && origin !== currentOrigin;
+            } catch {
+                return false;
+            }
+        })
+        .map((site) => ({
+            title: site.label,
+            href: site.url,
+        }));
+});
+
+const { openPalette } = useCommandPalette();
+const eventStore = useEventStore();
+const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
 
 const hasOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -162,6 +189,23 @@ onMounted(() => {
                 :tooltip="tab.tooltip"
                 :target="tab.target"
                 @click="extensionTabClick(tab)" />
+            <MastheadDropdown
+                v-if="subdomainSwitcherMenu.length"
+                id="subdomain_switcher"
+                :icon="faConnectdevelop"
+                tooltip="Switch sites"
+                :menu="subdomainSwitcherMenu" />
+            <li class="nav-item masthead-search">
+                <button
+                    class="masthead-search-button"
+                    type="button"
+                    data-description="masthead search button"
+                    :title="`Search Galaxy (${shortcutLabel})`"
+                    @click="openPalette()">
+                    <FontAwesomeIcon :icon="faSearch" />
+                    <kbd>{{ shortcutLabel }}</kbd>
+                </button>
+            </li>
             <MastheadItem
                 id="help"
                 :icon="faQuestion"
@@ -294,6 +338,34 @@ onMounted(() => {
         font-size: 1rem;
         line-height: var(--masthead-height);
         color: var(--masthead-text-color);
+    }
+
+    .masthead-search {
+        .masthead-search-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            margin: 0 var(--spacing-1);
+            padding: var(--spacing-1) var(--spacing-2);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--spacing-1);
+            color: var(--masthead-text-color);
+            cursor: pointer;
+
+            kbd {
+                background: rgba(0, 0, 0, 0.25);
+                border-radius: 3px;
+                padding: 0 var(--spacing-1);
+                font-size: var(--font-size-small);
+                color: inherit;
+            }
+
+            &:hover {
+                color: var(--masthead-text-hover);
+                border-color: currentColor;
+            }
+        }
     }
 }
 </style>

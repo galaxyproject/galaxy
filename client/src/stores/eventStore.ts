@@ -47,6 +47,8 @@ export const useEventStore = defineStore("eventStore", () => {
          * typical key for selection (ctrl for windows/linux, cmd for mac).
          */
         isCtrlKey,
+        /** Whether the user is on a mac keyboard platform (cmd instead of ctrl) */
+        isMac,
         setDragData,
     };
 });

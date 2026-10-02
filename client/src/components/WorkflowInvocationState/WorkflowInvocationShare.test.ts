@@ -6,6 +6,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
+import { clearRaisedToasts, raisedToasts } from "@/composables/__mocks__/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
@@ -14,6 +15,9 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 // Constants
 const WORKFLOW_OWNER = "test-user";
 const OTHER_USER = "other-user";
+// `getFakeRegisteredUser` always defaults to this id, regardless of `username`
+const CURRENT_USER_ID = "fake_user_id";
+const OTHER_USER_ID = "other-user-id";
 const TEST_WORKFLOW = {
     id: "workflow-id",
     name: "workflow-name",
@@ -25,10 +29,12 @@ const TEST_WORKFLOW = {
     title: "workflow-title",
 };
 const SHARED_WORKFLOW_ID = "shared-workflow-id";
+const UNOWNED_HISTORY_ID = "unowned-history-id";
 const TEST_HISTORY = {
     id: "test-history-id",
     name: "test-history-name",
     archived: false,
+    user_id: CURRENT_USER_ID,
 };
 const TEST_HISTORY_POST_SHARE = {
     ...TEST_HISTORY,
@@ -44,22 +50,7 @@ const SELECTORS = {
     SHARE_ICON_BUTTON: "[data-button-share]",
 } as const;
 
-// Mock the toast composable to track the messages
-const MSG = 0;
-const TYPE = 1;
-const toastMock = vi.fn((message, type: "success" | "info") => {
-    return { message, type };
-});
-vi.mock("@/composables/toast", () => ({
-    Toast: {
-        success: vi.fn().mockImplementation((message) => {
-            toastMock(message, "success");
-        }),
-        info: vi.fn().mockImplementation((message) => {
-            toastMock(message, "info");
-        }),
-    },
-}));
+vi.mock("@/composables/toast");
 
 // Mock "@/utils/clipboard"
 const writeText = vi.fn();
@@ -101,6 +92,7 @@ vi.mock("@/stores/historyStore", async () => {
                     ...TEST_HISTORY,
                     id: historyId,
                     importable: historyId === `${TEST_HISTORY.id}-importable`,
+                    user_id: historyId === UNOWNED_HISTORY_ID ? OTHER_USER_ID : CURRENT_USER_ID,
                 };
             }),
             getHistoryNameById: vi.fn().mockImplementation(() => {
@@ -118,9 +110,10 @@ const localVue = getLocalVue();
  * Mounts the WorkflowInvocationShare component with props/stores adjusted given the parameters
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param bothShareable Whether the workflow and history are already shareable
+ * @param ownsHistory Whether the user owns the history associated with the invocation
  * @returns The wrapper object
  */
-async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false) {
+async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false, ownsHistory = true) {
     server.use(
         http.put("/api/workflows/{workflow_id}/enable_link_access", ({ response }) => {
             return response(200).json({
@@ -138,11 +131,14 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         propsData: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
-            historyId: bothShareable ? `${TEST_HISTORY.id}-importable` : TEST_HISTORY.id,
+            historyId: bothShareable
+                ? `${TEST_HISTORY.id}-importable`
+                : !ownsHistory
+                  ? UNOWNED_HISTORY_ID
+                  : TEST_HISTORY.id,
         },
         stubs: {
             FontAwesomeIcon: true,
-            BModal: true,
         },
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
@@ -164,7 +160,7 @@ async function openShareModal(wrapper: Wrapper<Vue>) {
 
 describe("WorkflowInvocationShare", () => {
     beforeEach(() => {
-        toastMock.mockClear();
+        clearRaisedToasts();
         (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     });
 
@@ -189,21 +185,26 @@ describe("WorkflowInvocationShare", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        // We have 2 toasts
-        const toasts = toastMock.mock.calls;
-        expect(toasts.length).toBe(2);
-
-        // The first one is the success message for sharing the workflow and history
-        expect(toasts[0]![MSG]).toBe(SHARE_SUCCESS_MSG);
-        expect(toasts[0]![TYPE]).toBe("success");
-
-        // The second one is the copied link message
-        expect(toasts[1]![MSG]).toBe(CLIPBOARD_MSG);
-        expect(toasts[1]![TYPE]).toBe("info");
+        expect(raisedToasts()).toEqual([
+            { variant: "success", message: SHARE_SUCCESS_MSG },
+            { variant: "info", message: CLIPBOARD_MSG },
+        ]);
     });
 
     it("renders nothing when the user does not own the workflow", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(false);
+        expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
+        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
+    });
+
+    it("renders nothing when the user owns the workflow but not the history", async () => {
+        const { wrapper } = await mountWorkflowInvocationShare(true, false, false);
+        expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
+        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
+    });
+
+    it("renders nothing when the user owns the history but not the workflow", async () => {
+        const { wrapper } = await mountWorkflowInvocationShare(false, false, true);
         expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
         expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
     });
@@ -217,9 +218,6 @@ describe("WorkflowInvocationShare", () => {
         expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
 
         // Instead we already have a singular toast with the link copied message
-        const toasts = toastMock.mock.calls;
-        expect(toasts.length).toBe(1);
-        expect(toasts[0]![MSG]).toBe(CLIPBOARD_MSG);
-        expect(toasts[0]![TYPE]).toBe("info");
+        expect(raisedToasts()).toEqual([{ variant: "info", message: CLIPBOARD_MSG }]);
     });
 });

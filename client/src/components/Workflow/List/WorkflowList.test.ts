@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { server, http } = useServerMock();
 
@@ -63,6 +64,10 @@ describe("WorkflowList", () => {
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
             }),
+            // The tab bar reads useConfig(), and the configuration store fetches in its setup body
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            }),
         );
     });
 
@@ -84,6 +89,27 @@ describe("WorkflowList", () => {
 
         const nonDeletedWorkflows = FAKE_WORKFLOWS.filter((w) => !w.deleted);
         expect(wrapper.findAll(".workflow-card")).toHaveLength(nonDeletedWorkflows.length);
+    });
+
+    it("render own workflows when the user loads after the workflow list", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 3 });
+
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+        setActivePinia(pinia);
+        const userStore = useUserStore();
+
+        const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
+        await flushPromises();
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
+        expect(wrapper.find("#workflow-list-empty").exists()).toBe(false);
+
+        userStore.currentUser = FAKE_USER;
+        await flushPromises();
+
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
     });
 
     it("toggle show deleted workflows", async () => {

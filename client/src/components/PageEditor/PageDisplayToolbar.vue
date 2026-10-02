@@ -1,14 +1,5 @@
 <script setup lang="ts">
-import {
-    faArrowLeft,
-    faEdit,
-    faEye,
-    faHistory,
-    faInfo,
-    faPen,
-    faSave,
-    faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faEdit, faEye, faHistory, faPen, faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -20,6 +11,7 @@ import { usePageEditorStore } from "@/stores/pageEditorStore.js";
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import RenameModal from "../Common/RenameModal.vue";
+import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 
 const props = defineProps<{
     labels: (typeof PAGE_LABELS)[keyof typeof PAGE_LABELS];
@@ -37,6 +29,9 @@ const emit = defineEmits<{
 }>();
 
 const showRename = ref(false);
+
+/** Ref for the `ChangesIndicator` component from which we call the `flashSavedIndicator` method. */
+const changesIndicator = ref<InstanceType<typeof ChangesIndicator> | null>(null);
 
 const currentEntity = computed(() => {
     return props.labels.entityName.toLowerCase();
@@ -56,7 +51,12 @@ const saveDisabledTitle = computed(() => {
 });
 
 async function handleSave() {
-    await pageEditorStore.savePage();
+    try {
+        await pageEditorStore.savePage();
+        changesIndicator.value?.flashSavedIndicator();
+    } catch (error) {
+        // Error is already handled in the store and displayed in parent(s)
+    }
 }
 
 function handleTitleChange(newTitle: string): Promise<void> {
@@ -86,15 +86,7 @@ function handleTitleChange(newTitle: string): Promise<void> {
         </div>
 
         <div class="d-flex align-items-center flex-gapx-1 flex-shrink-0">
-            <span
-                v-if="isDirty"
-                class="d-flex align-items-center flex-gapx-1 text-warning small"
-                data-description="page unsaved indicator">
-                <BBadge variant="warning" class="text-light">
-                    <FontAwesomeIcon :icon="faInfo" />
-                </BBadge>
-                Unsaved
-            </span>
+            <ChangesIndicator ref="changesIndicator" class="pr-2" :has-changes="isDirty" object-namespace="page" />
 
             <GButton color="blue" transparent size="small" data-description="page back button" @click="emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" />

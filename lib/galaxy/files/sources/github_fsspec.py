@@ -13,9 +13,8 @@ access to the repository.
 import base64
 import logging
 
-import requests
-
 from galaxy.exceptions import MessageException
+from galaxy.util import requests
 
 try:
     from fsspec.implementations.github import GithubFileSystem
@@ -110,7 +109,7 @@ def list_authorized_repositories(access_token: str) -> list[dict]:
 
 if GithubFileSystem is not None:
 
-    class WritableGithubFileSystem(GithubFileSystem):
+    class WritableGithubFileSystem(GithubFileSystem):  # type: ignore[misc]  # fsspec is untyped
         """``GithubFileSystem`` with OAuth2 Bearer auth and write support via the Contents API."""
 
         def __init__(self, *args, access_token: str | None = None, **kwargs):
@@ -147,8 +146,7 @@ if GithubFileSystem is not None:
             }
             # The Contents API requires the current blob sha to update an existing file;
             # it must be omitted when creating a new one.
-            existing_sha = self._existing_sha(rpath)
-            if existing_sha is not None:
+            if (existing_sha := self._existing_sha(rpath)) is not None:
                 payload["sha"] = existing_sha
 
             url = _PUT_URL.format(org=self.org, repo=self.repo, path=rpath)

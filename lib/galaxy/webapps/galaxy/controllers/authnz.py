@@ -13,7 +13,11 @@ from galaxy import (
     exceptions,
     web,
 )
-from galaxy.util import url_get
+from galaxy.util import (
+    asbool,
+    is_safe_local_redirect,
+    url_get,
+)
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
 
@@ -104,11 +108,14 @@ class OIDC(BaseUIController):
     def callback(self, trans: "GalaxyWebTransaction", provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
         login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
-        if login_next_cookie and login_next_cookie != "None":
+        if login_next_cookie and login_next_cookie != "None" and is_safe_local_redirect(login_next_cookie):
             # This cookie can sometimes be set to a literal string 'None', which we don't want to use as a redirect.
             login_next = url_for(login_next_cookie)
         else:
-            # Fallback to default redirect if no login_next cookie is found.
+            # Fallback to default redirect if no login_next cookie is found, or if it points
+            # somewhere we refuse to send the user -- this value reaches us from the client.
+            if login_next_cookie and login_next_cookie != "None":
+                log.warning("Ignoring post-login redirect target outside of Galaxy: %s", login_next_cookie)
             login_next = url_for("/")
         if not bool(kwargs):
             log.warning(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
@@ -212,24 +219,30 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def logout(self, trans: "GalaxyWebTransaction", provider, **kwargs):
+    def logout(self, trans: "GalaxyWebTransaction", provider, logout_all=False, **kwargs):
+        if not trans.app.config.enable_oidc:
+            msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
+            log.debug(msg)
+            return {"message": msg}
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
-        trans.handle_user_logout()
+        trans.handle_user_logout(logout_all=asbool(logout_all))
         if success:
             return {"redirect_uri": redirect_uri}
         else:
             return {"message": message}
 
     @web.expose
-    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, **kwargs):
+    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, logout_all=False, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
+            return trans.response.send_redirect(
+                url_for(controller="authnz", action="logout", provider=idp_provider, logout_all=logout_all)
+            )
 
     @web.expose
     @web.json

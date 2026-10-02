@@ -8,6 +8,7 @@ import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
+import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
@@ -98,19 +99,17 @@ import VisualizationPublished from "@/components/Visualizations/VisualizationPub
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 import InvocationReport from "@/components/Workflow/InvocationReport.vue";
+import CuratedWorkflowList from "@/components/Workflow/List/CuratedWorkflowList.vue";
 import WorkflowList from "@/components/Workflow/List/WorkflowList.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import StoredWorkflowInvocations from "@/components/Workflow/StoredWorkflowInvocations.vue";
-import WorkflowCreate from "@/components/Workflow/WorkflowCreate.vue";
 import WorkflowExport from "@/components/Workflow/WorkflowExport.vue";
 import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
-import Login from "@/entry/analysis/modules/Login.vue";
-import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 Vue.use(VueRouter);
@@ -145,14 +144,6 @@ function redirectAnon(redirect = "") {
     }
 }
 
-// redirect logged in users
-function redirectLoggedIn() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
-        return "/";
-    }
-}
-
 function redirectIf(condition, path) {
     if (condition) {
         return path;
@@ -165,18 +156,8 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            /** Login entry route */
-            {
-                path: "/login/start",
-                component: Login,
-                redirect: redirectLoggedIn(),
-            },
-            /** Registration entry route */
-            {
-                path: "/register/start",
-                component: Register,
-                redirect: redirectLoggedIn(),
-            },
+            /** Login and registration entry routes */
+            ...LoginRoutes,
             /** Workflow editor */
             {
                 path: "/workflows/edit",
@@ -631,6 +612,8 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             exchangeId: route.params.exchangeId || undefined,
                             compact: route.query.compact === "true",
+                            // `?q=` seeds a fresh conversation, e.g. from the command palette
+                            initialQuestion: typeof route.query.q === "string" ? route.query.q : undefined,
                         }),
                     },
                     {
@@ -819,11 +802,6 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "workflows/create",
-                        component: WorkflowCreate,
-                        redirect: redirectAnon(),
-                    },
-                    {
                         path: "workflows/export",
                         component: WorkflowExport,
                         props: (route) => ({
@@ -875,6 +853,10 @@ export function getRouter(Galaxy) {
                             isFullPage: true,
                             success: Boolean(route.query.success),
                         }),
+                    },
+                    {
+                        path: "workflows/list_curated",
+                        component: CuratedWorkflowList,
                     },
                     {
                         path: "workflows/list",

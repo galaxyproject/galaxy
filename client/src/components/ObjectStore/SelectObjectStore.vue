@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -7,6 +6,7 @@ import type { UserConcreteObjectStoreModel } from "@/api";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SourceOptionCard from "@/components/ConfigTemplates/SourceOptionCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -31,7 +31,7 @@ const { loading, loadErrorMessage, selectableObjectStores } = storeToRefs(store)
 const selectableAndVisibleObjectStores = computed(() => {
     const allSelectableObjectStores = selectableObjectStores.value;
     if (allSelectableObjectStores != null) {
-        return allSelectableObjectStores.filter((item) => {
+        return allSelectableObjectStores.filter((item: UserConcreteObjectStoreModel) => {
             return "hidden" in item ? !item.hidden : true;
         });
     } else {
@@ -85,9 +85,9 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
                 {{ props.forWhat }}
             </span>
 
-            <BAlert v-if="error" variant="danger" class="object-store-selection-error" show>
+            <GAlert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
-            </BAlert>
+            </GAlert>
 
             <div class="d-flex flex-wrap">
                 <SourceOptionCard

@@ -8,6 +8,8 @@ import type { FieldDict } from "@/api";
 import localize from "@/utils/localization";
 
 import FormRecordFieldDefinition from "./FormRecordFieldDefinition.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
 type FieldDefinitions = FieldDict[];
@@ -87,44 +89,44 @@ const emit = defineEmits(["onChange"]);
             <template v-slot:operations>
                 <!-- code modelled after FormRepeat -->
                 <span class="float-right">
-                    <b-button-group>
+                    <GButtonGroup>
                         <span v-g-tooltip.hover.bottom title="move down">
-                            <b-button
+                            <GButton
                                 :id="getButtonId(index, 'up')"
                                 v-g-tooltip.hover.bottom
                                 title="move up"
-                                role="button"
-                                variant="link"
-                                size="sm"
+                                transparent
+                                size="small"
+                                icon-only
                                 class="ml-0"
                                 @click="() => swap(index, index - 1, 'up')">
                                 <FontAwesomeIcon :icon="faCaretUp" />
-                            </b-button>
+                            </GButton>
                         </span>
                         <span v-g-tooltip.hover.bottom title="move down">
-                            <b-button
+                            <GButton
                                 :id="getButtonId(index, 'down')"
                                 v-g-tooltip.hover.bottom
                                 title="move down"
-                                role="button"
-                                variant="link"
-                                size="sm"
+                                transparent
+                                size="small"
+                                icon-only
                                 class="ml-0"
                                 @click="() => swap(index, index + 1, 'down')">
                                 <FontAwesomeIcon :icon="faCaretDown" />
-                            </b-button>
+                            </GButton>
                         </span>
-                    </b-button-group>
+                    </GButtonGroup>
                     <span v-g-tooltip.hover.bottom :title="deleteTooltip">
-                        <b-button
+                        <GButton
                             title="delete"
-                            role="button"
-                            variant="link"
-                            size="sm"
+                            transparent
+                            size="small"
+                            icon-only
                             class="ml-0"
                             @click="() => onRemove(index)">
                             <FontAwesomeIcon :icon="faTrashAlt" />
-                        </b-button>
+                        </GButton>
                     </span>
                 </span>
             </template>

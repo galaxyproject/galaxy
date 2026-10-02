@@ -1,5 +1,10 @@
 import os
 import tempfile
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from typing import Any
 
 import pytest
@@ -12,6 +17,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
 )
+from galaxy.files.models import RemoteFile
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
@@ -21,6 +27,7 @@ from galaxy.files.unittest_utils import (
 from ._util import (
     assert_realizes_as,
     assert_realizes_throws_exception,
+    configured_file_sources,
     find,
     find_file_a,
     list_dir,
@@ -71,6 +78,16 @@ def test_posix():
     assert subdir2
     assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
     assert subdir2.class_ == "Directory"
+
+
+def test_posix_list_ctime_is_utc(non_utc_local_time):
+    file_sources, root = _configured_file_sources_with_root()
+    file_a = find_file_a(list_root(file_sources, "gxfiles://test1", recursive=False))
+    assert isinstance(file_a, RemoteFile)
+    st_ctime = os.stat(os.path.join(root, "a")).st_ctime
+    assert file_a.ctime
+    assert file_a.ctime.utcoffset() == timedelta(0)
+    assert abs(file_a.ctime - datetime.fromtimestamp(st_ctime, tz=timezone.utc)) <= timedelta(microseconds=1)
 
 
 def test_posix_link_security():
@@ -556,3 +573,33 @@ def test_get_file_source_path_strips_whitespace():
     resolved = file_sources.get_file_source_path("\ngxfiles://test1/a\n")
     assert resolved.file_source is not None
     assert resolved.path == "/a"
+
+
+def _two_posix_file_sources(tmp_path):
+    root_good = tmp_path / "good"
+    root_other = tmp_path / "other"
+    root_good.mkdir()
+    root_other.mkdir()
+    return configured_file_sources(
+        [
+            {"type": "posix", "id": "good", "root": str(root_good)},
+            {"type": "posix", "id": "other", "root": str(root_other)},
+        ]
+    )
+
+
+def test_plugins_to_dict_serializes_only_referenced_sources(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True, referenced_uris={"gxfiles://good/some/file"})
+    assert [p["id"] for p in plugins] == ["good"]
+
+
+def test_plugins_to_dict_serializes_nothing_when_no_uris_referenced(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    assert file_sources.plugins_to_dict(for_serialization=True, referenced_uris=set()) == []
+
+
+def test_plugins_to_dict_serializes_all_when_referenced_uris_none(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True)
+    assert {p["id"] for p in plugins} == {"good", "other"}

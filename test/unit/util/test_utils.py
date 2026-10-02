@@ -2,7 +2,10 @@ import errno
 import os
 import tempfile
 from enum import Enum
-from io import StringIO
+from io import (
+    BytesIO,
+    StringIO,
+)
 from pathlib import Path
 
 import pytest
@@ -24,6 +27,65 @@ SECTION_XML = """<?xml version="1.0" ?>
 def test_strip_control_characters():
     s = "\x00bla"
     assert util.strip_control_characters(s) == "bla"
+
+
+def test_stream_to_path(tmp_path):
+    destination = tmp_path / "streamed"
+
+    assert util.stream_to_path(BytesIO(b"streamed content"), destination) == destination
+    assert destination.read_bytes() == b"streamed content"
+
+
+def test_stream_to_open_named_file_compatibility(tmp_path):
+    destination = tmp_path / "streamed"
+    fd = os.open(destination, os.O_WRONLY | os.O_CREAT)
+
+    assert util.stream_to_open_named_file(BytesIO(b"streamed content"), fd, destination) == destination
+    assert destination.read_bytes() == b"streamed content"
+    with pytest.raises(OSError):
+        os.fstat(fd)
+
+
+def test_filesystem_safe_string():
+    assert util.filesystem_safe_string(".sample/data") == "sample_data"
+    assert util.filesystem_safe_string("café") == "café"
+    assert util.filesystem_safe_string("...") == ""
+    assert util.filesystem_safe_string("...", fallback="_") == "_"
+    assert util.filesystem_safe_string("a" * 256).endswith("..")
+    assert len(util.filesystem_safe_string("a" * 256)) == 255
+
+
+@pytest.mark.parametrize(
+    ("identifier", "expected"),
+    [
+        ("Plain HDA", "Plain_HDA"),
+        ("../etc/passwd", "_etc_passwd"),
+        ("..\\etc\\passwd", "_etc_passwd"),
+        (".", "_"),
+        ("..", "_"),
+        ("...", "_"),
+        ("---", "_"),
+        (".-.", "_"),
+        ("-.hidden", "hidden"),
+        (".-hidden", "hidden"),
+        ("café", "caf_"),
+        ("NUL", "_NUL"),
+        ("CON.txt", "_CON.txt"),
+        ("name.", "name"),
+        ("x\x00y", "xy"),
+        ("x\ny", "x_y"),
+    ],
+)
+def test_safe_filename_component(identifier, expected):
+    assert util.safe_filename_component(identifier) == expected
+    assert util.safe_filename_component(identifier) == expected
+
+
+def test_safe_filename_component_is_bounded_but_not_unique():
+    assert util.safe_filename_component("a/b") == util.safe_filename_component("a:b") == "a_b"
+    safe_identifier = util.safe_filename_component("a" * 255, max_len=20)
+    assert safe_identifier == f"{'a' * 18}__"
+    assert len(safe_identifier) == 20
 
 
 def test_parse_xml_string():
@@ -146,6 +208,11 @@ DOI_VALID_VALUES = [
     "doi:10.1234567890/42",  # longer prefix
     "doi:10.1234/42ab:%&*$//crazy-suffix/%/&/",
     "doi:10.1234/aa",
+    "http://doi.org/10.1234/42",
+    "stillvalid:10.1234/42",
+    "dx.doi.org:10.1234/42",
+    "https://dx.doi.org:10.1234/42",
+    "httpss://dx.doi.org:10.1234/42",
 ]
 
 
@@ -155,12 +222,11 @@ def test_validate_doi_pass(input):
 
 
 DOI_INVALID_VALUES = [
-    "http://doi.org/10.1234/42",
-    "invalid:10.1234/42",
     "doi:11.1234/42",
     "doi:101234/42",
     "doi:10. 1234/42",
     "doi:10.abc/42",
+    "10.1234 /42/a b",
     "doi:10.1234/ 42",
     "doi:10.1234/42/a b",
 ]
@@ -213,9 +279,10 @@ def test_ready_name_for_url(input_name, expected_output):
         ("Galaxy102-[name].fastqsanger.gz ", 'filename="Galaxy102-[name].fastqsanger.gz"'),
     ],
 )
-def test_to_content_disposition(target, expected_substring):
-    result = util.to_content_disposition(target)
-    assert result.startswith("attachment; ")
+@pytest.mark.parametrize("disposition", ["attachment", "inline"])
+def test_to_content_disposition(target, expected_substring, disposition):
+    result = util.to_content_disposition(target, disposition=disposition)
+    assert result.startswith(f"{disposition}; ")
     assert expected_substring in result
     # Ensure no trailing whitespace in the header value
     assert result == result.strip()

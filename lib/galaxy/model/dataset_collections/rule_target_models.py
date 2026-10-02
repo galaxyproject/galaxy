@@ -1,3 +1,9 @@
+"""Models describing the column targets a rule builder workbook can carry.
+
+The target definitions themselves live in ``rule_targets.yml``; header parsing
+onto these types lives in ``rule_target_columns.py``.
+"""
+
 from typing import (
     Literal,
 )
@@ -12,15 +18,17 @@ from galaxy.util.resources import resource_string
 
 RuleBuilderImportType = Literal["datasets", "collections"]
 RuleBuilderModes = Literal[
-    "raw",
-    "ftp",
+    "raw",  # URIs supplied directly in the workbook
+    "ftp",  # files staged in the user's FTP directory
     "datasets",
-    "library_datasets",
-    "collection_contents",
+    "library_datasets",  # datasets from data libraries
+    "collection_contents",  # elements of an existing collection
 ]
 
 
 class ColumnTarget(BaseModel):
+    """One column type a workbook may declare, as defined in ``rule_targets.yml``."""
+
     label: str
     help: str | None
     modes: list[RuleBuilderModes] | None = None
@@ -41,11 +49,11 @@ class ColumnTarget(BaseModel):
 RuleBuilderMappingTargetKey = Literal[
     "list_identifiers",
     "paired_identifier",
-    "paired_or_unpaired_identifier",
+    "paired_or_unpaired_identifier",  # as above, but the column may be blank
     "collection_name",
-    "name_tag",
+    "name_tag",  # name: tags, propagated to derived datasets
     "tags",
-    "group_tags",
+    "group_tags",  # group: tags, consumed by factorial tools
     "name",
     "dbkey",
     "hash_sha1",
@@ -54,13 +62,13 @@ RuleBuilderMappingTargetKey = Literal[
     "hash_sha512",
     "file_type",
     "url",
-    "url_deferred",
-    "info",
-    "ftp_path",
-    "deferred",
-    "to_posix_lines",
-    "space_to_tab",
-    "auto_decompress",
+    "url_deferred",  # record the URI, fetch only when something needs it
+    "info",  # unstructured text shown in the expanded history item
+    "ftp_path",  # path relative to the user's FTP directory
+    "deferred",  # boolean form of url_deferred
+    "to_posix_lines",  # boolean, convert line endings on fetch
+    "space_to_tab",  # boolean, convert spaces to tabs on fetch
+    "auto_decompress",  # boolean, decompress on fetch
 ]
 
 

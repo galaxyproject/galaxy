@@ -61,7 +61,7 @@ watch(
     () => props.repositoryId,
     (_first, second) => {
         repositoryStore.setId(second)
-    }
+    },
 )
 
 function trsToolId(tool: RepositoryToolModel) {
@@ -139,7 +139,7 @@ watch(
         if (newValue && newValue != currentRevision.value) {
             currentRevision.value = newValue
         }
-    }
+    },
 )
 
 watch(currentRevision, () => {

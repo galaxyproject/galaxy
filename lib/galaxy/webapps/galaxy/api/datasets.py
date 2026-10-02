@@ -144,6 +144,15 @@ DisplayChunkSizeQueryParam = Query(
 )
 
 
+def _allows_stream(request: Request) -> bool:
+    """Whether this request can be answered by streaming the object straight from the backing store.
+
+    A HEAD wants headers only, and a Range request needs random access -- both are served from a
+    file in the cache instead, so neither may consume a forward-only stream.
+    """
+    return request.method == "GET" and "range" not in request.headers
+
+
 @router.cbv
 class FastAPIDatasets:
     service: DatasetsService = depends(DatasetsService)
@@ -436,7 +445,7 @@ class FastAPIDatasets:
         ck_size: int | None = None,
     ):
         extra_params = get_query_parameters_from_request_excluding(
-            request, {"preview", "filename", "to_ext", "raw", "dataset", "ck_size", "offset"}
+            request, {"preview", "filename", "to_ext", "raw", "dataset", "ck_size", "offset", "allow_stream"}
         )
         display_data, headers = self.service.display(
             trans,
@@ -447,6 +456,7 @@ class FastAPIDatasets:
             raw=raw,
             offset=offset,
             ck_size=ck_size,
+            allow_stream=_allows_stream(request),
             **extra_params,
         )
         if isinstance(display_data, IOBase):

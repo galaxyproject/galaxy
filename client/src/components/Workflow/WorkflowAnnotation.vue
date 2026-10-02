@@ -14,6 +14,8 @@ import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vu
 
 interface Props {
     workflowId: string;
+    /** The time the workflow run was invoked. This prop being set also
+     * decides that this is being rendered in the invocation view */
     invocationCreateTime?: string;
     historyId: string;
     showDetails?: boolean;
@@ -41,7 +43,9 @@ const workflowTags = computed(() => {
 
 <template>
     <div v-if="workflow" class="pb-2 pl-2">
-        <div class="d-flex justify-content-between align-items-center">
+        <div
+            class="d-flex justify-content-between align-items-center"
+            :class="{ 'has-annotation-middle': props.invocationCreateTime }">
             <div class="annotation-left">
                 <i v-if="timeElapsed" data-description="workflow annotation time info">
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />
@@ -52,7 +56,7 @@ const workflowTags = computed(() => {
                 </i>
                 <TargetHistoryLink v-if="props.invocationCreateTime" :target-history-id="props.historyId" />
             </div>
-            <div class="annotation-middle">
+            <div v-if="props.invocationCreateTime" class="annotation-middle">
                 <slot name="middle-content" />
             </div>
             <div class="annotation-right">
@@ -71,10 +75,8 @@ const workflowTags = computed(() => {
 </template>
 
 <style scoped lang="scss">
-// Left column: 35% of the width
 .annotation-left {
     flex: 1 1 0;
-    max-width: 35%;
     min-width: 0;
     overflow: hidden;
 
@@ -103,17 +105,13 @@ const workflowTags = computed(() => {
     }
 }
 
-// Middle column: 30% of the width
 .annotation-middle {
     flex: 1 1 0;
-    max-width: 30%;
     min-width: 0;
 }
 
-// Right column: 35% of the width
 .annotation-right {
     flex: 1 1 0;
-    max-width: 35%;
     min-width: 0;
     overflow: hidden;
     justify-content: flex-end;
@@ -131,6 +129,22 @@ const workflowTags = computed(() => {
     :deep(.workflow-indicators) {
         flex-wrap: wrap;
         justify-content: flex-end;
+    }
+}
+
+// When the middle column is rendered (invocation view), give all
+// fixed widths so the progress bars in middle are not constrained
+.has-annotation-middle {
+    .annotation-left {
+        max-width: 35%;
+    }
+
+    .annotation-middle {
+        max-width: 30%;
+    }
+
+    .annotation-right {
+        max-width: 35%;
     }
 }
 </style>

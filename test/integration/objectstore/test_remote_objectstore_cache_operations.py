@@ -19,15 +19,13 @@ class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):
 
     def upload_dataset(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(history_id, content="123", wait=True)
-        return hda
+        return self.upload_dataset_and_wait_for_hash(history_id, content="123")
 
     def upload_bam_dataset(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(
-            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
+        return self.upload_dataset_and_wait_for_hash(
+            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam"
         )
-        return hda
 
     def test_cache_populated(self):
         self.upload_dataset()

@@ -7,6 +7,8 @@ from typing import (
 
 import aiohttp
 
+from galaxy.util.requests import create_ssl_context
+
 log = logging.getLogger()
 
 REQUEST_METHOD = Literal["GET", "POST", "HEAD"]
@@ -32,7 +34,8 @@ async def async_request_with_timeout(
     method: REQUEST_METHOD = "GET",
     timeout: float = 1.0,
 ):
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(ssl=create_ssl_context())
+    async with aiohttp.ClientSession(connector=connector) as session:
         try:
             # Wait for the async request, with a user-defined timeout
             result = await asyncio.wait_for(

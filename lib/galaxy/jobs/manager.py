@@ -73,7 +73,6 @@ class JobManager:
         tool_id = None
         configured_handler = None
         if tool:
-            tool = self.app.toolbox.materialize_tool(tool, reason="job_setup")
             tool_id = tool.id
             configured_handler = tool.get_configured_job_handler()
             if configured_handler is not None:
@@ -105,6 +104,23 @@ class JobManager:
         """
         self.job_handler.job_stop_queue.put(job.id, error_msg=message)
 
+    def stop_without_failing(self, job: "Job") -> None:
+        """Stop a running job without cancelling or failing it.
+
+        The job is moved into a stopping state, so the handler ends the job
+        process and collects the outputs it has produced as a normal, successful
+        completion. ``stop`` on its own is a no-op for a job whose state does not
+        already indicate that it should end, so the state change belongs here.
+
+        :param job:     Job to stop.
+        :type job:      Instance of :class:`galaxy.model.Job`.
+        """
+        job.mark_stopped(self.app.config.track_jobs_in_database)
+        self.stop(job)
+        session = self.app.model.session
+        session.add(job)
+        session.commit()
+
     def shutdown(self):
         self.job_handler.shutdown()
 
@@ -121,6 +137,9 @@ class NoopManager:
         pass
 
     def stop(self, *args, **kwargs):
+        pass
+
+    def stop_without_failing(self, *args, **kwargs):
         pass
 
 

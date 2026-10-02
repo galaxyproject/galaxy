@@ -2,16 +2,13 @@
 Class encapsulating the management of repositories installed into Galaxy from the Tool Shed.
 """
 
-import copy
 import logging
 import os
 import shutil
 from typing import (
     Any,
-    no_type_check,
 )
 
-from galaxy import util
 from galaxy.model.tool_shed_install import (
     ToolDependency,
     ToolShedRepository,
@@ -20,19 +17,16 @@ from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
-from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager,
 )
 from galaxy.tool_shed.util import (
-    repository_util,
     shed_util_common as suc,
     tool_dependency_util,
 )
 from galaxy.tool_shed.util.container_util import generate_repository_dependencies_key_for_repository
 from galaxy.util.tool_shed import common_util
-from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -77,25 +71,6 @@ class InstalledRepositoryManager:
         # and whose values are a list of tuples defining tool_shed_repository objects (whose status is 'Installed') that require
         # the key.
         self.installed_dependent_repositories_of_installed_repositories = {}
-
-    @property
-    def tool_paths(self) -> list[str]:
-        """Return all possible tool_path attributes of all tool config files."""
-        if len(self._tool_paths) != len(self.tool_configs):
-            # This could be happen at startup or after the creation of a new shed_tool_conf.xml file
-            # before the installation of the first repository
-            tool_paths = []
-            for tool_config in self.tool_configs:
-                tree, error_message = parse_xml(tool_config)
-                if error_message:
-                    log.error(error_message)
-                else:
-                    assert tree
-                    tool_path = tree.getroot().get("tool_path")
-                    if tool_path:
-                        tool_paths.append(tool_path)
-            self._tool_paths = tool_paths
-        return self._tool_paths
 
     def activate_repository(self, repository: ToolShedRepository) -> None:
         """Activate an installed tool shed repository that has been marked as deactivated."""
@@ -142,195 +117,6 @@ class InstalledRepositoryManager:
                 )
         self.context.add(repository)
         self.context.commit()
-
-    def add_entry_to_installed_repository_dependencies_of_installed_repositories(
-        self, repository: ToolShedRepository
-    ) -> None:
-        """
-        Add an entry to self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
-        is the population of self.installed_dependent_repositories_of_installed_repositories.  Since this method discovers
-        all repositories required by the received repository, it can use the list to add entries to the reverse dictionary.
-        """
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        tool_shed, name, owner, installed_changeset_revision = repository_tup
-        # Get the list of repository dependencies for this repository.
-        status = ToolShedRepository.installation_status.INSTALLED
-        repository_dependency_tups = self.get_repository_dependency_tups_for_installed_repository(
-            repository, status=status
-        )
-        # Add an entry to self.installed_repository_dependencies_of_installed_repositories.
-        if repository_tup not in self.installed_repository_dependencies_of_installed_repositories:
-            debug_msg = (
-                f"Adding an entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
-            )
-            debug_msg += "to installed_repository_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            self.installed_repository_dependencies_of_installed_repositories[repository_tup] = (
-                repository_dependency_tups
-            )
-        # Use the repository_dependency_tups to add entries to the reverse dictionary
-        # self.installed_dependent_repositories_of_installed_repositories.
-        for required_repository_tup in repository_dependency_tups:
-            debug_msg = f"Appending revision {installed_changeset_revision} of repository {name} owned by {owner} "
-            debug_msg += "to all dependent repositories in installed_dependent_repositories_of_installed_repositories."
-            log.debug(debug_msg)
-            if required_repository_tup in self.installed_dependent_repositories_of_installed_repositories:
-                self.installed_dependent_repositories_of_installed_repositories[required_repository_tup].append(
-                    repository_tup
-                )
-            else:
-                self.installed_dependent_repositories_of_installed_repositories[required_repository_tup] = [
-                    repository_tup
-                ]
-
-    def add_entry_to_repository_dependencies_of_installed_repositories(self, repository: ToolShedRepository) -> None:
-        """Add an entry to self.repository_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup not in self.repository_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = (
-                f"Adding an entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
-            )
-            debug_msg += "to repository_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            repository_dependency_tups = self.get_repository_dependency_tups_for_installed_repository(
-                repository, status=None
-            )
-            self.repository_dependencies_of_installed_repositories[repository_tup] = repository_dependency_tups
-
-    def get_containing_repository_for_tool_dependency(self, tool_dependency_tup: tuple) -> ToolShedRepository:
-        tool_shed_repository_id, name, version, type = tool_dependency_tup
-        repository = self.context.query(ToolShedRepository).get(tool_shed_repository_id)
-        assert repository
-        return repository
-
-    def get_dependencies_for_repository(
-        self,
-        tool_shed_url: str,
-        repo_info_dict: dict[str, repository_util.AnyRepositoryTupleT],
-        includes_tool_dependencies,
-        updating=False,
-    ) -> dict[str, Any]:
-        """
-        Return dictionaries containing the sets of installed and missing tool dependencies and repository
-        dependencies associated with the repository defined by the received repo_info_dict.
-        """
-        rdim = repository_dependency_manager.RepositoryDependencyInstallManager(self.app)
-        repository = None
-        installed_rd: dict[str, Any] = {}
-        installed_td: repository_util.ToolDependenciesDictT = {}
-        missing_rd: dict[str, Any] = {}
-        missing_td: repository_util.ToolDependenciesDictT = {}
-        name = next(iter(repo_info_dict))
-        repo_info_tuple = repo_info_dict[name]
-        (
-            description,
-            repository_clone_url,
-            changeset_revision,
-            ctx_rev,
-            repository_owner,
-            repository_dependencies,
-            tool_dependencies,
-        ) = repository_util.get_repo_info_tuple_contents(repo_info_tuple)
-        if tool_dependencies:
-            if not includes_tool_dependencies:
-                includes_tool_dependencies = True
-            # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.
-            # We don't add to installed_td and missing_td here because at this point they are empty.
-            installed_td, missing_td = self.get_installed_and_missing_tool_dependencies_for_repository(
-                tool_dependencies
-            )
-        # In cases where a repository dependency is required only for compiling a dependent repository's
-        # tool dependency, the value of repository_dependencies will be an empty dictionary here.
-        if repository_dependencies:
-            # We have a repository with one or more defined repository dependencies.
-            if not repository:
-                repository = repository_util.get_repository_for_dependency_relationship(
-                    self.app, tool_shed_url, name, repository_owner, changeset_revision
-                )
-            if not updating and repository and repository.metadata_:
-                installed_rd, missing_rd = self.get_installed_and_missing_repository_dependencies(repository)
-            else:
-                (
-                    installed_rd,
-                    missing_rd,
-                ) = self.get_installed_and_missing_repository_dependencies_for_new_or_updated_install(repo_info_tuple)
-            # Discover all repository dependencies and retrieve information for installing them.
-            all_repo_info_dict = rdim.get_required_repo_info_dicts(tool_shed_url, util.listify(repo_info_dict))
-            has_repository_dependencies = all_repo_info_dict.get("has_repository_dependencies", False)
-            has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get(
-                "has_repository_dependencies_only_if_compiling_contained_td", False
-            )
-            includes_tools_for_display_in_tool_panel = all_repo_info_dict.get(
-                "includes_tools_for_display_in_tool_panel", False
-            )
-            includes_tool_dependencies = all_repo_info_dict.get("includes_tool_dependencies", False)
-            includes_tools = all_repo_info_dict.get("includes_tools", False)
-            required_repo_info_dicts = all_repo_info_dict.get("all_repo_info_dicts", [])
-            # Display tool dependencies defined for each of the repository dependencies.
-            if required_repo_info_dicts:
-                required_tool_dependencies = {}
-                for rid in required_repo_info_dicts:
-                    for repo_info_tuple in rid.values():
-                        (
-                            description,
-                            repository_clone_url,
-                            changeset_revision,
-                            ctx_rev,
-                            repository_owner,
-                            rid_repository_dependencies,
-                            rid_tool_dependencies,
-                        ) = repository_util.get_repo_info_tuple_contents(repo_info_tuple)
-                        if rid_tool_dependencies:
-                            for td_key, td_dict in rid_tool_dependencies.items():
-                                if td_key not in required_tool_dependencies:
-                                    required_tool_dependencies[td_key] = td_dict
-                if required_tool_dependencies:
-                    # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
-                    (
-                        required_installed_td,
-                        required_missing_td,
-                    ) = self.get_installed_and_missing_tool_dependencies_for_repository(required_tool_dependencies)
-                    if required_installed_td:
-                        if not includes_tool_dependencies:
-                            includes_tool_dependencies = True
-                        for td_key, td_dict in required_installed_td.items():
-                            if td_key not in installed_td:
-                                installed_td[td_key] = td_dict
-                    if required_missing_td:
-                        if not includes_tool_dependencies:
-                            includes_tool_dependencies = True
-                        for td_key, td_dict in required_missing_td.items():
-                            if td_key not in missing_td:
-                                missing_td[td_key] = td_dict
-        else:
-            # We have a single repository with (possibly) no defined repository dependencies.
-            all_repo_info_dict = rdim.get_required_repo_info_dicts(tool_shed_url, util.listify(repo_info_dict))
-            has_repository_dependencies = all_repo_info_dict.get("has_repository_dependencies", False)
-            has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get(
-                "has_repository_dependencies_only_if_compiling_contained_td", False
-            )
-            includes_tools_for_display_in_tool_panel = all_repo_info_dict.get(
-                "includes_tools_for_display_in_tool_panel", False
-            )
-            includes_tool_dependencies = all_repo_info_dict.get("includes_tool_dependencies", False)
-            includes_tools = all_repo_info_dict.get("includes_tools", False)
-            required_repo_info_dicts = all_repo_info_dict.get("all_repo_info_dicts", [])
-        dependencies_for_repository_dict = dict(
-            changeset_revision=changeset_revision,
-            has_repository_dependencies=has_repository_dependencies,
-            has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
-            includes_tool_dependencies=includes_tool_dependencies,
-            includes_tools=includes_tools,
-            includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-            installed_repository_dependencies=installed_rd,
-            installed_tool_dependencies=installed_td,
-            missing_repository_dependencies=missing_rd,
-            missing_tool_dependencies=missing_td,
-            name=name,
-            repository_owner=repository_owner,
-        )
-        return dependencies_for_repository_dict
 
     def get_installed_and_missing_repository_dependencies(
         self, repository: ToolShedRepository
@@ -402,229 +188,8 @@ class InstalledRepositoryManager:
                     missing_repository_dependencies["description"] = description
         return installed_repository_dependencies, missing_repository_dependencies
 
-    def get_installed_and_missing_repository_dependencies_for_new_or_updated_install(
-        self, repo_info_tuple
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """
-        Parse the received repository_dependencies dictionary that is associated with a repository being
-        installed into Galaxy for the first time and attempt to determine repository dependencies that are
-        already installed and those that are not.
-        """
-        missing_repository_dependencies = {}
-        installed_repository_dependencies = {}
-        missing_rd_tups = []
-        installed_rd_tups = []
-        (
-            description,
-            repository_clone_url,
-            changeset_revision,
-            ctx_rev,
-            repository_owner,
-            repository_dependencies,
-            tool_dependencies,
-        ) = repository_util.get_repo_info_tuple_contents(repo_info_tuple)
-        if repository_dependencies:
-            description = repository_dependencies["description"]
-            root_key = repository_dependencies["root_key"]
-            # The repository dependencies container will include only the immediate repository dependencies of
-            # this repository, so the container will be only a single level in depth.
-            for key, rd_tups in repository_dependencies.items():
-                if key in ["description", "root_key"]:
-                    continue
-                for rd_tup in rd_tups:
-                    (
-                        tool_shed,
-                        name,
-                        owner,
-                        changeset_revision,
-                        prior_installation_required,
-                        only_if_compiling_contained_td,
-                    ) = common_util.parse_repository_dependency_tuple(rd_tup)
-                    # Updates to installed repository revisions may have occurred, so make sure to locate the
-                    # appropriate repository revision if one exists.  We need to create a temporary repo_info_tuple
-                    # that includes the correct repository owner which we get from the current rd_tup.  The current
-                    # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner,
-                    #                     repository_dependencies, installed_td )
-                    tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup(self.app, rd_tup)
-                    tmp_repo_info_tuple = (None, tmp_clone_url, changeset_revision, None, owner, None, None)
-                    repository, installed_changeset_revision = repository_util.repository_was_previously_installed(
-                        self.app, tool_shed, name, tmp_repo_info_tuple, from_tip=False
-                    )
-                    if repository:
-                        new_rd_tup = [
-                            tool_shed,
-                            name,
-                            owner,
-                            changeset_revision,
-                            prior_installation_required,
-                            only_if_compiling_contained_td,
-                            repository.id,
-                            repository.status,
-                        ]
-                        if repository.status == ToolShedRepository.installation_status.INSTALLED:
-                            if new_rd_tup not in installed_rd_tups:
-                                installed_rd_tups.append(new_rd_tup)
-                        else:
-                            # A repository dependency that is not installed will not be considered missing if its value
-                            # for only_if_compiling_contained_td is True  This is because this type of repository dependency
-                            # will only be considered at the time that the specified tool dependency is being installed, and
-                            # even then only if the compiled binary of the tool dependency could not be installed due to the
-                            # unsupported installation environment.
-                            if not util.asbool(only_if_compiling_contained_td):
-                                if new_rd_tup not in missing_rd_tups:
-                                    missing_rd_tups.append(new_rd_tup)
-                    else:
-                        new_rd_tup = [
-                            tool_shed,
-                            name,
-                            owner,
-                            changeset_revision,
-                            prior_installation_required,
-                            only_if_compiling_contained_td,
-                            None,
-                            "Never installed",
-                        ]
-                        if not util.asbool(only_if_compiling_contained_td):
-                            # A repository dependency that is not installed will not be considered missing if its value for
-                            # only_if_compiling_contained_td is True - see above...
-                            if new_rd_tup not in missing_rd_tups:
-                                missing_rd_tups.append(new_rd_tup)
-        if installed_rd_tups:
-            installed_repository_dependencies["root_key"] = root_key
-            installed_repository_dependencies[root_key] = installed_rd_tups
-            installed_repository_dependencies["description"] = description
-        if missing_rd_tups:
-            missing_repository_dependencies["root_key"] = root_key
-            missing_repository_dependencies[root_key] = missing_rd_tups
-            missing_repository_dependencies["description"] = description
-        return installed_repository_dependencies, missing_repository_dependencies
-
     # The following function will be removed at some point and has clear issues the type checking
     # makes clear... I'm going to skip type checking for now rather than fix bugs in deprecated code
-    @no_type_check
-    def get_installed_and_missing_tool_dependencies_for_repository(
-        self, tool_dependencies_dict: repository_util.ToolDependenciesDictT
-    ) -> tuple[repository_util.ToolDependenciesDictT, repository_util.ToolDependenciesDictT]:
-        """
-        Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
-        being installed into Galaxy.
-        """
-        # FIXME: This implementation breaks when updates to a repository contain dependencies that result in
-        # multiple entries for a specific tool dependency.  A scenario where this can happen is where 2 repositories
-        # define  the same dependency internally (not using the complex repository dependency definition to a separate
-        # package repository approach).  If 2 repositories contain the same tool_dependencies.xml file, one dependency
-        # will be lost since the values in these returned dictionaries are not lists.  All tool dependency dictionaries
-        # should have lists as values.  These scenarios are probably extreme corner cases, but still should be handled.
-        installed_tool_dependencies: dict = {}
-        missing_tool_dependencies: dict = {}
-        if tool_dependencies_dict:
-            # Make sure not to change anything in the received tool_dependencies_dict as that would be a bad side-effect!
-            tmp_tool_dependencies_dict: dict = copy.deepcopy(tool_dependencies_dict)
-            for td_key, val in tmp_tool_dependencies_dict.items():
-                # Default the status to NEVER_INSTALLED.
-                tool_dependency_status = ToolDependency.installation_status.NEVER_INSTALLED
-                if td_key == "set_environment":
-                    # Set environment tool dependencies are a list.
-                    assert isinstance(val, list)
-                    new_val = []
-                    for requirement_dict in val:
-                        # {'repository_name': 'xx',
-                        #  'name': 'bwa',
-                        #  'version': '0.5.9',
-                        #  'repository_owner': 'yy',
-                        #  'changeset_revision': 'zz',
-                        #  'type': 'package'}
-                        tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type(
-                            self.app,
-                            requirement_dict.get("name", None),
-                            requirement_dict.get("version", None),
-                            requirement_dict.get("type", "package"),
-                        )
-                        if tool_dependency:
-                            tool_dependency_status = tool_dependency.status
-                        requirement_dict["status"] = tool_dependency_status
-                        new_val.append(requirement_dict)
-                        if tool_dependency_status in [ToolDependency.installation_status.INSTALLED]:
-                            if td_key in installed_tool_dependencies:
-                                installed_tool_dependencies[td_key].extend(new_val)
-                            else:
-                                installed_tool_dependencies[td_key] = new_val
-                        else:
-                            if td_key in missing_tool_dependencies:
-                                missing_tool_dependencies[td_key].extend(new_val)
-                            else:
-                                missing_tool_dependencies[td_key] = new_val
-                else:
-                    # The val dictionary looks something like this:
-                    # {'repository_name': 'xx',
-                    #  'name': 'bwa',
-                    #  'version': '0.5.9',
-                    #  'repository_owner': 'yy',
-                    #  'changeset_revision': 'zz',
-                    #  'type': 'package'}
-                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type(
-                        self.app, val.get("name", None), val.get("version", None), val.get("type", "package")
-                    )
-                    if tool_dependency:
-                        tool_dependency_status = tool_dependency.status
-                    val["status"] = tool_dependency_status
-                if tool_dependency_status in [ToolDependency.installation_status.INSTALLED]:
-                    installed_tool_dependencies[td_key] = val
-                else:
-                    missing_tool_dependencies[td_key] = val
-        return installed_tool_dependencies, missing_tool_dependencies
-
-    def get_repository_dependency_tups_for_installed_repository(
-        self, repository, dependency_tups=None, status=None
-    ) -> list[RepositoryTupleT]:
-        """
-        Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
-        received repository.  The returned list defines the entire repository dependency tree.  This method is called
-        only from Galaxy.
-        """
-        if dependency_tups is None:
-            dependency_tups = []
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        for rrda in repository.required_repositories:
-            repository_dependency = rrda.repository_dependency
-            required_repository = repository_dependency.repository
-            if status is None or required_repository.status == status:
-                required_repository_tup = self.get_repository_tuple_for_installed_repository_manager(
-                    required_repository
-                )
-                if required_repository_tup == repository_tup:
-                    # We have a circular repository dependency relationship, skip this entry.
-                    continue
-                if required_repository_tup not in dependency_tups:
-                    dependency_tups.append(required_repository_tup)
-                    return self.get_repository_dependency_tups_for_installed_repository(
-                        required_repository, dependency_tups=dependency_tups
-                    )
-        return dependency_tups
-
-    def get_repository_tuple_for_installed_repository_manager(self, repository: ToolShedRepository) -> RepositoryTupleT:
-        return (
-            str(repository.tool_shed),
-            str(repository.name),
-            str(repository.owner),
-            str(repository.installed_changeset_revision),
-        )
-
-    def get_repository_install_dir(self, tool_shed_repository: ToolShedRepository) -> str | None:
-        for tool_path in self.tool_paths:
-            ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
-            relative_path = os.path.join(
-                tool_path,
-                ts,
-                "repos",
-                str(tool_shed_repository.owner),
-                str(tool_shed_repository.name),
-                str(tool_shed_repository.installed_changeset_revision),
-            )
-            if os.path.exists(relative_path):
-                return relative_path
-        return None
-
     def handle_existing_tool_dependencies_that_changed_in_update(
         self, repository: ToolShedRepository, original_dependency_dict, new_dependency_dict
     ) -> tuple[list[str], list[str]]:
@@ -700,54 +265,6 @@ class InstalledRepositoryManager:
         self.context.add(repository)
         self.context.commit()
         return errors
-
-    def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
-        self, repository: ToolShedRepository
-    ) -> None:
-        """
-        Remove an entry from self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
-        is removal of appropriate value items from self.installed_dependent_repositories_of_installed_repositories.
-        """
-        # Remove tuples defining this repository from value lists in self.installed_dependent_repositories_of_installed_repositories.
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        tool_shed, name, owner, installed_changeset_revision = repository_tup
-        altered_installed_dependent_repositories_of_installed_repositories = {}
-        for r_tup, v_tups in self.installed_dependent_repositories_of_installed_repositories.items():
-            if repository_tup in v_tups:
-                debug_msg = (
-                    f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
-                )
-                r_tool_shed, r_name, r_owner, r_installed_changeset_revision = r_tup
-                debug_msg += f"from the dependent list for revision {r_installed_changeset_revision} of repository {r_name} owned by {r_owner} "
-                debug_msg += "in installed_repository_dependencies_of_installed_repositories."
-                log.debug(debug_msg)
-                v_tups.remove(repository_tup)
-            altered_installed_dependent_repositories_of_installed_repositories[r_tup] = v_tups
-        self.installed_dependent_repositories_of_installed_repositories = (
-            altered_installed_dependent_repositories_of_installed_repositories
-        )
-        # Remove this repository's entry from self.installed_repository_dependencies_of_installed_repositories.
-        if repository_tup in self.installed_repository_dependencies_of_installed_repositories:
-            debug_msg = (
-                f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
-            )
-            debug_msg += "from installed_repository_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            del self.installed_repository_dependencies_of_installed_repositories[repository_tup]
-
-    def remove_entry_from_repository_dependencies_of_installed_repositories(
-        self, repository: ToolShedRepository
-    ) -> None:
-        """Remove an entry from self.repository_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup in self.repository_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = (
-                f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
-            )
-            debug_msg += "from repository_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            del self.repository_dependencies_of_installed_repositories[repository_tup]
 
     def repository_dependency_needed_only_for_compiling_tool_dependency(
         self, repository: ToolShedRepository, repository_dependency

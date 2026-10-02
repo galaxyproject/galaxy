@@ -2,7 +2,10 @@ import os
 from typing import (
     cast,
 )
-from uuid import uuid4
+from uuid import (
+    UUID,
+    uuid4,
+)
 
 import pytest
 import responses
@@ -15,7 +18,12 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
-from galaxy.files import FileSourcesUserContext
+from galaxy.files import (
+    ConfiguredFileSources,
+    FileSourcesUserContext,
+    USER_FILE_SOURCES_SCHEME,
+)
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources import dropbox
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
@@ -24,13 +32,13 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    referenced_user_file_source_ids,
     TemplateFormDataRequest,
     TestUpdateInstancePayload,
     TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
     UpgradeInstancePayload,
-    USER_FILE_SOURCES_SCHEME,
     UserDefinedFileSourcesConfig,
     UserDefinedFileSourcesImpl,
     UserFileSourceModel,
@@ -325,6 +333,97 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.connection
         assert not status.connection.is_not_ok
         assert fsspec_fs_init_kwd["token"] == "my_test_access_token"
+
+    def test_serialization_mints_no_tokens_when_no_sources_referenced(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+            referenced_uris=set(),
+        )
+        assert calls == []
+        assert as_dicts == []
+
+    def test_serialization_mints_only_referenced_source(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        referenced_uuid = uuid4().hex
+        self._create_dropbox_oauth_source(referenced_uuid)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+            referenced_uris={f"gxuserfiles://{referenced_uuid}/some/path"},
+        )
+        assert calls == [f"refresh_token_{referenced_uuid}"]
+        assert len(as_dicts) == 1
+        assert UUID(as_dicts[0]["id"]).hex == referenced_uuid
+        assert as_dicts[0]["access_token"] == "my_test_access_token"
+
+    def test_serialization_without_reference_filter_includes_all_sources(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        as_dicts = self.file_sources.user_file_sources_to_dicts(
+            True,
+            cast(FileSourcesUserContext, self.trans),
+        )
+        assert len(calls) == 2
+        assert len(as_dicts) == 2
+
+    def test_configured_file_sources_to_dict_threads_referenced_uris(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+        referenced_uuid = uuid4().hex
+        self._create_dropbox_oauth_source(referenced_uuid)
+        self._create_dropbox_oauth_source(uuid4().hex)
+        calls = self._count_refresh_token_mints(monkeypatch)
+        configured = ConfiguredFileSources(
+            FileSourcePluginsConfig(),
+            user_defined_file_sources=self.file_sources,
+        )
+        as_dict = configured.to_dict(
+            for_serialization=True,
+            user_context=cast(FileSourcesUserContext, self.trans),
+            referenced_uris={f"gxuserfiles://{referenced_uuid}/x"},
+        )
+        ids = [s["id"] for s in as_dict["file_sources"]]
+        assert calls == [f"refresh_token_{referenced_uuid}"]
+        assert len(ids) == 1
+        assert UUID(ids[0]).hex == referenced_uuid
+
+    def _create_dropbox_oauth_source(self, uuid: str) -> None:
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        # Seed a per-source refresh token so a captured mint identifies which source minted.
+        self.trans.user_vault.write_secret(config_secret_key, f"refresh_token_{uuid}")
+        self._create_instance(
+            CreateInstancePayload(
+                name=SIMPLE_FILE_SOURCE_NAME,
+                description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+                template_id="dropbox",
+                template_version=0,
+                variables={},
+                secrets={},
+                uuid=uuid,
+            )
+        )
+
+    def _count_refresh_token_mints(self, monkeypatch) -> list:
+        calls: list = []
+
+        class MockDropboxDriveFileSystem:
+            pass
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            calls.append(refresh_token)
+            return MockResponse({"access_token": "my_test_access_token"})
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        monkeypatch.setattr(dropbox.DropboxFilesSource, "required_module", MockDropboxDriveFileSystem)
+        return calls
 
     def test_onedrive_oauth2_flow(self, tmp_path, monkeypatch):
         json = {
@@ -1197,3 +1296,33 @@ class OneDriveMockResponse:
 
     def json(self):
         return self._json_data
+
+
+def test_referenced_user_file_source_ids_selects_only_user_sources():
+    user_uuid = uuid4().hex
+    uris = {
+        f"gxuserfiles://{user_uuid}/some/path",
+        "gxfiles://dropbox/other",
+        "https://example.com/file.txt",
+        "drs://example.org/abc",
+    }
+    assert referenced_user_file_source_ids(uris) == {user_uuid}
+
+
+def test_referenced_user_file_source_ids_normalizes_dashed_uuid():
+    dashed = str(uuid4())
+    assert referenced_user_file_source_ids({f"gxuserfiles://{dashed}/x"}) == {dashed.replace("-", "")}
+
+
+def test_referenced_user_file_source_ids_handles_no_match():
+    uris = {"gxfiles://dropbox/x", "not-a-uri", ""}
+    assert referenced_user_file_source_ids(uris) == set()
+
+
+@pytest.mark.parametrize(
+    "uri",
+    ["gxuserfiles://[invalid-authority/x", "gxuserfiles://not-a-uuid/x", "gxuserfiles:///x"],
+)
+def test_referenced_user_file_source_ids_rejects_invalid_user_source_uri(uri):
+    with pytest.raises(RequestParameterInvalidException, match="Invalid user file source URI"):
+        referenced_user_file_source_ids({uri})

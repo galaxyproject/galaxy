@@ -1,18 +1,40 @@
+import logging
+from typing import TYPE_CHECKING
+from urllib.parse import urlencode
+
 from sqlalchemy import select
 
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
+)
+from galaxy.managers.users import UserManager
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
     validate_publicname,
 )
-from tool_shed.context import ProvidesUserContext
+from tool_shed.context import (
+    ProvidesUserContext,
+    SessionRequestContext,
+)
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import User
 from tool_shed_client.schema import (
     CreateUserRequest,
     UserV2 as ApiUser,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
+    from sqlalchemy.orm import (
+        scoped_session,
+        Session,
+    )
+
+log = logging.getLogger(__name__)
+
+RESET_PASSWORD_PATH = "user/reset_password"
 
 
 def index(app: ToolShedApp, deleted: bool) -> list[ApiUser]:
@@ -51,6 +73,21 @@ def api_create_user(trans: ProvidesUserContext, request: CreateUserRequest) -> A
     return get_api_user(app, user)
 
 
+def send_password_reset_email(trans: SessionRequestContext, user_manager: UserManager, email: str) -> None:
+    tool_shed_url = trans.app.config.tool_shed_url
+    if not tool_shed_url:
+        # Reject the fallback to an untrusted request Host header.
+        raise ConfigDoesNotAllowException(
+            "This Tool Shed has no tool_shed_url configured, so it cannot build a password reset link. "
+            "Please contact an administrator."
+        )
+
+    def reset_url_for(token: str) -> str:
+        return f"{tool_shed_url.rstrip('/')}/{RESET_PASSWORD_PATH}?{urlencode({'token': token})}"
+
+    user_manager.request_password_reset(trans, email, reset_url_for=reset_url_for)
+
+
 def get_api_user(app: ToolShedApp, user: User) -> ApiUser:
     admin = app.config.is_admin_user(user)
     return ApiUser(
@@ -76,6 +113,8 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
     return message
 
 
-def get_users_by_deleted(session, user_model, deleted):
+def get_users_by_deleted(
+    session: "scoped_session[Session]", user_model: type[User], deleted: bool
+) -> "ScalarResult[User]":
     stmt = select(user_model).where(user_model.deleted == deleted).order_by(user_model.username)
     return session.scalars(stmt)

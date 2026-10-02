@@ -78,8 +78,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.web_stack import ApplicationStack
 
-glx_dir = galaxy_directory()
-
 
 # =============================================================================
 def buildMockEnviron(**kwargs):
@@ -230,6 +228,8 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         super().__init__(**kwargs)
         self.schema = self.MockSchema()
         self.use_remote_user = kwargs.get("use_remote_user", False)
+        self.disable_local_accounts = kwargs.get("disable_local_accounts", False)
+        self.fixed_delegated_auth = kwargs.get("fixed_delegated_auth", False)
         self.enable_celery_tasks = False
         self.tool_data_path = os.path.join(self.root, "tool-data")
         self.galaxy_data_manager_data_path = self.tool_data_path
@@ -266,6 +266,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # Compliance related config
         self.redact_email_in_job_name = False
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_user_address_during_deletion = False
 
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join("tool-data", "shared", "ucsc", "chrom")
@@ -309,6 +312,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.vault_config_file = kwargs.get("vault_config_file")
         self.url_headers_config_file = None
         self.max_discovered_files = 10000
+        self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
         self.config_dict = self.dict()
@@ -412,7 +416,7 @@ class MockTrans:
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
         if template_lookup is None:
-            template_path = os.path.join(glx_dir, "templates")
+            template_path = os.path.join(galaxy_directory(), "templates")
             template_lookup = mako.lookup.TemplateLookup(directories=template_path)
         template = template_lookup.get_template(filename)
         kwargs.update(h=MockTemplateHelpers())

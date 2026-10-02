@@ -207,7 +207,7 @@ class ToolRecommendations:
             module.recover_state(module_state)
         inputs = module.get_all_inputs(connectable_only=True)
         outputs = module.get_all_outputs()
-        input_extensions = []
+        input_extensions: list[str] = []
         output_extensions = []
         for i_ext in inputs:
             input_extensions.extend(i_ext["extensions"])

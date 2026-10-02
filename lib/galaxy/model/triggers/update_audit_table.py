@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DDL
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 # function name prefix
 fn_prefix = "fn_audit_history_by"
@@ -76,13 +81,13 @@ def build_trigger_fn(function_name: str, id_field: str, *, use_statement: bool, 
     """
 
 
-def install(engine):
+def install(engine: "Engine") -> None:
     """Install history audit table triggers"""
     sql = _postgres_install(engine) if "postgres" in engine.name else _sqlite_install()
     execute_statements(engine, sql)
 
 
-def remove(engine):
+def remove(engine: "Engine") -> None:
     """Uninstall history audit table triggers"""
     sql = _postgres_remove() if "postgres" in engine.name else _sqlite_remove()
     execute_statements(engine, sql)
@@ -91,7 +96,7 @@ def remove(engine):
 # Postgres trigger installation
 
 
-def _postgres_remove():
+def _postgres_remove() -> list[str]:
     """postgres trigger removal sql"""
 
     sql = []
@@ -101,7 +106,7 @@ def _postgres_remove():
     return sql
 
 
-def _postgres_install(engine):
+def _postgres_install(engine: "Engine") -> list[str]:
     """PostgreSQL trigger installation SQL"""
 
     sql = []
@@ -137,6 +142,7 @@ def _postgres_install(engine):
             """
 
     # pick row or statement triggers depending on postgres version
+    assert engine.dialect.server_version_info is not None
     version = engine.dialect.server_version_info[0]
     statement = use_statement_trigger(version)
 
@@ -151,7 +157,7 @@ def _postgres_install(engine):
     return sql
 
 
-def _sqlite_remove():
+def _sqlite_remove() -> list[str]:
     sql = []
 
     for source_table in trigger_config:
@@ -162,11 +168,11 @@ def _sqlite_remove():
     return sql
 
 
-def _sqlite_install():
+def _sqlite_install() -> list[str]:
     # delete old stuff first
     sql = _sqlite_remove()
 
-    def trigger_def(source_table, id_field, operation, when="AFTER"):
+    def trigger_def(source_table: str, id_field: str, operation: str, when: str = "AFTER") -> str:
         # only one trigger per operation/table in simple databases, so
         # trigger name is less descriptive
         trigger_name = get_trigger_name(source_table, operation, when)
@@ -190,16 +196,16 @@ def _sqlite_install():
     return sql
 
 
-def get_trigger_name(label, operation, when, statement=False):
+def get_trigger_name(label: str, operation: str, when: str, statement: bool = False) -> str:
     op_initial = operation.lower()[0]
     when_initial = when.lower()[0]
     rs = "s" if statement else "r"
     return f"trigger_{label}_{when_initial}{op_initial}{rs}"
 
 
-def execute_statements(engine, raw_sql):
+def execute_statements(engine: "Engine", raw_sql: str | list[str]) -> None:
     statements = raw_sql if isinstance(raw_sql, list) else [raw_sql]
     with engine.begin() as connection:
         for sql in statements:
-            cmd = DDL(sql)
+            cmd = DDL(sql)  # type: ignore[no-untyped-call]  # DDL.__init__() is untyped in SQLAlchemy
             connection.execute(cmd)

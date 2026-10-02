@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
@@ -9,48 +8,32 @@ import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./Ca
 import Heading from "../Common/Heading.vue";
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-const props = defineProps({
-    datasetFilesize: {
-        type: Number,
-        default: 0,
-    },
-    datasetId: {
-        type: String,
-        default: "",
-    },
-    datasetType: {
-        type: String,
-        default: "hda",
-    },
-    includeTitle: {
-        type: Boolean,
-        default: true,
-    },
-    jobId: {
-        type: String,
-        default: null,
-    },
-    powerUsageEffectiveness: {
-        type: Number,
-        default: worldwidePowerUsageEffectiveness,
-    },
-    geographicalServerLocationName: {
-        type: String,
-        default: "GLOBAL",
-    },
-    carbonIntensity: {
-        type: Number,
-        default: worldwideCarbonIntensity,
-    },
-    shouldShowAwsEstimate: {
-        type: Boolean,
-        default: false,
-    },
-    shouldShowCarbonEmissionEstimates: {
-        type: Boolean,
-        default: true,
-    },
+interface Props {
+    datasetFilesize?: number;
+    datasetId?: string;
+    datasetType?: "hda" | "ldda";
+    includeTitle?: boolean;
+    jobId?: string | null;
+    powerUsageEffectiveness?: number;
+    geographicalServerLocationName?: string;
+    carbonIntensity?: number;
+    shouldShowAwsEstimate?: boolean;
+    shouldShowCarbonEmissionEstimates?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    datasetFilesize: 0,
+    datasetId: "",
+    datasetType: "hda",
+    includeTitle: true,
+    jobId: null,
+    powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
+    geographicalServerLocationName: "GLOBAL",
+    carbonIntensity: worldwideCarbonIntensity,
+    shouldShowAwsEstimate: false,
+    shouldShowCarbonEmissionEstimates: true,
 });
 
 const jobMetricsStore = useJobMetricsStore();
@@ -59,7 +42,7 @@ async function getJobMetrics() {
     if (props.jobId) {
         await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
     } else {
-        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType as "hda" | "ldda");
     }
 }
 
@@ -97,7 +80,7 @@ const jobMetrics = computed(() => {
 });
 
 const jobMetricsGroupedByPluginType = computed(() => {
-    const pluginGroups: Record<string, any> = {};
+    const pluginGroups: Record<string, Record<string, string>> = {};
 
     for (const metric of jobMetrics.value) {
         // new group found
@@ -107,7 +90,9 @@ const jobMetricsGroupedByPluginType = computed(() => {
 
         // Add metric to group
         const group = pluginGroups[metric.plugin];
-        group[metric.title] = metric.value;
+        if (group) {
+            group[metric.title] = metric.value;
+        }
     }
 
     return pluginGroups;
@@ -219,5 +204,5 @@ const estimatedServerInstance = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
-    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
+    <GAlert v-else variant="info" show> No metrics available for this job. </GAlert>
 </template>

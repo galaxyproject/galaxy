@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCard from "@/components/Common/GCard.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -31,6 +32,8 @@ interface Props {
     additionalOptions?: AdditionalOptions[];
     showModal?: boolean;
     inModal?: boolean;
+    /** Increment to explicitly refresh the pinned-history sort snapshot. */
+    pinnedOrderResetKey?: number;
     filter: string;
     loading: boolean;
 }
@@ -43,6 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
     additionalOptions: () => [],
     showModal: false,
     inModal: false,
+    pinnedOrderResetKey: 0,
     filter: "",
     loading: false,
 });
@@ -69,6 +73,7 @@ const validFilter = computed(() => props.filter && props.filter.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
 
 onMounted(async () => {
+    freezePinnedOrder();
     // if mounted with a filter, load histories for filter
     if (props.filter !== "" && validFilter.value) {
         await loadMore(true);
@@ -78,10 +83,16 @@ onMounted(async () => {
 watch(
     () => props.filter,
     async (newVal: string, oldVal: string) => {
+        freezePinnedOrder();
         if (newVal !== "" && validFilter.value && newVal !== oldVal) {
             await loadMore(true);
         }
     },
+);
+
+watch(
+    () => props.pinnedOrderResetKey,
+    () => freezePinnedOrder(),
 );
 
 watch(
@@ -124,9 +135,9 @@ const filtered = computed<HistorySummary[]>(() => {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
             return 1;
-        } else if (isMultiviewPanel.value && isPinned(a.id) && !isPinned(b.id)) {
+        } else if (isMultiviewPanel.value && wasPinnedWhenOrdered(a.id) && !wasPinnedWhenOrdered(b.id)) {
             return -1;
-        } else if (isMultiviewPanel.value && !isPinned(a.id) && isPinned(b.id)) {
+        } else if (isMultiviewPanel.value && !wasPinnedWhenOrdered(a.id) && wasPinnedWhenOrdered(b.id)) {
             return 1;
         } else if (a.update_time < b.update_time) {
             return 1;
@@ -149,6 +160,23 @@ function isActiveItem(history: HistorySummary) {
 
 function isPinned(historyId: string) {
     return pinnedHistories.value.some((item: PinnedHistory) => item.id == historyId);
+}
+
+/** Which histories were pinned when this list was last (re)ordered.
+ *
+ * The multiview list sorts pinned histories to the top. Reading the live
+ * pinned state while sorting means deselecting a history moves it out from
+ * under the cursor and the list scrolls to follow, so the order is held
+ * steady until something that legitimately reorders the list happens.
+ */
+const pinnedWhenOrdered = ref(new Set<string>());
+
+function freezePinnedOrder() {
+    pinnedWhenOrdered.value = new Set(pinnedHistories.value.map((item: PinnedHistory) => item.id));
+}
+
+function wasPinnedWhenOrdered(historyId: string) {
+    return pinnedWhenOrdered.value.has(historyId);
 }
 
 function historyClicked(history: HistorySummary) {
@@ -300,7 +328,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>
-            <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
+            <GAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</GAlert>
         </template>
 
         <template v-slot:item="{ item: history }">

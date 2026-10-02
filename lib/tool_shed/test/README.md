@@ -21,7 +21,7 @@ uv run pytest tool_shed/test/functional/test_frontend_login.py -v
 
 ### Numbered Tests (`test_0xxx`, `test_1xxx`)
 
-Legacy comprehensive tests using Twill/API:
+Legacy comprehensive tests driving the browser and the API:
 
 - `test_0xxx` - Tool Shed functionality (repos, dependencies, metadata)
 - `test_1xxx` - Galaxy installation scenarios

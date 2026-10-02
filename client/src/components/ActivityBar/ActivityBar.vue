@@ -476,7 +476,7 @@ defineExpose({
             :collapsible="false"
             :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
+            <UploadPanel v-else-if="isActiveSideBar('upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />

@@ -132,6 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
+            "subdomain_switcher": _use_config,
             "terms_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
@@ -168,6 +169,7 @@ class ConfigSerializer(base.ModelSerializer):
             "markdown_to_pdf_available": lambda item, key, **context: weasyprint_available(),
             "matomo_server": _use_config,
             "matomo_site_id": _use_config,
+            "curated_workflows_source": _use_config,
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
             "enable_beacon_integration": _use_config,
@@ -175,6 +177,7 @@ class ConfigSerializer(base.ModelSerializer):
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,
             "has_user_tool_filters": _defaults_to(False),
+            "has_user_preferences_extra": _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it

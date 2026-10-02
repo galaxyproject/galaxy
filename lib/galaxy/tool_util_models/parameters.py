@@ -476,20 +476,18 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 _INFINITY_SENTINEL = "__Infinity__"
 _NEG_INFINITY_SENTINEL = "__-Infinity__"
+_NAN_SENTINEL = "__NaN__"
 
 
 def _convert_infinity_sentinel(v: Any) -> Any:
-    """Convert Galaxy JSON sentinel strings for infinity back to Python floats.
-
-    Galaxy's custom JSON encoder (galaxy.util.json.safe_dumps) serializes
-    float('inf') as '__Infinity__' and float('-inf') as '__-Infinity__' to
-    produce valid JSON.  When these sentinel values appear in deserialized
-    parameter dicts (e.g. from GET /api/tools/{id}/test_data) Pydantic must
-    accept them as valid float input.
-    """
+    """Restore non-finite floats without depending on the full Galaxy utility package."""
+    if not isinstance(v, str):
+        return v
+    if v == _NAN_SENTINEL:
+        return float("nan")
     if v == _INFINITY_SENTINEL:
         return float("inf")
-    elif v == _NEG_INFINITY_SENTINEL:
+    if v == _NEG_INFINITY_SENTINEL:
         return float("-inf")
     return v
 
@@ -676,24 +674,41 @@ def _collection_element_discriminator(value: Any) -> str | None:
     return getattr(value, "class_", None)
 
 
+_COLLECTION_ELEMENT_MODELS_BY_TAG: dict[str, type[StrictModel]] = {
+    "Collection": CollectionElementCollectionRequestUri,
+    "File": CollectionElementDataRequestUri,
+}
+
+
+def _collection_element_discriminator_schema(schema: dict[str, Any]) -> None:
+    """Attach the OpenAPI discriminator object for the collection element union.
+
+    The mapping targets are copied from the union's own ``$ref`` values so they
+    follow whichever ``ref_template`` the generator is using: ``#/$defs/...`` in
+    the standalone tool state schemas and ``#/components/schemas/...`` in OpenAPI.
+    """
+    mapping: dict[str, str] = {}
+    for choice in schema.get("oneOf", []):
+        ref = choice.get("$ref")
+        if not isinstance(ref, str):
+            continue
+        definition_name = ref.rsplit("/", 1)[-1]
+        for tag, model in _COLLECTION_ELEMENT_MODELS_BY_TAG.items():
+            if model.__name__ in definition_name:
+                mapping[tag] = ref
+    if len(mapping) == len(_COLLECTION_ELEMENT_MODELS_BY_TAG):
+        schema["discriminator"] = {"propertyName": "class", "mapping": mapping}
+
+
 # A callable Discriminator avoids the PydanticJsonSchemaWarning emitted for
 # the recursive Field(discriminator="class_") on this self-referential union;
-# json_schema_extra restores the OpenAPI discriminator metadata.
+# json_schema_extra restores the OpenAPI discriminator metadata pydantic then
+# no longer emits.
 CollectionRequestUriElement = Annotated[
     Annotated[CollectionElementCollectionRequestUri, Tag("Collection")]
     | Annotated[CollectionElementDataRequestUri, Tag("File")],
     Discriminator(_collection_element_discriminator),
-    Field(
-        json_schema_extra={
-            "discriminator": {
-                "propertyName": "class",
-                "mapping": {
-                    "Collection": "#/components/schemas/CollectionElementCollectionRequestUri",
-                    "File": "#/components/schemas/CollectionElementDataRequestUri",
-                },
-            }
-        }
-    ),
+    Field(json_schema_extra=_collection_element_discriminator_schema),
 ]
 
 
@@ -2075,7 +2090,10 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
         if self.multiple:
             py_type = list_type(py_type)
 
-        return py_type
+        # unlike select, multiple does not imply optional here - DrillDownSelectToolParameter
+        # calls ToolParameter.__init__ rather than SelectToolParameter.__init__, so at runtime
+        # it reads a bare parse_optional() with no multiple-derived default.
+        return optional_if_needed(py_type, self.optional)
 
     @property
     def py_type_test_case_xml(self) -> builtins.type:
@@ -2095,6 +2113,8 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
+        if self.optional:
+            return False
         if options := self.options:
             # if any of these are selected, they seem to serve as defaults - check out test_tools -> test_drill_down_first_by_default
             return not any_drill_down_options_selected(options)
@@ -2354,6 +2374,9 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                     return str(test_param_val)
 
         py_type: type
+
+        if not when_types:
+            raise ValueError(f"Conditional parameter '{self.name}' has no when branches to build a model from")
 
         if len(when_types) > 1:
             cond_type = union_type(when_types)

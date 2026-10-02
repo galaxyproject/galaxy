@@ -155,6 +155,12 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* Fix fasta preview rendering for sequences larger than 100 KB
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 23163`_
+* Use a thread-safe libmagic handle when sniffing datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 23200`_
 * Add bwa_index datatype
   (thanks to `@Delphine-L <https://github.com/Delphine-L>`__).
   `Pull Request 22310`_

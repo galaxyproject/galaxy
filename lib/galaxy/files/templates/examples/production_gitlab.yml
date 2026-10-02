@@ -1,0 +1,42 @@
+- id: gitlab
+  version: 0
+  name: GitLab
+  description: |
+      Browse the projects of a GitLab instance and import files from them. Projects you have access
+      to appear as folders, with their repository contents below. Public projects can be browsed
+      without an access token.
+
+      Exporting commits the file to the branch. A GitLab instance that hosts ARCs takes data
+      another way, so use the ARC file source for those.
+  variables:
+      base_url:
+          label: GitLab URL (e.g. https://gitlab.com)
+          type: string
+          help: |
+              The URL of the GitLab instance you are connecting to, including the protocol.
+      writable:
+          label: Allow Galaxy to export data to this GitLab instance?
+          type: boolean
+          optional: true
+          default: false
+          help: |
+              Allow Galaxy to commit data to your projects. This requires an access token that
+              can push code, and the file lands on the project's default branch as an ordinary
+              commit, so that branch must not be protected against the token's user. GitLab
+              protects the default branch by default. Exports are limited to 20 MB, because the
+              file travels inside the commit request; an ARC file source has no such limit.
+              Leave this off to browse and import only.
+  secrets:
+      token:
+          label: GitLab Access Token
+          optional: true
+          help: |
+              Required for private projects; public ones need none, though a token also lifts
+              the limit some servers place on how deep an anonymous listing can page. A classic
+              token needs the "read_api" scope to browse, or "api" to export. A fine-grained
+              token needs "Project: Read" under "User" as well as its repository permissions.
+  configuration:
+      type: gitlab
+      base_url: "{{ variables.base_url }}"
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"

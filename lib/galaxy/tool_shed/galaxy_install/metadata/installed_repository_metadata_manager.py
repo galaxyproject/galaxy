@@ -21,7 +21,6 @@ from galaxy.util.tool_shed import (
     common_util,
     xml_util,
 )
-from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 
@@ -60,17 +59,6 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         else:
             self.tpm = tpm
-
-    def build_repository_ids_select_field(self, name="repository_ids", multiple=True, display="checkboxes"):
-        """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        query = self.get_query_for_setting_metadata_on_repositories(order=True)
-        for repository in query:
-            owner = str(repository.owner)
-            option_label = f"{str(repository.name)} ({owner})"
-            option_value = f"{self.app.security.encode_id(repository.id)}"
-            repositories_select_field.add_option(option_label, option_value)
-        return repositories_select_field
 
     def get_query_for_setting_metadata_on_repositories(self, order=True):
         """

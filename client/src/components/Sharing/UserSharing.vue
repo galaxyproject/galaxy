@@ -1,18 +1,8 @@
 <script setup lang="ts">
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BCard,
-    BCardGroup,
-    BFormSelect,
-    BFormSelectOption,
-    BListGroup,
-    BListGroupItem,
-    BModal,
-} from "bootstrap-vue";
+import { BCard, BCardGroup, BFormSelect, BFormSelectOption, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
@@ -22,7 +12,9 @@ import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 import { assertArray } from "@/utils/assertions";
 
-import Heading from "../Common/Heading.vue";
+import GAlert from "../BaseComponents/GAlert.vue";
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 
 const props = defineProps<{
     item: AnyShareableItemWithStatus;
@@ -43,6 +35,14 @@ const permissionsChangeRequired = computed(() => {
         return props.item.extra.can_change.length > 0 || props.item.extra.cannot_change.length > 0;
     } else {
         return false;
+    }
+});
+
+const showPermissionsModal = ref(permissionsChangeRequired.value);
+
+watch(permissionsChangeRequired, (value) => {
+    if (value) {
+        showPermissionsModal.value = true;
     }
 });
 
@@ -109,6 +109,11 @@ function onCancel() {
     emit("cancel");
 }
 
+function onPermissionsModalCancel() {
+    showPermissionsModal.value = false;
+    onCancel();
+}
+
 function onSubmit() {
     emit("share", sharingCandidatesAsEmails.value);
 }
@@ -152,7 +157,7 @@ defineExpose({
 
 <template>
     <div class="user-sharing">
-        <div v-if="currentUser && isConfigLoaded">
+        <div v-if="currentUser && isConfigLoaded" class="p-1">
             <p v-if="props.item.users_shared_with?.length === 0">
                 You have not shared this {{ props.modelClass }} with any users.
             </p>
@@ -211,39 +216,35 @@ defineExpose({
                 </Multiselect>
 
                 <div class="share-with-card-buttons mt-2 w-100 d-flex justify-content-end flex-gapx-1">
-                    <BButton class="cancel-sharing-with" :disabled="noChanges" @click="onCancel"> Cancel </BButton>
-                    <BButton variant="primary" class="submit-sharing-with" :disabled="noChanges" @click="onSubmit">
+                    <GButton class="cancel-sharing-with" :disabled="noChanges" @click="onCancel"> Cancel </GButton>
+                    <GButton class="submit-sharing-with" color="blue" :disabled="noChanges" @click="onSubmit">
                         {{ currentSearch ? `Add` : `Save` }}
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>
 
-        <BModal
-            :visible="permissionsChangeRequired"
-            size="xl"
-            no-close-on-backdrop
-            scrollable
-            dialog-class="user-sharing-modal"
+        <GModal
+            class="user-sharing-modal"
+            confirm
+            :show.sync="showPermissionsModal"
+            size="medium"
+            title="Permissions Change Required"
+            fixed-height
             data-description="sharing permissions change required"
             @ok="onUpdatePermissions"
-            @cancel="onCancel"
-            @close="onCancel">
-            <template v-slot:modal-title>
-                <Heading inline h2 size="md"> Permissions Change Required </Heading>
-            </template>
-
-            <BAlert variant="warning" dismissible :show="permissionsChangeRequired && canChangeCount > 0">
+            @cancel="onPermissionsModalCancel">
+            <GAlert v-if="canChangeCount > 0" variant="warning" dismissible>
                 This {{ modelClass }} contains {{ canChangeCount }}
                 {{ canChangeCount === 1 ? "dataset which is" : "datasets which are" }} exclusively private to you. You
                 need to update {{ canChangeCount === 1 ? "its" : "their" }} permissions, in order to share
                 {{ canChangeCount === 1 ? "it" : "them" }}.
-            </BAlert>
+            </GAlert>
 
-            <BAlert variant="danger" dismissible :show="permissionsChangeRequired && cannotChangeCount > 0">
+            <GAlert v-if="cannotChangeCount > 0" variant="danger" dismissible>
                 This {{ modelClass }} contains {{ cannotChangeCount }}
                 {{ cannotChangeCount === 1 ? "dataset" : "datasets" }} which you are not authorized to share.
-            </BAlert>
+            </GAlert>
 
             <BCard
                 border-variant="primary"
@@ -281,12 +282,14 @@ defineExpose({
                     </BListGroup>
                 </BCard>
             </BCardGroup>
-        </BModal>
+        </GModal>
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
 .user-sharing-modal {
-    width: 100%;
+    :deep(.g-modal-content) {
+        overflow-x: hidden !important;
+    }
 }
 </style>

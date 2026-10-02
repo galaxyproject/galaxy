@@ -1,0 +1,102 @@
+<tool id="data_manager_fetch_genome_all_fasta_dbkey" name="Create DBKey and Reference Genome" version="0.0.2" tool_type="manage_data">
+    <description>fetching</description>
+    <command detect_errors="exit_code"><![CDATA[
+       python '$__tool_directory__/data_manager_fetch_genome_all_fasta_dbkeys.py'
+       '${out_file}'
+       #if str( $dbkey_source.dbkey_source_selector ) == 'existing':
+           --dbkey_description '${dbkey_source.dbkey}'
+       #else
+           --dbkey_description '${ dbkey_source.dbkey_name or $dbkey_source.dbkey }'
+       #end if
+    ]]></command>
+    <inputs>
+        <conditional name="dbkey_source">
+            <param name="dbkey_source_selector" type="select" label="Use existing dbkey or create a new one.">
+                <option value="existing" selected="True">Existing</option>
+                <option value="new">New</option>
+            </param>
+            <when value="existing">
+                <param name="dbkey" type="genomebuild" label="DBKEY to assign to data" />
+            </when>
+            <when value="new">
+                <param name="dbkey" type="text" value="" optional="false" label="dbkey" />
+                <param name="dbkey_name" type="text" value="" label="Display name for dbkey" />
+            </when>
+        </conditional>
+        <param name="sequence_name" type="text" value="" label="Name of sequence" />
+        <param name="sequence_id" type="text" value="" label="ID for sequence" />
+        <conditional name="reference_source">
+            <param name="reference_source_selector" type="select" label="Choose the source for the reference genome">
+                <option value="ucsc" selected="True">UCSC</option>
+                <option value="ncbi">NCBI</option>
+                <option value="url">URL</option>
+                <option value="history">History</option>
+                <option value="directory">Directory on Server</option>
+            </param>
+            <when value="ucsc">
+                <param name="requested_dbkey" type="text" value="" optional="false" label="UCSC's DBKEY for source FASTA" />
+            </when>
+            <when value="ncbi">
+                <param name="requested_identifier" type="text" value="" optional="false" label="NCBI identifier/accession" help="Identifiers (e.g 667699573) or accessions (e.g AC020606.7) may be used" />
+            </when>
+            <when value="url">
+                <param name="user_url" type="text" area="True" value="http://" optional="false" label="URLs" />
+            </when>
+            <when value="history">
+                <param name="input_fasta" type="data" format="fasta" label="FASTA file" />
+            </when>
+            <when value="directory">
+                <param name="fasta_filename" type="text" value="" optional="false" label="Full path to FASTA file on disk" />
+                <param name="create_symlink" type="boolean" truevalue="create_symlink" falsevalue="copy_file" label="Create symlink to original data instead of copying" />
+            </when>
+        </conditional>
+        <conditional name="sorting">
+            <param name="sort_selector" type="select" label="Sort by chromosome name">
+                <option value="as_is" selected="True">As is</option>
+                <option value="lexicographical">Lexicographical</option>
+                <option value="gatk">GATK</option>
+                <option value="custom">Custom</option>
+            </param>
+            <when value="as_is" />
+            <when value="lexicographical" />
+            <when value="gatk" />
+            <when value="custom">
+                <repeat name="sequence_identifiers" title="Sequence Identifiers" min="1" default="1">
+                    <param name="identifier" type="text" value="" optional="false" label="Sequence Identifier" />
+                </repeat>
+                <param name="handle_not_listed_selector" type="select" label="How to handle non-specified Identifiers">
+                    <option value="discard" selected="True">Discard</option>
+                    <option value="keep_append">Keep and Append</option>
+                    <option value="keep_prepend">Keep and Prepend</option>
+                </param>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+    <tests>
+        <!-- TODO: need some way to test that new entry was added to data table -->
+        <test>
+            <param name="dbkey" value="phiX174"/>
+            <param name="dbkey_source|dbkey_source_selector" value="new"/>
+            <param name="sequence_name" value="phiX174 sequence name"/>
+            <param name="sequence_id" value="phix174"/>
+            <param name="reference_source_selector" value="history"/>
+            <param name="input_fasta" value="phiX174.fasta"/>
+            <param name="sort_selector" value="as_is"/>
+            <output name="out_file" file="phiX174.data_manager_json"/>
+        </test>
+    </tests>
+    <help>
+**What it does**
+
+Fetches a reference genome from various sources (UCSC, NCBI, URL, Galaxy History, or a server directory) and populates the "all_fasta" data table.
+
+------
+
+.. class:: infomark
+
+**Notice:** If you leave name, description, or id blank, it will be generated automatically.
+    </help>
+</tool>

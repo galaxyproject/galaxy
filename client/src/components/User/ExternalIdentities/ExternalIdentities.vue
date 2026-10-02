@@ -1,23 +1,18 @@
 <template>
     <section class="external-id">
-        <b-alert :show="!!connectExternal" variant="info">
+        <GAlert :show="!!connectExternal" variant="info">
             You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
             >, to your preferred external provider.
-        </b-alert>
-        <b-alert :show="!!existingEmail" variant="warning">
+        </GAlert>
+        <GAlert :show="!!existingEmail" variant="warning">
             Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
             >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
             this identity to a different account, you will need to disconnect it from this account first.
-        </b-alert>
+        </GAlert>
         <header>
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">{{
+                errorMessage
+            }}</GAlert>
 
             <hgroup class="external-id-title">
                 <h1 class="h-lg">Manage External Identities</h1>
@@ -39,7 +34,7 @@
 
         <div v-if="items.length" class="external-subheading">
             <h2 class="h-md">Connected External Identities</h2>
-            <b-button
+            <GButton
                 v-for="item in items"
                 :key="item.email"
                 aria-label="Disconnect External Identity"
@@ -48,40 +43,11 @@
                 @click="onDisconnect(item)">
                 Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
                 {{ item.email }}
-            </b-button>
+            </GButton>
 
-            <b-modal
-                id="disconnectIDModal"
-                ref="deleteModal"
-                centered
-                title="Disconnect Identity?"
-                size="sm"
-                @ok="disconnectID"
-                @cancel="doomedItem = null"></b-modal>
-
-            <b-modal
-                id="disconnectAndResetModal"
-                ref="deleteAndResetModal"
-                centered
-                title="Deleting last external identity"
-                @ok="disconnectAndReset"
-                @cancel="doomedItem = null">
-                <p>
-                    This is your only defined external identity. If you delete this identity, you will be logged out. To
-                    log back in you will need to use a password associated with your account, or reconnect to this third
-                    party identity. If you don't know your Galaxy user password, you can reset it or contact an
-                    administrator for help.
-                </p>
-            </b-modal>
-
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">{{
+                errorMessage
+            }}</GAlert>
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
@@ -98,12 +64,15 @@ import purify from "dompurify";
 import Vue from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { userLogout } from "@/utils/logout";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -111,6 +80,14 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ExternalLogin,
+        GAlert,
+        GButton,
+    },
+    setup() {
+        const { confirm } = useConfirmDialog();
+        return {
+            confirm,
+        };
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -171,15 +148,39 @@ export default {
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
         },
-        onDisconnect(doomed) {
+        async onDisconnect(doomed) {
             this.doomedItem = doomed;
             if (doomed.id) {
                 if (this.items.length > 1) {
                     // User must confirm that they want to disconnect the identity
-                    this.$refs.deleteModal.show();
+                    const confirmed = await this.confirm(
+                        `Are you sure you want to disconnect the external identity '${doomed.email}'?`,
+                        {
+                            title: "Disconnect Identity?",
+                            okText: "Disconnect",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectID();
+                    } else {
+                        this.doomedItem = null;
+                    }
                 } else {
                     // User is notified to reset password to use regular Galaxy login and avoid lockout
-                    this.$refs.deleteAndResetModal.show();
+                    const confirmed = await this.confirm(
+                        "This is your only defined external identity. If you delete this identity, you will be logged out. To log back in you will need to use a password associated with your account, or reconnect to this third party identity. If you don't know your Galaxy user password, you can reset it or contact an administrator for help.",
+                        {
+                            title: "Deleting last external identity",
+                            okText: "Disconnect and Logout",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectAndReset();
+                    } else {
+                        this.doomedItem = null;
+                    }
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
                             "in order to avoid being locked out of your account.",
@@ -349,15 +350,5 @@ export default {
 .fade-enter,
 .fade-leave-to {
     opacity: 0;
-}
-
-// Delete modal
-#disconnectIDModal {
-    .modal-body {
-        display: none;
-    }
-    .modal-dialog {
-        max-width: 300px;
-    }
 }
 </style>

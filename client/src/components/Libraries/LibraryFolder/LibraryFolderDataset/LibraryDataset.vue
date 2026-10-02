@@ -4,56 +4,53 @@
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
 
             <!-- Toolbar -->
-            <BButton
+            <GButton
                 title="Download dataset"
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
                 <FontAwesomeIcon :icon="faDownload" />
                 Download
-            </BButton>
+            </GButton>
 
-            <BButton
+            <GButton
                 title="Import dataset into history"
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
                 <FontAwesomeIcon :icon="faBook" />
                 to History
-            </BButton>
+            </GButton>
 
             <span v-if="dataset.can_user_modify">
-                <BButton
+                <GButton
                     title="Modify library item"
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
                     <FontAwesomeIcon :icon="faPencilAlt" />
                     Modify
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     title="Attempt to detect the format of dataset"
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
                     <FontAwesomeIcon :icon="faRedo" />
                     Auto-detect datatype
-                </BButton>
+                </GButton>
             </span>
 
-            <BButton
+            <GButton
                 v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
-                :to="{
-                    name: 'LibraryFolderDatasetPermissions',
-                    params: { folder_id: folder_id, dataset_id: dataset_id },
-                }"
+                :to="`/libraries/folders/${folder_id}/dataset/${dataset_id}/permissions`"
                 data-test-id="permissions-btn">
                 <FontAwesomeIcon :icon="faUsers" />
                 Permissions
-            </BButton>
+            </GButton>
         </div>
 
         <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
@@ -122,15 +119,15 @@
 
         <!-- Edit Controls -->
         <div v-if="isEditMode">
-            <BButton class="mr-1 mb-2" @click="isEditMode = false">
+            <GButton class="mr-1 mb-2" @click="isEditMode = false">
                 <FontAwesomeIcon :icon="faTimes" />
                 Cancel
-            </BButton>
+            </GButton>
 
-            <BButton class="mr-1 mb-2" @click="updateDataset">
+            <GButton class="mr-1 mb-2" @click="updateDataset">
                 <FontAwesomeIcon :icon="faSave" />
                 Save
-            </BButton>
+            </GButton>
         </div>
 
         <!-- Peek View -->
@@ -142,7 +139,7 @@
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { mapState } from "pinia";
 
 import { buildFields } from "@/components/Libraries/library-utils";
@@ -154,6 +151,7 @@ import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
@@ -161,8 +159,8 @@ import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
-        BButton,
         BFormInput,
+        GButton,
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,

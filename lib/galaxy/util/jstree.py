@@ -7,7 +7,7 @@ import dictobj
 Path = namedtuple("Path", ("path", "id", "options"))
 
 
-class Node(dictobj.DictionaryObject):
+class Node(dictobj.DictionaryObject):  # type: ignore[misc]  # dictobj is untyped
     """
     Copyright 2012 "Grim Apps"
 
@@ -90,7 +90,7 @@ class Node(dictobj.DictionaryObject):
         return output
 
 
-class JSTree(dictobj.DictionaryObject):
+class JSTree(dictobj.DictionaryObject):  # type: ignore[misc]  # dictobj is untyped
     """
     An immutable dictionary-like object that converts a list of "paths"
     into a tree structure suitable for jQuery's jsTree.

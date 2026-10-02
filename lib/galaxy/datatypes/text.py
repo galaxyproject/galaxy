@@ -37,6 +37,7 @@ from galaxy.datatypes.sniff import (
     iter_headers,
 )
 from galaxy.objectstore import ObjectStoreAuth
+from galaxy.tool_util.data import BUNDLE_INDEX_FILE_NAME
 from galaxy.util import (
     nice_size,
     string_as_bool,
@@ -149,7 +150,11 @@ class DataManagerJson(Json):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
-        with open(dataset.get_file_name()) as fh:
+        if dataset.metadata.is_bundle:
+            filename = os.path.join(dataset.extra_files_path, BUNDLE_INDEX_FILE_NAME)
+        else:
+            filename = dataset.get_file_name()
+        with open(filename) as fh:
             data_tables = json.load(fh)["data_tables"]
         dataset.metadata.data_tables = data_tables
 

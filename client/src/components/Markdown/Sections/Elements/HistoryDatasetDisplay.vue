@@ -1,27 +1,27 @@
 <template>
     <BCard body-class="p-0">
-        <BCardHeader v-if="!embedded">
-            <span class="float-right">
-                <GButton
-                    :href="downloadUrl"
-                    tooltip
-                    transparent
-                    color="blue"
-                    size="small"
-                    title="Download Dataset"
-                    class="py-0 px-1">
-                    <FontAwesomeIcon :icon="faDownload" fixed-width />
+        <BCardHeader v-if="!embedded" class="d-flex justify-content-between">
+            <span>
+                <span>Dataset:</span>
+                <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
+            </span>
+
+            <span>
+                <GButton :href="downloadUrl" tooltip transparent color="blue" size="small" title="Download Dataset">
+                    <FontAwesomeIcon :icon="faDownload" />
                 </GButton>
 
                 <GButton
-                    :href="importUrl"
+                    data-description="import dataset button"
                     tooltip
                     transparent
                     color="blue"
                     size="small"
                     title="Import Dataset"
-                    class="py-0 px-1">
-                    <FontAwesomeIcon :icon="faFileImport" fixed-width />
+                    :disabled="importing || importedOnce"
+                    :disabled-title="importedOnce ? 'Already imported' : 'Importing'"
+                    @click="onImport">
+                    <FontAwesomeIcon :icon="faFileImport" />
                 </GButton>
 
                 <GButton
@@ -31,9 +31,8 @@
                     color="blue"
                     size="small"
                     title="Collapse"
-                    class="py-0 px-1"
                     @click="onExpand">
-                    <FontAwesomeIcon :icon="faAngleDoubleUp" fixed-width />
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </GButton>
                 <GButton
                     v-else-if="expandable"
@@ -42,15 +41,9 @@
                     color="blue"
                     size="small"
                     title="Expand"
-                    class="py-0 px-1"
                     @click="onExpand">
-                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </GButton>
-            </span>
-
-            <span>
-                <span>Dataset:</span>
-                <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
             </span>
         </BCardHeader>
 
@@ -98,7 +91,7 @@
                 </div>
                 <div v-else>No content found.</div>
 
-                <GLink v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </GLink>
+                <ExternalLink v-if="dataContent?.truncated" :href="displayUrl"> Show More </ExternalLink>
             </div>
         </BCardBody>
     </BCard>
@@ -111,15 +104,19 @@ import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vu
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import type { TableField } from "@/components/Common/GTable.types";
+import { copyDataset } from "@/api/datasets";
+import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
+import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import HistoryDatasetAsImage from "@/components/Markdown/Sections/Elements/HistoryDatasetAsImage.vue";
 
@@ -142,6 +139,9 @@ const props = defineProps<{
 const currentPage = ref(1);
 const expanded = ref(false);
 const perPage = ref(100);
+/** Denotes if a successful attempt to import into history has been made. */
+const importedOnce = ref(false);
+const importing = ref(false);
 
 // Store
 const { getDatasetError, getDataset } = useDatasetStore();
@@ -150,6 +150,8 @@ const {
     getItemLoadError: getContentLoadError,
     isLoadingItem: isLoadingContent,
 } = useDatasetTextContentStore();
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
 
 // Dataset Mapper Store
 const datatypesMapperStore = useDatatypesMapperStore();
@@ -172,53 +174,33 @@ const dataError = computed(() => getContentLoadError(props.datasetId));
 const dataLoading = computed(() => isLoadingContent(props.datasetId));
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
-const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.extension);
 
-const getFields = (metaContent: Dataset): TableField[] => {
-    const fields: TableField[] = [];
-    const columnNames = metaContent.metadata_column_names || [];
-    const columnCount = metaContent.metadata_columns || 0;
-    for (let i = 0; i < columnCount; i++) {
-        fields.push({
-            key: `${i}`,
-            label: columnNames[i] || String(i),
-            sortable: true,
-        });
-    }
-    return fields;
-};
-
-const getItems = (textData: string, metaData: Dataset) => {
-    const tableData: Record<string, string>[] = [];
-    const delimiter = metaData.metadata_delimiter || "\t";
-    const comments = metaData.metadata_comment_lines || 0;
-    const lines = textData.split("\n");
-    lines.forEach((line, i) => {
-        if (i >= comments) {
-            const tabs = line.split(delimiter);
-            const rowData: Record<string, string> = {};
-            let hasData = false;
-            tabs.forEach((cellData, j) => {
-                const cellDataTrimmed = cellData.trim();
-                if (cellDataTrimmed) {
-                    hasData = true;
-                }
-                rowData[j] = cellDataTrimmed;
-            });
-            if (hasData) {
-                tableData.push(rowData);
-            }
-        }
-    });
-    return tableData;
-};
-
 const onExpand = () => {
     expanded.value = !expanded.value;
 };
+
+async function onImport() {
+    if (importing.value || importedOnce.value) {
+        return;
+    }
+    importing.value = true;
+    try {
+        if (!currentHistoryId.value) {
+            throw new Error("No current history found.");
+        }
+        await copyDataset(props.datasetId, currentHistoryId.value);
+        historyStore.loadCurrentHistory();
+        Toast.success(`Dataset "${metaContent.value?.name}" copied to current history.`);
+        importedOnce.value = true;
+    } catch (e) {
+        Toast.error(errorMessageAsString(e), "Failed to import dataset");
+    } finally {
+        importing.value = false;
+    }
+}
 
 // Lifecycle hooks
 onMounted(() => {
@@ -226,7 +208,7 @@ onMounted(() => {
 });
 </script>
 
-<style>
+<style scoped>
 .embedded-dataset {
     height: 10rem;
 }

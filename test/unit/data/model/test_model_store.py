@@ -50,6 +50,12 @@ TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
 
 
+def test_dataset_attribute_import_model_coerces_deleted_state():
+    attributes = store.DatasetAttributeImportModel(state="deleted")
+
+    assert attributes.state == model.Dataset.states.DISCARDED
+
+
 def test_get_export_dataset_filename_truncates_long_name():
     long_name = "https___example.com_" + "a" * 2000 + ".fastq.gz"
     filename = store.get_export_dataset_filename(long_name, "fastqsanger.gz", "abcdef1234567890", conversion_key=None)
@@ -1018,6 +1024,8 @@ def test_edit_metadata_files(tmp_path):
     d1.metadata.from_JSON_dict(json_dict=metadata_dict)
     assert d1.metadata.bam_index
     assert isinstance(d1.metadata.bam_index, model.MetadataFile)
+    app.commit()
+    bam_index = d1.metadata.bam_index
 
     with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True, strip_metadata_files=False) as export_store:
         export_store.add_dataset(d1)
@@ -1025,6 +1033,53 @@ def test_edit_metadata_files(tmp_path):
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
     _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
+    app.commit()
+
+    metadata_file_ids = sa_session.scalars(select(model.MetadataFile.id).filter_by(uuid=bam_index.uuid)).all()
+    assert metadata_file_ids == [bam_index.id]
+    assert d1.metadata.bam_index == bam_index
+
+
+def test_import_new_dataset_with_metadata_file_uuid_of_other_dataset(tmp_path):
+    app = _mock_app(store_by="uuid")
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
+    app.add_and_commit(h, d1)
+    index = NamedTemporaryFile("w")
+    index.write("cool bam index")
+    metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
+    d1.metadata.from_JSON_dict(json_dict=metadata_dict)
+    app.commit()
+
+    with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True, strip_metadata_files=False) as export_store:
+        export_store.add_dataset(d1)
+    _rewrite_export_as_new_datasets(tmp_path)
+
+    import_history = model.History(name="Test History for Import", user=u)
+    app.add_and_commit(import_history)
+    _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
+    app.commit()
+
+    assert import_history.datasets[0].metadata.bam_index is not None
+
+
+def test_metadata_file_wrap_with_duplicate_uuid_rows():
+    app = _mock_app(store_by="uuid")
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
+    bam_index = model.MetadataFile(dataset=d1, name="bam_index")
+    app.add_and_commit(h, d1, bam_index)
+    duplicate = model.MetadataFile(dataset=d1, name="bam_index", uuid=bam_index.uuid)
+    app.add_and_commit(duplicate)
+    d1._metadata = {"bam_index": str(bam_index.uuid)}
+
+    assert d1.metadata.bam_index == bam_index
 
 
 def test_sessionless_import_edit_datasets():
@@ -1056,6 +1111,21 @@ def test_import_job_with_output_copy():
     )
     import_model_store.perform_import()
     assert copy.extension == "txt"
+
+
+def test_import_existing_job_reports_state_without_applying_it():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    job = h.active_datasets[-1].creating_job
+    assert job
+    job.state = model.Job.states.RUNNING
+    app.commit()
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    object_import_tracker = import_model_store.perform_import()
+    assert job.state == model.Job.states.RUNNING
+    assert app.model.session.scalar(select(model.Job.state).where(model.Job.id == job.id)) == model.Job.states.RUNNING
+    assert object_import_tracker.job_states_by_id == {job.id: model.Job.states.OK}
 
 
 def test_import_datasets_with_ids_fails_if_not_editing_models():
@@ -1331,6 +1401,18 @@ def _perform_import_from_directory(directory, app, user, import_history, import_
     )
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)
+
+
+def _rewrite_export_as_new_datasets(directory):
+    # Drop the database identifiers so the import creates new HDAs instead of editing the exported ones.
+    attrs_path = directory / "datasets_attrs.txt"
+    datasets_attrs = json.loads(attrs_path.read_text())
+    for i, dataset_attrs in enumerate(datasets_attrs):
+        for key in ("id", "dataset", "uuid", "dataset_uuid"):
+            dataset_attrs.pop(key, None)
+        dataset_attrs["encoded_id"] = f"new{i}"
+        dataset_attrs["state"] = "ok"
+    attrs_path.write_text(json.dumps(datasets_attrs))
 
 
 def _create_datasets(sa_session, history, n, extension="txt"):

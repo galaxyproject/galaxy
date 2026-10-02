@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -14,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import FormElement from "../Form/FormElement.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     submit: (message: string) => Promise<string[][] | undefined>;
@@ -58,16 +58,16 @@ async function submitEmail() {
 <template>
     <div>
         <h4 class="mb-3 h-md">Issue Report</h4>
-        <BAlert v-if="props.requireLogin && !userEmail" variant="info" show>
+        <GAlert v-if="props.requireLogin && !userEmail" variant="info" show>
             <span v-localize> You must be logged in to submit a report. </span>
             <GLink to="/login/start"> Please log in to continue. </GLink>
-        </BAlert>
+        </GAlert>
 
         <div v-else>
-            <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
+            <GAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
-            </BAlert>
+            </GAlert>
 
             <div v-if="showForm" id="email-report-form">
                 <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>

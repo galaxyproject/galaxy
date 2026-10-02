@@ -16,6 +16,7 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     CreateTimeField,
+    MAX_ANNOTATION_SIZE,
     Model,
     SanitizedString,
     TagCollection,
@@ -339,6 +340,7 @@ class VisualizationCreatePayload(Model):
         None,
         title="Annotation",
         description="The annotation of the visualization.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     config: dict | None = Field(
         {},

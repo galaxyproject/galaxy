@@ -1,3 +1,4 @@
+import math
 from typing import (
     Any,
 )
@@ -19,6 +20,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
+    restore_non_finite_floats,
     strictify,
 )
 from galaxy.tool_util.parser.util import parse_profile_version
@@ -186,6 +188,36 @@ def test_dereference():
     dereferenced_state.validate(bundle)
 
 
+def test_restore_non_finite_floats():
+    tool_source = tool_source_for("parameters/gx_float")
+    bundle = input_models_for_tool_source(tool_source)
+    # safe_dumps encodes non-finite floats as sentinel strings so API payloads stay valid
+    # JSON - the persisted request state keeps that encoding and must be decoded before use.
+    request_state = RequestInternalToolState({"parameter": "__Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == float("inf")
+
+    request_state = RequestInternalToolState({"parameter": "__-Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == float("-inf")
+
+    request_state = RequestInternalToolState({"parameter": "__NaN__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert math.isnan(restored.input_state["parameter"])
+
+    request_state = RequestInternalToolState({"parameter": 1.5})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == 1.5
+
+
+def test_restore_non_finite_floats_leaves_text_alone():
+    tool_source = tool_source_for("parameters/gx_text")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = RequestInternalToolState({"parameter": "__Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == "__Infinity__"
+
+
 def test_dereference_resolves_url_default():
     bundle = ToolParameterBundleModel(
         parameters=[
@@ -288,11 +320,15 @@ def test_fill_defaults():
     assert with_defaults["parameter"] == 1
     with_defaults = fill_state_for({}, "parameters/gx_float")
     assert with_defaults["parameter"] == 1.0
+    with_defaults = fill_state_for({}, "parameters/gx_numeric_zero_user_y")
+    assert with_defaults == {"integer": 0, "float": 0.0, "optional_integer": 0, "optional_float": 0.0}
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
-    # This is False unfortunately - see comments in gx_boolean_optional XML.
+    # Profiles before 26.2 keep reporting false for an unset optional boolean.
     assert with_defaults["parameter"] is False
+    with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_26_2")
+    assert with_defaults["parameter"] is None
     with_defaults = fill_state_for({}, "parameters/gx_boolean_checked")
     assert with_defaults["parameter"] is True
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_checked")

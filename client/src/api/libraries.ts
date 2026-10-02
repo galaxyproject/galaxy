@@ -5,6 +5,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 export type LibrarySummary = components["schemas"]["LibrarySummary"];
 export type LibraryFolderDetails = components["schemas"]["LibraryFolderDetails"];
 export type LibraryFolderContentsIndexResult = components["schemas"]["LibraryFolderContentsIndexResult"];
+export type LibraryFolderMetadata = components["schemas"]["LibraryFolderMetadata"];
 export type FileLibraryFolderItem = components["schemas"]["FileLibraryFolderItem"];
 export type FolderLibraryFolderItem = components["schemas"]["FolderLibraryFolderItem"];
 export type AnyLibraryFolderItem = FileLibraryFolderItem | FolderLibraryFolderItem;

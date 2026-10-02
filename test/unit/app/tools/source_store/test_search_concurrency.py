@@ -41,6 +41,7 @@ class _FakeCachedToolbox:
     def __init__(self, index: ToolIndex, panel_view_ids: list[str]) -> None:
         self._index = index
         self._panel_view_ids = panel_view_ids
+        self._reload_count = 0
 
     @property
     def tool_index(self) -> ToolIndex:

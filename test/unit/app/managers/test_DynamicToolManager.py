@@ -1,3 +1,4 @@
+from galaxy import exceptions
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
@@ -32,4 +33,17 @@ class TestDynamicToolManager(BaseToolBoxTestCase):
             representation={"class": "GalaxyTool", "name": "Test Tool", "shell_command": "echo 42"}
         )
         with self.assertRaises(ValueError):
+            self.dynamic_tool_manager.create_tool(payload)
+
+    def test_create_tool_requires_beta_tool_formats(self):
+        self.app.config.enable_beta_tool_formats = False
+        payload = DynamicToolCreatePayload(
+            representation={
+                "class": "GalaxyTool",
+                "name": "Test Tool",
+                "version": "0.1",
+                "shell_command": "echo 42",
+            }
+        )
+        with self.assertRaises(exceptions.ConfigDoesNotAllowException):
             self.dynamic_tool_manager.create_tool(payload)

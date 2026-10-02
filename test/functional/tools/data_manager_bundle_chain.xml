@@ -1,0 +1,29 @@
+<tool id="data_manager_bundle_chain" name="Bundle chaining fixture" tool_type="manage_data" version="1.0" profile="24.0">
+    <command detect_errors="exit_code"><![CDATA[
+        python '$__tool_directory__/data_manager_bundle_chain.py' '$out_file'
+        #if $source.kind == 'bundle'
+            --database '$source.database.fields.path'
+        #end if
+    ]]></command>
+    <inputs>
+        <param name="shape" type="select">
+            <option value="dict">Bare dict without dbkey</option>
+            <option value="list">List with dbkey</option>
+        </param>
+        <conditional name="source">
+            <param name="kind" type="select">
+                <option value="new">Create database</option>
+                <option value="bundle">Read database from bundle</option>
+            </param>
+            <when value="new" />
+            <when value="bundle">
+                <param name="database" type="select">
+                    <options from_data_table="testbeta" />
+                </param>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json" />
+    </outputs>
+</tool>

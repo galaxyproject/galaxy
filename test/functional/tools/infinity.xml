@@ -1,0 +1,37 @@
+<!-- Exercise non-finite numeric values without converting similar strings or identifiers. -->
+<tool id="infinity" name="infinity" version="0.1.0">
+    <command><![CDATA[
+        echo "text $intext" > '$NaN' &&
+        echo "float $infloat" >> '$NaN' &&
+        echo "select $inselect" >> '$NaN' &&
+        echo "param $Infinity" >> '$NaN'
+    ]]></command>
+    <inputs>
+        <param name="intext" type="text" value=""/>
+        <param name="infloat" type="float" value=""/>
+        <param name="inselect" type="select">
+            <option value="Infinity">Infinity</option>
+            <option value="NaN">NaN</option>
+        </param>
+        <param name="Infinity" type="text" value=""/>
+    </inputs>
+    <outputs>
+        <data name="NaN" format="txt" label="out"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="intext" value="__Infinity__"/>
+            <param name="infloat" value="Inf"/>
+            <param name="inselect" value="Infinity"/>
+            <param name="Infinity" value="VAL"/>
+            <output name="NaN" file="1.txt" compare="sim_size" delta_frac="INF">
+                <assert_contents>
+                    <has_line line="text __Infinity__"/>
+                    <has_line line="float inf"/>
+                    <has_line line="select Infinity"/>
+                    <has_line line="param VAL"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

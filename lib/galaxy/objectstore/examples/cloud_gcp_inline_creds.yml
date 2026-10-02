@@ -1,0 +1,24 @@
+type: cloud
+provider: google
+auth:
+  # Inline service-account credentials as an alternative to credentials_file
+  # (exactly one of the two must be set). YAML configurations only.
+  credentials_dict:
+    type: service_account
+    project_id: my_project
+    client_email: galaxy@my_project.iam.gserviceaccount.com
+  region: us-central1
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud

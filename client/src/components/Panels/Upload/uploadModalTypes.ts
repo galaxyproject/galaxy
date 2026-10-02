@@ -32,6 +32,8 @@ export interface UploadModalConfig {
     title?: string;
     /** Whether to hide user tips/help text. */
     hideTips?: boolean;
+    /** Files to stage immediately in the local-file upload method. */
+    immediateFiles?: File[];
 }
 
 /**

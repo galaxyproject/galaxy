@@ -1,6 +1,5 @@
 import datetime
 import json
-import shutil
 from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
@@ -34,6 +33,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
@@ -94,6 +94,7 @@ from galaxy.util import (
     now,
 )
 from galaxy.util.custom_logging import get_logger
+from galaxy.workflow import curated
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
 log = get_logger(__name__)
@@ -810,13 +811,11 @@ def _cleanup_jwds(
 
     def _delete_jwd(job: model.Job) -> bool:
         try:
-            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-            shutil.rmtree(path)
-            return True
+            return JobWorkingDirectory(job, object_store).delete()
         except ObjectNotFound:
             return False
         except OSError as e:
-            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
+            log.error(f"Error deleting job working directory for job {job.id}: {e.strerror}")
             return False
 
     deleted_count = 0
@@ -847,20 +846,41 @@ def renew_vault_token(vault: Vault):
 
 @galaxy_task(action="refreshing IWC workflow manifest cache")
 def refresh_iwc_manifest(config: GalaxyAppConfiguration):
-    """Pre-warm the in-process IWC manifest cache.
+    """Refresh the curated workflow projection and pre-warm the agent-ops cache.
 
-    The agent-ops layer caches the manifest at module scope with an hour
-    TTL; without this task the first user-driven IWC call after a worker
-    restart pays the full network fetch. Failures are logged and swallowed
-    so an iwc.galaxyproject.org outage doesn't kill the periodic queue --
-    on-demand callers still get the prior cached copy until the TTL lapses.
+    Two independent consumers, each fetched only when something actually reads it.
+
+    The projection at ``curated_workflows_path`` is what crosses the process
+    boundary: the in-process manifest cache is a module global, and celery runs
+    as a separate service from the web workers, so only the file reaches them.
+    That refresh is conditional -- an unchanged manifest costs a HEAD.
+
+    Failures are logged and swallowed so an iwc.galaxyproject.org outage doesn't
+    kill the periodic queue; readers keep serving the previous copy either way.
     """
-    try:
-        manifest = iwc.refresh_manifest()
-    except Exception as e:  # noqa: BLE001 -- best-effort warm; resilience over precision
-        log.warning("refresh_iwc_manifest: fetch failed, keeping existing cache: %s", e)
-        return
-    log.info("refresh_iwc_manifest: cached %s top-level manifest entries", len(manifest))
+    path = config.curated_workflows_path
+    if config.curated_workflows_source == "iwc" and path:
+        try:
+            written = curated.refresh_projection(path)
+        except curated.RefreshInProgress:
+            log.info("refresh_iwc_manifest: another process is already refreshing %s, skipping", path)
+        except Exception as e:  # noqa: BLE001 -- best-effort refresh; resilience over precision
+            log.warning("refresh_iwc_manifest: could not refresh %s: %s", path, e)
+        else:
+            if written is None:
+                log.info("refresh_iwc_manifest: curated catalog at %s is already current", path)
+            else:
+                log.info("refresh_iwc_manifest: wrote %s curated workflows to %s", written, path)
+
+    # Only the agent-ops layer reads the module-level manifest cache, so warming
+    # it is worth a second fetch only when that layer is actually configured.
+    if config.inference_services:
+        try:
+            manifest = iwc.refresh_manifest()
+        except Exception as e:  # noqa: BLE001 -- best-effort warm; resilience over precision
+            log.warning("refresh_iwc_manifest: fetch failed, keeping existing cache: %s", e)
+            return
+        log.info("refresh_iwc_manifest: cached %s top-level manifest entries", len(manifest))
 
 
 @galaxy_task(action="refreshing GTN training database")

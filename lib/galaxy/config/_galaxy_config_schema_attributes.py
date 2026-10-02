@@ -7,6 +7,7 @@ from typing import Any
 class GalaxyAppConfigurationAttributes:
     """Type annotations for schema-defined "galaxy" config attributes."""
 
+    server_name: str
     config_dir: str
     managed_config_dir: str
     data_dir: str
@@ -159,12 +160,14 @@ class GalaxyAppConfigurationAttributes:
     inactivity_box_content: str
     password_expiration_period: timedelta
     enable_account_interface: bool
+    enable_user_addresses: bool
     session_duration: int
     ga_code: str | None
     plausible_server: str | None
     plausible_domain: str | None
     matomo_server: str | None
     matomo_site_id: str | None
+    matomo_disable_cookies: bool
     display_servers: str
     enable_old_display_applications: bool
     aws_estimate: bool
@@ -196,6 +199,7 @@ class GalaxyAppConfigurationAttributes:
     logo_url: str
     logo_src: str
     logo_src_secondary: str | None
+    subdomain_switcher: list[dict[str, str]]
     helpsite_url: str
     wiki_url: str
     quota_url: str
@@ -338,6 +342,7 @@ class GalaxyAppConfigurationAttributes:
     flush_per_n_datasets: int
     max_discovered_files: int
     history_local_serial_workflow_scheduling: bool
+    expression_evaluation_isolation_command: str
     enable_oidc: bool
     oidc_config_file: str
     oidc_backends_config_file: str
@@ -352,6 +357,9 @@ class GalaxyAppConfigurationAttributes:
     ga4gh_service_id: str | None
     ga4gh_service_environment: str | None
     enable_tool_tags: bool
+    curated_workflows_source: str
+    curated_workflow_owners: list[str]
+    curated_workflows_path: str
     enable_unique_workflow_defaults: bool
     simplified_workflow_run_ui: str
     simplified_workflow_run_ui_target_history: str

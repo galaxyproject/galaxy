@@ -21,6 +21,8 @@ from galaxy.tool_util.toolbox.base import AbstractToolBox
 if TYPE_CHECKING:
     from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 
+INSTALLATION_RELOAD_TIMEOUT = 60
+
 
 class DataManagerInterface(Protocol):
     GUID_TYPE: str = "data_manager"

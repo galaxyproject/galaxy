@@ -328,3 +328,35 @@
   doc: Browse and import canvases from the Cambridge Digital Library
   manifest_url: "https://cudl.lib.cam.ac.uk/iiif/collection/csic"
   writable: false
+
+# GitLab file source. Requires the optional 'arcfs-fsspec' package. Public projects can be browsed
+# without a token; private ones need a personal access token. Browsing needs no more than the
+# "read_api" scope, or read access to projects and repositories on a fine-grained token. Exporting
+# needs "api", or permission to push code and create commits. An export commits to the project's
+# default branch, which GitLab protects by default, so the token's user must be allowed to push
+# there. Exports are limited to 20 MB because the file travels inside the commit request.
+- type: gitlab
+  id: gitlab
+  label: GitLab
+  doc: Browse the projects of a GitLab instance and import files from them. Set writable to
+    export to them as well.
+  base_url: https://gitlab.com
+  # A token is needed for private projects, and removes the limit some servers place on how deep
+  # an anonymous listing can page.
+  # token: ${user.preferences['gitlab|token']}
+  writable: false
+
+# ARC (Annotated Research Context) file source backed by a DataPLANT DataHUB (GitLab) instance.
+# Requires the optional 'arcfs-fsspec' package. Public ARCs can be browsed without a token; private
+# ARCs need one that can read projects and repositories, and exports additionally need permission to
+# push code and to create branches, commits and merge requests. A classic token with the "api" scope
+# covers both. Exports go to a branch named after the token and reach the ARC through a merge
+# request, not to the default branch, so a token shared between users collects all of their exports
+# on one branch.
+- type: arc
+  id: arc-nfdi4plants
+  label: DataPLANT DataHUB
+  doc: Browse and import files from ARCs hosted on git.nfdi4plants.org
+  base_url: https://git.nfdi4plants.org
+  # token: ${user.preferences['arc|token']}
+  writable: false

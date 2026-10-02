@@ -74,7 +74,7 @@ function createTestGrid(): GridConfig {
                 ],
             },
         ],
-        filtering: new Filtering({}, undefined, false, false),
+        filtering: new Filtering({}, undefined, false),
         getData: vi.fn(async (offset: number, limit: number): Promise<[RowData[], number]> => {
             const data: RowData[] = [];
             for (let i = offset; i < offset + limit; i++) {
@@ -175,8 +175,8 @@ describe("GridList", () => {
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("Operation-3 has been executed.");
-        vi.runAllTimers();
-        await wrapper.vm.$nextTick();
+        await vi.runAllTimersAsync();
+        await flushPromises();
         expect(wrapper.find(".alert").exists()).toBeFalsy();
     });
 

@@ -131,6 +131,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
 
+    def test_direct_data_fetch_tool_execution_is_blocked(self, history_id):
+        response = self.dataset_populator.run_tool_raw("__DATA_FETCH__", {}, history_id)
+        assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Cannot execute tool [__DATA_FETCH__] directly, must use alternative endpoint."
+        )
+
     @skip_without_tool("cat1")
     def test_search_cat(self):
         url = self._api_url("tools")
@@ -323,6 +330,17 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg19_value" in option_values
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
+
+    @skip_without_tool("filter_param_value_nested_conditional")
+    def test_build_request_param_value_filter_in_inactive_nested_case(self):
+        # https://github.com/galaxyproject/galaxy/issues/23077
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("filter_param_value_nested_conditional", history_id)
+            outer = build["inputs"][0]
+            inner = outer["cases"][0]["inputs"][0]
+            select1, select2 = inner["cases"][1]["inputs"]
+            assert select1["value"] == "hg19_value"
+            assert [o[1] for o in select2["options"]] == ["hg19_value"]
 
     @skip_without_tool("dbkey_filter_multi_input")
     def test_build_request_dbkey_filter_hdca_multi_input(self):
@@ -810,9 +828,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert unversioned.json() == versioned.json()
 
     @skip_without_tool("test_data_source")
-    def test_data_source_ok_request(self, mock_http_server):
+    def test_data_source_ok_request(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = mock_http_server.get_url(
+            url = test_http_server.get_url(
                 remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
                 file_path="test-data/1.bed",
             )
@@ -839,12 +857,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
-    def test_data_source_sniff_fastqsanger(self):
+    def test_data_source_sniff_fastqsanger(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = test_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                file_path="test-data/1.fastqsanger.gz",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                    "URL": url,
                     "URL_method": "get",
                 },
                 history_id=history_id,
@@ -2284,6 +2306,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("validation_empty_dataset", history_id, inputs)
         self._assert_status_code_is(response, 400)
+        error = response.json()
+        assert error["err_msg"] == (
+            "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files."
+        )
+        assert error["param_errors"]["input1"] == {
+            "message": "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files.",
+            "message_suffix": "The selected dataset is empty, this tool expects non-empty files.",
+            "parameter_name": "input1",
+        }
 
     @skip_without_tool("validation_repeat")
     def test_validation_in_repeat(self, history_id):
@@ -2945,12 +2976,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "forward"
-        assert output2_content.strip() == "reverse"
+        assert output1_content.splitlines() == ["identifier forward", "safe_identifier forward"]
+        assert output2_content.splitlines() == ["identifier reverse", "safe_identifier reverse"]
 
     @skip_without_tool("identifier_single")
     def test_identifier_outside_map(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="Plain HDA")
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="../Plain HDA")
         inputs = {
             "input1": {"src": "hda", "id": new_dataset1["id"]},
         }
@@ -2965,7 +2996,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "Plain HDA"
+        assert output1_content.splitlines() == ["identifier ../Plain HDA", "safe_identifier _Plain_HDA"]
 
     @skip_without_tool("identifier_multiple")
     def test_list_selectable_in_multidata_input(self, history_id):

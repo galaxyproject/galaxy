@@ -118,8 +118,12 @@ class TourGenerator:
                             "files_0|file_data", filename
                         ),
                     }
-                    input_file = cgi_FieldStorage(headers=headers)
-                    input_file.file = input_file.make_file()
+                    # types-webob's shim for cgi_FieldStorage on Python >= 3.13 (the real cgi module
+                    # was removed in that version) doesn't declare a constructor accepting headers,
+                    # and types make_file()'s return as TextIOWrapper | FileIO though file is
+                    # IO[bytes]. Neither error occurs on Python < 3.13, hence unused-ignore too.
+                    input_file = cgi_FieldStorage(headers=headers)  # type: ignore[call-arg, unused-ignore]
+                    input_file.file = input_file.make_file()  # type: ignore[assignment, unused-ignore]
                     input_file.file.write(content)
 
                     # Use "auto" for generic 'data' extensions, otherwise use the specific extension

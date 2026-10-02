@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -12,6 +11,7 @@ import { addHistoryViewerSubscription, removeHistoryViewerSubscription } from "@
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionPanel from "@/components/History/CurrentCollection/CollectionPanel.vue";
 import HistoryNavigation from "@/components/History/CurrentHistory/HistoryNavigation.vue";
 import HistoryPanel from "@/components/History/CurrentHistory/HistoryPanel.vue";
@@ -79,25 +79,27 @@ function onViewCollection(collection: object) {
     <div v-else id="list-item" class="d-flex flex-column w-100">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <BButton
-                    size="sm"
+                <GButton
+                    size="small"
                     class="my-1"
+                    color="blue"
+                    outline
                     :disabled="sameToCurrent"
-                    :variant="sameToCurrent ? 'disabled' : 'outline-info'"
                     :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
                     @click="historyStore.setCurrentHistory(source.id)">
                     {{ sameToCurrent ? "Current History" : "Switch to" }}
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-if="Object.keys(pinnedHistories).length > 0"
-                    size="sm"
+                    size="small"
                     class="my-1"
-                    variant="outline-danger"
+                    color="red"
+                    outline
                     title="Hide this history from the list"
                     @click="historyStore.unpinHistories([source.id])">
                     <FontAwesomeIcon :icon="faTimes" />
                     Hide
-                </BButton>
+                </GButton>
             </div>
 
             <HistoryNavigation :history="history" minimal />

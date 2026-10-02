@@ -44,7 +44,7 @@ export interface LintData {
 export function useLintData(
     workflowId: Ref<string>,
     steps: Ref<Steps>,
-    datatypesMapper: Ref<DatatypesMapperModel>,
+    datatypesMapper: Ref<DatatypesMapperModel | null>,
     annotation?: Ref<string | null>,
     readme?: Ref<string | null>,
     license?: Ref<string | null>,
@@ -59,7 +59,7 @@ export function useLintData(
     const unlabeledOutputs = ref<UnlabeledOuputState[]>([]);
     const missingMetadata = ref<MetadataLintState[]>([]);
     watch(
-        () => [steps, datatypesMapper.value],
+        () => [steps.value, datatypesMapper.value],
         () => {
             if (datatypesMapper.value) {
                 untypedParameters.value = getUntypedWorkflowParameters(steps.value);

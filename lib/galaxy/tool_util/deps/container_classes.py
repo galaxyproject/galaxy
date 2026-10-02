@@ -94,6 +94,8 @@ class ContainerProtocol(Protocol):
     Helper class to allow typing for the HasDockerLikeVolumes mixin
     """
 
+    destination_info: dict[str, Any]
+
     @property
     def app_info(self) -> "AppInfo": ...
 
@@ -153,6 +155,18 @@ class Container(metaclass=ABCMeta):
         if self.container_description and not self.container_description.explicit:
             return SOURCE_CONDA_ACTIVATE
         return ""
+
+    @property
+    def image_identifier_is_path(self) -> bool:
+        """Whether ``container_id`` refers to a local filesystem path.
+
+        Most container identifiers are registry references (e.g.
+        ``quay.io/biocontainers/...`` or ``docker://...``) rather than paths.
+        Only when the identifier is a local path does it make sense to rewrite
+        it for a compute node with a different filesystem layout (e.g. a
+        Singularity/Apptainer image cached on CVMFS).
+        """
+        return False
 
     @abstractmethod
     def containerize_command(self, command: str) -> str:
@@ -328,12 +342,35 @@ class HasDockerLikeVolumes:
         add_var("job_directory", self.job_info.job_directory)
         add_var("tool_directory", self.job_info.tool_directory)
         add_var("home_directory", self.job_info.home_directory)
-        add_var("galaxy_root", self.app_info.galaxy_root_dir)
+        if self.tool_info.disable_galaxy_root_mount:
+            # TODO: remove the default galaxy_root mount eventually,
+            # this should only be required for very old tools that
+            # import galaxy internals.
+            add_var("galaxy_root", None)
+        else:
+            add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
         add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
+
+        # Provide storage template variable to both pulsar and galaxy,
+        # but only add it to defaults for galaxy. Only makes sense
+        # if embedded pulsar is used without path rewriting.
+        outputs_to_working_directory = self.app_info.outputs_to_working_directory
+        if "outputs_to_working_directory" in self.destination_info:
+            outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
+        if outputs_to_working_directory and self.job_info.job_type == "tool":
+            # Provide RO access to inputs
+            storage_mount_mode = "ro"
+        else:
+            # Need to write to storage (outputs_to_working_directory: false or containerized metadata)
+            storage_mount_mode = "rw"
+        storage_mounts = None
+        if self.job_info.output_paths:
+            storage_mounts = ",".join([f"{p}:{storage_mount_mode}" for p in self.job_info.output_paths])
+        add_var("storage", storage_mounts)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
@@ -351,7 +388,8 @@ class HasDockerLikeVolumes:
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
                 defaults = "$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
-            defaults += ",$galaxy_root:ro"
+            if not self.tool_info.disable_galaxy_root_mount:
+                defaults += ",$galaxy_root:ro"
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
             if self.job_info.job_directory:
@@ -360,12 +398,9 @@ class HasDockerLikeVolumes:
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
-            if self.app_info.outputs_to_working_directory:
-                # Should need default_file_path (which is of course an estimate given
-                # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:ro"
-            else:
-                defaults += ",$working_directory:rw,$default_file_path:rw"
+            defaults += ",$working_directory:rw"
+            if storage_mounts:
+                defaults += ",$storage"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:ro"
@@ -518,6 +553,14 @@ def docker_cache_path(cache_directory: str, container_id: str) -> str:
 
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
+
+    @property
+    def image_identifier_is_path(self) -> bool:
+        # A Singularity/Apptainer image identifier is either a local path (e.g.
+        # a ``.sif`` file or a CVMFS-cached image) or a URI with a scheme such
+        # as ``docker://``, ``library://``, ``shub://``, or ``oras://``. Only
+        # absolute paths are read from the (compute-node) filesystem.
+        return os.path.isabs(self.container_id)
 
     def get_singularity_target_kwds(self) -> dict[str, Any]:
         return dict(

@@ -15,7 +15,7 @@ const toolsYaml = computed(
         `tools:
 - name: ${props.repositoryName}
   owner: ${props.repositoryOwner}
-`
+`,
 )
 </script>
 

@@ -1,9 +1,9 @@
 <template>
     <div>
-        <BAlert v-if="loading" show>
+        <GAlert v-if="loading" show>
             <LoadingSpan />
-        </BAlert>
-        <BAlert v-else-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        </GAlert>
+        <GAlert v-else-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
         <div v-else>
             <FormCard :title="cardTitle" icon="fa-file-contract">
                 <template v-slot:body>
@@ -39,7 +39,6 @@
 <script setup lang="ts">
 import { faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -49,6 +48,7 @@ import { FORM_LABELS } from "@/components/Page/constants";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 import { useToast } from "@/composables/toast";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";

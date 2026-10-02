@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { BAlert, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, ref, toRef } from "vue";
 
 import { useJobBasic } from "@/composables/useJobBasic";
@@ -8,6 +8,7 @@ import { useJobBasic } from "@/composables/useJobBasic";
 import { useToolExecutionJobs } from "./useToolExecutionJobs";
 
 import JobDetailsTabs from "./JobDetailsTabs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 import JobState from "@/components/JobStates/JobState.vue";
@@ -48,7 +49,7 @@ const paginationPage = computed<number>({
 <template>
     <div>
         <LoadingSpan v-if="loading" message="Loading job details" />
-        <BAlert v-else-if="error" variant="info" show class="mb-0">{{ error }}</BAlert>
+        <GAlert v-else-if="error" variant="info" show class="mb-0">{{ error }}</GAlert>
         <template v-else-if="currentJob">
             <GTabs>
                 <template v-slot:nav-end>

@@ -1,9 +1,9 @@
 import logging
 import os
 import random
+import secrets
 import string
 import weakref
-from collections.abc import Mapping
 from datetime import (
     datetime,
     timedelta,
@@ -50,22 +50,21 @@ from galaxy.model.custom_types import (
     TrimmedString,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.security.validate_user_input import validate_password_str
-from galaxy.util import (
-    now,
-    unique_id,
-)
+from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.user_input import validate_password_str
 from tool_shed.util import hg_util
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
-WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
+WEAK_HG_REPO_CACHE: weakref.WeakKeyDictionary["Repository", hg.cachedlocalrepo] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
+    from mercurial.interfaces.repository import IRepo
+
     # Workaround for https://github.com/python/mypy/issues/14182
     from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
 
@@ -184,7 +183,7 @@ class User(Base, Dictifiable):
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
-    def set_password_cleartext(self, cleartext):
+    def set_password_cleartext(self, cleartext: str) -> None:
         if message := validate_password_str(cleartext):
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
@@ -212,7 +211,7 @@ class PasswordResetToken(Base):
         if token:
             self.token = token
         else:
-            self.token = unique_id()
+            self.token = secrets.token_hex(16)
         add_object_to_object_session(self, user)
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)
@@ -389,16 +388,14 @@ class Repository(Base, Dictifiable):
         back_populates="repository",
     )
     user = relationship("User", back_populates="active_repositories")
-    downloadable_revisions = relationship(
-        "RepositoryMetadata",
+    downloadable_revisions: Mapped[list["RepositoryMetadata"]] = relationship(
         primaryjoin=lambda: (
             (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true())
         ),
         viewonly=True,
         order_by=lambda: desc(RepositoryMetadata.update_time),
     )
-    metadata_revisions = relationship(
-        "RepositoryMetadata",
+    metadata_revisions: Mapped[list["RepositoryMetadata"]] = relationship(
         order_by=lambda: desc(RepositoryMetadata.update_time),
         back_populates="repository",
     )
@@ -465,7 +462,7 @@ class Repository(Base, Dictifiable):
         return func.coalesce(last_revision_create_time, cls.create_time)
 
     @property
-    def hg_repo(self):
+    def hg_repo(self) -> "IRepo":
         if not WEAK_HG_REPO_CACHE.get(self):
             WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode("utf-8")))
         return WEAK_HG_REPO_CACHE[self].fetch()[0]
@@ -535,12 +532,14 @@ class Repository(Base, Dictifiable):
     def get_type_class(self, app):
         return app.repository_types_registry.get_class_by_label(self.type)
 
-    def get_tool_dependencies(self, app, changeset_revision):
+    def get_tool_dependencies(self, app: "ToolShedApp", changeset_revision: str) -> dict[str, Any]:
         from tool_shed.util.metadata_util import get_next_downloadable_changeset_revision
 
-        changeset_revision = get_next_downloadable_changeset_revision(app, self, changeset_revision)
+        next_downloadable_changeset_revision = get_next_downloadable_changeset_revision(app, self, changeset_revision)
+        if next_downloadable_changeset_revision is None:
+            return {}
         for downloadable_revision in self.downloadable_revisions:
-            if downloadable_revision.changeset_revision == changeset_revision:
+            if downloadable_revision.changeset_revision == next_downloadable_changeset_revision:
                 return downloadable_revision.metadata.get("tool_dependencies", {})
         return {}
 
@@ -553,8 +552,9 @@ class Repository(Base, Dictifiable):
         tip_rev = self.hg_repo.changelog.tiprev()
         return tip_rev < 0
 
-    def repo_path(self, app=None):
+    def repo_path(self, app: "ToolShedApp | None" = None) -> str:
         # Keep app argument for compatibility with tool_shed_install Repository model
+        assert self.name is not None
         return hgweb_config_manager.get_entry(
             os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
         )
@@ -599,11 +599,11 @@ class Repository(Base, Dictifiable):
                 else:
                     fh.write(line)
 
-    def tip(self):
+    def tip(self) -> str:
         repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view: str = "collection", value_mapper=None) -> dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if "user_id" in rval:
             rval["owner"] = self.user.username
@@ -669,7 +669,7 @@ WHERE
         params = {"category_id": self.id}
         return session.execute(text(statement), params).scalar()
 
-    def __init__(self, deleted=False, **kwd):
+    def __init__(self, deleted: bool = False, **kwd: Any) -> None:
         super().__init__(**kwd)
         self.deleted = deleted
 

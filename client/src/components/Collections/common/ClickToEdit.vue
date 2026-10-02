@@ -68,7 +68,6 @@ function revertToOriginal() {
             class="w-100 input-with-icon"
             tabindex="0"
             title="Press enter/return to save, esc to revert changes"
-            contenteditable
             max-rows="4"
             aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"

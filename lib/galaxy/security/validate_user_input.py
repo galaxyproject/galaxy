@@ -6,7 +6,6 @@ user inputs - so these methods do not need to be escaped.
 """
 
 import logging
-import re
 from typing import (
     Any,
     Protocol,
@@ -22,6 +21,20 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
+from galaxy.util.user_input import (
+    EMAIL_MAX_LEN,
+    FILL_CHAR,
+    is_valid_email_str,
+    PASSWORD_MIN_LEN,
+    PUBLICNAME_MAX_LEN,
+    transform_publicname,
+    VALID_EMAIL_RE,
+    VALID_PUBLICNAME_RE,
+    VALID_PUBLICNAME_SUB,
+    validate_email_str,
+    validate_password_str,
+    validate_publicname_str,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import User
@@ -45,60 +58,6 @@ class UserValidationContext(Protocol):
 
 log = logging.getLogger(__name__)
 
-# Email validity parameters
-#
-# Many words (and regexes) have been written about validating email addresses and there is no perfect answer on how it
-# should be done. We choose to use the HTML5 spec (and corresponding regex) that engages in a "willful violation" of RFC
-# 5322 to provide a reasonably good validation. Additionally, we allow Unicode characters in both the user and domain
-# parts of the email by using re's '\w' character. Note that \w includes "word" characters but appears to exclude emoji
-# characters, which should in fact be valid.
-#
-# https://html.spec.whatwg.org/multipage/input.html#e-mail-state-(type%3Demail)
-VALID_EMAIL_RE = re.compile(r"^[\w.!#$%&'*+\/=?^_`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)*$")
-EMAIL_MAX_LEN = 255
-
-# Public name validity parameters
-PUBLICNAME_MAX_LEN = 255
-VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
-VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
-FILL_CHAR = "-"
-
-# Password validity parameters
-PASSWORD_MIN_LEN = 6
-
-
-def is_valid_email_str(email):
-    """Validates a string containing an email address and returns a boolean result."""
-    return validate_email_str(email) == ""
-
-
-def validate_email_str(email):
-    """Validates a string containing an email address."""
-    if not email:
-        return "No email address was provided."
-    if not (VALID_EMAIL_RE.match(email)):
-        return "The format of the email address is not correct."
-    elif len(email) > EMAIL_MAX_LEN:
-        return f"Email address cannot be more than {EMAIL_MAX_LEN} characters in length."
-    return ""
-
-
-def validate_password_str(password):
-    if not password or len(password) < PASSWORD_MIN_LEN:
-        return f"Use a password of at least {PASSWORD_MIN_LEN} characters."
-    return ""
-
-
-def validate_publicname_str(publicname):
-    """Validates a string containing a public username."""
-    if not publicname:
-        return "Public name cannot be empty"
-    if len(publicname) > PUBLICNAME_MAX_LEN:
-        return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
-    if not (VALID_PUBLICNAME_RE.match(publicname)):
-        return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
-    return ""
-
 
 def validate_email(
     trans: UserValidationContext, email, user=None, check_dup=True, allow_empty=False, validate_domain=False
@@ -120,9 +79,14 @@ def validate_email(
         if is_email_banned(email, trans.app.config.email_ban_file, trans.app.config.canonical_email_rules):
             message = "This email address has been banned."
 
-    stmt = select(trans.app.model.User).filter(func.lower(trans.app.model.User.email) == email.lower()).limit(1)
-    if not message and check_dup and trans.sa_session.scalars(stmt).first():
-        message = f"User with email '{email}' already exists."
+    if not message and check_dup:
+        user_class = trans.app.model.User
+        stmt = select(user_class).filter(func.lower(user_class.email) == email.lower())
+        if user is not None:
+            # Changing only the case of one's own address is not a duplicate.
+            stmt = stmt.filter(user_class.id != user.id)
+        if trans.sa_session.scalars(stmt.limit(1)).first():
+            message = f"User with email '{email}' already exists."
 
     if not message:
         # If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
@@ -175,21 +139,6 @@ def validate_publicname(trans: UserValidationContext, publicname, user=None):
     if trans.sa_session.scalars(stmt).first():
         return "Public name is taken; please choose another."
     return ""
-
-
-def transform_publicname(publicname):
-    """
-    Transform publicname to respect the minimum and maximum string length, and
-    the allowed characters.
-    FILL_CHAR is used to extend or replace characters.
-    """
-    # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if not publicname:
-        raise ValueError("Public name cannot be empty")
-    publicname = publicname.lower()
-    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-    publicname = publicname[:PUBLICNAME_MAX_LEN]
-    return publicname
 
 
 def validate_password(trans: UserValidationContext, password, confirm):
@@ -282,3 +231,28 @@ class EmailAddressNormalizer:
                 email_localpart = email_localpart[: email_localpart.index(delim)]
 
         return email_localpart
+
+
+__all__ = (
+    "EMAIL_MAX_LEN",
+    "EmailAddressNormalizer",
+    "extract_domain",
+    "FILL_CHAR",
+    "is_email_banned",
+    "is_valid_email_str",
+    "PASSWORD_MIN_LEN",
+    "PUBLICNAME_MAX_LEN",
+    "transform_publicname",
+    "UserValidationContext",
+    "VALID_EMAIL_RE",
+    "VALID_PUBLICNAME_RE",
+    "VALID_PUBLICNAME_SUB",
+    "validate_email",
+    "validate_email_domain_name",
+    "validate_email_str",
+    "validate_password",
+    "validate_password_str",
+    "validate_preferred_object_store_id",
+    "validate_publicname",
+    "validate_publicname_str",
+)

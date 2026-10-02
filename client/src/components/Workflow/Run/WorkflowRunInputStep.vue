@@ -19,6 +19,7 @@
 <script>
 import { debounce } from "lodash";
 
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import WorkflowIcons from "@/components/Workflow/icons";
 
 import { searchHistoryContents } from "./services";
@@ -69,15 +70,6 @@ export default {
             return this._isSimpleInputType(this.model.step_type);
         },
         inputs() {
-            // Keep the array reference stable across paginated refreshes:
-            // ``_fetchStepOptions`` mutates a single ``localInputs[i]``'s
-            // ``options`` / ``options_meta`` properties (not the array), so
-            // Vue's ``v-for`` in the child ``FormDisplay`` doesn't unmount
-            // its rendered children. That matters because
-            // ``select_set_value`` (used by ``test_execution_with_multiple_inputs``)
-            // types into vue-multiselect's input, sleeps ``UX_RENDER``, then
-            // sends Enter on the same element reference — a remount during
-            // that window would invalidate it.
             return this.localInputs;
         },
         hasInputs() {
@@ -112,7 +104,6 @@ export default {
     },
     methods: {
         onChange(data) {
-            console.log("emitting default change", data);
             this.$emit("onChange", this.model.index, data);
         },
         onValidation(validation) {
@@ -135,60 +126,58 @@ export default {
                 tags: row.tags || [],
             };
         },
-        async _fetchStepOptions(name, src, payload = {}, mode = "append") {
+        async _fetchStepOptions(name, src, payload = {}) {
             const input = this._findInputByName(name);
             if (!input || !this.historyId) {
                 return;
             }
             const type = src === "hdca" ? "dataset_collection" : "dataset";
             const extensions = input.acceptable_extensions || [];
-            const limit = payload.limit || 50;
+            const limit = payload.limit || DEFAULT_OPTIONS_PAGE_SIZE;
             const offset = payload.offset || 0;
             try {
                 const rows = await searchHistoryContents(this.historyId, {
                     extensions,
                     type,
+                    tag: input.tag,
+                    // ``data_collection`` parameters offer hidden collections too.
+                    visibleOnly: input.type !== "data_collection",
                     search: payload.search,
                     offset,
                     limit,
                 });
                 const shaped = (rows || []).map(this._shapeContentsRow);
-                let merged;
-                if (mode === "replace") {
-                    merged = shaped;
-                } else {
-                    const base = (input.options && input.options[src]) || [];
-                    const seen = new Set();
-                    merged = [...base, ...shaped].filter((item) => {
-                        const k = `${item.id}_${item.src}`;
-                        if (seen.has(k)) {
+                const base = (input.options && input.options[src]) || [];
+                const seen = new Set(base.map((item) => `${item.id}_${item.src}`));
+                const merged = base.concat(
+                    shaped.filter((item) => {
+                        const key = `${item.id}_${item.src}`;
+                        if (seen.has(key)) {
                             return false;
                         }
-                        seen.add(k);
+                        seen.add(key);
                         return true;
-                    });
-                }
-                // Mutate the local copy in place; ``localInputs`` is
-                // component-owned (declared in ``data()``), so this is not
-                // prop mutation. The ``localInputs`` array reference stays
-                // stable across paginated refreshes — Vue's ``v-for`` in the
-                // child ``FormDisplay`` doesn't unmount its children, so
-                // vue-multiselect's ``<input>`` survives across the
-                // search-change debounce.
+                    }),
+                );
                 input.options = { ...(input.options || {}), [src]: merged };
                 input.options_meta = {
                     ...(input.options_meta || {}),
                     [src]: { offset, limit, has_more: shaped.length === limit },
                 };
+                // FormDisplay renders from an internal clone and only syncs
+                // server-owned attributes when the inputs prop changes by
+                // identity. Bump the array reference so the fetched options
+                // reach that clone without replacing its client-owned value.
+                this.localInputs = [...this.localInputs];
             } catch (e) {
                 console.warn("history-contents pagination failed", e);
             }
         },
         onLoadMore({ name, src, offset, limit, search }) {
-            this._fetchStepOptions(name, src, { offset, limit, search }, "append");
+            this._fetchStepOptions(name, src, { offset, limit, search });
         },
         onSearchChange({ name, src, query, limit }) {
-            this._fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query }, "replace");
+            this._fetchStepOptions(name, src, { offset: 0, limit: limit || DEFAULT_OPTIONS_PAGE_SIZE, search: query });
         },
     },
 };

@@ -81,6 +81,10 @@ export default {
 
     "Saved Pages": "Páginas Guardadas",
 
+    Saved: "Guardado",
+
+    Unsaved: "Sin guardar",
+
     "Using ": "Utilizando ",
 
     //Tooltip

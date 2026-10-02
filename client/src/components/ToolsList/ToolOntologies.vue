@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faFilter, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -12,7 +12,10 @@ import { searchSections } from "../Panels/utilities";
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
@@ -183,14 +186,7 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                         <HelpText uri="galaxy.tools.ontologies.operation" text="What is an EDAM Operation?" />
                     </BBadge>
 
-                    <BDropdown
-                        block
-                        :disabled="loading"
-                        variant="link"
-                        toggle-class="text-decoration-none"
-                        role="menu"
-                        aria-label="Choose whether to show operations, topics, or all"
-                        size="sm">
+                    <GDropdown block :disabled="loading" variant="link" toggle-class="text-decoration-none" size="sm">
                         <template v-slot:button-content>
                             <span class="sr-only">Choose whether to show operations, topics, or all</span>
                             <FontAwesomeIcon :icon="faFilter" />
@@ -199,10 +195,10 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                             <span v-else>Showing Operations Only</span>
                         </template>
 
-                        <BDropdownItem @click="showing = 'all'">Show All Ontologies</BDropdownItem>
-                        <BDropdownItem @click="showing = 'operations'">Show Operations Only</BDropdownItem>
-                        <BDropdownItem @click="showing = 'topics'">Show Topics Only</BDropdownItem>
-                    </BDropdown>
+                        <GDropdownItem @click="showing = 'all'">Show All Ontologies</GDropdownItem>
+                        <GDropdownItem @click="showing = 'operations'">Show Operations Only</GDropdownItem>
+                        <GDropdownItem @click="showing = 'topics'">Show Topics Only</GDropdownItem>
+                    </GDropdown>
 
                     <GButton v-if="!validFilter" color="blue" outline @click="changeSort">
                         <FontAwesomeIcon :icon="sortOrder === 'asc' ? faSortAlphaDown : faSortAlphaUp" />
@@ -212,9 +208,9 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
             </div>
         </div>
 
-        <BAlert v-if="errorMessage" show variant="danger">
+        <GAlert v-if="errorMessage" show variant="danger">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <div class="d-flex flex-column overflow-auto h-100">
             <ScrollList

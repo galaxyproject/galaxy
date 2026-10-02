@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
+import { BFormCheckbox, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -9,6 +9,8 @@ import Multiselect from "vue-multiselect";
 import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -160,8 +162,8 @@ defineExpose({
 <template>
     <div class="d-flex flex-column">
         <div>
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <BAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+            <GAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
                 {{ successItemCount }} item{{ successItemCount === 1 ? "" : "s" }} copied to:
                 <span v-if="successHistoryName">
                     <RouterLink
@@ -178,7 +180,7 @@ defineExpose({
                         <span v-if="targetIndex != successTargetIds.length - 1">, </span>
                     </span>
                 </span>
-            </BAlert>
+            </GAlert>
             <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
         </div>
 
@@ -213,10 +215,10 @@ defineExpose({
                     </div>
                 </div>
                 <div class="d-flex mt-2">
-                    <BButton class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
+                    <GButton class="mr-2" size="small" color="blue" outline @click="toggleAll(true)">
                         Select All
-                    </BButton>
-                    <BButton size="sm" variant="outline-primary" @click="toggleAll(false)"> Unselect All </BButton>
+                    </GButton>
+                    <GButton size="small" color="blue" outline @click="toggleAll(false)"> Unselect All </GButton>
                 </div>
             </div>
 
@@ -262,15 +264,15 @@ defineExpose({
                         targetSingleHistory = null;
                     " />
                 <div class="text-right mt-2">
-                    <BButton
-                        size="sm"
-                        variant="primary"
+                    <GButton
+                        size="small"
+                        color="blue"
                         :disabled="loading"
                         data-description="copy button"
                         @click="onCopy">
                         <FontAwesomeIcon :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy Selected Items</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>

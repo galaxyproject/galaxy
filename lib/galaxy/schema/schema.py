@@ -16,6 +16,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AfterValidator,
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
@@ -45,11 +46,21 @@ from galaxy.schema.fields import (
     is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
+    message_rule_validator,
     ModelClassField,
+)
+from galaxy.schema.states import (
+    DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionType,
+    DatasetState,
+    DatasetValidatedState,
+    JobState,
+    ToolRequestState,
 )
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
+    OmittableNotNull,
     RelativeUrl,
 )
 from galaxy.tool_util_models.sample_sheet import (
@@ -58,9 +69,22 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
+from galaxy.util import string_as_bool
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.user_input import (
+    canonicalize_display_name,
+    canonicalize_email,
+    DISPLAY_NAME_MAX_LEN,
+    EMAIL_MAX_LEN,
+    PUBLICNAME_MAX_LEN,
+    validate_display_name_str,
+    validate_email_str,
+    validate_publicname_str,
+)
+
+MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -82,31 +106,6 @@ OptionalNumberT = int | float | None
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
-class DatasetState(str, Enum):
-    NEW = "new"
-    UPLOAD = "upload"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    EMPTY = "empty"
-    ERROR = "error"
-    PAUSED = "paused"
-    SETTING_METADATA = "setting_metadata"
-    FAILED_METADATA = "failed_metadata"
-    # Non-deleted, non-purged datasets that don't have physical files.
-    # These shouldn't have objectstores attached -
-    # 'deferred' can be materialized for jobs using
-    # attached DatasetSource objects but 'discarded'
-    # cannot (e.g. imported histories). These should still
-    # be able to have history contents associated (normal HDAs?)
-    DEFERRED = "deferred"
-    DISCARDED = "discarded"
-
-    @classmethod
-    def values(self):
-        return self.__members__.values()
-
-
 # Create dictionary for ElementsStatesDict using class syntax
 class ElementsStatesDict(TypedDict, total=False):
     # Add fields for each DatasetState value
@@ -122,41 +121,6 @@ class ElementsStatesDict(TypedDict, total=False):
     failed_metadata: NotRequired[int]
     deferred: NotRequired[int]
     discarded: NotRequired[int]
-
-
-class JobState(str, Enum):
-    NEW = "new"
-    RESUBMITTED = "resubmitted"
-    UPLOAD = "upload"
-    WAITING = "waiting"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    ERROR = "error"
-    FAILED = "failed"
-    PAUSED = "paused"
-    DELETING = "deleting"
-    DELETED = "deleted"
-    STOPPING = "stop"
-    STOPPED = "stopped"
-    SKIPPED = "skipped"
-
-
-class DatasetCollectionPopulatedState(str, Enum):
-    NEW = "new"  # New dataset collection, unpopulated elements
-    OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
-    FAILED = "failed"  # some problem populating state, won't be populated
-
-
-# we use TypedDicts in the model layer and I don't know how to type with that enum
-# in the dict - it doesn't have the enum value magic that pydantic has.
-DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
-
-
-class DatasetSourceTransformActionType(str, Enum):
-    TO_POSIX_LINES = "to_posix_lines"
-    SPACES_TO_TABLES = "spaces_to_tabs"
-    DATATYPE_GROOM = "datatype_groom"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -301,8 +265,60 @@ ContentsUrlField = Annotated[
 
 UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
+
+
+def _canonicalize_email_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str schema to reject.
+    return canonicalize_email(value) if isinstance(value, str) else value
+
+
+# An email address as a client may submit it, checked for format only. Whether
+# it is taken, banned or on an allowed domain depends on the server's
+# configuration and database, so the managers check that.
+EmailAddress = Annotated[
+    Annotated[str, Field(max_length=EMAIL_MAX_LEN)],
+    BeforeValidator(_canonicalize_email_input),
+    AfterValidator(message_rule_validator(validate_email_str)),
+]
+
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
+UserDisplayNameField = Field(
+    default=None,
+    title="Display name",
+    description=(
+        "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
+    ),
+)
+
+
+def _canonicalize_display_name_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str | None schema to reject.
+    return canonicalize_display_name(value) if isinstance(value, str) else value
+
+
+# A display name as a client may submit it. The length limit applies to the
+# canonical form, so padding a name does not push it over, and a blank name
+# arrives as None, which clears the field.
+DisplayName = Annotated[
+    Annotated[str, Field(max_length=DISPLAY_NAME_MAX_LEN)] | None,
+    BeforeValidator(_canonicalize_display_name_input),
+    AfterValidator(message_rule_validator(validate_display_name_str)),
+]
+
+
+# A username for a new account, checked for format only. Whether it is taken
+# depends on the database, so the managers check that.
+NewUsername = Annotated[
+    Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)],
+    AfterValidator(message_rule_validator(validate_publicname_str)),
+]
+
+# A username as an update may carry it. Accounts created under older rules can
+# hold names the format check would refuse, and must be able to send them back
+# unchanged, so the managers check the format only when the name changes.
+StoredUsername = Annotated[str, Field(max_length=PUBLICNAME_MAX_LEN)]
+
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -397,6 +413,7 @@ class AnonUserModel(DiskUsageUserModel):
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
+    display_name: str | None = UserDisplayNameField
     is_admin: bool = Field(default=..., title="Is admin", description="User is admin")
     purged: bool = Field(default=..., title="Purged", description="User is purged")
     preferences: dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
@@ -408,19 +425,146 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
-    active: Annotated[bool | None, Field(title="Active", description="User is active")] = None
-    username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
+    # The deserializer skips keys it does not know, so without this a misspelt
+    # field, or one this route cannot change (`is_admin`, `password`), would
+    # be dropped and the request would still succeed.
+    model_config = ConfigDict(extra="forbid")
+
+    active: Annotated[
+        OmittableNotNull[bool],
+        Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
+    ] = None
+    username: Annotated[
+        OmittableNotNull[StoredUsername],
+        Field(
+            title="Username",
+            description=(
+                "The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; "
+                "the current name is accepted as stored."
+            ),
+        ),
+    ] = None
+    display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
+    # Declared last so that a payload combining it with `active` ends on the
+    # deactivation, not on a stale activation. UserDeserializer only lets an
+    # administrator set `active`, so this ordering is belt and braces.
+    email: Annotated[
+        OmittableNotNull[EmailAddress],
+        Field(
+            title="Email",
+            description=(
+                "New email address. When `user_activation_on` is set, changing the email deactivates the account "
+                "and sends an activation link to the new address."
+            ),
+        ),
+    ] = None
+
+
+ExtraPreferenceScalar = str | int | float | bool
+# A list is the value of a `select` input with `multiple: true`.
+ExtraPreferenceValue = ExtraPreferenceScalar | list[ExtraPreferenceScalar]
+
+SENSITIVE_EXTRA_PREFERENCE_TYPES = frozenset({"password", "secret"})
+
+
+class ExtraPreferenceInputDefinition(Model):
+    """One input of an administrator-defined extra preferences section.
+
+    Keys beyond the declared fields are form options the administrator set in
+    ``user_preferences_extra_conf.yml`` and are passed through unchanged.
+    """
+
+    model_config = ConfigDict(extra="allow", coerce_numbers_to_str=True)
+
+    name: str = Field(..., title="Name", description="Name of the input within its section.")
+    label: str | None = Field(default=None, title="Label")
+    type: str | None = Field(
+        default=None,
+        title="Type",
+        description=(
+            "Form input type, such as `text`, `select`, `boolean`, `password` or `secret`. Without a type, an input "
+            "with `options` is a `select` and any other input is `text`. The extra preferences endpoints never "
+            "return values of `password` and `secret` inputs."
+        ),
+    )
+    help: str | None = Field(default=None, title="Help")
+    required: Annotated[bool, BeforeValidator(lambda v: string_as_bool(v) if isinstance(v, str) else v)] = Field(
+        default=False,
+        title="Required",
+        description="Whether a stored value is protected from being cleared or set to an empty string.",
+    )
+    store: str | None = Field(
+        default=None,
+        title="Store",
+        description="`vault` when the value is kept in Galaxy's vault rather than in the user's preferences.",
+    )
+    options: list[tuple[str, ExtraPreferenceScalar] | tuple[str, ExtraPreferenceScalar, bool]] | None = Field(
+        default=None,
+        title="Options",
+        description="`[label, value]` or `[label, value, selected]` entries of a `select` input.",
+    )
+    multiple: bool = Field(
+        default=False, title="Multiple", description="Whether a `select` input takes a list of its options."
+    )
+    value: ExtraPreferenceValue | None = Field(default=None, title="Default value")
+
+    @property
+    def kind(self) -> str:
+        return self.type or ("select" if self.options else "text")
+
+    @property
+    def sensitive(self) -> bool:
+        return self.kind in SENSITIVE_EXTRA_PREFERENCE_TYPES
+
+    @property
+    def in_vault(self) -> bool:
+        return self.store == "vault"
+
+    @property
+    def option_values(self) -> set[ExtraPreferenceScalar]:
+        return {option[1] for option in self.options or []}
+
+
+class ExtraPreferenceSectionDefinition(Model):
+    name: str = Field(..., title="Name", description="Name of the section, the first part of each stored key.")
+    description: str = Field(..., title="Description")
+    inputs: list[ExtraPreferenceInputDefinition] = Field(default_factory=list, title="Inputs")
+
+
+class ExtraPreferenceSecretState(Model):
+    is_set: bool = Field(
+        ..., title="Is set", description="Whether a value is stored. The value itself is never returned."
+    )
+
+
+class UserExtraPreferences(RootModel[dict[str, dict[str, ExtraPreferenceValue | ExtraPreferenceSecretState | None]]]):
+    """A user's values for the extra preferences, by section and input name.
+
+    Inputs without a stored value are null. `password` and `secret` inputs report
+    whether a value is stored instead of the value.
+    """
+
+
+class UserExtraPreferencesUpdatePayload(RootModel[dict[str, dict[str, ExtraPreferenceValue | None]]]):
+    """Values to change, by section and input name.
+
+    Inputs that are left out keep their stored value; null clears one.
+    """
 
 
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
-    email: str = UserEmailField
-    username: str = UserNameField
+    email: Annotated[EmailAddress, UserEmailField]
+    username: Annotated[NewUsername, UserNameField]
 
 
 class RemoteUserCreationPayload(Model):
-    remote_user_email: str = UserEmailField
+    remote_user_email: Annotated[EmailAddress, UserEmailField]
+
+
+class UserPasswordResetPayload(Model):
+    password: str = Field(default=..., title="Password", description="The new password of the user.")
 
 
 class UserDeletionPayload(Model):
@@ -551,7 +695,7 @@ class GroupModel(Model, WithModelClass):
     """User group model"""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,  # ...
         title="ID",
         description="Encoded group ID",
@@ -795,12 +939,6 @@ HdaLddaField = Field(
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
-
-
-class DatasetValidatedState(str, Enum):
-    UNKNOWN = "unknown"
-    INVALID = "invalid"
-    OK = "ok"
 
 
 class DatasetHash(Model):
@@ -1423,11 +1561,18 @@ class UpdateHistoryContentsPayload(Model):
         None,
         title="Annotation",
         description="A user-defined annotation for this item.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     tags: TagCollection | None = Field(
         None,
         title="Tags",
         description="A list of tags to add to this item.",
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        title="Metadata",
+        description="A dictionary of metadata key/value pairs to update for this dataset. "
+        "Readonly and unknown metadata keys are silently ignored.",
     )
     model_config = ConfigDict(
         extra="allow",
@@ -1609,7 +1754,7 @@ AnyHistoryView = Annotated[
 
 class UpdateHistoryPayload(Model):
     name: str | None = None
-    annotation: str | None = None
+    annotation: str | None = Field(default=None, max_length=MAX_ANNOTATION_SIZE)
     tags: TagCollection | None = None
     published: bool | None = None
     importable: bool | None = None
@@ -1678,6 +1823,132 @@ class WorkflowIndexQueryPayload(Model):
 
 class WorkflowIndexPayload(WorkflowIndexQueryPayload):
     missing_tools: bool = False
+
+
+class CuratedWorkflowSourceEnum(str, Enum):
+    """Where the curated workflow listing was drawn from."""
+
+    iwc = "iwc"
+    local = "local"
+    preparing = "preparing"
+    unavailable = "unavailable"
+
+
+class CuratedWorkflowsQueryPayload(Model):
+    search: str | None = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: WorkflowSortByEnum | None = Field(
+        None, title="Sort By", description="Sort curated workflows by this attribute"
+    )
+    sort_desc: bool | None = Field(
+        None, title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
+    limit: int = Field(default=24, title="Limit", description="Maximum number of curated workflows to return.")
+    offset: int = Field(default=0, title="Offset", description="Number of curated workflows to skip.")
+
+
+class CuratedWorkflow(Model):
+    id: str = Field(
+        ...,
+        title="ID",
+        description=(
+            "Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is "
+            "served from this Galaxy, otherwise the identifier of the workflow in the public catalog."
+        ),
+    )
+    name: str = Field(..., title="Name", description="The name of the workflow.")
+    description: str = Field(default="", title="Description", description="Short annotation describing the workflow.")
+    tags: list[str] = Field(default_factory=list, title="Tags", description="Tags associated with the workflow.")
+    collections: list[str] = Field(
+        default_factory=list,
+        title="Collections",
+        description="Names of the curated collections this workflow belongs to.",
+    )
+    number_of_steps: int | None = Field(
+        default=None, title="Number of Steps", description="The number of steps in the workflow."
+    )
+    update_time: datetime | None = Field(
+        default=None, title="Update Time", description="The last time the workflow was updated."
+    )
+    release: str | None = Field(
+        default=None, title="Release", description="The release version of the workflow, if published with one."
+    )
+    doi: str | None = Field(default=None, title="DOI", description="The DOI of the workflow, if it has one.")
+    external_url: str | None = Field(
+        default=None,
+        title="External URL",
+        description="Link to the workflow on the external catalog that published it.",
+    )
+    owner: str | None = Field(
+        default=None,
+        title="Owner",
+        description="Username of the account owning the workflow on this Galaxy, if it is hosted here.",
+    )
+    stored_workflow_id: str | None = Field(
+        default=None,
+        title="Stored Workflow ID",
+        description=(
+            "Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which "
+            "case it can be run directly."
+        ),
+    )
+    trs_url: str | None = Field(
+        default=None,
+        title="TRS URL",
+        description="Full TRS URL of the workflow version to import, pinned to its release when it has one.",
+    )
+    trs_fallback_url: str | None = Field(
+        default=None,
+        title="TRS Fallback URL",
+        description=(
+            "TRS URL of the workflow's development branch, to import when the TRS server has not yet published "
+            "the release that trs_url pins."
+        ),
+    )
+    missing_tools: list[str] | None = Field(
+        default=None,
+        title="Missing Tools",
+        description=(
+            "Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when "
+            "the workflow will run here after import; null when this Galaxy did not check."
+        ),
+    )
+
+
+class CuratedWorkflowCollection(Model):
+    name: str = Field(..., title="Name", description="The collection's name.")
+    count: int = Field(..., title="Count", description="How many curated workflows belong to the collection.")
+
+
+class CuratedWorkflowsIndexResponse(Model):
+    source: CuratedWorkflowSourceEnum = Field(
+        ...,
+        title="Source",
+        description=(
+            "Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state "
+            "indicating the catalog is being prepared or could not be reached."
+        ),
+    )
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description="Total number of curated workflows matching the query, ignoring limit and offset.",
+    )
+    workflows: list[CuratedWorkflow] = Field(
+        default_factory=list, title="Workflows", description="The requested page of curated workflows."
+    )
+    message: str | None = Field(
+        default=None,
+        title="Message",
+        description="Human readable explanation shown when no workflows could be listed.",
+    )
+    collections: list[CuratedWorkflowCollection] = Field(
+        default_factory=list,
+        title="Collections",
+        description=(
+            "Every collection in the catalog with its size, largest first, regardless of the search. Empty when "
+            "the listing has no collections, as for workflows curated on this Galaxy."
+        ),
+    )
 
 
 class JobIndexSortByEnum(str, Enum):
@@ -2637,17 +2908,35 @@ class SubworkflowStep(WorkflowStepBase):
     )
 
 
-class Creator(Model):
+class Thing(Model):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this thing.")
+    name: str | None = Field(None, title="Name", description="The name of the thing.")
+    alternate_name: str | None = Field(
+        None,
+        alias="alternateName",
+        title="Alternate Name",
+    )
+    description: str | None = Field(
+        None,
+        title="Description",
+    )
+    identifier: str | None = Field(None, title="Identifier")
+    image: AnyHttpUrl | None = Field(
+        None,
+        title="Image URL",
+    )
+    url: AnyHttpUrl | None = Field(
+        None,
+        title="URL",
+    )
+
+
+class Creator(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
     name: str | None = Field(None, title="Name", description="The name of the creator.")
     address: str | None = Field(
         None,
         title="Address",
-    )
-    alternate_name: str | None = Field(
-        None,
-        alias="alternateName",
-        title="Alternate Name",
     )
     email: str | None = Field(
         None,
@@ -2659,17 +2948,9 @@ class Creator(Model):
         title="Fax Number",
     )
     identifier: str | None = Field(None, title="Identifier", description="Identifier (typically an orcid.org ID)")
-    image: AnyHttpUrl | None = Field(
-        None,
-        title="Image URL",
-    )
     telephone: str | None = Field(
         None,
         title="Telephone",
-    )
-    url: AnyHttpUrl | None = Field(
-        None,
-        title="URL",
     )
 
 
@@ -2708,6 +2989,13 @@ class Person(Creator):
         None,
         alias="jobTitle",
         title="Job Title",
+    )
+
+
+class Grant(Thing):
+    class_: str = Field(
+        "Grant",
+        alias="class",
     )
 
 
@@ -2931,8 +3219,50 @@ class RoleDefinitionModel(Model):
     role_type: Literal["admin", "user_tool_create", "user_tool_execute"] = "admin"
 
 
+class RoleUpdatePayload(Model):
+    name: RoleNameField | None = None
+    description: RoleDescriptionField | None = None
+    user_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="User IDs",
+        description="Users to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+    group_ids: list[DecodedDatabaseIdField] | None = Field(
+        default=None,
+        title="Group IDs",
+        description="Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.",
+    )
+
+
 class RoleListResponse(RootModel):
     root: list[RoleModelResponse]
+
+
+class RoleUserResponse(Model):
+    id: EncodedDatabaseIdField
+    email: str = UserEmailField
+
+
+class RoleUserListResponse(RootModel):
+    root: list[RoleUserResponse]
+
+
+class GroupModelListResponse(RootModel):
+    root: list[GroupModel]
+
+
+class UserRolesUpdatePayload(Model):
+    role_ids: list[DecodedDatabaseIdField] = Field(
+        title="Role IDs",
+        description="Roles to associate with the user, replacing the current ones. The user's private role is always kept.",
+    )
+
+
+class UserGroupsUpdatePayload(Model):
+    group_ids: list[DecodedDatabaseIdField] = Field(
+        title="Group IDs",
+        description="Groups the user is a member of, replacing the current ones.",
+    )
 
 
 # The tuple should probably be another proper model instead?
@@ -4108,6 +4438,7 @@ class CreatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     invocation_id: DecodedDatabaseIdField | None = Field(
         None,
@@ -4142,6 +4473,7 @@ class UpdatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     edit_source: str | None = Field(
         default=None,
@@ -4179,12 +4511,6 @@ ArchivedHistoryDetailed.model_rebuild()
 CustomArchivedHistoryView.model_rebuild()
 
 ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
-
-
-class ToolRequestState(str, Enum):
-    NEW = "new"
-    SUBMITTED = "submitted"
-    FAILED = "failed"
 
 
 class ToolRequestStateMessage(Model):

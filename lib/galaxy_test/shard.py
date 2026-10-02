@@ -44,8 +44,7 @@ def group_key(item) -> str:
     module = getattr(item, "module", None)
     if module is None:
         return item.nodeid.split("::")[0]
-    cls = getattr(item, "cls", None)
-    if cls is not None:
+    if (cls := getattr(item, "cls", None)) is not None:
         return f"{module.__name__}::{cls.__name__}"
     return module.__name__
 
@@ -95,8 +94,7 @@ def select_shard(items: list[Any], shard_id: int, num_shards: int, durations: di
 
 def pytest_configure(config) -> None:
     """Take over sharding from pytest-shard, reusing its command line options."""
-    shard_plugin = config.pluginmanager.get_plugin("pytest-shard")
-    if shard_plugin is not None:
+    if (shard_plugin := config.pluginmanager.get_plugin("pytest-shard")) is not None:
         config.pluginmanager.unregister(shard_plugin)
 
 

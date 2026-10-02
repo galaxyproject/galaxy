@@ -41,9 +41,11 @@ const extendedHistoryParams = {
  * Create a new history, select it as the current history, and return it if successful.
  * @return the new history or throws an error if new history creation fails
  */
-export async function createAndSelectNewHistory() {
+export async function createAndSelectNewHistory(name?: string) {
     const url = "history/create_new_current";
-    const response = await axios.get(prependPath(url));
+    // the legacy controller creates the history and makes it current in one
+    // request, naming it when asked
+    const response = await axios.get(prependPath(url), { params: name ? { name } : undefined });
     const newHistoryId = response?.data?.id || null;
     if (!newHistoryId) {
         throw new Error("failed to create and select new history");
@@ -74,7 +76,12 @@ export async function setCurrentHistoryOnServer(historyId: string) {
 }
 
 /**
- * Get list of histories from server and return them.
+ * Get list of histories owned by the current user and return them.
+ *
+ * The backend defaults to `show_published=true`, so the `show_*` flags have to be
+ * sent explicitly to keep other users' published or shared histories out of the
+ * listing.
+ *
  * @param offset to start from (default = 0)
  * @param limit of histories to load (default = null; in which case no limit)
  * @param queryString to append to url in the form `q=filter&qv=val&q=...`
@@ -84,7 +91,7 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
     // TODO: to convert this to openapi-fetch we need to fix the query string handling
     // in the caller code to use the query object instead of a string
 
-    const params = `view=summary&order=update_time&offset=${offset}`;
+    const params = `view=summary&order=update_time&offset=${offset}&show_own=true&show_published=false&show_shared=false`;
     let url = `api/histories?${params}`;
     if (limit !== null) {
         url += `&limit=${limit}`;
@@ -135,6 +142,7 @@ export async function secureHistoryOnServer(history: AnyHistory) {
         securedHistory: result.data,
         message: response.data.message as string,
         sharingStatusChanged: response.data.sharing_status_changed as boolean,
+        skippedDatasets: response.data.skipped_datasets as number,
     };
 }
 

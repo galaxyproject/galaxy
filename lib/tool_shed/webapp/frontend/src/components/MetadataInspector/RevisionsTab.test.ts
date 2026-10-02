@@ -114,25 +114,25 @@ describe("RevisionsTab", () => {
         })
 
         it("shows invalid tool paths when revision is expanded", async () => {
-            const keyWithInvalid = Object.entries(bismarkMetadata).find(
-                ([, rev]) => rev.invalid_tools && rev.invalid_tools.length > 0
-            )?.[0]
+            const entryWithInvalid = Object.entries(bismarkMetadata).find(
+                ([, rev]) => rev.invalid_tools && rev.invalid_tools.length > 0,
+            )
+            expect(entryWithInvalid).toBeDefined()
 
-            if (keyWithInvalid) {
-                const wrapper = mount(RevisionsTab, {
-                    props: {
-                        metadata: bismarkMetadata,
-                        expandRevision: keyWithInvalid,
-                    },
-                })
+            const [keyWithInvalid, revision] = entryWithInvalid ?? []
+            const invalidTools = revision?.invalid_tools ?? []
+            expect(invalidTools.length).toBeGreaterThan(0)
 
-                await nextTick()
+            const wrapper = mount(RevisionsTab, {
+                props: {
+                    metadata: bismarkMetadata,
+                    expandRevision: keyWithInvalid,
+                },
+            })
 
-                const invalidTools = bismarkMetadata[keyWithInvalid].invalid_tools
-                if (invalidTools && invalidTools.length > 0) {
-                    expect(wrapper.text()).toContain(invalidTools[0])
-                }
-            }
+            await nextTick()
+
+            expect(wrapper.text()).toContain(invalidTools[0].tool_config)
         })
     })
 

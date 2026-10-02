@@ -1,6 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -12,10 +13,12 @@ import {
     isCollectionElement,
     isHDCA,
     type SubCollection,
+    userOwnsHistory,
 } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useUserStore } from "@/stores/userStore";
 import { setItemDragstart } from "@/utils/setDrag";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -23,6 +26,7 @@ import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
 import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -40,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const collectionElementsStore = useCollectionElementsStore();
+const { currentUser } = storeToRefs(useUserStore());
 
 const emit = defineEmits<{
     (e: "view-collection", collection: CollectionEntry): void;
@@ -78,7 +83,9 @@ const rootCollection = computed(() => {
     }
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
-const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
+const canEdit = computed(
+    () => isRoot.value && canMutateHistory(props.history) && userOwnsHistory(currentUser.value, props.history),
+);
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -146,13 +153,13 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
-                    <b-alert
+                    <GAlert
                         v-if="collectionElements.length === 0"
                         class="m-2"
                         :variant="populatedStateMsg ? 'danger' : 'info'"
                         show>
                         {{ populatedStateMsg || "This is an empty collection." }}
-                    </b-alert>
+                    </GAlert>
                     <ListingLayout
                         v-else
                         data-key="element_index"

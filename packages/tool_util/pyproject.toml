@@ -16,7 +16,6 @@ dependencies = [
     "galaxy-tool-util-models",
     "galaxy-util[template,image-util]>=22.1",
     "conda-package-streaming",
-    "jsonschema",
     "lxml!=4.2.2",
     "MarkupSafe",
     "packaging",
@@ -47,7 +46,7 @@ keywords = ["Galaxy"]
 
 [project.optional-dependencies]
 cwl = [
-    "cwl-utils",
+    "cwl-utils!=0.44",  # configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
     "cwltool>=3.1.20230624081518",
 ]
 mulled = [
@@ -65,14 +64,18 @@ extended-assertions = [
 ]
 test = [
     "Beaker",
+    "jsonschema",
     "pytest",
     "pytest-mock",
+    "responses",
+    "watchdog",
 ]
 
 [project.scripts]
 galaxy-tool-format = "galaxy.tool_util.format:main"
 galaxy-tool-test = "galaxy.tool_util.verify.script:main"
 galaxy-tool-test-case-validation = "galaxy.tool_util.parameters.scripts.validate_test_cases:main"
+galaxy-tool-data-lint = "galaxy.tool_util.data.bundles.script:main"
 galaxy-tool-upgrade-advisor = "galaxy.tool_util.upgrade.script:main"
 validate-test-format = "galaxy.tool_util.validate_test_format:main"
 mulled-build = "galaxy.tool_util.deps.mulled.mulled_build:main"

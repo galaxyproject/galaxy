@@ -215,6 +215,24 @@ describe("DatasetView", () => {
     });
 
     describe("Component mounting and basic functionality", () => {
+        it.each(["preview", "raw"])("uses the download endpoint from the %s tab", async (tab) => {
+            server.use(
+                http.get("/api/datatypes/:datatype_id", ({ response }) =>
+                    response(200).json({
+                        id: "mp4",
+                        display_behavior: "download",
+                    }),
+                ),
+            );
+            const wrapper = await mountDatasetView(tab, {
+                dataset: { ...mockDataset, name: "Annotated video", file_ext: "mp4" },
+            });
+
+            const downloadLink = wrapper.get(".auto-download-message a");
+            expect(downloadLink.text()).toContain("Download File");
+            expect(downloadLink.attributes("href")).toBe(`/api/datasets/${DATASET_ID}/download`);
+        });
+
         it("mounts with correct props", async () => {
             const wrapper = await mountDatasetView();
             expect(wrapper.exists()).toBe(true);

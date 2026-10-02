@@ -86,6 +86,15 @@ input1: "hello world"
         assert workflow["steps"]["1"]["workflow_outputs"][0]["label"] == "wf_output_1"
         workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
 
+    def test_connected_inputs_stored_as_connected_values(self):
+        for client_convert in [True, False]:
+            workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_TWICE, client_convert=client_convert)
+            cat_step = workflow["steps"]["1"]
+            tool_state = json.loads(cat_step["tool_state"])
+            assert tool_state["input1"] == {"__class__": "ConnectedValue"}, client_convert
+            assert tool_state["queries"][0]["input2"] == {"__class__": "ConnectedValue"}, client_convert
+            assert cat_step["inputs"] == [], client_convert
+
     def test_runtime_inputs(self):
         workflow = self._upload_and_download(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
         assert len(workflow["steps"]) == 2

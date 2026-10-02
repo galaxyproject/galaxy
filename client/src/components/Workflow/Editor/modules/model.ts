@@ -14,7 +14,7 @@ export interface Workflow {
     annotation: string;
     license: string;
     creator: any;
-    version: number;
+    version?: number;
     report?: any;
     steps: Steps;
     comments: WorkflowComment[];

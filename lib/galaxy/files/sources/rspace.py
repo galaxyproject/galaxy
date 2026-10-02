@@ -29,7 +29,6 @@ References:
 - [6] https://docs.pyfilesystem.org/
 """
 
-import datetime
 import os.path
 from types import MethodType
 from typing import (
@@ -88,7 +87,7 @@ class FakedNameIO:
 
 if RSpaceGalleryFilesystem is not None:
 
-    class PatchedRSpaceGalleryFilesystem(RSpaceGalleryFilesystem):
+    class PatchedRSpaceGalleryFilesystem(RSpaceGalleryFilesystem):  # type: ignore[misc]  # fsspec is untyped
         """
         Patch RSpaceGalleryFilesystem to keep a record of the RSpace global id of the most recently uploaded file.
         """
@@ -203,11 +202,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
             dict_.update(
                 {
                     "size": resource_info.size,
-                    "ctime": self.to_dict_time(
-                        datetime.datetime.fromisoformat(resource_info.get("rspace", "created")).astimezone(
-                            datetime.timezone.utc
-                        )
-                    ),
+                    "ctime": resource_info.get("rspace", "created"),
                 }
             )
             entry = RemoteFile(

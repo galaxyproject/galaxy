@@ -8,9 +8,7 @@ CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
-SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
-SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 PNPM := $(shell $(IN_VENV) command -v pnpm 2> /dev/null)
 PNPM_INSTALL_OPTS=--frozen-lockfile
 # Default to not fail on error, set to 1 to fail client builds on a plugin error.
@@ -43,7 +41,7 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc html
 
 docs-develop: ## Fast doc generation and more warnings (for development)
-	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 SPHINXOPTS='-j 4' $(MAKE) -C doc html
+	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 $(MAKE) -C doc html
 
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
@@ -61,14 +59,6 @@ remove-unused-imports:  ## Remove unused imports in Python code base
 pyupgrade:  ## Convert older code patterns to Python 3.10+ idiomatic ones
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs auto-walrus
-
-docs-slides-ready:
-	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
-	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
-	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
-
-docs-slides-export: docs-slides-ready
-	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
 _open-docs:
 	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
@@ -90,18 +80,6 @@ tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dr
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
 	$(CONFIG_MANAGE) convert tool_shed
 
-reports-config-validate: ## validate reports YAML configuration file
-	$(CONFIG_MANAGE) validate reports
-
-reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry run)
-	$(CONFIG_MANAGE) convert reports --dry-run
-
-reports-config-convert: ## convert old style reports ini to yaml
-	$(CONFIG_MANAGE) convert reports
-
-reports-config-lint: ## lint reports YAML configuration file
-	$(CONFIG_MANAGE) lint reports
-
 config-validate: ## validate galaxy YAML configuration file
 	$(CONFIG_MANAGE) validate galaxy
 
@@ -115,9 +93,6 @@ config-rebuild: ## Rebuild all sample YAML, RST files, and type stubs from confi
 	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
 	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
 	$(CONFIG_MANAGE) build_config_types galaxy
-	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
-	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
-	$(CONFIG_MANAGE) build_config_types reports
 	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
 	$(CONFIG_MANAGE) build_config_types tool_shed
 

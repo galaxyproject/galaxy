@@ -45,14 +45,13 @@ function onClick(evt: MouseEvent) {
 
 <template>
     <div class="toolTitle">
-        <div v-if="props.showDragHandle" class="favorite-top-level-drag-target">
+        <div
+            v-if="props.showDragHandle"
+            class="favorite-top-level-drag-target"
+            data-description="favorite-top-level-drag-target">
             <FontAwesomeIcon :icon="faGripLines" />
         </div>
-        <a
-            v-if="props.tool.disabled"
-            class="title-link name text-muted tool-link"
-            :data-tool-id="props.tool.id"
-            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null">
+        <a v-if="props.tool.disabled" class="title-link name text-muted tool-link" :data-tool-id="props.tool.id">
             <span v-if="!props.hideName">{{ props.tool.name }}</span>
             <span class="description">{{ props.tool.description }}</span>
         </a>
@@ -60,7 +59,6 @@ function onClick(evt: MouseEvent) {
             v-else
             class="title-link cursor-pointer tool-link"
             :data-tool-id="props.tool.id"
-            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null"
             :href="toolLink"
             :target="toolTarget"
             :title="props.tool.help"

@@ -2,11 +2,14 @@
 
 import json
 import os
+import subprocess
 import unittest
 from typing import Any
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
+from galaxy.util import galaxy_directory
 from galaxy.util.commands import which
+from galaxy.version import VERSION
 from galaxy_test.base.populators import (
     CredentialsPopulator,
     DatasetPopulator,
@@ -36,6 +39,25 @@ MULLED_EXAMPLE_MULTI_1_HASH = (
 CREDENTIALS_TEST_TOOL = "secret_tool"
 CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
 CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
+
+def build_metadata_container():
+    galaxy_root = galaxy_directory()
+    subprocess.check_output(
+        [
+            "docker",
+            "build",
+            "-t",
+            "galaxyproject/galaxy-job-execution:integration",
+            "--build-arg",
+            "RUNTIME_SOURCE=source",
+            "--build-arg",
+            f"GALAXY_VERSION={VERSION}",
+            "-f",
+            os.path.join(galaxy_root, "packages", "job_execution", "Dockerfile"),
+            galaxy_root,
+        ]
+    )
 
 
 class MulledJobTestCases:

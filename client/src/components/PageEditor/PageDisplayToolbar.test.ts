@@ -11,8 +11,10 @@ import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { PAGE_LABELS } from "../Page/constants.js";
 
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
+import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 
 const localVue = getLocalVue();
+(ChangesIndicator as unknown as { name?: string }).name = "ChangesIndicator";
 
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
@@ -34,14 +36,18 @@ const SELECTORS = {
 
 let pinia: Pinia;
 
-function mountComponent(propsData: {
-    labels: (typeof PAGE_LABELS)[keyof typeof PAGE_LABELS];
-    mode: "editor" | "display";
-}) {
+function mountComponent(
+    propsData: {
+        labels: (typeof PAGE_LABELS)[keyof typeof PAGE_LABELS];
+        mode: "editor" | "display";
+    },
+    stubs: Record<string, object> = {},
+) {
     return mount(PageDisplayToolbar as object, {
         localVue,
         propsData,
         pinia,
+        stubs,
     });
 }
 
@@ -78,6 +84,7 @@ describe("PageDisplayToolbar", () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
@@ -172,6 +179,45 @@ describe("PageDisplayToolbar", () => {
             await flushPromises();
 
             expect(store.savePage).toHaveBeenCalled();
+        });
+
+        it("shows saved feedback after a successful save", async () => {
+            const flashSavedIndicator = vi.fn();
+            const saveWrapper = mountComponent(
+                { labels: PAGE_LABELS.history, mode: "editor" },
+                {
+                    ChangesIndicator: {
+                        template: "<div />",
+                        methods: { flashSavedIndicator },
+                    },
+                },
+            );
+
+            await saveWrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(flashSavedIndicator).toHaveBeenCalledOnce();
+            saveWrapper.destroy();
+        });
+
+        it("does not show saved feedback after a failed save", async () => {
+            const flashSavedIndicator = vi.fn();
+            const saveWrapper = mountComponent(
+                { labels: PAGE_LABELS.history, mode: "editor" },
+                {
+                    ChangesIndicator: {
+                        template: "<div />",
+                        methods: { flashSavedIndicator },
+                    },
+                },
+            );
+            vi.mocked(store.savePage).mockRejectedValue(new Error("save failed"));
+
+            await saveWrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(flashSavedIndicator).not.toHaveBeenCalled();
+            saveWrapper.destroy();
         });
 
         it("back button text says whatever the label back button value is", () => {

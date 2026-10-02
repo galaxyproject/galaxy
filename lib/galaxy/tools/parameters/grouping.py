@@ -723,7 +723,7 @@ class UploadDataset(Group):
                     if file_bunch.path:
                         if force_composite:
                             assert group_incoming
-                            key = group_incoming.get("NAME") or i
+                            key = group_incoming.get("NAME") or str(i)
                         dataset.composite_files[key] = file_bunch.__dict__
                     elif not force_composite:
                         dataset.composite_files[key] = None

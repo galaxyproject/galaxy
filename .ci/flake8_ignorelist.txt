@@ -13,6 +13,6 @@ lib/galaxy/web/proxy/js/node_modules
 lib/tool_shed/test/test_data/repos
 static/maps
 static/scripts
-test/functional/tools/cwl_tools/v1.?/
+test/functional/tools/cwl_tools/
 build
 dist

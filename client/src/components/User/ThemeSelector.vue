@@ -57,11 +57,10 @@ watch(
 </template>
 
 <style lang="scss" scoped>
-@import "bootstrap/scss/bootstrap.scss";
-@import "@/style/scss/custom_theme_variables.scss";
+@import "@/style/scss/theme/blue.scss";
 .theme-element {
-    @extend .rounded;
-    @extend .p-1;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
 }
 .theme-masthead {
     @extend .theme-element;

@@ -67,7 +67,8 @@ def _write_to_destination(file_sources_path: str, out_file: str, destination_uri
     file_source_path = file_sources.get_file_source_path(destination_uri)
     file_source = file_source_path.file_source
     assert os.path.exists(out_file)
-    return file_source.write_from(file_source_path.path, out_file)
+    actual_path_or_uri = file_source.write_from(file_source_path.path, out_file)
+    return file_source.uri_from_write_result(actual_path_or_uri)
 
 
 def get_file_sources(file_sources_path: str) -> ConfiguredFileSources:

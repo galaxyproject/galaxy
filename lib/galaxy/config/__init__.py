@@ -70,7 +70,6 @@ ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
-REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
 LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
     "disable_existing_loggers": False,
@@ -216,6 +215,34 @@ def configure_logging(config, facts=None):
                 conf["filename"] = conf.pop("filename_template").format(**facts)
                 logging_conf["handlers"][name] = conf
         logging.config.dictConfig(logging_conf)
+
+
+CURATED_WORKFLOWS_SOURCES = ("iwc", "local", "off")
+
+
+def resolve_curated_workflows_source(source: str | None, owners: list[str]) -> str:
+    """Validate the curated workflows mode; it depends on config alone, never on the database."""
+    normalized = (source or "").strip().lower()
+    # YAML 1.1 loads an unquoted `off` as False, which the str-typed schema then
+    # renders as "False" -- and an unquoted `off` is what an admin will write.
+    if normalized == "false":
+        normalized = "off"
+    if normalized not in CURATED_WORKFLOWS_SOURCES:
+        raise ConfigurationError(
+            f"Unrecognized value for curated_workflows_source option: {source!r} "
+            f"(expected one of: {', '.join(CURATED_WORKFLOWS_SOURCES)})"
+        )
+    if normalized == "local" and not owners:
+        # Falling back to off would hide the tab with nothing but a log line to say
+        # why; the admin asked for local curation, so make them finish configuring it.
+        raise ConfigurationError("curated_workflows_source is 'local' but curated_workflow_owners is empty")
+    if normalized != "local" and owners:
+        log.warning(
+            "curated_workflow_owners is set but curated_workflows_source is '%s', so it is ignored; "
+            "set curated_workflows_source to 'local' to list those accounts' workflows",
+            normalized,
+        )
+    return normalized
 
 
 def find_root(kwargs) -> str:
@@ -887,6 +914,12 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.tool_filters = listify(self.tool_filters, do_strip=True)
         self.tool_label_filters = listify(self.tool_label_filters, do_strip=True)
         self.tool_section_filters = listify(self.tool_section_filters, do_strip=True)
+        self.curated_workflow_owners = [
+            owner for owner in listify(self.curated_workflow_owners, do_strip=True) if owner
+        ]
+        self.curated_workflows_source = resolve_curated_workflows_source(
+            self.curated_workflows_source, self.curated_workflow_owners
+        )
 
         self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
         self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
@@ -1154,6 +1187,9 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                     f"Config file ({self.user_preferences_extra_conf_path}) could not be found or is malformed."
                 )
             self.user_preferences_extra = {"preferences": {}}
+        # Lets the client hide the extra preferences entry entirely on instances
+        # that configure none, rather than linking to an empty form.
+        self.has_user_preferences_extra = bool(self.user_preferences_extra.get("preferences"))
 
         # default allow_local_account_creation to false if disable_local_accounts is true
         if "disable_local_accounts" in kwargs and self.disable_local_accounts:

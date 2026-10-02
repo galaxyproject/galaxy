@@ -13,6 +13,7 @@ import pytest
 import routes
 
 from galaxy import model
+from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -53,6 +54,17 @@ class TestToolBox(BaseToolBoxTestCase):
         tool = toolbox.get_tool("tool_with_macro")
         assert tool is not None
         assert len(tool._macro_paths) == 1
+
+    def test_wait_for_toolbox_reload_times_out_without_reload(self, caplog, monkeypatch):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+
+        monkeypatch.setattr("galaxy.app.INSTALLATION_RELOAD_TIMEOUT", 0.01)
+        with caplog.at_level(logging.WARNING, logger="galaxy.app"):
+            UniverseApplication.wait_for_toolbox_reload(self.app, toolbox)
+
+        assert "Waiting for toolbox reload timed out" in caplog.text
 
     @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_when_macro_is_altered(self):
@@ -228,6 +240,37 @@ class TestToolBox(BaseToolBoxTestCase):
         assert favorites_section["model_class"] == "ToolSection"
         assert favorites_section["name"] == "Favorites"
         assert favorites_section["tools"] == []
+
+    def test_panel_view_referencing_tool_by_old_id_loads_while_toolbox_is_built(self):
+        # Panel views are rendered from within ToolBox.__init__, before any
+        # toolbox is registered on the app.
+        self._init_tool()
+        self._setup_two_versions_in_config()
+        self._setup_two_versions()
+        self.app.config.panel_views = [
+            {
+                "id": "old_id_view",
+                "name": "Old Id View",
+                "type": "generic",
+                "items": [{"type": "tool", "id": "test_tool"}],
+            }
+        ]
+
+        assert "old_id_view" in self.toolbox.panel_view_dicts()
+
+    def test_lineage_for_tool_registered_outside_of_panel_load(self):
+        # `register_tool` is how built-in converters and hidden tools enter the
+        # toolbox, and it registers no lineage. Resolving one must not depend on
+        # the toolbox already being the one registered on the app.
+        self._init_tool()
+        self._add_config("""<toolbox></toolbox>""")
+        toolbox = self.toolbox
+        hidden_tool = toolbox.load_hidden_tool(self._tool_path())
+        self.app._toolbox = None
+
+        lineage = toolbox._lineage_map.get("test_tool")
+        assert lineage is not None
+        assert hidden_tool.version in lineage.tool_versions
 
     def test_out_of_panel_filtering(self):
         self._init_tool_in_section()

@@ -237,8 +237,8 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         }
     });
 
-    const specialWorkflowActivities = computed<Activity[]>(() => [
-        {
+    const bestPracticesActivity = computed<Activity>(() => {
+        return {
             title: "Best Practices",
             id: "workflow-best-practices",
             description: "Show and test for the best practices in this workflow.",
@@ -249,8 +249,8 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
             panel: true,
             visible: true,
             optional: true,
-        },
-    ]);
+        };
+    });
 
     const runWorkflowActivity: Activity = {
         title: "Run",
@@ -276,7 +276,7 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
     };
 
     return {
-        specialWorkflowActivities,
+        bestPracticesActivity,
         exitWorkflowActivity,
         runWorkflowActivity,
     };
