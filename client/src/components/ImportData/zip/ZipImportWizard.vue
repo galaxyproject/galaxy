@@ -18,6 +18,8 @@ import {
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { zipImportResultsLocation } from "./resultsRoute";
+
 import ZipFileSelector from "./ZipFileSelector.vue";
 import ZipImportSummary from "./ZipImportSummary.vue";
 import ZipPreview from "./ZipPreview.vue";
@@ -114,13 +116,12 @@ async function importItems() {
     }
     isWizardBusy.value = true;
     try {
-        router.push({
-            name: "ZipImportResults",
-            params: {
-                workflowFileCount: String(filesToImport.value.filter((file) => file.type === "workflow").length),
-                regularFileCount: String(filesToImport.value.filter((file) => file.type === "file").length),
-            },
-        });
+        router.push(
+            zipImportResultsLocation({
+                workflowFileCount: filesToImport.value.filter((file) => file.type === "workflow").length,
+                regularFileCount: filesToImport.value.filter((file) => file.type === "file").length,
+            }),
+        );
         // Workflows can be imported without a target history, but regular files require a target history.
         const targetHistoryId = hasRegularFilesToImport.value ? (effectiveTargetHistoryId.value ?? null) : null;
         await importArtifacts(filesToImport.value, targetHistoryId);
