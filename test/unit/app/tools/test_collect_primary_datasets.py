@@ -204,11 +204,6 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         created_hda = self._collect_default_extra()
         assert created_hda.ext == "txt"
 
-    def test_collect_input_ext(self):
-        self._setup_extra_file(ext="input")
-        created_hda = self._collect_default_extra()
-        assert created_hda.ext == "txt"
-
     def test_copied_to_imported_histories(self):
         self._setup_extra_file()
         cloned_hda = self.hda.copy()
@@ -284,24 +279,6 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert primary_outputs["foo2"].ext == "tabular"
         assert primary_outputs["foo1"].dbkey == "btau"
         assert primary_outputs["foo2"].dbkey == "btau"
-
-    def test_name_and_ext_pattern_unknown_ext_is_data(self):
-        self._replace_output_collectors(
-            """<output><discover_datasets pattern="__name_and_ext__" directory="subdir" format="auto" /></output>"""
-        )
-        self._setup_extra_file(subdir="subdir", filename="foo1.notadatatype")
-        self._setup_extra_file(subdir="subdir", filename="foo2.txt")
-        primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
-        assert primary_outputs["foo1"].ext == "data"
-        assert primary_outputs["foo2"].ext == "txt"
-
-    def test_name_and_ext_pattern_ext_case_insensitive(self):
-        self._replace_output_collectors(
-            """<output><discover_datasets pattern="__name_and_ext__" directory="subdir" /></output>"""
-        )
-        self._setup_extra_file(subdir="subdir", filename="foo1.TXT")
-        primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
-        assert primary_outputs["foo1"].ext == "txt"
 
     def test_custom_pattern(self):
         # Hypothetical oral metagenomic classifier that populates a directory

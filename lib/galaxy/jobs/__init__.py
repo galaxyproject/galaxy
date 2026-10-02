@@ -2333,8 +2333,15 @@ class MinimalJobWrapper(HasResourceParameters):
         collected_bytes = 0
         quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
+        # and turn extensions that are not registered datatypes into data.
         for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset.dataset
+            dataset_instance = dataset_assoc.dataset
+            if (
+                dataset_instance.extension not in ("auto", "_sniff_")
+                and self.app.datatypes_registry.get_datatype_by_extension(dataset_instance.extension) is None
+            ):
+                dataset_instance.extension = "data"
+            dataset = dataset_instance.dataset
             # assume all datasets in a job get written to the same objectstore
             quota_source_info = dataset.quota_source_info
             collected_bytes += dataset.set_total_size()

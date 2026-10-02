@@ -55,6 +55,7 @@ TEST_TOOL_IDS = [
     "environment_variables",
     "all_output_types",
     "discover_sort_by",
+    "discover_unknown_ext",
     "create_directory_index",
 ]
 
