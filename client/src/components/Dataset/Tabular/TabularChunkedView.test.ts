@@ -74,7 +74,9 @@ describe("TabularChunkedView", () => {
         const wrapper = mountChunkedView("tabular");
 
         await vi.waitFor(() => expect(axios.get).toHaveBeenCalledTimes(3));
-        expect(vi.mocked(axios.get).mock.calls.map(([, config]) => config?.params.offset)).toEqual([0, 8, 12]);
+        expect(
+            vi.mocked(axios.get).mock.calls.map(([, config]) => (config?.params as { offset: number }).offset),
+        ).toEqual([0, 8, 12]);
         await vi.waitFor(() => expect(wrapper.findComponent(GTable).props("items")).toHaveLength(3));
         await new Promise((resolve) => setTimeout(resolve, 250));
         expect(axios.get).toHaveBeenCalledTimes(3);
