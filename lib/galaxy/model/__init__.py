@@ -4289,16 +4289,13 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     def paginated_active_dataset_collections(
         self,
         *,
-        visible_only: bool = True,
         tag: str | None = None,
         search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
-        """Active HDCAs filtered by tag and an optional ``search`` term,
-        paginated. Pass ``visible_only=False`` to include hidden collections
-        (matches the legacy ``active_dataset_collections`` semantics used by
-        some tool-form paths). ``search`` matches case-insensitively against
+        """Active, visible HDCAs filtered by tag and an optional ``search``
+        term, paginated. ``search`` matches case-insensitively against
         the collection name and (when numeric) against the hid. Extension
         filtering for collections is exposed via the history-contents filter
         parser (see :py:meth:`_hdca_extensions_only_in_clause`).
@@ -4306,9 +4303,8 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         filters = [
             HistoryDatasetCollectionAssociation.history_id == self.id,
             not_(HistoryDatasetCollectionAssociation.deleted),
+            HistoryDatasetCollectionAssociation.visible.is_(True),
         ]
-        if visible_only:
-            filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
         if tag:
             filters.append(
                 build_tag_filter(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionTagAssociation, "eq", tag)
