@@ -103,9 +103,9 @@ importers:
       ag-grid-community:
         specifier: ^30
         version: 30.2.1
-      ag-grid-vue:
-        specifier: ^30
-        version: 30.2.1(ag-grid-community@30.2.1)(vue-property-decorator@9.1.2(vue-class-component@7.2.6(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
+      ag-grid-vue3:
+        specifier: ~30.2.1
+        version: 30.2.1(ag-grid-community@30.2.1)(vue@3.5.43(typescript@5.8.3))
       assert:
         specifier: ^2.1.0
         version: 2.1.0
@@ -2336,12 +2336,11 @@ packages:
   ag-grid-community@30.2.1:
     resolution: {integrity: sha512-1slonXskJbbI9ybhTx//4YKfJpZVAEnHL8dui1rQJRSXKByUi+/f7XtvkLsbgBkawoWbqvRAySjYtvz80+kBfA==}
 
-  ag-grid-vue@30.2.1:
-    resolution: {integrity: sha512-dnyltXrVUPk0ALQ1PfwnjBtYk/GDOjRjyOMy8LVAiWxVQA6Tmnb/dTnS1yjym1uggu+dDKof2zgPxVKayIHtWg==}
+  ag-grid-vue3@30.2.1:
+    resolution: {integrity: sha512-uIsBv5H7Nu6ao1V7cuReVj27gFdlK4kfvo/4M6AWmYswghMpc1GwzczZNV8HUypGcwxONW9YSfr8zabYQNGcAg==}
     peerDependencies:
       ag-grid-community: ~30.2.1
       vue: 3.5.43
-      vue-property-decorator: ^7.2.0 || ^8.0.0 || ^9.1.2
 
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -5833,11 +5832,6 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
-  vue-class-component@7.2.6:
-    resolution: {integrity: sha512-+eaQXVrAm/LldalI272PpDe3+i4mPis0ORiMYxF6Ae4hyuCh15W8Idet7wPUEs4N4YptgFHGys4UrgNQOMyO6w==}
-    peerDependencies:
-      vue: 3.5.43
-
   vue-component-type-helpers@3.3.11:
     resolution: {integrity: sha512-LwcxzeliO9fkQcpJG0PoX8X5kmAhKmH9wkpDLxNabwzkQ9Zeib2YVHwFV4pcWmMLfXVfjr/dSV+DaJ3cIPgSNA==}
 
@@ -5901,12 +5895,6 @@ packages:
 
   vue-observe-visibility@1.0.0:
     resolution: {integrity: sha512-s5TFh3s3h3Mhd3jaz3zGzkVHKHnc/0C/gNr30olO99+yw2hl3WBhK3ng3/f9OF+qkW4+l7GkmwfAzDAcY3lCFg==}
-
-  vue-property-decorator@9.1.2:
-    resolution: {integrity: sha512-xYA8MkZynPBGd/w5QFJ2d/NM0z/YeegMqYTphy7NJQXbZcuU6FC6AOdUAcy4SXP+YnkerC6AfH+ldg7PDk9ESQ==}
-    peerDependencies:
-      vue: 3.5.43
-      vue-class-component: '*'
 
   vue-router@3.6.5:
     resolution: {integrity: sha512-VYXZQLtjuvKxxcshuRAwjHnciqZVoXAjTjcqBTz4rKc8qih9g9pI3hbDjmqXaHdgL3v8pV6P8Z335XvHzESxLQ==}
@@ -7732,11 +7720,10 @@ snapshots:
 
   ag-grid-community@30.2.1: {}
 
-  ag-grid-vue@30.2.1(ag-grid-community@30.2.1)(vue-property-decorator@9.1.2(vue-class-component@7.2.6(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3)):
+  ag-grid-vue3@30.2.1(ag-grid-community@30.2.1)(vue@3.5.43(typescript@5.8.3)):
     dependencies:
       ag-grid-community: 30.2.1
       vue: 3.5.43(typescript@5.8.3)
-      vue-property-decorator: 9.1.2(vue-class-component@7.2.6(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
 
   agent-base@6.0.2:
     dependencies:
@@ -11667,10 +11654,6 @@ snapshots:
 
   vscode-uri@3.1.0: {}
 
-  vue-class-component@7.2.6(vue@3.5.43(typescript@5.8.3)):
-    dependencies:
-      vue: 3.5.43(typescript@5.8.3)
-
   vue-component-type-helpers@3.3.11: {}
 
   vue-demi@0.13.11(vue@3.5.43(typescript@5.8.3)):
@@ -11725,11 +11708,6 @@ snapshots:
   vue-multiselect@3.5.0(patch_hash=2479aaed9b25d624bf0f2a818e6b482fe4c5c46421542d86b8cc9595add82c91): {}
 
   vue-observe-visibility@1.0.0: {}
-
-  vue-property-decorator@9.1.2(vue-class-component@7.2.6(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3)):
-    dependencies:
-      vue: 3.5.43(typescript@5.8.3)
-      vue-class-component: 7.2.6(vue@3.5.43(typescript@5.8.3))
 
   vue-router@3.6.5(vue@3.5.43(typescript@5.8.3)):
     dependencies:
