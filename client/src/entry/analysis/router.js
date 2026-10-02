@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
+import { zipImportResultsProps } from "@/components/ImportData/zip/resultsRoute";
 import { APIKey } from "@/components/User/APIKey";
 import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
@@ -907,10 +908,7 @@ export function getRouter(Galaxy) {
                         path: "import/zip/results",
                         name: "ZipImportResults",
                         component: ZipImportResults,
-                        props: (route) => ({
-                            workflowFileCount: Number(route.params.workflowFileCount),
-                            regularFileCount: Number(route.params.regularFileCount),
-                        }),
+                        props: zipImportResultsProps,
                         redirect: redirectAnon(),
                     },
                     {
