@@ -15,6 +15,7 @@ import type {
 } from "@/api/userCredentials";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 /** Placeholder for secret values in UI. */
 export const SECRET_PLACEHOLDER = "********";
@@ -390,7 +391,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
             throw new Error(`No service found for tool ${userToolKey}`);
         }
 
-        const serviceGroupPayloadCopy = structuredClone(serviceGroupPayload);
+        const serviceGroupPayloadCopy = cloneRaw(serviceGroupPayload);
         removeSecretPlaceholders(serviceGroupPayloadCopy);
 
         busyMessage.value = "Updating your credentials";
