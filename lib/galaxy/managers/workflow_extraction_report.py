@@ -20,6 +20,7 @@ so those mutations and the report are committed with it.
 """
 
 import logging
+from datetime import datetime
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_util import (
@@ -202,7 +203,7 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     def handle_generate_galaxy_version(self, line: str, galaxy_version: str) -> DirectiveResult:
         return (line, False)
 
-    def handle_generate_time(self, line: str, date: str) -> DirectiveResult:
+    def handle_generate_time(self, line: str, date: datetime) -> DirectiveResult:
         return (line, False)
 
     def handle_instance_access_link(self, line: str, url: str) -> DirectiveResult:
