@@ -228,13 +228,13 @@ describe("Notifications categories", () => {
         // Each tool's list item must contain its own details and not the other tool's.
         const toolItems = wrapper.findAll("ul:not(.list-unstyled) > li");
         expect(toolItems).toHaveLength(2);
-        expect(toolItems.at(0).text()).toContain("bwa");
-        expect(toolItems.at(0).text()).toContain("Aligner for short reads");
-        expect(toolItems.at(0).text()).not.toContain("SAM/BAM utilities");
-        expect(toolItems.at(1).text()).toContain("samtools");
-        expect(toolItems.at(1).text()).toContain("SAM/BAM utilities");
-        expect(toolItems.at(1).text()).toContain("1.13");
-        expect(toolItems.at(1).text()).not.toContain("Aligner for short reads");
+        expect(toolItems.at(0)!.text()).toContain("bwa");
+        expect(toolItems.at(0)!.text()).toContain("Aligner for short reads");
+        expect(toolItems.at(0)!.text()).not.toContain("SAM/BAM utilities");
+        expect(toolItems.at(1)!.text()).toContain("samtools");
+        expect(toolItems.at(1)!.text()).toContain("SAM/BAM utilities");
+        expect(toolItems.at(1)!.text()).toContain("1.13");
+        expect(toolItems.at(1)!.text()).not.toContain("Aligner for short reads");
     });
 
     it("tool_installation_request notification links the workflow id to its run page", async () => {
