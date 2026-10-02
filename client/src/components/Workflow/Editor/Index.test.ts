@@ -16,7 +16,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-import { getVersions, saveWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
@@ -25,6 +25,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
+import NodeInspector from "@/components/Workflow/Editor/NodeInspector.vue";
 import ReadmeEditor from "@/components/Workflow/Editor/ReadmeEditor.vue";
 import WorkflowAttributes from "@/components/Workflow/Editor/WorkflowAttributes.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -116,6 +117,7 @@ const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
+const mockGetModule = vi.mocked(getModule);
 
 describe("Index", () => {
     beforeEach(() => {
@@ -506,6 +508,129 @@ describe("Index", () => {
 
                 expect(wrapper.find("[data-description='workflow editor error modal']").props("show")).toBe(false);
             });
+        });
+    });
+
+    describe("module updates from the node inspector", () => {
+        let stepStore: ReturnType<typeof useWorkflowStepStore>;
+        let stateStore: ReturnType<typeof useWorkflowStateStore>;
+
+        function moduleData(toolState: object) {
+            return {
+                content_id: "cat1",
+                inputs: [],
+                outputs: [],
+                config_form: { inputs: [] },
+                tool_state: toolState,
+                tool_version: "1.0",
+                errors: null,
+            };
+        }
+
+        async function mountWithSteps(stepCount: number) {
+            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            setActivePinia(testingPinia);
+            useDatatypesMapperStore().datatypesMapper = testDatatypesMapper;
+            stateStore = useWorkflowStateStore("workflow_id");
+            stepStore = useWorkflowStepStore("workflow_id");
+            const stubs = editorStubs();
+            const wrapper = shallowMount(Index as object, {
+                propsData: { workflowId: "workflow_id", initialVersion: 1, workflows: [], toolbox: [] },
+                localVue,
+                pinia: testingPinia,
+                // render the graph's slot so the node inspector mounts for the active step
+                stubs: { ...stubs, WorkflowGraph: { ...stubs.WorkflowGraph, template: "<div><slot /></div>" } },
+            });
+            await flushPromises();
+            const stepIds = [];
+            for (let i = 0; i < stepCount; i++) {
+                const step = stepStore.addStep({
+                    type: "tool",
+                    label: `step ${i}`,
+                    name: `step ${i}`,
+                    content_id: "cat1",
+                    tool_id: "cat1",
+                    tool_state: {},
+                    input_connections: {},
+                    inputs: [],
+                    outputs: [],
+                    position: { left: 0, top: 0 },
+                    workflow_outputs: [],
+                });
+                stepIds.push(step.id);
+            }
+            stateStore.activeNodeId = stepIds[0]!;
+            await nextTick();
+            return { wrapper, stepIds };
+        }
+
+        function emitDataChanged(wrapper: Wrapper<Vue>, stepId: number, data: object) {
+            wrapper.findComponent(NodeInspector).vm.$emit("dataChanged", stepId, data);
+        }
+
+        it("skips superseded form edits and applies the latest module response", async () => {
+            const { wrapper, stepIds } = await mountWithSteps(1);
+            const stepId = stepIds[0]!;
+            vi.useFakeTimers();
+            try {
+                let resolveFirst!: (data: object) => void;
+                const firstResponse = new Promise((resolve) => {
+                    resolveFirst = resolve;
+                });
+                mockGetModule.mockReset();
+                mockGetModule.mockReturnValueOnce(firstResponse).mockResolvedValueOnce(moduleData({ text: "latest" }));
+
+                emitDataChanged(wrapper, stepId, { text: "first" });
+                emitDataChanged(wrapper, stepId, { text: "intermediate" });
+                emitDataChanged(wrapper, stepId, { text: "latest" });
+                await flushPromises();
+                expect(mockGetModule).toHaveBeenCalledTimes(1);
+
+                resolveFirst(moduleData({ text: "first" }));
+                await flushPromises();
+                expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "first" });
+
+                await vi.advanceTimersByTimeAsync(1000);
+                await flushPromises();
+
+                expect(mockGetModule).toHaveBeenCalledTimes(2);
+                expect(mockGetModule).toHaveBeenLastCalledWith({ text: "latest" }, stepId, stateStore.setLoadingState);
+                expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "latest" });
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it("applies queued form edits for different steps", async () => {
+            const { wrapper, stepIds } = await mountWithSteps(2);
+            const [stepZero, stepOne] = stepIds as [number, number];
+            vi.useFakeTimers();
+            try {
+                let resolveFirst!: (data: object) => void;
+                const firstResponse = new Promise((resolve) => {
+                    resolveFirst = resolve;
+                });
+                const firstEdit = { text: "first" };
+                mockGetModule.mockReset();
+                mockGetModule.mockImplementation((requestData) =>
+                    requestData === firstEdit ? firstResponse : Promise.resolve(moduleData(requestData)),
+                );
+
+                emitDataChanged(wrapper, stepOne, firstEdit);
+                emitDataChanged(wrapper, stepZero, { text: "step 0" });
+                emitDataChanged(wrapper, stepOne, { text: "step 1" });
+
+                resolveFirst(moduleData(firstEdit));
+                await flushPromises();
+                await vi.advanceTimersByTimeAsync(1000);
+                await flushPromises();
+
+                expect(mockGetModule).toHaveBeenCalledWith({ text: "step 0" }, stepZero, stateStore.setLoadingState);
+                expect(stepStore.getStep(stepZero)?.tool_state).toEqual({ text: "step 0" });
+                expect(stepStore.getStep(stepOne)?.tool_state).toEqual({ text: "step 1" });
+            } finally {
+                vi.useRealTimers();
+            }
         });
     });
 

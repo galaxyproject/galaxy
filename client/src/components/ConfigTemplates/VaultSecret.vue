@@ -57,15 +57,13 @@ async function onOk() {
                     </BInputGroup>
                 </div>
             </div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
+            <span v-sanitize-html:links="helpHtml" class="ui-form-info form-text text-muted" />
         </div>
         <GModal confirm size="small" :show.sync="showEdit" :title="editTitle" ok-text="Update" @ok="onOk">
             <div>
                 <BFormTextarea v-if="multiline" v-model="secretValue" rows="8" no-resize />
                 <GFormInput v-else v-model="secretValue" class="w-100" type="password" />
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
+                <span v-sanitize-html:links="helpHtml" class="ui-form-info form-text text-muted" />
             </div>
         </GModal>
     </div>

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import HistoryExportWizard from "./HistoryExportWizard.vue";
 
@@ -149,6 +150,27 @@ describe("HistoryExportWizard.vue", () => {
                 expect(card.exists()).toBe(true);
                 expect(card.text()).toContain(format.label);
             }
+        });
+    });
+
+    describe("Description rendering", () => {
+        it("renders format and destination descriptions through v-sanitize-html with the links profile", async () => {
+            vi.mocked(sanitizeHtml).mockClear();
+            const wrapper = await mountHistoryExportWizard();
+
+            const formatCalls = vi.mocked(sanitizeHtml).mock.calls;
+            expect(formatCalls.length).toBeGreaterThan(0);
+            expect(formatCalls.every(([, profile]) => profile === "links")).toBe(true);
+
+            await wrapper.find(selectors.nextButton).trigger("click");
+
+            const downloadCall = vi
+                .mocked(sanitizeHtml)
+                .mock.calls.find(([html]) => html?.includes("download it directly to your computer"));
+            expect(downloadCall?.[1]).toBe("links");
+            expect(wrapper.find('[data-history-export-destination="download"]').text()).toContain(
+                "download it directly to your computer",
+            );
         });
     });
 

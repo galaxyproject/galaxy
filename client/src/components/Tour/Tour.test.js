@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import TourList from "./TourList.vue";
 
@@ -42,5 +43,17 @@ describe("Tour", () => {
 
     it("test tours", async () => {
         expect(wrapper.findAll("[data-description='tour link']").length).toBe(2);
+    });
+
+    it("renders tour descriptions through v-sanitize-html", async () => {
+        server.use(
+            http.get("/api/tours", ({ response }) =>
+                response(200).json([{ id: "t", name: "T", description: "Uses <b>markup</b>", tags: [] }]),
+            ),
+        );
+        const textWrapper = shallowMount(TourList, { propsData: {}, localVue });
+        await flushPromises();
+        expect(sanitizeHtml).toHaveBeenCalledWith("Uses <b>markup</b>", "default");
+        expect(textWrapper.find("b").text()).toBe("markup");
     });
 });

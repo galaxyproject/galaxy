@@ -7,21 +7,18 @@
             </div>
             <!-- shrink long text -->
             <div v-else-if="text && text.length > maxDescriptionLength && !isExpanded">
-                <!-- eslint-disable vue/no-v-html -->
                 <span
+                    v-sanitize-html="linkify(text.substring(0, maxDescriptionLength))"
                     class="shrinked-description"
-                    :title="text"
-                    v-html="linkify(sanitize(text.substring(0, maxDescriptionLength)))">
+                    :title="text">
                 </span>
 
-                <!-- eslint-enable vue/no-v-html -->
                 <span :title="text">...</span>
                 <a class="more-text-btn" href="javascript:void(0)" @click="toggleDescriptionExpand">(more) </a>
             </div>
             <!-- Regular -->
             <div v-else>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-html="linkify(sanitize(text ?? ''))"></div>
+                <div v-sanitize-html="linkify(text ?? '')"></div>
 
                 <!-- hide toggle expand if text is too short -->
                 <a
@@ -38,10 +35,10 @@
 
 <script>
 import { BFormTextarea } from "bootstrap-vue";
-import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 
 import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 export default {
     components: {
@@ -62,18 +59,12 @@ export default {
             type: Boolean,
         },
     },
-    setup() {
-        return { purify };
-    },
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
         };
     },
     methods: {
-        sanitize(text) {
-            return purify.sanitize(text);
-        },
         updateValue(value) {
             this.$emit("update:changedValue", value);
         },
@@ -81,7 +72,9 @@ export default {
             this.$emit("toggleDescriptionExpand");
         },
         linkify(raw_text) {
-            return linkifyHtml(raw_text);
+            // Clean before linkifying: linkify-html tokenizes its input as HTML, so a
+            // bare "<" in plain text would otherwise be read as the start of a tag.
+            return linkifyHtml(sanitizeHtml(raw_text));
         },
     },
 };

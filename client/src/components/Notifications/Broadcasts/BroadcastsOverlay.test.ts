@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
@@ -163,5 +164,18 @@ describe("BroadcastsOverlay.vue", () => {
 
         expect(wrapper.exists()).toBe(true);
         expect(wrapper.html()).toBe("");
+    });
+
+    it("renders the broadcast message through v-sanitize-html with the links profile", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        await mountBroadcastsOverlayWith([
+            generateBroadcastNotification({
+                id: "links",
+                content: { category: "broadcast", subject: "s", message: "See [docs](https://example.org)" },
+            }),
+        ]);
+        const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes("example.org"));
+        expect(call?.[1]).toBe("links");
+        expect(call?.[0]).toContain('target="_blank"');
     });
 });

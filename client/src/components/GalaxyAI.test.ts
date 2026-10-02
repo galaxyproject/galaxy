@@ -2,11 +2,13 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { http as mswHttp } from "msw";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 import type { ActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
@@ -43,6 +45,8 @@ vi.mock("@/composables/confirmDialog", () => ({
 }));
 
 vi.mock("@/composables/toast");
+
+const toastError = vi.mocked(Toast.error);
 
 vi.mock("@/composables/useEntityMentions", () => ({
     parseMentions: (s: string) => s,
@@ -287,6 +291,18 @@ describe("GalaxyAI fetch operations on mount", () => {
             mountGalaxyAI({});
             await flushPromises();
             expect(mockGetMessages).toHaveBeenCalledOnce();
+        });
+
+        it.each([
+            ["/api/chat/history", "Failed to load latest chat"],
+            ["/api/chat/exchange/:exchange_id/messages", "Error loading conversation"],
+        ])("reports a %s request that fails to reach the server", async (path, title) => {
+            makeHistoryFetch([{ id: "latest-chat" }]);
+            toastError.mockClear();
+            server.use(mswHttp.get(path, () => HttpResponse.error()));
+            mountGalaxyAI({});
+            await flushPromises();
+            expect(toastError).toHaveBeenCalledWith(expect.any(String), title);
         });
     });
 });

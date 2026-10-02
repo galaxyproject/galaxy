@@ -71,8 +71,8 @@ onUnmounted(() => {
         <small class="text-muted tip-content" :class="{ 'has-controls': hasMultipleTips }">
             <span class="tip-item">
                 <strong>Tip:</strong>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="tipList[currentIndex]"></span>
+                <!-- v-sanitize-html is registered globally by the consuming app (client/src/utils/mountVueComponent.js) -->
+                <span v-sanitize-html:links="tipList[currentIndex]"></span>
             </span>
         </small>
 

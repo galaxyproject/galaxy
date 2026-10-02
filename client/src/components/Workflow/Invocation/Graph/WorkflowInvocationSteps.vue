@@ -10,6 +10,7 @@ import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useToolStore } from "@/stores/toolStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -94,11 +95,18 @@ watch(
     },
 );
 
+const graphError = ref("");
+
 watch(
     () => workflowId.value,
-    (newVal) => {
+    async (newVal) => {
         if (newVal) {
-            loadInvocationGraph(false);
+            try {
+                await loadInvocationGraph(false);
+                graphError.value = "";
+            } catch (e) {
+                graphError.value = errorMessageAsString(e);
+            }
         }
     },
     { immediate: true },
@@ -109,8 +117,8 @@ watch(
     <GAlert v-if="loading || graphLoading" variant="info" show>
         <LoadingSpan message="Loading invocation steps" />
     </GAlert>
-    <GAlert v-else-if="error" variant="danger" show>
-        {{ error }}
+    <GAlert v-else-if="error || graphError" variant="danger" show>
+        {{ error || graphError }}
     </GAlert>
     <div v-else-if="graphSteps && workflow" class="steps-container">
         <div class="px-1 pt-1 pb-2">

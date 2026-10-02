@@ -178,7 +178,7 @@ const bodyStyle = computed(() => {
         </slot>
 
         <slot name="description">
-            <div v-if="props.description" v-html="renderMarkdown(props.description)" />
+            <div v-if="props.description" v-sanitize-html:links="renderMarkdown(props.description)" />
         </slot>
 
         <BCardBody v-if="props.use?.steps?.value" class="wizard">

@@ -254,3 +254,30 @@ cases:
     expected_format:
       - "id: String should match pattern '^[a-z][a-z0-9_-]*$'"
       - "container: container must not be empty"
+
+  - name: label_references_accepted
+    doc:
+      outputs:
+        - type: data
+          name: out
+          from_work_dir: out.txt
+          label: "$(inputs.data_input.element_identifier) n=$(inputs.n_lines) on $(runtime.on_string) ${kept}"
+    valid: true
+
+  - name: label_undeclared_input_rejected
+    doc:
+      outputs:
+        - {type: data, name: out, from_work_dir: out.txt, label: "$(inputs.missing.name)"}
+    expected_errors:
+      - code: dynamic_tool.undeclared_input_ref
+        msg_contains: inputs.missing
+
+  - name: label_too_long_rejected
+    doc:
+      outputs:
+        - type: data
+          name: out
+          from_work_dir: out.txt
+          label: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    expected_errors:
+      - code: string_too_long

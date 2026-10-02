@@ -248,8 +248,7 @@ onMounted(() => load());
                 :placeholder="localize('Search curated workflows by query or use the advanced filtering options')"
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="curatedHelpHtml(isIwcCatalog)"></div>
+                    <div v-sanitize-html="curatedHelpHtml(isIwcCatalog)"></div>
                 </template>
             </FilterMenu>
 

@@ -210,9 +210,9 @@ function markNotificationAsSeen() {
             </template>
             <template v-else>
                 <span
+                    v-sanitize-html="renderMarkdown(props.notification.content.message)"
                     class="notification-message"
-                    @click="handleMessageClick"
-                    v-html="renderMarkdown(props.notification.content.message)" />
+                    @click="handleMessageClick" />
             </template>
         </template>
     </GCard>
