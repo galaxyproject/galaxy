@@ -61,6 +61,7 @@ const emit = defineEmits<{
     (e: "mouseup", event: MouseEvent): void;
     (e: "mousedown", event: MouseEvent): void;
     (e: "start"): void;
+    (e: "stop"): void;
 }>();
 
 let isPanning = false;
@@ -177,6 +178,7 @@ function onStart() {
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
+        @stop="emit('stop')"
         @mousedown="(e: MouseEvent) => emit('mousedown', e)">
         <slot></slot>
     </Draggable>
