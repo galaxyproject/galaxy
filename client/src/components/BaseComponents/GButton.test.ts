@@ -108,9 +108,9 @@ describe("GButton.vue click propagation", () => {
 
 const RouteStub = { render: () => null };
 
-function routerWithRoutes(paths = ["/", "/pages/create"]) {
+function routerWithRoutes(paths = ["/", "/pages/create"], base?: string) {
     return createRouter({
-        history: createMemoryHistory(),
+        history: createMemoryHistory(base),
         routes: paths.map((path) => ({ path, component: RouteStub })),
     });
 }
@@ -190,5 +190,32 @@ describe("GButton.vue disabled navigation", () => {
         await wrapper.trigger("click");
 
         expect(router.currentRoute.value.fullPath).toBe(routeBeforeClick);
+    });
+});
+
+describe("GButton.vue link targets", () => {
+    // Galaxy can be served under a URL prefix, so a router link's href has to come from
+    // the router, which knows the base -- open-in-new-tab and copy-link use it as is.
+    it("renders a router link's href with the router base", () => {
+        const router = routerWithRoutes(["/", "/pages/create"], "/galaxypf/");
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create" },
+            localVue,
+            router,
+        });
+
+        expect(wrapper.get("a").attributes("href")).toBe("/galaxypf/pages/create");
+    });
+
+    it("renders a plain anchor's href as given", () => {
+        const wrapper = mountGButton({ href: "https://example.org/data.txt" });
+
+        expect(wrapper.get("a").attributes("href")).toBe("https://example.org/data.txt");
+    });
+
+    it("renders no href when disabled", () => {
+        const wrapper = mountGButton({ href: "https://example.org/data.txt", disabled: true });
+
+        expect(wrapper.get("button").attributes("href")).toBeUndefined();
     });
 });
