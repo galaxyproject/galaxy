@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
+
+import { eventBus } from "@/utils/eventBus";
 
 import { patchRouterPush } from "./router-push";
 
@@ -12,91 +15,92 @@ const { mockGalaxy } = vi.hoisted(() => ({
     },
 }));
 
-vi.mock("@/app/index", () => ({
+vi.mock("@/app", () => ({
     getGalaxyInstance: vi.fn(() => mockGalaxy),
 }));
 
+function createPatchedRouter() {
+    const component = { template: "<div />" };
+    const router = createRouter({
+        history: createMemoryHistory("/galaxy"),
+        routes: [
+            { path: "/", component },
+            { path: "/test/:name", component },
+            { path: "/collection/new_list", component },
+        ],
+    });
+    patchRouterPush(router);
+    return router;
+}
+
 // router push handling tests
 describe("router push changes", () => {
-    it("pushing routes", async () => {
-        window.confirm = vi.fn();
-        let currentLocation = null;
-        const mockComplete = vi.fn();
-        const mockContext = {
-            confirmation: true,
-            app: {
-                $emit: vi.fn(),
-            },
-        };
-        const mockRouter = {
-            prototype: {
-                push: (location) => {
-                    currentLocation = location;
-                    return { catch: mockComplete };
-                },
-            },
-        };
-        patchRouterPush(mockRouter);
-        const push = mockRouter.prototype.push;
-        // route will be rejected while confirmation is required
-        push.call(mockContext, "/test/name");
-        expect(currentLocation).toBe(null);
-        expect(mockComplete.mock.results.length).toBe(0);
-        expect(window.confirm.mock.calls[0][0]).toBe("There are unsaved changes which will be lost.");
-        // route should properly parse to original push
-        mockContext.confirmation = false;
-        push.call(mockContext, "/test/other");
-        expect(currentLocation).toBe("/test/other");
-        expect(mockComplete.mock.results.length).toBe(1);
-        // route should properly parse to original push despite title
-        const title = "test title";
-        push.call(mockContext, "/test/something", { title });
-        expect(currentLocation).toBe("/test/something");
-        expect(mockComplete.mock.results.length).toBe(2);
-        // route should be handled by calling the window manager
-        mockGalaxy.frame.active = true;
-        push.call(mockContext, "/test/tryagain", { title });
-        expect(currentLocation).toBe("/test/something");
-        push.call(mockContext, "/test/openanotherone", { title });
-        expect(mockComplete.mock.results.length).toBe(2);
-        expect(mockGalaxy.frame.add.mock.results.length).toBe(2);
-        // route should be handled by router again
+    beforeEach(() => {
         mockGalaxy.frame.active = false;
-        push.call(mockContext, "/test/regularagain", { title });
-        expect(currentLocation).toBe("/test/regularagain");
-        push.call(mockContext, "/test/openanotherone", { title });
-        expect(mockComplete.mock.results.length).toBe(4);
-        expect(mockGalaxy.frame.add.mock.results.length).toBe(2);
-        // force route should modify location by adding key
-        mockGalaxy.frame.active = false;
-        push.call(mockContext, "/test/forceroute", { force: true });
-        expect(currentLocation).toMatch(new RegExp(`/test/forceroute?.*vkey.*`));
+        mockGalaxy.frame.add.mockClear();
     });
 
-    it("does not double the router base for forced object routes", () => {
-        const base = "/galaxy";
-        let pushed = null;
-        const mockContext = {
-            confirmation: false,
-            app: { $emit: vi.fn() },
-            resolve(location) {
-                const rel = typeof location === "object" ? location.path : location;
-                return { href: `${base}${rel}`, route: { fullPath: rel } };
-            },
-        };
-        const mockRouter = {
-            prototype: {
-                push: (location) => {
-                    pushed = location;
-                    return { catch: vi.fn() };
-                },
-            },
-        };
-        patchRouterPush(mockRouter);
+    it("navigates when the window manager is inactive, even with a title", async () => {
+        const router = createPatchedRouter();
+        await router.push("/test/other");
+        expect(router.currentRoute.value.fullPath).toBe("/test/other");
+        await router.push("/test/something", { title: "test title" });
+        expect(router.currentRoute.value.fullPath).toBe("/test/something");
+        expect(mockGalaxy.frame.add).not.toHaveBeenCalled();
+    });
 
-        mockRouter.prototype.push.call(mockContext, { path: "/collection/new_list?advanced=false" }, { force: true });
+    it("opens titled routes in the window manager when it is active", async () => {
+        const router = createPatchedRouter();
+        await router.push("/test/start");
+        mockGalaxy.frame.active = true;
+        const result = router.push("/test/tryagain", { title: "test title" });
+        expect(result).toBeUndefined();
+        expect(mockGalaxy.frame.add).toHaveBeenCalledWith({ title: "test title", url: "/test/tryagain" });
+        expect(router.currentRoute.value.fullPath).toBe("/test/start");
+    });
 
-        expect(pushed.fullPath).not.toContain(base);
-        expect(pushed.fullPath).toContain("__vkey__");
+    it("navigates when the window manager is active but the route has no title or opts out", async () => {
+        const router = createPatchedRouter();
+        mockGalaxy.frame.active = true;
+        await router.push("/test/untitled");
+        expect(router.currentRoute.value.fullPath).toBe("/test/untitled");
+        await router.push("/test/optout", { title: "test title", preventWindowManager: true });
+        expect(router.currentRoute.value.fullPath).toBe("/test/optout");
+        expect(mockGalaxy.frame.add).not.toHaveBeenCalled();
+    });
+
+    it("emits router-push for every navigation, including duplicates", async () => {
+        const router = createPatchedRouter();
+        const listener = vi.fn();
+        eventBus.on("router-push", listener);
+        await router.push("/test/same");
+        await router.push("/test/same");
+        eventBus.off("router-push", listener);
+        expect(listener).toHaveBeenCalledTimes(2);
+    });
+
+    it("adds a key to forced string routes", async () => {
+        const router = createPatchedRouter();
+        await router.push("/test/forceroute", { force: true });
+        expect(router.currentRoute.value.path).toBe("/test/forceroute");
+        expect(router.currentRoute.value.query.__vkey__).toBeDefined();
+    });
+
+    it("does not double the router base for forced object routes", async () => {
+        const router = createPatchedRouter();
+        await router.push({ path: "/collection/new_list", query: { advanced: "false" } }, { force: true });
+        const { fullPath, query } = router.currentRoute.value;
+        expect(fullPath).not.toContain("/galaxy");
+        expect(fullPath).toContain("__vkey__");
+        expect(query.advanced).toBe("false");
+    });
+
+    it("keeps a query embedded in a forced object route's path", async () => {
+        const router = createPatchedRouter();
+        await router.push({ path: "/collection/new_list?advanced=true" }, { force: true });
+        const { path, query } = router.currentRoute.value;
+        expect(path).toBe("/collection/new_list");
+        expect(query.advanced).toBe("true");
+        expect(query.__vkey__).toBeDefined();
     });
 });

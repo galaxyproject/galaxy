@@ -13,7 +13,8 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
-// import { patchRouterPush } from "./router-push";  // Vue Router 3 only
+import { patchRouterPush } from "./router-push";
+
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
@@ -112,9 +113,6 @@ import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 // Lazy-loaded so Monaco stays out of the main bundle.
 const CustomToolEditor = () => import("@/components/Tool/CustomToolEditor.vue");
-
-// TODO: patchRouterPush was used with Vue Router 3 but VueRouter constructor
-// doesn't exist in Vue Router 4. Revisit if navigation duplicate warnings return.
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -982,6 +980,8 @@ export function getRouter(Galaxy) {
             throw error;
         }
     });
+
+    patchRouterPush(router);
 
     // Vue Router 4 drops params that aren't part of the path, so the message
     // travels in history state instead.
