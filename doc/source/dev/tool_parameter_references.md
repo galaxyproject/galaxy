@@ -6,7 +6,7 @@ intended for Galaxy developers evaluating new features or changes to existing fe
 
 Start with [At a Glance](#at-a-glance), then use [Tool Syntax](#tool-syntax), [API](#api) or
 [Workflows](#workflows) for the relevant interface. For how parameter _values_ are represented and
-validated, see [Tool State](tool_state.md). Collapsed verification notes identify supporting tests
+validated, see [Tool State](tool_state.md). Verification notes identify supporting tests
 and source inspection for selected behaviors; [Verification Gaps](#verification-gaps) lists the
 remaining checks.
 
@@ -348,6 +348,8 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
   `from_dataset`, and the `ref` of `data_meta` and `param_value` filters.
 - These are not checked at parse time and resolve leniently at runtime: `remove_value` `ref` and
   `meta_ref`, and `rules` `data_ref`.
+- The legacy conditional `value_ref` / `value_from` (used by `upload.xml`) names a sibling parameter
+  on the same level by bare name.
 - `<options from_parameter>` (deprecated) is an attribute path on the parameter object itself, not a
   parameter reference.
 
@@ -391,15 +393,6 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
   not for every reference style the tool contains.
 
 </details>
-
-#### Not References
-
-- `<validator>`s and `<sanitizer>`s only see their own parameter's value.
-- `<expand>` and macro tokens are textual and resolved before parsing.
-- `<discover_datasets>` attributes are not parameter references.
-- `<edam_*>` and `<xrefs>` are not parameter references.
-- The legacy conditional `value_ref` / `value_from` (used by `upload.xml`) names a sibling parameter
-  on the same level by bare name.
 
 ### YAML
 
