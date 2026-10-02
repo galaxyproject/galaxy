@@ -56,7 +56,7 @@ const {
     onPermanentlyDeleteDataset,
 } = useDatasetsToDisplay();
 
-const { isLoading, loadDataOnMount } = useDataLoading();
+const { isLoading, loadData, loadDataOnMount } = useDataLoading();
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
 const objectStore = ref<string>();
@@ -67,7 +67,7 @@ const canEditHistory = computed(() => {
 
 function onChangeObjectStore(value?: string) {
     objectStore.value = value;
-    reloadDataFromServer();
+    loadData(reloadDataFromServer);
 }
 
 async function reloadDataFromServer() {

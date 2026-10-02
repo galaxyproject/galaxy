@@ -26,8 +26,7 @@ const summaryHtml = computed(() => (summary.value ? renderMarkdown(summary.value
         <GAlert v-else-if="error" variant="danger" show class="mb-0">
             Failed to generate the AI summary: {{ error }}
         </GAlert>
-        <!-- eslint-disable-next-line vue/no-v-html — markdown is sanitised by useMarkdown -->
-        <div v-else-if="summary" class="report-text" v-html="summaryHtml" />
+        <div v-else-if="summary" v-sanitize-html:links="summaryHtml" class="report-text" />
         <GAlert v-else show variant="info" class="mb-0">No summary available.</GAlert>
     </div>
 </template>

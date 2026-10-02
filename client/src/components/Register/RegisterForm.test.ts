@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import MountTarget from "./RegisterForm.vue";
 
@@ -86,4 +87,12 @@ describe("RegisterForm", () => {
     //     const missingToggle = wrapper.find(SELECTORS.LOGIN_TOGGLE);
     //     expect(missingToggle.exists()).toBeFalsy();
     // });
+
+    it("renders the configured registration warning as written", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const message = 'Read the <a href="https://example.org/terms" target="_blank">terms</a>';
+        await wrapper.setProps({ registrationWarningMessage: message });
+        expect(sanitizeHtml).not.toHaveBeenCalledWith(message, expect.anything());
+        expect(wrapper.find(".alert span").element.innerHTML).toBe(message);
+    });
 });

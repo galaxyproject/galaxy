@@ -35,7 +35,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
-import { isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
+import { ApiError, isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
@@ -181,10 +181,15 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return (historyId: string, shouldFetchIfMissing = true) => {
             if (!storedHistories.value[historyId] && shouldFetchIfMissing) {
                 const existingError = historyLoadErrors.value[historyId];
+                // Errors that are not an ``ApiError`` come from requests that got no response at all,
+                // which are retried like a 5xx response.
                 const canRetry =
-                    existingError && isRetryableApiError(existingError) && (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
+                    existingError &&
+                    (isRetryableApiError(existingError) || !(existingError instanceof ApiError)) &&
+                    (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
                 if (!existingError || canRetry) {
-                    loadHistoryById(historyId);
+                    // The failure is recorded in ``historyLoadErrors`` and shown by views reading ``getHistoryLoadError``.
+                    loadHistoryById(historyId).catch((e) => console.warn(`Failed to load history ${historyId}`, e));
                 }
             }
             return storedHistories.value[historyId] ?? null;
@@ -849,14 +854,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
             return;
         }
         const promise = (async () => {
-            const result = await getHistoryByIdFromServer(historyId);
-            if (result.error) {
+            try {
+                const result = await getHistoryByIdFromServer(historyId);
+                if (result.error) {
+                    retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                    set(historyLoadErrors.value, historyId, result.error);
+                } else {
+                    setHistory(result.data);
+                    del(historyLoadErrors.value, historyId);
+                    delete retryCounts[historyId];
+                }
+            } catch (error) {
                 retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
-                set(historyLoadErrors.value, historyId, result.error);
-            } else {
-                setHistory(result.data);
-                del(historyLoadErrors.value, historyId);
-                delete retryCounts[historyId];
+                set(historyLoadErrors.value, historyId, error as Error);
+                throw error;
             }
         })();
         historyPromises.set(historyId, promise);

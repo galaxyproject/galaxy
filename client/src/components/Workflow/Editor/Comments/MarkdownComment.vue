@@ -163,7 +163,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 @input="onTextChange"></textarea>
 
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
-            <div class="rendered-markdown" @click="onClick" v-html="content"></div>
+            <div v-sanitize-html:links="content" class="rendered-markdown" @click="onClick"></div>
         </div>
 
         <GButtonGroup v-if="!props.readonly" class="style-buttons">

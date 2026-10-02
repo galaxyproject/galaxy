@@ -1,4 +1,6 @@
 import json
+import re
+import shlex
 import typing
 from logging import getLogger
 from os import (
@@ -306,19 +308,25 @@ def __handle_metadata(
         commands_builder.append_command(metadata_command)
 
 
-def __copy_if_exists_command(work_dir_output):
+def __quote_preserving_globs(path: str) -> str:
+    # ``*`` and ``?`` stay unquoted so the shell still expands them, everything
+    # else is quoted.
+    return "".join(part if part in ("*", "?") else shlex.quote(part) for part in re.split(r"([*?])", path) if part)
+
+
+def __copy_if_exists_command(work_dir_output: tuple[str, str]) -> str:
     source_file, destination = work_dir_output
     is_directory = True if destination.endswith("_files") else False
     test_flag = "-d" if is_directory else "-f"
     recursive_flag = " -r" if is_directory else ""
+    source_file = __quote_preserving_globs(source_file)
+    destination = shlex.quote(destination)
     delete_destination_dir = f" rmdir {destination}; " if is_directory else ""
-    if "?" in source_file or "*" in source_file:
-        source_file = source_file.replace("*", '"*"').replace("?", '"?"')
     # Check if source and destination exist.
     # Users can purge outputs before the job completes,
     # in that case we don't want to copy the output to a purged path.
     # Static, non work_dir_output files are handled in job_finish code.
-    return f'\nif [ {test_flag} "{source_file}" -a {test_flag} "{destination}" ] ; then{delete_destination_dir} cp{recursive_flag} "{source_file}" "{destination}" ; fi'
+    return f"\nif [ {test_flag} {source_file} -a {test_flag} {destination} ] ; then{delete_destination_dir} cp{recursive_flag} {source_file} {destination} ; fi"
 
 
 class CommandsBuilder:

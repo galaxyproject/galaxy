@@ -38,6 +38,7 @@ const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
 const dataset = ref<HDADetailed | null>(null);
 const jobLoadingError = ref<string | null>(null);
+let isUnmounted = false;
 const datasetLoadingError = ref<string | null>(null);
 
 async function getDatasetDetails() {
@@ -53,12 +54,26 @@ async function getDatasetDetails() {
 }
 
 async function loadJobDetails() {
-    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-        params: {
-            path: { job_id: dataset.value?.creating_job! },
-            query: { full: true },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET("/api/jobs/{job_id}", {
+            params: {
+                path: { job_id: dataset.value?.creating_job! },
+                query: { full: true },
+            },
+        });
+    } catch {
+        result = undefined;
+    }
+    if (isUnmounted) {
+        return;
+    }
+    if (!result) {
+        // Failures without an error response are retried on the next poll.
+        jobTimeOut.value = setTimeout(loadJobDetails, 3000);
+        return;
+    }
+    const { data, error } = result;
 
     if (error) {
         jobLoadingError.value = errorMessageAsString(error);
@@ -84,6 +99,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    isUnmounted = true;
     clearTimeout(jobTimeOut.value);
 });
 </script>
@@ -128,7 +144,7 @@ onUnmounted(() => {
                 <div v-if="dataset.peek">
                     <Heading id="dataset-peek-heading" h2 separator inline size="md"> Dataset Peek </Heading>
 
-                    <div class="dataset-peek" v-html="dataset.peek" />
+                    <div v-sanitize-html="dataset.peek" class="dataset-peek" />
                 </div>
             </div>
 

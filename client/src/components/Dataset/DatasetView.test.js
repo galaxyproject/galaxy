@@ -391,4 +391,13 @@ describe("DatasetView", () => {
             expect(errorUrl).toBe(`/datasets/${DATASET_ID}/error`);
         });
     });
+
+    describe("File size", () => {
+        it("shows the formatted size as text", async () => {
+            const wrapper = await mountDatasetView("preview", { dataset: { ...mockDataset, file_size: 2048 } });
+            const size = wrapper.find(".filesize .value");
+            expect(size.text()).toBe("2 KB");
+            expect(size.find("strong").exists()).toBe(false);
+        });
+    });
 });

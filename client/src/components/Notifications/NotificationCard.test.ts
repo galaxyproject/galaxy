@@ -11,6 +11,7 @@ import {
     generateNewSharedItemNotification,
     generateToolInstallationRequestNotification,
 } from "@/components/Notifications/test-utils";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
@@ -142,6 +143,19 @@ describe("Notifications categories", () => {
         await nextTick();
 
         expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders the message markdown through v-sanitize-html", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const notification = generateMessageNotification();
+        notification.content.message = "A [link](/histories/list) and <b>raw</b>";
+
+        await mountComponent(NotificationCard, { notification });
+
+        const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes("/histories/list"));
+        expect(call?.[1]).toBe("default");
+        expect(call?.[0]).toContain('<a href="/histories/list">link</a>');
+        expect(call?.[0]).toContain("&lt;b&gt;raw&lt;/b&gt;");
     });
 
     it("tool_installation_request notification shows tool name in title and details in description", async () => {

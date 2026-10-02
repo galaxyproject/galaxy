@@ -937,9 +937,13 @@ function nameValidate() {
 }
 
 function onSetData(stepId: number, newData: object) {
-    lastQueue
-        .enqueue(() => getModule(newData, stepId, stateStore.setLoadingState), {})
+    return lastQueue
+        .enqueue(() => getModule(newData, stepId, stateStore.setLoadingState), {}, stepId)
         .then((data) => {
+            // Superseded edits resolve without module data.
+            if (data === undefined) {
+                return;
+            }
             const partialStep = {
                 content_id: data.content_id,
                 inputs: data.inputs,
