@@ -12,12 +12,15 @@ from unittest.mock import (
 )
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
     DefaultStrategy,
     NotificationManager,
     NotificationRecipientResolver,
+    TemplateFormats,
+    ToolInstallationRequestEmailNotificationTemplateBuilder,
 )
 from galaxy.model import (
     DatasetStorageOperationRun,
@@ -25,19 +28,26 @@ from galaxy.model import (
     Role,
     User,
 )
+from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
+    InternalNotificationCreateData,
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    RequestedTool,
+    StoredToolInstallationRequestContent,
+    ToolInstallationRequestCreateContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
+    UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
 from galaxy.schema.storage_operations import (
@@ -81,7 +91,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
-        notification_data = NotificationCreateData(**data)
+        notification_data = InternalNotificationCreateData(**data)
 
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(
@@ -507,6 +517,38 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
             mock_send_mail.assert_called_once()
             assert len(emails_sent) == 1
 
+    def test_force_sync_creates_notification_without_dispatching_email_channel_when_async_is_enabled(self):
+        user = self._create_test_user()
+        # The response model encodes ids via the process-global Security.security;
+        # patch it for this test only so the helper does not leak into later tests.
+        with patch.object(Security, "security", self.trans.security, create=True):
+            self._assert_force_sync_creates_notification_without_dispatching_email(user)
+
+    def _assert_force_sync_creates_notification_without_dispatching_email(self, user: User):
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(**self._default_test_notification_data()),
+            galaxy_url="https://test.galaxy.url",
+        )
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            response = self.notification_manager.send_notification_internal(request, force_sync=True)
+
+        assert isinstance(response, NotificationCreatedResponse)
+        assert response.total_notifications_sent == 1
+        mock_send_mail.assert_not_called()
+        assert "email" in self.notification_manager.get_supported_channels()
+        pending_notifications = self.notification_manager.get_pending_notifications()
+        assert len(pending_notifications) == 1
+        assert pending_notifications[0].category == response.notification.category
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            dispatched_count = self.notification_manager.dispatch_pending_notifications_via_channels()
+
+        assert dispatched_count == 1
+        mock_send_mail.assert_called_once()
+        assert self.notification_manager.get_pending_notifications() == []
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
@@ -596,3 +638,154 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             self.trans.app.security_agent.associate_group_role(group, role)
         sa_session.flush()
         return role
+
+
+class TestUserNotificationPreferencesFallback:
+    def test_get_falls_back_to_default_for_a_category_missing_from_the_stored_blob(self):
+        # Preferences saved before a category existed have no key for it; a
+        # KeyError here would drop the notification when associations are created.
+        stale_blob = {
+            PersonalNotificationCategory.message: {
+                "enabled": True,
+                "channels": {"push": True, "email": True, "webhook": False},
+            }
+        }
+        preferences = UserNotificationPreferences.model_validate({"preferences": stale_blob})
+
+        settings = preferences.get(PersonalNotificationCategory.tool_installation_request)
+
+        assert settings == NotificationCategorySettings()
+        assert settings.enabled is True
+        assert settings.channels.push is True
+
+
+class TestToolInstallationRequestContentValidation:
+
+    def test_control_characters_are_collapsed_in_single_line_fields(self):
+        tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
+        assert tool.name == "FastQC Evil"
+        assert tool.requested_version == "1.0 2"
+
+    def test_whitespace_only_identifier_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="   ")
+
+    def test_multiline_fields_keep_newlines_but_drop_other_control_characters(self):
+        content = ToolInstallationRequestCreateContent(
+            tools=[RequestedTool(name="bwa")],
+            additional_remarks="line1\r\nline2\x00x",
+        )
+        assert content.additional_remarks == "line1\nline2 x"
+
+    def test_non_http_tool_url_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(tool_url="javascript:alert(1)")
+
+    def test_unicode_line_separators_are_sanitized(self):
+        # NEL in single-line fields collapses to a space; in multiline fields
+        # Unicode line/paragraph separators normalize to newlines.
+        tool = RequestedTool(name="FastQC\x85Evil", description="l1\u2028l2\u2029l3")
+        assert tool.name == "FastQC Evil"
+        assert tool.description == "l1\nl2\nl3"
+
+    def test_crlf_text_fitting_after_normalization_is_accepted(self):
+        # Raw length exceeds the bound, sanitized length does not.
+        remarks = ("y\r\n" * 2000).rstrip()
+        assert len(remarks) > 5000
+        content = ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks=remarks)
+        assert content.additional_remarks == "\n".join(["y"] * 2000)
+
+    def test_uppercase_url_scheme_is_accepted(self):
+        assert RequestedTool(tool_url="HTTPS://example.com/tool").tool_url == "HTTPS://example.com/tool"
+
+    def test_mismatched_envelope_and_content_category_is_rejected(self):
+        with pytest.raises(ValidationError, match="does not match"):
+            NotificationCreateData.model_validate(
+                {
+                    "source": "s",
+                    "category": "tool_installation_request",
+                    "variant": "info",
+                    "content": {"category": "message", "subject": "x", "message": "y"},
+                }
+            )
+
+    def test_every_unicode_format_character_is_stripped(self):
+        # The filter is by general category (Cf), not an enumerated list: the
+        # RTL override (U+202E) must not survive into rendered labels, and bidi
+        # marks outside the classic ranges (U+061C ARABIC LETTER MARK) go too.
+        tool = RequestedTool(name="a\u202eevil\u202cb\u061c", description="l1\n\u061cl2")
+        assert tool.name == "aevilb"
+        assert tool.description == "l1\nl2"
+        # A name made only of format characters (zero-width space, tag characters) is not an identifier.
+        for name in ("\u200b", "\U000e0041\U000e0042", "\u061c"):
+            with pytest.raises(ValidationError):
+                RequestedTool(name=name)
+
+    def test_subject_tool_label_is_truncated_for_header_safety(self):
+        tool = RequestedTool(tool_url="https://example.org/" + "x" * 1500)
+        label = ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(tool)
+        assert len(label) <= ToolInstallationRequestEmailNotificationTemplateBuilder._SUBJECT_LABEL_MAX_LENGTH + 3
+        assert label.endswith("...")
+        # Short labels are untouched.
+        assert ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(RequestedTool(name="bwa")) == "bwa"
+
+    def test_bounds_are_enforced(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="x" * 256)
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks="x" * 5001)
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
+
+
+class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
+    """The email builder renders from the stored content alone, without a database lookup."""
+
+    def _send_stored_request(self, user: User, **content_overrides):
+        content = StoredToolInstallationRequestContent(
+            tools=[RequestedTool(name="bwa")],
+            workflow_id="deadbeef",
+            workflow_name="Mapping pipeline",
+            requester_email="requester@user.email",
+            **content_overrides,
+        )
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(
+                source="tool_installation_request_form",
+                category=PersonalNotificationCategory.tool_installation_request,
+                variant=NotificationVariant.info,
+                content=content,
+            ),
+            galaxy_url="https://test.galaxy.url",
+        )
+        notification, _ = self.notification_manager.send_notification_to_recipients(request)
+        assert notification
+        return notification
+
+    def test_admin_email_renders_the_stamped_workflow_name(self):
+        admin = self._create_test_user()
+        notification = self._send_stored_request(admin)
+        builder = ToolInstallationRequestEmailNotificationTemplateBuilder(self.app.config, notification, admin)
+        assert "Mapping pipeline" in builder.get_body(TemplateFormats.TXT)
+        assert "Mapping pipeline" in builder.get_body(TemplateFormats.HTML)
+        assert "confirmation" not in builder.get_template_path(TemplateFormats.TXT)
+        assert builder.get_subject() == "[Galaxy] Tool installation request: bwa"
+
+    def test_confirmation_copy_selects_the_confirmation_template(self):
+        requester = self._create_test_user()
+        notification = self._send_stored_request(requester, is_confirmation=True)
+        builder = ToolInstallationRequestEmailNotificationTemplateBuilder(self.app.config, notification, requester)
+        assert "confirmation" in builder.get_template_path(TemplateFormats.TXT)
+        assert builder.get_subject() == "[Galaxy] Tool installation request submitted: bwa"
+
+    def test_server_only_fields_do_not_reach_the_response_model(self):
+        admin = self._create_test_user()
+        self._send_stored_request(admin)
+        user_notification = self.notification_manager.get_user_notifications(admin)[0]
+        with patch.object(Security, "security", self.trans.security, create=True):
+            response = UserNotificationResponse.model_validate(user_notification)
+        content = response.content.model_dump()
+        assert content["requester_email"] == "requester@user.email"
+        assert "is_confirmation" not in content
+        assert "workflow_name" not in content
