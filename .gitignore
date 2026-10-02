@@ -185,7 +185,7 @@ config/plugins/visualizations/tiffviewer/static/
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
-test/functional/tools/cwl_tools/v1.?/
+test/functional/tools/cwl_tools/
 
 # Involucro tool
 involucro

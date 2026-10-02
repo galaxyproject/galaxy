@@ -79,6 +79,7 @@ def get_repository_metadata_by_tool_version(
     versions = {}
     for _, changeset in repository.installable_revisions(app):
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changeset)
+        assert metadata is not None
         tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
         if not tools:
             continue

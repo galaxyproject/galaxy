@@ -72,7 +72,7 @@ def move_file(current_dir, source, destination, rename_to=None):
     shutil.move(source_path, destination_path)
 
 
-def remove_dir(dir):
+def remove_dir(dir: str | None) -> None:
     """Attempt to remove a directory from disk."""
     if dir:
         if os.path.exists(dir):

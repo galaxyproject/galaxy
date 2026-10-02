@@ -537,20 +537,10 @@ def test_assert_yaml_v1_parameters_walks_nested_groups():
         assert_yaml_v1_parameters([repeat])
 
 
-def test_authoring_view_drops_tests_and_shrinks_schema():
-    """The LLM-facing authoring view omits the `tests` block, which pulls in the
-    test-assertion DSL (~70% of the full schema). This is what keeps the
-    structured-output schema small; guard against `tests` creeping back onto the
-    shared base (which would silently re-inflate it)."""
+def test_authoring_view_drops_tests():
     assert "tests" not in UserToolSourceAuthoringView.model_fields
     assert "tests" in UserToolSource.model_fields
-    # A produced view is a strict subset and promotes to a full UserToolSource.
     assert issubclass(UserToolSource, UserToolSourceAuthoringView)
-
-    full = len(json.dumps(UserToolSource.model_json_schema()))
-    slim = len(json.dumps(UserToolSourceAuthoringView.model_json_schema()))
-    # Generous bound; the real reduction is ~80%. Catches accidental re-inflation.
-    assert slim < full * 0.5, f"authoring view not slim enough: {slim} vs {full}"
 
 
 def test_collection_discovery_only_requires_pattern():

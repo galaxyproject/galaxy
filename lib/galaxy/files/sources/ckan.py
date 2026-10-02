@@ -264,12 +264,10 @@ class CKANRepositoryInteractor(RDMRepositoryInteractor):
         filters (site id, state, permission labels) to it and the grouping would be lost otherwise.
         """
         clauses = []
-        organization_ids = self._get_writable_organization_ids(context)
-        if organization_ids:
+        if organization_ids := self._get_writable_organization_ids(context):
             quoted_ids = " OR ".join(f'"{organization_id}"' for organization_id in organization_ids)
             clauses.append(f"owner_org:({quoted_ids})")
-        user_id = self._get_current_user_id(context)
-        if user_id:
+        if user_id := self._get_current_user_id(context):
             # datasets without an organization are not covered by the filter above. CKAN itself would
             # let any logged in user edit them, but only offering the own ones matches expectations
             clauses.append(f'(creator_user_id:"{user_id}" AND -owner_org:[* TO *])')

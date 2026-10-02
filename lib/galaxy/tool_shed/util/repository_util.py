@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import shutil
+from collections.abc import Sequence
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -393,7 +394,7 @@ def get_repository_and_repository_dependencies_from_repo_info_dict(app: "Install
     return repository, repository_dependencies
 
 
-def get_repository_dependency_types(repository_dependencies):
+def get_repository_dependency_types(repository_dependencies: list[Sequence[str]]) -> tuple[bool, bool]:
     """
     Inspect the received list of repository_dependencies tuples and return boolean values
     for has_repository_dependencies and has_repository_dependencies_only_if_compiling_contained_td.

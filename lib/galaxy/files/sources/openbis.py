@@ -392,8 +392,7 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
         if fourth == "files":
             collection_obj = client.get_experiment(collection_id)
             return AfsPath(collection_obj.permId, segments[:4], rest)
-        obj = self._try_get_object(client, collection_id, fourth)
-        if obj is not None:
+        if (obj := self._try_get_object(client, collection_id, fourth)) is not None:
             if not rest:
                 return ObjectPath(obj)
             if rest[0] == "files":

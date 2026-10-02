@@ -104,8 +104,7 @@ class Cloud(CachingConcreteObjectStore):
             value = connection_dict.get(key)
             if value:
                 self.connection_dict[key] = value
-        validate_certs = connection_dict.get("validate_certs")
-        if validate_certs is not None:
+        if (validate_certs := connection_dict.get("validate_certs")) is not None:
             self.connection_dict["validate_certs"] = asbool(validate_certs)
 
         # Sibling stores take the region from <connection>; accept it there too
@@ -163,16 +162,14 @@ class Cloud(CachingConcreteObjectStore):
         # following.
         config = parse_config_xml(config_xml)
 
-        transfer_element = config_xml.find("transfer")
-        if transfer_element is not None:
+        if (transfer_element := config_xml.find("transfer")) is not None:
             config["transfer"] = {
                 key: transfer_element.get(key)
                 for key in ALL_TRANSFER_OPTION_KEYS
                 if transfer_element.get(key) is not None
             }
 
-        connection_element = config_xml.find("connection")
-        if connection_element is not None:
+        if (connection_element := config_xml.find("connection")) is not None:
             for key in ("endpoint_url", "validate_certs", "signature_version"):
                 value = connection_element.get(key)
                 if value is not None:

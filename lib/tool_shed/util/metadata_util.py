@@ -79,7 +79,9 @@ def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependenc
     return returned_dependencies
 
 
-def get_current_repository_metadata_for_changeset_revision(app, repository, changeset_revision):
+def get_current_repository_metadata_for_changeset_revision(
+    app: "ToolShedApp", repository: Repository, changeset_revision: str
+) -> RepositoryMetadata | None:
     encoded_repository_id = app.security.encode_id(repository.id)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, encoded_repository_id, changeset_revision)
     if repository_metadata:
@@ -150,7 +152,13 @@ def get_latest_repository_metadata(app: "ToolShedApp", decoded_repository_id, do
     return get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), changeset_revision)
 
 
-def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, downloadable=True):
+def get_metadata_revisions(
+    app: "ToolShedApp",
+    repository: Repository,
+    sort_revisions: bool = True,
+    reverse: bool = False,
+    downloadable: bool = True,
+) -> list[tuple[int, str]]:
     """
     Return a list of changesets for the provided repository.
     """
@@ -161,6 +169,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
         metadata_revisions = repository.metadata_revisions
     changeset_tups = []
     for repository_metadata in metadata_revisions:
+        assert repository_metadata.changeset_revision is not None
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
                 rev = changeset2rev(repository.hg_repo, repository_metadata.changeset_revision)
@@ -204,7 +213,9 @@ def get_next_downloadable_changeset_revision(
     return None
 
 
-def get_previous_metadata_changeset_revision(app, repository, before_changeset_revision, downloadable=True):
+def get_previous_metadata_changeset_revision(
+    app: "ToolShedApp", repository: Repository, before_changeset_revision: str
+) -> str | None:
     """
     Return the changeset_revision in the repository changelog that has associated metadata prior to
     the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
@@ -226,6 +237,7 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
                 return INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
+    return None
 
 
 def get_repository_metadata_by_changeset_revision(

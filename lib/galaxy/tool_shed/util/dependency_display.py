@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from galaxy.tool_shed.util import utility_container_manager
 
@@ -6,10 +7,10 @@ log = logging.getLogger(__name__)
 
 
 class DependencyDisplayer:
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self.app = app
 
-    def generate_message_for_orphan_tool_dependencies(self, repository, metadata_dict):
+    def generate_message_for_orphan_tool_dependencies(self, metadata_dict: dict[str, Any]) -> str:
         """
         The designation of a ToolDependency into the "orphan" category has evolved over time,
         and is significantly restricted since the introduction of the TOOL_DEPENDENCY_DEFINITION
