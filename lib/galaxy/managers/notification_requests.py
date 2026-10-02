@@ -196,9 +196,9 @@ class ToolInstallationRequestHandler:
 class NotificationRequestManager:
     """Turns a user's notification submission into the requests to send.
 
-    The registry of per-category handlers lives on the instance, so the
-    user allow-list is derived from it and the two cannot drift apart. To add a
-    new user-submittable request type, register its handler in
+    The registry of per-category handlers lives on the instance and doubles as
+    the list of categories a non-admin user may submit. To add a new
+    user-submittable request type, register its handler in
     :meth:`_build_handlers`.
     """
 
@@ -216,11 +216,6 @@ class NotificationRequestManager:
     @staticmethod
     def _build_handlers() -> dict[NotificationCategory, NotificationRequestHandler]:
         return {handler.category: handler for handler in (ToolInstallationRequestHandler(),)}
-
-    @property
-    def user_allowed_categories(self) -> frozenset[NotificationCategory]:
-        """Categories a non-admin user may submit."""
-        return frozenset(self._handlers)
 
     def build_user_sender_requests(
         self,
