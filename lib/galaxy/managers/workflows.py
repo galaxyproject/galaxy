@@ -2524,7 +2524,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if refactor_request.dry_run:
             return dry_run_workflow, action_executions, changed
         # Refactoring an older version always saves, making it the latest version again.
-        if not changed and workflow == stored_workflow.latest_workflow:
+        if not changed and workflow is stored_workflow.latest_workflow:
             return workflow, action_executions, changed
         refactored_workflow, errors = self.update_workflow_from_raw_description(
             trans,
@@ -2563,8 +2563,10 @@ class WorkflowContentsManager(UsesAnnotations):
     ) -> dict[str, Any]:
         as_dict = self._workflow_to_dict_export(trans, workflow=workflow, stored=stored, internal=True)
         # tags belong to the stored workflow - refactoring doesn't change them and a dry
-        # run build's detached stored workflow doesn't export them; each build gets a new uuid
+        # run build's detached stored workflow doesn't export them; builds only get
+        # source_metadata when importing from a URL or TRS; each build gets a new uuid
         as_dict.pop("tags", None)
+        as_dict.pop("source_metadata", None)
         as_dict.pop("uuid", None)
         return copy.deepcopy(as_dict)
 
