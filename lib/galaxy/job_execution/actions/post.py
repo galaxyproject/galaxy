@@ -242,7 +242,7 @@ class RenameDatasetAction(DefaultJobAction):
                     replacement = input_names[input_file_var]
                 else:
                     for input_name, _replacement in input_names.items():
-                        if "|" in input_name and input_name.endswith(input_file_var):
+                        if input_name.endswith(f"|{input_file_var}"):
                             # best effort attempt at matching up unqualified input
                             replacement = _replacement
                             break

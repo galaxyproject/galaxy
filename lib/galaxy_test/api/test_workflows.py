@@ -9018,6 +9018,63 @@ fastq_input:
             name = content["name"]
             assert name == "fastq1 suffix", name
 
+    @skip_without_tool("mapper2")
+    def test_run_rename_rejects_partial_input_segments(self):
+        self._run_rename_rejects_partial_input_segments(mapped=False)
+
+    @skip_without_tool("mapper2")
+    def test_run_rename_rejects_partial_input_segments_on_mapped_collection(self):
+        self._run_rename_rejects_partial_input_segments(mapped=True)
+
+    def _run_rename_rejects_partial_input_segments(self, mapped):
+        workflow = yaml.safe_load("""
+class: GalaxyWorkflow
+inputs:
+  fasta_input: data
+  fastq_input: data
+steps:
+  mapping:
+    tool_id: mapper2
+    state:
+      fastq_input:
+        fastq_input_selector: single
+        fastq_input1:
+          $link: fastq_input
+      reference:
+        $link: fasta_input
+    out:
+      out_file1:
+        rename: "#{fastq_input1 | basename}#{input1} suffix"
+""")
+        fastq_input: dict[str, Any] = {
+            "value": "1.fastqsanger",
+            "type": "File",
+            "name": "fastq1.fastq",
+            "file_type": "fastqsanger",
+        }
+        if mapped:
+            workflow["inputs"]["fastq_input"] = {"type": "collection", "collection_type": "list"}
+            fastq_input = {
+                "collection_type": "list",
+                "name": "fastq1.fastq",
+                "elements": [{"value": "1.fastqsanger", "type": "File", "name": "reads.fastq", "ext": "fastqsanger"}],
+            }
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                workflow,
+                test_data={
+                    "fasta_input": {"value": "1.fasta", "type": "File", "name": "fasta1", "file_type": "fasta"},
+                    "fastq_input": fastq_input,
+                },
+                history_id=history_id,
+            )
+            if mapped:
+                content = self.dataset_populator.get_history_collection_details(history_id, wait=True, assert_ok=True)
+                assert content["elements"][0]["object"]["name"] == "reads suffix", content
+            else:
+                content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
+            assert content["name"] == "fastq1 suffix", content
+
     @skip_without_tool("collection_creates_pair")
     def test_run_hide_on_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
