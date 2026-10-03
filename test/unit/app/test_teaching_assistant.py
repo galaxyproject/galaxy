@@ -393,9 +393,11 @@ class TestTeachingAssistantAgent:
         search = agent._build_capability_context().split("GTN search: ", 1)[1].split("\n", 1)[0]
 
         assert "Unavailable" in search
-        assert not re.search(r"""['"‘“][^'"’”]{20,}['"’”]""", search), "no scripted sentence for the model to repeat"
+        assert not re.search(r"""(?:^|\s)['"‘“][^'"’”]{20,}['"’”]""", search), "no scripted sentence to repeat"
         assert "keep helping" in search
         assert "search terms" in search
+        # "Answer from general knowledge" alone led models to name remembered tutorials and assert they exist.
+        assert "from memory" in search
 
     def test_prompt_excludes_internal_routing_state(self):
         agent = TeachingAssistantAgent(self.deps)
