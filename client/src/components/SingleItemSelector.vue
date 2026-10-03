@@ -3,7 +3,7 @@
         <LoadingSpan v-if="loading" :message="loadingMessage" />
         <Multiselect
             v-if="items && items.length"
-            id="single-item-selector"
+            :id="selectorId"
             v-model="selectedItem"
             class="single-item-selector"
             name="single-item-selector"
@@ -30,6 +30,8 @@
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { uid } from "@/utils/utils";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 // Using `any` here until we can use generics in Vue3
@@ -39,6 +41,9 @@ type Item = any;
 // (not just omitting the prop) suppresses the label instead of falling back to its
 // default text -- its .d.ts doesn't account for that.
 const noLabel = null as unknown as string;
+
+// Upload tables render one of these per row, so each needs its own id.
+const selectorId = `single-item-selector-${uid()}`;
 
 interface SingleItemSelectorProps {
     /** Indicates if the available items are still loading. */

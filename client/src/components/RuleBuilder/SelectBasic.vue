@@ -1,6 +1,6 @@
 <template>
     <VueMultiselect
-        id="select-basic"
+        :id="selectId"
         class="select-basic"
         name="select-basic"
         :allow-empty="multiple"
@@ -20,6 +20,8 @@
 import { computed } from "vue";
 import VueMultiselect from "vue-multiselect";
 
+import { uid } from "@/utils/utils";
+
 const props = defineProps({
     value: { required: false },
     multiple: { type: Boolean, default: false },
@@ -28,6 +30,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["input"]);
+
+// The rule builder shows several of these at once, so each needs its own id.
+const selectId = `select-basic-${uid()}`;
 
 const selectedValue = computed(() => {
     if (!props.value) {
