@@ -153,7 +153,7 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
             "If the learner asked for a tutorial, tell them the search found none focused on this tool."
         )
 
-    def render(match: re.Match) -> str:
+    def render(match: re.Match[str]) -> str:
         source = sources[match.group(1)]
         title = _plain_markdown(source["title"])
         excerpt = _plain_markdown(source["excerpt"])
@@ -199,7 +199,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         return bool(getattr(self.deps.config, "tutor_allow_tool_execution", False))
 
     def _get_temperature(self) -> float:
-        return self._get_agent_config("temperature", 0.2)
+        return float(self._get_agent_config("temperature", 0.2))
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         """Create the teaching assistant agent with tools."""

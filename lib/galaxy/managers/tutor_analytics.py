@@ -141,7 +141,7 @@ class TutorAnalyticsManager:
         except (json.JSONDecodeError, TypeError):
             return "unknown"
         if isinstance(data, dict):
-            return data.get("agent_type", "unknown")
+            return str(data.get("agent_type", "unknown"))
         return "unknown"
 
     def _learning_states(self, trans: ProvidesUserContext) -> list[dict[str, Any]]:
