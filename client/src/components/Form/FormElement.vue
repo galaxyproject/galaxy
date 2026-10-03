@@ -22,6 +22,7 @@ import FormError from "./Elements/FormError.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
@@ -97,6 +98,8 @@ const attrs: ComputedRef<FormParameterAttributes> = computed(() => props.attribu
 const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["collapsible_value"]);
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
+
+const isMultipleInteger = computed(() => props.type === "integer" && Boolean(attrs.value.multiple));
 
 const computedPlaceholder = computed(() => {
     if (!props.workflowRun) {
@@ -371,6 +374,16 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 </div>
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
+                <FormNumberList
+                    v-else-if="isMultipleInteger"
+                    :id="props.id"
+                    v-model="currentValue"
+                    :max="attrs.max"
+                    :min="attrs.min"
+                    :placeholder="computedPlaceholder"
+                    :optional="isOptional"
+                    :show-state="props.workflowRun"
+                    type="integer" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
                     :id="props.id"

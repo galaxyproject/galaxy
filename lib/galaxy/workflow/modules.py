@@ -1528,6 +1528,16 @@ class InputParameterModule(WorkflowModule):
                 when_this_type.inputs["restrictions"] = restrictions_cond
 
             if param_type == "integer":
+                specify_multiple = BooleanToolParameter(
+                    None,
+                    dict(
+                        name="multiple",
+                        label="Allow multiple values",
+                        help="Only applies when connected to parameter(s) accepting multiple values, such as multiple column selections",
+                        type="boolean",
+                    ),
+                )
+                when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
                 when_this_type.inputs["min"] = IntegerToolParameter(
                     None,
                     {
@@ -2816,7 +2826,7 @@ class ToolModule(WorkflowModule):
                             InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
-                                multiple=False,
+                                multiple=isinstance(input, SelectToolParameter) and input.multiple,
                                 input_type="parameter",
                                 optional=getattr(input, "optional", False),
                                 type=input_type,

@@ -82,7 +82,7 @@ export interface DataCollectionStepInput extends BaseStepInput {
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     input_type: "parameter";
-    type: typeof ParameterTypes;
+    type: typeof ParameterTypes | "select" | "data_column";
 }
 
 export type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterStepInput;

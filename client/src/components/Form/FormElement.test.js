@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import FormHidden from "./Elements/FormHidden.vue";
+import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormText from "./Elements/FormText.vue";
 import FormElement from "./FormElement.vue";
 
@@ -84,6 +86,16 @@ describe("FormElement", () => {
     it("displays as the correct type if is_workflow is true", async () => {
         await wrapper.setProps({ type: "data_column", attributes: { is_workflow: true } });
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
+    });
+
+    it("displays a multiple integer as a list of number fields", async () => {
+        await wrapper.setProps({ type: "integer", value: [1, 2], workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(true);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(2);
+
+        await wrapper.setProps({ value: 1, attributes: { multiple: false } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(false);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
     });
 
     it("marks required values", async () => {
