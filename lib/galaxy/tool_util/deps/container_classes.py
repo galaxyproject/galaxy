@@ -5,7 +5,6 @@ from abc import (
     abstractmethod,
 )
 from logging import getLogger
-from shlex import quote
 from typing import (
     Any,
     Optional,
@@ -464,9 +463,14 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     def containerize_command(self, command: str) -> str:
         env_directives = []
         pass_through = []
+        sudo = asbool(self.prop("sudo", docker_util.DEFAULT_SUDO))
         for name in dict.fromkeys(self.tool_info.env_pass_through):
-            env_directives.append(name)
-            pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export {name}; fi')
+            if sudo:
+                # sudo resets the environment, so expand set values on the host; unset names stay bare and are omitted.
+                env_directives.append(f'"{name}${{{name}+=${name}}}"')
+            else:
+                env_directives.append(name)
+                pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export {name}; fi')
 
         # Legacy runtime-specific values override the variables forwarded by name.
         for key, value in self.destination_info.items():
@@ -491,10 +495,6 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
         else:
             cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
-        run_host_props = docker_host_props.copy()
-        if run_host_props["sudo"] and self.tool_info.env_pass_through:
-            names = ",".join(dict.fromkeys(self.tool_info.env_pass_through))
-            run_host_props["sudo_cmd"] += f" --preserve-env={quote(names)}"
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -509,7 +509,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             guest_ports=self.tool_info.guest_ports,
             host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
-            **run_host_props,
+            **docker_host_props,
         )
         kill_command = docker_util.build_docker_simple_command(
             "kill", container_name=self.container_name, **docker_host_props

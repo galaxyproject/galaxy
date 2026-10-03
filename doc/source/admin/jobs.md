@@ -169,9 +169,9 @@ User-defined tools cannot make these declarations. Reserved names and prefixes
 are listed in the tool schema documentation. Secret-looking names trigger a lint
 warning recommending `<credentials>`.
 
-Docker receives bare `-e NAME` arguments. With `docker_sudo`, Galaxy requests
-that sudo preserve only the explicitly forwarded names; the configured sudo
-command and policy must support `--preserve-env=NAME,...`. Singularity/Apptainer receives
+Docker receives bare `-e NAME` arguments. With `docker_sudo`, sudo resets the
+environment, so set values are expanded on the host as `-e "NAME=value"` and no
+sudoers change is needed. Singularity/Apptainer receives
 `SINGULARITYENV_NAME` only when `NAME` is set. An empty string is set; an undefined
 variable is omitted. Missing required declared variables produce a warning on
 the job information page and an info-level log entry, without failing the job.
