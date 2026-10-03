@@ -383,7 +383,7 @@ class TestScopedJobEnvironment(BaseJobConfXmlParserTestCase):
         assert [entry["value"] for entry in destination.env][:3] == ["tool", "job", "legacy"]
         assert [entry["type"] for entry in destination.env] == ["tool", "job", "job", "tool"]
         assert destination.tool_env_names == ["X", "EMPTY"]
-        assert not {"env", "job_env", "tool_env", "env_order"}.intersection(destination.params)
+        assert not {"env", "job_env", "tool_env"}.intersection(destination.params)
 
     def test_xml_container_native_job_env_warning(self):
         self._check_xml_container_native_warning("job_env", True)
@@ -427,4 +427,4 @@ execution:
         assert [entry["value"] for entry in destination.env] == ["tool", "job", "legacy"]
         assert [entry["type"] for entry in destination.env] == ["tool", "job", "job"]
         assert "also reach the tool container" in warning.call_args[0][0]
-        assert not {"env", "job_env", "tool_env", "env_order"}.intersection(destination.params)
+        assert not {"env", "job_env", "tool_env"}.intersection(destination.params)

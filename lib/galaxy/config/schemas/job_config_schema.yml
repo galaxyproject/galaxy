@@ -85,10 +85,6 @@ mapping:
                         type: bool
                       value:
                         type: str
-                      file:
-                        type: str
-                      execute:
-                        type: str
               resubmit:
                 type: seq
                 sequence:

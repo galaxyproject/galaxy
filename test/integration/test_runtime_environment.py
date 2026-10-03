@@ -1,5 +1,7 @@
 """Verify runtime warnings survive both Galaxy metadata completion paths."""
 
+from pathlib import Path
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -56,8 +58,6 @@ class TestRuntimeEnvironmentIntegration(integration_util.IntegrationTestCase):
 
     def test_task_warnings_reach_parent_job(self):
         # Galaxy forces directory metadata for split jobs, even with extended as the instance default.
-        from pathlib import Path
-
         populator = DatasetPopulator(self.galaxy_interactor)
         with populator.test_history() as history_id:
             input_dataset = populator.new_dataset(history_id, content="first\nsecond\n", file_type="txt", wait=True)
