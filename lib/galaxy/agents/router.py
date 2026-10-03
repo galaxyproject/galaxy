@@ -39,6 +39,7 @@ from .base import (
     BaseGalaxyAgent,
     extract_result_content,
     GalaxyAgentDependencies,
+    SourceCitation,
 )
 
 log = logging.getLogger(__name__)
@@ -286,6 +287,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 "suggestions": [
                     s.model_dump() if hasattr(s, "model_dump") else s for s in (response.suggestions or [])
                 ],
+                "sources": [s.model_dump() for s in response.sources],
                 "handoff_info": {
                     "source_agent": self.agent_type,
                     "target_agent": target_agent,
@@ -583,6 +585,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         confidence=ConfidenceLevel(parsed.get("confidence", "medium")),
                         agent_type=parsed.get("agent_type", self.agent_type),
                         suggestions=parsed.get("suggestions", []),
+                        sources=[SourceCitation(**s) for s in parsed.get("sources", [])],
                         metadata=metadata,
                     )
             except (json.JSONDecodeError, TypeError, KeyError, ValidationError) as e:

@@ -90,6 +90,10 @@ from galaxy.agents.base import (
     AgentType,
 )
 from galaxy.agents.error_analysis import ErrorAnalysisResult
+from galaxy.agents.gtn.search import (
+    FAQResult,
+    SearchResult,
+)
 from galaxy.agents.gtn_training import GTNSearchResponse
 from galaxy.agents.orchestrator import (
     AgentPlan,
@@ -100,7 +104,10 @@ from galaxy.agents.page_assistant import (
     SectionPatchEdit,
 )
 from galaxy.exceptions import ConfigurationError
-from galaxy.schema.agents import ConfidenceLevel
+from galaxy.schema.agents import (
+    ConfidenceLevel,
+    SourceCitation,
+)
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 
@@ -1283,6 +1290,77 @@ class TestAgentUnitMocked:
         assert "**Relevant FAQs:**" in content
         assert "How do I archive a history?" in content
         assert "**Relevant Tutorials:**" not in content
+
+    _RNASEQ_RESULT = SearchResult(
+        id=1,
+        topic="transcriptomics",
+        tutorial="ref-based",
+        title="Reference-based RNA-Seq data analysis",
+        url="https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/ref-based/tutorial.html",
+        snippet="RNA-seq walkthrough",
+        score=9.1,
+        difficulty="Intermediate",
+        hands_on=True,
+        time_estimation="8h",
+    )
+    _ARCHIVE_RESULT = FAQResult(
+        id=2,
+        category="galaxy",
+        filename="histories_archive",
+        title="How do I archive a history?",
+        area="histories",
+        content="Histories can be archived...",
+        snippet="Histories can be archived...",
+        score=4.2,
+    )
+    _RNASEQ_TUTORIAL = _RNASEQ_RESULT.to_dict()
+    _ARCHIVE_FAQ = _ARCHIVE_RESULT.to_dict()
+
+    @pytest.mark.asyncio
+    async def test_router_handoff_carries_sources(self):
+        router = QueryRouterAgent(self.deps)
+        source = SourceCitation(title="RNA-seq", url=self._RNASEQ_TUTORIAL["url"], source_type="gtn_tutorial")
+        handoff = router._serialize_handoff(
+            AgentResponse(
+                content="Try the RNA-seq tutorial.",
+                confidence=ConfidenceLevel.HIGH,
+                agent_type="gtn_training",
+                sources=[source],
+            ),
+            "gtn_training",
+        )
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = handoff
+            mock_run.return_value = mock_result
+
+            response = await router.process("How do I learn RNA-seq?")
+
+        assert response.agent_type == "gtn_training"
+        assert response.sources == [source]
+
+    @pytest.mark.asyncio
+    async def test_workflow_orchestrator_combines_sources(self):
+        agent = WorkflowOrchestratorAgent(self.deps)
+        tutorial = SourceCitation(title="RNA-seq", url=self._RNASEQ_TUTORIAL["url"], source_type="gtn_tutorial")
+        faq = SourceCitation(title="Archive", url=self._ARCHIVE_FAQ["url"], source_type="gtn_faq")
+        responses = {
+            "gtn_training": AgentResponse(
+                content="Tutorials", confidence="high", agent_type="gtn_training", sources=[tutorial, faq]
+            ),
+            "history": AgentResponse(content="History", confidence="high", agent_type="history", sources=[tutorial]),
+        }
+
+        with (
+            patch.object(agent, "_get_agent_plan") as mock_get_plan,
+            patch.object(agent, "_execute_parallel", new_callable=AsyncMock) as mock_parallel,
+        ):
+            mock_get_plan.return_value = AgentPlan(agents=["gtn_training", "history"], sequential=False, reasoning="")
+            mock_parallel.return_value = responses
+            response = await agent.process("Find tutorials and check my history")
+
+        assert response.sources == [tutorial, faq]
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):

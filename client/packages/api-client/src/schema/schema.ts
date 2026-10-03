@@ -7933,6 +7933,11 @@ export interface components {
              */
             reasoning?: string | null;
             /**
+             * Sources
+             * @description Verified sources behind the response
+             */
+            sources?: components["schemas"]["SourceCitation"][];
+            /**
              * Suggestions
              * @description Actionable suggestions
              */
@@ -23872,6 +23877,27 @@ export interface components {
              * @description User ID of user that ran this job
              */
             user_id?: string | null;
+        };
+        /**
+         * SourceCitation
+         * @description A source an agent drew on, taken from what its tools returned rather than model-written text.
+         */
+        SourceCitation: {
+            /**
+             * Source Type
+             * @description Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'
+             */
+            source_type: string;
+            /**
+             * Title
+             * @description Title of the source
+             */
+            title: string;
+            /**
+             * Url
+             * @description URL of the source
+             */
+            url: string;
         };
         /** SplitUpPairedDataLogEntry */
         SplitUpPairedDataLogEntry: {
