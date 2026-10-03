@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { type ActionSuggestion, ActionType, type AgentResponse } from "@/composables/agentActions";
+import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
 import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
@@ -24,11 +24,6 @@ import ClarificationCard from "./ClarificationCard.vue";
 const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
 type Segment = { kind: "text"; value: string } | { kind: "mention"; entityType: EntityType; identifier: string };
-type ReferenceLink = { label: string; url: string };
-
-const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
-const BARE_URL_RE = /https?:\/\/[^\s<>"')]+/g;
-const LINK_METADATA_KEYS = new Set(["link", "links", "url", "urls", "source", "sources", "reference", "references"]);
 
 function parseSegments(text: string): Segment[] {
     const segments: Segment[] = [];
@@ -64,85 +59,9 @@ const isClarification = computed(() => props.message.agentType === "clarificatio
 const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
 const linksExpanded = ref(false);
 
-function trimUrl(url: string) {
-    return url.replace(/[.,;:!?]+$/, "");
-}
-
-function isHttpUrl(value: string) {
-    return /^https?:\/\//i.test(value);
-}
-
-function addLink(links: ReferenceLink[], seen: Set<string>, label: string | undefined, url: string | undefined) {
-    if (!url || !isHttpUrl(url)) {
-        return;
-    }
-    const normalizedUrl = trimUrl(url);
-    if (seen.has(normalizedUrl)) {
-        return;
-    }
-    seen.add(normalizedUrl);
-    links.push({ label: label?.trim() || normalizedUrl, url: normalizedUrl });
-}
-
-function collectMetadataLinks(value: unknown, links: ReferenceLink[], seen: Set<string>, keyHint?: string) {
-    if (!value) {
-        return;
-    }
-
-    if (typeof value === "string") {
-        if (!keyHint || LINK_METADATA_KEYS.has(keyHint.toLowerCase()) || isHttpUrl(value)) {
-            addLink(links, seen, undefined, value);
-        }
-        return;
-    }
-
-    if (Array.isArray(value)) {
-        value.forEach((item) => collectMetadataLinks(item, links, seen, keyHint));
-        return;
-    }
-
-    if (typeof value === "object") {
-        const record = value as Record<string, unknown>;
-        const url =
-            typeof record.url === "string" ? record.url : typeof record.link === "string" ? record.link : undefined;
-        const label =
-            typeof record.title === "string"
-                ? record.title
-                : typeof record.label === "string"
-                  ? record.label
-                  : typeof record.name === "string"
-                    ? record.name
-                    : undefined;
-        addLink(links, seen, label, url);
-
-        Object.entries(record).forEach(([key, child]) => collectMetadataLinks(child, links, seen, key));
-    }
-}
-
-const referenceLinks = computed<ReferenceLink[]>(() => {
-    const links: ReferenceLink[] = [];
-    const seen = new Set<string>();
-    const content = props.message.content;
-
-    for (const match of content.matchAll(MARKDOWN_LINK_RE)) {
-        addLink(links, seen, match[1], match[2]);
-    }
-
-    for (const match of content.matchAll(BARE_URL_RE)) {
-        addLink(links, seen, undefined, match[0]);
-    }
-
-    props.message.suggestions?.forEach((suggestion) => {
-        const url = typeof suggestion.parameters?.url === "string" ? suggestion.parameters.url : undefined;
-        if (suggestion.action_type === ActionType.VIEW_EXTERNAL || url) {
-            addLink(links, seen, suggestion.description, url);
-        }
-    });
-
-    collectMetadataLinks(props.message.agentResponse?.metadata, links, seen);
-
-    return links;
-});
+// Only sources the agent verified against its search results, never URLs
+// scraped from model-written text.
+const sources = computed(() => props.message.agentResponse?.sources ?? []);
 </script>
 
 <template>
@@ -225,25 +144,25 @@ const referenceLinks = computed<ReferenceLink[]>(() => {
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
-                            <div v-if="referenceLinks.length" class="reference-links">
+                            <div v-if="sources.length" class="reference-links">
                                 <button
                                     class="links-toggle"
                                     :aria-expanded="linksExpanded ? 'true' : 'false'"
                                     title="References"
                                     @click="linksExpanded = !linksExpanded">
                                     <FontAwesomeIcon :icon="faLink" fixed-width />
-                                    <span class="links-count">{{ referenceLinks.length }}</span>
+                                    <span class="links-count">{{ sources.length }}</span>
                                     <FontAwesomeIcon :icon="linksExpanded ? faChevronDown : faChevronUp" fixed-width />
                                 </button>
                                 <div v-if="linksExpanded" class="links-popover">
                                     <a
-                                        v-for="link in referenceLinks"
-                                        :key="link.url"
+                                        v-for="source in sources"
+                                        :key="source.url"
                                         class="reference-link"
-                                        :href="link.url"
+                                        :href="source.url"
                                         target="_blank"
                                         rel="noopener noreferrer">
-                                        <span class="reference-link-label">{{ link.label }}</span>
+                                        <span class="reference-link-label">{{ source.title }}</span>
                                         <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                                     </a>
                                 </div>
