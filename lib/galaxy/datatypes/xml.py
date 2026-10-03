@@ -4,6 +4,7 @@ XML format classes
 
 import logging
 import re
+from xml.parsers import expat
 
 from galaxy import util
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -86,6 +87,65 @@ class GenericXml(data.Text):
     def xml_dataprovider(self, dataset: DatasetProtocol, **settings) -> XMLDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return XMLDataProvider(dataset_source, **settings)
+
+
+class _XmlRootFound(Exception):
+    """Stop parsing as soon as the root start tag has been read."""
+
+
+def _sniff_xml_root(file_prefix: FilePrefix, root: str, namespace_pattern: str) -> bool:
+    # Parse only the root, so truncated prefixes and large OCR documents work.
+    # Expat does not fetch external entities without an external entity handler.
+    parser = expat.ParserCreate(namespace_separator="}")
+    matches = False
+
+    def start_element(name, attrs):
+        nonlocal matches
+        namespace, _, local_name = name.rpartition("}")
+        matches = local_name == root and re.fullmatch(namespace_pattern, namespace) is not None
+        raise _XmlRootFound
+
+    parser.StartElementHandler = start_element
+    try:
+        parser.Parse(file_prefix.contents_header_bytes, False)
+    except _XmlRootFound:
+        return matches
+    except expat.ExpatError:
+        pass
+    return False
+
+
+class PageXml(GenericXml):
+    """PAGE XML layout and text recognition data."""
+
+    file_ext = "page.xml"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return _sniff_xml_root(
+            file_prefix, "PcGts", r"http://schema\.primaresearch\.org/PAGE/gts/pagecontent/\d{4}-\d{2}-\d{2}"
+        )
+
+
+class Alto(GenericXml):
+    """ALTO layout and text recognition data, including the original v1 namespace."""
+
+    file_ext = "alto"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return _sniff_xml_root(
+            file_prefix, "alto", r"(?:http://www\.loc\.gov/standards/alto/ns-v\d+#|http://schema\.ccs-gmbh\.com/ALTO)"
+        )
+
+
+class AbbyyXml(GenericXml):
+    """ABBYY FineReader XML recognition data."""
+
+    file_ext = "abbyy.xml"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return _sniff_xml_root(
+            file_prefix, "document", r"http://www\.abbyy\.com/FineReader_xml/FineReader\d+-schema-v\d+\.xml"
+        )
 
 
 @disable_parent_class_sniffing
