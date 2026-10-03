@@ -181,3 +181,28 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
 
     def galaxy_url(self):
         return self.job_io.galaxy_url
+
+
+class RemoteComputeEnvironment(SharedComputeEnvironment):
+    """Apply paths selected during Pulsar staging when evaluating a tool remotely."""
+
+    def __init__(self, job_io: JobIO, job: Job, paths: dict[str, str]):
+        super().__init__(job_io, job)
+        self.paths = paths
+
+    def input_path_rewrite(self, dataset):
+        path = super().input_path_rewrite(dataset)
+        return self.paths.get(path, path)
+
+    def output_path_rewrite(self, dataset):
+        path = super().output_path_rewrite(dataset)
+        return self.paths.get(path, path)
+
+    def input_extra_files_rewrite(self, dataset):
+        return self.paths.get(dataset.extra_files_path, super().input_extra_files_rewrite(dataset))
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        return self.paths.get(metadata_value)
+
+    def unstructured_path_rewrite(self, path):
+        return self.paths.get(path)

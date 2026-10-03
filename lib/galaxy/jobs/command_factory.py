@@ -235,17 +235,18 @@ def __externalize_commands(
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
-        sep = "" if for_pulsar else "&&"
+        sep = "&&"
         if for_pulsar:
             # Pulsar sets GALAXY_LIB from its own galaxy_home, so this Galaxy's layout says
             # nothing about the remote's - let the remote pick between the two forms.
-            # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
-            # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
-            command = f"{REMOTE_TOOL_EVAL_PULSAR_COMMAND} && bash ../tool_script.sh"
+            command = REMOTE_TOOL_EVAL_PULSAR_COMMAND
         elif job_wrapper.galaxy_lib_dir:
             command = REMOTE_TOOL_EVAL_SOURCE_COMMAND
         else:
             command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
+        # Streaming stdout/stderr adds a multiline setup block. Guard the whole
+        # block so an evaluation failure cannot execute any of the tool command.
+        commands_builder.commands = f"{{ {commands_builder.commands}; }}"
         commands_builder.prepend_command(command, sep=sep)
 
 
@@ -294,7 +295,7 @@ def __handle_metadata(
     config_file = metadata_kwds.get("config_file", None)
     datatypes_config = metadata_kwds.get("datatypes_config", None)
     compute_tmp_dir = metadata_kwds.get("compute_tmp_dir", None)
-    version_path = job_wrapper.job_io.version_path
+    version_path = remote_command_params.get("version_path", job_wrapper.job_io.version_path)
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = (
         job_wrapper.setup_external_metadata(
