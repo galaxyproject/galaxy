@@ -608,11 +608,6 @@ class DatasetCollectionManager:
                 validated_payload[key] = validation.validate_and_sanitize_basestring_list(key, val)
         return validated_payload
 
-    def history_dataset_collections(self, history, query):
-        collections = history.active_dataset_collections
-        collections = list(filter(query.direct_match, collections))
-        return collections
-
     def __persist(
         self,
         dataset_collection_instance: "DatasetCollectionInstance",

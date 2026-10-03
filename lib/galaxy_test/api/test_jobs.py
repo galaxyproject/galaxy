@@ -1124,6 +1124,28 @@ steps:
         hdca_option = f1_input["options"]["hdca"][0]
         assert hdca_option["id"] == hdca_id and hdca_option["src"] == "hdca"
 
+    @skip_without_tool("collection_paired_test")
+    def test_job_build_for_rerun_hidden_hdca_carried_into_collection_options(self, history_id):
+        create_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True)
+        hdca_id = create_response.json()["outputs"][0]["id"]
+        run_response = self._run(
+            "collection_paired_test",
+            history_id,
+            {"f1": {"src": "hdca", "id": hdca_id}},
+            wait_for_job=True,
+            assert_ok=True,
+        )
+        self.dataset_populator.hide_dataset_collection(hdca_id)
+
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"])
+
+        f1_input = next(i for i in rerun_params["inputs"] if i["name"] == "f1")
+        assert f1_input["value"]["values"][0]["id"] == hdca_id
+        matching = [o for o in f1_input["options"]["hdca"] if o["id"] == hdca_id]
+        assert len(matching) == 1, f1_input["options"]["hdca"]
+        assert matching[0]["keep"] is True
+        assert matching[0]["name"].startswith("(hidden) ")
+
     @skip_without_tool("multiple_versions")
     def test_job_build_for_rerun_switch_version(self, history_id):
         run_response = self._run("multiple_versions", history_id, {}, tool_version="0.1").json()
