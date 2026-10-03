@@ -108,4 +108,14 @@ describe("SingleItemSelector", () => {
             expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[2]);
         });
     });
+
+    // The upload table renders one selector per row, so a fixed id would repeat.
+    it("gives each selector its own id", () => {
+        const first = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
+        const second = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
+
+        const firstId = first.findComponent(Multiselect).props("id");
+        expect(firstId).toBeTruthy();
+        expect(second.findComponent(Multiselect).props("id")).not.toBe(firstId);
+    });
 });
