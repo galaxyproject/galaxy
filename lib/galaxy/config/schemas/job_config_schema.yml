@@ -23,7 +23,7 @@ mapping:
   handling:
     type: map
     allowempty: true
-  execution:
+  execution: 
     type: map
     allowempty: true
     mapping:
@@ -103,7 +103,7 @@ mapping:
               tool_evaluation_strategy:
                 type: str
 
-  tools:
+  tools: 
     type: seq
     sequence:
       - type: map
