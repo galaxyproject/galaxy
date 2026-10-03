@@ -39,16 +39,11 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

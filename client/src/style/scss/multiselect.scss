@@ -46,11 +46,15 @@
             color: darken($brand-secondary, 40%);
         }
 
+        // vue-multiselect's own selected+highlight rule has the same specificity as the plain
+        // selected rule above, so restate the colors here instead of relying on bundle order.
         &.multiselect__option--highlight {
             background: darken($brand-secondary, 10%);
+            color: $brand-primary;
 
             &::after {
                 background: unset;
+                color: darken($brand-secondary, 40%);
             }
         }
     }

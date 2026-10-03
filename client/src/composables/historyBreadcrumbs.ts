@@ -7,11 +7,11 @@ interface Props {
 }
 
 export function useHistoryBreadCrumbsToForProps<T extends Props>(props: T, historyAction: string) {
-    const historyId = toRef(props, "historyId");
+    const historyId = toRef(() => props.historyId);
     return useHistoryBreadCrumbsTo(historyId, historyAction);
 }
 
-export function useHistoryBreadCrumbsTo(historyId: Ref<string>, historyAction: string) {
+export function useHistoryBreadCrumbsTo(historyId: Readonly<Ref<string>>, historyAction: string) {
     const historyStore = useHistoryStore();
 
     const breadcrumbItems = computed(() => [

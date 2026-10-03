@@ -1,3 +1,4 @@
+import { emittedArg } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
@@ -8,17 +9,17 @@ import ColorSelector from "./ColorSelector.vue";
 
 describe("ColorSelector", () => {
     it("shows a button for each color and 'none'", () => {
-        const wrapper = mount(ColorSelector, { propsData: { color: "none" } });
+        const wrapper = mount(ColorSelector, { props: { color: "none" } });
         const buttons = wrapper.findAll("button");
         expect(buttons.length).toBe(Object.keys(colors).length + 1);
     });
 
     it("highlights the selected color", async () => {
-        const wrapper = mount(ColorSelector, { propsData: { color: "none" } });
+        const wrapper = mount(ColorSelector, { props: { color: "none" } });
         const allSelected = wrapper.findAll(".selected");
         expect(allSelected.length).toBe(1);
 
-        let selected = allSelected.wrappers[0];
+        let selected = allSelected[0];
         expect(selected.element.getAttribute("title")).toBe("No Color");
 
         const colorNames = Object.keys(colors);
@@ -35,14 +36,14 @@ describe("ColorSelector", () => {
     });
 
     it("emits the set color", async () => {
-        const wrapper = mount(ColorSelector, { propsData: { color: "none" } });
+        const wrapper = mount(ColorSelector, { props: { color: "none" } });
 
         const colorNames = Object.keys(colors);
 
         for (let i = 0; i < colorNames.length; i++) {
             const color = colorNames[i];
             await wrapper.find(`[title="Color ${color}"]`).trigger("click");
-            expect(wrapper.emitted()["set-color"][i][0]).toBe(color);
+            expect(emittedArg(wrapper, "set-color", i)).toBe(color);
         }
     });
 });

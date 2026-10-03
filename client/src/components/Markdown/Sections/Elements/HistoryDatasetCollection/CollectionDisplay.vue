@@ -2,8 +2,8 @@
     <GAlert v-if="!!errorText" variant="warning" show>
         {{ errorText }}
     </GAlert>
-    <b-card v-else body-class="p-0">
-        <b-card-header>
+    <BCard v-else body-class="p-0">
+        <BCardHeader>
             <span class="float-right">
                 <GButton
                     v-g-tooltip.hover
@@ -31,8 +31,8 @@
                 <span>Dataset Collection:</span>
                 <span class="font-weight-light">{{ itemName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+        <BCardBody>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
                 <GAlert v-if="!!messageText" :variant="messageVariant" show>
@@ -40,11 +40,12 @@
                 </GAlert>
                 <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 
 <script setup lang="ts">
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";

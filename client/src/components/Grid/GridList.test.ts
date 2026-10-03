@@ -1,10 +1,9 @@
 import { faCog, faCopy, faFilter, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
@@ -18,10 +17,9 @@ vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-vi.mock("vue-router/composables");
+vi.mock("vue-router");
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 function createTestGrid(): GridConfig {
     return {
@@ -102,7 +100,7 @@ interface TargetProps {
 function createTarget(propsData: TargetProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return mount(MountTarget as object, {
-        localVue,
+        global: localVue,
         propsData,
         pinia,
     });
@@ -163,15 +161,15 @@ describe("GridList", () => {
         await flushPromises();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
         const dropdownItems = dropdown.findAll(".dropdown-item");
-        expect(dropdownItems.at(0).text()).toBe("operation-title-1");
-        expect(dropdownItems.at(1).text()).toBe("operation-title-3");
-        await dropdownItems.at(0).trigger("click");
+        expect(nth(dropdownItems, 0).text()).toBe("operation-title-1");
+        expect(nth(dropdownItems, 1).text()).toBe("operation-title-3");
+        await nth(dropdownItems, 0).trigger("click");
         const clickHandler = testGrid.fields[2]!.operations![0]!.handler;
         expect(clickHandler).toHaveBeenCalledTimes(1);
         expect(vi.mocked(clickHandler).mock.calls[0]!.slice(0, 1)).toEqual([
             { id: "id-1", link: "link-1", operation: "operation-1" },
         ]);
-        await dropdownItems.at(1).trigger("click");
+        await nth(dropdownItems, 1).trigger("click");
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("Operation-3 has been executed.");
@@ -201,8 +199,10 @@ describe("GridList", () => {
             limit: 2,
         });
         await flushPromises();
+
         const pageLinks = wrapper.findAll(".page-link");
-        await pageLinks.at(4).trigger("click");
+        await pageLinks[4]!.trigger("click");
+        await flushPromises();
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
         expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-6");
     });

@@ -22,7 +22,6 @@ class ResizeObserver {
     disconnect = vi.fn();
 }
 
-// eslint-disable-next-line compat/compat
 window.ResizeObserver = ResizeObserver;
 
 function propsForStep(step: Step) {
@@ -73,10 +72,9 @@ describe("NodeOutput", () => {
         const simpleDataStep = stepForLabel("simple data", stepStore.steps);
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
-            propsData: propsData,
-            localVue,
+            props: propsData,
+            global: { ...localVue, provide: { transform, workflowId: "mock-workflow" } },
             pinia,
-            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
     });
@@ -96,10 +94,9 @@ describe("NodeOutput", () => {
         } as any);
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
-            propsData: propsData,
-            localVue,
+            props: propsData,
+            global: { ...localVue, provide: { transform, workflowId: "mock-workflow" } },
             pinia,
-            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".mapped-over").exists()).toBe(false);
         inputTerminal.connect(outputTerminal);

@@ -5,8 +5,7 @@ import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CreateElement } from "vue";
-import { nextTick, ref } from "vue";
+import { h, nextTick, ref } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -35,7 +34,7 @@ vi.mock("./uploadMethodRegistry", async (importOriginal: () => Promise<Record<st
             name: "Paste Links",
             requiresTargetHistory: true,
             component: {
-                render: (h: CreateElement) => h("div"),
+                render: () => h("div"),
                 mounted(this: { $emit: (event: string, ready: boolean) => void }) {
                     this.$emit("ready", true);
                 },

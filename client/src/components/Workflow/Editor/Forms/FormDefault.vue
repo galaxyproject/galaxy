@@ -40,7 +40,7 @@
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
-                @onUpdateStep="(id, step) => emit('onUpdateStep', id, step)" />
+                @onUpdateStep="(id: number, step: Partial<Step>) => emit('onUpdateStep', id, step)" />
             <FormPickValue
                 v-if="type == 'pick_value'"
                 :step="step"

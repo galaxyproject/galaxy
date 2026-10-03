@@ -2,7 +2,7 @@
 import { faCheck, faExclamationTriangle, faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
@@ -246,5 +246,5 @@ async function onImportLocal() {
         :tags-editable="false"
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="workflow.update_time ?? ''"
-        @tagClick="(tag) => emit('tagClick', tag)" />
+        @tagClick="(tag: string) => emit('tagClick', tag)" />
 </template>

@@ -1,3 +1,4 @@
+import { emittedArg } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -30,7 +31,7 @@ const postFrom = (wrapper, data) =>
     window.dispatchEvent(new MessageEvent("message", { data, source: wrapper.find("iframe").element.contentWindow }));
 
 afterEach(() => {
-    mounted.forEach((wrapper) => wrapper.destroy());
+    mounted.forEach((wrapper) => wrapper.unmount());
     mounted = [];
     vi.useRealTimers();
 });
@@ -73,8 +74,8 @@ describe("several visualizations on one page", () => {
         await settle();
         expect(first.emitted("change")).toHaveLength(1);
         expect(second.emitted("change")).toHaveLength(1);
-        expect(first.emitted("change")[0][0].visualization_title).toBe("one");
-        expect(second.emitted("change")[0][0].visualization_title).toBe("two");
+        expect(emittedArg(first, "change").visualization_title).toBe("one");
+        expect(emittedArg(second, "change").visualization_title).toBe("two");
     });
 
     it("ignores a message from a window that is not its frame", async () => {
@@ -93,7 +94,7 @@ describe("several visualizations on one page", () => {
     it("does not emit a debounced change after it has been removed", async () => {
         const { first } = await twoFrames();
         postFrom(first, { from: "galaxy-visualization", visualization_config: {}, visualization_title: "in flight" });
-        first.destroy();
+        first.unmount();
         await settle();
         expect(first.emitted("change")).toBeFalsy();
     });
@@ -101,7 +102,7 @@ describe("several visualizations on one page", () => {
     it("takes its listener off the shared window when removed", async () => {
         const added = vi.spyOn(window, "addEventListener");
         const removed = vi.spyOn(window, "removeEventListener");
-        mountFrame({}).destroy();
+        mountFrame({}).unmount();
         const handler = added.mock.calls.find(([type]) => type === "message")?.[1];
         expect(handler).toBeDefined();
         expect(removed.mock.calls).toContainEqual(["message", handler]);
@@ -136,7 +137,7 @@ describe("what a message is allowed to say", () => {
         const wrapper = await frame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_config: { a: 1 }, visualization_saved: true });
         await settle();
-        expect(wrapper.emitted("change")[0][0].visualization_config).toEqual({ a: 1 });
+        expect(emittedArg(wrapper, "change").visualization_config).toEqual({ a: 1 });
         expect(wrapper.emitted("saved")).toEqual([[true]]);
     });
 });
@@ -182,7 +183,7 @@ describe("what counts as a change to the visualization", () => {
             visualization_saved: true,
         });
         await settle();
-        expect(wrapper.emitted("change")[0][0].visualization_title).toBe("renamed");
+        expect(emittedArg(wrapper, "change").visualization_title).toBe("renamed");
         expect(wrapper.emitted("saved")).toEqual([[true]]);
     });
 });

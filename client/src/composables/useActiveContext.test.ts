@@ -13,7 +13,7 @@ const mockRoute: Ref<{ path: string; query: Record<string, string>; params: Reco
     params: {},
 });
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => mockRoute.value,
 }));
 

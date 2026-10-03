@@ -19,7 +19,7 @@ const selectors = {
 const { server, http } = useServerMock();
 
 async function mountNotificationsManagement(config: any = {}) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     server.use(
@@ -29,7 +29,7 @@ async function mountNotificationsManagement(config: any = {}) {
     );
 
     const wrapper = shallowMount(NotificationsManagement as object, {
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

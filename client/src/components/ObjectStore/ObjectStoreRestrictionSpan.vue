@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
-import Vue, { computed } from "vue";
-
-Vue.use(BootstrapVue);
+import { computed } from "vue";
 
 const props = defineProps({
     isPrivate: Boolean,

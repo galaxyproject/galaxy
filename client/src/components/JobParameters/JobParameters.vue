@@ -53,8 +53,6 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useJobParametersStore } from "@/stores/jobParametersStore";
@@ -64,8 +62,6 @@ import JobOutputs from "../JobInformation/JobOutputs.vue";
 import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
 import JobParametersArrayValue from "./JobParametersArrayValue.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

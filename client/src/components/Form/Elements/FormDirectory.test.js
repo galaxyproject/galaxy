@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -29,8 +29,7 @@ async function init(wrapper, data) {
 }
 
 async function validateLatestEmittedPath(wrapper, expectedPath) {
-    const latestEmitIndex = wrapper.emitted()["input"].length - 1;
-    const latestPath = wrapper.emitted()["input"][latestEmitIndex][0];
+    const latestPath = emittedArg(wrapper, "input", -1);
     expect(latestPath).toBe(expectedPath);
 
     // also manually change prop value to be able to test the value being displayed
@@ -65,7 +64,10 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         await input.setValue(path);
         expect(input.element.value).toBe(path);
 
-        input.trigger("keyup.enter");
+        // VTU2's ".enter" modifier shorthand sets event.key to the literal
+        // string "enter" rather than the real DOM value "Enter", so the
+        // component's `key === "Enter"` check never matches -- pass it explicitly.
+        await input.trigger("keyup", { key: "Enter" });
         return input;
     };
 
@@ -83,17 +85,17 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const pinia = createPinia();
 
         wrapper = mount(FormDirectory, {
-            propsData: {
+            props: {
                 value: null,
             },
-            localVue: localVue,
+            global: localVue,
             pinia,
         });
         await flushPromises();
     });
     afterEach(async () => {
         if (wrapper) {
-            wrapper.destroy();
+            wrapper.unmount();
         }
         wrapper = undefined;
     });
@@ -147,7 +149,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // should be the same name plus additional item
         expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
         // find newly added chunk
-        const addedChunk = wrapper.findAll("li.breadcrumb-item button").wrappers.find((e) => e.text() === validPath);
+        const addedChunk = wrapper.findAll("li.breadcrumb-item button").find((e) => e.text() === validPath);
 
         await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);
 

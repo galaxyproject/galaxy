@@ -2,6 +2,7 @@
 import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -35,9 +36,9 @@ const onImport = async () => {
 
 <template>
     <div>
-        <b-link v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onImport">
+        <BLink v-if="showLink" data-description="history import link" :data-history-id="historyId" @click="onImport">
             Click to Import History: {{ name }}
-        </b-link>
+        </BLink>
         <div v-if="imported" class="text-success">
             <FontAwesomeIcon :icon="faCheck" class="mr-1" />
             <span>Successfully Imported History: {{ name }}!</span>

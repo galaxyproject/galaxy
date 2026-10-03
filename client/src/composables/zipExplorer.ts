@@ -11,7 +11,7 @@ import {
     ZipExplorer,
     type ZipFileEntry,
 } from "ro-crate-zip-explorer";
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { defaultModel, type FileStream } from "@/components/Upload/model";
@@ -20,7 +20,7 @@ import { buildUploadPayload, type LocalFileUploadItem, submitUpload } from "@/ut
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
-const zipExplorer = ref<IZipExplorer>();
+const zipExplorer = shallowRef<IZipExplorer>();
 const zipExplorerError = ref<string>();
 
 export function useZipExplorer() {
@@ -348,7 +348,7 @@ export async function isRemoteZipFile(url: string): Promise<boolean> {
 
         // Check for ZIP magic number: 0x50 0x4B 0x03 0x04
         return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
-    } catch (err) {
+    } catch {
         return false;
     }
 }
@@ -360,7 +360,7 @@ export function isValidUrl(inputUrl?: string | null): boolean {
     try {
         const url = new URL(inputUrl);
         return url.protocol === "http:" || url.protocol === "https:";
-    } catch (_) {
+    } catch {
         return false;
     }
 }

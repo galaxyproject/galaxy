@@ -123,8 +123,10 @@ describe("WorkflowRun.vue", () => {
         const MISSING_TOOLS_MESSAGE = "Following tools missing: toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17";
 
         function mountWithRegisteredUser(props = {}) {
-            // @vue/test-utils v1: `propsData`, and the testing pinia becomes active on creation.
-            createTestingPinia({
+            // Pinia re-activates the pinia of whichever app last used a store, so with the outer
+            // beforeEach mount alive, useHistoryItemsStore() below could resolve to its store.
+            wrapper.unmount();
+            const pinia = createTestingPinia({
                 createSpy: vi.fn,
                 initialState: {
                     user: {
@@ -133,7 +135,8 @@ describe("WorkflowRun.vue", () => {
                 },
             });
             return mount(WorkflowRun, {
-                propsData: { workflowId: run1WorkflowId, ...props },
+                props: { workflowId: run1WorkflowId, ...props },
+                global: { plugins: [pinia] },
             });
         }
 

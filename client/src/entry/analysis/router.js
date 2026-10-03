@@ -1,8 +1,8 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
+import { zipImportResultsProps } from "@/components/ImportData/zip/resultsRoute";
 import { APIKey } from "@/components/User/APIKey";
 import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
@@ -112,25 +112,8 @@ import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
-Vue.use(VueRouter);
-
-// Async component for CustomToolEditor to reduce bundle size
-// NOTE: We use the full async component factory pattern instead of simple dynamic imports
-// (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
-const CustomToolEditor = () => ({
-    component: import("@/components/Tool/CustomToolEditor.vue"),
-    loading: {
-        template: '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading Tool Editor...</div>',
-    },
-    error: {
-        template: '<div class="alert alert-danger">Failed to load Tool Editor</div>',
-    },
-    delay: 200,
-    timeout: 10000,
-});
-
-// patches $router.push() to trigger an event and hide duplication warnings
-patchRouterPush(VueRouter);
+// Lazy-loaded so Monaco stays out of the main bundle.
+const CustomToolEditor = () => import("@/components/Tool/CustomToolEditor.vue");
 
 // redirect anon users
 function redirectAnon(redirect = "") {
@@ -152,9 +135,8 @@ function redirectIf(condition, path) {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    const router = new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
+    const router = createRouter({
+        history: createWebHistory(getAppRoot()),
         routes: [
             /** Login and registration entry routes */
             ...LoginRoutes,
@@ -206,7 +188,7 @@ export function getRouter(Galaxy) {
                 name: "error",
                 path: "/client-error/",
                 component: ClientError,
-                props: true,
+                props: () => ({ message: window.history.state?.errorMessage }),
             },
             /** Analysis routes */
             {
@@ -926,10 +908,7 @@ export function getRouter(Galaxy) {
                         path: "import/zip/results",
                         name: "ZipImportResults",
                         component: ZipImportResults,
-                        props: (route) => ({
-                            workflowFileCount: Number(route.params.workflowFileCount),
-                            regularFileCount: Number(route.params.regularFileCount),
-                        }),
+                        props: zipImportResultsProps,
                         redirect: redirectAnon(),
                     },
                     {
@@ -978,31 +957,34 @@ export function getRouter(Galaxy) {
         return false;
     }
 
-    router.beforeEach(async (to, from, next) => {
+    router.beforeEach(async (to) => {
         // TODO: merge anon redirect functionality here for more standard handling
 
         if (!checkUnsavedChanges(router)) {
-            return next(false);
+            return false;
         }
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);
         if (isAdminAccessRequired) {
             const error = new Error(`Admin access required for '${to.path}'.`);
             error.name = "AdminRequired";
-            return next(error);
+            throw error;
         }
 
         const isRegisteredUserAccessRequired = checkRegisteredUserAccessRequired(to);
         if (isRegisteredUserAccessRequired) {
             const error = new Error(`Registered user access required for '${to.path}'.`);
             error.name = "RegisteredUserRequired";
-            return next(error);
+            throw error;
         }
-        next();
     });
 
+    patchRouterPush(router);
+
+    // Vue Router 4 drops params that aren't part of the path, so the message
+    // travels in history state instead.
     router.onError((error) => {
-        router.push({ name: "error", params: { error: error } });
+        router.push({ name: "error", state: { errorMessage: error.message } });
     });
 
     return router;

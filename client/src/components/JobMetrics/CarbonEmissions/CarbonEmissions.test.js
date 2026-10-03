@@ -1,15 +1,14 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
 
 import CarbonEmissions from "./CarbonEmissions.vue";
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;
@@ -25,7 +24,7 @@ const testServerInstance = {
 describe("CarbonEmissions/CarbonEmissions.vue", () => {
     it("correctly calculates carbon emissions.", () => {
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity: worldwideCarbonIntensity,
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
@@ -34,7 +33,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
                 geographicalServerLocationName: "GLOBAL",
             },
-            localVue,
+            global: localVue,
             router,
         });
 
@@ -51,7 +50,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
 
     it("does not render memory estimates when no value can be determined.", () => {
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
                 jobRuntimeInSeconds: 1,
@@ -59,7 +58,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
                 carbonIntensity: worldwideCarbonIntensity,
             },
-            localVue,
+            global: localVue,
             router,
         });
 
@@ -69,7 +68,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
 
     it("takes the configured `powerUsageEffectiveness` value into account.", () => {
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity: 1,
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
@@ -78,7 +77,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: 0,
                 geographicalServerLocationName: "GLOBAL",
             },
-            localVue,
+            global: localVue,
             router,
         });
 
@@ -95,7 +94,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
 
     it("takes the configured `carbonIntensity` value into account.", () => {
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity: 0,
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
@@ -104,7 +103,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: 1,
                 geographicalServerLocationName: "GLOBAL",
             },
-            localVue,
+            global: localVue,
             router,
         });
 
@@ -118,7 +117,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
     it("displays text saying that global values were used when the `geographicalServerLocationName` prop is set to `GLOBAL`.", () => {
         const carbonIntensity = worldwideCarbonIntensity;
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity,
                 coresAllocated: 2,
                 estimatedServerInstance: testServerInstance,
@@ -126,7 +125,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 geographicalServerLocationName: "GLOBAL",
                 powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
             },
-            localVue,
+            global: localVue,
             router,
         });
         const locationText = wrapper.find("#location-explanation").element;
@@ -139,7 +138,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
         const locationName = "Italy";
         const carbonIntensity = worldwideCarbonIntensity;
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity,
                 coresAllocated: 2,
                 estimatedServerInstance: testServerInstance,
@@ -148,7 +147,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness: worldwideCarbonIntensity,
                 geographicalServerLocationName: locationName,
             },
-            localVue,
+            global: localVue,
             router,
         });
 
@@ -161,7 +160,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
     it("displays text saying that global average values for PUE where used when `powerUsageEffectiveness` matches the global average.", () => {
         const powerUsageEffectiveness = worldwidePowerUsageEffectiveness;
         const wrapper = mount(CarbonEmissions, {
-            propsData: {
+            props: {
                 carbonIntensity: 1,
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
@@ -170,7 +169,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 powerUsageEffectiveness,
                 geographicalServerLocationName: "GLOBAL",
             },
-            localVue,
+            global: localVue,
             router,
         });
 

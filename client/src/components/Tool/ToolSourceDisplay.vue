@@ -4,6 +4,7 @@
 
 <script>
 import loader from "@monaco-editor/loader";
+import { markRaw } from "vue";
 
 export default {
     props: {
@@ -36,7 +37,7 @@ export default {
     mounted() {
         this.initMonaco();
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.editor) {
             this.editor.dispose();
         }
@@ -44,15 +45,18 @@ export default {
     methods: {
         initMonaco() {
             loader.init().then((monaco) => {
-                this.editor = monaco.editor.create(this.$refs.editorContainer, {
-                    value: this.code,
-                    language: this.language,
-                    readOnly: true,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    theme: "vs",
-                });
+                // Calls through a reactive proxy of Monaco hang the tab, so keep it raw.
+                this.editor = markRaw(
+                    monaco.editor.create(this.$refs.editorContainer, {
+                        value: this.code,
+                        language: this.language,
+                        readOnly: true,
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        theme: "vs",
+                    }),
+                );
             });
         },
     },

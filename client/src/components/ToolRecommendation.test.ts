@@ -1,4 +1,5 @@
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentOptions } from "vue";
@@ -24,12 +25,12 @@ const predictions = {
 };
 
 describe("ToolRecommendation", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     const renderD3Tree = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.spyOn((ToolRecommendation as unknown as ComponentOptions<Vue>).methods!, "renderD3Tree").mockImplementation(
+        vi.spyOn((ToolRecommendation as unknown as ComponentOptions).methods!, "renderD3Tree").mockImplementation(
             renderD3Tree,
         );
         vi.mocked(getToolPredictions).mockResolvedValue(predictions);
@@ -37,11 +38,12 @@ describe("ToolRecommendation", () => {
         vi.mocked(getCompatibleRecommendations).mockReturnValue(predictions.predicted_data.children);
     });
 
-    afterEach(() => wrapper?.destroy());
+    afterEach(() => wrapper?.unmount());
 
     async function mountRecommendation() {
         wrapper = shallowMount(ToolRecommendation as object, {
             propsData: { toolId: "cat1" },
+            global: getLocalVue(),
         });
         await flushPromises();
     }

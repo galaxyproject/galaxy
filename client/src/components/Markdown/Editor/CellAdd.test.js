@@ -1,3 +1,4 @@
+import { emittedArg } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -79,7 +80,7 @@ describe("CellAdd.vue", () => {
         const option = wrapper.findComponent(CellOption);
         await option.trigger("click");
         expect(wrapper.emitted("click")).toBeTruthy();
-        expect(wrapper.emitted("click")?.[0][0]).toMatchObject({
+        expect(emittedArg(wrapper, "click")).toMatchObject({
             configure: false,
             toggle: true,
             id: expect.any(Number),

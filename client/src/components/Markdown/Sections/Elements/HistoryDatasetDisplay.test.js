@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { copyDataset } from "@/api/datasets";
@@ -29,8 +29,11 @@ vi.mock("@/api/datasets", async (importOriginal) => {
 
 vi.mock("@/composables/toast");
 
+// `currentHistoryId` must be a ref (not a plain string) so that `storeToRefs()` --
+// which only wraps ref/reactive/computed properties of the raw store object --
+// picks it up the same way it would for a real Pinia store's internal state.
 const mockHistoryStore = reactive({
-    currentHistoryId: "current_history_id",
+    currentHistoryId: ref("current_history_id"),
     loadCurrentHistory: vi.fn(),
 });
 
@@ -75,7 +78,7 @@ describe("HistoryDatasetDisplay", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(content)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
+            global: localVue,
             propsData: { datasetId, ...propsData },
             pinia: setUpDatatypesStore(),
         });

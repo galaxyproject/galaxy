@@ -1,4 +1,4 @@
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
@@ -37,8 +37,8 @@ describe("WorkflowAttributes", () => {
         untypedParameters.getParameter("workflow_parameter_0");
         untypedParameters.getParameter("workflow_parameter_1");
 
-        const wrapper = mount(WorkflowAttributes as object, {
-            propsData: {
+        const wrapper = mount(WorkflowAttributes, {
+            props: {
                 id: "workflow_id",
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
@@ -47,11 +47,10 @@ describe("WorkflowAttributes", () => {
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },
-            stubs: {
-                LicenseSelector: true,
+            global: {
+                ...withPlugins(localVue, pinia),
+                stubs: { ...localVue.stubs, LicenseSelector: true },
             },
-            localVue,
-            pinia,
         });
 
         await flushPromises();
@@ -95,8 +94,8 @@ describe("WorkflowAttributes", () => {
 
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);
-        expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
-        expect(parameters.at(1).text()).toBe("2: workflow_parameter_1");
+        expect(parameters[0]!.text()).toBe("1: workflow_parameter_0");
+        expect(parameters[1]!.text()).toBe("2: workflow_parameter_1");
         expect((wrapper.find("#workflow-annotation").element as HTMLInputElement).value).toBe(TEST_ANNOTATION);
     });
 });

@@ -2,7 +2,7 @@
     <div v-if="isContainerResolution">
         <ContainerResolutionDetails :resolution="containerResolution" />
     </div>
-    <b-card v-else>
+    <BCard v-else>
         <div class="row">
             <div class="col">
                 <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
@@ -64,9 +64,11 @@
                 </div>
             </span>
         </div>
-    </b-card>
+    </BCard>
 </template>
 <script>
+import { BCard } from "bootstrap-vue";
+
 import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
 import DependencyResolver from "./DependencyResolver.vue";
 import Requirement from "./Requirement.vue";
@@ -77,6 +79,7 @@ import Tools from "./Tools.vue";
 
 export default {
     components: {
+        BCard,
         ContainerResolutionDetails,
         DependencyResolver,
         Requirement,
@@ -105,7 +108,7 @@ export default {
         resolutionOkay: function() {
             let anyUnresolved = this.resolution.status.length != 0;  // odd logic here, but we call no requirements unresolved in the GUI :(
             for( const status of this.resolution.status ) {
-                anyUnresolved = anyUnresolved || status.dependency_type == null;                    
+                anyUnresolved = anyUnresolved || status.dependency_type == null;
             }
             return !anyUnresolved;
         },

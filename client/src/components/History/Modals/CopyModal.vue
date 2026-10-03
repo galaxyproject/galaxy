@@ -103,7 +103,7 @@ async function copy() {
 
 <template>
     <GModal
-        :show.sync="localShowModal"
+        v-model:show="localShowModal"
         size="small"
         :title="title"
         confirm
@@ -126,7 +126,7 @@ async function copy() {
         </transition>
 
         <transition>
-            <GForm v-if="!loading" @submit.native.prevent="copy">
+            <GForm v-if="!loading" @submit.prevent="copy">
                 <GFormLabel
                     title="Enter a title for the new history"
                     invalid-feedback="Please enter a valid history title."

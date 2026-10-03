@@ -48,8 +48,6 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { waitOnJob } from "@/components/JobStates/wait";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -59,8 +57,6 @@ import ExportLink from "./ExportLink.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import JobError from "@/components/JobInformation/JobError.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

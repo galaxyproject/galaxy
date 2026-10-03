@@ -1,6 +1,8 @@
 import { toValue } from "@vueuse/core";
 import { onScopeDispose, ref, watch } from "vue";
 
+import { toRawDeep } from "@/utils/toRawDeep";
+
 export function useFilterObjectArray(array, filter, objectFields, asRegex = false) {
     const worker = new Worker(new URL("./filter.worker.js", import.meta.url), { type: "module" });
 
@@ -14,7 +16,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
     const post = (message) => {
         sentSeq += 1;
         pending.value = true;
-        worker.postMessage({ ...message, seq: sentSeq });
+        worker.postMessage(toRawDeep({ ...message, seq: sentSeq }));
     };
 
     watch(

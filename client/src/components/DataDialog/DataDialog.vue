@@ -2,7 +2,6 @@
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, type Ref, ref, watch } from "vue";
-import Vue from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
@@ -18,7 +17,9 @@ import { Services } from "./services";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-type Record = SelectionItem;
+// `_rowVariant` was bootstrap-vue's BTable row-styling convention; GTable doesn't read it (this
+// is a no-op today), but keeping the type honest rather than dropping the assignment outright.
+type Record = SelectionItem & { _rowVariant?: string };
 
 interface Props {
     allowUpload?: boolean;
@@ -93,7 +94,7 @@ function formatRows() {
         if (item.isLeaf) {
             _rowVariant = model.exists(item.id) ? "success" : "default";
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        item._rowVariant = _rowVariant;
     }
 }
 

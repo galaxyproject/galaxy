@@ -2,29 +2,37 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
+import "@/compat-config";
 
+import { config } from "@vue/test-utils";
 import { vi } from "vitest";
-// Vue configuration
-import Vue from "vue";
 
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
 
-Vue.config.productionTip = false;
-Vue.config.devtools = false;
+// Vue passes a warning's component props to console.warn as raw objects, and
+// vitest-fail-on-console formats every argument before deciding whether to
+// silence it -- a big enough props object overflows the string it builds.
+// Hand Vue's warnings to the console as the plain strings Vue already has.
+config.global.config.warnHandler = (message: string, _instance: unknown, trace: string) => {
+    console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+};
 
-// Mock g-tooltip directive so components don't trigger "Failed to resolve directive" warnings
-Vue.directive("g-tooltip", {
-    bind(el: HTMLElement, binding: { value?: string }) {
-        el.setAttribute("data-mock-directive", binding.value || el.title || "");
+// Mock g-tooltip directive globally so components don't trigger
+// "Failed to resolve directive" warnings during tests.
+config.global.directives = {
+    ...(config.global.directives ?? {}),
+    "g-tooltip": {
+        mounted(el: HTMLElement, binding: { value?: string }) {
+            el.setAttribute("data-mock-directive", binding.value || el.title || "");
+        },
     },
-});
-
-// v-sanitize-html is the real directive; only the DOMPurify call behind it is
-// replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
+    // v-sanitize-html is the real directive; only the DOMPurify call behind it is
+    // replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
+    "sanitize-html": vSanitizeHtml,
+    "no-sanitize-html": vNoSanitizeHtml,
+};
 vi.mock("@/directives/sanitizeHtml");
-Vue.directive("sanitize-html", vSanitizeHtml);
-Vue.directive("no-sanitize-html", vNoSanitizeHtml);
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
@@ -44,13 +52,6 @@ vi.mock("katex", () => ({
     default: {
         renderToString: (latex: string) => `<span class="katex">${latex}</span>`,
     },
-}));
-
-// Provide a mocked version of Vue to ensure above settings are not
-// overridden by a Vue library that gets imported later
-vi.doMock("vue", () => ({
-    default: Vue,
-    ...Vue,
 }));
 
 // Mock window.scrollIntoView (not available in test environment)
@@ -94,12 +95,87 @@ Object.defineProperty(global, "BroadcastChannel", {
     value: MockBroadcastChannel,
 });
 
+// Mock Worker so components using web workers (e.g. useFilterObjectArray)
+// don't throw "Worker is not defined" under happy-dom.
+class MockWorker extends EventTarget {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    onmessageerror: ((event: MessageEvent) => void) | null = null;
+
+    constructor(_url: string | URL, _options?: WorkerOptions) {
+        super();
+    }
+
+    postMessage(_message: unknown) {
+        // No-op for tests
+    }
+
+    terminate() {
+        // No-op for tests
+    }
+}
+
+Object.defineProperty(global, "Worker", {
+    writable: true,
+    configurable: true,
+    value: MockWorker,
+});
+
 // Fail tests that log console errors or warnings
-// Replaces jest-fail-on-console functionality
+// Replaces jest-fail-on-console functionality.
+//
+// vitest-fail-on-console treats shouldFailOnError/shouldFailOnWarn as booleans
+// (defaults: true). The predicate that decides whether to silence a particular
+// message is silenceMessage(message, methodName) -- returning true suppresses
+// it completely (no fail, no noisy print).
 const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
     shouldFailOnError: true,
     shouldFailOnWarn: true,
+    silenceMessage: (message: string, methodName: string) => {
+        if (methodName === "warn") {
+            // Vue compat mode warnings (resolveComponent / resolveDirective /
+            // withDirectives / Property "X" was accessed during render /
+            // Missing ref owner / injection not found / onScopeDispose /
+            // $scopedSlots / COMPONENT_FUNCTIONAL deprecation / Invalid vnode
+            // type / Unhandled error during execution of watcher callback)
+            if (message.includes("[Vue warn]")) {
+                return true;
+            }
+            // Vue Router compat warnings (e.g. "No match found for location");
+            // since vue-router 5 they come from nostics as "[VUE_ROUTER_R0004] ..."
+            if (message.includes("[Vue Router warn]") || message.includes("[VUE_ROUTER_")) {
+                return true;
+            }
+            // Pinia duplicate registration during test setup
+            if (message.includes("App already provides property with key")) {
+                return true;
+            }
+            // Bootstrap-Vue duplicate-registration noise
+            if (message.includes("has already been registered")) {
+                return true;
+            }
+            // Deprecation warnings during migration
+            if (message.includes("DEPRECATION") || message.includes("deprecated")) {
+                return true;
+            }
+        }
+        if (methodName === "error") {
+            // axios mock not installed during some tests (expected)
+            if (message.includes('No "default" export is defined on the "axios" mock')) {
+                return true;
+            }
+            // Network errors from unmocked endpoints (mocking issue, not a real error)
+            if (message.includes("ECONNREFUSED") || message.includes("socket hang up")) {
+                return true;
+            }
+            // FontAwesome icon-not-found noise from tests using made-up icon names
+            if (message.includes("Could not find one or more icon")) {
+                return true;
+            }
+        }
+        return false;
+    },
 });
 
 // Import and setup MSW if needed

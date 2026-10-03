@@ -61,9 +61,11 @@ describe("JobInformation/JobInformation.vue", () => {
             jobId: JOB_ID,
         };
         wrapper = mount(JobInformation, {
-            propsData,
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            props: propsData,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
+            },
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");
@@ -105,7 +107,7 @@ describe("JobInformation/JobInformation.vue", () => {
                 });
             }),
         );
-        wrapper.destroy();
+        wrapper.unmount();
         wrapper = mount(JobInformation, {
             propsData: { jobId: JOB_ID },
             localVue,

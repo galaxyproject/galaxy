@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -8,6 +8,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import apiResponse from "./response.test.json";
 
 import FolderDetails from "./FolderDetails.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const { server, http } = useServerMock();
 
@@ -28,20 +29,19 @@ const INPUT_PROP_DATA = {
 
 const DETAILS_BUTTON = '[data-testid="loc-details-btn"]';
 const LIBRARY_TABLE = '[data-testid="library-table"]';
-const DETAILS_MODAL = "#details-modal";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
 async function mountFolderDetailsWrapper(localVue: ReturnType<typeof getLocalVue>) {
     const wrapper = mount(FolderDetails as object, {
-        localVue,
+        global: localVue,
         propsData: INPUT_PROP_DATA,
     });
     await flushPromises();
     return wrapper;
 }
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     const localVue = getLocalVue();
 
     beforeEach(async () => {
@@ -49,7 +49,7 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     });
 
     afterEach(async () => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("Should display details button", async () => {
@@ -65,12 +65,12 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
         );
 
         // Modal is hidden
-        expect(wrapper.find(DETAILS_MODAL).props("show")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBeFalsy();
 
         await openDetailsModal();
 
         // Modal is visible
-        expect(wrapper.find(DETAILS_MODAL).props("show")).toBeTruthy();
+        expect(wrapper.findComponent(GModal).props("show")).toBeTruthy();
 
         expect(wrapper.find(LIBRARY_TABLE).html()).toContain(LIBRARY_ID);
         expect(wrapper.find(FOLDER_TABLE).html()).toContain(FOLDER_ID);

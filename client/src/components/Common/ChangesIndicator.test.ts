@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
-import { nextTick } from "vue";
+import { type ComponentPublicInstance, nextTick } from "vue";
 
 import ChangesIndicator from "./ChangesIndicator.vue";
 
@@ -13,15 +12,18 @@ const SELECTORS = {
     UNSAVED: "[data-description='item unsaved indicator']",
 } as const;
 
-type ChangesIndicatorInstance = Vue & {
+type ChangesIndicatorInstance = ComponentPublicInstance & {
     flashSavedIndicator: () => Promise<void>;
 };
 
-function mountIndicator(hasChanges = false): Wrapper<ChangesIndicatorInstance> {
+function mountIndicator(hasChanges = false): VueWrapper<ChangesIndicatorInstance> {
     return mount(ChangesIndicator as object, {
         localVue,
         propsData: { hasChanges },
-    }) as Wrapper<ChangesIndicatorInstance>;
+        // happy-dom only resolves getComputedStyle() (what isVisible() reads) for
+        // elements attached to the document, so mount into the body.
+        attachTo: document.body,
+    }) as unknown as VueWrapper<ChangesIndicatorInstance>;
 }
 
 describe("ChangesIndicator", () => {
@@ -70,7 +72,7 @@ describe("ChangesIndicator", () => {
         const wrapper = mountIndicator();
 
         const flashPromise = wrapper.vm.flashSavedIndicator();
-        wrapper.destroy();
+        wrapper.unmount();
         await flashPromise;
 
         expect(vi.getTimerCount()).toBe(0);

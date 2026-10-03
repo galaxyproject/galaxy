@@ -1,4 +1,4 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
@@ -11,7 +11,7 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
 describe("StateUpgradeModal.vue", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     async function mountWith(stateMessages: UpgradeMessage[]) {
         wrapper = mount(StateUpgradeModal as object, {

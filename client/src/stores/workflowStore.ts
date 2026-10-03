@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed, WorkflowSortBy, WorkflowSummary } from "@/api/workflows";
@@ -110,7 +110,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     function mergeWorkflowSummaries(workflows: WorkflowSummary[]) {
         workflows.forEach((workflow) => {
             const cached = workflowSummariesById.value[workflow.id];
-            set(workflowSummariesById.value, workflow.id, cached ? { ...cached, ...workflow } : workflow);
+            workflowSummariesById.value[workflow.id] = cached ? { ...cached, ...workflow } : workflow;
         });
     }
 
@@ -127,7 +127,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         const merged = isFirstPage
             ? [...incomingIds, ...cached.filter((workflowId) => !incoming.has(workflowId))]
             : [...cached, ...incomingIds.filter((workflowId) => !cached.includes(workflowId))];
-        set(listIdsByKey.value, key, merged);
+        listIdsByKey.value[key] = merged;
     }
 
     async function fetchAndMergeWorkflowList(
@@ -281,7 +281,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
             if (error) {
                 throw Error(`Failed to retrieve workflow. ${error.err_msg}`);
             }
-            set(workflowsByInstanceId.value, workflowId, data);
+            workflowsByInstanceId.value[workflowId] = data;
         }
         workflowDetailPromises.delete(workflowId);
     }

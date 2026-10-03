@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { type HDASummary, isHDA } from "@/api";
 import { loadDatasets } from "@/api/datasets";
@@ -51,7 +51,7 @@ export const useDatasetListStore = defineStore("datasetListStore", () => {
             if (!dataset?.id) {
                 continue;
             }
-            set(storedDatasets.value, dataset.id, dataset);
+            storedDatasets.value[dataset.id] = dataset;
         }
     }
 

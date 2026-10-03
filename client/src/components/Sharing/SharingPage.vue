@@ -285,7 +285,7 @@ const embedable = computed(
                 ref="userSharing"
                 :item="item"
                 :model-class="modelClass"
-                @share="(users, option) => setSharing(actions.share_with, users, option)"
+                @share="(users: string[], option?: ShareOption) => setSharing(actions.share_with, users, option)"
                 @error="onError"
                 @cancel="getSharing" />
         </div>

@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { ScanEye } from "lucide-vue";
+import { ScanEye } from "lucide-vue-next";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -134,7 +134,7 @@ function onDisplay($event: MouseEvent) {
             transparent
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <ScanEye absolute-stroke-width :size="16" />
+            <ScanEye v-bind="{ absoluteStrokeWidth: true }" :size="16" />
         </GButton>
         <GButton
             v-if="writable && isHistoryItem"

@@ -17,7 +17,7 @@ const workflowData = {
     version: 0,
 };
 const selectors = {
-    gAlertStub: "galert-stub",
+    gAlertStub: "g-alert-stub",
 };
 const alertMessages = {
     unOwned: "Workflow is neither importable, nor owned by or shared with current user",
@@ -57,7 +57,7 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
         };
         const wrapper = shallowMount(WorkflowInvocationOverview, {
             propsData,
-            localVue,
+            global: localVue,
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();

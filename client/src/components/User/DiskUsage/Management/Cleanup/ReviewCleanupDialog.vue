@@ -247,7 +247,7 @@ defineExpose({
 </script>
 
 <template>
-    <GModal footer :show.sync="showDialog" size="medium">
+    <GModal v-model:show="showDialog" footer size="medium">
         <template v-slot:header>
             <Heading class="w-100 d-flex justify-content-between mb-0" size="md">
                 <div>{{ title }}</div>
@@ -315,8 +315,8 @@ defineExpose({
 
         <GModal
             id="confirmation-modal"
+            v-model:show="openConfirmationModal"
             confirm
-            :show.sync="openConfirmationModal"
             :title="confirmationTitle"
             :ok-text="permanentlyDeleteText"
             ok-color="red"

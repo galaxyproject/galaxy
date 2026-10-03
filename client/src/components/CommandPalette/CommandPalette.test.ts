@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
@@ -28,7 +28,6 @@ vi.mock("@/composables/config");
 vi.mock("@/composables/toast");
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 const { server, http } = useServerMock();
 
@@ -77,8 +76,8 @@ function countEmptyQuerySearches(provider: CommandPaletteProvider): SearchCounte
 }
 
 describe("CommandPalette", () => {
-    let wrapper: Wrapper<Vue>;
-    let router: VueRouter;
+    let wrapper: VueWrapper;
+    let router: Router;
 
     beforeEach(async () => {
         server.use(
@@ -86,7 +85,7 @@ describe("CommandPalette", () => {
                 return response(200).json([]);
             }),
         );
-        router = new VueRouter({ mode: "abstract" });
+        router = createRouter({ history: createMemoryHistory(), routes: [] });
         wrapper = mount(MountTarget as object, {
             localVue,
             router,
@@ -100,7 +99,7 @@ describe("CommandPalette", () => {
         useCommandPalette().closePalette();
         // the MRU list is a module level singleton, shared by every test here
         useRecentPaletteItems().clearRecentItems();
-        wrapper?.destroy();
+        wrapper?.unmount();
     });
 
     function input() {
@@ -164,7 +163,7 @@ describe("CommandPalette", () => {
     }
 
     function optionRow(text: string) {
-        return wrapper.findAll("[data-description='palette option']").wrappers.find((row) => row.text().includes(text));
+        return wrapper.findAll("[data-description='palette option']").find((row) => row.text().includes(text));
     }
 
     function spyOnInputFocus() {
@@ -174,7 +173,7 @@ describe("CommandPalette", () => {
     function sectionIds() {
         return wrapper
             .findAll("[data-description^='palette section ']")
-            .wrappers.map((section) => section.attributes("data-description"));
+            .map((section) => section.attributes("data-description"));
     }
 
     /** Presses or releases a modifier on the window, as holding it down would */
@@ -198,7 +197,7 @@ describe("CommandPalette", () => {
         await type("workflows");
         const options = wrapper.findAll("[role='option']");
         expect(options.length).toBeGreaterThan(0);
-        expect(options.at(0).text()).toContain("Workflows");
+        expect(nth(options, 0).text()).toContain("Workflows");
     });
 
     it("scopes to actions with the '>' prefix", async () => {
@@ -234,7 +233,7 @@ describe("CommandPalette", () => {
         await type("atac");
         const option = wrapper
             .findAll("[data-description='palette option']")
-            .wrappers.find((row) => row.text().includes("ATAC peaks"));
+            .find((row) => row.text().includes("ATAC peaks"));
         await option?.trigger("click");
 
         expect(useRecentPaletteItems().recentItems("visualization")).toMatchObject([
@@ -249,7 +248,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("lab notes");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         await press("Enter", { shiftKey: true });
         expect(push).toHaveBeenCalledWith("/pages/editor?id=p1");
@@ -260,7 +259,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("> upload");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
         expect(hint("secondary").text()).toContain("pick a method");
 
         await press("Enter", { shiftKey: true });
@@ -281,7 +280,7 @@ describe("CommandPalette", () => {
         useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
 
         await type("> run workflow");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Run workflow");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Run workflow");
 
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
@@ -385,7 +384,7 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("Actions");
         expect(inputValue()).toBe("Upload data");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
     });
 
     it("documents every binding in the help keys section", async () => {
@@ -399,7 +398,7 @@ describe("CommandPalette", () => {
         // the key badge is decorative, so the row names its shortcut itself
         const keyRow = wrapper
             .findAll("[data-description='palette option']")
-            .wrappers.find((row) => row.text().includes("Open the selected result"));
+            .find((row) => row.text().includes("Open the selected result"));
         expect(keyRow?.attributes("aria-label")).toBe("Open the selected result (↵)");
     });
 
@@ -456,7 +455,7 @@ describe("CommandPalette", () => {
         expect(hint("open").classes()).not.toContain("hint-active");
         // only the selected row previews what shift + enter would do
         expect(secondaryHints().length).toBe(1);
-        expect(secondaryHints().at(0).text()).toContain("pick a method");
+        expect(nth(secondaryHints(), 0).text()).toContain("pick a method");
 
         await holdKey("Shift", false);
         expect(hint("secondary").classes()).not.toContain("hint-active");
@@ -794,7 +793,7 @@ describe("CommandPalette", () => {
     });
 
     it("re-runs the search once the tool store finishes hydrating", async () => {
-        wrapper.destroy();
+        wrapper.unmount();
         useCommandPalette().closePalette();
 
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: true });
@@ -926,7 +925,7 @@ describe("CommandPalette", () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("lab notes");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         // the switch to the actions list is debounced, so enter lands while the
         // page row is still on screen and must not run it
@@ -938,7 +937,7 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
 
         await settle();
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
 
         await press("Enter", { shiftKey: true });
         expect(badge().text()).toContain("Upload data");
@@ -977,7 +976,7 @@ describe("CommandPalette", () => {
         vi.mocked(useHistoryStore().createNewHistory).mockRejectedValue(new Error("history quota exceeded"));
 
         await type("> new history");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Create new history");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Create new history");
 
         await press("Enter");
 
@@ -998,7 +997,7 @@ describe("CommandPalette", () => {
         } as never;
         vi.mocked(Toast.error).mockClear();
         await type("h: target");
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Target history");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Target history");
         await press("Enter", { shiftKey: true });
         expect(store.setCurrentHistory).toHaveBeenCalledWith("target");
         expect(Toast.error).toHaveBeenCalledWith(

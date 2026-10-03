@@ -1,4 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { nth } from "@tests/vitest/helpers";
+import { type DOMWrapper, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -42,22 +43,24 @@ describe("JobParameters/JobParameters.vue", () => {
         await flushPromises();
 
         const checkTableParameter = (
-            element: Wrapper<any>,
+            element: DOMWrapper<HTMLTableRowElement>,
             expectedTitle: string,
             expectedValue: string | { id: string; src: string },
             link?: string,
         ) => {
             const tds = element.findAll("td");
-            expect(tds.at(0).text()).toBe(expectedTitle);
+            expect(nth(tds, 0).text()).toBe(expectedTitle);
             if (typeof expectedValue === "string") {
-                expect(tds.at(1).text()).toContain(expectedValue);
+                expect(nth(tds, 1).text()).toContain(expectedValue);
             } else {
-                const genericItem = tds.at(1).find("generichistoryitem-stub");
-                expect(genericItem.attributes("item-id")).toBe(expectedValue.id);
-                expect(genericItem.attributes("item-src")).toBe(expectedValue.src);
+                const genericItem = nth(tds, 1).find("generic-history-item-stub");
+                // Stub props render as bare lowercase attributes (no hyphen), matching
+                // their camelCase prop names (itemId/itemSrc), not kebab-case.
+                expect(genericItem.attributes("itemid")).toBe(expectedValue.id);
+                expect(genericItem.attributes("itemsrc")).toBe(expectedValue.src);
             }
             if (link) {
-                const a_element = tds.at(1).find("a");
+                const a_element = nth(tds, 1).find("a");
                 expect(a_element.attributes("href")).toBe(link);
             }
         };
@@ -69,15 +72,15 @@ describe("JobParameters/JobParameters.vue", () => {
         const elements = tbody.findAll("tr");
         expect(elements.length).toBe(3);
 
-        checkTableParameter(elements.at(0), "Add this value", "22", undefined);
+        checkTableParameter(nth(elements, 0), "Add this value", "22", undefined);
         const firstVal = Array.isArray(linkParam.value) ? linkParam.value[0] : { id: "", src: "" };
         checkTableParameter(
-            elements.at(1),
+            nth(elements, 1),
             linkParam.text,
             { id: firstVal?.id || "", src: firstVal?.src || "" },
             undefined,
         );
-        checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
+        checkTableParameter(nth(elements, 2), "Iterate?", "NO", undefined);
     });
 
     it("should show only single parameter", async () => {
@@ -86,9 +89,9 @@ describe("JobParameters/JobParameters.vue", () => {
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
+        const getSingleParam = async (_props: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters as object, {
-                propsData,
+                props: propsData,
                 stubs: {
                     GenericHistoryItem: true,
                 },

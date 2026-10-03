@@ -2,21 +2,21 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input-group class="mb-3">
-                <b-input
+            <BInputGroup class="mb-3">
+                <BFormInput
                     id="toolshed-repo-search"
                     v-model="queryInput"
                     placeholder="Search Repositories"
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
-                <b-input-group-append v-g-tooltip.hover :title="titleClearSearch">
-                    <b-btn @click="setQuery()">
+                <BInputGroupAppend v-g-tooltip.hover :title="titleClearSearch">
+                    <BButton @click="setQuery()">
                         <i class="fa fa-times" />
-                    </b-btn>
-                </b-input-group-append>
-            </b-input-group>
-            <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
+                    </BButton>
+                </BInputGroupAppend>
+            </BInputGroup>
+            <BFormRadioGroup v-model="tabValue" class="mb-3" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
@@ -27,6 +27,8 @@
     </div>
 </template>
 <script>
+import { BButton, BFormInput, BFormRadioGroup, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+
 import _l from "@/utils/localization";
 
 import InstalledList from "./InstalledList/Index.vue";
@@ -34,6 +36,11 @@ import SearchList from "./SearchList/Index.vue";
 
 export default {
     components: {
+        BButton,
+        BFormInput,
+        BFormRadioGroup,
+        BInputGroup,
+        BInputGroupAppend,
         SearchList,
         InstalledList,
     },

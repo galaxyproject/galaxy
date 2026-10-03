@@ -34,8 +34,6 @@
 </template>
 
 <script>
-import Vue from "vue";
-
 import _l from "@/utils/localization";
 
 import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
@@ -112,19 +110,23 @@ export default {
         },
         handleAdd(value) {
             // TODO: Rework add/remove here to not mutate props.
+
             // eslint-disable-next-line vue/no-mutating-props
             this.target.push(parseInt(value));
             this.$emit("update:orderedEdit", false);
         },
         handleRemove(index) {
             // TODO: See above.
+
             // eslint-disable-next-line vue/no-mutating-props
             this.target.splice(index, 1);
         },
         moveUp(value) {
             const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
+            // eslint-disable-next-line vue/no-mutating-props
+            this.target[value - 1] = this.target[value];
+            // eslint-disable-next-line vue/no-mutating-props
+            this.target[value] = swapVal;
         },
     },
 };
