@@ -3479,6 +3479,22 @@ class TestToolsApi(ApiTestCase, TestsTools):
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
             assert collection_details["elements"][0]["object"]["elements"][0]["element_type"] == "hda"
 
+    @skip_without_tool("collection_type_source_conditional_unqualified")
+    def test_collection_type_source_unqualified_rejected(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("A", "A")], wait=True
+            ).json()["outputs"][0]["id"]
+            inputs = {
+                "cond|sel": "a",
+                "cond|input_collect": {"src": "hdca", "id": hdca_id},
+            }
+            response = self._run("collection_type_source_conditional_unqualified", history_id, inputs)
+            assert_status_code_is(response, 400)
+            err_msg = response.json()["err_msg"]
+            assert "type_source 'input_collect'" in err_msg
+            assert "cond|input_collect" in err_msg
+
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):
         with self.dataset_populator.test_history() as history_id:

@@ -220,6 +220,10 @@
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
   <tool file="collection_type_source_map_over.xml" />
+  <tool file="collection_type_source_conditional.xml" />
+  <tool file="collection_type_source_conditional_unqualified.xml" />
+  <tool file="collection_type_source_digit_name.xml" />
+  <tool file="collection_type_source_section_repeat.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="collection_list_or_nested_list_input.xml" />

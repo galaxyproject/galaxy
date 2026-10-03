@@ -1,0 +1,24 @@
+<tool id="collection_type_source_conditional_unqualified" name="collection_type_source_conditional_unqualified" version="0.1.0">
+  <!-- A bare legacy alias never resolved for type_source; Galaxy rejects it. -->
+  <command>
+    mkdir output;
+    #for $key in $cond.input_collect.keys()#
+    cat "$cond.input_collect[$key]" > output/"$key";
+    #end for#
+  </command>
+  <inputs>
+    <conditional name="cond">
+      <param name="sel" type="select">
+        <option value="a">a</option>
+      </param>
+      <when value="a">
+        <param name="input_collect" type="data_collection" collection_type="list" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <collection name="list_output" type_source="input_collect" format="txt">
+      <discover_datasets pattern="__name__" directory="output" visible="true" />
+    </collection>
+  </outputs>
+</tool>
