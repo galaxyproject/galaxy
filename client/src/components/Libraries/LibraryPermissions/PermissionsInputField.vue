@@ -40,16 +40,27 @@
 import "vue-multiselect/dist/vue-multiselect.css";
 
 import { BCol, BRow } from "bootstrap-vue";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
-import VueObserveVisibility from "vue-observe-visibility";
 
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-Vue.use(VueObserveVisibility);
+// vue-observe-visibility 1.x reaches for `vnode.context`, which Vue 3 doesn't have.
+const observeVisibility = {
+    mounted(el, binding) {
+        el._visibilityObserver = new IntersectionObserver(([entry]) => binding.value(entry.isIntersecting));
+        el._visibilityObserver.observe(el);
+    },
+    unmounted(el) {
+        el._visibilityObserver?.disconnect();
+    },
+};
+
 export default {
+    directives: {
+        observeVisibility,
+    },
     components: {
         BCol,
         BRow,
