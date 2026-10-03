@@ -765,7 +765,7 @@ class JobConfiguration(ConfiguresHandlers):
         return JobConfiguration.get_params(self.app.config, parent)
 
     @staticmethod
-    def get_envs(parent: "Element", tag: str | None = None) -> list[DestinationEnvironmentEntry]:
+    def get_envs(parent: "Element") -> list[DestinationEnvironmentEntry]:
         """Parse XML environment setup elements directly into an ordered scoped list.
 
         ``env`` is the legacy alias for ``job_env``. Both produce job-scoped
@@ -775,8 +775,6 @@ class JobConfiguration(ConfiguresHandlers):
         entries: list[DestinationEnvironmentEntry] = []
         for element in parent:
             if element.tag not in ("env", "job_env", "tool_env"):
-                continue
-            if tag is not None and element.tag != tag:
                 continue
             statement: EnvironmentStatement = {
                 "name": element.get("id"),

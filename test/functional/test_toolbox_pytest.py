@@ -12,6 +12,7 @@ from galaxy.tool_util.verify.interactor import (
     UseLegacyApiT,
 )
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy_test.driver.integration_util import ConfiguresDatabaseVault
 
@@ -72,8 +73,6 @@ class TestFrameworkTools(ApiTestCase, ConfiguresDatabaseVault):
         cls._configure_database_vault(config)
 
     def test_runtime_environment_warning(self):
-        from galaxy_test.base.populators import DatasetPopulator
-
         populator = DatasetPopulator(self.galaxy_interactor)
         with populator.test_history() as history_id:
             result = populator.run_tool("runtime_environment", {}, history_id)
