@@ -62,4 +62,20 @@ describe("GLink.vue link targets", () => {
 
         expect(wrapper.get("button").attributes("aria-disabled")).toBe("true");
     });
+
+    // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
+    // `false` attribute renders as the string "false" instead of being dropped.
+    it("leaves the native title off a router link with a tooltip", () => {
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
+        });
+        const wrapper = mount(GLink as object, {
+            propsData: { to: "/pages/create", title: "Create a page", tooltip: true },
+            localVue,
+            router,
+        });
+
+        expect(wrapper.get("a").attributes("title")).toBeUndefined();
+    });
 });
