@@ -133,6 +133,7 @@ from galaxy.work.context import WorkRequestContext
 if TYPE_CHECKING:
     from sqlalchemy.sql.expression import (
         ColumnElement,
+        Exists,
         Label,
         Select,
     )
@@ -898,6 +899,20 @@ class JobSearch:
         else:
             return func.array_agg(aggregate_order_by(column, column.asc()))
 
+    def _is_empty_collection_of_type(self, collection_id, collection_type: str) -> "Exists":
+        # Collection signatures are built from leaf datasets, so a populated collection
+        # without elements can only be compared by its type.
+        collection = aliased(model.DatasetCollection)
+        return exists().where(
+            collection.id == collection_id,
+            collection.collection_type == collection_type,
+            collection.populated_state == model.DatasetCollection.populated_states.OK,
+            collection.element_count == 0,
+        )
+
+    def _is_empty_collection(self, collection_id: int, collection_type: str) -> bool:
+        return bool(self.sa_session.scalar(select(self._is_empty_collection_of_type(collection_id, collection_type))))
+
     def _build_stmt_for_hdca(
         self,
         stmt: "Select[tuple[int]]",
@@ -928,12 +943,12 @@ class JobSearch:
         # Note: CTEs are uniquely named using 'k' and 'v' to allow this logic to be embedded
         # within larger queries or loops processing multiple target HDCAs. Aliases are used
         # extensively to manage dynamic joins based on collection depth.
-        collection_type = self.sa_session.scalar(
-            select(model.DatasetCollection.collection_type)
+        collection_id, collection_type = self.sa_session.execute(
+            select(model.DatasetCollection.id, model.DatasetCollection.collection_type)
             .select_from(model.HistoryDatasetCollectionAssociation)
             .join(model.DatasetCollection)
             .where(model.HistoryDatasetCollectionAssociation.id == v)
-        )
+        ).one()
         depth = collection_type.count(":") if collection_type else 0
 
         a = safe_aliased(model.JobToInputDatasetCollectionAssociation, name=f"jtidc_1_{k}_{value_index}")
@@ -941,6 +956,17 @@ class JobSearch:
             model.HistoryDatasetCollectionAssociation,
             name=f"hdca_1_{k}_{value_index}",
         )
+
+        if self._is_empty_collection(collection_id, collection_type):
+            labeled_col = a.dataset_collection_id.label(safe_label(f"{k}_{value_index}", value_index))
+            stmt = stmt.add_columns(labeled_col)
+            stmt = stmt.join(a, a.job_id == model.Job.id)
+            stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
+            used_ids.append(labeled_col)
+            data_conditions.append(
+                and_(a.name == k, self._is_empty_collection_of_type(hdca_input.collection_id, collection_type))
+            )
+            return stmt
 
         _hdca_target_cte_ref = aliased(model.HistoryDatasetCollectionAssociation, name="_hdca_target_cte_ref")
         _target_collection_cte_ref = aliased(model.DatasetCollection, name="_target_collection_cte_ref")
@@ -1162,12 +1188,32 @@ class JobSearch:
         if dce_root_target.child_collection_id:
             # This DCE represents a collection, apply the signature comparison approach
             target_collection_id = dce_root_target.child_collection_id
-            collection_type = self.sa_session.scalar(
+            collection_type = self.sa_session.execute(
                 select(model.DatasetCollection.collection_type).where(
                     model.DatasetCollection.id == target_collection_id
                 )
-            )
+            ).scalar_one()
             depth = collection_type.count(":") if collection_type else 0
+
+            if self._is_empty_collection(target_collection_id, collection_type):
+                a = safe_aliased(
+                    model.JobToInputDatasetCollectionElementAssociation,
+                    name=f"job_to_input_dce_association_{k}_{value_index}",
+                )
+                input_dce = aliased(model.DatasetCollectionElement)
+                labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
+                stmt = stmt.add_columns(labeled_col)
+                stmt = stmt.join(a, a.job_id == model.Job.id)
+                stmt = stmt.join(input_dce, input_dce.id == a.dataset_collection_element_id)
+                used_ids.append(labeled_col)
+                data_conditions.append(
+                    and_(
+                        a.name == k,
+                        input_dce.element_identifier == dce_root_target.element_identifier,
+                        self._is_empty_collection_of_type(input_dce.child_collection_id, collection_type),
+                    )
+                )
+                return stmt
 
             # Aliases for the target DCE's collection structure
             _dce_target_root_ref = safe_aliased(

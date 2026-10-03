@@ -20093,6 +20093,16 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
+        /** MarkdownHelpContent */
+        MarkdownHelpContent: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @constant
+             */
+            format: "markdown";
+        };
         /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
@@ -27456,9 +27466,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -27598,9 +27608,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.

@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { useRankedSearch } from "@/composables/useRankedSearch";
 import { uid } from "@/utils/utils";
 
 const props = defineProps({
@@ -41,10 +42,14 @@ const props = defineProps({
 
 const emit = defineEmits(["input"]);
 
+const { rankedItems: rankedOptions, onSearchChange } = useRankedSearch(() => props.options, ["text", "id"]);
+
 const currentValue = computed({
     get: () => props.options.find((option) => option.id === props.value),
     set(newValue) {
-        emit("input", newValue.id);
+        if (newValue) {
+            emit("input", newValue.id);
+        }
     },
 });
 </script>
@@ -53,16 +58,19 @@ const currentValue = computed({
     <Multiselect
         :id="id"
         v-model="currentValue"
+        :allow-empty="false"
         class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
         :searchable="searchable"
+        :internal-search="false"
         label="text"
-        :options="options"
+        :options="rankedOptions"
         :placeholder="placeholder"
         select-label=""
         selected-label=""
-        track-by="id">
+        track-by="id"
+        @search-change="onSearchChange">
         <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
         <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
             {{ option.text }}

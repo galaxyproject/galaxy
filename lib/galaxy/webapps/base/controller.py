@@ -713,8 +713,8 @@ class SharableMixin:
     def set_slug_async(self, trans: "GalaxyWebTransaction", id, new_slug):
         item = self.get_item(trans, id)
         if item:
-            # Only update slug if slug is not already in use.
-            if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
+            # Only update slug if slug is valid and not already in use.
+            if self._is_valid_slug(new_slug) and not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
                 trans.sa_session.commit()
 

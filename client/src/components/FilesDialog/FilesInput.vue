@@ -59,6 +59,8 @@ const selectFile = () => {
 };
 
 const placeholder = `Click to select ${props.mode}`;
+
+defineExpose({ selectFile });
 </script>
 
 <template>
