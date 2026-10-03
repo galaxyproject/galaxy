@@ -477,9 +477,10 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             "Available. Search before recommending specific tutorials; a search can still fail or return no matches."
             if self.gtn_db is not None
             else (
-                "Unavailable. You cannot determine whether GTN has or lacks a tutorial on any topic. "
-                "Say 'I cannot verify whether GTN has a tutorial on that topic here.' "
-                "You may suggest search terms, but never claim matching lessons, sections, or related tutorials exist."
+                "Unavailable. You cannot determine whether GTN has or lacks a tutorial on any topic, so say briefly "
+                "that you can't check the training catalog right now, then keep helping: answer from general knowledge "
+                "and suggest search terms the learner can try on the GTN site. Never claim matching lessons, sections, "
+                "or related tutorials exist."
             )
         )
         execution = (
