@@ -3,6 +3,7 @@ Base classes for job runner plugins.
 """
 
 import datetime
+import errno
 import os
 import string
 import subprocess
@@ -742,6 +743,27 @@ class BaseJobRunner:
                     log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
             tool_stdout = tool_streams["stdout"]
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
+            if any(error["errno"] == errno.ENOENT for error in stdio_errors):
+                # tool_stdout/tool_stderr are missing — this can happen when
+                # remote_tool_eval.py fails and the && chain prevents cd working, so the
+                # shell redirection creates files at the wrong path.  Surface
+                # the remote_tool_eval traceback as a job-level error (not a
+                # tool error) since the tool never actually ran.
+                eval_traceback_path = os.path.join(
+                    job_wrapper.working_directory, "metadata", "outputs_populated", "traceback.txt"
+                )
+                if os.path.exists(eval_traceback_path):
+                    with open(eval_traceback_path) as tb:
+                        eval_traceback = tb.read()
+                    job_wrapper.fail(
+                        f"Job setup failed during remote_tool_eval:\n{eval_traceback}",
+                        tool_stdout="",
+                        tool_stderr="",
+                        exit_code=exit_code,
+                        job_stdout=job_stdout,
+                        job_stderr=job_stderr,
+                    )
+                    return
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
