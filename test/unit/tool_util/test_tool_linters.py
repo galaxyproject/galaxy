@@ -181,6 +181,22 @@ GENERAL_REQUIREMENT_WO_VERSION = """
 </tool>
 """
 
+GENERAL_RUNTIME_ENVIRONMENT_RESERVED = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <requirements>
+        <runtime_environment_variable name="PATH" />
+    </requirements>
+</tool>
+"""
+
+GENERAL_RUNTIME_ENVIRONMENT_SECRET = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <requirements>
+        <runtime_environment_variable name="SERVICE_TOKEN" description="Service token" />
+    </requirements>
+</tool>
+"""
+
 GENERAL_VALID = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
 </tool>
@@ -1766,6 +1782,24 @@ def test_general_requirement_without_version(lint_ctx):
     assert len(lint_ctx.valid_messages) == 3
     assert len(lint_ctx.warn_messages) == 2
     assert len(lint_ctx.error_messages) == 1
+
+
+def test_general_runtime_environment_reserved_name(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_RUNTIME_ENVIRONMENT_RESERVED)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert len(lint_ctx.error_messages) == 1
+    assert "Reserved runtime environment variable name: PATH" in lint_ctx.error_messages[0].message
+
+
+def test_general_runtime_environment_secret_name(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_RUNTIME_ENVIRONMENT_SECRET)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert (
+        "Runtime environment variable SERVICE_TOKEN looks like a secret; use <credentials> instead."
+        in lint_ctx.warn_messages
+    )
+    assert "Runtime environment variable SERVICE_TOKEN: Service token" in lint_ctx.info_messages
+    assert not lint_ctx.error_messages
 
 
 def test_general_valid(lint_ctx):

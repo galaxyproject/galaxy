@@ -15,7 +15,6 @@ from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
-from galaxy.tool_util.lint import get_lint_context_for_tool_source
 from galaxy.tool_util.output_checker import (
     merge_runtime_environment_warnings,
     runtime_environment_job_messages,
@@ -88,22 +87,53 @@ def test_yaml_installed_and_user_tools():
     assert YamlToolSource.model_validate(tool).runtime_environment_variables[0].name == "_JAVA_OPTIONS"
 
 
-def test_runtime_environment_lint():
-    source = XmlToolSource(
-        parse_xml_string_to_etree(
-            '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/><runtime_environment_variable name="PATH"/></requirements></tool>'
-        )
-    )
-    ctx = get_lint_context_for_tool_source(source)
-    assert any("Reserved runtime" in m.message for m in ctx.error_messages)
-    source = XmlToolSource(
-        parse_xml_string_to_etree(
-            '<tool id="test" name="test" version="1"><requirements><runtime_environment_variable name="SERVICE_TOKEN" description="Service token"/></requirements></tool>'
-        )
-    )
-    ctx = get_lint_context_for_tool_source(source)
-    assert any("use <credentials>" in m.message for m in ctx.warn_messages)
-    assert any("Service token" in m.message for m in ctx.info_messages)
+# Fake runtimes print, as JSON, the environment the container would get and the
+# names in their own (client) environment, so no daemon or image is needed.
+FAKE_DOCKER = """
+import json, os, sys
+if sys.argv[1] != 'run':
+    sys.exit(0)
+container = {}
+args = iter(sys.argv[2:])
+for arg in args:
+    if arg == '-e':
+        name, sep, value = next(args).partition('=')
+        if sep:
+            container[name] = value
+        elif name in os.environ:
+            container[name] = os.environ[name]
+print(json.dumps({'container': container, 'client': sorted(os.environ)}))
+"""
+
+FAKE_SINGULARITY = """
+import json, os
+prefix = 'SINGULARITYENV_'
+container = {k[len(prefix):]: v for k, v in os.environ.items() if k.startswith(prefix)}
+print(json.dumps({'container': container, 'client': sorted(os.environ)}))
+"""
+
+# Like a sudoers rule without SETENV: options that preserve the caller's environment are refused.
+STRICT_SUDO = """
+import os, sys
+args = sys.argv[1:]
+while args and args[0].startswith('--'):
+    option = args.pop(0)
+    if option != '--non-interactive':
+        raise RuntimeError('Unexpected sudo option: ' + option)
+os.execve(args[0], args, {})
+"""
+
+TRICKY_VALUE = 'spaces "quotes" $dollars `backticks`\nnewlines'
+FORWARDED_NAMES = ["DECLARED", "EMPTY", "UNSET", "OVERRIDE", "SOURCED"]
+HOST_ENVIRONMENT = {"DECLARED": TRICKY_VALUE, "EMPTY": "", "OVERRIDE": "forwarded", "UNRELATED_SECRET": "host-only"}
+# Set by the job script itself, as a sourced file or executed setup command would.
+JOB_SCRIPT_SETUP = 'SOURCED="from a sourced file";\n'
+
+RUNTIMES = pytest.mark.parametrize(
+    "runtime,sudo",
+    [("docker", False), ("singularity", False), ("docker", True)],
+    ids=["docker", "singularity", "docker_sudo"],
+)
 
 
 def _write_python_script(path, body):
@@ -114,52 +144,17 @@ def _write_python_script(path, body):
     path.chmod(0o755)
 
 
-@pytest.mark.parametrize("runtime,sudo", [("docker", False), ("singularity", False), ("docker", True)])
-def test_forwarding_preserves_unset_empty_and_legacy_overrides(tmp_path, runtime, sudo):
-    # Simulate only runtime argument/environment handling, so this test needs no daemon or image.
+def _containerize(tmp_path, runtime: str, sudo: bool) -> str:
+    """Containerize a no-op command, with OVERRIDE also set through the legacy runtime-specific param."""
     runtime_script = tmp_path / runtime
-    if runtime == "docker":
-        body = """
-import json, os, sys
-if sys.argv[1] != 'run':
-    sys.exit(0)
-result = {}
-args = iter(sys.argv[2:])
-for arg in args:
-    if arg == '-e':
-        directive = next(args)
-        name, sep, value = directive.partition('=')
-        if sep:
-            result[name] = value
-        elif name in os.environ:
-            result[name] = os.environ[name]
-print(json.dumps(result))
-"""
-    else:
-        body = """
-import json, os
-print(json.dumps({k[len('SINGULARITYENV_'):]: v for k, v in os.environ.items() if k.startswith('SINGULARITYENV_')}))
-"""
+    _write_python_script(runtime_script, FAKE_DOCKER if runtime == "docker" else FAKE_SINGULARITY)
     sudo_script = tmp_path / "sudo"
-    # Like a sudoers rule without SETENV: options that preserve the caller's environment are refused.
-    sudo_body = """
-import os, sys
-args = sys.argv[1:]
-while args and args[0].startswith('--'):
-    option = args.pop(0)
-    if option != '--non-interactive':
-        raise RuntimeError('Unexpected sudo option: ' + option)
-os.execve(args[0], args, {})
-"""
-    _write_python_script(sudo_script, sudo_body)
-    if sudo:
-        body += "\nassert 'UNRELATED_SECRET' not in os.environ\n"
-    _write_python_script(runtime_script, body)
+    _write_python_script(sudo_script, STRICT_SUDO)
     container_class = DockerContainer if runtime == "docker" else SingularityContainer
     container = container_class(
         container_id="image",
         app_info=AppInfo(container_image_cache_path=str(tmp_path)),
-        tool_info=ToolInfo(env_pass_through=["DECLARED", "EMPTY", "UNSET", "OVERRIDE", "SOURCED"]),
+        tool_info=ToolInfo(env_pass_through=FORWARDED_NAMES),
         destination_info={
             f"{runtime}_cmd": str(runtime_script),
             f"{runtime}_env_OVERRIDE": "legacy",
@@ -170,22 +165,53 @@ os.execve(args[0], args, {})
         job_info=JobInfo(str(tmp_path), None, str(tmp_path), None, None, "galaxy", set()),
         container_description=None,
     )
-    command = 'SOURCED="from a sourced file";\n' + container.containerize_command("true")
-    value = 'spaces "quotes" $dollars `backticks`\nnewlines'
-    result = subprocess.run(
-        ["bash", "-c", command],
-        env={"DECLARED": value, "EMPTY": "", "OVERRIDE": "forwarded", "UNRELATED_SECRET": "host-only"},
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    assert json.loads(result.stdout) == {
-        "DECLARED": value,
-        "EMPTY": "",
-        "OVERRIDE": "legacy",
-        "SOURCED": "from a sourced file",
+    return JOB_SCRIPT_SETUP + container.containerize_command("true")
+
+
+def _run(command: str) -> dict:
+    result = subprocess.run(["bash", "-c", command], env=HOST_ENVIRONMENT, check=True, capture_output=True, text=True)
+    return json.loads(result.stdout)
+
+
+@RUNTIMES
+def test_forwarded_values_reach_container_intact(tmp_path, runtime, sudo):
+    container_environment = _run(_containerize(tmp_path, runtime, sudo))["container"]
+    assert container_environment["DECLARED"] == TRICKY_VALUE
+    assert container_environment["SOURCED"] == "from a sourced file"
+
+
+@RUNTIMES
+def test_empty_stays_empty_and_unset_stays_unset(tmp_path, runtime, sudo):
+    container_environment = _run(_containerize(tmp_path, runtime, sudo))["container"]
+    assert container_environment["EMPTY"] == ""
+    assert "UNSET" not in container_environment
+
+
+@RUNTIMES
+def test_runtime_specific_params_override_forwarded_values(tmp_path, runtime, sudo):
+    assert _run(_containerize(tmp_path, runtime, sudo))["container"]["OVERRIDE"] == "legacy"
+
+
+@RUNTIMES
+def test_only_forwarded_names_reach_container(tmp_path, runtime, sudo):
+    assert set(_run(_containerize(tmp_path, runtime, sudo))["container"]) == {
+        "DECLARED",
+        "EMPTY",
+        "OVERRIDE",
+        "SOURCED",
     }
-    assert value not in command
+
+
+@RUNTIMES
+def test_values_stay_out_of_container_command(tmp_path, runtime, sudo):
+    assert TRICKY_VALUE not in _containerize(tmp_path, runtime, sudo)
+
+
+def test_docker_sudo_needs_no_environment_preservation(tmp_path):
+    # STRICT_SUDO refuses --preserve-env and hands docker an empty environment.
+    outcome = _run(_containerize(tmp_path, "docker", sudo=True))
+    assert "UNRELATED_SECRET" not in outcome["client"]
+    assert outcome["container"]["DECLARED"] == TRICKY_VALUE
 
 
 def test_merge_task_runtime_warnings(tmp_path):
