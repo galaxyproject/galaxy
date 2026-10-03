@@ -58,3 +58,10 @@ describe("Rules DSL", () => {
         itShouldConform(testCase, parseInt(i));
     }
 });
+
+describe("colHeadersFor", () => {
+    it("returns an empty header list when there is no data and no columns", () => {
+        // Callers map and index into the result, so it has to stay an array.
+        expect(RuleDefs.colHeadersFor([], undefined)).toEqual([]);
+    });
+});
