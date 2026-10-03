@@ -198,7 +198,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         description=(
             "Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' "
             "and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, "
-            'for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "ND"}. '
+            'for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. '
             "Input keys are interpreted according to 'inputs_by'."
         ),
     )
