@@ -26,6 +26,7 @@ import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
+    _get_datatypes_registry,
     Dataset,
     JobOutputNameTooLongError,
     LibraryFolder,
@@ -1261,6 +1262,19 @@ class JsonCollectedDatasetMatch:
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
     def __init__(self, re_match, collector: CollectorT | None, filename, path=None):
         super().__init__(re_match.groupdict(), collector, filename, path=path)
+
+    @property
+    def ext(self) -> str:
+        # A pattern's ext group captures arbitrary filename suffixes; only
+        # registered datatype extensions and the input token are used,
+        # anything else becomes data.
+        ext = self.as_dict.get("ext")
+        if ext is None:
+            return super().ext
+        ext = ext.lower()
+        if ext != "input" and _get_datatypes_registry().get_datatype_by_extension(ext) is None:
+            return "data"
+        return ext
 
 
 class DiscoveredFileError(NamedTuple):
