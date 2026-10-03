@@ -6,7 +6,10 @@ from typing import (
     cast,
 )
 
-from sqlalchemy import select
+from sqlalchemy import (
+    func,
+    select,
+)
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
@@ -669,6 +672,99 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    state:
+      inttest: 0
+""")
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        self._dry_run(actions)
+        self._app.model.session.expire_all()
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        # the source version keeps its steps
+        assert stored_workflow.get_internal_version(0).step_by_label("the_step").tool_version == "0.1"
+        assert stored_workflow.get_internal_version(1).step_by_label("the_step").tool_version == "0.2"
+
+    def test_refactor_noop_of_imported_workflow_does_not_create_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.2'
+    state:
+      inttest: 0
+""")
+        sa_session = self._app.model.session
+        # as set by a URL or TRS import
+        self._latest_workflow.source_metadata = {"url": "https://example.org/the_workflow.ga"}
+        sa_session.commit()
+        name = self._most_recent_stored_workflow.name
+
+        response = self._refactor([{"action_type": "update_name", "name": name}])
+        assert not response.changed
+        sa_session.expire_all()
+        assert len(self._most_recent_stored_workflow.workflows) == 1
+
+    def test_refactor_saves_only_the_new_version(self):
+        # the comparison dry run build must not be committed alongside the real save
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        sa_session = self._app.model.session
+        sa_session.commit()
+
+        def last_ids():
+            classes = (StoredWorkflow, Workflow, WorkflowStep, WorkflowOutput)
+            return [sa_session.scalar(select(func.max(clazz.id))) for clazz in classes]
+
+        stored_workflow_last_id, workflow_last_id, step_last_id, output_last_id = last_ids()
+        # drops the outer workflow output, since the new subworkflow no longer has it
+        response = self._refactor([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+        sa_session.commit()
+        new_workflow = self._latest_workflow
+        num_outputs = sum(len(step.workflow_outputs) for step in new_workflow.steps)
+        assert last_ids() == [
+            stored_workflow_last_id,
+            workflow_last_id + 1,
+            step_last_id + len(new_workflow.steps),
+            output_last_id + num_outputs,
+        ]
+
+    def test_subworkflow_upgrade_dry_run_writes_nothing(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        response = self._dry_run([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+
     def test_tool_version_upgrade_keeps_when_expression(self):
         self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -756,6 +852,26 @@ steps:
 
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
+
+    def test_subworkflow_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        original_nested_workflow_id = nested_stored_workflow.latest_workflow.id
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="2")
+        self._app.model.session.expunge(nested_stored_workflow)
+
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        source_step = stored_workflow.get_internal_version(0).step_by_label("nested_workflow")
+        # the source version keeps its steps
+        assert source_step.subworkflow.id == original_nested_workflow_id
+        upgraded_step = stored_workflow.get_internal_version(1).step_by_label("nested_workflow")
+        assert upgraded_step.subworkflow.id != original_nested_workflow_id
 
     def test_subworkflow_upgrade_specified(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)

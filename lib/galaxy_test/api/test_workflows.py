@@ -72,6 +72,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
@@ -1208,6 +1209,161 @@ steps:
         # Version 1 should still have its label unchanged
         workflow_v1_check = self.workflow_populator.download_workflow(workflow_id, version=1)
         assert workflow_v1_check["steps"]["0"]["label"] == "v1_label"
+
+    def test_refactor_upgrade_preserves_previous_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    state:
+      inttest: 0
+""")
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+
+        previous_version = self.workflow_populator.download_workflow(workflow_id, version=0)
+        # the source version keeps its steps
+        assert previous_version["steps"]["0"]["tool_version"] == "0.1"
+        latest_version = self.workflow_populator.download_workflow(workflow_id, version=1)
+        assert latest_version["steps"]["0"]["tool_version"] == "0.2"
+
+    def test_refactor_noop_does_not_create_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    state:
+      inttest: 0
+""")
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        for actions in [
+            [{"action_type": "upgrade_all_steps"}],
+            [{"action_type": "update_name", "name": name}],
+        ]:
+            dry_run_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+            dry_run_response.raise_for_status()
+            assert dry_run_response.json()["changed"] is False
+
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+            refactor_response.raise_for_status()
+            assert refactor_response.json()["changed"] is False
+            assert len(self._workflow_versions(workflow_id)) == 1
+
+    def test_refactor_upgrade_reports_changed(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    state:
+      inttest: 0
+""")
+        actions = [{"action_type": "upgrade_all_steps"}]
+        dry_run_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        dry_run_response.raise_for_status()
+        assert dry_run_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 1
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+
+    def test_refactor_noop_of_previous_version_creates_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        relabel = [{"action_type": "update_step_label", "step": {"order_index": 0}, "label": "v1_label"}]
+        self.workflow_populator.refactor_workflow(workflow_id, relabel).raise_for_status()
+
+        # a no-op refactor of an older version restores it as the latest version
+        noop = [{"action_type": "update_name", "name": name}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, noop, version=0)
+        refactor_response.raise_for_status()
+        assert len(self._workflow_versions(workflow_id)) == 3
+        assert self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["label"] == "input1"
+
+    def test_refactor_noop_with_connections_and_subworkflow(self):
+        for workflow_yaml in [WORKFLOW_SIMPLE_CAT_TWICE, WORKFLOW_NESTED_SIMPLE]:
+            workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+            name = self.workflow_populator.download_workflow(workflow_id)["name"]
+            noop = [{"action_type": "update_name", "name": name}]
+            upgrade = [{"action_type": "upgrade_all_steps"}]
+            # the first upgrade re-injects steps and saves the connected inputs that were
+            # stored as runtime values at upload - after that, no-ops don't save
+            self.workflow_populator.refactor_workflow(workflow_id, upgrade).raise_for_status()
+            num_versions = len(self._workflow_versions(workflow_id))
+            for actions in [upgrade, noop]:
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+                refactor_response.raise_for_status()
+                assert refactor_response.json()["changed"] is False, (workflow_yaml, actions)
+            assert len(self._workflow_versions(workflow_id)) == num_versions
+
+    def test_refactor_step_position_creates_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+
+        def left_offset(workflow_dict):
+            return workflow_dict["steps"]["1"]["position"]["left"] - workflow_dict["steps"]["0"]["position"]["left"]
+
+        offset = left_offset(self.workflow_populator.download_workflow(workflow_id))
+        actions = [
+            {"action_type": "update_step_position", "step": {"order_index": 0}, "position_shift": {"left": 3, "top": 5}}
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id, version=0)) == offset
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id)) == offset - 3
+
+    def test_refactor_annotation_reports_changed(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+doc: the annotation
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    state:
+      inttest: 0
+""")
+        same_annotation = [{"action_type": "update_annotation", "annotation": "the annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, same_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is False
+        assert len(self._workflow_versions(workflow_id)) == 1
+
+        new_annotation = [{"action_type": "update_annotation", "annotation": "a new annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, new_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert self.workflow_populator.download_workflow(workflow_id)["annotation"] == "a new annotation"
+
+    def test_refactor_noop_saves_pending_tool_substitution(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        actions = [{"action_type": "update_name", "name": name}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        # the stored 0.0.1 isn't installed, so saving picks up the substituted version
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert self.workflow_populator.download_workflow(workflow_id)["steps"]["1"]["tool_version"] == "0.2"
+
+    def _workflow_versions(self, workflow_id):
+        versions_response = self._get(f"workflows/{workflow_id}/versions")
+        versions_response.raise_for_status()
+        return versions_response.json()
 
     def test_refactor_tool_state_upgrade(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""

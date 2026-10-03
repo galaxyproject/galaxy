@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -22,6 +23,7 @@ from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
 from pydantic import (
     BaseModel,
+    Field,
     SerializerFunctionWrapHandler,
     WrapSerializer,
 )
@@ -2243,8 +2245,12 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "when" in step_dict:
             step.when_expression = step_dict["when"]
-        if dry_run and step in trans.sa_session:
-            trans.sa_session.expunge(step)
+        if dry_run:
+            # expunging doesn't cascade to the step's children, which may have followed it
+            # into the session (e.g. a subworkflow step's workflow outputs)
+            for obj in [step, *step.workflow_outputs, *step.inputs, *step.post_job_actions]:
+                if obj in trans.sa_session:
+                    trans.sa_session.expunge(obj)
 
         return module, step
 
@@ -2475,8 +2481,14 @@ class WorkflowContentsManager(UsesAnnotations):
         # Get the workflow version to refactor (latest or specific version)
         workflow = stored_workflow.get_internal_version(refactor_request.version)
 
-        as_dict = self._workflow_to_dict_export(
-            trans, workflow=workflow, stored=stored_workflow, internal=True, allow_upgrade=True
+        # Without allow_upgrade, so pending load-time tool substitutions count as changes.
+        source_dict = self._refactor_comparison_dict(trans, workflow, stored_workflow)
+        # A copy, so the executor's in-place edits don't reach the source version's
+        # steps through shared JSON columns (e.g. position).
+        as_dict = copy.deepcopy(
+            self._workflow_to_dict_export(
+                trans, workflow=workflow, stored=stored_workflow, internal=True, allow_upgrade=True
+            )
         )
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
         workflow_update_options = WorkflowUpdateOptions(
@@ -2486,8 +2498,26 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections=True)
-        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
+        # The executor uses its workflow's steps as scratch space (e.g. upgrades set
+        # tool_version / subworkflow on them), so give it a detached build, not the source.
+        scratch_workflow = self._build_detached(
+            trans, stored_workflow, raw_workflow_description, workflow_update_options
+        )
+        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, scratch_workflow, module_injector)
         action_executions = refactor_executor.refactor(refactor_request)
+
+        # Export a build like the source, so both sides of the comparison come from the same code.
+        dry_run_workflow = self._build_detached(
+            trans, stored_workflow, raw_workflow_description, workflow_update_options
+        )
+        changed = (
+            self._refactor_comparison_dict(trans, dry_run_workflow, dry_run_workflow.stored_workflow) != source_dict
+        )
+        if refactor_request.dry_run:
+            return dry_run_workflow, action_executions, changed
+        # Refactoring an older version always saves, making it the latest version again.
+        if not changed and workflow is stored_workflow.latest_workflow:
+            return workflow, action_executions, changed
         refactored_workflow, errors = self.update_workflow_from_raw_description(
             trans,
             stored_workflow,
@@ -2500,16 +2530,47 @@ class WorkflowContentsManager(UsesAnnotations):
         #   so this is really more of a warning - we disregard it the other two places
         #   it is used also. These same messages will appear in the dictified version we
         #   we send back anyway
-        return refactored_workflow, action_executions
+        return refactored_workflow, action_executions, changed
+
+    def _build_detached(
+        self,
+        trans: ProvidesHistoryContext,
+        stored_workflow: StoredWorkflow,
+        raw_workflow_description: RawWorkflowDescription,
+        workflow_update_options: WorkflowUpdateOptions,
+    ) -> Workflow:
+        # From a copy, since built steps share JSON values (e.g. position) with their description.
+        workflow, _ = self.update_workflow_from_raw_description(
+            trans,
+            stored_workflow,
+            RawWorkflowDescription(
+                copy.deepcopy(raw_workflow_description.as_dict), raw_workflow_description.workflow_path
+            ),
+            workflow_update_options.model_copy(update={"dry_run": True}),
+        )
+        return workflow
+
+    def _refactor_comparison_dict(
+        self, trans: ProvidesHistoryContext, workflow: Workflow, stored: StoredWorkflow
+    ) -> dict[str, Any]:
+        as_dict = self._workflow_to_dict_export(trans, workflow=workflow, stored=stored, internal=True)
+        # tags belong to the stored workflow - refactoring doesn't change them and a dry
+        # run build's detached stored workflow doesn't export them; builds only get
+        # source_metadata when importing from a URL or TRS; each build gets a new uuid
+        as_dict.pop("tags", None)
+        as_dict.pop("source_metadata", None)
+        as_dict.pop("uuid", None)
+        return copy.deepcopy(as_dict)
 
     def refactor(
         self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
     ):
-        refactored_workflow, action_executions = self.do_refactor(trans, stored_workflow, refactor_request)
+        refactored_workflow, action_executions, changed = self.do_refactor(trans, stored_workflow, refactor_request)
         return RefactorResponse(
             action_executions=action_executions,
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
+            changed=changed,
         )
 
     def get_all_tools(self, workflow):
@@ -2638,6 +2699,10 @@ class RefactorResponse(BaseModel):
     action_executions: list[RefactorActionExecution]
     workflow: Annotated[dict, WrapSerializer(safe_wraps, when_used="json")]
     dry_run: bool
+    changed: bool = Field(
+        ...,
+        description="Whether the actions changed the workflow. If false and not a dry run, no new version was saved.",
+    )
 
 
 # Workflow update options but with some different defaults - we allow creating
