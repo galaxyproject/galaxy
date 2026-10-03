@@ -303,13 +303,16 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
     @skip_without_tool("runtime_environment")
     def test_runtime_environment_scopes(self) -> None:
         with self.dataset_populator.test_history() as history_id:
-            self.dataset_populator.run_tool("runtime_environment", {}, history_id)
+            result = self.dataset_populator.run_tool("runtime_environment", {}, history_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "LEGACY_VAR=legacy" in content
             assert "JOB_VAR=job" in content
             assert "TOOL_VAR=tool" in content
             assert "DECLARED_VAR=declared" in content
+            job = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
+            assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
 
     @property
     def _active_kubernetes_jobs(self) -> int:

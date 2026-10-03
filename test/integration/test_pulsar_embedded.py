@@ -32,6 +32,16 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["retry_metadata_internally"] = False
         config["cleanup_job"] = "never"
 
+    def test_runtime_environment_warning(self):
+        with self.dataset_populator.test_history() as history_id:
+            result = self.dataset_populator.run_tool("runtime_environment", {}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            job = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
+            assert len(warnings) == 1
+            assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
+            assert job["state"] == "ok"
+
     def test_tool_eval_failure(self):
         with self.dataset_populator.test_history() as history_id:
             dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", ext="tabular")
