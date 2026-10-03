@@ -1072,6 +1072,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         log.debug(message)
                         unsuccessful_count += 1
                     else:
+                        assert repository.user is not None
                         log.debug(
                             "Successfully reset metadata on repository %s owned by %s",
                             repository.name,
