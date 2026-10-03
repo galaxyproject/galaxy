@@ -77,8 +77,6 @@ import "vue-multiselect/dist/vue-multiselect.css";
 import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BContainer } from "bootstrap-vue";
-import Vue from "vue";
-import VueObserveVisibility from "vue-observe-visibility";
 
 import { getGalaxyInstance } from "@/app";
 import { extractRoles } from "@/components/Libraries/library-utils";
@@ -90,8 +88,6 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
-
-Vue.use(VueObserveVisibility);
 
 export default {
     components: {
