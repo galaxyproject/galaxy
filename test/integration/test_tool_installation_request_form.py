@@ -93,30 +93,6 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             assert "is_confirmation" not in notification["content"]
             assert "workflow_name" not in notification["content"]
 
-    def test_workflow_id_is_resolved_to_the_stored_workflow(self):
-        user = self._setup_user("tool_installation_request_workflow@galaxy.test")
-        with self._different_user(user["email"]):
-            workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_context")
-        payload = copy.deepcopy(TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY)
-        payload["notification"]["content"]["tools"] = [
-            {"tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17"},
-            {"tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13"},
-        ]
-        payload["notification"]["content"]["workflow_id"] = workflow_id
-        with self._different_user(user["email"]):
-            response = self._post("notifications", data=payload, json=True)
-            self._assert_status_code_is(response, 200)
-
-        notifications = self._admin_tool_request_notifications()
-        own = [n for n in notifications if n["content"].get("workflow_id") == workflow_id]
-        assert (
-            own
-        ), f"Expected a tool_installation_request notification for workflow {workflow_id}, got: {notifications}"
-        content = own[0]["content"]
-        # The name is stamped for the email at submission time but is not public.
-        assert "workflow_name" not in content
-        assert len(content["tools"]) == 2
-
     def test_workflow_id_must_name_a_workflow_accessible_to_the_submitter(self):
         # The id is linked and resolved to a workflow name in the admin-facing
         # notification, so it must not be usable to reference workflows the
@@ -149,6 +125,7 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
         email_path = os.path.join(self.email_directory, "email.json")
         user = self._setup_user("tool_installation_request_email_delivery@galaxy.test")
         with self._different_user(user["email"]):
+            workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_email_workflow")
             # Opt the submitter out of email so the admin's is the only email produced.
             update_request = {
                 "preferences": {
@@ -159,7 +136,9 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
                 }
             }
             self._assert_status_code_is_ok(self._put("notifications/preferences", data=update_request, json=True))
-            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+            payload = copy.deepcopy(TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY)
+            payload["notification"]["content"]["workflow_id"] = workflow_id
+            response = self._post("notifications", data=payload, json=True)
             self._assert_status_code_is(response, 200)
             self.dataset_populator.wait_on_task_id(response.json()["id"])
 
@@ -171,6 +150,7 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
         assert email["to"] == ADMIN_TEST_USER
         assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
         assert re.search(rf"^Requested by: {re.escape(user['email'])}$", email["body"], re.MULTILINE)
+        assert re.search(r"^Workflow: +tool_installation_request_email_workflow$", email["body"], re.MULTILINE)
         assert "FastQC" in email["html"] and "Genomics" in email["html"]
 
 
@@ -214,3 +194,8 @@ class TestToolInstallationRequestFormRateLimitIntegration(ToolInstallationReques
         body = responses[-1].json()
         assert "3 per 1 minute" in body["err_msg"]
         assert body["err_code"] == 429001
+
+        other_user = self._setup_user("tool_installation_request_rate_limit_other@galaxy.test")
+        with self._different_user(other_user["email"]):
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+        self._assert_status_code_is(response, 200)

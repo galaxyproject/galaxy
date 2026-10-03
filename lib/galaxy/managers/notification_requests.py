@@ -131,13 +131,16 @@ class ToolInstallationRequestHandler:
         # stamp the requester's real email server-side (never trust the client).
         # is_confirmation is forced False on the admin-facing copy; build_confirmation
         # below decides which copy is the confirmation.
-        # model_construct reuses the already-validated field values instead of
-        # re-running every sanitizer and bound check on them.
-        return StoredToolInstallationRequestContent.model_construct(
-            **{**dict(content), "workflow_id": workflow_id},
-            requester_email=ctx.sender.email,
-            is_confirmation=False,
-            workflow_name=workflow_name,
+        # Validated so the workflow name, chosen by the workflow's author, is
+        # collapsed to a single line before it reaches the plain-text email.
+        return StoredToolInstallationRequestContent.model_validate(
+            {
+                **dict(content),
+                "workflow_id": workflow_id,
+                "requester_email": ctx.sender.email,
+                "is_confirmation": False,
+                "workflow_name": workflow_name,
+            }
         )
 
     @staticmethod
@@ -193,9 +196,9 @@ class ToolInstallationRequestHandler:
 class NotificationRequestManager:
     """Turns a user's notification submission into the requests to send.
 
-    The registry of per-category handlers lives on the instance, so the
-    user allow-list is derived from it and the two cannot drift apart. To add a
-    new user-submittable request type, register its handler in
+    The registry of per-category handlers lives on the instance and doubles as
+    the list of categories a non-admin user may submit. To add a new
+    user-submittable request type, register its handler in
     :meth:`_build_handlers`.
     """
 
@@ -213,11 +216,6 @@ class NotificationRequestManager:
     @staticmethod
     def _build_handlers() -> dict[NotificationCategory, NotificationRequestHandler]:
         return {handler.category: handler for handler in (ToolInstallationRequestHandler(),)}
-
-    @property
-    def user_allowed_categories(self) -> frozenset[NotificationCategory]:
-        """Categories a non-admin user may submit."""
-        return frozenset(self._handlers)
 
     def build_user_sender_requests(
         self,

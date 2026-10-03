@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
     DefaultStrategy,
+    MessageEmailNotificationTemplateBuilder,
     NotificationManager,
     NotificationRecipientResolver,
     TemplateFormats,
@@ -738,16 +739,33 @@ class TestToolInstallationRequestContentValidation:
             ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
 
 
+class TestMessageEmailBuilder(NotificationManagerBaseTestCase):
+    def test_html_email_renders_the_message_markdown_and_escapes_the_subject(self):
+        user = self._create_test_user()
+        notification, _ = self._send_message_notification_to_users(
+            [user],
+            notification={
+                "content": {"category": "message", "subject": "<i>Maintenance</i>", "message": "**Downtime** tonight"}
+            },
+        )
+        builder = MessageEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        html = builder.get_body(TemplateFormats.HTML)
+        assert "<strong>Downtime</strong>" in html
+        assert "&lt;i&gt;Maintenance&lt;/i&gt;" in html
+
+
 class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
     """The email builder renders from the stored content alone, without a database lookup."""
 
     def _send_stored_request(self, user: User, **content_overrides):
-        content = StoredToolInstallationRequestContent(
-            tools=[RequestedTool(name="bwa")],
-            workflow_id="deadbeef",
-            workflow_name="Mapping pipeline",
-            requester_email="requester@user.email",
-            **content_overrides,
+        content = StoredToolInstallationRequestContent.model_validate(
+            {
+                "tools": [RequestedTool(name="bwa")],
+                "workflow_id": "deadbeef",
+                "workflow_name": "Mapping pipeline",
+                "requester_email": "requester@user.email",
+                **content_overrides,
+            }
         )
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
@@ -771,6 +789,18 @@ class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
         assert "Mapping pipeline" in builder.get_body(TemplateFormats.HTML)
         assert "confirmation" not in builder.get_template_path(TemplateFormats.TXT)
         assert builder.get_subject() == "[Galaxy] Tool installation request: bwa"
+
+    def test_admin_html_email_escapes_request_fields(self):
+        admin = self._create_test_user()
+        notification = self._send_stored_request(
+            admin, tools=[RequestedTool(name="<script>alert(1)</script>")], workflow_name="<b>Mapping</b>"
+        )
+        builder = ToolInstallationRequestEmailNotificationTemplateBuilder(self.app.config, notification, admin)
+        html = builder.get_body(TemplateFormats.HTML)
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+        assert "&lt;b&gt;Mapping&lt;/b&gt;" in html
+        assert "<script>" not in html
+        assert "<b>Mapping</b>" not in html
 
     def test_confirmation_copy_selects_the_confirmation_template(self):
         requester = self._create_test_user()
