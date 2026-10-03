@@ -1,6 +1,7 @@
 """The destination keeps one ordered, serializable list outside persisted params."""
 
 import json
+from typing import Any
 
 import pytest
 
@@ -61,3 +62,25 @@ def test_explicit_config_scope_wins():
         "name": "EMPTY",
         "value": "",
     }
+
+
+def test_destination_scopes():
+    destination = JobDestination(
+        env=[
+            {"name": "LEGACY", "value": "1"},
+            {"type": "job", "name": "JOB", "value": "2"},
+            {"type": "tool", "name": "TOOL", "value": "3"},
+        ],
+    )
+    assert [e["name"] for e in destination.env] == ["LEGACY", "JOB", "TOOL"]
+    assert destination.tool_env_names == ["TOOL"]
+
+
+@pytest.mark.parametrize(
+    "entry", [{"file": "/env.sh"}, {"execute": "module load x"}, {"name": "bad-name", "value": "x"}]
+)
+def test_destination_rejects_invalid_tool_env_entries(entry):
+    # Deliberately malformed, so it can't satisfy the entry TypedDicts.
+    env: list[Any] = [{"type": "tool", **entry}]
+    with pytest.raises(ValueError):
+        JobDestination(env=env)
