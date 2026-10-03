@@ -104,6 +104,7 @@ from galaxy.tools import (
     get_safe_version,
     Tool,
 )
+from galaxy.tools._types import ParameterValidationErrorsT
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
@@ -117,6 +118,7 @@ from galaxy.tools.expressions import (
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
+    populate_state,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -565,6 +567,13 @@ class WorkflowModule:
             inputs = safe_loads(state) or {}
             self.validate_state(inputs)
             self.state.inputs = inputs
+
+    def populate_state_from_tool_form(self, incoming, errors: ParameterValidationErrorsT) -> dict[str, Any]:
+        """Validate tool form ``incoming`` against get_inputs() and recover the resulting state."""
+        state: dict[str, Any] = {}
+        populate_state(self.trans, self.get_inputs(), incoming, state, errors=errors, check=True)
+        self.recover_state(state, from_tool_form=True)
+        return state
 
     def validate_state(self, inputs: dict[str, Any]) -> None:
         """If get_inputs() return None, validate the inputs dictionary directly bypassing ToolForm stuff."""
@@ -1333,6 +1342,12 @@ class InputParameterModule(WorkflowModule):
     optional = default_optional
     default_value = default_default_value
 
+    def populate_state_from_tool_form(self, incoming, errors: ParameterValidationErrorsT) -> dict[str, Any]:
+        # The default value field is shaped by the definition being edited (e.g. ``multiple``),
+        # so recover that definition before validating against it.
+        super().populate_state_from_tool_form(incoming, {})
+        return super().populate_state_from_tool_form(incoming, errors)
+
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1359,7 +1374,9 @@ class InputParameterModule(WorkflowModule):
         cases = []
 
         for param_type in POSSIBLE_PARAMETER_TYPES:
-            default_parameter = get_default_parameter(param_type)
+            default_parameter = get_default_parameter(
+                param_type, multiple=param_type == parameter_type and bool(parameter_def.get("multiple"))
+            )
 
             optional_value = optional_param()
             optional_cond = Conditional("optional")

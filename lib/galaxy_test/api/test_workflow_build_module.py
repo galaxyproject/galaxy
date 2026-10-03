@@ -75,3 +75,33 @@ class TestBuildWorkflowModule(ApiTestCase):
         assert not module["errors"], module["errors"]
         assert module["outputs"][0]["type"] == "integer"
         assert module["outputs"][0]["multiple"] is True
+
+    def test_build_module_multiple_integer_parameter_list_default(self):
+        for default in ["1,2", [1, 2]]:
+            module = self.workflow_populator.build_module(
+                step_type="parameter_input",
+                inputs={
+                    "parameter_definition|parameter_type": "integer",
+                    "parameter_definition|multiple": True,
+                    "parameter_definition|optional|optional": "false",
+                    "parameter_definition|optional|specify_default|specify_default": True,
+                    "parameter_definition|optional|specify_default|default": default,
+                },
+            )
+            assert not module["errors"], module["errors"]
+            specify_default = module["tool_state"]["parameter_definition"]["optional"]["specify_default"]
+            assert specify_default["default"] == [1, 2]
+            (parameter_definition,) = module["config_form"]["inputs"]
+            (integer_case,) = [case for case in parameter_definition["cases"] if case["value"] == "integer"]
+            default_field = _find_input(integer_case["inputs"], "default")
+            assert default_field["multiple"] is True
+
+
+def _find_input(inputs, name):
+    for input in inputs:
+        if input.get("name") == name:
+            return input
+        for case in input.get("cases", []):
+            if (found := _find_input(case["inputs"], name)) is not None:
+                return found
+    return None
