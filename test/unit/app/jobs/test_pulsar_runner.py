@@ -7,8 +7,15 @@ from typing import (
 )
 
 import pytest
+from packaging.version import Version
 
+from galaxy import model
 from galaxy.exceptions import ConfigurationError
+from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
+from galaxy.jobs.runners import (
+    AsynchronousJobState,
+    pulsar as pulsar_runner,
+)
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -65,6 +72,47 @@ def test_rewrite_container_noop_without_container():
     # Should not raise when there is no resolved container.
     compute_environment = _ComputeEnvironment({IMAGE: REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(None, compute_environment)
+
+
+def test_finishing_uses_the_version_the_job_was_submitted_for(tmp_path):
+    PulsarPlugin.write_version_target(
+        str(tmp_path), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image"
+    )
+    # Polling coexecution status comes from the platform and carries no version at all.
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {}) == Version("0.15.0.dev1")
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {"pulsar_version": "0.16.0"}) == Version(
+        "0.15.0.dev1"
+    )
+
+
+def test_finishing_a_job_submitted_before_versions_were_recorded(tmp_path):
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {"pulsar_version": "0.15.13"}) == Version("0.15.13")
+    assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {}) == Version("0.6.0")
+
+
+def test_finish_job_describes_outputs_for_the_submitted_version(tmp_path, monkeypatch):
+    metadata_directory = tmp_path / "metadata"
+    PulsarPlugin.write_version_target(
+        str(metadata_directory), client_version="0.15.16", target_version="0.15.16", source="container_image"
+    )
+    # Polling coexecution status comes from the platform and carries no version at all.
+    client = SimpleNamespace(full_status=lambda: {}, destination_params={})
+    job_wrapper = SimpleNamespace(
+        job_id=1,
+        working_directory=str(tmp_path),
+        cleanup_job="never",
+        get_state=lambda: model.Job.states.RUNNING,
+    )
+    job_state = cast(Any, object.__new__(AsynchronousJobState))
+    job_state.job_wrapper = job_wrapper
+    described_for = []
+    runner = cast(Any, object.__new__(PulsarJobRunner))
+    runner.get_client_from_state = lambda job_state: client
+    runner._PulsarJobRunner__client_outputs = lambda client, job_wrapper, version: described_for.append(version)
+    runner._complete_staged_job = lambda *args, **kwargs: None
+    monkeypatch.setattr(pulsar_runner, "pulsar_finish_job", lambda **kwargs: False)
+    runner.finish_job(job_state)
+    assert described_for == [Version("0.15.16")]
 
 
 class RecordingClient:

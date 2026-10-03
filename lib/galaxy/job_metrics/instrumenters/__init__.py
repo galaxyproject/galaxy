@@ -81,19 +81,22 @@ class InstrumentPlugin(metaclass=ABCMeta):
         """
         return self.job_properties(job.id, job_directory)
 
-    def safety(self, metric_name: str) -> Safety:
-        """Return safety level of metric."""
-        # None of the plugins override this to dispatch on metric_name but on next
-        # iteration it would make sense to allow admins to expose particular env vars
-        # or to have cgroup keys we know are about runtime or memeory to be exposed
-        # at a safer level.
-        return self.default_safety
+    @classmethod
+    def safety(cls, metric_name: str) -> Safety:
+        """Return safety level of metric.
 
-    def _instrument_file_name(self, name: str) -> str:
+        A classmethod so metrics recorded by a plugin that isn't configured globally (e.g. only
+        for some destinations) keep their level.
+        """
+        return cls.default_safety
+
+    @classmethod
+    def _instrument_file_name(cls, name: str) -> str:
         """Provide a common pattern for naming files used by instrumentation
         plugins - to ease their staging out of remote job directories.
         """
-        return f"{INSTRUMENT_FILE_PREFIX}_{self.plugin_type}_{name}"
+        return f"{INSTRUMENT_FILE_PREFIX}_{cls.plugin_type}_{name}"
 
-    def _instrument_file_path(self, job_directory: str, name: str) -> str:
-        return os.path.join(job_directory, self._instrument_file_name(name))
+    @classmethod
+    def _instrument_file_path(cls, job_directory: str, name: str) -> str:
+        return os.path.join(job_directory, cls._instrument_file_name(name))
