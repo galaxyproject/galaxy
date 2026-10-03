@@ -296,6 +296,13 @@ def test_parameter_input_multiple_integer_list_default_round_trip():
     assert reloaded.get_runtime_inputs(mock.MagicMock())["input"].get_initial_value(None, {}) == [1, 2]
 
 
+def test_parameter_input_multiple_integer_cleared_default():
+    _, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=None)
+    assert "an integer or workflow parameter is required" in str(
+        errors["parameter_definition|optional|specify_default|default"]
+    )
+
+
 def test_parameter_input_list_default_after_disabling_multiple():
     _, errors = __populate_integer_parameter_from_tool_form(multiple=False, default=[1, 2])
     assert "an integer or workflow parameter is required" in str(
