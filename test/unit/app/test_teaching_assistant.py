@@ -385,6 +385,18 @@ class TestTeachingAssistantAgent:
         assert "HID 1:" not in result
         assert "40 datasets" in result
 
+    def test_unavailable_search_guidance_has_no_line_to_recite(self):
+        # Given a quoted sentence to say, a model answered with only that sentence and stopped helping.
+        agent = TeachingAssistantAgent(self.deps)
+        agent.gtn_db = None
+
+        search = agent._build_capability_context().split("GTN search: ", 1)[1].split("\n", 1)[0]
+
+        assert "Unavailable" in search
+        assert not re.search(r"""['"‘“][^'"’”]{20,}['"’”]""", search), "no scripted sentence for the model to repeat"
+        assert "keep helping" in search
+        assert "search terms" in search
+
     def test_prompt_excludes_internal_routing_state(self):
         agent = TeachingAssistantAgent(self.deps)
         context = {
