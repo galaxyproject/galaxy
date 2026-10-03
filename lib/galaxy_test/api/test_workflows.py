@@ -9019,14 +9019,14 @@ fastq_input:
             assert name == "fastq1 suffix", name
 
     @skip_without_tool("mapper2")
-    def test_run_rename_rejects_partial_input_segments(self):
-        self._run_rename_rejects_partial_input_segments(mapped=False)
+    def test_run_rename_ignores_partial_input_segments(self):
+        self._run_rename_ignores_partial_input_segments(mapped=False)
 
     @skip_without_tool("mapper2")
-    def test_run_rename_rejects_partial_input_segments_on_mapped_collection(self):
-        self._run_rename_rejects_partial_input_segments(mapped=True)
+    def test_run_rename_ignores_partial_input_segments_on_mapped_collection(self):
+        self._run_rename_ignores_partial_input_segments(mapped=True)
 
-    def _run_rename_rejects_partial_input_segments(self, mapped):
+    def _run_rename_ignores_partial_input_segments(self, mapped):
         workflow = yaml.safe_load("""
 class: GalaxyWorkflow
 inputs:

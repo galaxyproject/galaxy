@@ -9,6 +9,17 @@ from galaxy.model import PostJobAction
     [
         ("#{input1}", {"cond|xinput1": "wrong", "cond|input1": "right"}, "right"),
         ("#{s}", {"main|barcodes": "wrong", "main|s": "right"}, "right"),
+        ("#{e}", {"mode_conditional|reference": "wrong", "mode_conditional|advanced_options|e": "right"}, "right"),
+        (
+            "#{file}",
+            {"rep_experiment_0|chrom_len_file": "wrong", "rep_experiment_0|rep_samples_0|file": "right"},
+            "right",
+        ),
+        (
+            "#{intervals}",
+            {"optional|excl_ival_type|exclude_intervals": "wrong", "optional|ival_type|intervals": "right"},
+            "right",
+        ),
         ("Renamed #{input1}", {"cond|xinput1": "wrong"}, "Renamed "),
         ("#{input}", {"cond|other_input": "wrong", "repeat_0|nested|input": "right"}, "right"),
         ("#{input}", {"cond|input": "first", "other|input": "second"}, "first"),
