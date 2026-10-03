@@ -262,6 +262,24 @@ def test_subworkflow_new_inputs_collection_type():
     assert inputs[0]["collection_type"] == "list:list"
 
 
+MULTIPLE_PARAMETER_WORKFLOW_YAML = """
+steps:
+  - type: "parameter_input"
+    label: "single"
+    tool_inputs: {"parameter_type": "integer", "optional": false}
+  - type: "parameter_input"
+    label: "multiple"
+    tool_inputs: {"parameter_type": "integer", "optional": false, "multiple": true}
+"""
+
+
+def test_subworkflow_new_inputs_parameter_multiple():
+    subworkflow_module = __new_subworkflow_module(MULTIPLE_PARAMETER_WORKFLOW_YAML)
+    inputs = {i["name"]: i for i in subworkflow_module.get_all_inputs()}
+    assert inputs["single"]["multiple"] is False
+    assert inputs["multiple"]["multiple"] is True
+
+
 def test_subworkflow_new_outputs():
     subworkflow_module = __new_subworkflow_module()
     outputs = subworkflow_module.get_data_outputs()
