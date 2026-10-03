@@ -75,7 +75,16 @@ dependencies = [
     "pillow",
     "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
     "psutil",
-    "pulsar-galaxy-lib>=0.15.15",
+    # TEMP: pinned to the pulsar#514 merge until pulsar-galaxy-lib 0.15.16 is
+    # released, then revert to a plain ``>=0.15.16``. That PR makes
+    # ``register_with_galaxy`` take the manager_name from Galaxy's registration
+    # response instead of the relay ``sub``; 0.15.15 and earlier bind the daemon
+    # to topics Galaxy never publishes to, so every BYOC job queues forever.
+    # NOTE: building this sdist needs PULSAR_GALAXY_LIB=1 in the environment or
+    # it names itself ``pulsar-app`` and the install fails on a name mismatch.
+    # scripts/common_startup.sh exports it.
+    "pulsar-galaxy-lib @ git+https://github.com/galaxyproject/pulsar@069adbd81396a228b3ac68dcd27521bf71c06666",
+    "pulsar-relay-client>=0.2.2",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
@@ -140,6 +149,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
+    "pulsar-relay>=0.2.1",  # BYOC e2e tests boot the relay server in-process
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
