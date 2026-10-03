@@ -141,18 +141,15 @@ import json, os
 print(json.dumps({k[len('SINGULARITYENV_'):]: v for k, v in os.environ.items() if k.startswith('SINGULARITYENV_')}))
 """
     sudo_script = tmp_path / "sudo"
+    # Like a sudoers rule without SETENV: options that preserve the caller's environment are refused.
     sudo_body = """
 import os, sys
 args = sys.argv[1:]
-preserved = []
 while args and args[0].startswith('--'):
     option = args.pop(0)
-    if option.startswith('--preserve-env='):
-        preserved.extend(option.split('=', 1)[1].split(','))
-    elif option != '--non-interactive':
+    if option != '--non-interactive':
         raise RuntimeError('Unexpected sudo option: ' + option)
-environment = {name: os.environ[name] for name in preserved if name in os.environ}
-os.execve(args[0], args, environment)
+os.execve(args[0], args, {})
 """
     _write_python_script(sudo_script, sudo_body)
     if sudo:
