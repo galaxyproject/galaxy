@@ -58,6 +58,7 @@ from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     galaxy_directory,
@@ -730,7 +731,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
 
-        env = getattr(job_wrapper.job_destination, "env", [])
+        env = job_wrapper.job_destination.env.copy()
         return self.get_client(params, job_id, env)
 
     def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
@@ -1029,7 +1030,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
-            dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
+            dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN[:]
             output_files = []
             work_dir_outputs = []
         else:
@@ -1072,6 +1073,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 dynamic_outputs.append(tool_provided_metadata_dynamic_output)
             output_files = self.get_output_files(job_wrapper)
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
+        if any(variable.required for variable in tool.runtime_environment_variables):
+            dynamic_outputs = [*(dynamic_outputs or []), re.escape(RUNTIME_ENVIRONMENT_WARNING_FILE)]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,

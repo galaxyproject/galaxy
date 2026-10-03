@@ -71,6 +71,16 @@ execution:
       env:
         - name: SOME_ENV_VAR
           value: '42'
+        - name: LEGACY_VAR
+          value: legacy
+      job_env:
+        - name: JOB_VAR
+          value: job
+        - name: DECLARED_VAR
+          value: declared
+      tool_env:
+        - name: TOOL_VAR
+          value: tool
     local_environment:
       runner: local
 tools:
@@ -289,6 +299,17 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
     def test_job_environment(self) -> None:
         job_env = self._run_and_get_environment_properties()
         assert job_env.some_env == "42"
+
+    @skip_without_tool("runtime_environment")
+    def test_runtime_environment_scopes(self) -> None:
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.run_tool("runtime_environment", {}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "LEGACY_VAR=legacy" in content
+            assert "JOB_VAR=job" in content
+            assert "TOOL_VAR=tool" in content
+            assert "DECLARED_VAR=declared" in content
 
     @property
     def _active_kubernetes_jobs(self) -> int:

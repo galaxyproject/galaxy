@@ -2855,8 +2855,9 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    # (157 = 149 tool linters + 8 repository data-table linters registered via list_linters)
-    assert len(linter_names) == 157
+    # (158 = 150 tool linters + 8 repository data-table linters registered via list_linters)
+    assert len(linter_names) == 158
+    assert linter_names.count("RuntimeEnvironmentVariables") == 1
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

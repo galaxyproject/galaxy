@@ -380,7 +380,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         try:
             config_job_destination = self.app.job_config.get_destination(job.destination_id)
             job_destination.resubmit = config_job_destination.resubmit
-            job_destination.env = config_job_destination.env
+            job_destination.env = config_job_destination.env.copy()
             job_destination.tags = config_job_destination.tags
         except KeyError:
             log.debug(
