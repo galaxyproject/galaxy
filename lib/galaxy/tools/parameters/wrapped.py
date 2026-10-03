@@ -66,9 +66,6 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
             return True
         return key in self._legacy_mapping
 
-    def qualified_key(self, legacy_key: str) -> Optional[str]:
-        return self._legacy_mapping.get(legacy_key)
-
     def map_values(self, fn: Callable[[Any], Any]) -> "LegacyUnprefixedDict":
         mapped = LegacyUnprefixedDict({k: fn(v) for k, v in self.data.items()})
         mapped._legacy_mapping = dict(self._legacy_mapping)

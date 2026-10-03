@@ -1200,10 +1200,9 @@ class OutputCollections:
                 raise Exception("Could not determine collection type to create.")
             data_param = self.input_collection_parameters.get(collection_type_source)
             if data_param is None:
-                message = f"Output collection '{output.name}' has type_source '{collection_type_source}'"
-                if qualified_key := input_collections.qualified_key(collection_type_source):
-                    raise Exception(f"{message}, which must be qualified as '{qualified_key}'.")
-                raise Exception(f"{message}, which does not name a collection input.")
+                raise Exception(
+                    f"Output collection '{output.name}' has type_source '{collection_type_source}', which does not name a collection input."
+                )
             collection_type_description = data_param._history_query(self.trans).can_map_over(
                 input_collections[collection_type_source]
             )
