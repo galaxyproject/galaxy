@@ -67,6 +67,24 @@ def get_message_for_no_shed_tool_config():
     return message
 
 
+def parse_repository_from_payload(payload):
+    tool_shed_url = payload.get("tool_shed_url", "")
+    if not tool_shed_url:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'tool_shed_url'.")
+    name = payload.get("name", "")
+    if not name:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
+    owner = payload.get("owner", "")
+    if not owner:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'owner'.")
+    changeset_revision = payload.get("changeset_revision", "")
+    if not changeset_revision:
+        raise HTTPBadRequest(detail="Missing required parameter 'changeset_revision'.")
+    # Form-encoded payload values are JSON-decoded, so a name, owner or changeset hash made up only of digits
+    # arrives here as an int.
+    return tool_shed_url, str(name), str(owner), str(changeset_revision)
+
+
 class ToolShedRepositoriesController(BaseGalaxyAPIController):
     """RESTful controller for interactions with tool shed repositories."""
 
@@ -133,10 +151,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             configuration file will be selected automatically.
 
         """
-        # Get the information about the repository to be installed from the payload.
-        tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(
-            payload, include_changeset=True
-        )
+        tool_shed_url, name, owner, changeset_revision = parse_repository_from_payload(payload)
         self.__ensure_can_install_repos(trans)
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url, name, owner, changeset_revision, payload)
@@ -291,26 +306,6 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             raise Exception(
                 f"Attempting to uninstall tool dependencies for repository named {repository.name} resulted in errors: {errors}"
             )
-
-    def __parse_repository_from_payload(self, payload, include_changeset=False):
-        # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get("tool_shed_url", "")
-        if not tool_shed_url:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'tool_shed_url'.")
-        name = payload.get("name", "")
-        if not name:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        owner = payload.get("owner", "")
-        if not owner:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'owner'.")
-        if not include_changeset:
-            return tool_shed_url, name, owner
-
-        changeset_revision = payload.get("changeset_revision", "")
-        if not changeset_revision:
-            raise HTTPBadRequest(detail="Missing required parameter 'changeset_revision'.")
-
-        return tool_shed_url, name, owner, changeset_revision
 
     @require_admin
     @expose_api

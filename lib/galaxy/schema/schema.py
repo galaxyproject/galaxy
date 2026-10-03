@@ -3937,7 +3937,7 @@ class PageSummaryBase(Model):
         default=None,
         title="Identifier",
         description="The identifying slug for the page URL, must be unique. Required for non-history pages.",
-        pattern=r"^[a-z0-9-]+$",
+        pattern=r"^[^/:?#]+$",
     )
 
 
