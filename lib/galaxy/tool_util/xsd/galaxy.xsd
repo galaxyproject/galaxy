@@ -6593,7 +6593,9 @@ collection types (the most common types are ``list``, ``paired``,
     <xs:attribute name="type_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This is the name of input collection to
-derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
+derive collection's type (e.g. ``collection_type``) from. If the input is nested in a
+conditional, section or repeat, this value must be qualified (e.g. ``cond|input``
+instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -6632,7 +6634,9 @@ collection types (the most common types are ``list``, ``paired``,
     <xs:attribute name="collection_type_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This is the name of input collection to
-derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
+derive collection's type (e.g. ``collection_type``) from. If the input is nested in a
+conditional, section or repeat, this value must be qualified (e.g. ``cond|input``
+instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
