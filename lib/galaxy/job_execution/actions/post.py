@@ -26,6 +26,10 @@ class DefaultJobAction:
 
     name = "DefaultJobAction"
     verbose_name = "Default Job"
+    # Whether execute_on_mapped_over below is actually implemented. Steps that
+    # apply actions without a job to hang them off of can only run actions that
+    # set this, so ActionBox warns rather than silently dropping the others.
+    supports_mapped_over = False
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
@@ -126,6 +130,7 @@ class ValidateOutputsAction(DefaultJobAction):
 
 class ChangeDatatypeAction(DefaultJobAction):
     name = "ChangeDatatypeAction"
+    supports_mapped_over = True
     verbose_name = "Change Datatype"
 
     @classmethod
@@ -170,6 +175,7 @@ class ChangeDatatypeAction(DefaultJobAction):
 
 class RenameDatasetAction(DefaultJobAction):
     name = "RenameDatasetAction"
+    supports_mapped_over = True
     verbose_name = "Rename Dataset"
 
     @classmethod
@@ -313,6 +319,7 @@ class RenameDatasetAction(DefaultJobAction):
 
 class HideDatasetAction(DefaultJobAction):
     name = "HideDatasetAction"
+    supports_mapped_over = True
     verbose_name = "Hide Dataset"
 
     @classmethod
@@ -338,6 +345,7 @@ class HideDatasetAction(DefaultJobAction):
 class DeleteDatasetAction(DefaultJobAction):
     # This is disabled for right now.  Deleting a dataset in the middle of a workflow causes errors (obviously) for the subsequent steps using the data.
     name = "DeleteDatasetAction"
+    supports_mapped_over = True
     verbose_name = "Delete Dataset"
 
     @classmethod
@@ -361,6 +369,7 @@ class DeleteDatasetAction(DefaultJobAction):
 
 class ColumnSetAction(DefaultJobAction):
     name = "ColumnSetAction"
+    supports_mapped_over = True
     verbose_name = "Assign Columns"
 
     @classmethod
@@ -493,6 +502,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
 
 class TagDatasetAction(DefaultJobAction):
     name = "TagDatasetAction"
+    supports_mapped_over = True
     verbose_name = "Add tag to dataset"
     action = "Add"
     direction = "to"
@@ -617,10 +627,21 @@ class ActionBox:
     def execute_on_mapped_over(
         cls, trans, sa_session, pja, step_inputs, step_outputs, replacement_dict=None, final_job_state=None
     ):
-        if pja.action_type in cls.actions:
-            cls.actions[pja.action_type].execute_on_mapped_over(
-                trans, sa_session, pja, step_inputs, step_outputs, replacement_dict, final_job_state=final_job_state
+        action = cls.actions.get(pja.action_type)
+        if action is None:
+            return
+        if not action.supports_mapped_over:
+            log.warning(
+                "Ignoring post job action %s on workflow step %s output '%s', it cannot be applied to a step "
+                "output that has no job attached to it.",
+                pja.action_type,
+                pja.workflow_step_id,
+                pja.output_name,
             )
+            return
+        action.execute_on_mapped_over(
+            trans, sa_session, pja, step_inputs, step_outputs, replacement_dict, final_job_state=final_job_state
+        )
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None, final_job_state=None):
