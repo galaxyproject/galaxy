@@ -80,7 +80,7 @@ function updateStored(v: boolean) {
                     transparent
                     title="maximize"
                     @click="inspectorStore.setMaximized(props.step, true)">
-                    <ArrowLeftFromLine absolute-stroke-width :size="17" />
+                    <ArrowLeftFromLine v-bind="{ absoluteStrokeWidth: true }" :size="17" />
                 </GButton>
                 <GButton
                     v-else
@@ -88,7 +88,7 @@ function updateStored(v: boolean) {
                     transparent
                     title="minimize"
                     @click="inspectorStore.setMaximized(props.step, false)">
-                    <ArrowRightToLine absolute-stroke-width :size="17" />
+                    <ArrowRightToLine v-bind="{ absoluteStrokeWidth: true }" :size="17" />
                 </GButton>
 
                 <GDropdown
