@@ -80,6 +80,12 @@ export function useUploadStagingCounts() {
     });
 }
 
+/** Whether any upload method has items staged but not yet submitted. */
+export function useHasStagedUploads() {
+    const counts = useUploadStagingCounts();
+    return computed(() => Object.values(counts.value).some((count) => (count ?? 0) > 0));
+}
+
 function countStagedItems(mode: UploadMethod, items: StagedUploadItem[]): number {
     if (mode == "paste-content") {
         return items.filter(isNonEmptyPasteContentItem).length;
