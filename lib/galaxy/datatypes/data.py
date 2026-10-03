@@ -242,7 +242,7 @@ class Data(metaclass=DataMeta):
     # datatype change is allowed if the datatype is not composite.
     allow_datatype_change: bool | None = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
-    _max_optional_metadata_filesize = None
+    _max_optional_metadata_filesize: int | None = None
 
     # Display behavior when preview=True: "inline" (can be displayed in browser),
     # "download" (always triggers download), or None (default behavior)
