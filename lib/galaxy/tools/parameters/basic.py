@@ -509,7 +509,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.value:
             try:
                 self._to_int_values(self.value) if self.multiple else int(self.value)
-            except ValueError:
+            except (TypeError, ValueError):
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
         self.min = input_source.get("min")
         self.max = input_source.get("max")

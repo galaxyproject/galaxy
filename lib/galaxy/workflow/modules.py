@@ -104,7 +104,10 @@ from galaxy.tools import (
     get_safe_version,
     Tool,
 )
-from galaxy.tools._types import ParameterValidationErrorsT
+from galaxy.tools._types import (
+    ParameterValidationErrorsT,
+    ToolStateJobInstanceT,
+)
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
@@ -568,7 +571,9 @@ class WorkflowModule:
             self.validate_state(inputs)
             self.state.inputs = inputs
 
-    def populate_state_from_tool_form(self, incoming, errors: ParameterValidationErrorsT) -> dict[str, Any]:
+    def populate_state_from_tool_form(
+        self, incoming: ToolStateJobInstanceT, errors: ParameterValidationErrorsT
+    ) -> dict[str, Any]:
         """Validate tool form ``incoming`` against get_inputs() and recover the resulting state."""
         state: dict[str, Any] = {}
         populate_state(self.trans, self.get_inputs(), incoming, state, errors=errors, check=True)
@@ -1342,7 +1347,9 @@ class InputParameterModule(WorkflowModule):
     optional = default_optional
     default_value = default_default_value
 
-    def populate_state_from_tool_form(self, incoming, errors: ParameterValidationErrorsT) -> dict[str, Any]:
+    def populate_state_from_tool_form(
+        self, incoming: ToolStateJobInstanceT, errors: ParameterValidationErrorsT
+    ) -> dict[str, Any]:
         # The default value field is shaped by the definition being edited (e.g. ``multiple``),
         # so recover that definition before validating against it.
         super().populate_state_from_tool_form(incoming, {})
