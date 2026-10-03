@@ -10,6 +10,27 @@ Configuration of where to run jobs is performed in the `job_conf.yml` file in `$
 
 For metadata runtime images, including Pulsar staging, versioning and custom datatype dependencies, see [Containerized metadata collection](containerized_metadata.md).
 
+To evaluate tool commands and materialize deferred inputs on Pulsar, set these
+parameters on the Pulsar destination:
+
+```yaml
+remote_metadata: true
+metadata_strategy: extended
+tool_evaluation_strategy: remote
+```
+
+Galaxy uses structured path rewriting for remote evaluation. Input datasets,
+metadata files, and composite input files are staged before the command is
+evaluated. Deferred inputs are downloaded by the remote evaluator instead of
+being transferred from Galaxy. The job working directories can be separate;
+the extended metadata strategy still requires Pulsar to access the configured
+object store, including write access for outputs and metadata files.
+
+Pulsar needs a matching Galaxy runtime for remote evaluation and metadata
+collection. Declare supporting tool files with `<required_files>` to limit
+transfers; when it is absent, remote evaluation stages the tool directory with
+the standard exclusions for test data, tool data, and Mercurial metadata.
+
 ## job_conf.xml Syntax
 
 The root element is `<job_conf>`.
