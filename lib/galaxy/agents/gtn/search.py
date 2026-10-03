@@ -29,7 +29,8 @@ from urllib.parse import (
 from galaxy.util import requests
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
-GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
+GTN_SITE_URL = "https://training.galaxyproject.org/training-material"
+GTN_FAQ_BASE_URL = f"{GTN_SITE_URL}/faqs"
 # Connect + per-read timeout for the initial GTN database download. The file
 # is ~25MB; this bounds individual socket reads so a stalled depot can't hang
 # an agent init forever. Total wall-clock can still exceed this if the
