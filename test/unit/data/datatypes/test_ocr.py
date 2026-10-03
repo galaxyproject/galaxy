@@ -1,7 +1,10 @@
 import pytest
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
-from galaxy.datatypes.sniff import guess_ext
+from galaxy.datatypes.sniff import (
+    get_test_fname,
+    guess_ext,
+)
 from galaxy.datatypes.text import (
     Hocr,
     Html,
@@ -147,3 +150,26 @@ def test_generic_fallback(tmp_path, registry, content, extension):
     path = tmp_path / "unknown.dat"
     path.write_text(content)
     assert guess_ext(str(path), registry.sniff_order) == extension
+
+
+@pytest.mark.parametrize(
+    "filename,datatype",
+    [
+        ("ocr_sample.page.xml", PageXml),
+        ("ocr_sample.alto", Alto),
+        ("ocr_sample.abbyy.xml", AbbyyXml),
+        ("ocr_sample.hocr", Hocr),
+    ],
+)
+def test_ocr_fixtures(tmp_path, registry, filename, datatype):
+    source = get_test_fname(filename)
+    assert datatype().sniff(source)
+    for other in (PageXml, Alto, AbbyyXml, Hocr):
+        if other is not datatype:
+            assert not other().sniff(source)
+
+    # Preserve BOMs and line endings, but remove the filename's format hint.
+    path = tmp_path / "unknown.dat"
+    with open(source, "rb") as fixture:
+        path.write_bytes(fixture.read())
+    assert guess_ext(str(path), registry.sniff_order) == datatype.file_ext
