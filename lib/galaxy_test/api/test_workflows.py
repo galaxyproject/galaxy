@@ -9035,13 +9035,12 @@ inputs:
 steps:
   mapping:
     tool_id: mapper2
+    in:
+      fastq_input|fastq_input1: fastq_input
+      reference: fasta_input
     state:
       fastq_input:
         fastq_input_selector: single
-        fastq_input1:
-          $link: fastq_input
-      reference:
-        $link: fasta_input
     out:
       out_file1:
         rename: "#{fastq_input1 | basename}#{input1} suffix"
