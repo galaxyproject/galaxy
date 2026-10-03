@@ -116,6 +116,18 @@ function routerWithRoutes(paths = ["/", "/pages/create"], base?: string) {
 }
 
 describe("GButton.vue router-link root", () => {
+    // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
+    // `false` attribute renders as the string "false" instead of being dropped.
+    it("leaves the native title off a router link with a tooltip", () => {
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create", title: "Create a page", tooltip: true },
+            localVue,
+            router: routerWithRoutes(),
+        });
+
+        expect(wrapper.get("a").attributes("title")).toBeUndefined();
+    });
+
     // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
     // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
     // which reaches the rendered anchor.
