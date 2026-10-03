@@ -497,7 +497,7 @@ class IntegerToolParameter(TextToolParameter):
     >>> p = IntegerToolParameter(None, {"name": "_name", "type": "integer", "multiple": True, "min": 1})
     >>> p.to_python("1\\n2,3", None)
     [1, 2, 3]
-    >>> p.to_json([1, 2], None, False)
+    >>> p.from_json(p.to_json([1, 2], None, False), trans)
     [1, 2]
     >>> p.validate([1, 2])
     >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):

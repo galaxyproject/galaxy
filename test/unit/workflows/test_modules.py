@@ -298,12 +298,14 @@ def test_parameter_input_multiple_integer_list_default_round_trip():
 
 def test_parameter_input_list_default_after_disabling_multiple():
     _, errors = __populate_integer_parameter_from_tool_form(multiple=False, default=[1, 2])
-    assert "parameter_definition|optional|specify_default|default" in errors
+    assert "an integer or workflow parameter is required" in str(
+        errors["parameter_definition|optional|specify_default|default"]
+    )
     step = model.WorkflowStep()
     step.type = "parameter_input"
     step.tool_inputs = {"parameter_type": "integer", "optional": False, "multiple": False, "default": [1, 2]}
     module = modules.module_factory.from_workflow_step(MockTrans(), step)
-    with pytest.raises(ParameterValueError):
+    with pytest.raises(ParameterValueError, match="the attribute 'value' must be an integer"):
         module.get_runtime_inputs(mock.MagicMock())
 
 

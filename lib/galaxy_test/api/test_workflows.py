@@ -7736,6 +7736,21 @@ steps: []
         invocation = self.workflow_populator.get_invocation(response.json()["id"])
         assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
 
+    def test_run_form_list_default_on_single_integer_parameter(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  columns:
+    type: int
+    default: [1, 2]
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            response = self._get(f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'columns' cannot be run")
+        assert_error_message_contains(response, "the attribute 'value' must be an integer")
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
