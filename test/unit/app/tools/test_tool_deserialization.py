@@ -392,7 +392,9 @@ COLLECTION_IN_CONDITIONAL = """
     <when value="a"><param name="input_collect" type="data_collection" /></when>
 </conditional>
 """
-COLLECTION_IN_SECTION = '<section name="sec" title="sec"><param name="input_collect" type="data_collection" /></section>'
+COLLECTION_IN_SECTION = (
+    '<section name="sec" title="sec"><param name="input_collect" type="data_collection" /></section>'
+)
 COLLECTION_IN_REPEAT_CONDITIONAL = f'<repeat name="rep" title="rep">{COLLECTION_IN_CONDITIONAL}</repeat>'
 COLLECTION_AT_TOP_LEVEL = '<param name="input_collect" type="data_collection" />'
 

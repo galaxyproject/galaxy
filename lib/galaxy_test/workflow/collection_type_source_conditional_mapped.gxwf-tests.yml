@@ -17,6 +17,7 @@
       collection_type: list:list
       elements:
         outer1:
+          class: Collection
           elements:
             inner1:
               asserts:

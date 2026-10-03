@@ -294,7 +294,9 @@ def visit_input_values(
 _InputPathT = tuple[tuple[str, bool], ...]
 
 
-def _data_input_paths(inputs, qualified: _InputPathT = (), legacy: _InputPathT = ()) -> Iterator[tuple[_InputPathT, _InputPathT]]:
+def _data_input_paths(
+    inputs, qualified: _InputPathT = (), legacy: _InputPathT = ()
+) -> Iterator[tuple[_InputPathT, _InputPathT]]:
     """Yield the qualified and legacy paths of every data and collection input.
 
     Legacy paths drop conditional and section names, as the ``prefix`` passed by
