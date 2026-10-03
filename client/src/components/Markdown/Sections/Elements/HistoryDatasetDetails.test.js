@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetDetails from "./HistoryDatasetDetails.vue";
@@ -31,8 +32,8 @@ function setUpDatatypesStore() {
     return pinia;
 }
 
-async function mountTarget(propsData = {}) {
-    server.use(http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(tabularMetaData)));
+async function mountTarget(propsData = {}, dataset = tabularMetaData) {
+    server.use(http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(dataset)));
     const wrapper = mount(HistoryDatasetDetails, {
         localVue,
         propsData,
@@ -52,5 +53,18 @@ describe("HistoryDatasetDetails.vue", () => {
         expect(wrapper.text()).toBe("tabular_misc_blurb");
         await wrapper.setProps({ name: "history_dataset_type" });
         expect(wrapper.text()).toBe("tabular");
+    });
+
+    it("shows the dataset name as text and renders the peek through v-sanitize-html", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const dataset = { ...tabularMetaData, name: "<b>name</b>", peek: "<table><tr><td>peek</td></tr></table>" };
+        const wrapper = await mountTarget({ datasetId: "datasetId", name: "history_dataset_name" }, dataset);
+        expect(wrapper.find("pre").text()).toBe("<b>name</b>");
+        expect(wrapper.find("b").exists()).toBe(false);
+        expect(sanitizeHtml).not.toHaveBeenCalled();
+
+        await wrapper.setProps({ name: "history_dataset_peek" });
+        expect(sanitizeHtml).toHaveBeenCalledWith(dataset.peek, "default");
+        expect(wrapper.find("pre td").text()).toBe("peek");
     });
 });

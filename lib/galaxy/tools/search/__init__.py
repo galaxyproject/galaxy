@@ -27,6 +27,7 @@ Filters - various filters are available for processing content as the index is
 
 import logging
 import os
+import re
 import shutil
 import threading
 from typing import (
@@ -69,6 +70,22 @@ CanConvertToInt = str | int | float
 # skipped: the process holding the lock is writing the same documents.
 INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
+UNSAFE_PATH_CHARACTERS = re.compile(r"[^A-Za-z0-9_-]")
+
+
+def panel_view_index_dir(index_dir: str, panel_view_id: str) -> str:
+    """Directory holding the index of ``panel_view_id`` inside ``index_dir``.
+
+    Panel view ids such as ``ontology:edam_operations`` contain characters that
+    some filesystems (SMB/CIFS shares, NFS exports of NTFS-style volumes,
+    Windows) reject in file names, so every character outside
+    ``[A-Za-z0-9_-]`` is percent-encoded.
+    """
+    dir_name = UNSAFE_PATH_CHARACTERS.sub(
+        lambda match: "".join(f"%{byte:02X}" for byte in match.group().encode("utf-8")), panel_view_id
+    )
+    return os.path.join(index_dir, dir_name)
+
 
 def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
     """Get or create a reference to the index."""
@@ -95,7 +112,7 @@ class ToolBoxSearch:
         panel_searches: dict[str, ToolPanelViewSearch] = {}
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
-            panel_index_dir = os.path.join(index_dir, panel_view_id)
+            panel_index_dir = panel_view_index_dir(index_dir, panel_view_id)
             panel_searches[panel_view_id] = ToolPanelViewSearch(
                 panel_view_id,
                 panel_index_dir,
@@ -213,7 +230,7 @@ class CachedToolboxSearch(ToolBoxSearch):
         tuning = ToolSearchTuning.from_config(self.config)
         self.cached_panel_searches = {
             panel_view_id: ToolWhooshIndex(
-                index_dir=os.path.join(self.config.tool_search_index_dir, panel_view_id),
+                index_dir=panel_view_index_dir(self.config.tool_search_index_dir, panel_view_id),
                 tuning=tuning,
             )
             for panel_view_id in panel_view_ids

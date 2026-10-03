@@ -184,7 +184,7 @@ const helpText = computed(() => {
 });
 const nonMdHelp = computed(() =>
     Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
-        ? purify.sanitize(helpText.value!)
+        ? helpText.value!
         : "",
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
@@ -367,8 +367,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     v-if="props.type === 'boolean' && props.workflowRun"
                     :class="{ 'd-flex align-items-start flex-gapx-1': Boolean(nonMdHelp) }">
                     <FormBoolean :id="props.id" v-model="currentValue" class="mr-2" :no-label="Boolean(nonMdHelp)" />
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-if="Boolean(nonMdHelp)" class="text-muted" v-html="nonMdHelp" />
+                    <span v-if="Boolean(nonMdHelp)" v-sanitize-html="nonMdHelp" class="text-muted" />
                 </div>
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
@@ -475,8 +474,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
             </div>
 
             <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-if="showNonMdHelp" class="ui-form-info form-text text-muted" v-html="nonMdHelp" />
+            <span v-if="showNonMdHelp" v-sanitize-html="nonMdHelp" class="ui-form-info form-text text-muted" />
             <span v-else-if="Boolean(helpText) && helpFormat === 'markdown'" class="ui-form-info form-text text-muted">
                 <FormElementHelpMarkdown :content="helpText ?? ''" />
             </span>

@@ -202,6 +202,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <span
                 ref="editableElement"
+                v-sanitize-html="escapeAndSanitize(props.comment.data.text)"
                 :contenteditable="!props.readonly"
                 class="prevent-zoom"
                 spellcheck="false"
@@ -211,8 +212,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 }"
                 @blur="saveText"
                 @mouseup.stop
-                @dblclick.prevent="onDoubleClick"
-                v-html="escapeAndSanitize(props.comment.data.text)" />
+                @dblclick.prevent="onDoubleClick" />
         </div>
 
         <GButtonGroup v-if="!props.readonly" class="style-buttons">

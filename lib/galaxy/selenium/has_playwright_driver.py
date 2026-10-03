@@ -845,8 +845,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             return
         x = rect["x"] + rect["width"] + HOVER_AWAY_OFFSET
         y = rect["y"] + rect["height"] + HOVER_AWAY_OFFSET
-        viewport = self.page.viewport_size
-        if viewport is not None:
+        if (viewport := self.page.viewport_size) is not None:
             # past the far edge there is nowhere to land, so leave on the near side instead
             if x >= viewport["width"]:
                 x = max(0.0, rect["x"] - HOVER_AWAY_OFFSET)

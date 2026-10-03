@@ -55,11 +55,11 @@ class HgWebConfigManager:
         finally:
             self.lock.release()
 
-    def get_entry(self, lhs):
+    def get_entry(self, lhs: str) -> str:
         """Return an entry in the hgweb.config file for a repository"""
         self.read_config()
         try:
-            entry = self.in_memory_config.get("paths", lhs)
+            entry: str = self.in_memory_config.get("paths", lhs)
         except configparser.NoOptionError:
             try:
                 # We have a multi-threaded front-end, so one of the threads may not have the latest version of the hgweb.config file.

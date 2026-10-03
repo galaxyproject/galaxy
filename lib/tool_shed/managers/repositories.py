@@ -236,13 +236,15 @@ def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
 
 def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
     repository_found = []
-    all_metadata = {}
+    all_metadata: dict[str, Any] = {}
     for tool_id in tool_ids:
         repository = guid_to_repository(app, tool_id)
         owner = repository.user.username
         name = repository.name
         for changeset, changehash in repository.installable_revisions(app):
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
+            if metadata is None:
+                continue
             tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
             if not tools:
                 log.warning(f"Repository {owner}/{name}/{changehash} does not contain valid tools, skipping")
@@ -250,9 +252,6 @@ def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
             for tool_metadata in tools:
                 if tool_metadata["guid"] in tool_ids:
                     repository_found.append(f"{int(changeset)}:{changehash}")
-            metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
-            if metadata is None:
-                continue
             metadata_dict = metadata.to_dict(
                 value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
             )
@@ -323,7 +322,7 @@ def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
 def can_update_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
     app = trans.app
     security_agent = app.security_agent
-    return can_manage_repo(trans, repository) or security_agent.can_push(app, trans.user, repository)
+    return can_manage_repo(trans, repository) or security_agent.can_push(trans.user, repository)
 
 
 def get_repository_metadata_for_management(
@@ -657,7 +656,6 @@ def reset_metadata_on_repositories(
 
     start_time = strftime("%Y-%m-%d %H:%M:%S")
     results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
-    handled_repository_ids: list[str] = []
     encoded_ids_to_skip = request.encoded_ids_to_skip or []
     if trans.user_is_admin:
         my_writable = request.my_writable
@@ -678,7 +676,7 @@ def reset_metadata_on_repositories(
                 repository.id,
                 encoded_ids_to_skip,
             )
-        elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+        elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
             results = handle_repository(trans, repository, results)
     # Now reset metadata on all remaining repositories.
     for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
@@ -689,7 +687,7 @@ def reset_metadata_on_repositories(
                 repository.id,
                 encoded_ids_to_skip,
             )
-        elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+        elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION:
             results = handle_repository(trans, repository, results)
     stop_time = strftime("%Y-%m-%d %H:%M:%S")
     results["stop_time"] = stop_time
@@ -792,7 +790,7 @@ def upload_tar_and_set_metadata(
             raise MalformedContents("No changes to repository.")
         else:
             rmm = repository_metadata_manager.RepositoryMetadataManager(trans, repository=repository)
-            _, error_message = rmm.set_repository_metadata_due_to_new_tip(host, content_alert_str=content_alert_str)
+            error_message, _ = rmm.set_repository_metadata(host, content_alert_str=content_alert_str)
             if error_message:
                 raise InternalServerError(error_message)
             dd = dependency_display.DependencyDisplayer(app)
@@ -812,7 +810,7 @@ def upload_tar_and_set_metadata(
                     metadata_dict = repository.metadata_revisions[0].metadata
                 else:
                     metadata_dict = {}
-                orphan_message = dd.generate_message_for_orphan_tool_dependencies(repository, metadata_dict)
+                orphan_message = dd.generate_message_for_orphan_tool_dependencies(metadata_dict)
                 if orphan_message:
                     message += orphan_message
     else:
@@ -1162,13 +1160,12 @@ def previous_changeset_revisions_str(
 ) -> str:
     """Return comma-separated changeset hashes between previous metadata revision and the given one."""
     repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    assert repository is not None
     if from_tip:
         changeset_revision = repository.tip()
     if changeset_revision is not None:
         repo = repository.hg_repo
-        lower_bound_changeset_revision = get_previous_metadata_changeset_revision(
-            app, repository, changeset_revision, downloadable=True
-        )
+        lower_bound_changeset_revision = get_previous_metadata_changeset_revision(app, repository, changeset_revision)
         changeset_hashes = []
         for changeset in reversed_lower_upper_bounded_changelog(
             repo, lower_bound_changeset_revision, changeset_revision

@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import VaultSecret from "./VaultSecret.vue";
 
@@ -36,5 +38,14 @@ describe("VaultSecret", () => {
             localVue,
         });
         expect(wrapper.html()).toContain("bformtextarea-stub");
+    });
+
+    it("renders help through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        shallowMount(VaultSecret as object, {
+            propsData: { name: "secret", label: "Secret", help: "the *help*", isSet: false },
+            localVue,
+        });
+        expect(sanitizeHtml).toHaveBeenCalledWith("<p>the <em>help</em></p>\n", "links");
     });
 });

@@ -389,6 +389,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/configuration/extra_preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return the administrator-defined extra user preferences
+         * @description Return the sections and inputs configured in `user_preferences_extra_conf.yml`.
+         *
+         *     A user's values for them are at `/api/users/{user_id}/extra_preferences`.
+         */
+        get: operations["extra_preferences_api_configuration_extra_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/configuration/tool_lineages": {
         parameters: {
             query?: never;
@@ -4112,6 +4134,12 @@ export interface paths {
         /**
          * Sends a notification to a list of recipients (users, groups or roles).
          * @description Sends a notification to a list of recipients (users, groups or roles).
+         *
+         *     Administrators can address arbitrary recipients. Other authenticated users can only
+         *     submit the request categories Galaxy accepts from users (currently
+         *     ``tool_installation_request``); for those, the recipients are resolved server-side and
+         *     the ``recipients`` field is ignored. Submissions are rate-limited per user
+         *     (``send_notification_rate_limit``).
          */
         post: operations["send_notification_api_notifications_post"];
         /** Deletes a list of notifications received by the user in a single request. */
@@ -6255,17 +6283,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{user_id}/extra_preferences/inputs": {
+    "/api/users/{user_id}/extra_preferences": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Return the administrator-defined extra user preferences as form inputs */
-        get: operations["get_extra_preferences_api_users__user_id__extra_preferences_inputs_get"];
-        /** Save values for the administrator-defined extra user preferences */
-        put: operations["set_extra_preferences_api_users__user_id__extra_preferences_inputs_put"];
+        /**
+         * Return the user's values for the administrator-defined extra preferences
+         * @description The sections and inputs are described by `GET /api/configuration/extra_preferences`.
+         */
+        get: operations["get_extra_preferences_api_users__user_id__extra_preferences_get"];
+        /**
+         * Change values of the administrator-defined extra preferences
+         * @description Inputs left out of the payload keep their stored value; null clears one.
+         *
+         *     Unlike account data, these stay writable when `enable_account_interface` is
+         *     off: they configure integrations such as file sources, not the account.
+         */
+        put: operations["update_extra_preferences_api_users__user_id__extra_preferences_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -13068,6 +13105,75 @@ export interface components {
          * @enum {string}
          */
         ExtraFilesEntryClass: "Directory" | "File";
+        /**
+         * ExtraPreferenceInputDefinition
+         * @description One input of an administrator-defined extra preferences section.
+         *
+         *     Keys beyond the declared fields are form options the administrator set in
+         *     ``user_preferences_extra_conf.yml`` and are passed through unchanged.
+         */
+        ExtraPreferenceInputDefinition: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Multiple
+             * @description Whether a `select` input takes a list of its options.
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Name of the input within its section.
+             */
+            name: string;
+            /**
+             * Options
+             * @description `[label, value]` or `[label, value, selected]` entries of a `select` input.
+             */
+            options?: ([string, string | number | boolean] | [string, string | number | boolean, boolean])[] | null;
+            /**
+             * Required
+             * @description Whether a stored value is protected from being cleared or set to an empty string.
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Store
+             * @description `vault` when the value is kept in Galaxy's vault rather than in the user's preferences.
+             */
+            store?: string | null;
+            /**
+             * Type
+             * @description Form input type, such as `text`, `select`, `boolean`, `password` or `secret`. Without a type, an input with `options` is a `select` and any other input is `text`. The extra preferences endpoints never return values of `password` and `secret` inputs.
+             */
+            type?: string | null;
+            /** Default value */
+            value?: string | number | boolean | (string | number | boolean)[] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ExtraPreferenceSecretState */
+        ExtraPreferenceSecretState: {
+            /**
+             * Is set
+             * @description Whether a value is stored. The value itself is never returned.
+             */
+            is_set: boolean;
+        };
+        /** ExtraPreferenceSectionDefinition */
+        ExtraPreferenceSectionDefinition: {
+            /** Description */
+            description: string;
+            /** Inputs */
+            inputs?: components["schemas"]["ExtraPreferenceInputDefinition"][];
+            /**
+             * Name
+             * @description Name of the section, the first part of each stored key.
+             */
+            name: string;
+        };
         /** ExtractInputAction */
         ExtractInputAction: {
             /**
@@ -16889,7 +16995,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**
@@ -16952,7 +17058,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**
@@ -20349,6 +20455,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -20438,6 +20545,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -21670,7 +21778,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -22335,6 +22443,48 @@ export interface components {
             | "track_config"
             | "genome_data"
             | "in_use_state";
+        /**
+         * RequestedTool
+         * @description A single requested tool in a tool installation request.
+         *
+         *     This is the per-item model: each entry describes one tool. An installation
+         *     request submits an array of these, wrapped by
+         *     :class:`ToolInstallationRequestNotificationContent` which carries the
+         *     request-level metadata. All fields are sanitized on validation: control
+         *     characters are collapsed and whitespace-only values become ``None``.
+         */
+        RequestedTool: {
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description?: string | null;
+            /**
+             * Tool name
+             * @description The human-readable name of the tool, if known.
+             */
+            name?: string | null;
+            /**
+             * Requested version
+             * @description The version of the tool being requested, if any.
+             */
+            requested_version?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool shed ID
+             * @description The fully qualified tool shed repository ID (e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.
+             */
+            tool_shed_id?: string | null;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool. Must be an http(s) URL.
+             */
+            tool_url?: string | null;
+        };
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -25402,6 +25552,69 @@ export interface components {
              */
             values: string;
         };
+        /**
+         * ToolInstallationRequestCreateContent
+         * @description A tool installation request as a user submits it.
+         *
+         *     The requested ``tools`` plus request-level context: the workflow that needs
+         *     them and any remarks for the admins.
+         */
+        ToolInstallationRequestCreateContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description A tool installation request as delivered to its recipients.
+         *
+         *     Adds ``requester_email``, taken from the authenticated submitter, so the
+         *     admin's notification card can name and contact the requester.
+         */
+        ToolInstallationRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requester email
+             * @description Email address of the user who made the request.
+             */
+            requester_email?: string | null;
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /** ToolLandingRequest */
         ToolLandingRequest: {
             /** Origin */
@@ -26433,6 +26646,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -26722,36 +26942,33 @@ export interface components {
             id: string;
         };
         /**
-         * UserExtraPreferencesInputs
-         * @description Form-builder inputs for the admin-defined extra user preferences.
+         * UserExtraPreferences
+         * @description A user's values for the extra preferences, by section and input name.
          *
-         *     The sections come from ``user_preferences_extra_conf.yml``, so their shape is
-         *     whatever an administrator wrote. Modelling it any further would be fiction.
+         *     Inputs without a stored value are null. `password` and `secret` inputs report
+         *     whether a value is stored instead of the value.
          */
-        UserExtraPreferencesInputs: {
-            /**
-             * Inputs
-             * @description One form-builder section per configured group of extra preferences.
-             */
-            inputs?: {
-                [key: string]: unknown;
-            }[];
+        UserExtraPreferences: {
+            [key: string]: {
+                [key: string]:
+                    | string
+                    | number
+                    | boolean
+                    | (string | number | boolean)[]
+                    | components["schemas"]["ExtraPreferenceSecretState"]
+                    | null;
+            };
         };
         /**
-         * UserExtraPreferencesPayload
-         * @description Flat map of ``<section>|<input>`` to value, as produced by the generic form.
-         * @default {}
+         * UserExtraPreferencesUpdatePayload
+         * @description Values to change, by section and input name.
+         *
+         *     Inputs that are left out keep their stored value; null clears one.
          */
-        UserExtraPreferencesPayload: {
-            [key: string]: unknown;
-        };
-        /** UserExtraPreferencesUpdated */
-        UserExtraPreferencesUpdated: {
-            /**
-             * Message
-             * @description Human readable confirmation that the preferences were saved.
-             */
-            message: string;
+        UserExtraPreferencesUpdatePayload: {
+            [key: string]: {
+                [key: string]: string | number | boolean | (string | number | boolean)[] | null;
+            };
         };
         /** UserFileSourceModel */
         UserFileSourceModel: {
@@ -26895,6 +27112,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -26925,7 +27149,8 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["StorageOperationNotificationContent"];
+                | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -33963,6 +34188,47 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extra_preferences_api_configuration_extra_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sections and inputs users can set values for */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtraPreferenceSectionDefinition"][];
                 };
             };
             /** @description Request Error */
@@ -52836,7 +53102,7 @@ export interface operations {
             };
         };
     };
-    get_extra_preferences_api_users__user_id__extra_preferences_inputs_get: {
+    get_extra_preferences_api_users__user_id__extra_preferences_get: {
         parameters: {
             query?: never;
             header?: {
@@ -52857,7 +53123,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserExtraPreferencesInputs"];
+                    "application/json": components["schemas"]["UserExtraPreferences"];
                 };
             };
             /** @description Request Error */
@@ -52880,7 +53146,7 @@ export interface operations {
             };
         };
     };
-    set_extra_preferences_api_users__user_id__extra_preferences_inputs_put: {
+    update_extra_preferences_api_users__user_id__extra_preferences_put: {
         parameters: {
             query?: never;
             header?: {
@@ -52893,9 +53159,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["UserExtraPreferencesPayload"];
+                "application/json": components["schemas"]["UserExtraPreferencesUpdatePayload"];
             };
         };
         responses: {
@@ -52905,7 +53171,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserExtraPreferencesUpdated"];
+                    "application/json": components["schemas"]["UserExtraPreferences"];
                 };
             };
             /** @description Request Error */

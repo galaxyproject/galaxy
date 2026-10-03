@@ -24,8 +24,7 @@ def iter_fetch_urls(value: Any):
 
 def iter_fetch_request_urls(param_dict: ToolStateJobInstancePopulatedT) -> Iterator[str]:
     """Yield URLs from a data-fetch tool's serialized request."""
-    request_json = param_dict.get("request_json")
-    if request_json:
+    if request_json := param_dict.get("request_json"):
         for url in iter_fetch_urls(json.loads(request_json)):
             if isinstance(url, str) and url:
                 yield url

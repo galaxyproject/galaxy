@@ -7,17 +7,16 @@ preferences:
             # the content can be accessed by apollo_url_01.apollo_url
             - name: apollo_url
               label: Apollo URL
-              # type of input field that will be displayed to the user
-              # can be string or password
+              # type of input field that will be displayed to the user, e.g. text,
+              # select, boolean, password or secret. Values of password and secret
+              # inputs are never sent back to the client.
               type: text
-              # by defaul all inputs are required
+              # inputs are optional unless marked as required; a required value
+              # cannot be cleared once set
               required: True
             - name: apollo_text
               label: Apollo Text
-              # type of input field that will be displayed to the user
-              # can be string or password
               type: text
-              # by defaul all inputs are required
               required: True
 
     openstack_account:

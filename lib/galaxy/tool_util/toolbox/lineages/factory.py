@@ -59,8 +59,7 @@ class LineageMap:
         Falls back to fetching the lineage only when this fails.
         This happens when the tool_id does not contain a version.
         """
-        lineage = self._get_versionless(tool_id)
-        if lineage:
+        if lineage := self._get_versionless(tool_id):
             return lineage
         if tool_id not in self.lineage_map:
             # Not every tool reaches the toolbox through `__add_tool`, which is

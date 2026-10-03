@@ -297,8 +297,7 @@ class FileSourceInstancesManager:
         template = self._catalog.find_template(payload)
         if not template or not payload.uuid:
             return
-        capability = capability_for(template)
-        if capability is not None:
+        if (capability := capability_for(template)) is not None:
             capability.validate_creation(
                 template,
                 payload.variables,

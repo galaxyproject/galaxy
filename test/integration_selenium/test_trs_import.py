@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 
 from galaxy.util.unittest_utils import (
     skip_if_dockstore_down,
@@ -33,6 +34,24 @@ TRS_URL_DOCKSTORE = f"{TRS_API_URL_DOCKSTORE}/ga4gh/trs/v2/tools/%23{TRS_ID_DOCK
 TRS_URL_WORKFLOWHUB = (
     f"{TRS_API_URL_WORKFLOWHUB}/ga4gh/trs/v2/tools/{TRS_ID_WORKFLOWHUB}/versions/{TRS_VERSION_WORKFLOWHUB}"
 )
+
+
+def with_page_errors(method):
+    # A failed TRS request shows up only as an alert in the page while the test times out
+    # waiting for something else, so put the alert text into the failure.
+    @wraps(method)
+    def wrapped_method(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except Exception as e:
+            alerts = self.execute_script(
+                "return Array.from(document.querySelectorAll('.alert-danger'), el => el.innerText);"
+            )
+            if alerts:
+                raise AssertionError(f"{e}\nErrors shown on page: {alerts}") from e
+            raise
+
+    return wrapped_method
 
 
 class TestTrsImport(SeleniumIntegrationTestCase):
@@ -80,6 +99,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_workflow_by_url(import_url)
 
     @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_workflow_by_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_server=workflowhub&trs_version={TRS_VERSION_WORKFLOWHUB}&trs_id={TRS_ID_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)
@@ -119,6 +139,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.screenshot("workflow_imported_via_dockstore_search")
 
     @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_search_workflowhub(self):
         self.go_to_trs_search()
         self.components.trs_search.select_server_button.wait_for_and_click()
@@ -135,6 +156,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server="dockstore")
 
     @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_id_workflowhub(self):
         self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
@@ -143,6 +165,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_by_trs_url(TRS_URL_DOCKSTORE)
 
     @skip_if_workflowhub_down
+    @with_page_errors
     def test_import_by_trs_url_workflowhub(self):
         self._import_by_trs_url(TRS_URL_WORKFLOWHUB)
 
@@ -152,6 +175,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_workflow_by_url(import_url)
 
     @skip_if_workflowhub_down
+    @with_page_errors
     def test_auto_import_by_trs_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)

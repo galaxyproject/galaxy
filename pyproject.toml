@@ -206,6 +206,7 @@ extend-exclude = '''
 ^/(
   | packages
   | lib/tool_shed/test/test_data/repos
+  | lib/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
 )/
 '''
 

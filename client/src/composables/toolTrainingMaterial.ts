@@ -74,11 +74,17 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
             }
 
             if (apiEnabled.value && !cachedResponse.value) {
-                const res = await fetch(config.value.tool_training_recommendations_api_url);
+                try {
+                    const res = await fetch(config.value.tool_training_recommendations_api_url);
 
-                if (res.ok) {
-                    cachedResponse.value = await res.json();
-                    mapToolIds();
+                    if (res.ok) {
+                        cachedResponse.value = await res.json();
+                        mapToolIds();
+                    }
+                } catch (e) {
+                    // Recommendations come from an external training site and only add optional tutorial links,
+                    // so the tool form is shown without them, as for a non-OK response.
+                    console.warn("Failed to load tool training recommendations", e);
                 }
             }
 

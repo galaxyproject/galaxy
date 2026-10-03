@@ -156,8 +156,7 @@ function goToResetPassword() {
             <template v-if="!confirmURL">
                 <div>
                     <GAlert :show="!!messageText" :variant="messageVariant">
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="messageText" />
+                        <span v-sanitize-html="messageText" />
                     </GAlert>
 
                     <GAlert :show="!!connectExternalProvider" variant="info">

@@ -296,8 +296,7 @@ class FastAPIUsers:
     ):
         password = change_request.password
         confirm = change_request.confirm
-        token = change_request.token
-        if token:
+        if token := change_request.token:
             # Redeeming a reset token is how a locked out user gets back in, so this
             # branch is reachable while logged out.
             user, message = self.user_manager.change_password(trans, password=password, token=token, confirm=confirm)

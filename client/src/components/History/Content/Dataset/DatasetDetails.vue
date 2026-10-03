@@ -70,7 +70,7 @@ function toggleHighlights() {
                     :show-highlight="showHighlight"
                     :item-urls="itemUrls"
                     @toggleHighlights="toggleHighlights" />
-                <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
+                <pre v-if="result.peek" v-sanitize-html="result.peek" class="dataset-peek p-1" />
             </div>
         </div>
         <div v-else class="dataset">

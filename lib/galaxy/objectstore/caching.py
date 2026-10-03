@@ -139,8 +139,7 @@ class CacheShardManager:
         default_size = cache_dict.get("size") or config.object_store_cache_size
         default_path = cache_dict.get("path") or config.object_store_cache_path
 
-        dirs = cache_dict.get("dirs")
-        if dirs:
+        if dirs := cache_dict.get("dirs"):
             shards: list[CacheShard] = []
             for d in dirs:
                 path = d.get("path")

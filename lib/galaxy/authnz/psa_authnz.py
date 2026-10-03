@@ -1,7 +1,11 @@
 import json
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    NoReturn,
+    TYPE_CHECKING,
+)
 from urllib.parse import (
     quote,
     urlencode,
@@ -17,19 +21,34 @@ from social_core.actions import (
 )
 from social_core.backends.utils import get_backend
 from social_core.pipeline.user import create_user as social_create_user
-from social_core.strategy import BaseStrategy
+from social_core.storage import (
+    AssociationMixin,
+    BaseStorage,
+    CodeMixin,
+    NonceMixin,
+    PartialMixin,
+    UserMixin,
+)
+from social_core.strategy import (
+    BaseStrategy,
+    BaseTemplateStrategy,
+)
 from social_core.utils import (
     module_member,
     setting_name,
 )
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from webob.multidict import MultiDict
 
 from galaxy import (
     exceptions as galaxy_exceptions,
 )
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import MalformedContents
+from galaxy.exceptions import (
+    MalformedContents,
+    MalformedId,
+)
 from galaxy.managers import users as user_managers
 from galaxy.model import (
     PSAAssociation,
@@ -49,6 +68,7 @@ from .oidc_utils import (
     decode_access_token as decode_access_token_oidc,
     is_decodable_jwt,
     is_oidc_backend,
+    PKCE_CODE_VERIFIER_SESSION_KEY,
     verify_oidc_response,
 )
 
@@ -57,9 +77,14 @@ if TYPE_CHECKING:
     from social_core.strategy import HttpResponseProtocol
 
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.web.framework.base import Request
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
+
+PKCE_CODE_VERIFIER_COOKIE_NAME = "galaxy-oidc-pkce-verifier"
+# Long enough to sign in at the IdP.
+PKCE_CODE_VERIFIER_COOKIE_MAX_AGE = 600
 
 
 def locate_token_expiration(extra_data):
@@ -337,13 +362,42 @@ class PSAAuthnz(IdentityProvider):
     def _try_to_locate_token_expiration(self, extra_data):
         return locate_token_expiration(extra_data)
 
-    def authenticate(self, trans: "GalaxyWebTransaction", idphint=None) -> "HttpResponseProtocol":
+    def authenticate(self, trans: "GalaxyWebTransaction", idphint: str | None = None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        return do_auth(backend)
+        redirect = do_auth(backend)
+        self._save_pkce_code_verifier(strategy, trans)
+        return redirect
 
-    def callback(self, state_token, authz_code, trans: "GalaxyWebTransaction", login_redirect_url):
+    def _save_pkce_code_verifier(self, strategy: "Strategy", trans: "GalaxyWebTransaction") -> None:
+        # The verifier travels to the callback request in an encrypted cookie.
+        code_verifier = strategy.session_get(PKCE_CODE_VERIFIER_SESSION_KEY)
+        if code_verifier:
+            # encode_guid/decode_guid round-trip hexadecimal strings
+            trans.set_cookie(
+                trans.security.encode_guid(code_verifier.encode().hex()),
+                name=PKCE_CODE_VERIFIER_COOKIE_NAME,
+            )
+            # set_cookie counts age in days, so the lifetime is set on the cookie itself.
+            cookie = trans.response.cookies[PKCE_CODE_VERIFIER_COOKIE_NAME]
+            cookie["max-age"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
+            cookie["expires"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
+            cookie["samesite"] = "Lax"
+
+    def _restore_pkce_code_verifier(self, strategy: "Strategy", trans: "GalaxyWebTransaction") -> None:
+        encoded_code_verifier = trans.get_cookie(name=PKCE_CODE_VERIFIER_COOKIE_NAME)
+        if not encoded_code_verifier:
+            return
+        trans.set_cookie("", name=PKCE_CODE_VERIFIER_COOKIE_NAME, age=0)
+        try:
+            code_verifier = bytes.fromhex(trans.security.decode_guid(encoded_code_verifier)).decode()
+        except (MalformedId, ValueError):
+            log.warning("Ignoring malformed PKCE code verifier cookie")
+            return
+        strategy.session_set(PKCE_CODE_VERIFIER_SESSION_KEY, code_verifier)
+
+    def callback(self, state_token: str, authz_code: str, trans: "GalaxyWebTransaction", login_redirect_url: str):
         on_the_fly_config(trans.sa_session)
         # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
         # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
@@ -352,6 +406,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["GALAXY_TRANS"] = trans
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
+        self._restore_pkce_code_verifier(strategy, trans)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         redirect = do_complete(
             backend,
@@ -585,9 +640,16 @@ class PSAAuthnz(IdentityProvider):
 
 
 class Strategy(BaseStrategy):
-    def __init__(self, request, session, storage, config, tpl=None):
+    def __init__(
+        self,
+        request: "Request | None",
+        session: dict[str, Any] | None,
+        storage: type["Storage"] | None,
+        config: dict[str, Any],
+        tpl: type[BaseTemplateStrategy] | None = None,
+    ) -> None:
         self.request = request
-        self.session = session if session else {}
+        self.session = session if session is not None else {}
         self.config = config
         self.config["SOCIAL_AUTH_REDIRECT_IS_HTTPS"] = (
             True if self.request and self.request.host.startswith("https:") else False
@@ -595,65 +657,68 @@ class Strategy(BaseStrategy):
         self.config["SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA"] = ["id_token"]
         super().__init__(storage, tpl)
 
-    def get_setting(self, name):
+    def get_setting(self, name: str) -> Any:
         return self.config[name]
 
-    def session_get(self, name, default=None):
+    def session_get(self, name: str, default: Any = None) -> Any:
         return self.session.get(name, default)
 
-    def session_set(self, name, value):
+    def session_set(self, name: str, value: Any) -> None:
         self.session[name] = value
 
-    def session_pop(self, name):
-        raise NotImplementedError("Not implemented.")
+    def session_pop(self, name: str) -> Any:
+        return self.session.pop(name, None)
 
-    def request_data(self, merge=True):
+    def request_data(self, merge: bool = True) -> Any:
         if not self.request:
             return {}
+        post = self.request.POST
         if merge:
-            data = self.request.GET.copy()
-            data.update(self.request.POST)
+            merged: MultiDict[str, Any] = self.request.GET.copy()
+            # A body that is not form data parses to an empty NoVars.
+            if isinstance(post, MultiDict):
+                merged.update(list(post.items()))
+            return merged
         elif self.request.method == "POST":
-            data = self.request.POST
+            return post
         else:
-            data = self.request.GET
-        return data
+            return self.request.GET
 
-    def request_host(self):
+    def request_host(self) -> str:
         if self.request:
             return self.request.host
+        return ""
 
-    def build_absolute_uri(self, path=None):
+    def build_absolute_uri(self, path: str | None = None) -> str:
         path = path or ""
-        if path.startswith("http://") or path.startswith("https://"):
+        if path.startswith(("http://", "https://")):
             return path
         if self.request:
-            return (
-                self.request.host + "/authnz" + ("/" + self.config.get("provider"))
-                if self.config.get("provider", None) is not None
-                else ""
-            )
+            provider = self.config.get("provider")
+            return f"{self.request.host}/authnz/{provider}" if provider is not None else ""
         return path
 
     def redirect(self, url: str) -> Redirect:
         return Redirect(url)
 
-    def html(self, content):
+    def html(self, content: str) -> NoReturn:
         raise NotImplementedError("Not implemented.")
 
-    def render_html(self, tpl=None, html=None, context=None):
+    def render_html(
+        self, tpl: str | None = None, html: str | None = None, context: dict[str, Any] | None = None
+    ) -> NoReturn:
         raise NotImplementedError("Not implemented.")
 
 
-class Storage:
-    user = UserAuthnzToken
-    nonce = PSANonce
-    association = PSAAssociation
-    code = PSACode
-    partial = PSAPartial
+class Storage(BaseStorage):
+    user: type[UserMixin] = UserAuthnzToken
+    nonce: type[NonceMixin] = PSANonce
+    association: type[AssociationMixin] = PSAAssociation
+    code: type[CodeMixin] = PSACode
+    partial: type[PartialMixin] = PSAPartial
 
     @classmethod
-    def is_integrity_error(cls, exception):
+    def is_integrity_error(cls, exception: Exception) -> bool:
         return exception.__class__ is IntegrityError
 
 
@@ -887,8 +952,8 @@ def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, up
         return
     try:
         from galaxy.schema.notifications import (
+            InternalNotificationCreateData,
             MessageNotificationContent,
-            NotificationCreateData,
             NotificationCreateRequest,
             NotificationRecipients,
             NotificationVariant,
@@ -904,7 +969,7 @@ def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, up
         message = f"Your profile was updated from your identity provider: {', '.join(field_list)}."
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
-            notification=NotificationCreateData(
+            notification=InternalNotificationCreateData(
                 source="oidc",
                 category=PersonalNotificationCategory.message,
                 variant=NotificationVariant.info,

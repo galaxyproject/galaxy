@@ -18,6 +18,7 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
+    false,
     select,
     true,
     update,
@@ -43,6 +44,10 @@ from galaxy.managers.context import (
     ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
+)
+from galaxy.managers.extra_preferences import (
+    EXTRA_PREFERENCES_KEY,
+    ExtraPreferencesManager,
 )
 from galaxy.model import (
     Job,
@@ -484,9 +489,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
+
+        Deleted (and therefore purged) accounts are excluded even when their
+        email is still listed in ``admin_users``: they can no longer act as
+        admins and must not receive admin-targeted notifications.
         """
         admin_emails = self.app.config.admin_users_list
         filters = combine_lists(self.model_class.email.in_(admin_emails), filters)
+        filters = combine_lists(self.model_class.deleted == false(), filters)
         return super().list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
@@ -673,8 +683,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
-        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        # The HTML body is autoescaped to prevent XSS via attacker-influenced
+        # values such as the Host-derived ``hostname``; pre-escaped ``Markup``
+        # values (``name``/``user_email``) pass through unchanged under
+        # autoescape, and the admin's ``custom_message`` is marked ``| safe`` in
+        # the template. The plain-text body is never autoescaped (see
+        # templates.render's ``.txt`` guard).
+        body = templates.render(
+            TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=False
+        )
+        html = templates.render(
+            HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=True
+        )
         to = email
         subject = "Galaxy Account Activation"
         try:
@@ -840,12 +860,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: MinimalManagerApp, extra_preferences_manager: ExtraPreferencesManager):
         """
         Convert a User and associated data to a dictionary representation.
         """
         super().__init__(app)
         self.user_manager = self.manager
+        self.extra_preferences_manager = extra_preferences_manager
 
         self.default_view = "summary"
         self.add_view("summary", ["id", "email", "username"])
@@ -879,7 +900,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "update_time": self.serialize_date,
                 "active": lambda i, k, **c: bool(i.active),
                 "is_admin": lambda i, k, **c: self.user_manager.is_admin(i),
-                "preferences": lambda i, k, **c: self.user_manager.preferences(i),
+                "preferences": lambda i, k, **c: self.serialize_preferences(i),
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
@@ -919,6 +940,15 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             quota=quota,
             quota_bytes=quota_bytes,
         )
+
+    def serialize_preferences(self, user: User) -> dict[str, str]:
+        preferences = self.user_manager.preferences(user)
+        if EXTRA_PREFERENCES_KEY in preferences:
+            # Values of password and secret inputs are written by the user but never sent back.
+            preferences[EXTRA_PREFERENCES_KEY] = self.extra_preferences_manager.redact(
+                preferences[EXTRA_PREFERENCES_KEY]
+            )
+        return preferences
 
 
 class UserDeserializer(base.ModelDeserializer):

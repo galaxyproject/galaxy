@@ -1110,9 +1110,7 @@ class DefaultToolAction(ToolAction):
         job_params=None,
     ) -> str:
         if output.label:
-            params["tool"] = tool
-            params["on_string"] = on_text
-            return fill_template(output.label, context=params, python_template_version=tool.python_template_version)
+            return tool.render_output_label(output.label, params, on_text, tool_state=incoming)
         else:
             return self._get_default_data_name(
                 dataset,
@@ -1303,8 +1301,7 @@ def determine_output_format(
             except Exception:
                 pass
         ext = random_input_ext
-    format_source = output.format_source
-    if format_source is not None:
+    if (format_source := output.format_source) is not None:
         ext = resolve_format_source(format_source, input_datasets, input_dataset_collections, ext, execution_cache)
 
     # process change_format tags

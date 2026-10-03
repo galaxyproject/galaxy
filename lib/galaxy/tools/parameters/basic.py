@@ -2004,7 +2004,6 @@ def _paginated_dataset_collections(
     trans: "ProvidesHistoryContext",
     history: "History",
     *,
-    visible_only: bool,
     tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
@@ -2012,12 +2011,10 @@ def _paginated_dataset_collections(
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""
-    key = ("data_param_hdca_page", history.id, bool(visible_only), tag or None, search or None, offset, limit)
+    key = ("data_param_hdca_page", history.id, tag or None, search or None, offset, limit)
     return trans.get_or_set_cache_value(
         key,
-        lambda: history.paginated_active_dataset_collections(
-            visible_only=visible_only, tag=tag, search=search, offset=offset, limit=limit
-        ),
+        lambda: history.paginated_active_dataset_collections(tag=tag, search=search, offset=offset, limit=limit),
     )
 
 
@@ -2171,7 +2168,6 @@ class BaseDataToolParameter(ToolParameter):
                     collection_rows, total = _paginated_dataset_collections(
                         trans,
                         history,
-                        visible_only=True,
                         tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
@@ -2843,7 +2839,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=True, tag=self.tag, search=hdca_search, offset=offset, limit=limit
+                trans, history, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -2908,31 +2904,6 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def _history_query(self, trans: "ProvidesHistoryContext"):
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         return query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
-
-    def match_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
-        dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(
-            history, self._history_query(trans)
-        )
-
-        for dataset_collection_instance in dataset_collections:
-            match = dataset_collection_matcher.hdca_match(dataset_collection_instance)
-            if not match:
-                continue
-            # Filter sample sheet collections by column_definitions compatibility
-            if self._column_definitions:
-                collection_cols = dataset_collection_instance.collection.column_definitions
-                if not column_definitions_compatible(collection_cols, self._column_definitions):
-                    continue
-            yield dataset_collection_instance, match.implicit_conversion
-
-    def match_multirun_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
-        for history_dataset_collection in history.active_visible_dataset_collections:
-            if not self._history_query(trans).can_map_over(history_dataset_collection):
-                continue
-
-            match = dataset_collection_matcher.hdca_match(history_dataset_collection)
-            if match:
-                yield history_dataset_collection, match.implicit_conversion
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         session = trans.sa_session
@@ -3055,8 +3026,27 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
         self._page_hdca_matches(builder, trans, history, dataset_collection_matcher)
+        self._carry_selected_hdca(builder, history, other_values.get(self.name))
         builder.sort_by_hid("hdca")
         return d
+
+    def _carry_selected_hdca(self, builder: DataOptionsBuilder, history, value) -> None:
+        """Carry a selected HDCA that the visible-only listing cannot return
+        (hidden, deleted or from another history) as a ``keep=True`` entry
+        with a state-prefixed name, so a rerun form still pre-selects it."""
+        if isinstance(value, HistoryDatasetCollectionAssociation) and (
+            value.deleted or not value.visible or value.history != history
+        ):
+            state = _carried_state_label(value)
+            builder.options["hdca"].append(
+                make_hdca_entry(
+                    builder.security,
+                    value,
+                    f"({state}) {value.name}",
+                    keep=True,
+                    include_column_definitions=True,
+                )
+            )
 
     def _page_hdca_matches(
         self,
@@ -3067,16 +3057,14 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     ) -> None:
         """Emit one page of matching HDCAs into ``builder.options['hdca']``.
 
-        Walks all active HDCAs (incl. hidden) in HID-desc order; the
-        classifier in :meth:`_classify_hdca` demotes hidden HDCAs to
-        direct-only so they cannot appear as multirun (map-over) entries.
+        Walks active, visible HDCAs in HID-desc order.
         """
         _offset, _limit, hdca_search = builder.page("hdca")
         history_query = self._history_query(trans)
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=False, tag=self.tag, search=hdca_search, offset=offset, limit=limit
+                trans, history, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3103,8 +3091,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         ``list,list:list`` with a ``list:list`` HDCA matches ``list:list``
         directly AND can be mapped over to feed ``list``); both entries are
         emitted in that case. Direct entries come first so the stable
-        HID-desc sort places them above the multirun entry. Hidden HDCAs
-        emit only the direct-match entry — they are excluded from multirun.
+        HID-desc sort places them above the multirun entry.
         """
         match = dataset_collection_matcher.hdca_match(hdca)
         if not match:
@@ -3117,17 +3104,15 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 column_definitions_ok = column_definitions_compatible(collection_cols, self._column_definitions)
             if column_definitions_ok:
                 entries.append(("direct", hdca, match.implicit_conversion, None))
-        if hdca.visible:
-            can_map = history_query.can_map_over(hdca)
-            if can_map:
-                subcollection_type = can_map.collection_type
-                collection_type = hdca.collection.collection_type
-                if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
-                    if collection_type.endswith("paired"):
-                        subcollection_type = "paired"
-                    else:
-                        subcollection_type = "single_datasets"
-                entries.append(("multirun", hdca, match.implicit_conversion, subcollection_type))
+        if can_map := history_query.can_map_over(hdca):
+            subcollection_type = can_map.collection_type
+            collection_type = hdca.collection.collection_type
+            if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
+                if collection_type.endswith("paired"):
+                    subcollection_type = "paired"
+                else:
+                    subcollection_type = "single_datasets"
+            entries.append(("multirun", hdca, match.implicit_conversion, subcollection_type))
         return entries or None
 
 
