@@ -198,7 +198,7 @@ module.exports = {
         {
             // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
             // components keep `.native` for vue-router 3's RouterLink roots.
-            files: ["packages/ui/src/**/*.vue"],
+            files: ["**/packages/ui/src/**/*.vue"],
             rules: {
                 "vue/no-deprecated-v-on-native-modifier": "off",
             },
