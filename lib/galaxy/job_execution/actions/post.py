@@ -19,7 +19,7 @@ from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
 
-INPUT_REFERENCE_PATTERN = re.compile(r"#\{([^}]*)\}")
+RENAME_INPUT_REFERENCE_PATTERN = re.compile(r"#\{([^}]*)\}")
 
 
 class DefaultJobAction:
@@ -201,8 +201,8 @@ class RenameDatasetAction(DefaultJobAction):
             #  TODO: Unify and simplify replacement options.
             #      Add interface through workflow editor UI
 
-            #  The following if statement will process a request to rename
-            #  using an input file name.
+            #  Resolve each #{...} reference to an input to rename
+            #  using that input's name.
             #  Proper syntax is #{input_file_variable | option 1 | option n}
             #    where
             #      input_file_variable = is the name of an module input variable
@@ -265,7 +265,7 @@ class RenameDatasetAction(DefaultJobAction):
 
                 return replacement
 
-            new_name = INPUT_REFERENCE_PATTERN.sub(resolve, new_name)
+            new_name = RENAME_INPUT_REFERENCE_PATTERN.sub(resolve, new_name)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():
