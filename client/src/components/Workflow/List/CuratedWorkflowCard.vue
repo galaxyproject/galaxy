@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+    faBell,
     faCheck,
     faEdit,
     faExclamationTriangle,
@@ -19,11 +20,13 @@ import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
 import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
+import { useCanRequestToolInstallation } from "@/composables/toolInstallationRequest";
 import { useUserStore } from "@/stores/userStore";
 import { ApiError } from "@/utils/simple-error";
 
 import GCard from "@/components/Common/GCard.vue";
 import UtcDate from "@/components/UtcDate.vue";
+import ToolInstallationRequestDialog from "@/components/Workflow/ToolInstallationRequestDialog.vue";
 
 interface Props {
     workflow: CuratedWorkflow;
@@ -71,6 +74,17 @@ const titleBadges = computed<CardBadge[]>(() =>
     })),
 );
 
+const canRequestTools = useCanRequestToolInstallation();
+const canRequestMissingTools = computed(() => canRequestTools.value && Boolean(workflow.value.missing_tools?.length));
+const showInstallationRequest = ref(false);
+// Only for this visit: the admins' answer arrives as a notification, and the badge clears once they install.
+const installationRequested = ref(false);
+
+function onInstallationRequested() {
+    installationRequested.value = true;
+    Toast.success("Installation request sent. Check your notifications for updates.");
+}
+
 /** `toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4` -> `fastp`; built-in ids pass through. */
 function shortToolName(toolId: string): string {
     const parts = toolId.split("/");
@@ -93,12 +107,14 @@ const runnabilityBadge = computed<CardBadge | null>(() => {
         };
     }
     const names = [...new Set(missingTools.map(shortToolName))];
+    const canAsk = canRequestMissingTools.value && !installationRequested.value;
     return {
         id: "curated-missing-tools",
         label: `Needs ${names.length} ${names.length === 1 ? "tool" : "tools"}`,
-        title: `Not installed on this Galaxy: ${names.join(", ")}`,
+        title: `Not installed on this Galaxy: ${names.join(", ")}${canAsk ? ". Click to ask the admins to install them." : ""}`,
         icon: faExclamationTriangle,
         variant: "warning",
+        handler: canAsk ? () => (showInstallationRequest.value = true) : undefined,
     };
 });
 
@@ -171,19 +187,31 @@ const extraActions = computed<CardAction[]>(() => {
         ];
     }
 
-    if (!workflow.value.doi) {
-        return [];
+    const actions: CardAction[] = [];
+
+    if (canRequestMissingTools.value) {
+        actions.push({
+            id: "curated-request-tools",
+            label: installationRequested.value ? "Installation requested" : "Request tool installation",
+            title: "Ask the admins to install the tools this workflow needs",
+            icon: faBell,
+            disabled: installationRequested.value,
+            handler: () => (showInstallationRequest.value = true),
+        });
     }
-    return [
-        {
+
+    if (workflow.value.doi) {
+        actions.push({
             id: "curated-doi",
             label: "View DOI",
             title: `Resolve DOI ${workflow.value.doi}`,
             icon: faExternalLinkAlt,
             externalLink: true,
             href: `https://doi.org/${workflow.value.doi}`,
-        },
-    ];
+        });
+    }
+
+    return actions;
 });
 
 /** The IWC page has the diagram and full documentation, so it's worth a visible button rather than a menu entry. */
@@ -292,6 +320,15 @@ async function onImportLocal() {
                     {{ detail.label }}
                 </BBadge>
             </div>
+            <!-- Parked in a slot because the card needs GCard as its root; a <dialog> renders in the top layer anyway. -->
+            <ToolInstallationRequestDialog
+                v-if="canRequestMissingTools"
+                v-model:show="showInstallationRequest"
+                :missing-tool-ids="workflow.missing_tools ?? []"
+                :workflow-id="isLocal ? (workflow.stored_workflow_id ?? undefined) : undefined"
+                :workflow-name="workflow.name"
+                :workflow-url="workflow.external_url ?? undefined"
+                @submitted="onInstallationRequested" />
         </template>
     </GCard>
 </template>

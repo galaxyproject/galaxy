@@ -9,15 +9,27 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { AnonymousUser } from "@/api";
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
+import { setMockConfig } from "@/composables/__mocks__/config";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { ApiError } from "@/utils/simple-error";
 
 import CuratedWorkflowCard from "./CuratedWorkflowCard.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 const importTrsToolFromUrl = vi.fn();
 const copyWorkflow = vi.fn();
+
+vi.mock("@/composables/config");
+
+const { mockSubmitToolInstallationRequest } = vi.hoisted(() => ({
+    mockSubmitToolInstallationRequest: vi.fn(),
+}));
+
+vi.mock("@/api/notifications", () => ({
+    submitToolInstallationRequest: mockSubmitToolInstallationRequest,
+}));
 
 vi.mock("@/components/Workflow/services", () => ({
     Services: class MockServices {
@@ -136,6 +148,14 @@ function requiredBadgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
     return badge;
 }
 
+function extraActionById(wrapper: ReturnType<typeof mountCard>, id: string) {
+    const action = (wrapper.findComponent(GCard).props("extraActions") ?? []).find((extra) => extra.id === id);
+    if (!action) {
+        throw new Error(`No "${id}" action in the card menu`);
+    }
+    return action;
+}
+
 function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
     const card = wrapper.findComponent(GCard);
     const actions = [
@@ -151,6 +171,8 @@ describe("CuratedWorkflowCard", () => {
         suppressBootstrapVueWarnings();
         importTrsToolFromUrl.mockReset();
         copyWorkflow.mockReset();
+        mockSubmitToolInstallationRequest.mockReset();
+        setMockConfig({});
         // Stubbed so the assertions can see navigation; a real push would also
         // warn about redundant routes across repeated mounts.
         routerPush = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
@@ -354,6 +376,62 @@ describe("CuratedWorkflowCard", () => {
 
         expect(requiredBadgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
         expect(importActionOf(wrapper).disabled).toBe(false);
+    });
+
+    describe("asking the admins for missing tools", () => {
+        const MISSING = ["toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17"];
+
+        beforeEach(() => {
+            setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
+        });
+
+        it("offers the request from the menu and the missing-tools badge", () => {
+            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }));
+
+            expect(actionIds(wrapper)).toContain("curated-request-tools");
+            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeTypeOf("function");
+        });
+
+        it("sends a request that names the catalog workflow, then marks it requested", async () => {
+            mockSubmitToolInstallationRequest.mockResolvedValue(undefined);
+            const toastSuccess = vi.spyOn(Toast, "success").mockImplementation(() => {});
+            toastSuccess.mockClear();
+            const workflow = iwcWorkflow({ missing_tools: MISSING });
+            const wrapper = mountCard(workflow);
+
+            badgeById(wrapper, "curated-missing-tools").handler();
+            await flushPromises();
+            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+            wrapper.findComponent(GModal).vm.$emit("ok");
+            await flushPromises();
+
+            const payload = mockSubmitToolInstallationRequest.mock.calls[0]![0];
+            expect(payload.workflow_id).toBeUndefined();
+            expect(payload.additional_remarks).toContain(`"${workflow.name}"`);
+            expect(payload.additional_remarks).toContain(workflow.external_url);
+            expect(toastSuccess).toHaveBeenCalledWith(expect.stringContaining("Installation request sent"));
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+            expect(extraActionById(wrapper, "curated-request-tools").disabled).toBe(true);
+            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeUndefined();
+        });
+
+        it("offers nothing when the workflow lacks no tools", () => {
+            expect(actionIds(mountCard(iwcWorkflow({ missing_tools: [] })))).not.toContain("curated-request-tools");
+        });
+
+        it("offers nothing when the request form is off", () => {
+            setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: false });
+            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }));
+
+            expect(actionIds(wrapper)).not.toContain("curated-request-tools");
+            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeUndefined();
+        });
+
+        it("offers nothing to anonymous users", () => {
+            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }), true);
+
+            expect(actionIds(wrapper)).not.toContain("curated-request-tools");
+        });
     });
 
     it("shows no runnability badge when the server did not check", () => {
