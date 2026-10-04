@@ -398,15 +398,18 @@ def _refresh_projection_locked(path: str, timeout: float) -> int | None:
     # wrong-version file is exactly the case that must re-fetch, and asking
     # "modified since this file's mtime?" about it would answer no and strand it.
     current = load_projection(path)
-    if current is not None and not iwc_manifest.manifest_modified_since(target.stat().st_mtime, timeout):
+    remote = iwc_manifest.manifest_last_modified(timeout) if current is not None else None
+    if current is not None and remote is not None and not _upstream_changed(target, remote):
         # Nothing new upstream. Stamp the file so it stops looking stale, or every
         # subsequent request would re-arm this check until the manifest happens to
-        # change -- turning a once-an-interval HEAD into a permanent poll.
+        # change -- turning a once-an-interval HEAD into a permanent poll. The
+        # watermark, not this mtime, is what the next check compares against.
+        _write_watermark(target, remote)
         os.utime(target, None)
         log.debug("Curated catalog at %s is already current", path)
         return None
 
-    manifest = iwc_manifest.download_manifest(timeout)
+    manifest, served = iwc_manifest.fetch_manifest(timeout)
     entries = project_manifest(manifest)
     if not entries and current:
         # An upstream generation failure that returns HTTP 200 with an empty or
@@ -414,7 +417,37 @@ def _refresh_projection_locked(path: str, timeout: float) -> int | None:
         # with nothing, and the tab would look legitimately empty for an hour.
         raise ValueError(f"refusing to replace the curated catalog at {path} with an empty projection")
     write_projection(path, entries)
+    if served is not None:
+        # The date of the body we stored, not the HEAD's: the CDN can answer the two
+        # from different cached versions, and stamping an old body with the new date
+        # would make every later check think it is current.
+        _write_watermark(target, served)
+    else:
+        # Nothing says which version this is, so the next check downloads once more.
+        _watermark_path(target).unlink(missing_ok=True)
     return len(entries)
+
+
+def _watermark_path(target: Path) -> Path:
+    return target.with_name(f"{target.name}.last-modified")
+
+
+def _upstream_changed(target: Path, remote: datetime) -> bool:
+    # Compared against the Last-Modified we last saw rather than the file's mtime:
+    # the manifest sits behind a CDN that can answer with the old date for minutes
+    # after a publish, and stamping "now" during that window would read as newer
+    # than the publish and hide it until the next one.
+    try:
+        seen = datetime.fromisoformat(_watermark_path(target).read_text().strip())
+    except (OSError, ValueError):
+        # Nothing says which upstream version this copy is. Its mtime only says when
+        # it was fetched, and a CDN can serve a body older than that, so re-fetch once.
+        return True
+    return remote != seen
+
+
+def _write_watermark(target: Path, remote: datetime) -> None:
+    _watermark_path(target).write_text(remote.isoformat())
 
 
 def request_background_refresh(path: str, timeout: float = DEFAULT_FETCH_TIMEOUT_SECONDS) -> bool:

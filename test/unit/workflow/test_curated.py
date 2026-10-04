@@ -2,7 +2,7 @@
 
 Everything here runs without a database and without touching the network:
 ``galaxy.workflow.curated`` is deliberately trans-free, and the only network
-call it can make (``iwc_manifest.download_manifest``) is monkeypatched in every test
+call it can make (``iwc_manifest.fetch_manifest``) is monkeypatched in every test
 that reaches it.
 """
 
@@ -41,6 +41,15 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 # How long a test is willing to wait on a background thread before failing.
 THREAD_TIMEOUT_SECONDS = 10.0
+
+# Older than any projection a test writes, so a HEAD answering this reads as "unchanged".
+LONG_AGO = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+
+def serve_manifest(monkeypatch, download, last_modified: datetime | None = None) -> None:
+    """Stand in for the manifest GET: ``download(timeout)`` gives the body, served with ``last_modified``."""
+    monkeypatch.setattr(iwc_manifest, "fetch_manifest", lambda timeout: (download(timeout), last_modified))
+
 
 # Shaped like the real https://iwc.galaxyproject.org/workflow_manifest.json:
 # a list of repositories, each carrying a list of workflow entries whose
@@ -578,7 +587,7 @@ def test_request_background_refresh_never_downloads_on_the_calling_thread(projec
         assert release.wait(THREAD_TIMEOUT_SECONDS)
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "download_manifest", blocking_download)
+    serve_manifest(monkeypatch, blocking_download)
 
     calling_thread = threading.current_thread()
     try:
@@ -707,15 +716,41 @@ def test_refresh_projection_skips_the_download_when_upstream_is_unchanged(projec
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
         downloads.append(timeout)
-        return []
+        return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: False)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+    serve_manifest(monkeypatch, recording_download, last_modified=LONG_AGO)
 
+    # Nothing recorded which upstream version this copy is, so it can't be trusted yet.
+    assert curated.refresh_projection(projection_path) is not None
+    assert len(downloads) == 1
+
+    stat = os.stat(projection_path)
+    os.utime(projection_path, (stat.st_atime - 7200, stat.st_mtime - 7200))
     assert curated.refresh_projection(projection_path) is None
-    assert downloads == [], "an unchanged manifest must not be downloaded"
+    assert len(downloads) == 1, "an unchanged manifest must not be downloaded"
     # Re-stamped, so it stops looking stale and does not re-arm the check forever.
     assert curated.is_projection_stale(projection_path, 3600) is False
+
+
+def test_refresh_projection_does_not_trust_a_cold_download_by_its_mtime(projection_path: str, monkeypatch) -> None:
+    """A cold download never asked upstream for a date. Its mtime only says when it was
+    fetched, and a CDN can have served a body older than that, so the first check after it
+    has to download again rather than compare dates against the file."""
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    serve_manifest(monkeypatch, recording_download)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+    # Upstream's date predates the file, which an mtime comparison would call "unchanged".
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 2
 
 
 def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check(
@@ -736,27 +771,125 @@ def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check
     def fake_head(url: str, timeout: float) -> SimpleNamespace:
         return SimpleNamespace(headers={"Last-Modified": served[0]}, raise_for_status=lambda: None)
 
-    def recording_download(timeout: float) -> list[dict[str, Any]]:
+    def fake_get(url: str, timeout: float) -> SimpleNamespace:
         downloads.append(timeout)
-        return SAMPLE_MANIFEST
+        return SimpleNamespace(
+            headers={"Last-Modified": served[0]}, raise_for_status=lambda: None, json=lambda: SAMPLE_MANIFEST
+        )
 
+    # Faked at the HTTP layer so both requests go through the real date parsing.
     monkeypatch.setattr(galaxy_requests, "head", fake_head)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    monkeypatch.setattr(galaxy_requests, "get", fake_get)
+
+    # Learns which upstream version it has.
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
 
     # The CDN still serves the old Last-Modified: nothing to download yet.
     assert curated.refresh_projection(projection_path) is None
-    assert downloads == []
+    assert len(downloads) == 1
 
     # Once the CDN catches up, the publish must be picked up.
     served[0] = new_publish
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
+    assert len(downloads) == 2
+
+
+def served_manifest_response(last_modified: str | None) -> SimpleNamespace:
+    headers = {"Last-Modified": last_modified} if last_modified is not None else {}
+    return SimpleNamespace(headers=headers, raise_for_status=lambda: None, json=lambda: SAMPLE_MANIFEST)
+
+
+@pytest.mark.parametrize(
+    "header,expected",
+    [
+        ("Thu, 01 Jan 2026 12:00:00 GMT", datetime(2026, 1, 1, 12, tzinfo=timezone.utc)),
+        (None, None),
+        ("not a date", None),
+    ],
+)
+def test_fetch_manifest_returns_the_last_modified_it_was_served(
+    monkeypatch, header: str | None, expected: datetime | None
+) -> None:
+    monkeypatch.setattr(galaxy_requests, "get", lambda url, timeout: served_manifest_response(header))
+    assert iwc_manifest.fetch_manifest(1.0) == (SAMPLE_MANIFEST, expected)
+
+
+def test_refresh_projection_forgets_the_version_when_a_download_comes_without_one(
+    projection_path: str, monkeypatch
+) -> None:
+    """A dated watermark left beside an undated download would vouch for a body it
+    never described, and a matching HEAD would then keep that copy forever."""
+    publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: publish)
+    serve_manifest(monkeypatch, recording_download, last_modified=publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+
+    # A cold fetch whose GET carries no date.
+    os.unlink(projection_path)
+    serve_manifest(monkeypatch, recording_download, last_modified=None)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 2
+
+    # Nothing says which version that copy is, so the HEAD can't vouch for it.
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 3
+
+
+def test_refresh_projection_stamps_the_version_of_the_body_it_was_served(projection_path: str, monkeypatch) -> None:
+    """The HEAD and the GET are separate CDN requests and can be answered from different
+    cached versions. A body served as the old publish must not be recorded as the new one
+    the HEAD reported, or every later check would call that stale copy current."""
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+    old_publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    new_publish = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: new_publish)
+    serve_manifest(monkeypatch, recording_download, last_modified=old_publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+
+    # The HEAD still says the new publish, which this copy is not: fetch again.
+    serve_manifest(monkeypatch, recording_download, last_modified=new_publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 2
+
+    # Now the copy is the new publish, so the same answer means nothing changed.
+    assert curated.refresh_projection(projection_path) is None
+    assert len(downloads) == 2
+
+
+def test_refresh_projection_trusts_a_cold_download_that_came_with_a_date(projection_path: str, monkeypatch) -> None:
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    serve_manifest(monkeypatch, recording_download, last_modified=LONG_AGO)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+
+    curated.refresh_projection(projection_path)
+    assert curated.refresh_projection(projection_path) is None
     assert len(downloads) == 1
 
 
 def test_refresh_projection_downloads_when_upstream_moved(projection_path: str, monkeypatch) -> None:
     curated.write_projection(projection_path, [])
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: SAMPLE_MANIFEST)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST)
 
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
     assert curated.load_projection(projection_path) == curated.project_manifest(SAMPLE_MANIFEST)
@@ -769,8 +902,8 @@ def test_refresh_projection_refuses_to_replace_a_good_catalog_with_an_empty_one(
     healthy = curated.project_manifest(SAMPLE_MANIFEST)
     curated.write_projection(projection_path, healthy)
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: [])
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: [])
 
     with pytest.raises(ValueError):
         curated.refresh_projection(projection_path)
@@ -782,8 +915,8 @@ def test_refresh_projection_refuses_to_replace_a_good_catalog_with_an_empty_one(
 def test_refresh_projection_allows_an_empty_catalog_when_there_is_nothing_to_lose(
     projection_path: str, monkeypatch
 ) -> None:
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: [])
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: [])
 
     assert curated.refresh_projection(projection_path) == 0
     assert curated.load_projection(projection_path) == []
@@ -808,16 +941,16 @@ def test_refresh_projection_skips_without_fetching_while_another_process_refresh
 ) -> None:
     fetches: list[str] = []
 
-    def recording_head(mtime: float, timeout: float | None = None) -> bool:
+    def recording_head(timeout: float | None = None) -> datetime | None:
         fetches.append("head")
-        return True
+        return None
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
         fetches.append("download")
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", recording_head)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", recording_head)
+    serve_manifest(monkeypatch, recording_download)
 
     with refresh_lock_held_elsewhere(projection_path):
         with pytest.raises(curated.RefreshInProgress):
@@ -840,7 +973,7 @@ def test_background_refresh_skipped_for_another_process_does_not_start_the_coold
         downloads.append(timeout)
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    serve_manifest(monkeypatch, recording_download)
 
     with refresh_lock_held_elsewhere(projection_path):
         assert curated.request_background_refresh(projection_path) is True
@@ -1164,8 +1297,8 @@ def test_refresh_projection_redownloads_an_old_version_file_even_when_upstream_i
     os.makedirs(os.path.dirname(projection_path))
     with open(projection_path, "w") as out:
         json.dump({"version": 1, "workflows": [{"id": "old", "name": "Old"}]}, out)
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: False)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: SAMPLE_MANIFEST)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST)
 
     assert curated.load_projection(projection_path) is None
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
