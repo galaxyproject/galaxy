@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheck, faExclamationTriangle, faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
@@ -38,6 +38,10 @@ const { isAnonymous } = storeToRefs(userStore);
 const workflow = computed(() => props.workflow);
 
 const importing = ref(false);
+let unmounted = false;
+onBeforeUnmount(() => {
+    unmounted = true;
+});
 
 /** Presence of a stored workflow id means the row is a workflow hosted here, not a catalog entry. */
 const isLocal = computed(() => Boolean(workflow.value.stored_workflow_id));
@@ -211,6 +215,11 @@ async function onImport() {
 async function onImportTrs() {
     try {
         const response = await importFromTrs();
+        if (unmounted) {
+            // The user has moved on; redirecting now would yank them off that page.
+            Toast.success(`Imported "${workflow.value.name}"`);
+            return;
+        }
         router.push(getRedirectOnImportPath(response));
     } catch (error) {
         Toast.error(`Failed to import workflow: ${error}`);
