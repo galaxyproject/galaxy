@@ -231,6 +231,24 @@ describe("CuratedWorkflowCard", () => {
         expect(toastError).not.toHaveBeenCalled();
     });
 
+    it("does not navigate when the import finishes after the user has left the page", async () => {
+        let finishImport: (value: unknown) => void = () => {};
+        importTrsToolFromUrl.mockReturnValue(new Promise((resolve) => (finishImport = resolve)));
+        const toastSuccess = vi.spyOn(Toast, "success").mockImplementation(() => {});
+        toastSuccess.mockClear();
+        const workflow = iwcWorkflow();
+        const wrapper = mountCard(workflow);
+
+        await clickImport(wrapper, workflow);
+        wrapper.unmount();
+        finishImport({ id: "abc123", message: "Imported", status: "ok" });
+        await flushPromises();
+
+        expect(routerPush).not.toHaveBeenCalled();
+        // Still told it worked, just without being pulled off the page they moved to.
+        expect(toastSuccess).toHaveBeenCalledTimes(1);
+    });
+
     it("surfaces a failed TRS import instead of navigating", async () => {
         importTrsToolFromUrl.mockRejectedValue(new ApiError("dockstore is down", 502));
         const workflow = iwcWorkflow();
