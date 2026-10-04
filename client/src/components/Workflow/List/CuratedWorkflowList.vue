@@ -39,7 +39,7 @@ const breadcrumbItems = [{ title: "Workflows" }];
 // describes truthfully, so there's no separate default to offer.
 const RECOMMENDED_SORT = {
     label: localize("Recommended"),
-    title: localize("Workflows that can run on this Galaxy first, then most recently updated"),
+    title: localize("Workflows that can run on this Galaxy first, then those needing the fewest tools"),
 };
 
 const userStore = useUserStore();

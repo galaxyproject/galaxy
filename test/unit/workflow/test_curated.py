@@ -1366,8 +1366,26 @@ RUNNABLE_MISSING: dict[str, list[str] | None] = {
 
 def test_sort_curated_puts_runnable_entries_first_by_default() -> None:
     ordered = curated.sort_curated(RUNNABLE_ENTRIES, None, None, RUNNABLE_MISSING)
-    # Runnable group, newest first with the id tiebreaker; then the rest in the same order.
-    assert [entry["id"] for entry in ordered] == ["tie-b", "tie-a", "old-ready", "unknown", "new-blocked"]
+    # Runnable group, newest first with the id tiebreaker; then the blocked one; unchecked last.
+    assert [entry["id"] for entry in ordered] == ["tie-b", "tie-a", "old-ready", "new-blocked", "unknown"]
+
+
+def test_sort_curated_orders_blocked_entries_by_how_many_tools_they_lack() -> None:
+    """On an instance where nothing runs yet, the closest-to-runnable workflows lead."""
+    entries = [
+        {"id": "needs-three", "update_time": "2026-03-01T00:00:00"},
+        {"id": "needs-one-old", "update_time": "2024-01-01T00:00:00"},
+        {"id": "needs-one-new", "update_time": "2025-01-01T00:00:00"},
+        {"id": "needs-two", "update_time": "2026-02-01T00:00:00"},
+    ]
+    missing: dict[str, list[str] | None] = {
+        "needs-three": ["a", "b", "c"],
+        "needs-one-old": ["a"],
+        "needs-one-new": ["b"],
+        "needs-two": ["a", "b"],
+    }
+    ordered = curated.sort_curated(entries, None, None, missing)
+    assert [entry["id"] for entry in ordered] == ["needs-one-new", "needs-one-old", "needs-two", "needs-three"]
 
 
 def test_sort_curated_runnable_first_is_independent_of_input_order() -> None:
@@ -1412,8 +1430,8 @@ def test_list_catalog_reports_missing_tools_and_puts_runnable_entries_first(
     assert [(entry["id"], entry["missing_tools"]) for entry in as_user.entries] == [
         ("middle-runs", []),
         ("newest-missing", ["absent"]),
-        ("oldest-unknown", None),
         ("dm-only", ["dm_fetch"]),
+        ("oldest-unknown", None),
     ]
 
     as_admin = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=True)

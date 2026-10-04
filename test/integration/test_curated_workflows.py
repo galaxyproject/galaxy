@@ -66,10 +66,6 @@ NEWEST_FIRST_IDS = [
     entry["id"]
     for entry in sorted(CATALOG_ENTRIES, key=lambda entry: (entry["update_time"], entry["id"]), reverse=True)
 ]
-# The default ordering: what will run here first, newest-first within each group.
-CATALOG_IDS = [i for i in NEWEST_FIRST_IDS if i in RUNNABLE_IDS] + [
-    i for i in NEWEST_FIRST_IDS if i not in RUNNABLE_IDS
-]
 
 
 class _CuratedWorkflowsTestCase(CuratedWorkflowsNetworkGuard, integration_util.IntegrationTestCase):
@@ -252,6 +248,17 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         config["curated_workflow_owners"] = CURATED_OWNER_USERNAME
         config["curated_workflows_path"] = cls.projection_path
 
+    def _recommended_ids(self) -> list[str]:
+        """The default ordering: fewest missing tools first (runnable ones lead), newest first within a count.
+
+        Counted from what the server reports rather than restated here, since
+        which of the catalog's tools this test Galaxy happens to ship isn't
+        something the ordering test should pin.
+        """
+        missing = {workflow["id"]: workflow["missing_tools"] for workflow in self._curated_index(limit=10)["workflows"]}
+        assert {i for i, tools in missing.items() if tools == []} == RUNNABLE_IDS
+        return sorted(NEWEST_FIRST_IDS, key=lambda i: len(missing[i]))
+
     def test_catalog_ignores_owners_outside_local_mode(self):
         assert self._get("configuration", anon=True).json()["curated_workflows_source"] == "iwc"
         index = self._curated_index(limit=10)
@@ -262,7 +269,7 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         index = self._curated_index(limit=10)
         assert index["source"] == "iwc"
         assert index["total_matches"] == len(CATALOG_ENTRIES)
-        assert [workflow["id"] for workflow in index["workflows"]] == CATALOG_IDS
+        assert [workflow["id"] for workflow in index["workflows"]] == self._recommended_ids()
         assert index["message"] is None
 
         for workflow in index["workflows"]:
@@ -295,7 +302,7 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
             assert page["total_matches"] == len(CATALOG_ENTRIES)
             assert page["source"] == "iwc"
             seen.extend(workflow["id"] for workflow in page["workflows"])
-        assert seen == CATALOG_IDS
+        assert seen == self._recommended_ids()
 
     def test_catalog_search_name_and_tag(self):
         by_name = self._curated_index(search="name:assembly", limit=10)

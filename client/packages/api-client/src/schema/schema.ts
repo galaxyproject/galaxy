@@ -55170,7 +55170,7 @@ export interface operations {
                  *     Curated Workflows: `name`, `description`, `tag`, `collection`.
                  */
                 search?: string | null;
-                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, ordered first by how many of their tools this Galaxy is missing, so the ones that run here as-is lead and the ones it couldn't check come last. */
                 sort_by?: ("create_time" | "update_time" | "name") | null;
                 /** @description Sort in descending order? */
                 sort_desc?: boolean | null;

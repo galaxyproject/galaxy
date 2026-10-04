@@ -922,7 +922,8 @@ CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
     title="Sort By",
     description=(
         "Sort curated workflows by this attribute. Without it, most recently updated first -- and "
-        "in IWC catalog mode, workflows whose tools are all available here come before the rest."
+        "in IWC catalog mode, ordered first by how many of their tools this Galaxy is missing, so the "
+        "ones that run here as-is lead and the ones it couldn't check come last."
     ),
 )
 

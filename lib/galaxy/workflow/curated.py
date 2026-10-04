@@ -655,13 +655,21 @@ def sort_curated(
     """Order projected entries, defaulting to most-recently-updated first.
 
     When ``missing_tools`` is given and no explicit sort was asked for, entries
-    that will run here as-is come first, each group keeping the default order.
+    that will run here as-is come first, then the rest by how many tools they
+    still need, each group keeping the default order.
     """
     ordered = _sort_curated(entries, sort_by, sort_desc)
     if sort_by is None and missing_tools is not None:
+
+        def tools_needed(entry: dict[str, Any]) -> float:
+            missing = missing_tools.get(entry.get("id") or "")
+            # Unknown goes last: no badge vouches for it.
+            return len(missing) if missing is not None else float("inf")
+
         # Stable, so the id tiebreaker inside each group survives and pagination
-        # stays deterministic. Unknown counts as not runnable: no badge vouches for it.
-        ordered.sort(key=lambda entry: missing_tools.get(entry.get("id") or "") != [])
+        # stays deterministic. Counting rather than just runnable-or-not matters
+        # on a fresh instance, where nothing runs and a plain split is no order at all.
+        ordered.sort(key=tools_needed)
     return ordered
 
 
