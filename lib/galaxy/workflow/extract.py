@@ -33,6 +33,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
+from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -42,6 +43,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section,
 )
+from galaxy.tools.parameters.workflow_utils import ConnectedValue
 from galaxy.util import listify
 from .steps import (
     attach_ordered_steps,
@@ -121,6 +123,58 @@ def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, st
     conn.input_step_input = step.get_or_add_input(input_name)
     conn.output_step = source_step
     conn.output_name = source_name
+
+
+def _connect_parameter_inputs(trans: ProvidesHistoryContext, job_steps: list[tuple[Job, WorkflowStep]]) -> None:
+    """Recover parameter connections from the invocation that produced each job.
+
+    Job parameters contain evaluated expression outputs, so dataset associations
+    alone cannot recover these edges. Only reconnect selected steps from the same
+    invocation; an omitted source must leave the recorded parameter value intact.
+    """
+    invocation_steps = [
+        (job, invocation_step, step)
+        for job, step in job_steps
+        if (invocation_step := job.effective_workflow_invocation_step) is not None
+    ]
+    sources = {
+        (invocation_step.workflow_invocation_id, invocation_step.workflow_step_id): step
+        for _, invocation_step, step in invocation_steps
+    }
+    for job, invocation_step, step in invocation_steps:
+        connections = invocation_step.workflow_step.input_connections_by_name
+        if not connections:
+            continue
+        tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
+        if tool is None:
+            continue
+        assert step.tool_inputs is not None
+        values = tool.params_from_strings(step.tool_inputs, ignore_errors=True)
+
+        def reconnect(
+            input,
+            prefixed_name,
+            step=step,
+            connections=connections,
+            invocation_id=invocation_step.workflow_invocation_id,
+            **kwds,
+        ):
+            if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+                return
+            if prefixed_name not in connections or step.get_input(prefixed_name) is not None:
+                return
+            input_sources = []
+            for connection in connections[prefixed_name]:
+                source = sources.get((invocation_id, connection.output_step_id))
+                if source is None:
+                    return
+                input_sources.append((source, connection.output_name))
+            for source_pair in input_sources:
+                _connect(step, prefixed_name, source_pair)
+            return ConnectedValue()
+
+        visit_input_values(tool.inputs, values, reconnect)
+        step.tool_inputs = tool.params_to_strings(values, trans.app)
 
 
 def extract_workflow(
@@ -228,6 +282,7 @@ def extract_steps(
         hid_to_output_pair[input_hid] = (step, "output")
         steps.append(step)
     # Tool steps
+    job_steps = []
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
             log.warning(f"job_id {job_id} not found in job_id2representative_job {summary.job_id2representative_job}")
@@ -253,6 +308,7 @@ def extract_steps(
             if other_hid in hid_to_output_pair:
                 _connect(step, input_name, hid_to_output_pair[other_hid])
         steps.append(step)
+        job_steps.append((job, step))
         # Store created dataset hids
         for assoc in job.output_datasets + job.output_dataset_collection_instances:
             assoc_name = assoc.name
@@ -270,6 +326,7 @@ def extract_steps(
             if hid in hid_to_output_pair:
                 log.warning(f"duplicate hid found in extract_steps [{hid}]")
             hid_to_output_pair[hid] = (step, assoc.name)
+    _connect_parameter_inputs(trans, job_steps)
     return steps
 
 
@@ -700,6 +757,7 @@ def extract_steps_by_ids(
     # than the jobs whose outputs it consumes.
     work_items.sort(key=lambda item: item[0].id)
 
+    job_steps = []
     for job, output_hdcas in work_items:
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
@@ -720,6 +778,7 @@ def extract_steps_by_ids(
             if key in id_to_output_pair:
                 _connect(step, input_name, id_to_output_pair[key])
         steps.append(step)
+        job_steps.append((job, step))
 
         if output_hdcas:
             seen_names: dict[str, HistoryDatasetCollectionAssociation] = {}
@@ -741,6 +800,7 @@ def extract_steps_by_ids(
                 original_hdca = _original_hdca(hdca_assoc.dataset_collection_instance)
                 id_to_output_pair[("collection", original_hdca.id)] = (step, hdca_assoc.name)
 
+    _connect_parameter_inputs(trans, job_steps)
     return steps
 
 
