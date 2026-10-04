@@ -334,4 +334,15 @@ describe("GCard", () => {
         expect(inert.attributes("role")).toBeUndefined();
         expect(inert.attributes("tabindex")).toBeUndefined();
     });
+
+    it.each(["titleBadges", "badges"])("leaves Enter alone on link %s so they still navigate", (prop) => {
+        const wrapper = mountCard({
+            [prop]: [{ id: "link", label: "Link", title: "Link", href: "https://example.org" }],
+        });
+
+        const event = new KeyboardEvent("keydown", { key: "Enter", cancelable: true, bubbles: true });
+        wrapper.find("#g-card-badge-link-card").element.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+    });
 });
