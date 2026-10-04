@@ -548,7 +548,11 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
         needle = term.text.lower()
         if isinstance(term, FilteredTerm):
             if term.filter == "name":
-                matched = [item for item in matched if needle in item.name_text]
+                if term.quoted:
+                    # Exact and case-sensitive, as local-owner mode's StoredWorkflow.name equality is.
+                    matched = [item for item in matched if item.entry.get("name") == term.text]
+                else:
+                    matched = [item for item in matched if needle in item.name_text]
             elif term.filter == "tag":
                 if term.quoted:
                     matched = [item for item in matched if needle in item.tags]
