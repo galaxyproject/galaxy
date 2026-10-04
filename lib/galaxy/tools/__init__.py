@@ -179,6 +179,7 @@ from galaxy.tools.parameters import (
     params_to_strings,
     populate_state,
     populate_state_async,
+    qualify_legacy_data_input_reference,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -1863,6 +1864,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
+        for name, output_collection in self.output_collections.items():
+            type_source = output_collection.structure.collection_type_source
+            if type_source and (qualified := qualify_legacy_data_input_reference(self.inputs, type_source)):
+                raise ToolLoadError(
+                    f"Output collection '{name}' has type_source '{type_source}', which must be qualified as '{qualified}'."
+                )
 
     def to_raw_tool_source(self) -> RawToolSource:
         """Return a compact representation of this tool's source for external processing.

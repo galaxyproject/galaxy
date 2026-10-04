@@ -2,6 +2,8 @@
 Classes encapsulating Galaxy tool parameters.
 """
 
+import re
+from collections.abc import Iterator
 from json import dumps
 from typing import (
     Any,
@@ -286,6 +288,54 @@ def visit_input_values(
             callback_helper(
                 input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context
             )
+
+
+# A path segment is (name, is_repeat); repeat segments take an index (``name_0``).
+_InputPathT = tuple[tuple[str, bool], ...]
+
+
+def _data_input_paths(
+    inputs, qualified: _InputPathT = (), legacy: _InputPathT = ()
+) -> Iterator[tuple[_InputPathT, _InputPathT]]:
+    """Yield the qualified and legacy paths of every data and collection input.
+
+    Legacy paths drop conditional and section names, as the ``prefix`` passed by
+    ``visit_input_values`` does.
+    """
+    for input in inputs.values():
+        if isinstance(input, Repeat):
+            segment = ((input.name, True),)
+            yield from _data_input_paths(input.inputs, qualified + segment, legacy + segment)
+        elif isinstance(input, Conditional):
+            for case in input.cases:
+                yield from _data_input_paths(case.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, Section):
+            yield from _data_input_paths(input.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+            segment = ((input.name, False),)
+            yield qualified + segment, legacy + segment
+
+
+def _input_path_pattern(path: _InputPathT) -> str:
+    return r"\|".join(re.escape(name) + (r"_(\d+)" if is_repeat else "") for name, is_repeat in path)
+
+
+def qualify_legacy_data_input_reference(inputs, reference: str) -> Optional[str]:
+    """Return the qualified name for a bare legacy reference to a nested data or collection input.
+
+    Return ``None`` if ``reference`` is already qualified or names no nested input.
+    """
+    paths = list(_data_input_paths(inputs))
+    if any(re.fullmatch(_input_path_pattern(qualified), reference) for qualified, _ in paths):
+        return None
+    for qualified, legacy in paths:
+        if qualified == legacy:
+            continue
+        match = re.fullmatch(_input_path_pattern(legacy), reference)
+        if match:
+            indices = iter(match.groups())
+            return "|".join(f"{name}_{next(indices)}" if is_repeat else name for name, is_repeat in qualified)
+    return None
 
 
 def check_param(

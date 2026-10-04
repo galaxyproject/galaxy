@@ -1,5 +1,8 @@
 from collections import UserDict
-from collections.abc import Sequence
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from typing import (
     Any,
     Optional,
@@ -62,6 +65,11 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
         if super().__contains__(key):
             return True
         return key in self._legacy_mapping
+
+    def map_values(self, fn: Callable[[Any], Any]) -> "LegacyUnprefixedDict":
+        mapped = LegacyUnprefixedDict({k: fn(v) for k, v in self.data.items()})
+        mapped._legacy_mapping = dict(self._legacy_mapping)
+        return mapped
 
 
 def copy_identifiers(source, destination):
