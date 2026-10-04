@@ -14,6 +14,11 @@ import sys
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import (
+    datetime,
+    timezone,
+)
+from email.utils import format_datetime
 from pathlib import Path
 from time import (
     monotonic,
@@ -27,6 +32,7 @@ from typing import (
 
 import pytest
 
+from galaxy.util import requests as galaxy_requests
 from galaxy.workflow import (
     curated,
     iwc_manifest,
@@ -710,6 +716,41 @@ def test_refresh_projection_skips_the_download_when_upstream_is_unchanged(projec
     assert downloads == [], "an unchanged manifest must not be downloaded"
     # Re-stamped, so it stops looking stale and does not re-arm the check forever.
     assert curated.is_projection_stale(projection_path, 3600) is False
+
+
+def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check(
+    projection_path: str, monkeypatch
+) -> None:
+    """GitHub Pages caches the manifest for ten minutes, so a check just after a
+    publish can still be told the old Last-Modified. That check must not move the
+    watermark past the new publish, or the update is skipped until the next one."""
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+    stat = os.stat(projection_path)
+    os.utime(projection_path, (stat.st_atime - 3600, stat.st_mtime - 3600))
+    old_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 7200, tz=timezone.utc), usegmt=True)
+    # Published after the projection was written, but before the stale check below runs.
+    new_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 60, tz=timezone.utc), usegmt=True)
+    served = [old_publish]
+    downloads: list[float] = []
+
+    def fake_head(url: str, timeout: float) -> SimpleNamespace:
+        return SimpleNamespace(headers={"Last-Modified": served[0]}, raise_for_status=lambda: None)
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    monkeypatch.setattr(galaxy_requests, "head", fake_head)
+    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+
+    # The CDN still serves the old Last-Modified: nothing to download yet.
+    assert curated.refresh_projection(projection_path) is None
+    assert downloads == []
+
+    # Once the CDN catches up, the publish must be picked up.
+    served[0] = new_publish
+    assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
+    assert len(downloads) == 1
 
 
 def test_refresh_projection_downloads_when_upstream_moved(projection_path: str, monkeypatch) -> None:
