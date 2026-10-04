@@ -9043,7 +9043,7 @@ steps:
         fastq_input_selector: single
     out:
       out_file1:
-        rename: "#{fastq_input1 | basename}#{input1} suffix"
+        rename: "#{input1}#{fastq_input1 | basename} suffix"
 """)
         fastq_input: dict[str, Any] = {
             "value": "1.fastqsanger",

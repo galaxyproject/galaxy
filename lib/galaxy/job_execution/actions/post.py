@@ -4,6 +4,7 @@ immediate_actions listed below.
 """
 
 import datetime
+import re
 
 from markupsafe import escape
 
@@ -17,6 +18,8 @@ from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
+
+INPUT_REFERENCE_PATTERN = re.compile(r"#\{([^}]*)\}")
 
 
 class DefaultJobAction:
@@ -200,7 +203,6 @@ class RenameDatasetAction(DefaultJobAction):
 
             #  The following if statement will process a request to rename
             #  using an input file name.
-            #  TODO: Replace all matching code with regex
             #  Proper syntax is #{input_file_variable | option 1 | option n}
             #    where
             #      input_file_variable = is the name of an module input variable
@@ -211,16 +213,10 @@ class RenameDatasetAction(DefaultJobAction):
             #      upper = force the file name to upper case
             #      lower = force the file name to lower case
             #  suggested additions:
-            #      "replace" option so you can replace a portion of the name,
-            #      support multiple #{name} in one rename action...
+            #      "replace" option so you can replace a portion of the name.
 
-            start_pos = 0
-            while new_name.find("#{", start_pos) > -1:
-                to_be_replaced = ""
-                #  This assumes a single instance of #{variable} will exist
-                start_pos = new_name.find("#{", start_pos) + 2
-                end_pos = new_name.find("}", start_pos)
-                to_be_replaced = new_name[start_pos:end_pos]
+            def resolve(match: re.Match[str]) -> str:
+                to_be_replaced = match.group(1)
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later
                 #  parsing.
@@ -267,7 +263,9 @@ class RenameDatasetAction(DefaultJobAction):
                     elif operation == "lower":
                         replacement = replacement.lower()
 
-                new_name = new_name.replace(f"#{{{to_be_replaced}}}", replacement)
+                return replacement
+
+            new_name = INPUT_REFERENCE_PATTERN.sub(resolve, new_name)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():

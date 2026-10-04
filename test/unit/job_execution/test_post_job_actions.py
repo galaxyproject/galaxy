@@ -28,6 +28,18 @@ from galaxy.model import PostJobAction
         ("#{cond.input}", {"outer|xcond|input": "wrong", "outer|cond|input": "right"}, "right"),
         ("#{queries_0.input2 | basename | upper}", {"queries_0|input2": "reads.fastq"}, "READS"),
         ("Renamed #{missing}", {"cond|input": "unused"}, "Renamed "),
+        ("#{missing}#{input} suffix", {"input": "reads.fastq"}, "reads.fastq suffix"),
+        ("#{missing}_#{input}", {"input": "reads.fastq"}, "_reads.fastq"),
+        ("#{a}-#{b}", {"a": "", "b": "y"}, "-y"),
+        ("#{a}#{b}", {"a": "x", "b": "longer"}, "xlonger"),
+        ("#{a}#{b}#{c}", {"a": "", "b": "", "c": "z"}, "z"),
+        ("#{input}#{missing} suffix", {"input": "reads.fastq"}, "reads.fastq suffix"),
+        ("#{a}_#{a}", {"a": "x"}, "x_x"),
+        ("#{a} x", {"a": "ab#{b}", "b": "other"}, "ab#{b} x"),
+        ("#{a} #{b}", {"a": "#{b}", "b": "B"}, "#{b} B"),
+        ("pre #{a", {"a": "x"}, "pre #{a"),
+        ("#{a} and #{b", {"a": "x"}, "x and #{b"),
+        ("#{a#{b}}", {"a": "x", "b": "y"}, "}"),
     ],
 )
 def test_rename_input_references(template, input_names, expected):
