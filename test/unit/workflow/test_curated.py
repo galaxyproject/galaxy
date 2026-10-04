@@ -460,6 +460,16 @@ def test_search_curated_name_term_matches_names_only() -> None:
     assert curated.search_curated(entries, "name:single-cell") == []
 
 
+def test_search_curated_quoted_name_term_is_an_exact_case_sensitive_match() -> None:
+    """The same rule as local-owner mode and the other workflow tabs' help text."""
+    entries = curated.project_manifest(SAMPLE_MANIFEST)
+    assert [entry["id"] for entry in curated.search_curated(entries, "name:'Velocyto on 10x filtered barcodes'")] == [
+        "velocyto-velocyto-on10x-filtered-barcodes"
+    ]
+    assert curated.search_curated(entries, "name:'velocyto on 10x filtered barcodes'") == []
+    assert curated.search_curated(entries, "name:'Velocyto'") == []
+
+
 def test_search_curated_tag_term_is_substring_unless_quoted() -> None:
     entries = curated.project_manifest(SAMPLE_MANIFEST)
     assert [entry["id"] for entry in curated.search_curated(entries, "tag:import")] == [
