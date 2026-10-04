@@ -55164,6 +55164,9 @@ export interface operations {
                  *     `collection`
                  *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `is`
+                 *     : Use 'is:runnable' for workflows whose tools are all available here (IWC catalog only; matches nothing for a local feed).
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the

@@ -1446,6 +1446,38 @@ def test_list_catalog_reports_missing_tools_and_puts_runnable_entries_first(
     assert [entry["id"] for entry in by_update.entries][0] == "newest-missing"
 
 
+def test_list_catalog_is_runnable_keeps_only_workflows_that_run_here(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+    toolbox = fake_toolbox({"cat1", "dm_fetch"}, data_managers=("dm_fetch",))
+
+    as_user = list_sample_catalog(projection_path, toolbox=toolbox, search="is:runnable")
+    assert [entry["id"] for entry in as_user.entries] == ["middle-runs"]
+    assert as_user.total_matches == 1
+
+    # Data manager tools only count for admins, the same as the badge.
+    as_admin = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=True, search="is:runnable")
+    assert [entry["id"] for entry in as_admin.entries] == ["middle-runs", "dm-only"]
+
+    # ANDs with the rest of the query.
+    assert list_sample_catalog(projection_path, toolbox=toolbox, search="is:runnable newest").entries == []
+
+    # Filter values are case-insensitive, so this must still filter rather than pass everything.
+    shouted = list_sample_catalog(projection_path, toolbox=toolbox, search="is:Runnable")
+    assert [entry["id"] for entry in shouted.entries] == ["middle-runs"]
+
+
+def test_list_catalog_is_runnable_matches_nothing_it_cannot_vouch_for(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+
+    assert list_sample_catalog(projection_path, search="is:runnable").entries == []
+    toolbox = fake_toolbox({"cat1"})
+    assert list_sample_catalog(projection_path, toolbox=toolbox, search="is:published").entries == []
+
+
 def test_list_catalog_without_a_toolbox_leaves_runnability_unknown(
     projection_path: str, recorded_refreshes: list[str]
 ) -> None:

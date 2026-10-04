@@ -437,6 +437,48 @@ describe("CuratedWorkflowList", () => {
         expect(catalogQueries[1]!.get("search")).toBe("collection:'single-cell'");
     });
 
+    it("toggles is:runnable from the Ready to run button, keeping the rest of the query", async () => {
+        const wrapper = await mountCuratedList(iwcPage(["a"]));
+        await setFilterText(wrapper, "flye");
+        const toggle = () => wrapper.find("#curated-runnable-toggle");
+
+        await toggle().trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye is:runnable");
+        expect(toggle().classes()).toContain("g-pressed");
+
+        await toggle().trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye");
+        expect(toggle().classes()).not.toContain("g-pressed");
+    });
+
+    it("explains an empty Ready to run result as this Galaxy lacking tools", async () => {
+        useCatalog((query) => (query.get("search") === "is:runnable" ? iwcPage([]) : iwcPage(["a"])));
+        const wrapper = await mountList();
+
+        await wrapper.find("#curated-runnable-toggle").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find("#no-curated-workflow-runnable").exists()).toBe(true);
+        expect(wrapper.find("#no-curated-workflow-found").exists()).toBe(false);
+    });
+
+    it("offers the runnable filter only for the iwc catalog", async () => {
+        const iwcWrapper = await mountCuratedList(iwcPage(["a"]));
+        expect(iwcWrapper.find("#curated-runnable-toggle").exists()).toBe(true);
+        expect(iwcWrapper.findComponent(FilterMenu).props("filterClass").validFilters.runnable?.menuItem).toBe(true);
+
+        configSource = "local";
+        const localWrapper = await mountCuratedList({
+            source: "local",
+            total_matches: 1,
+            workflows: [localWorkflow()],
+        });
+        expect(localWrapper.find("#curated-runnable-toggle").exists()).toBe(false);
+        expect(localWrapper.findComponent(FilterMenu).props("filterClass").validFilters.runnable?.menuItem).toBe(false);
+    });
+
     it("shows no collection chips in local mode", async () => {
         configSource = "local";
         const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
@@ -487,8 +529,10 @@ describe("CuratedWorkflowList", () => {
 });
 
 describe("curatedHelpHtml", () => {
-    it("documents the collection filter only for the iwc catalog", () => {
+    it("documents the collection and runnable filters only for the iwc catalog", () => {
         expect(curatedHelpHtml(true)).toContain("collection:");
+        expect(curatedHelpHtml(true)).toContain("is:runnable");
         expect(curatedHelpHtml(false)).not.toContain("collection");
+        expect(curatedHelpHtml(false)).not.toContain("is:runnable");
     });
 });

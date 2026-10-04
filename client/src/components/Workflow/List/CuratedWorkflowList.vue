@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -82,6 +84,17 @@ const activeCollection = computed(() => {
         workflowFilters.value.getFilterValue(filterText.value, "c");
     return typeof value === "string" ? value.replace(/^(['"])(.*)\1$/, "$2").toLowerCase() : null;
 });
+
+const RUNNABLE_TERM = /(^|\s)is:runnable(?=\s|$)/gi;
+const runnableOnly = computed(() => new RegExp(RUNNABLE_TERM.source, "i").test(filterText.value));
+/** Nothing but the runnable filter, so an empty result says something about this Galaxy, not the query. */
+const onlyRunnableFilter = computed(() => filterText.value.trim().toLowerCase() === "is:runnable");
+
+/** Edits the text directly, like `toggleCollection`, so free text typed alongside survives. */
+function toggleRunnable() {
+    const rest = filterText.value.replace(RUNNABLE_TERM, "$1").replace(/\s+/g, " ").trim();
+    filterText.value = runnableOnly.value ? rest : `${rest} is:runnable`.trim();
+}
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
@@ -229,13 +242,27 @@ onMounted(() => load());
                 <span v-localize>Workflows curated for this Galaxy.</span>
             </div>
 
-            <CuratedCollectionChips
-                v-if="source === 'iwc' && collections.length"
-                id="curated-workflow-collections"
-                class="mb-2"
-                :collections="collections"
-                :active="activeCollection ?? undefined"
-                @toggle="toggleCollection" />
+            <div v-if="source === 'iwc'" class="curated-workflow-quick-filters d-flex align-items-start mb-2">
+                <GButton
+                    id="curated-runnable-toggle"
+                    class="flex-shrink-0"
+                    size="small"
+                    color="blue"
+                    outline
+                    :pressed="runnableOnly"
+                    :title="localize('Only show workflows whose tools are all installed on this Galaxy')"
+                    @click="toggleRunnable">
+                    <FontAwesomeIcon :icon="faCheck" fixed-width />
+                    <span v-localize>Ready to run here</span>
+                </GButton>
+                <CuratedCollectionChips
+                    v-if="collections.length"
+                    id="curated-workflow-collections"
+                    class="curated-workflow-collection-chips"
+                    :collections="collections"
+                    :active="activeCollection ?? undefined"
+                    @toggle="toggleCollection" />
+            </div>
 
             <FilterMenu
                 id="curated-workflow-list-filter"
@@ -309,7 +336,14 @@ onMounted(() => load());
             </GAlert>
         </div>
         <span v-else-if="!overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
-            <GAlert v-if="!hasInvalidFilters" id="no-curated-workflow-found" variant="info">
+            <GAlert v-if="!hasInvalidFilters && onlyRunnableFilter" id="no-curated-workflow-runnable" variant="info">
+                <span v-localize>
+                    None of the curated workflows can run on this Galaxy yet: each needs at least one tool that isn't
+                    installed. The badge on each card says which.
+                </span>
+                <GLink @click="toggleRunnable">Show all curated workflows</GLink>
+            </GAlert>
+            <GAlert v-else-if="!hasInvalidFilters" id="no-curated-workflow-found" variant="info">
                 No curated workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
                 <GLink @click="filterText = ''">Reset the filter</GLink>
             </GAlert>
@@ -367,6 +401,16 @@ onMounted(() => load());
 
     .workflow-list-alert {
         height: 100%;
+    }
+
+    .curated-workflow-quick-filters {
+        gap: 0.25rem;
+
+        // Lets the chips measure their own row instead of overflowing past the toggle.
+        .curated-workflow-collection-chips {
+            flex: 1 1 0;
+            min-width: 0;
+        }
     }
 
     .cards-list {

@@ -393,8 +393,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         stmt = stmt.where(text_column_filter(StoredWorkflow.name, term))
                     elif term.filter == "tag":
                         stmt = stmt.where(w_tag_exists(term.text, term.quoted))
-                    elif term.filter == "collection":
-                        # Collections are an IWC grouping; nothing curated here belongs to one.
+                    elif term.filter in ("collection", "is"):
+                        # Collections are an IWC grouping, and is:runnable rests on the
+                        # catalog's tool check, which local rows don't get; neither matches here.
                         stmt = stmt.where(false())
                 elif isinstance(term, RawTextTerm):
                     owner_annotation_exists = owner_annotation_exists_filter(

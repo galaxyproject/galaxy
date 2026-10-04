@@ -291,6 +291,11 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
                 assert workflow["missing_tools"]
                 assert set(workflow["missing_tools"]) <= tool_ids[workflow["id"]]
 
+    def test_catalog_is_runnable_lists_only_what_runs_here(self):
+        index = self._curated_index(search="is:runnable", limit=10)
+        assert {workflow["id"] for workflow in index["workflows"]} == RUNNABLE_IDS
+        assert index["total_matches"] == len(RUNNABLE_IDS)
+
     def test_catalog_explicit_sort_ignores_runnability(self):
         index = self._curated_index(sort_by="update_time", sort_desc=True, limit=10)
         assert [workflow["id"] for workflow in index["workflows"]] == NEWEST_FIRST_IDS

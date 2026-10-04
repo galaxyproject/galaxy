@@ -70,7 +70,9 @@ CURATED_SEARCH_FILTERS = {
     "t": "tag",
     "collection": "collection",
     "c": "collection",
+    "is": "is",
 }
+RUNNABLE_FLAG = "runnable"
 # ``filter_terms`` only caps unquoted raw terms, and the endpoint is anonymous, so
 # without this a long run of ``name:x`` terms becomes one SQL predicate each in
 # local-owner mode -- enough to overflow SQLite's expression tree.
@@ -563,9 +565,22 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
                     matched = [item for item in matched if needle in item.collections]
                 else:
                     matched = [item for item in matched if any(needle in c for c in item.collections)]
+            elif term.filter == "is" and needle != RUNNABLE_FLAG:
+                # is:runnable needs the toolbox, so ``list_catalog`` applies it; any other flag is unknown.
+                matched = []
         elif isinstance(term, RawTextTerm):
             matched = [item for item in matched if needle in item.all_text]
     return [item.entry for item in matched]
+
+
+def wants_runnable_only(search: str | None) -> bool:
+    """Whether ``search`` asks for only the workflows that run here as-is (``is:runnable``)."""
+    if not search:
+        return False
+    return any(
+        isinstance(term, FilteredTerm) and term.filter == "is" and term.text.lower() == RUNNABLE_FLAG
+        for term in parse_curated_search(search).terms
+    )
 
 
 class CuratedToolbox(Protocol):
@@ -747,6 +762,9 @@ def list_catalog(
 
     matched = search_curated(entries, search)
     missing = find_missing_tools(matched, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
+    if wants_runnable_only(search):
+        # Without a toolbox nothing can be vouched for, so nothing qualifies.
+        matched = [entry for entry in matched if missing is not None and missing.get(entry.get("id") or "") == []]
     ordered = sort_curated(matched, sort_by, sort_desc, missing)
     page = [
         {**entry, "missing_tools": (missing or {}).get(entry.get("id") or "")}

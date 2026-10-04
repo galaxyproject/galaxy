@@ -265,6 +265,15 @@ def test_raw_text_search_ignores_annotations_by_other_users(manager: WorkflowsMa
     assert total_matches == 0
 
 
+def test_is_runnable_matches_nothing_in_local_mode(manager: WorkflowsManager, trans: MockTrans) -> None:
+    """Local rows get no tool check, so the catalog-only flag can't vouch for any of them."""
+    make_workflow(trans, make_user(trans, CURATED_OWNER), "Hosted here")
+
+    names, total_matches = query(manager, trans, [CURATED_OWNER], search="is:runnable")
+    assert names == []
+    assert total_matches == 0
+
+
 def test_search_never_leaks_workflows_from_other_owners(manager: WorkflowsManager, trans: MockTrans) -> None:
     make_workflow(trans, make_user(trans, CURATED_OWNER), "Shared name")
     make_workflow(trans, make_user(trans, f"{CURATED_OWNER}-mirror"), "Shared name")
