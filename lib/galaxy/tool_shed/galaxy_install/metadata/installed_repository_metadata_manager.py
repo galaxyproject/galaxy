@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from typing import (
@@ -218,25 +219,21 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             guid_to_tool_elem_dict[guid] = self.tpm.generate_tool_elem(
                 tool_shed,
                 self.repository.name,
-                self.repository.changeset_revision,
+                self.repository.installed_changeset_revision,
                 self.repository.owner or "",
                 tool_config_filename,
                 tool,
                 None,
             )
-        config_elems = []
         tree, error_message = xml_util.parse_xml(shed_tool_conf)
         if tree:
             root = tree.getroot()
-            for elem in root:
-                if elem.tag == "section":
-                    for i, tool_elem in enumerate(elem):
-                        guid = tool_elem.attrib.get("guid")
-                        if guid in guid_to_tool_elem_dict:
-                            elem[i] = guid_to_tool_elem_dict[guid]
-                elif elem.tag == "tool":
-                    guid = elem.attrib.get("guid")
-                    if guid in guid_to_tool_elem_dict:
-                        elem = guid_to_tool_elem_dict[guid]
-                config_elems.append(elem)
-            self.tpm.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+            for tool_elem in root.findall("tool") + root.findall("section/tool"):
+                guid = tool_elem.get("guid")
+                if guid in guid_to_tool_elem_dict:
+                    updated_tool_elem = guid_to_tool_elem_dict[guid]
+                    # Keep placement attributes such as hidden while refreshing tool metadata.
+                    tool_elem.attrib.update(updated_tool_elem.attrib)
+                    # A tool can appear more than once; lxml moves children unless copied.
+                    tool_elem[:] = copy.deepcopy(list(updated_tool_elem))
+            self.tpm.config_elems_to_xml_file(list(root), shed_tool_conf, tool_path)
