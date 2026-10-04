@@ -138,7 +138,11 @@ function requiredBadgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
 
 function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
     const card = wrapper.findComponent(GCard);
-    const actions = [...(card.props("primaryActions") ?? []), ...(card.props("extraActions") ?? [])];
+    const actions = [
+        ...(card.props("primaryActions") ?? []),
+        ...(card.props("secondaryActions") ?? []),
+        ...(card.props("extraActions") ?? []),
+    ];
     return actions.map((action: { id: string }) => action.id);
 }
 
@@ -184,6 +188,29 @@ describe("CuratedWorkflowCard", () => {
         expect(ids).toContain("curated-external-link");
         expect(ids).toContain("curated-doi");
         expect(ids).not.toContain("curated-run");
+    });
+
+    it("keeps the IWC link out of the overflow menu", () => {
+        const card = mountCard(iwcWorkflow()).findComponent(GCard);
+        const ids = (props: "secondaryActions" | "extraActions") =>
+            (card.props(props) ?? []).map((action: { id: string }) => action.id);
+
+        expect(ids("secondaryActions")).toEqual(["curated-external-link"]);
+        expect(ids("extraActions")).toEqual(["curated-doi"]);
+    });
+
+    it("keeps only runnability beside the title and moves steps and version to the footer", () => {
+        const workflow = iwcWorkflow();
+        const wrapper = mountCard(workflow);
+
+        const titleRowIds = (wrapper.findComponent(GCard).props("badges") ?? []).map(
+            (badge: { id: string }) => badge.id,
+        );
+        expect(titleRowIds).toEqual(["curated-runnable"]);
+
+        const details = wrapper.find(`#g-card-${workflow.id}-details`);
+        expect(details.find(`#g-card-badge-curated-steps-${workflow.id}`).text()).toBe("5 steps");
+        expect(details.find(`#g-card-badge-curated-release-${workflow.id}`).text()).toBe("v0.1");
     });
 
     it("offers run and view for a workflow hosted on this Galaxy", () => {

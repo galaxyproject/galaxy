@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { faCheck, faExclamationTriangle, faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheck,
+    faEdit,
+    faExclamationTriangle,
+    faExternalLinkAlt,
+    faPlay,
+    faUpload,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeUnmount, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -14,6 +23,7 @@ import { useUserStore } from "@/stores/userStore";
 import { ApiError } from "@/utils/simple-error";
 
 import GCard from "@/components/Common/GCard.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     workflow: CuratedWorkflow;
@@ -92,15 +102,16 @@ const runnabilityBadge = computed<CardBadge | null>(() => {
     };
 });
 
-const badges = computed<CardBadge[]>(() => {
-    const cardBadges: CardBadge[] = [];
+// Only what decides whether to pick this workflow sits beside the title; every
+// extra badge there competes with the title for the header row.
+const badges = computed<CardBadge[]>(() => (runnabilityBadge.value ? [runnabilityBadge.value] : []));
 
-    if (runnabilityBadge.value) {
-        cardBadges.push(runnabilityBadge.value);
-    }
+/** Descriptive details, shown in the footer next to the update time. */
+const footerBadges = computed<CardBadge[]>(() => {
+    const details: CardBadge[] = [];
 
     if (workflow.value.number_of_steps !== null && workflow.value.number_of_steps !== undefined) {
-        cardBadges.push({
+        details.push({
             id: "curated-steps",
             label: `${workflow.value.number_of_steps} steps`,
             title: "Number of steps in this workflow",
@@ -108,14 +119,14 @@ const badges = computed<CardBadge[]>(() => {
     }
 
     if (workflow.value.release) {
-        cardBadges.push({
+        details.push({
             id: "curated-release",
             label: `v${workflow.value.release}`,
             title: "Released version of this workflow",
         });
     }
 
-    return cardBadges;
+    return details;
 });
 
 /** A catalog row can only be imported if the catalog gave us something to import. */
@@ -160,29 +171,37 @@ const extraActions = computed<CardAction[]>(() => {
         ];
     }
 
-    const actions: CardAction[] = [
+    if (!workflow.value.doi) {
+        return [];
+    }
+    return [
         {
-            id: "curated-external-link",
-            label: "View on iwc.galaxyproject.org",
-            title: "View this workflow on iwc.galaxyproject.org",
-            icon: faExternalLinkAlt,
-            externalLink: true,
-            href: workflow.value.external_url ?? undefined,
-        },
-    ];
-
-    if (workflow.value.doi) {
-        actions.push({
             id: "curated-doi",
             label: "View DOI",
             title: `Resolve DOI ${workflow.value.doi}`,
             icon: faExternalLinkAlt,
             externalLink: true,
             href: `https://doi.org/${workflow.value.doi}`,
-        });
-    }
+        },
+    ];
+});
 
-    return actions;
+/** The IWC page has the diagram and full documentation, so it's worth a visible button rather than a menu entry. */
+const secondaryActions = computed<CardAction[]>(() => {
+    if (isLocal.value || !workflow.value.external_url) {
+        return [];
+    }
+    return [
+        {
+            id: "curated-external-link",
+            label: "IWC",
+            title: "View this workflow on iwc.galaxyproject.org",
+            icon: faExternalLinkAlt,
+            externalLink: true,
+            href: workflow.value.external_url,
+            variant: "outline-primary",
+        },
+    ];
 });
 
 async function importFromTrs() {
@@ -249,11 +268,30 @@ async function onImportLocal() {
         :badges="badges"
         :extra-actions="extraActions"
         :primary-actions="primaryActions"
+        :secondary-actions="secondaryActions"
         :selectable="false"
         :show-bookmark="false"
         :tags="workflow.tags"
         :tags-editable="false"
         :max-visible-tags="props.gridView ? 2 : 8"
-        :update-time="workflow.update_time ?? ''"
-        @tagClick="(tag: string) => emit('tagClick', tag)" />
+        @tagClick="(tag: string) => emit('tagClick', tag)">
+        <template v-slot:update-time>
+            <div :id="`g-card-${workflow.id}-details`" class="align-self-end d-flex flex-gapx-1 flex-wrap mt-1">
+                <BBadge v-if="workflow.update_time" v-g-tooltip.hover pill variant="secondary" title="Last updated">
+                    <FontAwesomeIcon :icon="faEdit" fixed-width />
+                    <UtcDate :date="workflow.update_time" mode="elapsed" />
+                </BBadge>
+                <BBadge
+                    v-for="detail in footerBadges"
+                    :id="`g-card-badge-${detail.id}-${workflow.id}`"
+                    :key="detail.id"
+                    v-g-tooltip.hover
+                    pill
+                    variant="secondary"
+                    :title="detail.title">
+                    {{ detail.label }}
+                </BBadge>
+            </div>
+        </template>
+    </GCard>
 </template>
