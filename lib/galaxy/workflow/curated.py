@@ -49,6 +49,7 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.workflow import iwc_manifest
+from galaxy.workflow.trs_proxy import parse_trs_url
 
 log = logging.getLogger(__name__)
 
@@ -603,6 +604,29 @@ def toolbox_availability(toolbox: CuratedToolbox, is_admin: bool) -> Callable[[s
     materialising tools.
     """
     return hide_data_manager_tools(toolbox.has_tool, toolbox.data_manager_tools, is_admin)
+
+
+def entry_trs_tool_id(entry: dict[str, Any]) -> str | None:
+    """The TRS tool id an import of ``entry`` records as ``source_metadata["trs_tool_id"]``.
+
+    Read back out of the projected TRS URL rather than stored separately, so
+    projections written before this existed still work.
+    """
+    url = entry.get("trs_url") or entry.get("trs_fallback_url")
+    parts = parse_trs_url(url) if isinstance(url, str) else None
+    return parts["tool_id"] if parts else None
+
+
+def find_imports(
+    entries: list[dict[str, Any]], imports: dict[str, tuple[int, str | None]]
+) -> dict[str, tuple[int, str | None]]:
+    """Map each entry id to the (stored workflow id, version) of the user's import of it, if any."""
+    found: dict[str, tuple[int, str | None]] = {}
+    for entry in entries:
+        trs_tool_id = entry_trs_tool_id(entry)
+        if trs_tool_id and trs_tool_id in imports:
+            found[entry.get("id") or ""] = imports[trs_tool_id]
+    return found
 
 
 def find_missing_tools(

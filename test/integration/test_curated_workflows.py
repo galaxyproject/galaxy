@@ -22,6 +22,7 @@ from typing import (
 from uuid import uuid4
 
 from galaxy.exceptions import error_codes
+from galaxy.model import StoredWorkflow
 from galaxy.webapps.galaxy.services.workflows import (
     PREPARING_MESSAGE,
     UNAVAILABLE_MESSAGE,
@@ -295,6 +296,27 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         index = self._curated_index(search="is:runnable", limit=10)
         assert {workflow["id"] for workflow in index["workflows"]} == RUNNABLE_IDS
         assert index["total_matches"] == len(RUNNABLE_IDS)
+
+    def test_catalog_marks_the_users_own_import(self):
+        entry = next(entry for entry in CATALOG_ENTRIES if entry["id"] not in RUNNABLE_IDS)
+        workflow_id = self.workflow_populator.simple_workflow(f"imported {uuid4().hex}")
+        # Recorded straight into the database: a real TRS import would reach Dockstore.
+        stored_workflow = self._app.model.session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
+        assert stored_workflow is not None
+        stored_workflow.latest_workflow.source_metadata = {
+            "trs_tool_id": curated.entry_trs_tool_id(entry),
+            "trs_version_id": "v0.0.1",
+        }
+        self._app.model.session.commit()
+
+        by_id = {workflow["id"]: workflow for workflow in self._curated_index(limit=10)["workflows"]}
+        assert by_id[entry["id"]]["imported_workflow_id"] == workflow_id
+        assert by_id[entry["id"]]["imported_version"] == "v0.0.1"
+        assert all(workflow["imported_workflow_id"] is None for i, workflow in by_id.items() if i != entry["id"])
+
+        # Only ever the requester's own: an anonymous caller sees no imports at all.
+        anonymous = self._curated_index(anon=True, limit=10)["workflows"]
+        assert all(workflow["imported_workflow_id"] is None for workflow in anonymous)
 
     def test_catalog_explicit_sort_ignores_runnability(self):
         index = self._curated_index(sort_by="update_time", sort_desc=True, limit=10)

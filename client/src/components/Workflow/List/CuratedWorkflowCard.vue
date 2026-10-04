@@ -16,6 +16,7 @@ import { useRouter } from "vue-router";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
+import { compareTrsVersions } from "@/components/Workflow/Import/trsVersion";
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
 import { copyWorkflow } from "@/components/Workflow/workflows.services";
@@ -124,7 +125,7 @@ const badges = computed<CardBadge[]>(() => (runnabilityBadge.value ? [runnabilit
 
 /** Descriptive details, shown in the footer next to the update time. */
 const footerBadges = computed<CardBadge[]>(() => {
-    const details: CardBadge[] = [];
+    const details: CardBadge[] = importedBadge.value ? [importedBadge.value] : [];
 
     if (workflow.value.number_of_steps !== null && workflow.value.number_of_steps !== undefined) {
         details.push({
@@ -148,19 +149,71 @@ const footerBadges = computed<CardBadge[]>(() => {
 /** A catalog row can only be imported if the catalog gave us something to import. */
 const canImport = computed(() => (isLocal.value ? true : Boolean(workflow.value.trs_url)));
 
-const primaryActions = computed<CardAction[]>(() => {
-    const importAction: CardAction = {
-        id: "curated-import",
-        label: "Import",
-        icon: faUpload,
-        title: canImport.value ? importTitle.value : "This workflow cannot be imported automatically",
-        disabled: isAnonymous.value || !canImport.value || importing.value,
-        variant: "outline-primary",
-        handler: onImport,
+/** The user's own copy of a catalog workflow, from an earlier import. */
+const importedWorkflowId = computed(() => (isLocal.value ? null : workflow.value.imported_workflow_id));
+
+/** Whether a newer release has come out since the user's copy was imported. */
+const updateAvailable = computed(() => {
+    const imported = workflow.value.imported_version;
+    const release = workflow.value.release;
+    if (!importedWorkflowId.value || !imported || !release) {
+        return false;
+    }
+    // Only a strictly newer release counts: the catalog can lag a direct TRS import, and an import
+    // from the branch (the fallback when a release hadn't reached Dockstore yet) can't be placed at all.
+    const comparison = compareTrsVersions(release, imported);
+    return comparison !== null && comparison > 0;
+});
+
+const importedBadge = computed<CardBadge | null>(() => {
+    if (!importedWorkflowId.value) {
+        return null;
+    }
+    if (updateAvailable.value) {
+        return {
+            id: "curated-update-available",
+            label: `You have ${workflow.value.imported_version}`,
+            title: `Your copy was imported from ${workflow.value.imported_version}; v${workflow.value.release} is the latest release`,
+            variant: "warning",
+        };
+    }
+    return {
+        id: "curated-imported",
+        label: "In your workflows",
+        title: "You have already imported this workflow",
+        variant: "info",
     };
+});
+
+const importAction = computed<CardAction>(() => ({
+    id: "curated-import",
+    label: updateAvailable.value ? `Update to v${workflow.value.release}` : "Import",
+    icon: faUpload,
+    title: !canImport.value
+        ? "This workflow cannot be imported automatically"
+        : updateAvailable.value
+          ? `Import v${workflow.value.release} as a new workflow, alongside your copy`
+          : importTitle.value,
+    disabled: isAnonymous.value || !canImport.value || importing.value,
+    variant: "outline-primary",
+    handler: onImport,
+}));
+
+const primaryActions = computed<CardAction[]>(() => {
+    if (importedWorkflowId.value) {
+        const runImported: CardAction = {
+            id: "curated-run",
+            label: "Run",
+            icon: faPlay,
+            title: "Run your imported copy of this workflow",
+            to: `/workflows/run?id=${importedWorkflowId.value}`,
+        };
+        // Up to date, another import would just be a duplicate, so it steps back into the menu.
+        return updateAvailable.value ? [runImported, importAction.value] : [runImported];
+    }
 
     if (!isLocal.value) {
-        return [importAction];
+        return [importAction.value];
     }
 
     return [
@@ -171,7 +224,7 @@ const primaryActions = computed<CardAction[]>(() => {
             title: "Run workflow",
             to: `/workflows/run?id=${workflow.value.stored_workflow_id}`,
         },
-        importAction,
+        importAction.value,
     ];
 });
 
@@ -315,7 +368,7 @@ async function onImportLocal() {
                     :key="detail.id"
                     v-g-tooltip.hover
                     pill
-                    variant="secondary"
+                    :variant="detail.variant || 'secondary'"
                     :title="detail.title">
                     {{ detail.label }}
                 </BBadge>

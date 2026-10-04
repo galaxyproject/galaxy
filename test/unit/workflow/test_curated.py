@@ -1487,3 +1487,20 @@ def test_list_catalog_without_a_toolbox_leaves_runnability_unknown(
 
     assert [entry["id"] for entry in page.entries] == [entry["id"] for entry in TOOLED_ENTRIES]
     assert all(entry["missing_tools"] is None for entry in page.entries)
+
+
+def test_entry_trs_tool_id_matches_what_an_import_records() -> None:
+    entries = {entry["id"]: entry for entry in curated.project_manifest(SAMPLE_MANIFEST)}
+    entry = entries["velocyto-velocyto-on10x-filtered-barcodes"]
+
+    # The id a TRS import writes into source_metadata["trs_tool_id"], unquoted.
+    assert curated.entry_trs_tool_id(entry) == "#workflow/github.com/iwc-workflows/velocyto/main"
+    assert curated.entry_trs_tool_id({**entry, "trs_url": None}) == "#workflow/github.com/iwc-workflows/velocyto/main"
+    assert curated.entry_trs_tool_id({"id": "nothing-to-import"}) is None
+
+
+def test_find_imports_keys_the_users_imports_by_entry() -> None:
+    entries = curated.project_manifest(SAMPLE_MANIFEST)
+    imports = {"#workflow/github.com/iwc-workflows/velocyto/main": (42, "v0.1"), "#workflow/unrelated": (7, None)}
+
+    assert curated.find_imports(entries, imports) == {"velocyto-velocyto-on10x-filtered-barcodes": (42, "v0.1")}

@@ -60,6 +60,15 @@ def parse_search_kwds(search_query):
     return query_kwd
 
 
+def parse_trs_url(url: str) -> dict[str, str] | None:
+    """Split a TRS version URL into trs_base_url, tool_id (unquoted) and version_id."""
+    if matches := re.match(TRS_URL_REGEX, url):
+        match_dict = matches.groupdict()
+        match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
+        return match_dict
+    return None
+
+
 class TrsProxy:
     def __init__(self, config: Configuration):
         config_file = config.trs_servers_config_file
@@ -101,12 +110,7 @@ class TrsProxy:
         return self._match_url(url)
 
     def _match_url(self, url):
-        if matches := re.match(TRS_URL_REGEX, url):
-            match_dict = matches.groupdict()
-            match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
-            return match_dict
-        else:
-            return None
+        return parse_trs_url(url)
 
 
 class TrsServer:

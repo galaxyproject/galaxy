@@ -10625,6 +10625,16 @@ export interface components {
              */
             id: string;
             /**
+             * Imported Version
+             * @description The TRS version the user's import came from, such as v0.3, when it was recorded.
+             */
+            imported_version?: string | null;
+            /**
+             * Imported Workflow ID
+             * @description Encoded id of the requesting user's import of this catalog workflow, if they have one. With several imports, the one from the newest release, then the most recently updated. Always null for anonymous requests and for workflows hosted here.
+             */
+            imported_workflow_id?: string | null;
+            /**
              * Missing Tools
              * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
              */

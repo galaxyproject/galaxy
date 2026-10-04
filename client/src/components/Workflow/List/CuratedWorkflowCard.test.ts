@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -376,6 +376,63 @@ describe("CuratedWorkflowCard", () => {
 
         expect(requiredBadgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
         expect(importActionOf(wrapper).disabled).toBe(false);
+    });
+
+    describe("a catalog workflow the user has already imported", () => {
+        function primaryIds(wrapper: ReturnType<typeof mountCard>) {
+            return (wrapper.findComponent(GCard).props("primaryActions") ?? []).map(
+                (action: { id: string }) => action.id,
+            );
+        }
+
+        it("runs the user's copy instead of offering an import", () => {
+            const workflow = iwcWorkflow({ imported_workflow_id: "abc123", imported_version: "v0.1" });
+            const wrapper = mountCard(workflow);
+            const card = wrapper.findComponent(GCard);
+
+            expect(primaryIds(wrapper)).toEqual(["curated-run"]);
+            expect(nth(card.props("primaryActions"), 0).to).toBe("/workflows/run?id=abc123");
+            // Importing the same TRS version again hands back this copy rather than making a new one.
+            expect(actionIds(wrapper)).not.toContain("curated-import");
+            expect(wrapper.find(`#g-card-badge-curated-imported-${workflow.id}`).text()).toBe("In your workflows");
+        });
+
+        it("offers the newer release when the user's copy is older", () => {
+            const workflow = iwcWorkflow({ release: "0.2", imported_workflow_id: "abc123", imported_version: "v0.1" });
+            const wrapper = mountCard(workflow);
+
+            expect(primaryIds(wrapper)).toEqual(["curated-run", "curated-import"]);
+            expect(importActionOf(wrapper).label).toBe("Update to v0.2");
+            expect(wrapper.find(`#g-card-badge-curated-update-available-${workflow.id}`).text()).toBe("You have v0.1");
+        });
+
+        it.each([
+            ["a copy newer than the catalog's release", "0.2", "v0.3"],
+            ["a copy of the same release", "0.10", "v0.10"],
+            ["the same release written with a patch number", "0.1", "v0.1.0"],
+        ])("offers no update for %s", (_, release, imported) => {
+            const wrapper = mountCard(
+                iwcWorkflow({ release, imported_workflow_id: "abc123", imported_version: imported }),
+            );
+
+            expect(primaryIds(wrapper)).toEqual(["curated-run"]);
+        });
+
+        it("compares releases numerically, not as text", () => {
+            const wrapper = mountCard(
+                iwcWorkflow({ release: "0.10", imported_workflow_id: "abc123", imported_version: "v0.9" }),
+            );
+
+            expect(importActionOf(wrapper).label).toBe("Update to v0.10");
+        });
+
+        it("does not call a copy imported from the branch out of date", () => {
+            const wrapper = mountCard(
+                iwcWorkflow({ release: "0.2", imported_workflow_id: "abc123", imported_version: "main" }),
+            );
+
+            expect(primaryIds(wrapper)).toEqual(["curated-run"]);
+        });
     });
 
     describe("asking the admins for missing tools", () => {
