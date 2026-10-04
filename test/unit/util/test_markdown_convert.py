@@ -29,6 +29,7 @@ def fake_weasyprint(monkeypatch):
 
 def test_to_pdf_raw_renders_in_a_given_directory(fake_weasyprint, tmp_path):
     directory = str(tmp_path)
+    # A file the caller already keeps in the directory must survive rendering.
     index = tmp_path / "index.html"
     index.write_text("Caller-owned HTML")
     rendered = markdown_util.to_pdf_raw("# Hello", directory=directory).decode("utf-8")

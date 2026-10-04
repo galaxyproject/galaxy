@@ -274,8 +274,6 @@ def managed_history(f):
 
 def dump_test_information(self, name_prefix):
     if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
-        if not os.path.exists(GALAXY_TEST_ERRORS_DIRECTORY):
-            os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
         target_directory = run_directory(GALAXY_TEST_ERRORS_DIRECTORY, name_prefix)
 
         def write_file(name, content, raw=False):

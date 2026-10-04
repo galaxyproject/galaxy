@@ -154,7 +154,7 @@ class Story(StoryBase):
             f.write(markdown_content)
 
         with open(os.path.join(self.output_directory, "story.html"), "w", encoding="utf-8") as f:
-            # to_html sanitizes the body; the title is interpolated raw.
+            # to_html sanitizes the body; the title bypasses it, so escape it here.
             f.write(HTML_TEMPLATE.format(title=escape(self.title), body=to_html(markdown_content)))
 
         self._generate_pdf(markdown_content, os.path.join(self.output_directory, "story.pdf"))

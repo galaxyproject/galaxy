@@ -1,6 +1,7 @@
 """Tests for the story document model."""
 
 import os
+import types
 import zipfile
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from galaxy.selenium.stories import (
     story_for_run,
     write_story,
 )
+from galaxy.util import markdown_convert
 
 
 @pytest.fixture
@@ -109,15 +111,12 @@ class TestStoryArtifacts:
         # Arcnames are relative, so unzipping does not recreate the absolute path.
         assert "story.md" in names
         assert "000_a.png" in names
-        # to_pdf_raw's intermediate HTML must not survive into the archive.
-        assert "index.html" not in names
+        # Only the documents and referenced screenshots - story.pdf depends on weasyprint.
+        assert set(names) - {"story.pdf"} == {"story.md", "story.html", "000_a.png"}
         assert not any(n.startswith("/") for n in names)
 
     def test_pdf_leaves_no_intermediate_html_in_the_zip(self, story_dir, monkeypatch):
         """Drive the real to_pdf_raw with a stub weasyprint, so the cleanup actually runs."""
-        import types
-
-        from galaxy.util import markdown_convert
 
         class FakeHtml:
             def __init__(self, filename):
@@ -139,8 +138,7 @@ class TestStoryArtifacts:
         assert open(os.path.join(story_dir, "story.pdf"), "rb").read() == b"%PDF-fake"
         assert sorted(os.listdir(story_dir)) == ["000_a.png", "story.html", "story.md", "story.pdf"]
         with zipfile.ZipFile(f"{story_dir}.zip") as zf:
-            assert "index.html" not in zf.namelist()
-            assert "story.pdf" in zf.namelist()
+            assert sorted(zf.namelist()) == ["000_a.png", "story.html", "story.md", "story.pdf"]
 
     def test_retry_leftovers_are_not_archived(self, story_dir):
         """A discarded attempt's screenshots stay on disk but must not ship."""
