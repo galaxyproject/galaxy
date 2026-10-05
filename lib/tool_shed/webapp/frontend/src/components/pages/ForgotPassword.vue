@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
 import { errorMessageAsString } from "@/util"
 
@@ -39,18 +38,34 @@ function dismiss() {
                 If an account exists for that address, a password reset link is on its way. The link expires in 24
                 hours.
             </p>
-            <q-form v-else name="forgot_password" class="q-gutter-md" action="#" @submit.prevent="onSubmit">
+            <GForm v-else name="forgot_password" class="forgot-password-form" action="#" @submit.prevent="onSubmit">
                 <p class="text-grey-8">
                     Enter the email address of your account and we will send you a link to choose a new password.
                 </p>
-                <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="email" type="email" label="E-Mail" name="email" />
+                <GFormLabel title="E-Mail">
+                    <GFormInput
+                        :model-value="email"
+                        type="email"
+                        name="email"
+                        autocomplete="email"
+                        @update:model-value="email = $event ?? ''"
+                    />
+                </GFormLabel>
                 <GButton color="blue" size="large" class="full-width" type="submit" name="reset_password_button"
                     >Send Reset Link</GButton
                 >
-            </q-form>
+            </GForm>
         </q-card-section>
         <q-card-section class="text-center q-pa-none">
             <p class="text-grey-6">Remembered it? <router-link to="/login">Login.</router-link></p>
         </q-card-section>
     </modal-form>
 </template>
+
+<style scoped>
+.forgot-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+</style>

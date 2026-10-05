@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy, faTrash, faArrowsRotate } from "@fortawesome/free-solid-svg-icons"
 import { ref, computed } from "vue"
@@ -74,20 +74,19 @@ void init()
 <template>
     <page-container>
         Your API Key.
-        <div>
-            <q-input class="q-pa-lg" v-model="apiKey" readonly filled style="max-width: 450px">
-                <template #append>
-                    <GButton icon-only transparent aria-label="Copy API key" @click="copyKey">
-                        <FontAwesomeIcon :icon="faCopy" />
-                    </GButton>
-                    <GButton icon-only transparent aria-label="Deactivate API key" @click="deleteKey">
-                        <FontAwesomeIcon :icon="faTrash" />
-                    </GButton>
-                    <GButton icon-only transparent aria-label="Regenerate API key" @click="recreateKey">
-                        <FontAwesomeIcon :icon="faArrowsRotate" />
-                    </GButton>
-                </template>
-            </q-input>
+        <div class="api-key-row">
+            <GFormLabel title="API Key">
+                <GFormInput :model-value="apiKey" readonly style="max-width: 450px" />
+            </GFormLabel>
+            <GButton icon-only transparent aria-label="Copy API key" @click="copyKey">
+                <FontAwesomeIcon :icon="faCopy" />
+            </GButton>
+            <GButton icon-only transparent aria-label="Deactivate API key" @click="deleteKey">
+                <FontAwesomeIcon :icon="faTrash" />
+            </GButton>
+            <GButton icon-only transparent aria-label="Regenerate API key" @click="recreateKey">
+                <FontAwesomeIcon :icon="faArrowsRotate" />
+            </GButton>
         </div>
         <p>
             This API key will allow you to access the Tool Shed via its web API. Please note that this key acts as an
@@ -100,3 +99,12 @@ void init()
         <config-file-contents name=".planemo.yml" :contents="planemoConfig" what="Planemo configuration" />
     </page-container>
 </template>
+
+<style scoped>
+.api-key-row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4) 0;
+}
+</style>

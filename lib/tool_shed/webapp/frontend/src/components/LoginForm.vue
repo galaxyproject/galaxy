@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { useAuthStore } from "@/stores"
 import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -29,12 +28,36 @@ async function onLogin() {
 }
 </script>
 <template>
-    <q-form class="q-gutter-md" action="#" @submit.prevent="onLogin">
+    <GForm class="login-form" action="#" @submit.prevent="onLogin">
         <error-banner v-if="errorMessage" :error="errorMessage" @dismiss="errorMessage = null" />
-        <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="login" type="text" label="Username / Email" name="login" />
-        <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="password" type="password" label="Password" name="password" />
+        <GFormLabel title="Username / Email">
+            <GFormInput
+                :model-value="login"
+                type="text"
+                name="login"
+                autocomplete="username"
+                @update:model-value="login = $event ?? ''"
+            />
+        </GFormLabel>
+        <GFormLabel title="Password">
+            <GFormInput
+                :model-value="password"
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                @update:model-value="password = $event ?? ''"
+            />
+        </GFormLabel>
         <q-card-actions class="q-px-md">
             <GButton color="blue" size="large" class="full-width" type="submit" name="login_button">Login</GButton>
         </q-card-actions>
-    </q-form>
+    </GForm>
 </template>
+
+<style scoped>
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+</style>

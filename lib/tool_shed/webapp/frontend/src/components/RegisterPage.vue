@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
 import router from "@/router"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 
 const email = ref("")
 const password = ref("")
@@ -48,36 +47,58 @@ async function onRegister() {
 <template>
     <ModalForm :title="title">
         <q-card-section>
-            <q-form name="registration" class="q-gutter-md" action="#" @submit.prevent="onRegister">
-                <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="email" type="email" label="E-Mail" name="email" />
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="password"
-                    type="password"
-                    label="Password"
-                    name="password"
-                />
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="confirm"
-                    type="password"
-                    label="Re-enter Password"
-                    name="confirm"
-                />
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="username"
-                    type="text"
-                    label="Username"
-                    name="username"
-                />
+            <GForm name="registration" class="registration-form" action="#" @submit.prevent="onRegister">
+                <GFormLabel title="E-Mail">
+                    <GFormInput
+                        :model-value="email"
+                        type="email"
+                        name="email"
+                        autocomplete="email"
+                        @update:model-value="email = $event ?? ''"
+                    />
+                </GFormLabel>
+                <GFormLabel title="Password">
+                    <GFormInput
+                        :model-value="password"
+                        type="password"
+                        name="password"
+                        autocomplete="new-password"
+                        @update:model-value="password = $event ?? ''"
+                    />
+                </GFormLabel>
+                <GFormLabel title="Re-enter Password">
+                    <GFormInput
+                        :model-value="confirm"
+                        type="password"
+                        name="confirm"
+                        autocomplete="new-password"
+                        @update:model-value="confirm = $event ?? ''"
+                    />
+                </GFormLabel>
+                <GFormLabel title="Username">
+                    <GFormInput
+                        :model-value="username"
+                        type="text"
+                        name="username"
+                        autocomplete="username"
+                        @update:model-value="username = $event ?? ''"
+                    />
+                </GFormLabel>
                 <GButton color="blue" size="large" class="full-width" type="submit" name="create_user_button">
                     Register
                 </GButton>
-            </q-form>
+            </GForm>
         </q-card-section>
         <q-card-section class="text-center q-pa-none">
             <p class="text-grey-6">Already registered? <router-link to="/login">Login.</router-link></p>
         </q-card-section>
     </ModalForm>
 </template>
+
+<style scoped>
+.registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+</style>

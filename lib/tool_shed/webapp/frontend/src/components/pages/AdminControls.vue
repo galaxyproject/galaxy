@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { ToolShedApi, components } from "@/schema"
 import PageContainer from "@/components/PageContainer.vue"
 import SelectUser from "@/components/SelectUser.vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { useUsersStore } from "@/stores"
 import { notify, notifyOnCatch } from "@/util"
 
@@ -60,28 +59,40 @@ async function onResetPassword() {
         </div>
         <hr class="q-my-lg" />
         <h6 class="q-my-md">Reset a user's password</h6>
-        <q-form class="q-gutter-md" style="max-width: 30rem" action="#" @submit.prevent="onResetPassword">
+        <GForm class="reset-password-form" style="max-width: 30rem" action="#" @submit.prevent="onResetPassword">
             <select-user
                 label="Select user"
                 persist-selection
                 @selected-user="selectedUsername = $event"
                 @cleared="selectedUsername = null"
             />
-            <q-input
-                v-bind="AUTH_FORM_INPUT_PROPS"
-                v-model="password"
-                type="password"
-                label="New Password"
-                name="password"
-            />
-            <q-input
-                v-bind="AUTH_FORM_INPUT_PROPS"
-                v-model="confirm"
-                type="password"
-                label="Re-enter New Password"
-                name="confirm"
-            />
+            <GFormLabel title="New Password">
+                <GFormInput
+                    :model-value="password"
+                    type="password"
+                    name="password"
+                    autocomplete="new-password"
+                    @update:model-value="password = $event ?? ''"
+                />
+            </GFormLabel>
+            <GFormLabel title="Re-enter New Password">
+                <GFormInput
+                    :model-value="confirm"
+                    type="password"
+                    name="confirm"
+                    autocomplete="new-password"
+                    @update:model-value="confirm = $event ?? ''"
+                />
+            </GFormLabel>
             <GButton color="blue" type="submit" name="reset_password_button">Reset Password</GButton>
-        </q-form>
+        </GForm>
     </page-container>
 </template>
+
+<style scoped>
+.reset-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+</style>

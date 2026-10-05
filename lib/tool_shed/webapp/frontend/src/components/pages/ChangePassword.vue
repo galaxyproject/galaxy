@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
 import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import router from "@/router"
 
 const current = ref("")
@@ -38,17 +37,44 @@ function dismiss() {
     <modal-form title="Change Password">
         <q-card-section>
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
-            <q-form class="q-gutter-md" action="#" @submit.prevent="onChange">
-                <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="current" type="password" label="Current Password" />
-                <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="password" type="password" label="New Password" />
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="confirm"
-                    type="password"
-                    label="Re-enter New Password"
-                />
+            <GForm class="change-password-form" action="#" @submit.prevent="onChange">
+                <GFormLabel title="Current Password">
+                    <GFormInput
+                        :model-value="current"
+                        type="password"
+                        name="current"
+                        autocomplete="current-password"
+                        @update:model-value="current = $event ?? ''"
+                    />
+                </GFormLabel>
+                <GFormLabel title="New Password">
+                    <GFormInput
+                        :model-value="password"
+                        type="password"
+                        name="password"
+                        autocomplete="new-password"
+                        @update:model-value="password = $event ?? ''"
+                    />
+                </GFormLabel>
+                <GFormLabel title="Re-enter New Password">
+                    <GFormInput
+                        :model-value="confirm"
+                        type="password"
+                        name="confirm"
+                        autocomplete="new-password"
+                        @update:model-value="confirm = $event ?? ''"
+                    />
+                </GFormLabel>
                 <GButton color="blue" size="large" class="full-width" type="submit">Change Password</GButton>
-            </q-form>
+            </GForm>
         </q-card-section>
     </modal-form>
 </template>
+
+<style scoped>
+.change-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+</style>
