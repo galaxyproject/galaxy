@@ -30,7 +30,6 @@ from galaxy.celery import (
     galaxy_task,
 )
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.job_execution.setup import JobWorkingDirectory
@@ -263,8 +262,7 @@ def change_datatype(
         log.info(f"Changing datatype is not allowed for {model_class} {dataset_instance.id}")
         return
     if datatype == "auto":
-        path = dataset_instance.dataset.get_file_name()
-        datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
+        datatype = datatypes_registry.redetect_ext(dataset_instance)
     datatypes_registry.change_datatype(dataset_instance, datatype)
     sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
