@@ -3,7 +3,11 @@
 import http.server
 import socketserver
 import threading
+import time
 from pathlib import Path
+
+SLOW_PREFIX = "/slow"
+SLOW_DELAY = 0.5
 
 
 class TestHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -16,6 +20,13 @@ class TestHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args):
         """Suppress log messages during tests."""
         pass
+
+    def do_GET(self):
+        """Serve `/slow/<path>` after a delay, leaving room to race a navigation."""
+        if self.path.startswith(f"{SLOW_PREFIX}/"):
+            time.sleep(SLOW_DELAY)
+            self.path = self.path[len(SLOW_PREFIX) :]
+        super().do_GET()
 
     def end_headers(self):
         """Override to add test cookies to all responses."""

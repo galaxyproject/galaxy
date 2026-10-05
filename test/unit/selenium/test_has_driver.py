@@ -169,6 +169,19 @@ def has_driver_instance(request, driver, playwright_resources) -> HasDriverProto
         return HasDriverProxyImpl(selenium_impl)
 
 
+@pytest.fixture
+def playwright_driver_instance(playwright_resources) -> HasDriverProtocol:
+    """
+    Create a Playwright-only instance, for behavior the two backends do not share.
+
+    Args:
+        playwright_resources: PlaywrightResources fixture
+    """
+    if not check_playwright_cached():
+        pytest.skip(PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE)
+    return cast(HasDriverProtocol, TestHasPlaywrightDriverImpl(playwright_resources))
+
+
 class TestElementFinding:
     """Tests for element finding methods."""
 
@@ -1279,6 +1292,27 @@ class TestVisitNewWindow:
 
         assert "opened=1" not in has_driver_instance.current_url
         assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+
+class TestNavigateTo:
+    """Test navigate_to."""
+
+    def test_navigate_to_outlasts_a_competing_navigation(self, playwright_driver_instance, base_url):
+        """
+        A page that redirects itself mid-flight must not strand navigate_to.
+
+        Playwright only: Selenium's get() reports no error when the browser
+        cancels the navigation it asked for, and offers nothing to tell that
+        apart from an ordinary redirect, so it is left where the page went.
+        """
+        playwright_driver_instance.navigate_to(f"{base_url}/basic.html")
+        playwright_driver_instance.click_selector("#navigate-away-later")
+
+        # The fixture redirects itself while this slow response is still on the
+        # wire, so the requested navigation is the one the browser cancels.
+        playwright_driver_instance.navigate_to(f"{base_url}/slow/basic.html?requested=1")
+
+        assert "requested=1" in playwright_driver_instance.current_url
 
 
 class TestPageTitle:
