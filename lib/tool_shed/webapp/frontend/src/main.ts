@@ -1,14 +1,9 @@
 import { createApp } from "vue"
 import { Quasar, Cookies } from "quasar"
 import App from "./App.vue"
-// <q-icon icon="<icon_name>"
-import "@quasar/extras/material-icons/material-icons.css"
-// <q-icon icon="sym_r_<icon_name>"
-import "@quasar/extras/material-symbols-rounded/material-symbols-rounded.css"
-
-// Not needed...
-// import "@quasar/extras/material-icons-outlined/material-icons-outlined.css"
-// import "@quasar/extras/material-symbols-outlined/material-symbols-outlined.css"
+// Quasar's own chrome (select arrows, table pagination and sort) draws SVG FontAwesome
+// icons from this set, so no icon webfont ships with the app
+import iconSet from "quasar/icon-set/svg-fontawesome-v6"
 import "quasar/src/css/index.sass"
 
 // Galaxy brand: cross-property design tokens (--color-galaxy-*) and the
@@ -24,5 +19,5 @@ import router from "@/router"
 import { createPinia } from "pinia"
 
 const quasarPlugins = { Cookies }
-const quasarConfig = { plugins: quasarPlugins }
+const quasarConfig = { plugins: quasarPlugins, iconSet }
 createApp(App).use(createPinia()).use(router).use(Quasar, quasarConfig).mount("#app")
