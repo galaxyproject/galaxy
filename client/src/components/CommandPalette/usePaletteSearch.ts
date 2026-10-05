@@ -74,6 +74,9 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
     /** Whether the arrow keys currently move the category instead of the selection */
     const categoryRowSelected = computed(() => showCategoryRow.value && selectedIndex.value === CATEGORY_ROW_INDEX);
 
+    /** Aborted when a newer search starts, so a superseded one starts no further backend request */
+    let searchController = new AbortController();
+
     /** One provider failing must never cost the user every other section */
     function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallback: T): Promise<T> {
         return Promise.resolve()
@@ -97,12 +100,13 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         }
         // an `xy:` still being typed is a filter, not a term for any backend
         const localOnly = isScopeTokenLike(query.value);
+        const signal = searchController.signal;
         return withoutFailing(
             providerId,
             () =>
                 !query.value && provider.emptyQueryItems
                     ? provider.emptyQueryItems(ctx).slice(0, PALETTE_LIMITS.section)
-                    : provider.search(query.value, ctx, { localOnly }),
+                    : provider.search(query.value, ctx, { localOnly, signal }),
             [],
         );
     }
@@ -305,9 +309,15 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     let searchEpoch = 0;
 
+    function supersedeSearch() {
+        searchController.abort();
+        searchController = new AbortController();
+    }
+
     /** Drops the rendered results and any search still in flight for them */
     function clearResults() {
         searchEpoch++;
+        supersedeSearch();
         sections.value = [];
         selectedIndex.value = 0;
         pendingScope.value = null;
@@ -317,6 +327,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     async function runSearch() {
         const epoch = ++searchEpoch;
+        supersedeSearch();
         const ctx = getContext();
         // picking a category reruns the search; the row keeps the selection so the
         // next ←→ moves on to the neighboring category
@@ -381,6 +392,17 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
 
     // sync so old rows never show under a new badge; reads `mode` as a sync watcher can see a stale computed
     watch(() => paletteModeIdentity(mode.value), clearResults, { flush: "sync" });
+
+    // a keystroke retires the running search at once, not a debounce later, so one
+    // still inside its backend pause never reaches the backend
+    watch(
+        text,
+        () => {
+            searchEpoch++;
+            supersedeSearch();
+        },
+        { flush: "sync" },
+    );
 
     // the category is part of the mode, so a sweep across the row shares the debounce
     watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });

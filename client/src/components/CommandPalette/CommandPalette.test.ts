@@ -20,6 +20,7 @@ import { datasetsProvider } from "./providers/datasets";
 import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { invocationsProvider } from "./providers/invocations";
+import { PALETTE_LIMITS } from "./providers/limits";
 import { navigationProvider } from "./providers/navigation";
 import { reportsProvider } from "./providers/reports";
 import { toolsProvider } from "./providers/tools";
@@ -36,7 +37,8 @@ const localVue = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
-const DEBOUNCE_WAIT = 250;
+/** The input debounce, the pause before root searches reach the backend, and a margin */
+const DEBOUNCE_WAIT = 250 + PALETTE_LIMITS.backendSettle;
 /** The palette only opens once the configuration store holds a configuration */
 const CONFIG_LOADED = { configurationStore: { config: {} } };
 
@@ -946,6 +948,20 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("never sends the tool search of a keystroke typed over before it settled", async () => {
+        const toolStore = useToolStore();
+        vi.mocked(toolStore.fetchTools).mockClear();
+
+        (input().element as HTMLInputElement).value = "fastq";
+        await input().trigger("input");
+        // an ordinary gap between keys: the "fastq" search has started, but not reached the backend yet
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await type("fastqc");
+
+        expect(vi.mocked(toolStore.fetchTools)).toHaveBeenCalledWith("fastqc");
+        expect(vi.mocked(toolStore.fetchTools)).not.toHaveBeenCalledWith("fastq");
+    });
+
     it("keeps the selection on the same row across the final sort", async () => {
         const pages = stallSearch(reportsProvider);
         try {
@@ -1019,12 +1035,18 @@ describe("CommandPalette", () => {
             // interactivetools_enable is off in the mocked config, so `it:` stays plain text
             await type("it:");
             searches.forEach((search) =>
-                expect(search).toHaveBeenLastCalledWith("it:", expect.anything(), { localOnly: true }),
+                expect(search).toHaveBeenLastCalledWith("it:", expect.anything(), {
+                    localOnly: true,
+                    signal: expect.any(AbortSignal),
+                }),
             );
 
             await type("fastqc");
             searches.forEach((search) =>
-                expect(search).toHaveBeenLastCalledWith("fastqc", expect.anything(), { localOnly: false }),
+                expect(search).toHaveBeenLastCalledWith("fastqc", expect.anything(), {
+                    localOnly: false,
+                    signal: expect.any(AbortSignal),
+                }),
             );
         } finally {
             searches.forEach((search) => search.mockRestore());
@@ -1039,7 +1061,10 @@ describe("CommandPalette", () => {
             await pickCategory("tools");
             expect(category("tools").attributes("aria-selected")).toBe("true");
             expect(scoped.calls).toBe(0);
-            expect(search).toHaveBeenLastCalledWith("zz:foo", expect.anything(), { localOnly: true });
+            expect(search).toHaveBeenLastCalledWith("zz:foo", expect.anything(), {
+                localOnly: true,
+                signal: expect.any(AbortSignal),
+            });
 
             await type("fastqc");
             expect(scoped.calls).toBe(1);

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PaletteItem } from "../types";
 import { PaletteFetchError } from "./errors";
@@ -142,5 +142,42 @@ describe("rootListItems", () => {
         expect(await rootListItems("alp", own, [listing], { localOnly: true })).toEqual([]);
         expect(listing).not.toHaveBeenCalled();
         expect(own.fetchListing).not.toHaveBeenCalled();
+    });
+
+    describe("with a signal a newer search can abort", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("waits for the input to settle before searching the listings", async () => {
+            const listing = vi.fn(async () => [REMOTE]);
+            const controller = new AbortController();
+
+            const answer = rootListItems("alp", undefined, [listing], { signal: controller.signal });
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle - 1);
+            expect(listing).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(1);
+
+            expect((await answer).map((item) => item.title)).toEqual(["alpaca"]);
+            expect(listing).toHaveBeenCalledWith("alp");
+        });
+
+        it("never searches the listings once a newer search took over", async () => {
+            const listing = vi.fn(async () => [REMOTE]);
+            const own = fakeList();
+            await own.fetchListing();
+            const controller = new AbortController();
+
+            const answer = rootListItems("alp", own, [listing], { signal: controller.signal });
+            controller.abort();
+            await vi.advanceTimersByTimeAsync(PALETTE_LIMITS.backendSettle);
+
+            expect((await answer).map((item) => item.title).sort()).toEqual(["alpha", "alpine"]);
+            expect(listing).not.toHaveBeenCalled();
+        });
     });
 });
