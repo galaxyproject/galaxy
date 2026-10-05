@@ -9,11 +9,13 @@
 import Alert from "@/components/Alert.vue";
 
 const props = defineProps<{
-    error: Error;
+    message?: string;
 }>();
 </script>
 <template>
-    <div class="container error-container"><Alert :message="props.error.message" variant="error" /></div>
+    <div class="container error-container">
+        <Alert :message="props.message || 'Something went wrong.'" variant="error" />
+    </div>
 </template>
 <style scoped>
 .error-container {

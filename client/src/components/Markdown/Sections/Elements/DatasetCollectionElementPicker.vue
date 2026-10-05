@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormSelect, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { fetchCollectionElements, fetchCollectionSummary } from "@/api/datasetCollections";
@@ -39,20 +40,20 @@ function handleInput(value: string) {
 
 <template>
     <div>
-        <b-navbar class="align-items-center">
+        <BNavbar class="align-items-center">
             <div class="navbar-collapse">
-                <b-navbar-nav>
-                    <b-nav-text class="mr-3">Select Element</b-nav-text>
-                </b-navbar-nav>
-                <b-nav-form>
-                    <b-form-select
+                <BNavbarNav>
+                    <BNavText class="mr-3">Select Element</BNavText>
+                </BNavbarNav>
+                <BNavForm>
+                    <BFormSelect
                         class="form-control-sm"
                         :value="value"
                         :options="dceToId"
-                        @input="handleInput"></b-form-select>
-                </b-nav-form>
+                        @input="handleInput"></BFormSelect>
+                </BNavForm>
             </div>
-        </b-navbar>
+        </BNavbar>
         <slot name="element" :element="value"></slot>
     </div>
 </template>

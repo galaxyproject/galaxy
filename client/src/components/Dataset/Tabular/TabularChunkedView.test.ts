@@ -4,7 +4,6 @@ import axios from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import TabularChunkedView from "./TabularChunkedView.vue";
-import GTable from "@/components/Common/GTable.vue";
 
 vi.mock("axios");
 vi.mock("@/onload/loadConfig", () => ({
@@ -45,8 +44,8 @@ function mountChunkedView(fileExt: string, ckData?: string) {
 
 async function renderedItems(fileExt: string, ckData: string) {
     const wrapper = mountChunkedView(fileExt, ckData);
-    await vi.waitFor(() => expect(wrapper.findComponent(GTable).props("items")).not.toHaveLength(0));
-    return wrapper.findComponent(GTable).props("items");
+    await vi.waitFor(() => expect(wrapper.findComponent({ name: "GTable" }).props("items")).not.toHaveLength(0));
+    return wrapper.findComponent({ name: "GTable" }).props("items");
 }
 
 describe("TabularChunkedView", () => {
@@ -58,13 +57,13 @@ describe("TabularChunkedView", () => {
     it("hides the table header for generic tabular datasets", () => {
         const wrapper = mountChunkedView("tabular");
 
-        expect(wrapper.findComponent(GTable).props("hideHeader")).toBe(true);
+        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(true);
     });
 
     it("keeps the table header for CSV datasets", () => {
         const wrapper = mountChunkedView("csv");
 
-        expect(wrapper.findComponent(GTable).props("hideHeader")).toBe(false);
+        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(false);
     });
 
     it("loads chunks until the end of the dataset while the view is not filled", async () => {
@@ -75,7 +74,7 @@ describe("TabularChunkedView", () => {
 
         await vi.waitFor(() => expect(axios.get).toHaveBeenCalledTimes(3));
         expect(vi.mocked(axios.get).mock.calls.map(([, config]) => config?.params.offset)).toEqual([0, 8, 12]);
-        await vi.waitFor(() => expect(wrapper.findComponent(GTable).props("items")).toHaveLength(3));
+        await vi.waitFor(() => expect(wrapper.findComponent({ name: "GTable" }).props("items")).toHaveLength(3));
         await new Promise((resolve) => setTimeout(resolve, 250));
         expect(axios.get).toHaveBeenCalledTimes(3);
     });

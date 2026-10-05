@@ -2,7 +2,7 @@
 import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
     extractWorkflowByIds,
@@ -455,8 +455,8 @@ function stepKind(job: ExtractionRow): string {
                 :data-icj-id="isMappedTool(job) ? job.implicit_collection_jobs_id : undefined"
                 :data-step-kind="stepKind(job)"
                 @rename="onJobRename(index)"
-                @toggle-output="(outputIndex) => onOutputToggle(index, outputIndex)"
-                @rename-output="(outputIndex) => onOutputRename(index, outputIndex)"
+                @toggle-output="(outputIndex: number) => onOutputToggle(index, outputIndex)"
+                @rename-output="(outputIndex: number) => onOutputRename(index, outputIndex)"
                 @select="onJobSelect(index)"
                 @view-job="onViewJob" />
         </div>
@@ -475,7 +475,7 @@ function stepKind(job: ExtractionRow): string {
             :rename-action="renameOutput"
             @close="outputRenameTarget = null" />
 
-        <GModal :show.sync="showJobModal" title="View Job" fixed-height size="medium" @close="viewedJobId = null">
+        <GModal v-model:show="showJobModal" title="View Job" fixed-height size="medium" @close="viewedJobId = null">
             <JobDetails v-if="viewedJobId" :job-id="viewedJobId" />
         </GModal>
     </div>

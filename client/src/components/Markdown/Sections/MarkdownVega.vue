@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { defineAsyncComponent, ref, watch } from "vue";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
+const VegaWrapper = defineAsyncComponent(() => import("@/components/Common/VegaWrapper.vue"));
 
 const props = defineProps<{
     content: string;

@@ -111,16 +111,16 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         # Is this writing an unneeded file? Should this just copy in Python?
         if "__file_path" in payload:
-            file_path = payload.get("__file_path")
+            file_path = os.path.abspath(payload["__file_path"])
             upload_store = trans.app.config.nginx_upload_job_files_store
-            assert upload_store, (
-                "Request appears to have been processed by"
-                " nginx_upload_module but Galaxy is not"
-                " configured to recognize it"
-            )
-            assert file_path.startswith(
-                upload_store
-            ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
+            if not upload_store:
+                raise exceptions.ConfigDoesNotAllowException(
+                    "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+                )
+            if not util.in_directory(file_path, upload_store):
+                raise exceptions.RequestParameterInvalidException(
+                    "Filename provided by nginx is not in the configured upload directory."
+                )
             input_file = open(file_path)
         elif "session_id" in payload:
             # code stolen from basic.py

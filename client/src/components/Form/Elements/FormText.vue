@@ -1,7 +1,7 @@
 <template>
-    <b-row align-v="center">
-        <b-col>
-            <b-form-textarea
+    <BRow align-v="center">
+        <BCol>
+            <BFormTextarea
                 v-if="inputArea"
                 :id="id"
                 v-model="currentValue"
@@ -11,7 +11,7 @@
                 :style="style"
                 @focus="onFocus"
                 @blur="onBlur" />
-            <b-form-input
+            <BFormInput
                 v-else
                 :id="id"
                 v-model="currentValue"
@@ -27,12 +27,15 @@
             <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
                 <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value" />
             </datalist>
-        </b-col>
-    </b-row>
+        </BCol>
+    </BRow>
 </template>
 
 <script>
+import { BCol, BFormInput, BFormTextarea, BRow } from "bootstrap-vue";
+
 export default {
+    components: { BCol, BFormInput, BFormTextarea, BRow },
     props: {
         value: {
             // String; Array for multiple

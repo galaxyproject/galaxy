@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -13,7 +13,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 const router = useRouter();
 
 const loading = ref(false);
-const email = ref(router.currentRoute.query.email || "");
+const email = ref(router.currentRoute.value.query.email || "");
 const message = ref("");
 const messageVariant = ref("info");
 

@@ -92,7 +92,7 @@ async function handleSubmit() {
         <GAlert v-if="deleting" variant="info" show>
             <LoadingSpan message="Deleting user account" />
         </GAlert>
-        <GForm v-else @submit.native.prevent>
+        <GForm v-else @submit.prevent>
             <GFormLabel
                 title="Enter your email address to confirm deletion"
                 invalid-feedback="Email does not match the current user email."

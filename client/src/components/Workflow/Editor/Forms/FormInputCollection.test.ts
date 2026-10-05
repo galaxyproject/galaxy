@@ -1,7 +1,6 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import FormCollectionType from "./FormCollectionType.vue";
 import FormColumnDefinitions from "./FormColumnDefinitions.vue";
@@ -27,13 +26,12 @@ function stepWithCollectionType(collectionType: string | null) {
     };
 }
 
-function lastEmittedState(wrapper: Wrapper<Vue>) {
-    const emitted = wrapper.emitted("onChange");
-    return emitted?.[emitted.length - 1]?.[0];
+function lastEmittedState(wrapper: VueWrapper) {
+    return nth(wrapper.emitted<[Record<string, unknown>]>("onChange"), -1)[0];
 }
 
 describe("FormInputCollection", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = shallowMount(FormInputCollection as object, {
@@ -46,7 +44,7 @@ describe("FormInputCollection", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         vi.useRealTimers();
     });
 
@@ -75,9 +73,7 @@ describe("FormInputCollection", () => {
         await wrapper.setProps({ step: stepWithCollectionType("sample_sheet") });
 
         expect(wrapper.findComponent(FormCollectionType).props("value")).toBe("sample_sheet:paired");
-        const optionalField = wrapper
-            .findAllComponents(FormElement)
-            .wrappers.find((field) => field.props("id") === "optional");
+        const optionalField = wrapper.findAllComponents(FormElement).find((field) => field.props("id") === "optional");
         expect(optionalField).toBeDefined();
         const emittedCount = wrapper.emitted("onChange")!.length;
         optionalField!.vm.$emit("input", true);

@@ -11,13 +11,13 @@ const localVue = getLocalVue(true);
 describe("VaultSecret", () => {
     it("should render a form element", async () => {
         const wrapper = shallowMount(VaultSecret as object, {
-            propsData: {
+            props: {
                 name: "secret name",
                 label: "Label Secret",
                 help: "here is some good *help*",
                 isSet: true,
             },
-            localVue,
+            global: localVue,
         });
         const titleWrapper = wrapper.find(".ui-form-title-text");
         expect(titleWrapper.text()).toEqual("Label Secret");
@@ -37,7 +37,7 @@ describe("VaultSecret", () => {
             },
             localVue,
         });
-        expect(wrapper.html()).toContain("bformtextarea-stub");
+        expect(wrapper.html()).toContain("b-form-textarea-stub");
     });
 
     it("renders help through v-sanitize-html with the links profile", () => {

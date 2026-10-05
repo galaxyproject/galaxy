@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +30,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         );
     });
 
-    function doMount(split: boolean): Wrapper<Vue> {
+    function doMount(split: boolean): VueWrapper {
         const wrapper = mount(WorkflowStorageConfiguration as object, {
             propsData: {
                 splitObjectStore: split,
@@ -77,12 +77,10 @@ describe("WorkflowStorageConfiguration.vue", () => {
             // Find the first WorkflowSelectPreferredObjectStore component and emit its updated event
             const selectComponents = wrapper.findAllComponents(WorkflowSelectPreferredObjectStore);
             expect(selectComponents.length).toBeGreaterThan(0);
-            selectComponents.at(0).vm.$emit("updated", "storage123");
+            nth(selectComponents, 0).vm.$emit("updated", "storage123");
             await flushPromises();
 
-            const emitted = wrapper.emitted();
-            expect(emitted["updated"]?.[0]?.[0]).toEqual("storage123");
-            expect(emitted["updated"]?.[0]?.[1]).toEqual(false);
+            expect(wrapper.emitted("updated")).toEqual([["storage123", false]]);
         });
 
         it("should fire an update event when intermediate selection is updated", async () => {
@@ -97,12 +95,10 @@ describe("WorkflowStorageConfiguration.vue", () => {
             // Find the WorkflowSelectPreferredObjectStore components (there are 2, we want the 2nd one for intermediate)
             const selectComponents = wrapper.findAllComponents(WorkflowSelectPreferredObjectStore);
             expect(selectComponents.length).toBe(2);
-            selectComponents.at(1).vm.$emit("updated", "storage123");
+            nth(selectComponents, 1).vm.$emit("updated", "storage123");
             await flushPromises();
 
-            const emitted = wrapper.emitted();
-            expect(emitted["updated"]?.[0]?.[0]).toEqual("storage123");
-            expect(emitted["updated"]?.[0]?.[1]).toEqual(true);
+            expect(wrapper.emitted("updated")).toEqual([["storage123", true]]);
         });
     });
 });

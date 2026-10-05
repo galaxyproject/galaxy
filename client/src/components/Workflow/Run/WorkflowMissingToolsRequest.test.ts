@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,7 +52,7 @@ const REGISTERED_USER = {
     purged: false,
 };
 
-function mountComponent(props: Record<string, unknown> = {}): Wrapper<Vue> {
+function mountComponent(props: Record<string, unknown> = {}): VueWrapper {
     const pinia = createTestingPinia({
         createSpy: vi.fn,
         initialState: {

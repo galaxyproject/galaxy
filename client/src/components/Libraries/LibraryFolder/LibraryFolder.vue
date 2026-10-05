@@ -1,10 +1,10 @@
 <template>
     <div>
         <FolderTopBar
+            v-model:include-deleted="includeDeleted"
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            :include-deleted.sync="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
@@ -315,9 +315,8 @@ export default {
         LoadingSpan,
         UtcDate,
     },
-    beforeRouteUpdate(to, from, next) {
+    beforeRouteUpdate(to) {
         this.getFolder(to.params.folder_id, to.params.page);
-        next();
     },
     props: {
         folder_id: {

@@ -7,6 +7,7 @@ import { FAVORITES_KEYS, filterPanelByToolIds, searchTools } from "@/components/
 import { type Tool, type ToolPanelItem, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
+import { toRawDeep } from "@/utils/toRawDeep";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -262,7 +263,7 @@ function checkQuery(q: string) {
 
 function post(message: object) {
     if (props.useWorker) {
-        searchWorker.value?.postMessage(message);
+        searchWorker.value?.postMessage(toRawDeep(message));
     } else {
         nextTick(() => {
             handlePost({ data: message as SearchEventData });

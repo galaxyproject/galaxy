@@ -99,7 +99,7 @@ class APIKeys(Base):
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     key: Mapped[str | None] = mapped_column(TrimmedString(32), index=True, unique=True)
-    user = relationship("User", back_populates="api_keys")
+    user: Mapped["User | None"] = relationship(back_populates="api_keys")
     deleted: Mapped[bool | None] = mapped_column(index=True, default=False, nullable=False)
 
 
@@ -116,25 +116,23 @@ class User(Base, Dictifiable):
     new_repo_alert: Mapped[bool | None] = mapped_column(Boolean, default=False)
     deleted: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
     purged: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
-    active_repositories = relationship(
-        "Repository",
+    active_repositories: Mapped[list["Repository"]] = relationship(
         primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),
         back_populates="user",
         order_by=lambda: desc(Repository.name),
     )
-    galaxy_sessions = relationship(
-        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
+    galaxy_sessions: Mapped[list["GalaxySession"]] = relationship(
+        back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
     )
-    api_keys = relationship("APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time))
-    reset_tokens = relationship("PasswordResetToken", back_populates="user")
-    groups = relationship("UserGroupAssociation", back_populates="user")
+    api_keys: Mapped[list["APIKeys"]] = relationship(back_populates="user", order_by=lambda: desc(APIKeys.create_time))
+    reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(back_populates="user")
+    groups: Mapped[list["UserGroupAssociation"]] = relationship(back_populates="user")
 
     dict_collection_visible_keys = ["id", "username"]
     dict_element_visible_keys = ["id", "username"]
     bootstrap_admin_user = False
-    roles = relationship("UserRoleAssociation", back_populates="user")
-    non_private_roles = relationship(
-        "UserRoleAssociation",
+    roles: Mapped[list["UserRoleAssociation"]] = relationship(back_populates="user")
+    non_private_roles: Mapped[list["UserRoleAssociation"]] = relationship(
         viewonly=True,
         primaryjoin=(
             lambda: (
@@ -205,7 +203,7 @@ class PasswordResetToken(Base):
     token: Mapped[str] = mapped_column(String(32), primary_key=True, unique=True, index=True)
     expiration_time: Mapped[datetime | None] = mapped_column(DateTime)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User", back_populates="reset_tokens")
+    user: Mapped["User | None"] = relationship(back_populates="reset_tokens")
 
     def __init__(self, user, token=None):
         if token:
@@ -225,8 +223,8 @@ class Group(Base, Dictifiable):
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
     name: Mapped[str | None] = mapped_column(String(255), index=True, unique=True)
     deleted: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
-    roles = relationship("GroupRoleAssociation", back_populates="group")
-    users = relationship("UserGroupAssociation", back_populates="group")
+    roles: Mapped[list["GroupRoleAssociation"]] = relationship(back_populates="group")
+    users: Mapped[list["UserGroupAssociation"]] = relationship(back_populates="group")
 
     dict_collection_visible_keys = ["id", "name"]
     dict_element_visible_keys = ["id", "name"]
@@ -246,9 +244,9 @@ class Role(Base, Dictifiable):
     description: Mapped[str | None] = mapped_column(TEXT)
     type: Mapped[str | None] = mapped_column(String(40), index=True)
     deleted: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
-    repositories = relationship("RepositoryRoleAssociation", back_populates="role")
-    groups = relationship("GroupRoleAssociation", back_populates="role")
-    users = relationship("UserRoleAssociation", back_populates="role")
+    repositories: Mapped[list["RepositoryRoleAssociation"]] = relationship(back_populates="role")
+    groups: Mapped[list["GroupRoleAssociation"]] = relationship(back_populates="role")
+    users: Mapped[list["UserRoleAssociation"]] = relationship(back_populates="role")
 
     dict_collection_visible_keys = ["id", "name"]
     dict_element_visible_keys = ["id", "name", "description", "type"]
@@ -279,8 +277,8 @@ class UserGroupAssociation(Base):
     group_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
-    user = relationship("User", back_populates="groups")
-    group = relationship("Group", back_populates="users")
+    user: Mapped["User | None"] = relationship(back_populates="groups")
+    group: Mapped["Group | None"] = relationship(back_populates="users")
 
     def __init__(self, user, group):
         add_object_to_object_session(self, user)
@@ -296,8 +294,8 @@ class UserRoleAssociation(Base):
     role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
-    user = relationship("User", back_populates="roles")
-    role = relationship("Role", back_populates="users")
+    user: Mapped["User | None"] = relationship(back_populates="roles")
+    role: Mapped["Role | None"] = relationship(back_populates="users")
 
     def __init__(self, user, role):
         add_object_to_object_session(self, user)
@@ -314,8 +312,8 @@ class GroupRoleAssociation(Base):
     role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
-    group = relationship("Group", back_populates="roles")
-    role = relationship("Role", back_populates="groups")
+    group: Mapped["Group | None"] = relationship(back_populates="roles")
+    role: Mapped["Role | None"] = relationship(back_populates="groups")
 
     def __init__(self, group, role):
         self.group = group
@@ -330,8 +328,8 @@ class RepositoryRoleAssociation(Base):
     role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
-    repository = relationship("Repository", back_populates="roles")
-    role = relationship("Role", back_populates="repositories")
+    repository: Mapped["Repository | None"] = relationship(back_populates="roles")
+    role: Mapped["Role | None"] = relationship(back_populates="repositories")
 
     def __init__(self, repository, role):
         add_object_to_object_session(self, repository)
@@ -355,7 +353,7 @@ class GalaxySession(Base):
     # saves a reference to the previous session so we have a way to chain them together
     prev_session_id: Mapped[int | None] = mapped_column(Integer)
     last_action: Mapped[datetime | None] = mapped_column(DateTime)
-    user = relationship("User", back_populates="galaxy_sessions")
+    user: Mapped["User | None"] = relationship(back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
@@ -381,13 +379,12 @@ class Repository(Base, Dictifiable):
     email_alerts: Mapped[bytes | None] = mapped_column(MutableJSONType, nullable=True)
     times_downloaded: Mapped[int | None] = mapped_column(Integer)
     deprecated: Mapped[bool | None] = mapped_column(Boolean, default=False)
-    categories = relationship("RepositoryCategoryAssociation", back_populates="repository")
-    ratings = relationship(
-        "RepositoryRatingAssociation",
+    categories: Mapped[list["RepositoryCategoryAssociation"]] = relationship(back_populates="repository")
+    ratings: Mapped[list["RepositoryRatingAssociation"]] = relationship(
         order_by=lambda: desc(RepositoryRatingAssociation.update_time),
         back_populates="repository",
     )
-    user = relationship("User", back_populates="active_repositories")
+    user: Mapped["User | None"] = relationship(back_populates="active_repositories")
     downloadable_revisions: Mapped[list["RepositoryMetadata"]] = relationship(
         primaryjoin=lambda: (
             (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true())
@@ -399,7 +396,7 @@ class Repository(Base, Dictifiable):
         order_by=lambda: desc(RepositoryMetadata.update_time),
         back_populates="repository",
     )
-    roles = relationship("RepositoryRoleAssociation", back_populates="repository")
+    roles: Mapped[list["RepositoryRoleAssociation"]] = relationship(back_populates="repository")
 
     dict_collection_visible_keys = [
         "id",
@@ -555,6 +552,8 @@ class Repository(Base, Dictifiable):
     def repo_path(self, app: "ToolShedApp | None" = None) -> str:
         # Keep app argument for compatibility with tool_shed_install Repository model
         assert self.name is not None
+        assert self.user is not None
+        assert self.user.username is not None
         return hgweb_config_manager.get_entry(
             os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
         )
@@ -606,6 +605,7 @@ class Repository(Base, Dictifiable):
     def to_dict(self, view: str = "collection", value_mapper=None) -> dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if "user_id" in rval:
+            assert self.user is not None
             rval["owner"] = self.user.username
         return rval
 
@@ -632,8 +632,8 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int | None] = mapped_column(Integer, index=True)
     comment: Mapped[str | None] = mapped_column(TEXT)
-    repository = relationship("Repository", back_populates="ratings")
-    user = relationship("User")
+    repository: Mapped["Repository | None"] = relationship(back_populates="ratings")
+    user: Mapped["User | None"] = relationship()
 
     def set_item(self, repository):
         self.repository = repository
@@ -648,7 +648,7 @@ class Category(Base, Dictifiable):
     name: Mapped[str | None] = mapped_column(TrimmedString(255), index=True, unique=True)
     description: Mapped[str | None] = mapped_column(TEXT)
     deleted: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
-    repositories = relationship("RepositoryCategoryAssociation", back_populates="category")
+    repositories: Mapped[list["RepositoryCategoryAssociation"]] = relationship(back_populates="category")
 
     dict_collection_visible_keys = ["id", "name", "description", "deleted"]
     dict_element_visible_keys = ["id", "name", "description", "deleted"]
@@ -680,8 +680,8 @@ class RepositoryCategoryAssociation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     repository_id: Mapped[int | None] = mapped_column(ForeignKey("repository.id"), index=True)
     category_id: Mapped[int | None] = mapped_column(ForeignKey("category.id"), index=True)
-    category = relationship("Category", back_populates="repositories")
-    repository = relationship("Repository", back_populates="categories")
+    category: Mapped["Category | None"] = relationship(back_populates="repositories")
+    repository: Mapped["Repository | None"] = relationship(back_populates="categories")
 
     def __init__(self, repository=None, category=None):
         self.repository = repository
@@ -696,8 +696,8 @@ class Tag(Base):
     type: Mapped[int | None] = mapped_column(Integer)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"))
     name: Mapped[str | None] = mapped_column(TrimmedString(255))
-    children = relationship("Tag", back_populates="parent")
-    parent = relationship("Tag", back_populates="children", remote_side=[id])
+    children: Mapped[list["Tag"]] = relationship("Tag", back_populates="parent")
+    parent: Mapped["Tag | None"] = relationship("Tag", back_populates="children", remote_side=[id])
 
     def __str__(self):
         return f"Tag(id={self.id}, type={self.type}, parent_id={self.parent_id}, name={self.name})"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -6,6 +7,7 @@ import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
+import type { BootstrapSize } from "@/components/Common";
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
@@ -316,6 +318,14 @@ const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
 
 /**
+ * FontAwesome's size tokens don't include "md" -- passing it through today just produces an
+ * unstyled "fa-md" class, so this keeps that a no-op explicitly instead of lying to the types.
+ */
+function toIconSize(size: BootstrapSize | undefined): SizeProp | undefined {
+    return size && size !== "md" ? size : undefined;
+}
+
+/**
  * Number of lines before title truncation (undefined = no truncation)
  */
 const allowedTitleLines = computed(() => props.titleNLines);
@@ -398,7 +408,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-g-tooltip.hover
                                                 :title="localize(title.title)"
                                                 :class="{ 'g-card-title-truncate': props.titleNLines }"
-                                                @click.stop.prevent="title.handler">
+                                                @click.stop.prevent="title.handler && title.handler()">
                                                 {{ title.label }}
                                             </BLink>
                                             <template v-else>
@@ -432,11 +442,10 @@ function onKeyDown(event: KeyboardEvent) {
 
                             <div class="align-items-center d-flex flex-gapx-1">
                                 <slot name="titleBadges">
-                                    <template v-for="badge in props.titleBadges">
+                                    <template v-for="badge in props.titleBadges" :key="badge.id">
                                         <BBadge
                                             v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
-                                            :key="badge.id"
                                             v-g-tooltip.hover
                                             :pill="badge.type !== 'badge'"
                                             class="mt-1"
@@ -510,11 +519,10 @@ function onKeyDown(event: KeyboardEvent) {
                                             <FontAwesomeIcon :icon="faCaretDown" fixed-width />
                                         </template>
 
-                                        <template v-for="ea in props.extraActions">
+                                        <template v-for="ea in props.extraActions" :key="ea.id">
                                             <GDropdownItem
                                                 v-if="ea.visible ?? true"
                                                 :id="getActionId(props.id, ea.id)"
-                                                :key="ea.id"
                                                 :disabled="ea.disabled"
                                                 :variant="ea.variant || 'link'"
                                                 :to="ea.to"
@@ -536,11 +544,10 @@ function onKeyDown(event: KeyboardEvent) {
                                     :id="getElementId(props.id, 'badges')"
                                     class="align-items-center align-self-baseline d-flex flex-gapx-1">
                                     <slot name="badges">
-                                        <template v-for="badge in props.badges">
+                                        <template v-for="badge in props.badges" :key="badge.id">
                                             <BBadge
                                                 v-if="badge.visible ?? true"
                                                 :id="getBadgeId(props.id, badge.id)"
-                                                :key="badge.id"
                                                 v-g-tooltip.hover.top
                                                 :pill="badge.type !== 'badge'"
                                                 :class="{
@@ -566,11 +573,10 @@ function onKeyDown(event: KeyboardEvent) {
 
                                 <div :id="getElementId(props.id, 'indicators')" class="align-self-baseline">
                                     <slot name="indicators">
-                                        <template v-for="indicator in props.indicators">
+                                        <template v-for="indicator in props.indicators" :key="indicator.id">
                                             <GButton
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="`${indicator.id}-button`"
                                                 v-g-tooltip.hover
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
@@ -588,13 +594,15 @@ function onKeyDown(event: KeyboardEvent) {
                                                 {{ localize(indicator.label) }}
                                             </GButton>
                                             <FontAwesomeIcon
-                                                v-else-if="(indicator.visible ?? true) && indicator.disabled"
+                                                v-else-if="
+                                                    (indicator.visible ?? true) && indicator.disabled && indicator.icon
+                                                "
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="`${indicator.id}-icon`"
                                                 v-g-tooltip.hover
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
-                                                :size="indicator.size || 'sm'"
+                                                :size="toIconSize(indicator.size) || 'sm'"
                                                 fixed-width />
                                         </template>
                                     </slot>
@@ -658,11 +666,10 @@ function onKeyDown(event: KeyboardEvent) {
                                     v-if="props.secondaryActions?.length"
                                     :id="getElementId(props.id, 'secondary-actions')"
                                     class="g-card-secondary-actions mt-1">
-                                    <template v-for="sa in props.secondaryActions">
+                                    <template v-for="sa in props.secondaryActions" :key="sa.id">
                                         <GButton
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
-                                            :key="sa.id"
                                             v-g-tooltip.hover
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
@@ -676,7 +683,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-if="sa.icon"
                                                 :icon="sa.icon"
                                                 fixed-width
-                                                :size="sa.size || undefined" />
+                                                :size="toIconSize(sa.size)" />
                                             <span class="g-card-secondary-action-label">
                                                 {{ localize(sa.label) }}
                                             </span>
@@ -688,11 +695,10 @@ function onKeyDown(event: KeyboardEvent) {
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
                                     <template v-if="props.primaryActions?.length">
-                                        <template v-for="pa in props.primaryActions">
+                                        <template v-for="pa in props.primaryActions" :key="pa.id">
                                             <GButton
                                                 v-if="pa.visible ?? true"
                                                 :id="getActionId(props.id, pa.id)"
-                                                :key="pa.id"
                                                 v-g-tooltip.hover
                                                 :disabled="pa.disabled"
                                                 :title="localize(pa.title)"
@@ -712,7 +718,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 <FontAwesomeIcon
                                                     v-if="pa.icon"
                                                     :icon="pa.icon"
-                                                    :size="pa.size || undefined"
+                                                    :size="toIconSize(pa.size)"
                                                     fixed-width />
                                                 {{ localize(pa.label) }}
                                             </GButton>

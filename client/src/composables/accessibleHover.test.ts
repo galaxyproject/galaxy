@@ -49,7 +49,7 @@ describe("useAccessibleHover", () => {
         await advanceTooltipHoverDelay();
         expect(onEnter).toHaveBeenCalledTimes(1);
 
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     test("cancels delayed hover enter on mouseleave", async () => {
@@ -68,7 +68,7 @@ describe("useAccessibleHover", () => {
         expect(onEnter).not.toHaveBeenCalled();
         expect(onExit).not.toHaveBeenCalled();
 
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     test("shows immediately on focus", () => {
@@ -81,6 +81,6 @@ describe("useAccessibleHover", () => {
         element.dispatchEvent(new Event("focus"));
         expect(onEnter).toHaveBeenCalledTimes(1);
 
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

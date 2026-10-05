@@ -485,7 +485,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                         not-editable
                                         :selected="[pairElements.forward, pairElements.reverse].includes(element)"
                                         @element-is-selected="selectElement"
-                                        @onRename="(name) => (element.name = name)" />
+                                        @onRename="(name: string) => (element.name = name)" />
                                 </div>
                             </div>
                             <GAlert v-else show variant="info">

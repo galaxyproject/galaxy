@@ -14,25 +14,25 @@ describe("Tool", () => {
     test("test tool", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = mount(Tool as object, {
-            propsData: {
+            props: {
                 tool: {
                     id: "test_tool",
                 },
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("");
-        nameElement.trigger("click");
-        expect(wrapper.emitted().onClick).toBeDefined();
+        expect(nameElement[0]?.text()).toBe("");
+        nameElement[0]?.trigger("click");
+        expect(wrapper.emitted("onClick")).toBeDefined();
         const labelsElement = wrapper.find(".labels");
         expect(labelsElement.element.children.length).toBe(0);
     });
     test("test tool hide name, test description", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = mount(Tool as object, {
-            propsData: {
+            props: {
                 tool: {
                     id: "test_tool",
                     name: "name",
@@ -40,7 +40,7 @@ describe("Tool", () => {
                 },
                 hideName: true,
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         const nameElement = wrapper.findAll(".name");
@@ -71,6 +71,6 @@ describe("Tool", () => {
         (favoriteButton.element as HTMLElement).focus();
         expect(document.activeElement).toBe(favoriteButton.element);
 
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

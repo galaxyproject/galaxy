@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { loadVisualizations, type VisualizationSummary } from "@/api/visualizations";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -72,7 +72,7 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
             if (!visualization?.id) {
                 continue;
             }
-            set(storedVisualizations.value, visualization.id, visualization);
+            storedVisualizations.value[visualization.id] = visualization;
         }
     }
 
@@ -98,9 +98,9 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
             saveVisualizations(data);
             if (!search) {
                 const ids = Array.from(new Set(data.map((visualization) => visualization.id)));
-                set(visualizationIdsByVariant.value, variant, ids);
-                set(totalMatchesByVariant.value, variant, totalMatches);
-                set(loadedVariants.value, variant, true);
+                visualizationIdsByVariant.value[variant] = ids;
+                totalMatchesByVariant.value[variant] = totalMatches;
+                loadedVariants.value[variant] = true;
             }
             return data;
         } catch (error) {

@@ -1,5 +1,5 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -51,8 +51,8 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
     return wrapper;
 }
 
-async function setAllItemsChecked(wrapper: Wrapper<any>) {
-    await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+async function setAllItemsChecked(wrapper: VueWrapper<any>) {
+    await wrapper.find(SELECT_ALL_CHECKBOX).setValue(true);
     await flushPromises();
 }
 
@@ -80,7 +80,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
         expect(confirmationModal.props("show")).toBeFalsy();
         await wrapper.find(DELETE_BUTTON).trigger("click");
         expect(confirmationModal.props("show")).toBeTruthy();
@@ -91,9 +91,9 @@ describe("ReviewCleanupDialog.vue", () => {
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
         expect(confirmationModal.props("okDisabled")).toBe(true);
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
         await flushPromises();
         expect(confirmationModal.props("okDisabled")).toBe(false);
     });
@@ -102,13 +102,13 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
-        await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
+        await wrapper.find(AGREEMENT_CHECKBOX).setValue(true);
 
-        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
+        const confirmationModal = nth(wrapper.findAllComponents(GModal), 1);
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toBeFalsy();
         confirmationModal.vm.$emit("ok");
         await flushPromises();
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeTruthy();
-        expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toBeTruthy();
+        expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toHaveLength(1);
     });
 });

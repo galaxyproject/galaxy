@@ -1,13 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DescribeObjectStore from "./DescribeObjectStore.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const DESCRIPTION = "My cool **markdown**";
 
@@ -43,9 +42,8 @@ describe("DescribeObjectStore.vue", () => {
 
     async function mountWithResponse(response) {
         wrapper = shallowMount(DescribeObjectStore, {
-            propsData: { storageInfo: response, what: "where i am throwing my test dataset" },
-            localVue,
-            pinia,
+            props: { storageInfo: response, what: "where i am throwing my test dataset" },
+            global: localVue,
         });
     }
 

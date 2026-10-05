@@ -57,7 +57,11 @@ watch(
         <span class="d-flex flex-gapx-1 align-items-center">
             <span v-if="!hideHid && (element.hid ?? true)" data-description="dataset hid">{{ element.hid }}:</span>
             <strong>
-                <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
+                <ClickToEdit
+                    v-if="!notEditable"
+                    :value="elementName"
+                    :title="localize('Click to rename')"
+                    @input="(v: string) => (elementName = v)" />
                 <span v-else>{{ elementName }}</span>
             </strong>
             <i v-if="!hideExtension && element.extension"> ({{ element.extension }}) </i>

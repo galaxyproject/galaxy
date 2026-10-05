@@ -147,9 +147,10 @@ watch(
 
                         <div class="d-flex align-items-center justify-content-between">
                             <CollectionCreatorSourceOptions
-                                v-model="localHideSourceItems"
+                                :value="localHideSourceItems"
                                 :render-extensions-toggle="renderExtensionsToggle"
                                 :extensions-toggle="extensionsToggle"
+                                @input="(v: boolean) => (localHideSourceItems = v)"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
                                 :value="name"
@@ -190,9 +191,10 @@ watch(
 
                             <div class="d-flex align-items-center justify-content-between">
                                 <CollectionCreatorSourceOptions
-                                    v-model="localHideSourceItems"
+                                    :value="localHideSourceItems"
                                     :render-extensions-toggle="renderExtensionsToggle"
-                                    :extensions-toggle="extensionsToggle" />
+                                    :extensions-toggle="extensionsToggle"
+                                    @input="(v: boolean) => (localHideSourceItems = v)" />
                                 <CollectionNameInput
                                     :value="collectionName"
                                     :short-what-is-being-created="shortWhatIsBeingCreated"

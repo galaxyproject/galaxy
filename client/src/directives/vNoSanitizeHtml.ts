@@ -15,20 +15,15 @@ import type { DirectiveBinding, ObjectDirective } from "vue";
 type NoSanitizeHtmlBinding = string | null | undefined;
 
 export const vNoSanitizeHtml: ObjectDirective<HTMLElement, NoSanitizeHtmlBinding> = {
-    bind(el, binding: DirectiveBinding<NoSanitizeHtmlBinding>) {
+    beforeMount(el, binding: DirectiveBinding<NoSanitizeHtmlBinding>) {
         el.innerHTML = binding.value ?? "";
     },
-    update(el, binding: DirectiveBinding<NoSanitizeHtmlBinding>) {
+    beforeUpdate(el, binding: DirectiveBinding<NoSanitizeHtmlBinding>) {
         if (binding.value !== binding.oldValue) {
             el.innerHTML = binding.value ?? "";
         }
     },
-    unbind(el, _binding, _vnode, _oldVnode, isDestroy?: boolean) {
-        // Same element reuse cleanup as v-sanitize-html
-        if (!isDestroy) {
-            el.innerHTML = "";
-        }
-    },
+    // No unmount cleanup, for the same reason as v-sanitize-html
 };
 
 export default vNoSanitizeHtml;

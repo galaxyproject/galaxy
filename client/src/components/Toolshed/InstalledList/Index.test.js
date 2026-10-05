@@ -38,7 +38,7 @@ describe("InstalledList", () => {
     it("test installed list", async () => {
         const localVue = getLocalVue();
         const wrapper = mount(Index, {
-            propsData: {
+            props: {
                 filter: "",
             },
             stubs: {
@@ -46,9 +46,9 @@ describe("InstalledList", () => {
                 GLink,
                 LoadingSpan: true,
             },
-            localVue,
+            global: localVue,
         });
-        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repositories");
+        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repositories");
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".installed-message").text()).toBe("2 repositories installed on this instance.");
         const names = wrapper.findAll(".name");
@@ -59,6 +59,6 @@ describe("InstalledList", () => {
         expect(links.length).toBe(3);
         const badge = links.at(1).find(".badge");
         expect(badge.text()).toBe("Newer version available!");
-        expect(wrapper.vm.fields.some((field) => field.key === "tool_shed")).toBe(true);
+        expect(wrapper.findAll("thead th").map((th) => th.text())).toContain("Tool Shed");
     });
 });

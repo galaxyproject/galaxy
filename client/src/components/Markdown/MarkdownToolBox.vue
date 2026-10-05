@@ -39,8 +39,6 @@
 import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -52,8 +50,6 @@ import MarkdownDialog from "./MarkdownDialog.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ToolSection from "@/components/Panels/Common/ToolSection.vue";
-
-Vue.use(BootstrapVue);
 
 function historySharedElements(mode) {
     return [

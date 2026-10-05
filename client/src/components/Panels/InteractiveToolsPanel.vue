@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -112,7 +113,7 @@ function openInteractiveTool(toolId: string) {
 
         <div>
             <div v-if="loading" class="p-3 text-center">
-                <b-spinner label="Loading interactive tools..."></b-spinner>
+                <BSpinner label="Loading interactive tools..."></BSpinner>
                 <p class="mt-2">Loading interactive tools...</p>
             </div>
             <div v-else-if="filteredTools.length === 0" class="p-3 text-center">

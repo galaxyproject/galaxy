@@ -50,8 +50,10 @@ function clickedSave() {
 
         <Multiselect
             v-if="hasSelectedDatatype"
+            id="datatype-extension"
             v-model="selectedDatatype"
             class="datatype-dropdown"
+            name="datatype-extension"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"

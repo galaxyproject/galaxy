@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick, ref } from "vue";
 
 import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
@@ -31,14 +30,18 @@ vi.mock("@/composables/config", () => ({
 const mockPush = vi.fn().mockResolvedValue(undefined);
 /** Stands in for the modal's exposed guard; runs the navigation straight through by default. */
 const mockGuardNavigation = vi.fn((navigate: () => void) => navigate());
-vi.mock("vue-router/composables", () => ({
-    useRouter: vi.fn(() => ({
-        push: mockPush,
-    })),
-    useRoute: vi.fn(() => ({
-        params: {},
-    })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({
+            push: mockPush,
+        })),
+        useRoute: vi.fn(() => ({
+            params: {},
+        })),
+    };
+});
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => ({
@@ -123,7 +126,7 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (history mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage(HISTORY_ID);
@@ -168,7 +171,7 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (standalone mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage();
@@ -206,7 +209,7 @@ describe("PageEditorView", () => {
             await modal.props("onSave")();
             expect(store.savePage).toHaveBeenCalled();
 
-            modal.props("onDiscard")();
+            modal.props("onDiscard")?.();
             expect(store.discardChanges).toHaveBeenCalled();
         });
     });
@@ -230,7 +233,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID, displayOnly: true });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
             expect(store.clearCurrentPage).toHaveBeenCalled();
         });
@@ -383,7 +386,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(store.$reset).not.toHaveBeenCalled();
         });
@@ -395,7 +398,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.error).toBe("Save failed");
         });
     });
@@ -407,7 +410,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const errorAlert = wrapper.find("galert-stub[variant='danger']");
+            const errorAlert = wrapper.find("g-alert-stub[variant='danger']");
             expect(errorAlert.exists()).toBe(true);
             expect(errorAlert.text()).toContain("Save failed");
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(true);

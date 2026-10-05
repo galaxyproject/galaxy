@@ -1,6 +1,7 @@
 import inspect
 import os
 import tempfile
+from collections import Counter
 
 import pytest
 from Cheetah.Template import Template
@@ -114,6 +115,45 @@ COMMAND_TODO = """
 COMMAND_DETECT_ERRORS_INTERPRETER = """
 <tool id="id" name="name">
     <command detect_errors="nonsense" interpreter="python"/>
+</tool>
+"""
+
+VERSION_COMMAND_MISSING_MODERN_PROFILE = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_LEGACY_PROFILE = """
+<tool id="id" name="name" profile="21.09">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_CONTAINER = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_NO_REQUIREMENTS = """
+<tool id="id" name="name" profile="26.2">
+    <command>echo hello</command>
+</tool>
+"""
+VERSION_COMMAND_PRESENT = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+    <version_command>bwa 2&gt;&amp;1 | grep Version</version_command>
 </tool>
 """
 
@@ -1328,7 +1368,10 @@ def test_command_multiple(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MULTIPLE)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["Invalid XML: Element 'command': This element is not expected."]
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1337,7 +1380,9 @@ def test_command_missing(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MISSING)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["No command tag found, must specify a command template to execute."]
-    assert not lint_ctx.info_messages
+    assert lint_ctx.info_messages == [
+        "No version_command found, that should be OK for a tool without package requirements."
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1346,7 +1391,10 @@ def test_command_todo(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_TODO)
     run_lint_module(lint_ctx, command, tool_source)
     assert not lint_ctx.error_messages
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert lint_ctx.warn_messages == ["Command template contains TODO text."]
     assert not lint_ctx.valid_messages
 
@@ -1360,9 +1408,66 @@ def test_command_detect_errors_interpreter(lint_ctx):
         in lint_ctx.error_messages
     )
     assert lint_ctx.warn_messages == ["Command uses deprecated 'interpreter' attribute."]
-    assert lint_ctx.info_messages == ["Tool contains a command with interpreter of type [python]."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command with interpreter of type [python].",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_version_command_missing_modern_profile(lint_ctx):
+    """A tool wrapping packaged software should report its version - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_MODERN_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_legacy_profile(lint_ctx):
+    """Older profiles get the same info message - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_LEGACY_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_container(lint_ctx):
+    """A container is external software worth a version too - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_CONTAINER)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+
+
+def test_version_command_missing_no_requirements(lint_ctx):
+    """Pure Galaxy tools legitimately have no version to report - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_NO_REQUIREMENTS)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, that should be OK for a tool without package requirements." in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_present(lint_ctx):
+    tool_source = get_xml_tool_source(VERSION_COMMAND_PRESENT)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
 
 
 def test_general_missing_tool_id_name_version(lint_ctx):
@@ -2871,26 +2976,172 @@ def test_skip_by_module(lint_ctx):
 
 
 def test_list_linters():
-    linter_names = Linter.list_listers()
-    # make sure to add/remove a test for new/removed linters if this number changes
-    # (157 = 149 tool linters + 8 repository data-table linters registered via list_linters)
-    assert len(linter_names) == 157
-    assert "Linter" not in linter_names
-    # make sure that linters from all modules are available
-    for prefix in [
-        "Citations",
-        "Command",
-        "CWL",
-        "ToolProfile",
-        "Help",
-        "Inputs",
-        "Outputs",
-        "StdIO",
-        "Tests",
+    linter_names = Linter.list_linters()
+    # Linter names are public (tool authors skip linters by name) and must be unique.
+    duplicates = [name for name, count in Counter(linter_names).items() if count > 1]
+    assert not duplicates
+    # Add new linters here, sorted, one per line, so concurrent linter PRs rarely conflict.
+    assert set(linter_names) == {
+        "BioToolsValid",
+        "CWLDescriptionMissing",
+        "CWLDockerGood",
+        "CWLDockerMissing",
+        "CWLHelpTODO",
+        "CWLInValid",
+        "CWLValid",
+        "CWLVersionGood",
+        "CWLVersionMissing",
+        "CWLVersionUnknown",
+        "CitationsFound",
+        "CitationsInvalid",
+        "CitationsMissing",
+        "CitationsNoText",
+        "CitationsNoValid",
+        "CommandEmpty",
+        "CommandInfo",
+        "CommandInterpreterDeprecated",
+        "CommandMissing",
+        "CommandTODO",
+        "ConditionalOptionMissing",
+        "ConditionalOptionMissingBoolean",
+        "ConditionalParamIncompatibleAttributes",
+        "ConditionalParamType",
+        "ConditionalParamTypeBool",
+        "ConditionalWhenMissing",
+        "ConflictingTableSchema",
+        "ConsumerTableDefined",
+        "ContainerImageShape",
+        "DatatypesCustomConf",
+        "DuplicateColumnNames",
+        "EDAMTermsValid",
+        "EmptyLocFile",
+        "HelpEmpty",
+        "HelpInvalidRST",
+        "HelpMissing",
+        "HelpPresent",
+        "HelpTODO",
+        "HelpValidRST",
+        "InputsBoolDistinctValues",
+        "InputsBoolProblematic",
+        "InputsDataFormat",
+        "InputsDataOptionsAttrib",
+        "InputsDataOptionsFilterAttribFiltersType",
+        "InputsDataOptionsFiltersRef",
+        "InputsDataOptionsFiltersType",
+        "InputsDataOptionsMultiple",
+        "InputsDatasourceTags",
+        "InputsMissing",
+        "InputsMissingDataSource",
+        "InputsName",
+        "InputsNameDuplicate",
+        "InputsNameDuplicateOutput",
+        "InputsNameEmpty",
+        "InputsNameRedundantArgument",
+        "InputsNameReserved",
+        "InputsNameValid",
+        "InputsNum",
+        "InputsOptionsFiltersAllowedAttributes",
+        "InputsOptionsFiltersCheckReferences",
+        "InputsOptionsFiltersRequiredAttributes",
+        "InputsOptionsRegexFilterExpression",
+        "InputsOptionsRemoveValueFilterRequiredAttributes",
+        "InputsSelectDynamicOptions",
+        "InputsSelectMandatoryCheckboxes",
+        "InputsSelectMultipleRadio",
+        "InputsSelectOptionDuplicateText",
+        "InputsSelectOptionDuplicateValue",
+        "InputsSelectOptionValueMissing",
+        "InputsSelectOptionalRadio",
+        "InputsSelectOptionsDef",
+        "InputsSelectOptionsDefConditional",
+        "InputsSelectOptionsDefinesOptions",
+        "InputsSelectOptionsDeprecatedAttr",
+        "InputsSelectOptionsFromDatasetAndDatatable",
+        "InputsSelectOptionsMetaFileKey",
+        "InputsSelectOptionsMultiple",
+        "InputsSelectSingleCheckboxes",
+        "InputsTypeChildCombination",
+        "LocRowShape",
+        "ManagerTableConfigured",
+        "MissingLocFixture",
+        "OutputRefValid",
+        "OutputsCollectionType",
+        "OutputsFilterExpression",
+        "OutputsFormat",
+        "OutputsFormatInput",
+        "OutputsFormatSourceIncomp",
+        "OutputsFormatSourceReference",
+        "OutputsLabelDuplicatedFilter",
+        "OutputsLabelDuplicatedNoFilter",
+        "OutputsMissing",
+        "OutputsNameDuplicated",
+        "OutputsNameInvalidCheetah",
+        "OutputsNumber",
+        "OutputsOutput",
+        "OutputsStructuredLikeReference",
+        "RequiredFilesExist",
+        "RequirementNameMissing",
+        "RequirementVersionMissing",
+        "RequirementVersionWhitespace",
+        "ResourceRequirementExpression",
+        "StdIOAbsence",
+        "StdIOAbsenceLegacy",
+        "StdIORegex",
+        "TestsAssertionValidation",
+        "TestsAssertsHasNQuant",
+        "TestsAssertsHasSizeOrValueQuant",
+        "TestsAssertsHasSizeQuant",
+        "TestsAssertsMultiple",
+        "TestsCaseValidation",
+        "TestsExpectNumOutputs",
+        "TestsExpectNumOutputsFailing",
+        "TestsHasExpectations",
+        "TestsMissing",
+        "TestsMissingDatasource",
+        "TestsMultipleSelectEmptyValue",
+        "TestsNoValid",
+        "TestsOutputCheckDiscovered",
+        "TestsOutputCollectionCheckDiscovered",
+        "TestsOutputCollectionCheckDiscoveredNested",
+        "TestsOutputCollectionCorresponding",
+        "TestsOutputCompareAttrib",
+        "TestsOutputCorresponding",
+        "TestsOutputDefined",
+        "TestsOutputFailing",
+        "TestsOutputName",
+        "TestsParamInInputs",
+        "TestsValid",
+        "ToolIDMissing",
+        "ToolIDValid",
+        "ToolIDWhitespace",
+        "ToolNameMissing",
+        "ToolNameValid",
+        "ToolNameWhitespace",
+        "ToolProfileInvalid",
+        "ToolProfileLegacy",
+        "ToolProfileValid",
+        "ToolVersionMissing",
+        "ToolVersionPEP404",
+        "ToolVersionValid",
+        "ToolVersionWhitespace",
+        "ValidDatatypes",
+        "ValidatorAttribIncompatible",
+        "ValidatorDatasetMetadataEqualValue",
+        "ValidatorDatasetMetadataEqualValueOrJson",
+        "ValidatorExpression",
+        "ValidatorExpressionFuture",
+        "ValidatorHasNoText",
+        "ValidatorHasText",
+        "ValidatorMetadataCheckSkip",
+        "ValidatorMetadataName",
+        "ValidatorMinMax",
+        "ValidatorParamIncompatible",
+        "ValidatorTableName",
+        "VersionCommandMissing",
+        "VersionCommandMissingNoRequirements",
         "XMLOrder",
         "XSD",
-    ]:
-        assert len([x for x in linter_names if x.startswith(prefix)])
+    }
 
 
 def test_linting_functional_tool_multi_select(lint_ctx):

@@ -23,7 +23,7 @@ function mountHeader(propsData: Record<string, unknown> = {}) {
 function pressedSortIds(wrapper: ReturnType<typeof mountHeader>) {
     return wrapper
         .findAll("[id^='sortby-']")
-        .wrappers.filter((button) => button.classes().includes("g-pressed"))
+        .filter((button) => button.classes().includes("g-pressed"))
         .map((button) => button.attributes("id"));
 }
 

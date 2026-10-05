@@ -1,22 +1,26 @@
 <template>
     <VueMultiselect
+        :id="selectId"
         class="select-basic"
+        name="select-basic"
         :allow-empty="multiple"
         :close-on-select="!multiple"
         :options="options"
         :multiple="multiple"
         :placeholder="placeholder || 'Select an option'"
-        :value="selectedValue"
+        :model-value="selectedValue"
         deselect-label=""
         label="text"
         select-label=""
         track-by="id"
-        @input="onInput" />
+        @update:model-value="onInput" />
 </template>
 
 <script setup>
 import { computed } from "vue";
 import VueMultiselect from "vue-multiselect";
+
+import { uid } from "@/utils/utils";
 
 const props = defineProps({
     value: { required: false },
@@ -26,6 +30,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["input"]);
+
+// The rule builder shows several of these at once, so each needs its own id.
+const selectId = `select-basic-${uid()}`;
 
 const selectedValue = computed(() => {
     if (!props.value) {

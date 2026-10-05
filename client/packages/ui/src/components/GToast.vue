@@ -16,8 +16,7 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, getCurrentInstance } from "vue";
 
 import { type ToastProps, useToast } from "../composables/toast";
 import { activeToastHost } from "../composables/toastHost";
@@ -25,7 +24,14 @@ import { activeToastHost } from "../composables/toastHost";
 import GButton from "./GButton.vue";
 
 const { toasts, removeToast } = useToast();
-const router = useRouter();
+
+// vue-router puts useRouter behind a different entry point in each major
+// version it supports ("vue-router/composables" on 3.x, "vue-router" on 4.x),
+// so importing it directly would pin this component to one of them. $router is
+// installed as a global property by both, and reaching it through the instance
+// keeps GToast compiling for every consumer in the peer range.
+const instance = getCurrentInstance();
+const router = () => (instance?.proxy as { $router?: { push: (to: string) => void } } | undefined)?.$router;
 
 const props = defineProps<{
     host?: string;
@@ -40,7 +46,7 @@ const variantIcon: Record<ToastProps["variant"], IconDefinition> = {
 
 function onClick(toast: ToastProps) {
     if (toast.to) {
-        router.push(toast.to);
+        router()?.push(toast.to);
     } else if (toast.href) {
         window.location.href = toast.href;
     }

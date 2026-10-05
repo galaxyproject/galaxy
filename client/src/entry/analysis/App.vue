@@ -58,10 +58,9 @@
 <script>
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
-import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
 import { useHasStagedUploads } from "@/composables/upload/useUploadStaging";
@@ -97,9 +96,6 @@ export default {
         BroadcastsOverlay,
         TourRunner,
     },
-    directives: {
-        short,
-    },
     setup() {
         const tourStore = useTourStore();
         const { currentTour } = storeToRefs(tourStore);
@@ -108,7 +104,8 @@ export default {
         const { currentTheme } = storeToRefs(userStore);
 
         const confirmDialogRef = ref(null);
-        setConfirmDialogComponentRef(confirmDialogRef);
+        // Vue 3 doesn't unwrap a ref stored in a ref, so pass the instance, not the ref.
+        watch(confirmDialogRef, (instance) => setConfirmDialogComponentRef(instance));
 
         const windowManagerStore = useWindowManagerStore();
         const hasStagedUploads = useHasStagedUploads();

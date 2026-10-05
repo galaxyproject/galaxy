@@ -122,7 +122,7 @@ watch(
     </GAlert>
     <div v-else-if="graphSteps && workflow" class="steps-container">
         <div class="px-1 pt-1 pb-2">
-            <DelayedInput placeholder="search steps" :delay="200" @change="(v) => (currentQuery = v)" />
+            <DelayedInput placeholder="search steps" :delay="200" @change="(v: string) => (currentQuery = v)" />
         </div>
 
         <div v-if="filteredWorkflowSteps.length" class="steps-content">

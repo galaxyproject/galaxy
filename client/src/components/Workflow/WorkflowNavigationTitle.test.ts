@@ -6,6 +6,7 @@ import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AnyHistory } from "@/api";
+import type AsyncButton from "@/components/Common/AsyncButton.vue";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -43,7 +44,7 @@ const SELECTORS = {
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
     ROUTE_TO_RERUN_BUTTON: "[data-button-rerun][title='Rerun Workflow with same inputs']",
-    ALERT_MESSAGE: "galert-stub",
+    ALERT_MESSAGE: "g-alert-stub",
 };
 
 // Mock the copyWorkflow function for importing a workflow
@@ -113,11 +114,17 @@ async function mountWorkflowNavigationTitle(
     }
 
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
-        propsData: {
+        props: {
             invocation,
             workflowId,
         },
-        localVue,
+        global: {
+            ...localVue,
+            // Render for real so the heading and actions passed into its named
+            // slots (title/actions) actually show up; everything it renders
+            // (GButton, AsyncButton, ...) stays shallow-stubbed.
+            stubs: { ...localVue.stubs, NavigationTitle: false },
+        },
         pinia,
     });
 
@@ -192,10 +199,10 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show a confirmation dialog when the import is successful", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent<typeof AsyncButton>(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        await importButton.props("action")();
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);
@@ -206,10 +213,10 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show an error dialog when the import fails", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation", false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+        const importButton = actionsGroup.findComponent<typeof AsyncButton>(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
         // Cannot `.trigger("click")` on `AsyncButton` because it is a stubbed custom component
-        await importButton.props().action();
+        await importButton.props("action")();
         await flushPromises();
 
         const alert = wrapper.find(SELECTORS.ALERT_MESSAGE);

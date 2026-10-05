@@ -2,7 +2,7 @@ import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,7 +19,7 @@ vi.mock("@/api/notifications", () => ({
 
 const localVue = getLocalVue(true);
 
-async function mountForm(): Promise<Wrapper<Vue>> {
+async function mountForm(): Promise<VueWrapper> {
     suppressExpectedErrorMessages(["Invalid prop: type check failed for prop"]);
 
     const pinia = createTestingPinia({ createSpy: vi.fn });
@@ -34,7 +34,7 @@ async function mountForm(): Promise<Wrapper<Vue>> {
 }
 
 /** Fill the two required fields: tool_name and description. */
-async function fillRequiredFields(wrapper: Wrapper<Vue>, overrides: Record<string, string> = {}) {
+async function fillRequiredFields(wrapper: VueWrapper, overrides: Record<string, string> = {}) {
     await wrapper.find("#tool-installation-request-name").setValue(overrides["tool_name"] ?? "FastQC");
     await wrapper
         .find("#tool-installation-request-description")

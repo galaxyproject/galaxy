@@ -1,5 +1,5 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +10,8 @@ import {
     type WorkflowExtractionSummary,
 } from "@/api/histories";
 import { Toast } from "@/composables/toast";
+
+import { type InputStep, isInputStep } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
@@ -28,9 +30,18 @@ vi.mock("@/api/histories", () => ({
 
 vi.mock("@/composables/toast");
 
-vi.mock("vue-router/composables", () => ({
-    useRouter: () => ({ push: vi.fn() }),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        // BreadcrumbHeading (rendered inside GHeading) calls router.resolve(path).path,
+        // so the stub needs a resolve() alongside the push() spy.
+        useRouter: () => ({
+            push: vi.fn(),
+            resolve: (to: unknown) => ({ path: typeof to === "string" ? to : ((to as { path?: string })?.path ?? "") }),
+        }),
+    };
+});
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => ({
@@ -123,6 +134,15 @@ const TOOL_JOB_OUT_B: WorkflowExtractionJob = {
     outputs: [{ ...TOOL_OUTPUT, id: "out-b", name: "shared" }],
 };
 
+/** A card's job, narrowed to an input step (only input steps carry `newName`). */
+function inputJobOf(card: VueWrapper<InstanceType<typeof WorkflowExtractionCard>>): InputStep {
+    const job = card.props("job");
+    if (!isInputStep(job)) {
+        throw new Error(`Expected an input step card, got a ${job.step_type} step.`);
+    }
+    return job;
+}
+
 const SUMMARY_WITH_JOBS = summary([TOOL_JOB, INPUT_JOB]);
 const SUMMARY_WITH_DUPLICATE_INPUT_NAMES = summary([INPUT_JOB, INPUT_JOB_DUP]);
 const SUMMARY_WITH_DUPLICATE_OUTPUT_NAMES = summary([TOOL_JOB_OUT_A, TOOL_JOB_OUT_B]);
@@ -210,8 +230,8 @@ describe("WorkflowExtractionForm", () => {
 
         it("auto-populates newName for input jobs from output name", async () => {
             const wrapper = await mountForm();
-            const inputCard = wrapper.findAllComponents(WorkflowExtractionCard).at(1);
-            expect(inputCard.props("job").newName).toBe("myfile.txt");
+            const inputCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 1);
+            expect(inputJobOf(inputCard).newName).toBe("myfile.txt");
         });
 
         it("passes warnings to WorkflowExtractionMessages", async () => {
@@ -243,7 +263,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "My Workflow");
             // uncheck all cards via select events
-            wrapper.findAllComponents(WorkflowExtractionCard).wrappers.forEach((card) => {
+            wrapper.findAllComponents(WorkflowExtractionCard).forEach((card) => {
                 card.vm.$emit("select");
             });
             await wrapper.vm.$nextTick();
@@ -258,14 +278,14 @@ describe("WorkflowExtractionForm", () => {
 
         it("opens RenameModal when rename is emitted from an input card", async () => {
             const wrapper = await mountForm();
-            wrapper.findAllComponents(WorkflowExtractionCard).at(1).vm.$emit("rename");
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
             await flushPromises();
             expect(wrapper.findComponent(RenameModal).exists()).toBe(true);
         });
 
         it("closes RenameModal when the modal emits close", async () => {
             const wrapper = await mountForm();
-            wrapper.findAllComponents(WorkflowExtractionCard).at(1).vm.$emit("rename");
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
             await flushPromises();
             wrapper.findComponent(RenameModal).vm.$emit("close");
             await flushPromises();
@@ -301,7 +321,7 @@ describe("WorkflowExtractionForm", () => {
         it("submits output_labels only after an output is starred", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
@@ -314,7 +334,7 @@ describe("WorkflowExtractionForm", () => {
         it("does not submit starred outputs from unchecked tool rows", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("select");
             await wrapper.vm.$nextTick();
@@ -328,7 +348,7 @@ describe("WorkflowExtractionForm", () => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT]));
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
             const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
@@ -338,7 +358,7 @@ describe("WorkflowExtractionForm", () => {
         it("does not submit a starred output with an empty label", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("rename-output", 0);
             await flushPromises();
@@ -445,7 +465,7 @@ describe("WorkflowExtractionForm", () => {
         }
 
         function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
-            return wrapper.findAllComponents(WorkflowExtractionCard).at(index);
+            return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
         }
 
         it("de-duplicates colliding input names so the UI reflects what will be created", async () => {
@@ -453,7 +473,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
 
-            const names = [card(wrapper, 0).props("job").newName, card(wrapper, 1).props("job").newName];
+            const names = [inputJobOf(card(wrapper, 0)).newName, inputJobOf(card(wrapper, 1)).newName];
             expect(new Set(names)).toEqual(new Set(["myfile.txt", "myfile.txt (2)"]));
             // Names are unique, so the backend won't reject — submit is enabled.
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
@@ -470,7 +490,7 @@ describe("WorkflowExtractionForm", () => {
             (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)("myfile.txt");
             await wrapper.vm.$nextTick();
 
-            expect(card(wrapper, 1).props("job").newName).toBe("myfile.txt (2)");
+            expect(inputJobOf(card(wrapper, 1)).newName).toBe("myfile.txt (2)");
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
         });
 

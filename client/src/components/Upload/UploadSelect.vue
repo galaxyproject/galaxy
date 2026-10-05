@@ -58,6 +58,7 @@ const currentValue = computed({
     <Multiselect
         :id="id"
         v-model="currentValue"
+        :name="id"
         :allow-empty="false"
         class="upload-settings-select rounded"
         deselect-label=""
@@ -71,10 +72,14 @@ const currentValue = computed({
         selected-label=""
         track-by="id"
         @search-change="onSearchChange">
-        <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
-        <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
-            {{ option.text }}
-        </span>
+        <template v-slot:noResult>
+            <span v-localize>No matching {{ what }}s found.</span>
+        </template>
+        <template v-slot:singleLabel="{ option }">
+            <span :class="{ 'selection-warning': warn }">
+                {{ option.text }}
+            </span>
+        </template>
     </Multiselect>
 </template>
 

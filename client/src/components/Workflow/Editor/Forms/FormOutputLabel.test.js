@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { createPinia, PiniaVuePlugin, setActivePinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -8,7 +8,6 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import FormOutputLabel from "./FormOutputLabel.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 describe("FormOutputLabel", () => {
     let wrapper;
@@ -24,24 +23,22 @@ describe("FormOutputLabel", () => {
         const pinia = createPinia();
         setActivePinia(pinia);
         wrapper = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "output-name",
                 step: stepOne,
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia,
-            provide: { workflowId: "mock-workflow" },
         });
 
         const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "other-name",
                 step: stepTwo,
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia,
-            provide: { workflowId: "mock-workflow" },
         });
         stepStore = useWorkflowStepStore("mock-workflow");
         stepStore.addStep(stepOne);

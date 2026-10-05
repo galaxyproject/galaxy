@@ -1,4 +1,4 @@
-import Vue, { h, reactive } from "vue";
+import { defineComponent, h, reactive } from "vue";
 
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type {
@@ -8,17 +8,13 @@ import type {
     UploadModalResolvers,
     UploadModalResult,
 } from "@/components/Panels/Upload/uploadModalTypes";
+import { mountVueComponent } from "@/utils/mountVueComponent";
 
 import UploadMethodModal from "@/components/Panels/Upload/UploadMethodModal.vue";
 
 interface ModalState {
     modalVisible: boolean;
     modalConfig: UploadModalConfig;
-}
-
-interface UploadMethodModalHostInstance extends Vue {
-    state: ModalState;
-    render: () => ReturnType<typeof h>;
 }
 
 const DEFAULT_ALLOWED_METHODS: DatasetUploadMethod[] = [
@@ -32,7 +28,7 @@ const DEFAULT_ALLOWED_METHODS: DatasetUploadMethod[] = [
 export { DEFAULT_ALLOWED_METHODS };
 
 let hostElement: HTMLDivElement | null = null;
-let modalVm: UploadMethodModalHostInstance | null = null;
+let modalState: ModalState | null = null;
 let pendingResolvers: UploadModalResolvers | null = null;
 
 function toDataOptions(datasets: UploadedDataset[]): DataOption[] {
@@ -74,9 +70,9 @@ function resolveAndCleanup(resolvers: UploadModalResolvers | null, result: Uploa
     }
 }
 
-function ensureMounted(): UploadMethodModalHostInstance {
-    if (modalVm) {
-        return modalVm;
+function ensureMounted(): ModalState {
+    if (modalState) {
+        return modalState;
     }
 
     hostElement = document.createElement("div");
@@ -102,52 +98,42 @@ function ensureMounted(): UploadMethodModalHostInstance {
         resolveAndCleanup(resolvers, buildResult([], true));
     };
 
-    const render = () =>
-        h(UploadMethodModal, {
-            props: {
-                show: state.modalVisible,
-                config: state.modalConfig,
-                hideTips: state.modalConfig.hideTips ?? false,
-            },
-            on: {
-                "update:show": (show: boolean) => {
-                    state.modalVisible = show;
-                },
-                uploaded: finishUploaded,
-                cancelled: finishCancelled,
-            },
-        });
-
-    const instance = new Vue({
+    const UploadMethodModalHost = defineComponent({
         name: "UploadMethodModalHost",
         setup() {
-            return {
-                state,
-                finishUploaded,
-                finishCancelled,
-                render,
-            };
+            return () =>
+                h(UploadMethodModal, {
+                    show: state.modalVisible,
+                    config: state.modalConfig,
+                    hideTips: state.modalConfig.hideTips ?? false,
+                    "onUpdate:show": (show: boolean) => {
+                        state.modalVisible = show;
+                    },
+                    onUploaded: finishUploaded,
+                    onCancelled: finishCancelled,
+                });
         },
-        render(): ReturnType<typeof h> {
-            return this.render();
-        },
-    }).$mount(hostElement);
+    });
 
-    modalVm = instance as UploadMethodModalHostInstance;
-    return modalVm;
+    // A separate app rather than a child of the main one, so it goes through the
+    // shared helper to get the same pinia store and plugins.
+    mountVueComponent(UploadMethodModalHost)({}, hostElement);
+
+    modalState = state;
+    return modalState;
 }
 
 export function useUploadMethodModal() {
     async function openUploadModal(config?: UploadModalConfig): Promise<UploadModalResult> {
-        const vm = ensureMounted();
+        const state = ensureMounted();
 
         if (pendingResolvers) {
             return Promise.reject(new Error("An upload modal is already open."));
         }
 
         const defaultedConfig = applyConfigDefaults(config);
-        vm.state.modalConfig = defaultedConfig;
-        vm.state.modalVisible = true;
+        state.modalConfig = defaultedConfig;
+        state.modalVisible = true;
 
         return new Promise<UploadModalResult>((resolve, reject) => {
             pendingResolvers = { resolve, reject };

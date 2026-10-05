@@ -68,7 +68,7 @@
         </GDropdown>
 
         <GModal
-            :show.sync="showChangeDbKeyModal"
+            v-model:show="showChangeDbKeyModal"
             title="Change Database/Build?"
             confirm
             size="small"
@@ -86,7 +86,7 @@
             </DbKeyProvider>
         </GModal>
         <GModal
-            :show.sync="showChangeDatatypeModal"
+            v-model:show="showChangeDatatypeModal"
             title="Change data type?"
             confirm
             size="small"
@@ -105,7 +105,7 @@
             </DatatypesProvider>
         </GModal>
         <GModal
-            :show.sync="showAddTagsModal"
+            v-model:show="showAddTagsModal"
             title="Add tags?"
             confirm
             size="small"
@@ -113,11 +113,15 @@
             @ok="addTagsToSelected"
             @cancel="selectedTags = []">
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
-            <StatelessTags :key="showAddTagsModal" v-model="selectedTags" class="tags" />
+            <StatelessTags
+                :key="showAddTagsModal"
+                :value="selectedTags"
+                class="tags"
+                @input="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <GModal
-            :show.sync="showRemoveTagsModal"
+            v-model:show="showRemoveTagsModal"
             title="Remove tags?"
             confirm
             size="small"
@@ -125,11 +129,15 @@
             @ok="removeTagsFromSelected"
             @cancel="selectedTags = []">
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
-            <StatelessTags :key="showRemoveTagsModal" v-model="selectedTags" class="tags" />
+            <StatelessTags
+                :key="showRemoveTagsModal"
+                :value="selectedTags"
+                class="tags"
+                @input="(tags) => (selectedTags = tags)" />
             <GTip :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <StorageOperationWizardModal
-            :show.sync="showStorageOperationModal"
+            v-model:show="showStorageOperationModal"
             :history="history"
             :filter-text="filterText"
             :content-selection="contentSelection"
@@ -138,12 +146,12 @@
             @completed="onStorageOperationCompleted" />
         <CollectionCreatorIndex
             v-if="collectionModalType"
+            v-model:show="collectionModalShow"
             :history-id="history.id"
             :collection-type="collectionModalType"
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
             hide-on-create
             default-hide-source-items
             @created-collection="createdCollection" />
@@ -166,7 +174,6 @@ import {
     unhideSelectedContent,
 } from "@/components/History/model/crud";
 import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
-import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
@@ -182,6 +189,7 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {

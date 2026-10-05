@@ -194,12 +194,16 @@ function onRename(id: string, name: string) {
             :highlighted="props.rangeSelectAnchor?.id === history.id"
             class="history-card-in-list"
             @select="isMyHistory(history) && emit('select', history)"
-            @tagClick="(...args) => emit('tagClick', ...args)"
-            @refreshList="(...args) => emit('refreshList', ...args)"
-            @updateFilter="(...args) => emit('updateFilter', ...args)"
+            @tagClick="(tag: string) => emit('tagClick', tag)"
+            @refreshList="(overlayLoading?: boolean, silent?: boolean) => emit('refreshList', overlayLoading, silent)"
+            @updateFilter="(key: string, value: any) => emit('updateFilter', key, value)"
             @rename="onRename"
-            @on-key-down="(...args) => emit('on-key-down', ...args)"
-            @on-history-card-click="(...args) => emit('on-history-card-click', ...args)" />
+            @on-key-down="
+                (clickedHistory: AnyHistoryEntry, event: KeyboardEvent) => emit('on-key-down', clickedHistory, event)
+            "
+            @on-history-card-click="
+                (clickedHistory: AnyHistoryEntry, event: Event) => emit('on-history-card-click', clickedHistory, event)
+            " />
 
         <RenameModal
             v-if="showRename"

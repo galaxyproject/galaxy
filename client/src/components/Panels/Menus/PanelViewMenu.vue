@@ -141,7 +141,7 @@ async function updatePanelView(panel: Panel) {
                     <FontAwesomeIcon
                         v-if="showPanelIcon && !isFavoritesView"
                         class="mr-1 mt-1"
-                        :icon="panelIcon"
+                        :icon="panelIcon!"
                         data-description="panel view header icon" />
                     <Heading id="toolbox-heading" :class="headingClass" h2 inline size="sm">
                         <span v-if="loading && panelName">

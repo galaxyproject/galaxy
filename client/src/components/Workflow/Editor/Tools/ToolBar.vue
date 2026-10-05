@@ -16,13 +16,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { BoxSelect, Workflow } from "lucide-vue";
+import { BoxSelect, Workflow } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
 import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type { WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
@@ -161,14 +162,14 @@ function autoLayout() {
                         <FontAwesomeIcon :icon="faMousePointer" size="lg" />
                     </GButton>
                     <GButton
+                        v-model:pressed="snapActive"
                         tooltip
                         tooltip-placement="right"
                         outline
                         color="blue"
                         class="button"
                         data-tool="toggle_snap"
-                        :title="snapButtonTitle"
-                        :pressed.sync="snapActive">
+                        :title="snapButtonTitle">
                         <FontAwesomeIcon :icon="faMagnet" size="lg" />
                     </GButton>
                 </GButtonGroup>
@@ -319,7 +320,7 @@ function autoLayout() {
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option buttons">
                 <GButtonGroup>
                     <GButton
-                        :pressed.sync="commentOptions.bold"
+                        v-model:pressed="commentOptions.bold"
                         outline
                         color="blue"
                         class="button font-weight-bold"
@@ -327,7 +328,7 @@ function autoLayout() {
                         Bold
                     </GButton>
                     <GButton
-                        :pressed.sync="commentOptions.italic"
+                        v-model:pressed="commentOptions.italic"
                         outline
                         color="blue"
                         class="button font-italic"
@@ -343,7 +344,7 @@ function autoLayout() {
                 <ColorSelector
                     :color="commentOptions.color"
                     class="color-selector"
-                    @set-color="(color) => (commentOptions.color = color)" />
+                    @set-color="(color: WorkflowCommentColor) => (commentOptions.color = color)" />
             </div>
 
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option small">

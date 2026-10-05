@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import FormData from "./Elements/FormData/FormData.vue";
 import FormDisplay from "./FormDisplay.vue";
@@ -13,7 +14,7 @@ vi.mock("./Elements/FormData/FormData.vue", () => ({
     default: {
         name: "FormData",
         props: ["name"],
-        render: (h) => h("div"),
+        render: () => h("div"),
     },
 }));
 
@@ -104,7 +105,7 @@ describe("FormDisplay", () => {
         };
         wrapper = mount(FormDisplay, {
             propsData,
-            localVue,
+            global: localVue,
             stubs: {},
         });
     });
@@ -138,10 +139,10 @@ describe("FormDisplay", () => {
 
     it("conditional switch", async () => {
         const conditionalBool = wrapper.find("[type='checkbox']");
-        await conditionalBool.setChecked(false);
+        await conditionalBool.setValue(false);
         const conditionalInputUnchecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputUnchecked.length).toEqual(0);
-        await conditionalBool.setChecked(true);
+        await conditionalBool.setValue(true);
         const conditionalInputChecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputChecked.length).toEqual(1);
         await wrapper.setProps({
@@ -172,7 +173,7 @@ describe("FormDisplay", () => {
         "relays pagination and search events from repeated %s inputs",
         async (type) => {
             const input = { type, name: "input2", options: {} };
-            wrapper.destroy();
+            wrapper.unmount();
             wrapper = mount(FormDisplay, {
                 localVue,
                 propsData: {

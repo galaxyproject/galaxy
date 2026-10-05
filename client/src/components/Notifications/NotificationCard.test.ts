@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, RouterLinkStub, type Wrapper } from "@vue/test-utils";
+import { mount, RouterLinkStub, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
@@ -18,13 +18,13 @@ import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 
 const localVue = getLocalVue(true);
 
-async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
+async function mountComponent(component: object, propsData: object = {}): Promise<VueWrapper> {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(component, {
-        localVue,
-        propsData,
+        global: localVue,
+        props: propsData,
         pinia,
         // No router is installed in this harness; the stub exposes the `to` prop so links can be asserted.
         stubs: { RouterLink: RouterLinkStub },
@@ -228,13 +228,13 @@ describe("Notifications categories", () => {
         // Each tool's list item must contain its own details and not the other tool's.
         const toolItems = wrapper.findAll("ul:not(.list-unstyled) > li");
         expect(toolItems).toHaveLength(2);
-        expect(toolItems.at(0).text()).toContain("bwa");
-        expect(toolItems.at(0).text()).toContain("Aligner for short reads");
-        expect(toolItems.at(0).text()).not.toContain("SAM/BAM utilities");
-        expect(toolItems.at(1).text()).toContain("samtools");
-        expect(toolItems.at(1).text()).toContain("SAM/BAM utilities");
-        expect(toolItems.at(1).text()).toContain("1.13");
-        expect(toolItems.at(1).text()).not.toContain("Aligner for short reads");
+        expect(toolItems.at(0)!.text()).toContain("bwa");
+        expect(toolItems.at(0)!.text()).toContain("Aligner for short reads");
+        expect(toolItems.at(0)!.text()).not.toContain("SAM/BAM utilities");
+        expect(toolItems.at(1)!.text()).toContain("samtools");
+        expect(toolItems.at(1)!.text()).toContain("SAM/BAM utilities");
+        expect(toolItems.at(1)!.text()).toContain("1.13");
+        expect(toolItems.at(1)!.text()).not.toContain("Aligner for short reads");
     });
 
     it("tool_installation_request notification links the workflow id to its run page", async () => {

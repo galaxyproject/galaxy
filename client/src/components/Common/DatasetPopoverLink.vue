@@ -43,8 +43,8 @@ async function ensureDatasetDetails() {
             :id="targetId"
             class="text-monospace"
             :to="`/datasets/${datasetId}/details`"
-            @mouseenter.native="ensureDatasetDetails"
-            @focus.native="ensureDatasetDetails">
+            @mouseenter="ensureDatasetDetails"
+            @focus="ensureDatasetDetails">
             {{ datasetId }}
         </router-link>
 

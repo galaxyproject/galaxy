@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 import { MESSAGES } from "@/components/ObjectStore/badgeMessages";
@@ -14,14 +13,14 @@ const TEST_MESSAGE = "This is a test message for the badge.";
 
 async function mountBadge(badge: ObjectStoreBadgeType) {
     const wrapper = mount(ObjectStoreBadge as object, {
-        propsData: { badge },
-        localVue,
+        props: { badge },
+        global: localVue,
     });
 
     return wrapper;
 }
 
-async function getTooltip(wrapper: Wrapper<Vue>) {
+async function getTooltip(wrapper: VueWrapper) {
     const badge = wrapper.find(".object-store-badge-wrapper");
 
     return badge.attributes("data-mock-directive");
