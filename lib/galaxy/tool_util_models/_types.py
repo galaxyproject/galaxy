@@ -67,7 +67,8 @@ def _strip_annotation(field):
 def expand_annotation(field: type, new_annotations: list[Any]) -> type:
     is_annotation = get_origin(field) is Annotated
     if is_annotation:
-        args = get_args(field)  # noqa: F841
-        return Annotated[(args[0], *args[1:], *new_annotations)]  # type: ignore[return-value]
+        args = get_args(field)
+        params = (args[0], *args[1:], *new_annotations)
     else:
-        return Annotated[(field, *new_annotations)]  # type: ignore[return-value]
+        params = (field, *new_annotations)
+    return Annotated[params]  # type: ignore[return-value]
