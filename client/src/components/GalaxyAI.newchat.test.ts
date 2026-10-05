@@ -142,7 +142,7 @@ describe("GalaxyAI", () => {
 
         expect(wrapper.find("[data-description='learning mode toggle']").exists()).toBe(false);
         expect(mockGet).not.toHaveBeenCalledWith("/api/chat/tutor/state");
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it.each([null, { contextType: "notebook", pageId: "page-1", historyId: "hist-1" }] as const)(
@@ -167,7 +167,7 @@ describe("GalaxyAI", () => {
                     body: expect.objectContaining({ context: context ? JSON.stringify(context) : null }),
                 }),
             );
-            wrapper.destroy();
+            wrapper.unmount();
         },
     );
 
