@@ -1,5 +1,5 @@
 import { createApp } from "vue"
-import { Quasar, Cookies } from "quasar"
+import { Quasar } from "quasar"
 import App from "./App.vue"
 // Quasar's own chrome (select arrows, table pagination and sort) draws SVG FontAwesome
 // icons from this set, so no icon webfont ships with the app
@@ -18,8 +18,8 @@ import "@fontsource/atkinson-hyperlegible/700-italic.css"
 import router from "@/router"
 import { createPinia } from "pinia"
 
-const quasarPlugins = { Cookies }
-const quasarConfig = { plugins: quasarPlugins, iconSet }
+// Quasar now only provides q-select and the markup inside it (RevisionSelect, SelectUser, OverviewTab)
+const quasarConfig = { iconSet }
 const app = createApp(App).use(createPinia()).use(router).use(Quasar, quasarConfig)
 // galaxy-ui's GTable decorates a few controls with the Galaxy client's v-g-tooltip; here they keep
 // their native title, and registering a no-op stops Vue warning about the directive on every render

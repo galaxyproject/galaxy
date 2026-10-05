@@ -2,9 +2,8 @@
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons"
-import { copyAndNotify, notify } from "@/util"
+import { copyAndNotify, downloadTextFile, notify } from "@/util"
 
-import { exportFile } from "quasar"
 import PreformattedContent from "@/components/PreformattedContent.vue"
 
 interface ConfigFileContentsProps {
@@ -17,9 +16,10 @@ async function copyContents() {
     copyAndNotify(props.contents, `${props.what} copied to your clipboard`)
 }
 
-async function downloadContents() {
-    const status = exportFile(props.name, props.contents)
-    if (!status) {
+function downloadContents() {
+    try {
+        downloadTextFile(props.name, props.contents)
+    } catch (e) {
         notify("Your browser does not allow this operation")
     }
 }

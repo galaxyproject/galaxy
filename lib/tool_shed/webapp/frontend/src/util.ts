@@ -1,10 +1,20 @@
 import { useToast, type ToastVariant } from "@galaxyproject/galaxy-ui"
-import { copyToClipboard, Cookies } from "quasar"
 import { type LocationQueryValue } from "vue-router"
 import { type ApiMessageException } from "./schema/types"
 
 export function getCookie(name: string): string | null {
-    return Cookies.get(name)
+    const prefix = `${encodeURIComponent(name)}=`
+    const cookie = document.cookie.split("; ").find((part) => part.startsWith(prefix))
+    if (cookie === undefined) {
+        return null
+    }
+    const value = cookie.slice(prefix.length)
+    try {
+        return decodeURIComponent(value)
+    } catch {
+        // A value that isn't valid percent-encoding is still the cookie's value
+        return value
+    }
 }
 
 export function ensureCookie(name: string): string {
@@ -29,9 +39,47 @@ export function notify(notification: string, variant: ToastVariant = "info") {
     addToast(notification, { variant, duration: variant === "danger" ? ERROR_NOTIFY_DURATION : NOTIFY_DURATION })
 }
 
+async function writeToClipboard(value: string) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value)
+        return
+    }
+    // The Clipboard API needs a secure context; plain-http deployments fall back to the old copy command
+    // Focused and editable, as older and mobile Safari only copy from an active editable field
+    const textarea = document.createElement("textarea")
+    textarea.value = value
+    textarea.contentEditable = "true"
+    textarea.style.position = "fixed"
+    textarea.style.opacity = "0"
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const copied = document.execCommand("copy")
+    textarea.remove()
+    if (!copied) {
+        throw new Error("Copy command was refused")
+    }
+}
+
 export async function copyAndNotify(value: string, notification: string) {
-    await copyToClipboard(value)
-    notify(notification)
+    try {
+        await writeToClipboard(value)
+        notify(notification)
+    } catch (e) {
+        notify("Your browser did not allow copying to the clipboard.", "danger")
+    }
+}
+
+export function downloadTextFile(fileName: string, contents: string) {
+    const url = URL.createObjectURL(new Blob([contents], { type: "text/plain" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    // Safari can still be reading the blob after click() returns, so let it go later
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
 }
 
 export function errorMessageAsString(
