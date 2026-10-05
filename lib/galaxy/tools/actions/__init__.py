@@ -529,6 +529,7 @@ class DefaultToolAction(ToolAction):
             all_permissions,
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         assert history  # tell type system we've set history and it is no longer optional
+        app.dataset_protection.check_job_inputs(trans.user, tool, incoming)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
