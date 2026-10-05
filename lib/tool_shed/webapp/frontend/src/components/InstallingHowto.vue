@@ -20,7 +20,7 @@ const toolsYaml = computed(
 </script>
 
 <template>
-    <h3 class="repository-select-label">Installing</h3>
+    <h2 class="repository-select-label">Installing</h2>
     This repository can be installed by Galaxy admins by searching for it in the
     <code>Admin -> Tool Management -> Install and Uninstall</code> and choosing to install it. It can also be installed
     using the Galaxy API via

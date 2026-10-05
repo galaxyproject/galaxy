@@ -10,7 +10,7 @@ const { classes, size } = useCommonProps(props)
 <template>
     <FontAwesomeIcon :icon="faUpload" class="help-icon" :style="{ fontSize: size }" />
     <div :class="classes">
-        <h3 class="help-heading">Publish</h3>
+        <h2 class="help-heading">Publish</h2>
         <div>
             There best, most updated resource for information on publishing tools to the tool shed is the tutorial
             <a href="https://planemo.readthedocs.io/en/latest/publishing.html">Publishing to the Tool Shed</a>. This

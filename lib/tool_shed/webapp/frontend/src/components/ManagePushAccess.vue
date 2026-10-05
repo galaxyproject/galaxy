@@ -25,7 +25,7 @@ function removeUserAccess(username: string) {
 </script>
 <template>
     <div class="push-access" v-if="repository && repositoryPermissions">
-        <h3 class="push-access-heading">Who can push to this repository?</h3>
+        <h2 class="push-access-heading">Who can push to this repository?</h2>
         <ul class="push-access-list">
             <li class="push-access-owner">{{ repository.owner }} (owner)</li>
             <li class="push-access-user" v-for="username in repositoryPermissions.allow_push" :key="username">

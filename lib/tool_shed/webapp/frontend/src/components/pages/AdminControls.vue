@@ -58,7 +58,7 @@ async function onResetPassword() {
             {{ searchResults }}
         </div>
         <hr class="reset-password-divider" />
-        <h6 class="reset-password-heading">Reset a user's password</h6>
+        <h2 class="reset-password-heading">Reset a user's password</h2>
         <GForm class="reset-password-form" style="max-width: 30rem" action="#" @submit.prevent="onResetPassword">
             <select-user
                 label="Select user"
@@ -98,6 +98,7 @@ async function onResetPassword() {
 .reset-password-heading {
     margin-top: var(--spacing-4);
     margin-bottom: var(--spacing-4);
+    font-size: 1.25rem;
 }
 
 .reset-password-form {

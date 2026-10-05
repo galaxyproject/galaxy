@@ -9,7 +9,7 @@ const { classes, size } = useCommonProps(props)
 <template>
     <FontAwesomeIcon :icon="faQuoteLeft" class="help-icon" :style="{ fontSize: size }" />
     <div :class="classes">
-        <h3 class="help-heading">Cite</h3>
+        <h2 class="help-heading">Cite</h2>
         <div>
             Information on citing the tool shed can be found on the Galaxy Hub
             <a href="https://galaxyproject.org/citing-galaxy/#toolshed">here</a>.

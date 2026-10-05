@@ -27,6 +27,14 @@ export default defineComponent({
 
 <style lang="sass">
 // Skip link - visually hidden until focused
+// Quasar's typography still loads (for q-select) and gives bare h1-h6 display-sized line heights
+// and letter spacing; components size their own headings, so take the metrics back to normal.
+// Prefixed with body to outrank Quasar's element rules, which load after this file.
+body
+  h1, h2, h3, h4, h5, h6
+    line-height: 1.25
+    letter-spacing: normal
+
 // The masthead stays put while the page scrolls under it, as Quasar's fixed q-header did
 .shed-header
   position: sticky

@@ -11,7 +11,7 @@ const commonProps = { hAlign: "left" as "left" | "center" }
     <page-container>
         <div class="help-page-row">
             <div class="help-page-column" style="overflow: auto">
-                <h2>Tool Shed Help</h2>
+                <h1 class="help-page-title">Tool Shed Help</h1>
                 <HelpSearch v-bind="commonProps" />
                 <HelpInstall v-bind="commonProps" />
                 <HelpPublish v-bind="commonProps" />
@@ -33,5 +33,9 @@ const commonProps = { hAlign: "left" as "left" | "center" }
 
 .help-page-column {
     width: 75%;
+}
+
+.help-page-title {
+    font-size: 3.75rem;
 }
 </style>

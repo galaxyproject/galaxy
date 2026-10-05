@@ -10,7 +10,7 @@ const { classes, size } = useCommonProps(props)
 <template>
     <FontAwesomeIcon :icon="faMagnifyingGlass" class="help-icon" :style="{ fontSize: size }" />
     <div :class="classes">
-        <h3 class="help-heading">Explore</h3>
+        <h2 class="help-heading">Explore</h2>
         <div>
             Click the explore menu at the top right of the page to start exploring the tools in the Galaxy Tool Shed or
             to search for the repository you're looking for.

@@ -188,7 +188,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
         <section class="repository-card" v-else>
             <div class="repository-header-row">
                 <div class="repository-header repository-header-main">
-                    <GHeading h2 size="md" class="repository-name">{{ repository.name }}</GHeading>
+                    <GHeading h1 size="md" class="repository-name">{{ repository.name }}</GHeading>
                     <div class="repository-owner">
                         <router-link class="repository-owner-link" :to="`/repositories_by_owner/${repository.owner}`">{{
                             repository.owner
@@ -262,7 +262,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         <span class="repository-readme" v-html="content"></span>
                     </p>
                     <div class="repository-tools" v-if="tools && tools.length > 0">
-                        <h3 class="repository-list-heading">Tools</h3>
+                        <h2 class="repository-list-heading">Tools</h2>
                         <ul class="repository-tools-list">
                             <repository-tool
                                 v-for="tool in tools"
@@ -275,7 +275,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                     </div>
 
                     <div class="repository-invalid-tools" v-if="invalidTools && invalidTools.length > 0">
-                        <h3 class="repository-list-heading">Invalid Tools</h3>
+                        <h2 class="repository-list-heading">Invalid Tools</h2>
                         <ul class="repository-invalid-tools-list">
                             <li
                                 class="invalid-tool-item"

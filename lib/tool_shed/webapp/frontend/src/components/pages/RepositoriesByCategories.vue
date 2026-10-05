@@ -25,7 +25,7 @@ void categoriesStore.getAll()
 </script>
 <template>
     <page-container>
-        <h4 class="categories-heading">Categories</h4>
+        <h1 class="categories-heading">Categories</h1>
         <LoadingDiv v-if="loading" message="Loading categories" />
         <GTable
             v-else
@@ -56,6 +56,7 @@ void categoriesStore.getAll()
 
 .categories-heading {
     margin: 0 0 var(--spacing-4);
+    font-size: 2.125rem;
 }
 
 .category-name {

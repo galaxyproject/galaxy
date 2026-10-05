@@ -127,7 +127,7 @@ onMounted(() => {
 <template>
     <section class="repositories-grid" :aria-busy="tableLoading">
         <div class="grid-top">
-            <h2 class="grid-title">{{ title }}</h2>
+            <h1 class="grid-title">{{ title }}</h1>
             <div v-if="allowSearch" class="grid-filter">
                 <GFormLabel title="Filter">
                     <GFormInput :model-value="search" @update:model-value="search = $event ?? ''" />

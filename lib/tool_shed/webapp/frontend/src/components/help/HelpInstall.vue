@@ -10,7 +10,7 @@ const { classes, size } = useCommonProps(props)
 <template>
     <FontAwesomeIcon :icon="faDownload" class="help-icon" :style="{ fontSize: size }" />
     <div :class="classes">
-        <h3 class="help-heading">Installing</h3>
+        <h2 class="help-heading">Installing</h2>
         <div>
             There best, most updated resource for information on installing tools in Galaxy from the tool shed can be
             found in tutorial
