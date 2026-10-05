@@ -1,0 +1,45 @@
+<tool id="crypt4gh_output_kinds" name="crypt4gh_output_kinds" version="1.0.0">
+    <description>writes its input through every kind of tool output</description>
+    <command><![CDATA[
+cat '$input1' > '$declared' &&
+cat '$input1' > from_work_dir.txt &&
+cat '$input1' > assigned.primary.txt &&
+mkdir -p discovered split &&
+cat '$input1' > discovered/disc1.txt &&
+cat '$input1' > discovered/disc2.txt &&
+cat '$input1' > split/element1.txt &&
+cat '$input1' > split/element2.txt &&
+cat '$input1' > with_metadata.report.tsv &&
+mkdir -p '$composite.extra_files_path' &&
+cat '$input1' > '$composite.extra_files_path/part.txt' &&
+echo '<html/>' > '$composite' &&
+cp '$galaxy_json' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="galaxy_json">{"type": "new_primary_dataset", "filename": "with_metadata.report.tsv", "name": "with metadata", "ext": "tabular", "metadata": {"columns": 99}}
+</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="declared" format="txt"/>
+        <data name="work_dir" format="txt" from_work_dir="from_work_dir.txt"/>
+        <data name="assigned" format="txt">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.primary\.txt" ext="txt" assign_primary_output="true"/>
+        </data>
+        <data name="discovered" format="txt">
+            <discover_datasets pattern="__designation_and_ext__" directory="discovered" visible="true"/>
+        </data>
+        <data name="reports" format="tabular">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" visible="true"/>
+        </data>
+        <data name="composite" format="html"/>
+        <collection name="split" type="list">
+            <discover_datasets pattern="__name_and_ext__" directory="split"/>
+        </collection>
+    </outputs>
+    <help>
+Test tool for Crypt4GH support: every output of a job reading encrypted data must end up encrypted.
+    </help>
+</tool>

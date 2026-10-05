@@ -8,7 +8,9 @@ importing or exporting a dataset never transfers the ability to decrypt it.
 """
 
 import base64
+import hashlib
 import io
+import json
 import logging
 import os
 from datetime import (
@@ -29,6 +31,11 @@ from galaxy.datatypes.crypt4gh import Crypt4GH
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     RequestParameterInvalidException,
+)
+from galaxy.job_execution.protection.outputs import (
+    CONTENTLESS_OUTCOMES,
+    OUTCOME_PROTECTED,
+    SIDECAR_FILE,
 )
 from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
 from galaxy.job_execution.protection import (
@@ -72,6 +79,37 @@ GRANT_SOURCE_USER = "user"
 PROTECTED_TOOL_TYPES = ("default",)
 # Outputs are encrypted after the tool ran, the compute key must outlive the job.
 JOB_TTL_MARGIN = timedelta(hours=1)
+
+
+def _job_outputs(job: Job) -> list[DatasetInstance]:
+    """Every dataset a job produced, including discovered datasets and collection elements."""
+    outputs: dict[int, DatasetInstance] = {}
+    associations: list[Any] = [*job.output_datasets, *job.output_library_datasets]
+    for association in associations:
+        outputs[association.dataset.id] = association.dataset
+    collections: list[Any] = [
+        association.dataset_collection_instance for association in job.output_dataset_collection_instances
+    ]
+    collections.extend(association.dataset_collection for association in job.output_dataset_collections)
+    for collection in collections:
+        if collection is not None:
+            for dataset_instance in collection.dataset_instances:
+                outputs[dataset_instance.id] = dataset_instance
+    return list(outputs.values())
+
+
+def _has_content(dataset_instance: DatasetInstance) -> bool:
+    dataset = dataset_instance.dataset
+    return bool(dataset and not dataset.purged and dataset.state != Dataset.states.DEFERRED and dataset.file_size)
+
+
+def _purge(dataset_instance: DatasetInstance) -> None:
+    dataset = dataset_instance.dataset
+    assert dataset
+    dataset_instance.state = Dataset.states.ERROR
+    dataset_instance.purged = True
+    dataset_instance.deleted = True
+    dataset.full_delete()
 
 
 def _dataset_instances(value: Any) -> list[DatasetInstance]:
@@ -346,12 +384,91 @@ class DatasetProtectionManager:
         )
 
     def finish_job(self, job: Job, job_directory: str) -> str | None:
-        """Return why a finished protected job must fail, if it must."""
+        """Verify every output of a finished protected job was protected, record the grants to reuse them.
+
+        Returns why the job must fail, if it must. Outputs that can't be shown to be encrypted are purged.
+        Grants are added to the current session, to be committed together with the job's final state.
+        """
+        errors: list[str] = []
         cleanup_failure = os.path.join(job_directory, CLEANUP_FAILURE_FILE)
         if os.path.exists(cleanup_failure):
             with open(cleanup_failure) as f:
-                return f.read().strip() or "Could not remove the decrypted data of this job."
+                errors.append(f.read().strip() or "Could not remove the decrypted data of this job.")
+
+        sidecar_path = os.path.join(job_directory, SIDECAR_FILE)
+        sidecar: dict[str, Any] = {"datasets": {}}
+        if os.path.exists(sidecar_path):
+            with open(sidecar_path) as f:
+                sidecar = json.load(f)
+        else:
+            errors.append("The outputs of this job could not be verified to be encrypted.")
+        errors.extend(sidecar.get("errors", []))
+
+        protected: list[tuple[DatasetInstance, dict[str, Any]]] = []
+        unprotected: list[DatasetInstance] = []
+        for dataset_instance in _job_outputs(job):
+            assert dataset_instance.dataset
+            record = sidecar["datasets"].get(str(dataset_instance.dataset.uuid))
+            if (
+                record
+                and record["outcome"] == OUTCOME_PROTECTED
+                and self._is_protected_as_recorded(dataset_instance, record)
+            ):
+                protected.append((dataset_instance, record))
+            elif record and record["outcome"] in CONTENTLESS_OUTCOMES and not _has_content(dataset_instance):
+                continue
+            else:
+                unprotected.append(dataset_instance)
+
+        if unprotected:
+            names = ", ".join(f"'{dataset_instance.name}'" for dataset_instance in unprotected)
+            errors.append(f"Output(s) {names} could not be verified to be encrypted and were purged.")
+            for dataset_instance in unprotected:
+                _purge(dataset_instance)
+        if errors:
+            return " ".join(errors)
+        if job.user:
+            self._record_output_grants(job, sidecar, protected)
         return None
+
+    def _is_protected_as_recorded(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
+        if dataset_instance.extension != record["ext"] or not self.is_protected(dataset_instance):
+            return False
+        header = dataset_instance.metadata.crypt4gh_header
+        if not header or hashlib.sha256(base64.b64decode(header)).hexdigest() != record["header_sha256"]:
+            return False
+        assert dataset_instance.dataset
+        file_name = dataset_instance.dataset.get_file_name(sync_cache=False)
+        if os.path.exists(file_name):
+            # Data is local (e.g. disk object stores), check it independently of the compute host.
+            with open(file_name, "rb") as f:
+                try:
+                    stored_header = read_crypt4gh_header(f)
+                except ValueError:
+                    return False
+            return bool(hashlib.sha256(stored_header).hexdigest() == record["header_sha256"])
+        return True
+
+    def _record_output_grants(
+        self, job: Job, sidecar: dict[str, Any], protected: list[tuple[DatasetInstance, dict[str, Any]]]
+    ) -> None:
+        key_ref = sidecar.get("key_ref")
+        expiration = sidecar.get("key_expiration")
+        if not protected or not key_ref or not expiration:
+            return
+        expires_at = datetime.fromisoformat(expiration).astimezone(timezone.utc).replace(tzinfo=None)
+        assert job.user
+        for dataset_instance, record in protected:
+            scheme = self.scheme_for(dataset_instance)
+            assert scheme and dataset_instance.dataset
+            grant = self.get_grant(job.user, dataset_instance.dataset, scheme.name)
+            if grant is None:
+                grant = DatasetProtectionGrant(user=job.user, dataset=dataset_instance.dataset, scheme=scheme.name)
+                self.sa_session.add(grant)
+            grant.key_ref = key_ref
+            grant.expires_at = expires_at
+            grant.grant_data = {"compute_header": record["compute_header"], "extra_files": record["extra_files"]}
+            grant.source = f"job:{job.id}"
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:
         scheme = self.scheme_for(dataset_instance)
