@@ -110,7 +110,7 @@ For example, if you test a component with long text or special characters, add s
 ### Key Patterns
 
 - **Skip link**: `App.vue` - hidden until focused, targets `#main-content`
-- **Landmarks**: `role="banner"` on header, `role="main"` on page container
+- **Landmarks**: `App.vue` renders the page as `<header>` (the masthead) and `<main id="main-content">`
 - **Live regions**: `ErrorBanner.vue` uses `role="alert"`, `LoadingDiv.vue` uses `role="status"`
 - **Icon buttons**: Use `aria-label` not `title` for accessible names
 - **Focus indicators**: Global `:focus-visible` styles in `App.vue`
@@ -129,7 +129,7 @@ For example, if you test a component with long text or special characters, add s
 
 ### galaxy-ui and the remaining Quasar
 
-New UI uses galaxy-ui components (`GButton`, `GDropdown`, `GAlert`, `GTabs`, `GCollapse`, `GForm*`, ...), FontAwesome 6 icons, and scoped styles on the design tokens (`--color-*`, `--spacing-*`, `--color-galaxy-*`). Quasar still provides cards, lists, the page layout, `q-select` and `q-table`, which are being converted in turn.
+New UI uses galaxy-ui components (`GButton`, `GDropdown`, `GAlert`, `GTabs`, `GCollapse`, `GForm*`, ...), FontAwesome 6 icons, and scoped styles on the design tokens (`--color-*`, `--spacing-*`, `--color-galaxy-*`). Quasar now only provides `q-select` (RevisionSelect, SelectUser, OverviewTab) and the Quasar markup inside those selects (RevisionSelect's q-item option rows and badges), which need a galaxy-ui select before they can go.
 
 - The shed is plain Vue 3 (no `@vue/compat`). `GFormInput` and `GCheckbox` use `modelValue`, but `GTabs` and `GCollapse` still take `value` and emit `input`, so bind `:value`/`@input` on those -- `v-model` silently does nothing on them.
 - `GDropdown` names its menu from its toggle; icon-only toggles need `aria-label` (see `ActionMenu.vue`).

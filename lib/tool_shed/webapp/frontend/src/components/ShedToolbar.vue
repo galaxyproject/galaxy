@@ -18,16 +18,15 @@ void authStore.setup()
 const admin = computed(() => authStore.user && authStore.user.is_admin)
 </script>
 <template>
-    <q-toolbar class="shed-masthead text-white" role="navigation" aria-label="Main navigation">
-        <q-toolbar-title>
+    <nav class="shed-masthead" aria-label="Main navigation">
+        <div class="masthead-title">
             <router-link to="/" aria-label="Tool Shed Home" class="masthead-brand">
                 <img alt="Galaxy" src="../assets/galaxy_logo.svg" />
             </router-link>
-            <!-- Phones get the logo alone, which already reads "Galaxy" -->
-            <span class="text-bold gt-xs">
+            <span class="masthead-name">
                 {{ title }}
             </span>
-        </q-toolbar-title>
+        </div>
         <GDropdown text="Explore" right toggle-class="masthead-toggle" menu-class="masthead-menu">
             <GDropdownGroup header="Repositories">
                 <GDropdownItem to="/repositories_by_category">
@@ -99,11 +98,16 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
         <GButton class="masthead-icon toolbar-help" icon-only transparent to="/help" title="Help" aria-label="Help">
             <FontAwesomeIcon :icon="faCircleQuestion" />
         </GButton>
-    </q-toolbar>
+    </nav>
 </template>
 <style lang="scss" scoped>
 // Galaxy masthead idiom: flat dark bar, gold hover/active accents.
 .shed-masthead {
+    display: flex;
+    align-items: center;
+    min-height: 50px;
+    padding: 0 var(--spacing-3);
+    color: white;
     background: var(--color-galaxy-dark, #2c3143);
 
     // Masthead controls read as light text on the dark bar, turning gold on hover and while open
@@ -113,7 +117,8 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
         color: white;
         background: none;
         border: none;
-        height: 100%;
+        // Full masthead height, so the whole strip is the hit area as with Quasar's stretched buttons
+        height: 50px;
         padding: 0 var(--spacing-3);
         font-weight: bold;
 
@@ -159,9 +164,21 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
         }
     }
 
-    .q-toolbar__title {
+    .masthead-title {
+        flex: 1;
         display: flex;
         align-items: center;
+        min-width: 0;
+        font-size: 1.3rem;
+    }
+
+    .masthead-name {
+        font-weight: bold;
+
+        // Phones get the logo alone, which already reads "Galaxy"
+        @media (max-width: 599px) {
+            display: none;
+        }
     }
 }
 </style>

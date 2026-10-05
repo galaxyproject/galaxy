@@ -4,11 +4,17 @@ interface PageContainerProps {
 }
 
 withDefaults(defineProps<PageContainerProps>(), {
-    baseClass: "q-pa-md",
+    baseClass: "page-container",
 })
 </script>
 <template>
-    <q-page :class="baseClass">
+    <div :class="baseClass">
         <slot></slot>
-    </q-page>
+    </div>
 </template>
+
+<style scoped>
+.page-container {
+    padding: var(--spacing-4);
+}
+</style>

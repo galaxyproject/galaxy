@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
+import PageContainer from "@/components/PageContainer.vue"
 import PaginatedRepositoriesGrid from "@/components/PaginatedRepositoriesGrid.vue"
 import { useCategoriesStore } from "@/stores"
 import { adaptPaginatedIndexResponse, type Query, type QueryResults } from "@/components/RepositoriesGridInterface"
@@ -40,7 +41,7 @@ async function onRequest(query: Query): Promise<QueryResults> {
 </script>
 
 <template>
-    <q-page class="q-pa-md" v-if="categoryName">
+    <page-container v-if="categoryName">
         <paginated-repositories-grid :title="categoryName" :on-request="onRequest" :allow-search="true" />
-    </q-page>
+    </page-container>
 </template>

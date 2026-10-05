@@ -1,14 +1,12 @@
 <template>
     <div>
         <a href="#main-content" class="skip-link">Skip to main content</a>
-        <q-layout view="hHh lpR fFf">
-            <q-header elevated role="banner">
-                <ShedToolbar title="Tool Shed" />
-            </q-header>
-            <q-page-container id="main-content" role="main">
-                <router-view />
-            </q-page-container>
-        </q-layout>
+        <header class="shed-header">
+            <ShedToolbar title="Tool Shed" />
+        </header>
+        <main id="main-content" class="shed-main" tabindex="-1">
+            <router-view />
+        </main>
         <GToast />
     </div>
 </template>
@@ -29,6 +27,19 @@ export default defineComponent({
 
 <style lang="sass">
 // Skip link - visually hidden until focused
+// The masthead stays put while the page scrolls under it, as Quasar's fixed q-header did
+.shed-header
+  position: sticky
+  top: 0
+  z-index: 1000
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2)
+
+.shed-main
+  // The skip link lands here; keep its start clear of the sticky masthead
+  scroll-margin-top: 50px
+  &:focus
+    outline: none
+
 .skip-link
   position: absolute
   top: -40px
