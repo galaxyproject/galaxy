@@ -73,6 +73,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
+    WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
@@ -1292,7 +1293,7 @@ steps:
         assert self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["label"] == "input1"
 
     def test_refactor_noop_with_connections_and_subworkflow(self):
-        for workflow_yaml in [WORKFLOW_SIMPLE_CAT_TWICE, WORKFLOW_NESTED_SIMPLE]:
+        for workflow_yaml in [WORKFLOW_SIMPLE_CAT_TWICE, WORKFLOW_NESTED_SIMPLE, WORKFLOW_WITH_OUTPUT_ACTIONS]:
             workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
             name = self.workflow_populator.download_workflow(workflow_id)["name"]
             noop = [{"action_type": "update_name", "name": name}]
