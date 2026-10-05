@@ -129,11 +129,17 @@ DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
 class TourCallbackProtocol(Protocol):
-    def handle_step(self, step: dict[str, Any], step_index: int) -> None: ...
+    def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
+        """Handle a tour step once it has been reached.
+
+        ``element`` is the step's target, or None for a step that names neither an
+        ``element`` selector nor a ``component``.
+        """
+        ...
 
 
 class NullTourCallback(TourCallbackProtocol):
-    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
+    def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
         pass
 
 
@@ -2891,6 +2897,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components._.messages.error.assert_absent_or_hidden()
 
     def run_tour_step(self, step: dict[str, Any], step_index: int, tour_callback: TourCallbackProtocol) -> None:
+        element: WebElementProtocol | None = None
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)
@@ -2911,6 +2918,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             assert element is not None
 
         if (textinsert := step.get("textinsert", None)) is not None:
+            assert element is not None, f"Tour step {step_index} has textinsert but no element"
             if "\t" in textinsert:
                 # send_keys interprets \t as a Tab keypress, which moves focus
                 # out of the element. Use JS to set the value directly instead.
@@ -2923,7 +2931,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             else:
                 element.send_keys(textinsert)
 
-        tour_callback.handle_step(step, step_index)
+        tour_callback.handle_step(step, step_index, element)
 
         postclick = step.get("postclick", [])
         if postclick is True:

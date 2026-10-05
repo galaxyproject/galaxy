@@ -477,6 +477,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """
         return self._driver_impl.get_screenshot_as_png()
 
+    def highlight_element(self, element: WebElementProtocol):
+        """Draw a red border around an element for the duration of the block."""
+        return self._driver_impl.highlight_element(element)
+
     # Timeout utilities
 
     def _timeout_message(self, on_str: str) -> str:
