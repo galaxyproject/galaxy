@@ -516,6 +516,31 @@ function onHeaderClick(field: TableField) {
 }
 
 /**
+ * Sort from the keyboard. Only keys pressed on the header itself: a control inside a head() slot
+ * keeps its own Enter and Space.
+ */
+function onHeaderKeydown(field: TableField, event: KeyboardEvent) {
+    if (event.target !== event.currentTarget) {
+        return;
+    }
+    event.preventDefault();
+    onHeaderClick(field);
+}
+
+/**
+ * Sort state for assistive tech; only sortable columns carry it
+ */
+function getAriaSort(field: TableField) {
+    if (!field.sortable) {
+        return undefined;
+    }
+    if (sortBy.value !== field.key) {
+        return "none";
+    }
+    return sortDesc.value ? "descending" : "ascending";
+}
+
+/**
  * Get sort icon for a field
  */
 function getSortIcon(field: TableField) {
@@ -746,7 +771,11 @@ defineExpose({
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]"
                                 :style="field.width ? { width: field.width, minWidth: field.width } : undefined"
-                                @click="onHeaderClick(field)">
+                                :tabindex="field.sortable ? 0 : undefined"
+                                :aria-sort="getAriaSort(field)"
+                                @click="onHeaderClick(field)"
+                                @keydown.enter="onHeaderKeydown(field, $event)"
+                                @keydown.space="onHeaderKeydown(field, $event)">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1" :class="getTextAlignmentClass(field.align)">
                                         <slot :name="`head(${field.key})`" :field="field">

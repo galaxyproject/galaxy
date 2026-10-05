@@ -35,3 +35,44 @@ describe("GTable selection", () => {
         expect(wrapper.emitted("select-all")).toEqual([[true]]);
     });
 });
+
+describe("GTable sorting", () => {
+    function mountSortable() {
+        return mount(GTable as object, {
+            props: {
+                items,
+                fields: [
+                    { key: "name", label: "Name", sortable: true },
+                    { key: "id", label: "Id" },
+                ],
+                sortBy: "name",
+            },
+            attachTo: document.body,
+        });
+    }
+
+    it("exposes the sort state on sortable headers only", () => {
+        const wrapper = mountSortable();
+        const [name, id] = wrapper.findAll("thead th");
+
+        expect(name!.attributes("aria-sort")).toBe("ascending");
+        expect(name!.attributes("tabindex")).toBe("0");
+        expect(id!.attributes("aria-sort")).toBeUndefined();
+        expect(id!.attributes("tabindex")).toBeUndefined();
+    });
+
+    it("sorts from the keyboard with Enter and Space", async () => {
+        const wrapper = mountSortable();
+        const name = wrapper.findAll("thead th")[0]!;
+
+        await name.trigger("keydown", { key: "Enter" });
+        expect(wrapper.emitted("sort-changed")).toEqual([["name", true]]);
+        expect(name.attributes("aria-sort")).toBe("descending");
+
+        await name.trigger("keydown", { key: " " });
+        expect(wrapper.emitted("sort-changed")).toEqual([
+            ["name", true],
+            ["name", false],
+        ]);
+    });
+});
