@@ -2307,6 +2307,55 @@ wheels = [
 ]
 
 [[package]]
+name = "crypt4gh"
+version = "1.8.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bcrypt" },
+    { name = "cryptography" },
+    { name = "docopt-ng" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b0/5f/fc1eb82143c029f4203ae2ed2080e76b51aec4b2e2c0993be676020240d5/crypt4gh-1.8.6.tar.gz", hash = "sha256:70a1ea13161eae1a6ce040ad61759d11ca10d63ad0441f2a664c0c8f041ab341", size = 944023, upload-time = "2026-05-02T12:20:30.912Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/67/d60e1eade09063267f1ce519ff3ab529fb9a060bb650a52413f24aa83834/crypt4gh-1.8.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:50360438f24d7081e6b59e356441c3485a4c3d52f499125715d72531b59794ab", size = 169883, upload-time = "2026-05-02T12:19:22.636Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/4c/9948e27dd8becb8c4209fc7a67f1563362b02bfb11ac8cb9eeef66408311/crypt4gh-1.8.6-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:69b53ae3fc2149bde59de08ca976a27719bec8ba6fe09083b50d6de68a07d99c", size = 126760, upload-time = "2026-05-02T12:19:24.485Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/be/8e78188e3c74c68f1e85c8a44d898cb011c2a74444b279167f5571244ab0/crypt4gh-1.8.6-cp310-cp310-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:1489431f6c3862faacb07385d3fd95527a2af7e808ab5a69f252b51daec645e6", size = 184730, upload-time = "2026-05-02T12:19:25.856Z" },
+    { url = "https://files.pythonhosted.org/packages/72/9e/d0d9a568e6f93f1a7cadbfe5859e92a8aa79dbc0fa200d41f776a48e6a82/crypt4gh-1.8.6-cp310-cp310-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4b858235cf32558fbb223dc9cde7e6fc590491940f8a18b4b00f0c7811fb7462", size = 233336, upload-time = "2026-05-02T12:19:27.53Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/fe/ec0de51a850f1f0eb280215e50d9d7eb1e2c67ac8f0b6e97d4efa683297d/crypt4gh-1.8.6-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:4e08627b47896d0aa5db737f6e367e8c4845b33bf86cd95f48fbbd587c0eda2a", size = 183497, upload-time = "2026-05-02T12:19:29.316Z" },
+    { url = "https://files.pythonhosted.org/packages/92/a0/084aa0f1aae7a1f008f3e874dbcccef03615bbb2fd6097112fe76b661b35/crypt4gh-1.8.6-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:dc4f0696c77bdd18c79043fe7770c0be61c7215c401eac3fc14b97bafb58714a", size = 232020, upload-time = "2026-05-02T12:19:30.73Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/ce/a91b01584a63f0a0f3c119bf9d1b96dae4970b6c6af1d68a127d39271a6b/crypt4gh-1.8.6-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:a16ef10a4ba519d301e13d98436634f35a41cbb4eb5122aa7e95ecbca5a10d67", size = 169882, upload-time = "2026-05-02T12:19:32.538Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/b5/fa06c45d6289037929cdccf53c9d8f118b68fc85151f1f48a7b0d0d0c087/crypt4gh-1.8.6-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:e710678022396dc61c688de04284ea30540585195b41e67fe20a7584e1437346", size = 126756, upload-time = "2026-05-02T12:19:34.205Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/75/d67928efc63eefb63eba37f2670dabeda7959d1df09d9042483ea6c78381/crypt4gh-1.8.6-cp311-cp311-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9d90f4eecbe07450faca70356556c7681dc61d5dee7522e9ab5a61e44510ff15", size = 184733, upload-time = "2026-05-02T12:19:35.552Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/b6/d234a261b6161b38e145cbd341413fe2f3f3273496ede690447ec285ba23/crypt4gh-1.8.6-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6378de1b2e3c48e216482dc9136a945a2a3edf22b98e8da1484bdfb0cb3cd264", size = 233319, upload-time = "2026-05-02T12:19:37.285Z" },
+    { url = "https://files.pythonhosted.org/packages/13/f1/9365dd02481ea06a02895bc29c2683f517c36c3623fce2ae9a3e72b0a9ea/crypt4gh-1.8.6-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:867ac8248a3e428f613a76fe5f5cc09222d2706dba58e8bca180963692146e7c", size = 183511, upload-time = "2026-05-02T12:19:39.072Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/de/dd35ac54c8e1a44ffc2160bfb51d7348cb399ca3f2c9a719ffcaa8df0292/crypt4gh-1.8.6-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:55bf652ba0e56bd94b26c11580e9aa784092944d1aae59624f330c5467017bdd", size = 232029, upload-time = "2026-05-02T12:19:40.561Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/8b/9e2ce6e017c58ab6fb5bf04fd27d8873eeaa67ead460efd9f058c0b241f5/crypt4gh-1.8.6-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:17a8fec43a453453d3cab0e7b5dfd0504786c1611ebee5ee0e8498b7cf728c30", size = 169878, upload-time = "2026-05-02T12:19:41.912Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/82/60f16635d6f96fe72d39b4d460df26fe73fafe1486f47e9b2c9fc7ea064d/crypt4gh-1.8.6-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:e79bdf12373545eb72de4e7031efa19f2e6e37a54f7044ed30250d96535f3bb9", size = 126733, upload-time = "2026-05-02T12:19:43.53Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/72/ecb005886ec038d2c125b17b2819a75d652f021a709969d0ace360890cf5/crypt4gh-1.8.6-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cd9e8c4829ab887a3659991d535ac2b05444f2aad73e7e8faba30c43da3df65d", size = 184704, upload-time = "2026-05-02T12:19:45.069Z" },
+    { url = "https://files.pythonhosted.org/packages/de/e6/397c00c8536f11d7ab6078e4ec9c3c3d72ae7c0096ad747be309f560be05/crypt4gh-1.8.6-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d38539a11936e8733278436d5cd16f9a20209ce9d8b262f10ab5f78543e4f219", size = 233256, upload-time = "2026-05-02T12:19:46.618Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/e0/984fe219ddf5f8c88b53bb046961ce6f909ca664b444ad3604a4db23c6cc/crypt4gh-1.8.6-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:c6925fdddb9092aeb78ca44516f9f14e6d1f4455deaa0bf803bb0703424644a0", size = 183476, upload-time = "2026-05-02T12:19:48.569Z" },
+    { url = "https://files.pythonhosted.org/packages/75/1d/35a84fe5b666c71ef4b5ee206889356500594269fc913aa4fdcaff79827b/crypt4gh-1.8.6-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:8430f0b28fb9ed51b6bf58b941faa2dab91153729d20fed18b4d612c7515396d", size = 231928, upload-time = "2026-05-02T12:19:50.022Z" },
+    { url = "https://files.pythonhosted.org/packages/94/dd/687a266cb3505b2be8a2f4debfa8ca8bb259216ffa199a9c4aafbd6b5fe8/crypt4gh-1.8.6-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:27b7ef016377d9a66b6e185be04ac0f1066aefe7fce23716d7d589b2065e7ae4", size = 169882, upload-time = "2026-05-02T12:19:51.522Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/27/e38dae30df476fb871f07e1093c23a913e914e1ada6d3250fbb108738054/crypt4gh-1.8.6-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:5f8c1249d4baa4d925f71472c8fc8d9063ca31c8246a740f5bd2d64035bb4880", size = 126733, upload-time = "2026-05-02T12:19:53.101Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/3a/fbf9286d9a725f2058f2abc49659ac5c56520070a046f11b5e8c6271f0bb/crypt4gh-1.8.6-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3636a51ed271624fd295426afc89b0bcc21c7f86276681007fed9b2f40364078", size = 184778, upload-time = "2026-05-02T12:19:54.551Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/bb/8cf94f071e3b76ebee237702fb97f2638531a6302def6fe5280e6458c81c/crypt4gh-1.8.6-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:562b2533c4ea49214e54ce334dd2f331475652220edd30dc4bdd5c8cd9f53873", size = 233322, upload-time = "2026-05-02T12:19:56.88Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/9a/e1dcba1d49454d435814c94c52e5ec21fc390be553d4cd49b667279840f4/crypt4gh-1.8.6-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:ef3da8e2311b7a80dd6777440692bf1aac8e21090f8b15e6e8c1f01bff291ed9", size = 183502, upload-time = "2026-05-02T12:19:58.52Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/53/e7a3d5402f73eeede793c9c25204ddb9864dd37b8887111fc11fc54e4299/crypt4gh-1.8.6-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:69c3f415cdae3caf5138df6be255dedfa1d9f11a613b315bb2aa29fc102b1372", size = 231968, upload-time = "2026-05-02T12:20:00.321Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/ef/4005e48c53e9ea3e3a46b1d8bd13888f1311c9965e734696be7e3f07b13b/crypt4gh-1.8.6-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:4acaeb99d70da3a290e4d512bd9030a8ad07fb17008c817332afb1fe0f7a4be7", size = 169968, upload-time = "2026-05-02T12:20:01.894Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/1f/019b15fbc29c8b63f3d1c817f8b2fae393a0643eaef6257b0c297b46bbb9/crypt4gh-1.8.6-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:e2478ede6183082c04463ddcc5066720ff95561d9d218a8e5f1c6b0819a34699", size = 126741, upload-time = "2026-05-02T12:20:03.618Z" },
+    { url = "https://files.pythonhosted.org/packages/de/01/1e073e21d2d6649def42df9663efca2c61d87d75c6227667865286e50d8b/crypt4gh-1.8.6-cp314-cp314-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:7100cbf3b827a8b909b083e35bc846b57af94110262cbc12a2e9df151c433db6", size = 184840, upload-time = "2026-05-02T12:20:05.275Z" },
+    { url = "https://files.pythonhosted.org/packages/49/67/b17ae8de40361fd0bb05b1fde2fd1ae5a88ddf7492be25474ec77ec2af9b/crypt4gh-1.8.6-cp314-cp314-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3d947a954269e94a2ef6b32f53d04479281e59d6ac1a7cf006fb70fc6c654c0c", size = 233361, upload-time = "2026-05-02T12:20:06.629Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/f8/6d5763206bba94d4a644f785d97616bbcde6b90e0e6909e03ef58f5a5345/crypt4gh-1.8.6-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:e1cc59b06a480905f3df6755724f5ad177b4d2471bc267c14d528e810015d2b0", size = 183552, upload-time = "2026-05-02T12:20:08.373Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/e0/6280d925af3800c96a775edae8c61e32a41b6745eb288bea4d7d15fc2f26/crypt4gh-1.8.6-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:dee626c44d9db07fead9de2a8ebbca4f297dd39c672264d6b8b20bace6afeeb6", size = 232003, upload-time = "2026-05-02T12:20:09.965Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/cf/0ac16b53c4d3ef150b877fe84c3af6bb4018dffc114404afac4b1709d047/crypt4gh-1.8.6-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:e5df49bdc4c30c67cfe67c9584ce8f1ce97428b775b82c8c63283595cc9b26c9", size = 169970, upload-time = "2026-05-02T12:20:11.3Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/7c/5d08e915d69c5b39cdc6e5bb7fc8945b98a95a88dd985bbbcf89e068254a/crypt4gh-1.8.6-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:6b268260f68fcdfb490923e9a5a2a4ba3476c9d9816db164ecf73a764be49f4b", size = 126759, upload-time = "2026-05-02T12:20:12.661Z" },
+    { url = "https://files.pythonhosted.org/packages/50/d5/17d60372fcd00dc8328d9c3f0263fdc171ea0c3150b6b03536403322db3f/crypt4gh-1.8.6-cp314-cp314t-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ab08e12d19034b5668b859b1e569469a032bdebc8ad3634b6b4c3182959cf562", size = 184849, upload-time = "2026-05-02T12:20:14.554Z" },
+    { url = "https://files.pythonhosted.org/packages/68/b0/8fdb7e334e38330e3d8d12f1eb50a8bf80a9714b1ce7d013bc101a11554b/crypt4gh-1.8.6-cp314-cp314t-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:64ad13d6501158c278c91530a1b13763645fdf239eaa578c1caaf116d6a58e58", size = 233383, upload-time = "2026-05-02T12:20:16.231Z" },
+    { url = "https://files.pythonhosted.org/packages/74/57/5745adb3c31a36c1c3635ac14d0dd295398e8b2d4a6e42f1ba77700438ea/crypt4gh-1.8.6-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:068ed832a16f7417a93a28e2579a191d74c25cf0ecbdee0c3730633a8d0e586a", size = 183590, upload-time = "2026-05-02T12:20:17.728Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/90/203bf4640eeb2be7b02b1bf2a43cd7213f29322b461046f0c684e69499c4/crypt4gh-1.8.6-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:4ccf157e96bc43c21fb46667207bb6b54f025a4fb03f9e2f9cc52f5dbc093c03", size = 232049, upload-time = "2026-05-02T12:20:19.53Z" },
+]
+
+[[package]]
 name = "cryptography"
 version = "50.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2700,6 +2749,15 @@ version = "0.6.2"
 source = { registry = "https://wheels.galaxyproject.org/simple" }
 wheels = [
     { url = "https://wheels.galaxyproject.org/simple/docopt/docopt-0.6.2-py2.py3-none-any.whl" },
+]
+
+[[package]]
+name = "docopt-ng"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/50/8d6806cf13138127692ae6ff79ddeb4e25eb3b0bcc3c1bd033e7e04531a9/docopt_ng-0.9.0.tar.gz", hash = "sha256:91c6da10b5bb6f2e9e25345829fb8278c78af019f6fc40887ad49b060483b1d7", size = 32264, upload-time = "2023-05-30T20:46:25.064Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/4a/c3b77fc1a24510b08918b43a473410c0168f6e657118807015f1f1edceea/docopt_ng-0.9.0-py3-none-any.whl", hash = "sha256:bfe4c8b03f9fca424c24ee0b4ffa84bf7391cb18c29ce0f6a8227a3b01b81ff9", size = 16689, upload-time = "2023-05-30T20:46:45.294Z" },
 ]
 
 [[package]]
@@ -3657,23 +3715,31 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+crypt4gh = [
+    { name = "crypt4gh" },
+]
 test = [
+    { name = "crypt4gh" },
+    { name = "galaxy-test-base" },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "crypt4gh", marker = "extra == 'crypt4gh'" },
+    { name = "crypt4gh", marker = "extra == 'test'" },
     { name = "galaxy-config", editable = "packages/config" },
     { name = "galaxy-data", editable = "packages/data" },
     { name = "galaxy-files", editable = "packages/files" },
     { name = "galaxy-objectstore", editable = "packages/objectstore" },
+    { name = "galaxy-test-base", marker = "extra == 'test'", editable = "packages/test_base" },
     { name = "galaxy-tool-util", editable = "packages/tool_util" },
     { name = "galaxy-util", editable = "packages/util" },
     { name = "markupsafe" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
 ]
-provides-extras = ["test"]
+provides-extras = ["crypt4gh", "test"]
 
 [[package]]
 name = "galaxy-job-metrics"
@@ -4620,6 +4686,7 @@ dev = [
     { name = "boto3" },
     { name = "cloudbridge" },
     { name = "codespell" },
+    { name = "crypt4gh" },
     { name = "cwltest" },
     { name = "darker" },
     { name = "fluent-logger" },
@@ -4674,6 +4741,7 @@ test = [
     { name = "axe-selenium-python", version = "3.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "boto3" },
     { name = "cloudbridge" },
+    { name = "crypt4gh" },
     { name = "cwltest" },
     { name = "fluent-logger" },
     { name = "gcsfs" },
@@ -4851,6 +4919,7 @@ dev = [
     { name = "boto3" },
     { name = "cloudbridge", specifier = ">=4.4.2" },
     { name = "codespell" },
+    { name = "crypt4gh" },
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
     { name = "darker" },
     { name = "fluent-logger" },
@@ -4899,6 +4968,7 @@ test = [
     { name = "axe-selenium-python" },
     { name = "boto3" },
     { name = "cloudbridge", specifier = ">=4.4.2" },
+    { name = "crypt4gh" },
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
     { name = "fluent-logger" },
     { name = "gcsfs" },

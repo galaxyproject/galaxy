@@ -1698,6 +1698,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     destination_params: Mapped[dict[str, Any] | None] = mapped_column(MutableJSONType)
     object_store_id: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     working_directory: Mapped[str | None] = mapped_column(String(1024))
+    # Set when the job decrypts protected inputs, see galaxy.managers.dataset_protection.
+    protection_scheme: Mapped[str | None] = mapped_column(String(32))
     imported: Mapped[bool | None] = mapped_column(default=False, index=True)
     handler: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[str | None] = mapped_column(String(255))
