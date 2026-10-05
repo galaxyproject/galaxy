@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons"
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GAlert, GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { ToolShedApi } from "@/schema"
 import type { components } from "@/schema"
@@ -71,23 +71,25 @@ function clearPreview() {
 <template>
     <div>
         <!-- Initial state -->
-        <q-banner v-if="!previewResult" class="bg-blue-1 q-mb-md">
-            <template #avatar>
+        <GAlert v-if="!previewResult" variant="info" class="q-mb-md">
+            <div class="reset-metadata-banner">
                 <FontAwesomeIcon :icon="faCircleInfo" class="text-primary" />
-            </template>
-            <div><strong>Reset metadata</strong> regenerates all revision metadata from repository contents.</div>
-            <div class="q-mt-sm text-caption">
-                Use cases:
-                <ul class="q-mb-none">
-                    <li>Fix corrupted tool_config paths after migration</li>
-                    <li>Refresh metadata after tool shed code updates</li>
-                    <li>Repair missing or incomplete metadata</li>
-                </ul>
-            </div>
-            <template #action>
+                <div class="reset-metadata-banner-content">
+                    <div>
+                        <strong>Reset metadata</strong> regenerates all revision metadata from repository contents.
+                    </div>
+                    <div class="q-mt-sm text-caption">
+                        Use cases:
+                        <ul class="q-mb-none">
+                            <li>Fix corrupted tool_config paths after migration</li>
+                            <li>Refresh metadata after tool shed code updates</li>
+                            <li>Repair missing or incomplete metadata</li>
+                        </ul>
+                    </div>
+                </div>
                 <q-btn color="primary" label="Preview Changes" @click="runPreview" :loading="loading" />
-            </template>
-        </q-banner>
+            </div>
+        </GAlert>
 
         <!-- Results -->
         <div v-if="previewResult">
@@ -152,3 +154,16 @@ function clearPreview() {
         </div>
     </div>
 </template>
+
+<style scoped>
+.reset-metadata-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+}
+
+.reset-metadata-banner-content {
+    flex: 1 1 auto;
+}
+</style>
