@@ -16,7 +16,6 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     base,
@@ -560,8 +559,7 @@ class DatasetAssociationManager(
         self.ensure_can_change_datatype(dataset_assoc)
         self.ensure_can_set_metadata(dataset_assoc)
         assert dataset_assoc.dataset
-        path = dataset_assoc.dataset.get_file_name()
-        datatype = sniff.guess_ext(path, self.app.datatypes_registry.sniff_order)
+        datatype = self.app.datatypes_registry.redetect_ext(dataset_assoc)
         self.app.datatypes_registry.change_datatype(dataset_assoc, datatype)
         session.commit()
         self.set_metadata(trans, dataset_assoc)
