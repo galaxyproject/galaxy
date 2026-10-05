@@ -61,8 +61,8 @@ function onChange(event: Event) {
             :checked="currentValue"
             :indeterminate="indeterminate"
             :disabled="disabled"
+            :role="toggle ? 'switch' : undefined"
             @change="onChange" />
-        <span v-if="toggle" class="g-switch-slider" />
         <span v-if="$slots.default" class="g-checkbox-label">
             <slot></slot>
         </span>
@@ -91,13 +91,9 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
-    .g-switch & {
-        // Visually hide the checkbox in switch mode, keeping it accessible
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-        pointer-events: none;
+    &:focus-visible {
+        outline: 2px solid var(--color-blue-500, #197cd2);
+        outline-offset: 2px;
     }
 }
 
@@ -105,46 +101,46 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-// Switch/toggle styles
-.g-switch {
-    position: relative;
+// Switch: the input itself is the track, so it stays visible, clickable and focusable
+.g-switch .g-checkbox-input {
+    --g-switch-width: 2rem;
+    --g-switch-height: 1.125rem;
+    --g-switch-knob-color: var(--color-grey-500, #63656d);
 
-    .g-switch-slider {
-        position: relative;
-        display: inline-block;
-        width: 2rem;
-        height: 1.125rem;
-        background-color: var(--color-grey-400, #adb5bd);
-        border-radius: 1rem;
-        transition: background-color 0.15s ease-in-out;
+    appearance: none;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: var(--g-switch-width);
+    height: var(--g-switch-height);
+    // Off-state border keeps >= 3:1 against the page (WCAG 1.4.11) and survives forced-colors mode
+    border: 1px solid var(--color-grey-500, #63656d);
+    border-radius: calc(var(--g-switch-height) / 2);
+    background-color: var(--background-color, #ffffff);
+    background-image: radial-gradient(circle closest-side, var(--g-switch-knob-color) 75%, transparent 80%);
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-size: calc(var(--g-switch-height) - 2px) calc(var(--g-switch-height) - 2px);
+    transition:
+        background-position 0.15s ease-in-out,
+        background-color 0.15s ease-in-out;
 
-        &::before {
-            content: "";
-            position: absolute;
-            top: 0.125rem;
-            left: 0.125rem;
-            width: 0.875rem;
-            height: 0.875rem;
-            background-color: white;
-            border-radius: 50%;
-            transition: transform 0.15s ease-in-out;
-        }
+    &:checked {
+        --g-switch-knob-color: #ffffff;
+
+        border-color: var(--color-blue-500, #197cd2);
+        background-color: var(--color-blue-500, #197cd2);
+        background-position: right center;
     }
 
-    .g-checkbox-input:checked + .g-switch-slider {
-        background-color: var(--color-blue-500, #007bff);
-
-        &::before {
-            transform: translateX(0.875rem);
-        }
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
     }
 
-    .g-checkbox-input:focus + .g-switch-slider {
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-
-    &.g-disabled .g-switch-slider {
-        opacity: 0.5;
+    // Forced colors drop the knob gradient, which would hide the on/off state; fall back to the native box
+    @media (forced-colors: active) {
+        appearance: auto;
+        width: auto;
+        height: auto;
     }
 }
 </style>

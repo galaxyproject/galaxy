@@ -63,6 +63,13 @@ describe("GCheckbox", () => {
         const wrapper = mount(GCheckbox, { props: { modelValue: false, toggle: true } });
 
         expect(wrapper.classes()).toContain("g-switch");
-        expect(wrapper.find(".g-switch-slider").exists()).toBe(true);
+        expect(wrapper.find("input").attributes("role")).toBe("switch");
+    });
+
+    it("keeps the native checkbox role outside toggle mode", () => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false } });
+
+        expect(wrapper.classes()).not.toContain("g-switch");
+        expect(wrapper.find("input").attributes("role")).toBeUndefined();
     });
 });
