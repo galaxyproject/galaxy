@@ -1,3 +1,4 @@
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
@@ -143,7 +144,11 @@ describe("CommandPalette", () => {
 
     /** Icon names rendered in the input row, the leading mode icon included */
     function inputIcons() {
-        return wrapper.findAll(".palette-input svg").wrappers.map((icon) => icon.attributes("data-icon"));
+        // vue-fontawesome resolves a second Vue under vitest, so its svg never re-renders; read the bound prop
+        return wrapper
+            .find(".palette-input")
+            .findAllComponents(FontAwesomeIcon)
+            .map((icon) => icon.props("icon").iconName);
     }
 
     async function type(query: string) {
@@ -1140,7 +1145,7 @@ describe("CommandPalette", () => {
     });
 
     it("never searches, tabs or lists a provider the instance disabled", async () => {
-        wrapper.destroy();
+        wrapper.unmount();
         useCommandPalette().closePalette();
         setMockConfig({ command_palette_disabled_providers: ["workflows"] });
         const search = vi.spyOn(workflowsProvider, "search");
