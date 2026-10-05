@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons"
-import { GAlert, GButton } from "@galaxyproject/galaxy-ui"
+import { GAlert, GButton, GButtonGroup } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { ToolShedApi } from "@/schema"
 import type { components } from "@/schema"
@@ -87,7 +87,7 @@ function clearPreview() {
                         </ul>
                     </div>
                 </div>
-                <q-btn color="primary" label="Preview Changes" @click="runPreview" :loading="loading" />
+                <GButton color="blue" :loading="loading" @click="runPreview">Preview Changes</GButton>
             </div>
         </GAlert>
 
@@ -110,13 +110,9 @@ function clearPreview() {
                             <span v-if="previewResult.dry_run" class="text-caption q-ml-sm">(dry run)</span>
                         </div>
                         <div>
-                            <q-btn
-                                v-if="previewResult.dry_run"
-                                color="primary"
-                                label="Apply Now"
-                                @click="applyReset"
-                                :loading="loading"
-                            />
+                            <GButton v-if="previewResult.dry_run" color="blue" :loading="loading" @click="applyReset">
+                                Apply Now
+                            </GButton>
                             <GButton transparent class="q-ml-sm" :disabled="loading" @click="clearPreview">
                                 New Preview
                             </GButton>
@@ -126,14 +122,24 @@ function clearPreview() {
             </q-card>
 
             <!-- View mode toggle -->
-            <q-btn-toggle
-                v-model="viewMode"
-                :options="[
-                    { value: 'table', label: 'Summary Table' },
-                    { value: 'diff', label: 'JSON Diff' },
-                ]"
-                class="q-mb-md"
-            />
+            <GButtonGroup class="q-mb-md">
+                <GButton
+                    outline
+                    :pressed="viewMode === 'table'"
+                    :aria-pressed="viewMode === 'table'"
+                    @click="viewMode = 'table'"
+                >
+                    Summary Table
+                </GButton>
+                <GButton
+                    outline
+                    :pressed="viewMode === 'diff'"
+                    :aria-pressed="viewMode === 'diff'"
+                    @click="viewMode = 'diff'"
+                >
+                    JSON Diff
+                </GButton>
+            </GButtonGroup>
 
             <!-- Summary Table View -->
             <ChangesetSummaryTable

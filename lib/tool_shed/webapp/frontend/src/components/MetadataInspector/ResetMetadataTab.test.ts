@@ -124,6 +124,28 @@ describe("ResetMetadataTab", () => {
 
             expect(wrapper.text()).toContain("ok")
         })
+
+        it("keeps the accessible name on the Preview Changes button while loading", async () => {
+            let resolvePost!: (value: { data: ResetMetadataOnRepositoryResponse }) => void
+            mockPost.mockReturnValue(
+                new Promise((resolve) => {
+                    resolvePost = resolve
+                }),
+            )
+
+            const wrapper = mount(ResetMetadataTab, {
+                props: { repositoryId: "repo123" },
+            })
+
+            const button = wrapper.find("button")
+            await button.trigger("click")
+
+            expect(button.attributes("aria-busy")).toBe("true")
+            expect(button.text()).toContain("Preview Changes")
+
+            resolvePost({ data: fixturePreviewResponse })
+            await flushPromises()
+        })
     })
 
     describe("apply reset", () => {
@@ -280,6 +302,41 @@ describe("ResetMetadataTab", () => {
 
             expect(wrapper.text()).toContain("Summary Table")
             expect(wrapper.text()).toContain("JSON Diff")
+        })
+
+        it("marks the active view mode button with aria-pressed", async () => {
+            mockPost.mockResolvedValue({ data: fixturePreviewResponse })
+
+            const wrapper = mount(ResetMetadataTab, {
+                props: { repositoryId: "repo123" },
+            })
+
+            await wrapper.find("button").trigger("click")
+            await flushPromises()
+
+            const tableButton = wrapper.findAll("button").find((b) => b.text().includes("Summary Table"))
+            const diffButton = wrapper.findAll("button").find((b) => b.text().includes("JSON Diff"))
+
+            expect(tableButton?.attributes("aria-pressed")).toBe("true")
+            expect(diffButton?.attributes("aria-pressed")).toBe("false")
+        })
+
+        it("switches to the JSON diff view when its toggle button is clicked", async () => {
+            mockPost.mockResolvedValue({ data: fixturePreviewResponse })
+
+            const wrapper = mount(ResetMetadataTab, {
+                props: { repositoryId: "repo123" },
+            })
+
+            await wrapper.find("button").trigger("click")
+            await flushPromises()
+
+            const diffButton = wrapper.findAll("button").find((b) => b.text().includes("JSON Diff"))
+            await diffButton?.trigger("click")
+
+            expect(wrapper.find(".mock-diff-viewer").exists()).toBe(true)
+            expect(wrapper.find(".mock-summary-table").exists()).toBe(false)
+            expect(diffButton?.attributes("aria-pressed")).toBe("true")
         })
     })
 
