@@ -60,7 +60,7 @@ const modeOptions = [
 const modeHelp = computed(() => {
     const help = "How to select among the connected inputs.";
     if (asToolState(toolState.value).mode === "first_ok_or_skip") {
-        return `${help} Failed inputs are ignored, and the step is skipped when none remain.`;
+        return `${help} Failed inputs are ignored, and the step is skipped when none remain. Paused inputs are waited on until resumed or deleted.`;
     }
     return help;
 });
