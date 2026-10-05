@@ -85,8 +85,8 @@ const linkedFromOlderRevision = computed(() => {
 </script>
 
 <template>
-    <q-page class="q-ma-lg">
-        <div class="q-mb-md q-gutter-sm" v-if="linkedFromOlderRevision">
+    <div class="tool-version-page">
+        <div v-if="linkedFromOlderRevision" class="newer-revision-notice">
             <!-- Page content rather than an event, so no assertive announcement -->
             <GAlert variant="warning" role="status">
                 <strong
@@ -98,7 +98,7 @@ const linkedFromOlderRevision = computed(() => {
         <loading-div v-if="loading" message="Loading tool information" />
         <div v-else-if="errorMessage">
             <error-banner :error="errorMessage" />
-            <GAlert variant="info" class="q-mx-md">
+            <GAlert variant="info" class="stale-metadata-hint">
                 <p>
                     This error may be caused by stale repository metadata. The repository owner or a Tool Shed
                     administrator can fix this by resetting the repository metadata.
@@ -192,10 +192,22 @@ const linkedFromOlderRevision = computed(() => {
                 </dl>
             </div>
         </section>
-    </q-page>
+    </div>
 </template>
 
 <style scoped>
+.tool-version-page {
+    margin: var(--spacing-6);
+}
+
+.newer-revision-notice {
+    margin-bottom: var(--spacing-4);
+}
+
+.stale-metadata-hint {
+    margin-inline: var(--spacing-4);
+}
+
 .tool-card {
     background: var(--background-color);
     border: 1px solid var(--color-grey-300);

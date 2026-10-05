@@ -50,8 +50,7 @@ async function mountPage() {
     const wrapper = mount(MetadataInspectorPage, {
         props: { repositoryId: "abc123" },
         global: {
-            // QPage renders nothing outside a QLayout
-            stubs: { QPage: { template: "<div><slot /></div>" }, RouterLink: { template: "<a><slot /></a>" } },
+            stubs: { RouterLink: { template: "<a><slot /></a>" } },
         },
     })
     await flushPromises()

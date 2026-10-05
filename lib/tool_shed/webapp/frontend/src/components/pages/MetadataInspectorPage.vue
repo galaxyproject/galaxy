@@ -73,7 +73,7 @@ function onResetComplete() {
 </script>
 
 <template>
-    <q-page class="q-ma-lg">
+    <div class="metadata-inspector-page">
         <loading-div v-if="loading" message="Loading metadata..." />
         <error-banner v-else-if="!repository" error="Failed to load repository" />
         <section v-else class="inspector-card">
@@ -111,10 +111,14 @@ function onResetComplete() {
                 </GTab>
             </GTabs>
         </section>
-    </q-page>
+    </div>
 </template>
 
 <style scoped>
+.metadata-inspector-page {
+    margin: var(--spacing-6);
+}
+
 .inspector-card {
     background: var(--background-color);
     border: 1px solid var(--color-grey-300);

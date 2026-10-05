@@ -34,8 +34,6 @@ async function mountPage() {
         props: { trsToolId: "devteam~concat~cat1", version: "1.0.0" },
         global: {
             stubs: {
-                // QPage renders nothing outside a QLayout
-                QPage: { template: "<div><slot /></div>" },
                 RouterLink: { props: ["to"], template: '<a :href="to"><slot /></a>' },
                 LicenseLink: { props: ["id"], template: '<span class="stub-license">{{ id }}</span>' },
                 EdamLink: { props: ["term"], template: '<span class="stub-edam">{{ term }}</span>' },
