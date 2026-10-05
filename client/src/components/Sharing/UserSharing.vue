@@ -168,7 +168,9 @@ defineExpose({
 
             <div class="share_with_view">
                 <Multiselect
+                    id="user-share-selector"
                     v-model="sharingCandidates"
+                    name="user-share-selector"
                     :options="userOptions"
                     :clear-on-select="true"
                     :multiple="true"
@@ -180,7 +182,7 @@ defineExpose({
                     @remove="onRemove"
                     @search-change="onSearchChanged"
                     @close="onBlur">
-                    <template v-if="!sharingCandidates" slot="caret">
+                    <template v-if="!sharingCandidates" v-slot:caret>
                         <div></div>
                     </template>
 
@@ -196,7 +198,7 @@ defineExpose({
                         </span>
                     </template>
 
-                    <template v-if="sharingCandidates" slot="noResult">
+                    <template v-if="sharingCandidates" v-slot:noResult>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
@@ -205,7 +207,7 @@ defineExpose({
                         </div>
                     </template>
 
-                    <template slot="noOptions">
+                    <template v-slot:noOptions>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
@@ -225,9 +227,9 @@ defineExpose({
         </div>
 
         <GModal
+            v-model:show="showPermissionsModal"
             class="user-sharing-modal"
             confirm
-            :show.sync="showPermissionsModal"
             size="medium"
             title="Permissions Change Required"
             fixed-height

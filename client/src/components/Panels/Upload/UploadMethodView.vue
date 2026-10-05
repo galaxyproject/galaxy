@@ -2,7 +2,7 @@
 import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";

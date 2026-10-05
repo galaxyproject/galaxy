@@ -1,15 +1,15 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, test } from "vitest";
-import { defineComponent } from "vue";
+import { defineComponent, type PropType } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 function mountWith(value: string | null) {
     const Host = defineComponent({
-        props: { value: { type: String, default: null } },
+        props: { value: { type: String as PropType<string | null>, default: null } },
         template: `<div v-no-sanitize-html="value" />`,
     });
-    return mount(Host as object, { propsData: { value } });
+    return mount(Host, { props: { value } });
 }
 
 describe("v-no-sanitize-html", () => {
@@ -30,7 +30,7 @@ describe("v-no-sanitize-html", () => {
             props: { rich: { type: Boolean, default: true } },
             template: `<div><pre v-if="rich" v-no-sanitize-html="'<b>rich</b>'" /><pre v-else class="plain">plain</pre></div>`,
         });
-        const wrapper = mount(Host as object, { propsData: { rich: true } });
+        const wrapper = mount(Host, { props: { rich: true } });
         expect(wrapper.find("pre").element.innerHTML).toBe("<b>rich</b>");
 
         await wrapper.setProps({ rich: false });

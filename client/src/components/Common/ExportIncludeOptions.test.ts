@@ -30,9 +30,9 @@ describe("ExportIncludeOptions", () => {
         const wrapper = mount(WizardLikeParent as object, { localVue });
         const exportData = (wrapper.vm as unknown as InstanceType<typeof WizardLikeParent>).exportData;
 
-        await wrapper.find("input[data-test-id='include-files-checkbox']").setChecked(false);
-        await wrapper.find("input[data-test-id='include-deleted-checkbox']").setChecked(true);
-        await wrapper.find("input[data-test-id='include-hidden-checkbox']").setChecked(true);
+        await wrapper.find("input[data-test-id='include-files-checkbox']").setValue(false);
+        await wrapper.find("input[data-test-id='include-deleted-checkbox']").setValue(true);
+        await wrapper.find("input[data-test-id='include-hidden-checkbox']").setValue(true);
 
         expect(exportData).toEqual({ includeFiles: false, includeDeleted: true, includeHidden: true });
     });

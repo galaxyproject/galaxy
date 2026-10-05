@@ -1,10 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -26,14 +26,12 @@ vi.mock("@/composables/useAgGrid", () => ({
         AgGridVue: {
             name: "AgGridVue",
             props: ["rowData"],
-            render(h: (tag: string, data: unknown, children: unknown) => unknown) {
+            render() {
                 const self = this as unknown as { rowData: { id: string }[] };
                 return h(
                     "div",
                     {},
-                    (self.rowData || []).map((row) =>
-                        h("div", { class: "grid-row", attrs: { "data-row-id": row.id } }, []),
-                    ),
+                    (self.rowData || []).map((row) => h("div", { class: "grid-row", "data-row-id": row.id }, [])),
                 );
             },
         },
@@ -77,15 +75,14 @@ async function mountCreator(initialElements: HDASummary[]) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
-    const wrapper = mount(PairedOrUnpairedListCollectionCreator as object, {
-        propsData: {
+    const wrapper = mount(PairedOrUnpairedListCollectionCreator, {
+        props: {
             historyId: "history-1",
             initialElements,
             collectionType: "list:paired",
             mode: "modal",
         },
-        localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     });
 
     await flushPromises();
@@ -94,7 +91,7 @@ async function mountCreator(initialElements: HDASummary[]) {
 
 /** Row ids as our AG Grid stub renders them - the `RowT.id` contract the namespacing fix targets. */
 function gridRowIds(wrapper: ReturnType<typeof mount>): string[] {
-    return wrapper.findAll(".grid-row").wrappers.map((row) => row.attributes("data-row-id") ?? "");
+    return wrapper.findAll(".grid-row").map((row) => row.attributes("data-row-id") ?? "");
 }
 
 describe("PairedOrUnpairedListCollectionCreator", () => {

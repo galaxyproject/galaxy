@@ -1,0 +1,460 @@
+diff --git a/dist/vue.cjs.js b/dist/vue.cjs.js
+index fe3646d..22eac27 100644
+--- a/dist/vue.cjs.js
++++ b/dist/vue.cjs.js
+@@ -6112,7 +6112,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -6401,10 +6401,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6507,7 +6507,7 @@ function createSlots(slots, dynamicSlots) {
+
+ function renderSlot(slots, name, props, fallback, noSlotted, branchKey) {
+   if (props == null) props = {};
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     const slotProps = branchKey != null && props.key == null ? extend({}, props, { key: branchKey }) : props;
+     const hasProps = Object.keys(slotProps).length > 0;
+     if (name !== "default") slotProps.name = name;
+@@ -7562,8 +7562,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -8396,7 +8396,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -8484,7 +8484,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   {
+     const {
+       emitsOptions,
+@@ -10467,7 +10467,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -12550,7 +12550,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         {
+           startMeasure(instance, `compile`);
+@@ -13602,7 +13602,7 @@ const isEnumeratedAttr = /* @__PURE__ */ makeMap("contenteditable,draggable,spel
+ function compatCoerceAttr(el, key, value, instance = null) {
+   if (isEnumeratedAttr(key)) {
+     const v2CoercedValue = value === void 0 ? null : value === null || value === false || value === "false" ? "false" : "true";
+-    if (v2CoercedValue && compatUtils.softAssertCompatEnabled(
++    if (v2CoercedValue && compatUtils.isCompatEnabled("ATTR_ENUMERATED_COERCION", instance) && compatUtils.softAssertCompatEnabled(
+       "ATTR_ENUMERATED_COERCION",
+       instance,
+       key,
+diff --git a/dist/vue.cjs.prod.js b/dist/vue.cjs.prod.js
+index b06bd2c..497d52a 100644
+--- a/dist/vue.cjs.prod.js
++++ b/dist/vue.cjs.prod.js
+@@ -4893,7 +4893,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -5173,10 +5173,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -5274,7 +5274,7 @@ function createSlots(slots, dynamicSlots) {
+
+ function renderSlot(slots, name, props, fallback, noSlotted, branchKey) {
+   if (props == null) props = {};
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     const slotProps = branchKey != null && props.key == null ? extend$1({}, props, { key: branchKey }) : props;
+     const hasProps = Object.keys(slotProps).length > 0;
+     if (name !== "default") slotProps.name = name;
+@@ -6070,8 +6070,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend$1({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -6748,7 +6748,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -6828,7 +6828,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   let args = rawArgs;
+   const isCompatModelListener = compatModelEventPrefix + event in props;
+   const isModelListener = isCompatModelListener || event.startsWith("update:");
+@@ -8375,7 +8375,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -10296,7 +10296,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         const { isCustomElement, compilerOptions } = instance.appContext.config;
+         const { delimiters, compilerOptions: componentCompilerOptions } = Component;
+@@ -11072,7 +11072,7 @@ const isEnumeratedAttr = /* @__PURE__ */ makeMap("contenteditable,draggable,spel
+ function compatCoerceAttr(el, key, value, instance = null) {
+   if (isEnumeratedAttr(key)) {
+     const v2CoercedValue = value === void 0 ? null : value === null || value === false || value === "false" ? "false" : "true";
+-    if (v2CoercedValue && compatUtils.softAssertCompatEnabled(
++    if (v2CoercedValue && compatUtils.isCompatEnabled("ATTR_ENUMERATED_COERCION", instance) && compatUtils.softAssertCompatEnabled(
+       "ATTR_ENUMERATED_COERCION",
+       instance,
+       key,
+diff --git a/dist/vue.esm-browser.js b/dist/vue.esm-browser.js
+index ffb889a..e2088b1 100644
+--- a/dist/vue.esm-browser.js
++++ b/dist/vue.esm-browser.js
+@@ -6062,7 +6062,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -6351,10 +6351,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6457,7 +6457,7 @@ function createSlots(slots, dynamicSlots) {
+
+ function renderSlot(slots, name, props, fallback, noSlotted, branchKey) {
+   if (props == null) props = {};
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     const slotProps = branchKey != null && props.key == null ? extend({}, props, { key: branchKey }) : props;
+     const hasProps = Object.keys(slotProps).length > 0;
+     if (name !== "default") slotProps.name = name;
+@@ -7512,8 +7512,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -8346,7 +8346,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -8434,7 +8434,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   {
+     const {
+       emitsOptions,
+@@ -10417,7 +10417,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -12500,7 +12500,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         {
+           startMeasure(instance, `compile`);
+@@ -13620,7 +13620,7 @@ const isEnumeratedAttr = /* @__PURE__ */ makeMap("contenteditable,draggable,spel
+ function compatCoerceAttr(el, key, value, instance = null) {
+   if (isEnumeratedAttr(key)) {
+     const v2CoercedValue = value === void 0 ? null : value === null || value === false || value === "false" ? "false" : "true";
+-    if (v2CoercedValue && compatUtils.softAssertCompatEnabled(
++    if (v2CoercedValue && compatUtils.isCompatEnabled("ATTR_ENUMERATED_COERCION", instance) && compatUtils.softAssertCompatEnabled(
+       "ATTR_ENUMERATED_COERCION",
+       instance,
+       key,
+diff --git a/dist/vue.esm-bundler.js b/dist/vue.esm-bundler.js
+index d727fd3..32a335b 100644
+--- a/dist/vue.esm-bundler.js
++++ b/dist/vue.esm-bundler.js
+@@ -6093,7 +6093,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -6382,10 +6382,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6488,7 +6488,7 @@ function createSlots(slots, dynamicSlots) {
+
+ function renderSlot(slots, name, props, fallback, noSlotted, branchKey) {
+   if (props == null) props = {};
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     const slotProps = branchKey != null && props.key == null ? extend({}, props, { key: branchKey }) : props;
+     const hasProps = Object.keys(slotProps).length > 0;
+     if (name !== "default") slotProps.name = name;
+@@ -7545,8 +7545,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -8381,7 +8381,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -8469,7 +8469,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   if (!!(process.env.NODE_ENV !== "production")) {
+     const {
+       emitsOptions,
+@@ -10490,7 +10490,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -12575,7 +12575,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || __VUE_OPTIONS_API__ && resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || __VUE_OPTIONS_API__ && resolveMergedOptions(instance).template;
+       if (template) {
+         if (!!(process.env.NODE_ENV !== "production")) {
+           startMeasure(instance, `compile`);
+@@ -13707,7 +13707,7 @@ const isEnumeratedAttr = /* @__PURE__ */ makeMap("contenteditable,draggable,spel
+ function compatCoerceAttr(el, key, value, instance = null) {
+   if (isEnumeratedAttr(key)) {
+     const v2CoercedValue = value === void 0 ? null : value === null || value === false || value === "false" ? "false" : "true";
+-    if (v2CoercedValue && compatUtils.softAssertCompatEnabled(
++    if (v2CoercedValue && compatUtils.isCompatEnabled("ATTR_ENUMERATED_COERCION", instance) && compatUtils.softAssertCompatEnabled(
+       "ATTR_ENUMERATED_COERCION",
+       instance,
+       key,
+diff --git a/dist/vue.global.js b/dist/vue.global.js
+index 4c2b72c..3de2e01 100644
+--- a/dist/vue.global.js
++++ b/dist/vue.global.js
+@@ -6031,7 +6031,7 @@ Server rendered element contains fewer child nodes than client vdom.`
+   function getCompatListeners(instance) {
+     assertCompatEnabled("INSTANCE_LISTENERS", instance);
+     const listeners = {};
+-    const rawProps = instance.vnode.props;
++    const rawProps = instance?.vnode?.props;
+     if (!rawProps) {
+       return listeners;
+     }
+@@ -6320,10 +6320,10 @@ If this is a native custom element, make sure to exclude it from component resol
+       const instance = getCurrentInstance();
+       const legacyCtx = {
+         props,
+-        children: instance.vnode.children || [],
+-        data: instance.vnode.props || {},
++        children: instance?.vnode?.children || [],
++        data: instance?.vnode?.props || {},
+         scopedSlots: ctx.slots,
+-        parent: instance.parent && instance.parent.proxy,
++        parent: instance?.parent && instance.parent.proxy,
+         slots() {
+           return new Proxy(ctx.slots, legacySlotProxyHandlers);
+         },
+@@ -6426,7 +6426,7 @@ If this is a native custom element, make sure to exclude it from component resol
+
+   function renderSlot(slots, name, props, fallback, noSlotted, branchKey) {
+     if (props == null) props = {};
+-    if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++    if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+       const slotProps = branchKey != null && props.key == null ? extend({}, props, { key: branchKey }) : props;
+       const hasProps = Object.keys(slotProps).length > 0;
+       if (name !== "default") slotProps.name = name;
+@@ -7478,8 +7478,8 @@ If this is a native custom element, make sure to exclude it from component resol
+     } else if (!globalMixins.length && !mixins && !extendsOptions) {
+       if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+         resolved = extend({}, base);
+-        resolved.parent = instance.parent && instance.parent.proxy;
+-        resolved.propsData = instance.vnode.props;
++        resolved.parent = instance?.parent && instance.parent.proxy;
++        resolved.propsData = instance?.vnode?.props;
+       } else {
+         resolved = base;
+       }
+@@ -8312,7 +8312,7 @@ If you want to remount the same app, move your app creation logic into a factory
+     if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+       return;
+     }
+-    const props = instance.vnode.props;
++    const props = instance?.vnode?.props;
+     const modelHandler = props && props[compatModelEventPrefix + event];
+     if (modelHandler) {
+       callWithErrorHandling(
+@@ -8400,7 +8400,7 @@ If you want to remount the same app, move your app creation logic into a factory
+
+   function emit(instance, event, ...rawArgs) {
+     if (instance.isUnmounted) return;
+-    const props = instance.vnode.props || EMPTY_OBJ;
++    const props = instance?.vnode?.props || EMPTY_OBJ;
+     {
+       const {
+         emitsOptions,
+@@ -10383,7 +10383,7 @@ If you want to remount the same app, move your app creation logic into a factory
+     };
+     const updateComponentPreRender = (instance, nextVNode, optimized) => {
+       nextVNode.component = instance;
+-      const prevProps = instance.vnode.props;
++      const prevProps = instance?.vnode?.props;
+       instance.vnode = nextVNode;
+       instance.next = null;
+       updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -12452,7 +12452,7 @@ Component that was made reactive: `,
+     }
+     if (!instance.render) {
+       if (!isSSR && compile$1 && !Component.render) {
+-        const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++        const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+         if (template) {
+           {
+             startMeasure(instance, `compile`);
+@@ -13553,7 +13553,7 @@ Component that was made reactive: `,
+   function compatCoerceAttr(el, key, value, instance = null) {
+     if (isEnumeratedAttr(key)) {
+       const v2CoercedValue = value === void 0 ? null : value === null || value === false || value === "false" ? "false" : "true";
+-      if (v2CoercedValue && compatUtils.softAssertCompatEnabled(
++      if (v2CoercedValue && compatUtils.isCompatEnabled("ATTR_ENUMERATED_COERCION", instance) && compatUtils.softAssertCompatEnabled(
+         "ATTR_ENUMERATED_COERCION",
+         instance,
+         key,

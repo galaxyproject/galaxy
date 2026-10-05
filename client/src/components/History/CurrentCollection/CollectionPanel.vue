@@ -147,7 +147,9 @@ watch(
                 <CollectionNavigation
                     :history-name="history.name"
                     :selected-collections="selectedCollections"
-                    v-on="$listeners" />
+                    @update:selected-collections="
+                        (collections: CollectionEntry[]) => emit('update:selected-collections', collections)
+                    " />
                 <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
                 <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>

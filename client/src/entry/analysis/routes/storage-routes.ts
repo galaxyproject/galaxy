@@ -47,7 +47,8 @@ export default [
                 props: true,
             },
             {
-                path: "*",
+                // vue-router 4 catch-all; Vue Router 3 accepted a bare "*"
+                path: ":pathMatch(.*)*",
                 redirect: { name: "StorageDashboard" },
             },
         ],

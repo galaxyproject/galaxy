@@ -37,8 +37,8 @@ defineExpose({
         ref="inputElement"
         v-model="inputValue"
         class="g-form-input"
-        @keydown="(event) => emit('keydown', event)"
-        @blur="(event) => emit('blur', event)" />
+        @keydown="(event: KeyboardEvent) => emit('keydown', event)"
+        @blur="(event: FocusEvent) => emit('blur', event)" />
 </template>
 
 <style scoped lang="scss">

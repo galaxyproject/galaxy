@@ -59,7 +59,9 @@ const props = defineProps({
         default: false,
     },
     passthroughProps: {
-        type: Object,
+        // Forwarded straight through to the nested FormNode (see FormInputs.vue, which passes
+        // its own $props down); onChange/onChangeForm are required there, so type them here too.
+        type: Object as PropType<{ onChange: (...args: any[]) => unknown; onChangeForm: (...args: any[]) => unknown }>,
         required: true,
     },
     prefix: {

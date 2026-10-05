@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BProgress } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import localize from "@/utils/localization";
@@ -76,7 +77,7 @@ defineExpose({
         <span v-if="quotaHasLimit && !compact" class="quota-percent-text" :data-quota-percent="quotaUsage.quotaPercent">
             {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}
         </span>
-        <b-progress
+        <BProgress
             v-if="quotaHasLimit || !(embedded || compact)"
             :value="quotaUsage.quotaPercent"
             :variant="progressVariant"

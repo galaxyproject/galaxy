@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useChatStore } from "@/stores/chatStore";
 
@@ -39,7 +39,7 @@ watch(
     <div class="chat-panel" :class="collapsed ? 'collapsed' : 'expanded'">
         <div class="chat-panel-header">
             <span class="chat-panel-title">GalaxyAI</span>
-            <ChatActions source="panel" :collapsed.sync="collapsed" @dock-to="dockTo" />
+            <ChatActions v-model:collapsed="collapsed" source="panel" @dock-to="dockTo" />
         </div>
         <div v-show="!collapsed" class="chat-panel-body">
             <GalaxyAI :exchange-id="activeChatId || undefined" panel />

@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -11,11 +11,11 @@ describe("FormCheck", () => {
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 value: null,
                 options: [],
             },
-            localVue,
+            global: localVue,
         });
     });
 
@@ -33,19 +33,19 @@ describe("FormCheck", () => {
         expect(inputs.length).toBe(n + 1);
         let expectedValues = [];
         for (let i = 0; i < n; i++) {
-            await inputs.at(i + 1).setChecked();
+            await inputs.at(i + 1).setValue(true);
             expect(labels.at(i + 1).text()).toBe(`label_${i}`);
             expect(inputs.at(i + 1).attributes("value")).toBe(`value_${i}`);
             expectedValues.push(`value_${i}`);
-            expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
+            expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
         }
         for (let i = 0; i < n; i++) {
-            await inputs.at(i + 1).setChecked(false);
+            await inputs.at(i + 1).setValue(false);
             expectedValues = expectedValues.slice(1);
             if (expectedValues.length === 0) {
                 expectedValues = null;
             }
-            expect(wrapper.emitted().input[i + 3][0]).toEqual(expectedValues);
+            expect(emittedArg(wrapper, "input", i + 3)).toEqual(expectedValues);
         }
     });
 
@@ -60,10 +60,10 @@ describe("FormCheck", () => {
         expect(inputs.length).toBe(emptyValues.length + 1);
         const expectedValues = [];
         for (let i = 0; i < emptyValues; i++) {
-            await inputs.at(i + 1).setChecked();
+            await inputs.at(i + 1).setValue(true);
             expect(inputs.at(i + 1).attributes("value")).toBe(emptyValues[i]);
             expectedValues.push(expectedValues[i]);
-            expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
+            expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
         }
     });
 
@@ -82,21 +82,21 @@ describe("FormCheck", () => {
             expect(inputs.at(i).element.checked).toBeFalsy();
         }
         /* 1 - confirm select-all option checked */
-        await inputs.at(0).setChecked();
+        await inputs.at(0).setValue(true);
         expect(inputs.at(0).element.checked).toBeTruthy();
         /* ...confirm corresponding options checked */
         const values = options.map((option) => option.value);
-        expect(wrapper.emitted()["input"][0][0]).toStrictEqual(values);
+        expect(emittedArg(wrapper, "input")).toStrictEqual(values);
         /* 2 - confirm select-all option UNchecked */
-        await inputs.at(0).setChecked(false);
+        await inputs.at(0).setValue(false);
         expect(inputs.at(0).element.checked).toBeFalsy();
         /* ...confirm corresponding options UNchecked */
         for (let i = 0; i < n; i++) {
             expect(inputs.at(i + 1).element.checked).toBeFalsy();
         }
         /* 3 - confirm corresponding options indeterminate-state */
-        await inputs.at(1).setChecked(true);
-        expect(wrapper.emitted().input[2][0]).toStrictEqual(["value_0"]);
+        await inputs.at(1).setValue(true);
+        expect(emittedArg(wrapper, "input", 2)).toStrictEqual(["value_0"]);
         await wrapper.setProps({ value: ["value_0"] });
         expect(inputs.at(0).element.indeterminate).toBe(true);
     });

@@ -4,7 +4,7 @@
 
 import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
-import Vue, { computed, type Ref, ref, shallowRef } from "vue";
+import { computed, type Ref, ref, shallowRef } from "vue";
 
 import {
     MY_PANEL_VIEW_DESCRIPTION,
@@ -161,8 +161,10 @@ export const useToolStore = defineStore("toolStore", () => {
             if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                // own-property check: "constructor" must not reach filterTools from the prototype
-                const results = Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
+                // own-property check: "constructor" must not reach filterTools from the prototype;
+                // `in` comes first because Vue tracks it, so results added for `q` later trigger an update
+                const results =
+                    q in toolResults.value && Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
                 return filterTools(toolsById.value, results || []);
             }
         };
@@ -337,11 +339,11 @@ export const useToolStore = defineStore("toolStore", () => {
                     toolHelpData.help = ""; // for cases where helpText == '\n'
                 }
 
-                Vue.set(helpDataCached.value, toolId, toolHelpData);
+                helpDataCached.value[toolId] = toolHelpData;
             } catch (error) {
                 console.error("Error fetching help:", error);
                 // Settle current consumers but allow a later request to retry.
-                Vue.set(helpDataCached.value, toolId, { help: "", failed: true });
+                helpDataCached.value[toolId] = { help: "", failed: true };
                 fetchedHelpIds.value.delete(toolId);
             }
         })();
@@ -353,7 +355,7 @@ export const useToolStore = defineStore("toolStore", () => {
         try {
             currentPanelView.value = currentPanelView.value || defaultPanelView.value;
             await setPanel(currentPanelView.value);
-        } catch (e) {
+        } catch {
             await setPanel(defaultPanelView.value);
         }
     }
@@ -372,15 +374,15 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
-        Vue.set(toolSections.value, panelView, newPanel);
+        toolSections.value[panelView] = newPanel;
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
-        Vue.set(toolsById.value, toolId, toolData);
+        toolsById.value[toolId] = toolData;
     }
 
     function saveToolResults(whooshQuery: string, toolsData: Array<string>) {
-        Vue.set(toolResults.value, whooshQuery, toolsData);
+        toolResults.value[whooshQuery] = toolsData;
     }
 
     async function setPanel(panelView: string) {

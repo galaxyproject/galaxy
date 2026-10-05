@@ -19,7 +19,7 @@ const { server, http } = useServerMock();
 describe("MarkdownVitessce.vue", () => {
     it("displays error on invalid JSON", async () => {
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: "{invalid",
             },
             pinia: createTestingPinia({ createSpy: vi.fn }),
@@ -45,7 +45,7 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
         });
@@ -67,7 +67,7 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
         });
@@ -106,16 +106,21 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const localVue = getLocalVue(true);
-        localVue.component("VisualizationWrapper", {
-            template: "<div class='viz-wrapper-stub' />",
-        });
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
-            localVue,
-            pinia,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia],
+                components: {
+                    ...(localVue.components ?? {}),
+                    VisualizationWrapper: {
+                        template: "<div class='viz-wrapper-stub' />",
+                    },
+                },
+            },
         });
         await new Promise((resolve) => setTimeout(resolve));
         const file = wrapper.vm.visualizationConfig.dataset_content.datasets[0].files[0];

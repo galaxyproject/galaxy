@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import ViteYaml from "@modyfi/vite-plugin-yaml";
 import inject from "@rollup/plugin-inject";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
@@ -52,10 +52,18 @@ export default defineConfig(({ command }) => ({
     base: "./",
     resolve: {
         tsconfigPaths: true,
+        // galaxy-ui declares vue-router as a "^3 || ^4" peer, and pnpm satisfies that
+        // with its own vue-router 3 copy. Without deduping, galaxy-ui's RouterLink is
+        // the vue-router 3 component, which renders nothing under Vue 3.
+        dedupe: ["vue-router"],
         alias: {
+            // Use @vue/compat for Vue 2 compatibility mode
+            vue: "@vue/compat",
+            // Also alias the direct Vue 2 dist path that some libraries use
+            "vue/dist/vue.esm.js": "@vue/compat",
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
-            // files directly through @vitejs/plugin-vue2.
+            // files directly.
             "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
             // galaxy-api-client has a real tsup dist/ build and production
             // uses that via package.json exports. During `vite serve` we
@@ -83,6 +91,14 @@ export default defineConfig(({ command }) => ({
                 compilerOptions: {
                     // Preserve whitespace to match Webpack's vue-loader default behavior
                     whitespace: "preserve",
+                    // Vue 2 dropped template comments; Vue 3 keeps them outside production
+                    // builds, where a leading comment turns a single-root component into a
+                    // Fragment and breaks attribute fallthrough.
+                    comments: false,
+                    // Enable Vue 3 compat mode
+                    compatConfig: {
+                        MODE: 2,
+                    },
                 },
             },
         }),

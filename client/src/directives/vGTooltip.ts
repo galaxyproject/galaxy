@@ -27,7 +27,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { ObjectDirective, VNode } from "vue";
+import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "@/utils/tooltipTiming";
 
@@ -127,7 +127,7 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown): Placement {
+function getPlacement(modifiers: DirectiveBinding["modifiers"], bindingValue: unknown): Placement {
     for (const [mod, placement] of Object.entries(PLACEMENT_MAP)) {
         if (modifiers[mod]) {
             return placement;
@@ -154,13 +154,9 @@ function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): stri
         return String((bindingValue as { title: string }).title || "");
     }
     // Fall back to element's title attribute.
-    // Also check vnode attrs/props for components with inheritAttrs: false (e.g. BFormCheckbox)
+    // Also check the vnode's props for components with inheritAttrs: false (e.g. BFormCheckbox)
     // where :title doesn't land on the root DOM element.
-    const title =
-        el.getAttribute("title") ||
-        (vnode?.data?.attrs as Record<string, unknown> | undefined)?.title ||
-        (vnode?.componentOptions?.propsData as Record<string, unknown> | undefined)?.title ||
-        null;
+    const title = el.getAttribute("title") || vnode?.props?.title || null;
     if (title) {
         el.dataset.gTooltipTitle = String(title);
     }
@@ -315,7 +311,7 @@ function hideTooltip(el: HTMLElement) {
     }
 }
 
-function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
+function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"], arg?: string): () => void {
     const listeners: Array<[string, EventListener, boolean]> = [];
 
     function addListener(event: string, handler: EventListener, capture = false) {
@@ -387,7 +383,7 @@ function getLabelTarget(el: HTMLElement) {
 }
 
 export const vGTooltip: ObjectDirective<HTMLElement> = {
-    inserted(el, binding, vnode) {
+    mounted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -436,7 +432,7 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
     },
 
-    componentUpdated(el, binding, vnode) {
+    updated(el, binding, vnode) {
         const state = stateMap.get(el);
         if (!state) {
             return;
@@ -461,7 +457,7 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
     },
 
-    unbind(el) {
+    unmounted(el) {
         const state = stateMap.get(el);
         if (!state) {
             return;

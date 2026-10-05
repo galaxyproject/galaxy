@@ -78,7 +78,7 @@ function onDoNotShowAgain() {
         </GButtonGroup>
 
         <GPopover
-            :show.sync="isStorageHelperVisible"
+            v-model:show="isStorageHelperVisible"
             :target="storageOperationsButtonId"
             triggers="manual hover"
             placement="bottomleft"

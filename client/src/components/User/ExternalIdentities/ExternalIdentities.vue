@@ -59,9 +59,7 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import purify from "dompurify";
-import Vue from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -74,8 +72,6 @@ import svc from "./service";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

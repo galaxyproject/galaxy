@@ -170,7 +170,7 @@ onBeforeMount(() => {
                 :source-id="props.toolId"
                 :source-version="props.toolVersion"
                 :service-definition="sd"
-                @update-current-group="(groupId) => onCurrentGroupChange(sd, groupId)" />
+                @update-current-group="(groupId?: string) => onCurrentGroupChange(sd, groupId)" />
         </div>
     </GModal>
 </template>

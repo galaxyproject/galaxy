@@ -3,11 +3,12 @@ import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { usePanels } from "@/composables/usePanels";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
+import { eventBus } from "@/utils/eventBus";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -23,7 +24,6 @@ const { isRightPanelOpen, isBottomPanelOpen, activeChatId } = storeToRefs(chatSt
 const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
 
 const route = useRoute();
-const router = useRouter();
 
 watch(
     () => route.path,
@@ -79,11 +79,11 @@ function onLoad() {
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
     // always fires when a route is pushed instead of validating it first.
-    router.app.$on("router-push", hideCenter);
+    eventBus.on("router-push", hideCenter);
 });
 
 onUnmounted(() => {
-    router.app.$off("router-push", hideCenter);
+    eventBus.off("router-push", hideCenter);
 });
 </script>
 
@@ -99,7 +99,7 @@ onUnmounted(() => {
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" v-model:reactive-width="historyPanelWidth" side="right">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
@@ -112,9 +112,9 @@ onUnmounted(() => {
         </FlexPanel>
         <FlexPanel
             v-if="showPanels && isRightPanelOpen"
+            v-model:reactive-width="chatPanelWidth"
             panel-id="chat-panel"
             side="right"
-            :reactive-width.sync="chatPanelWidth"
             @close="chatStore.hideChat()">
             <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>

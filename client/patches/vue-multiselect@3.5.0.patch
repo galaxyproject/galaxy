@@ -1,0 +1,38 @@
+diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
+index 82db370..156c1a6 100644
+--- a/dist/vue-multiselect.esm.js
++++ b/dist/vue-multiselect.esm.js
+@@ -790,10 +790,14 @@ var pointerMixin = {
+     filteredOptions () {
+       this.pointerAdjust();
+     },
+-    isOpen () {
++    isOpen (val) {
+       this.pointerDirty = false;
++      // The options only exist while the dropdown is open, so don't leave the
++      // input pointing at one after it closes.
++      if (!val && this.$refs.search) this.$refs.search.removeAttribute('aria-activedescendant');
+     },
+     pointer () {
++      if (!this.isOpen) return
+       this.$refs.search && this.$refs.search.setAttribute('aria-activedescendant', this.id + '-' + this.pointer.toString());
+     }
+   },
+@@ -1248,7 +1252,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
+     onKeyup: _cache[19] || (_cache[19] = withKeys($event => (_ctx.deactivate()), ["esc"])),
+     role: "combobox",
+     "aria-expanded": _ctx.isOpen,
+-    "aria-owns": 'listbox-'+_ctx.id,
++    "aria-owns": _ctx.isOpen && $data.ready ? 'listbox-'+_ctx.id : null,
+     "aria-activedescendant": _ctx.isOpen && _ctx.pointer !== null ? _ctx.id + '-' + _ctx.pointer : null
+   }, [
+     renderSlot(_ctx.$slots, "caret", { toggle: _ctx.toggle }, () => [
+@@ -1338,7 +1342,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
+               _cache[9] || (_cache[9] = withKeys(withModifiers($event => (_ctx.removeLastElement()), ["stop"]), ["delete"]))
+             ],
+             class: "multiselect__input",
+-            "aria-controls": 'listbox-'+_ctx.id
++            "aria-controls": _ctx.isOpen && $data.ready ? 'listbox-'+_ctx.id : null
+           }, null, 44 /* STYLE, PROPS, NEED_HYDRATION */, _hoisted_8))
+         : createCommentVNode("v-if", true),
+       ($options.isSingleLabelVisible)

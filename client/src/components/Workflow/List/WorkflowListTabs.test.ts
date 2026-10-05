@@ -5,7 +5,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import type { AnyUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
@@ -32,8 +32,7 @@ vi.mock("@/composables/config", async () => {
 });
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const REGISTERED_USER = getFakeRegisteredUser();
 const ANONYMOUS_USER = {
@@ -75,7 +74,7 @@ async function mountTabs(active: WorkflowListTab, options: MountOptions = {}) {
 }
 
 function tabIds(wrapper: Awaited<ReturnType<typeof mountTabs>>) {
-    return wrapper.findAll("li.nav-item").wrappers.map((tab) => tab.attributes("id"));
+    return wrapper.findAll("li.nav-item").map((tab) => tab.attributes("id"));
 }
 
 describe("WorkflowListTabs", () => {
@@ -105,7 +104,7 @@ describe("WorkflowListTabs", () => {
     it("links each tab to its route", async () => {
         const wrapper = await mountTabs("curated");
 
-        const hrefs = wrapper.findAll("li.nav-item a").wrappers.map((link) => link.attributes("href"));
+        const hrefs = wrapper.findAll("li.nav-item a").map((link) => link.attributes("href"));
         expect(hrefs).toEqual([
             "/workflows/list_curated",
             "/workflows/list",

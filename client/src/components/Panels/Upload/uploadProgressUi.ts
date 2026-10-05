@@ -30,7 +30,7 @@ interface ProgressUiBase {
 /**
  * UI representation of a single upload file
  */
-export interface FileProgressUi extends ProgressUiBase {}
+export type FileProgressUi = ProgressUiBase;
 
 /**
  * UI representation of a batch / collection upload

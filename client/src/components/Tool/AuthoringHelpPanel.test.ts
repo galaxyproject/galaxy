@@ -1,20 +1,34 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AuthoringHelpPanel from "./AuthoringHelpPanel.vue";
 
 const localVue = getLocalVue();
 
+// happy-dom only resolves getComputedStyle() (what isVisible() reads) for elements
+// attached to the document, so mount into the body rather than a detached container.
+let container: HTMLDivElement;
+
 function mountAuthoringHelpPanel() {
     return mount(AuthoringHelpPanel as object, {
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
+        attachTo: container,
     });
 }
 
 describe("AuthoringHelpPanel", () => {
+    beforeEach(() => {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+        container.remove();
+    });
+
     it("expands and collapses a help section", async () => {
         const wrapper = mountAuthoringHelpPanel();
         const quickStartToggle = wrapper.find('[data-description="toggle help section quick-start"]');
@@ -40,7 +54,7 @@ describe("AuthoringHelpPanel", () => {
         expect(wrapper.find(".authoring-help-body").exists()).toBe(false);
 
         await toolDefinitionToggle.trigger("click");
-        expect(wrapper.findAll("th").wrappers.map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
+        expect(wrapper.findAll("th").map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
         const containerHelpLink = wrapper.find('#tool-format a[href="/help/terms/galaxy.tools.container"]');
         const commandHelpLink = wrapper.find('#tool-format a[href="/help/terms/unix.commandLine"]');
         expect(containerHelpLink.text()).toBe("container image");
@@ -89,7 +103,7 @@ describe("AuthoringHelpPanel", () => {
         );
 
         const parameterSection = wrapper.find("#parameter-boolean");
-        expect(parameterSection.findAll("th").wrappers.map((header) => header.text())).toEqual([
+        expect(parameterSection.findAll("th").map((header) => header.text())).toEqual([
             "Field",
             "Details",
             "Default",

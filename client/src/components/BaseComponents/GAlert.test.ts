@@ -16,9 +16,9 @@ describe("GAlert", () => {
     });
 
     it("self-dismisses when closed", async () => {
-        const wrapper = mount(GAlert as object, {
-            localVue,
-            propsData: {
+        const wrapper = mount(GAlert, {
+            global: localVue,
+            props: {
                 dismissible: true,
             },
             slots: {
@@ -37,9 +37,9 @@ describe("GAlert", () => {
     });
 
     it("uses default v-model value before the show default", async () => {
-        const wrapper = mount(GAlert as object, {
-            localVue,
-            propsData: {
+        const wrapper = mount(GAlert, {
+            global: localVue,
+            props: {
                 value: false,
             },
         });
@@ -52,9 +52,9 @@ describe("GAlert", () => {
     });
 
     it("counts down numeric show values", async () => {
-        const wrapper = mount(GAlert as object, {
-            localVue,
-            propsData: {
+        const wrapper = mount(GAlert, {
+            global: localVue,
+            props: {
                 show: 2,
             },
         });
@@ -82,16 +82,16 @@ describe("GAlert", () => {
         ["info", "status"],
         ["success", "status"],
     ])("renders %s alerts with role=%s and no conflicting aria-live", (variant, role) => {
-        const wrapper = mount(GAlert as object, { localVue, propsData: { variant } });
+        const wrapper = mount(GAlert, { global: localVue, props: { variant } });
         const alert = wrapper.find(".alert");
         expect(alert.attributes("role")).toBe(role);
         expect(alert.attributes("aria-live")).toBeUndefined();
     });
 
     it("lets call sites override the role", () => {
-        const wrapper = mount(GAlert as object, {
-            localVue,
-            propsData: { variant: "danger" },
+        const wrapper = mount(GAlert, {
+            global: localVue,
+            props: { variant: "danger" },
             attrs: { role: "status" },
         });
         expect(wrapper.find(".alert").attributes("role")).toBe("status");

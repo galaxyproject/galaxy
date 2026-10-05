@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,7 +13,7 @@ const mockPush = vi.fn();
 const mockFrameAdd = vi.fn();
 let mockRoute: { path: string; params: Record<string, string> } = { path: "/", params: {} };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({ push: mockPush }),
     useRoute: () => mockRoute,
 }));
@@ -38,18 +38,23 @@ function mountComponent(source: "center" | "docked" | "panel") {
         stubs: { FontAwesomeIcon: true },
     });
     const store = useChatStore();
+    // chatStore is a setup-syntax store, so @pinia/testing's automatic action
+    // spying (which relies on the options-API `actions` map) doesn't apply --
+    // spy on the actions these tests assert against explicitly.
+    vi.spyOn(store, "requestNewChat");
+    vi.spyOn(store, "setLocation");
+    vi.spyOn(store, "hideChat");
+    vi.spyOn(store, "setActiveChatId");
     return { wrapper, store };
 }
 
 /** Find a GButton by its title prop */
-function findButton(wrapper: Wrapper<Vue>, title: string) {
-    const all = wrapper.findAllComponents(GButton);
-    for (let i = 0; i < all.length; i++) {
-        if (all.at(i).props("title") === title) {
-            return all.at(i);
-        }
+function findButton(wrapper: VueWrapper, title: string) {
+    const button = wrapper.findAllComponents(GButton).find((candidate) => candidate.props("title") === title);
+    if (!button) {
+        throw new Error(`GButton with title "${title}" not found`);
     }
-    throw new Error(`GButton with title "${title}" not found`);
+    return button;
 }
 
 describe("ChatActions", () => {

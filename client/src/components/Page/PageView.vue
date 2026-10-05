@@ -3,7 +3,7 @@ import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
 import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";

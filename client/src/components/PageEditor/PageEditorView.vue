@@ -2,7 +2,7 @@
 import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
@@ -203,7 +203,7 @@ function handleRevisionRestore(revisionId: string) {
         <template v-else-if="store.hasCurrentPage">
             <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
                 <template v-if="isStandalone" v-slot:extra-actions>
-                    <ObjectPermissionsModal :show.sync="showPermissions" :markdown-content="store.currentContent" />
+                    <ObjectPermissionsModal v-model:show="showPermissions" :markdown-content="store.currentContent" />
                     <GButton
                         color="blue"
                         outline
@@ -239,9 +239,9 @@ function handleRevisionRestore(revisionId: string) {
                         @update="handleContentUpdate" />
                 </div>
                 <GModal
+                    v-model:show="store.showRevisions"
                     data-description="page revisions modal"
                     fixed-height
-                    :show.sync="store.showRevisions"
                     size="small"
                     :title="`${labels.entityName} Revisions`">
                     <template v-slot:header>

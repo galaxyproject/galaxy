@@ -1,13 +1,12 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import GrantViewer from "./GrantViewer.vue";
 import OrganizationViewer from "./OrganizationViewer.vue";
 import PersonViewer from "./PersonViewer.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 const CASES = [
     {
@@ -32,7 +31,7 @@ const CASES = [
 
 describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -44,7 +43,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
 
         // The old `$refs['button'] || 'works-lazily'` target never resolved: $refs is empty on first render.
         expect(target).toEqual(expect.stringContaining(prefix));
-        expect(document.getElementById(target)).not.toBeNull();
+        expect(document.getElementById(target as string)).not.toBeNull();
     });
 
     it("anchors its popover to a named button so keyboard users can open it", async () => {
@@ -52,7 +51,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         await wrapper.vm.$nextTick();
         await wrapper.vm.$nextTick();
 
-        const target = document.getElementById(wrapper.findComponent(GPopover).props("target"));
+        const target = document.getElementById(wrapper.findComponent(GPopover).props("target") as string);
 
         expect(target?.tagName).toBe("BUTTON");
         expect(target?.getAttribute("title")).toEqual(expect.stringContaining("details"));
@@ -69,7 +68,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         // Duplicate ids would anchor every creator's popover to the first icon.
         expect(firstTarget).not.toEqual(secondTarget);
 
-        first.destroy();
-        second.destroy();
+        first.unmount();
+        second.unmount();
     });
 });

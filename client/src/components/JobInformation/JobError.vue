@@ -60,7 +60,7 @@ function toggleExpanded() {
                 <pre :class="errorClasses">{{ job.stderr }}</pre>
             </div>
             <!-- TODO: modal for reporting error. -->
-            <GModal :show.sync="showInfo" class="job-information-modal" size="medium" fixed-height>
+            <GModal v-model:show="showInfo" class="job-information-modal" size="medium" fixed-height>
                 <JobInformation :job-id="job.id" :include-times="true" />
             </GModal>
         </template>

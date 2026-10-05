@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
@@ -145,10 +145,10 @@ const { server, http } = useServerMock();
 describe("CreateForm", () => {
     it("should render a form with admin markdown converted to HTML in help", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: STANDARD_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
         await flushPromises();
 
@@ -163,10 +163,10 @@ describe("CreateForm", () => {
 
     it("should post to create a new object store on submit", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: SIMPLE_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
 
         server.use(
@@ -189,15 +189,15 @@ describe("CreateForm", () => {
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(1);
-        expect(emitted[0][0]).toMatchObject(FAKE_OBJECT_STORE);
+        expect(nth(emitted, 0)[0]).toMatchObject(FAKE_OBJECT_STORE);
     });
 
     it("should indicate an error on failure", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: SIMPLE_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {

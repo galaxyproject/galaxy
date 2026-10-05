@@ -470,7 +470,7 @@ function onLabelToggle(labelId: string) {
 
         <ToolInstallationRequestForm
             v-if="showToolInstallationRequestForm"
-            :show.sync="showToolInstallationRequestForm" />
+            v-model:show="showToolInstallationRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

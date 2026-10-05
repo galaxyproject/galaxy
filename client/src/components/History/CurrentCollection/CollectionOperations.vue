@@ -2,7 +2,7 @@
 import { faDownload, faInfoCircle, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import type { HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";

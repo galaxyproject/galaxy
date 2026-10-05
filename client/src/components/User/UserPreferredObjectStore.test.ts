@@ -26,7 +26,7 @@ async function mountComponent() {
     );
 
     const wrapper = mount(UserPreferredObjectStore as object, {
-        localVue,
+        global: localVue,
     });
 
     await flushPromises();

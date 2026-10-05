@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BSpinner } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
@@ -27,7 +28,7 @@ function onReset() {
 <template>
     <div>
         <GButton v-if="isBusy" size="small" disabled>
-            <b-spinner small></b-spinner>
+            <BSpinner small></BSpinner>
         </GButton>
         <GButton v-else-if="installState" color="blue" size="small" @click="() => emit('onInstall')"> Install </GButton>
         <GButton v-else-if="uninstallState" color="red" size="small" @click="() => emit('onUninstall')">

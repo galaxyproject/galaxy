@@ -104,10 +104,10 @@ watch(
         <GAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </GAlert>
         <JobStepJobs
             v-else
+            v-model:current-page="currentPage"
+            v-model:sort-desc="sortDesc"
             :jobs="currentStateJobs"
             :invocation-id="props.invocationId"
-            :current-page.sync="currentPage"
-            :sort-desc.sync="sortDesc"
             :per-page="PER_PAGE" />
     </div>
 </template>

@@ -78,7 +78,7 @@
 <script setup lang="ts">
 import { faAngleDoubleUp, faEdit, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 
 import { MARKDOWN_CELL_TYPES } from "@/components/Markdown/directives";
 
@@ -93,7 +93,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
-const CellCode = () => import("./CellCode.vue");
+const CellCode = defineAsyncComponent(() => import("./CellCode.vue"));
 
 const props = defineProps<{
     cellIndex: number;

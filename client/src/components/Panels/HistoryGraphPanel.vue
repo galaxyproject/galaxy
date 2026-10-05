@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import type { HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
@@ -39,17 +39,17 @@ function openGraph(history: HistorySummary) {
     <ActivityPanel title="History Graphs">
         <template v-slot:header>
             <FilterMenu
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
-                :loading="historiesLoading || loading"
-                :show-advanced.sync="showAdvanced" />
+                :loading="historiesLoading || loading" />
         </template>
         <HistoryScrollList
             v-show="!showAdvanced"
+            v-model:loading="loading"
             :filter="filter"
-            :loading.sync="loading"
             :current-item-id="highlightId"
             hide-deleted
             @setFilter="setFilter"

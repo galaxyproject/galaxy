@@ -26,7 +26,7 @@ const mockApplyFilters = vi.fn();
 const mockWindowOpen = vi.fn(() => null);
 const mockGetHistoryLoadError = vi.fn(() => null as Error | null);
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         resolve: (route: string) => ({
             href: `resolved-${route}`,
@@ -81,7 +81,7 @@ function initializeMocks() {
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, hasFilters = false) {
     initializeMocks();
 
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
@@ -92,11 +92,11 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
     const filters = hasFilters ? { deleted: false, visible: true, hid: "1" } : undefined;
 
     const wrapper = mount(SwitchToHistoryLink as object, {
-        propsData: {
+        props: {
             historyId: history.id,
             filters,
         },
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

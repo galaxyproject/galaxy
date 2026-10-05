@@ -1,7 +1,6 @@
-import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia, type Pinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, ref } from "vue";
 
@@ -22,11 +21,12 @@ vi.mock("./config", () => ({
     useConfig: () => ({ config: ref({ default_genome: "?" }), isConfigLoaded: ref(true) }),
 }));
 
-const localVue = getLocalVue();
-
 describe("upload configuration failures", () => {
+    let pinia: Pinia;
+
     beforeEach(() => {
-        setActivePinia(createPinia());
+        pinia = createPinia();
+        setActivePinia(pinia);
         vi.clearAllMocks();
         vi.mocked(getUploadDatatypes).mockResolvedValue([]);
         vi.mocked(getUploadDbKeys).mockResolvedValue([]);
@@ -59,7 +59,8 @@ describe("upload configuration failures", () => {
                     },
                     template: "<div />",
                 }),
-                { localVue },
+                // The mapper store spied on above has to be the one the component sees.
+                { global: { plugins: [pinia] } },
             );
             await flushPromises();
 
@@ -70,7 +71,7 @@ describe("upload configuration failures", () => {
                 expect(Toast.error).toHaveBeenCalledWith("Failed to fetch", `Unable to load upload ${resource}`);
                 expect(configurations!.ready.value).toBe(false);
             }
-            wrapper.destroy();
+            wrapper.unmount();
         },
     );
 });

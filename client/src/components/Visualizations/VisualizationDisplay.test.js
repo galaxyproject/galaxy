@@ -4,12 +4,13 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import VisualizationDisplay from "./VisualizationDisplay.vue";
 
 const guards = { leave: undefined, update: undefined };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     onBeforeRouteLeave: (guard) => (guards.leave = guard),
     onBeforeRouteUpdate: (guard) => (guards.update = guard),
 }));
@@ -30,7 +31,7 @@ vi.mock("@/components/Visualizations/VisualizationFrame.vue", () => ({
     default: {
         name: "VisualizationFrame",
         props: ["config", "name", "title", "visualizationId"],
-        render: (h) => h("div"),
+        render: () => h("div"),
     },
 }));
 
@@ -88,9 +89,10 @@ function watchUnloadListeners() {
 }
 
 function decide(guard) {
-    let allowed = true;
-    guard({}, {}, (proceed) => (allowed = proceed !== false));
-    return allowed;
+    // Vue Router 4 guards signal cancellation via their return value (`false`),
+    // not the old `(to, from, next)` callback style.
+    const result = guard({}, {});
+    return result !== false;
 }
 
 beforeEach(() => {
@@ -100,7 +102,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    wrapper?.destroy();
+    wrapper?.unmount();
     wrapper = undefined;
     // happy-dom has no confirm of its own, so the stub has to be taken back off.
     delete window.confirm;
@@ -148,7 +150,7 @@ describe("warning about unsaved work", () => {
         const listening = watchUnloadListeners();
         mountDisplay({ visualization: "example", visualizationId: "v1" });
         expect(listening.size).toBe(1);
-        wrapper.destroy();
+        wrapper.unmount();
         respond();
         await flushPromises();
         expect(listening.size).toBe(0);

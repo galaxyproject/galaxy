@@ -27,6 +27,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminalSource, PostJobAction, PostJobActions, Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
@@ -192,11 +193,11 @@ function onToggleVisible() {
     const step = stepStore.getStep(stepId.value);
     assertDefined(step);
 
-    const oldPostJobActions = structuredClone(step.post_job_actions) ?? {};
+    const oldPostJobActions = cloneRaw(step.post_job_actions) ?? {};
     let newPostJobActions;
 
     if (isVisible.value) {
-        newPostJobActions = structuredClone(step.post_job_actions) ?? {};
+        newPostJobActions = cloneRaw(step.post_job_actions) ?? {};
         newPostJobActions[actionKey] = {
             action_type: "HideDatasetAction",
             output_name: props.output.name,
@@ -205,7 +206,7 @@ function onToggleVisible() {
     } else {
         if (step.post_job_actions) {
             const { [actionKey]: _unused, ...remainingPostJobActions } = step.post_job_actions;
-            newPostJobActions = structuredClone(remainingPostJobActions);
+            newPostJobActions = cloneRaw(remainingPostJobActions);
         } else {
             newPostJobActions = {};
         }

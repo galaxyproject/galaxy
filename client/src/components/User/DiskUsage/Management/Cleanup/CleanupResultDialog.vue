@@ -53,7 +53,7 @@ defineExpose({
 </script>
 
 <template>
-    <GModal id="cleanup-result-modal" :show.sync="showModal" :title="title" size="medium">
+    <GModal id="cleanup-result-modal" v-model:show="showModal" :title="title" size="medium">
         <div class="text-center">
             <Alert
                 variant="info"

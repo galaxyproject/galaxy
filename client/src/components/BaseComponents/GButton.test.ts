@@ -1,12 +1,11 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import GButton from "./GButton.vue";
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 function mountGButton(props: object) {
     return mount(GButton as object, { propsData: props, localVue });
@@ -107,10 +106,27 @@ describe("GButton.vue click propagation", () => {
     });
 });
 
+const RouteStub = { render: () => null };
+
+function routerWithRoutes(paths = ["/", "/pages/create"], base?: string) {
+    return createRouter({
+        history: createMemoryHistory(base),
+        routes: paths.map((path) => ({ path, component: RouteStub })),
+    });
+}
+
 describe("GButton.vue router-link root", () => {
-    function routerWithRoutes() {
-        return new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
-    }
+    // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
+    // `false` attribute renders as the string "false" instead of being dropped.
+    it("leaves the native title off a router link with a tooltip", () => {
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create", title: "Create a page", tooltip: true },
+            localVue,
+            router: routerWithRoutes(),
+        });
+
+        expect(wrapper.get("a").attributes("title")).toBeUndefined();
+    });
 
     // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
     // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
@@ -152,7 +168,7 @@ describe("GButton.vue disabled navigation", () => {
     // reliable no-op in vue-router, so a disabled GButton renders as a plain button
     // instead and has no navigation behaviour to suppress.
     it("renders an enabled router-link button as an anchor", () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create" },
             localVue,
@@ -163,7 +179,7 @@ describe("GButton.vue disabled navigation", () => {
     });
 
     it("renders a disabled router-link button as a plain button", () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create", disabled: true, disabledTitle: "Nope" },
             localVue,
@@ -174,9 +190,9 @@ describe("GButton.vue disabled navigation", () => {
     });
 
     it("does not navigate when a disabled router-link button is clicked", async () => {
-        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/start" }, { path: "/pages/create" }] });
+        const router = routerWithRoutes(["/start", "/pages/create"]);
         await router.push("/start?keep=me");
-        const routeBeforeClick = router.currentRoute.fullPath;
+        const routeBeforeClick = router.currentRoute.value.fullPath;
         const wrapper = mount(GButton as object, {
             propsData: { to: "/pages/create", disabled: true },
             localVue,
@@ -185,6 +201,33 @@ describe("GButton.vue disabled navigation", () => {
 
         await wrapper.trigger("click");
 
-        expect(router.currentRoute.fullPath).toBe(routeBeforeClick);
+        expect(router.currentRoute.value.fullPath).toBe(routeBeforeClick);
+    });
+});
+
+describe("GButton.vue link targets", () => {
+    // Galaxy can be served under a URL prefix, so a router link's href has to come from
+    // the router, which knows the base -- open-in-new-tab and copy-link use it as is.
+    it("renders a router link's href with the router base", () => {
+        const router = routerWithRoutes(["/", "/pages/create"], "/galaxypf/");
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create" },
+            localVue,
+            router,
+        });
+
+        expect(wrapper.get("a").attributes("href")).toBe("/galaxypf/pages/create");
+    });
+
+    it("renders a plain anchor's href as given", () => {
+        const wrapper = mountGButton({ href: "https://example.org/data.txt" });
+
+        expect(wrapper.get("a").attributes("href")).toBe("https://example.org/data.txt");
+    });
+
+    it("renders no href when disabled", () => {
+        const wrapper = mountGButton({ href: "https://example.org/data.txt", disabled: true });
+
+        expect(wrapper.get("button").attributes("href")).toBeUndefined();
     });
 });

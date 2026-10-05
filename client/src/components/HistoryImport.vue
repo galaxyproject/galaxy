@@ -28,40 +28,40 @@
                 :identifier-text-capitalized="identifierTextCapitalized" />
         </div>
         <div v-else>
-            <b-form @submit.prevent="submit">
-                <b-form-group v-slot="{ ariaDescribedby }" :label="howLabel">
-                    <b-form-radio-group
+            <BForm @submit.prevent="submit">
+                <BFormGroup v-slot="{ ariaDescribedby }" :label="howLabel">
+                    <BFormRadioGroup
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
                         stacked>
-                        <b-form-radio value="externalUrl">
+                        <BFormRadio value="externalUrl">
                             Export URL from another Galaxy instance
                             <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                        </b-form-radio>
-                        <b-form-radio value="upload">
+                        </BFormRadio>
+                        <BFormRadio value="upload">
                             Upload local file from your computer
                             <FontAwesomeIcon :icon="faUpload" />
-                        </b-form-radio>
-                        <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
+                        </BFormRadio>
+                        <BFormRadio v-if="hasFileSources" value="remoteFilesUri">
                             Select a repository (e.g. Galaxy's FTP)
                             <FontAwesomeIcon :icon="faFolderOpen" />
-                        </b-form-radio>
-                    </b-form-radio-group>
-                </b-form-group>
+                        </BFormRadio>
+                    </BFormRadioGroup>
+                </BFormGroup>
 
-                <b-form-group v-if="invocationImport" v-slot="{ ariaDescribedby }" :label="whereLabel">
-                    <b-form-radio-group
+                <BFormGroup v-if="invocationImport" v-slot="{ ariaDescribedby }" :label="whereLabel">
+                    <BFormRadioGroup
                         v-model="importTarget"
                         :aria-describedby="ariaDescribedby"
                         name="import-target"
                         stacked>
-                        <b-form-radio value="newHistory"> Import into a new history. </b-form-radio>
-                        <b-form-radio value="currentHistory"> Import into the current history. </b-form-radio>
-                    </b-form-radio-group>
-                </b-form-group>
+                        <BFormRadio value="newHistory"> Import into a new history. </BFormRadio>
+                        <BFormRadio value="currentHistory"> Import into the current history. </BFormRadio>
+                    </BFormRadioGroup>
+                </BFormGroup>
 
-                <b-form-group v-if="importType === 'externalUrl'" :label="urlLabel">
+                <BFormGroup v-if="importType === 'externalUrl'" :label="urlLabel">
                     <GAlert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
@@ -71,20 +71,20 @@
                         </ExternalLink>
                     </GAlert>
 
-                    <b-form-input v-model="sourceURL" type="url" />
-                </b-form-group>
-                <b-form-group v-else-if="importType === 'upload'" :label="fileLabel">
-                    <b-form-file v-model="sourceFile" />
-                </b-form-group>
-                <b-form-group v-show="importType === 'remoteFilesUri'" label="Repository">
+                    <BFormInput v-model="sourceURL" type="url" />
+                </BFormGroup>
+                <BFormGroup v-else-if="importType === 'upload'" :label="fileLabel">
+                    <BFormFile v-model="sourceFile" />
+                </BFormGroup>
+                <BFormGroup v-show="importType === 'remoteFilesUri'" label="Repository">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
-                </b-form-group>
+                </BFormGroup>
 
                 <GButton class="import-button" color="blue" type="submit" :disabled="!importReady">
                     Import {{ identifierText }}
                 </GButton>
-            </b-form>
+            </BForm>
         </div>
     </div>
 </template>
@@ -94,8 +94,8 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue, { ref, watch } from "vue";
+import { BForm, BFormFile, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
 import { waitOnJob } from "@/components/JobStates/wait";
@@ -111,10 +111,14 @@ import ImportSuccess from "@/components/ImportSuccess.vue";
 import JobError from "@/components/JobInformation/JobError.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        BForm,
+        BFormFile,
+        BFormGroup,
+        BFormInput,
+        BFormRadio,
+        BFormRadioGroup,
         FilesInput,
         FontAwesomeIcon,
         ImportSuccess,

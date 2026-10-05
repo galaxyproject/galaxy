@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, reactive, ref, set } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 
@@ -36,7 +36,7 @@ const tutorialText = computed(() => {
 });
 
 function toggleCategory(category: string) {
-    set(categoryOpen, category, !categoryOpen[category]);
+    categoryOpen[category] = !categoryOpen[category];
 }
 </script>
 

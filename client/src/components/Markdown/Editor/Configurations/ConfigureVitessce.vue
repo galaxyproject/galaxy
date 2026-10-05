@@ -13,7 +13,18 @@
         </div>
         <GAlert v-else variant="warning" show>No URL-like fields found.</GAlert>
         <FormElementLabel title="Height" help="Specify the height of the view in pixels.">
-            <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight" />
+            <FormNumber
+                id="vitessce-height"
+                :value="height"
+                :min="100"
+                :max="1000"
+                type="integer"
+                @input="
+                    (v: number) => {
+                        height = v;
+                        onHeight(v);
+                    }
+                " />
         </FormElementLabel>
     </div>
 </template>

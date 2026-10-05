@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import { Toast } from "@/composables/toast";
@@ -116,12 +116,12 @@ function userTitle(title: string) {
 
         <template v-slot:header>
             <FilterMenu
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
-                :loading="historiesLoading || loading"
-                :show-advanced.sync="showAdvanced" />
+                :loading="historiesLoading || loading" />
             <section v-if="!showAdvanced">
                 <GButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
@@ -151,9 +151,9 @@ function userTitle(title: string) {
 
         <HistoryList
             v-show="!showAdvanced"
+            v-model:loading="loading"
             multiple
             :filter="filter"
-            :loading.sync="loading"
             :pinned-order-reset-key="pinnedOrderResetKey"
             @setFilter="setFilter" />
     </ActivityPanel>

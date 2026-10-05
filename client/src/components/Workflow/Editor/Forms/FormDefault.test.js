@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 
@@ -10,10 +10,9 @@ import FormCollectionType from "./FormCollectionType.vue";
 import FormDefault from "./FormDefault.vue";
 import FormInputCollection from "./FormInputCollection.vue";
 
-vi.mock("./FormDatatype.vue", () => ({ default: { render: (h) => h("div") } }));
+vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 describe("FormDefault", () => {
     let wrapper;
@@ -24,7 +23,7 @@ describe("FormDefault", () => {
 
     beforeEach(() => {
         wrapper = mount(FormDefault, {
-            propsData: {
+            props: {
                 datatypes: [],
                 step: {
                     id: 0,
@@ -40,11 +39,8 @@ describe("FormDefault", () => {
                     outputs,
                 },
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            provide: {
-                workflowId: "mock-workflow",
-            },
         });
     });
 
@@ -63,9 +59,8 @@ describe("FormDefault", () => {
         };
         const collectionWrapper = mount(FormDefault, {
             propsData: { datatypes: [], step: collectionStep },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-            provide: { workflowId: "mock-workflow" },
         });
         const collectionTypeField = () =>
             collectionWrapper.findComponent(FormInputCollection).findComponent(FormCollectionType);
@@ -83,7 +78,7 @@ describe("FormDefault", () => {
         collectionTypeField().vm.$emit("onChange", "list:paired");
         expect(collectionWrapper.emitted("onSetData")).toHaveLength(2);
         expect(collectionWrapper.emitted("onSetData")[1][1].inputs.collection_type).toBe("list:paired");
-        collectionWrapper.destroy();
+        collectionWrapper.unmount();
     });
 
     it("check initial value and value change", async () => {
