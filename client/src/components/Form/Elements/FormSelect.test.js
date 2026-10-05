@@ -129,3 +129,12 @@ describe("FormSelect", () => {
         expect(finalValue).toEqual(["value_1"]);
     });
 });
+
+describe("FormSelect accessible names", () => {
+    it("does not name the search input after its id", () => {
+        const wrapper = createTarget({ options: defaultOptions });
+        const input = wrapper.find("input.multiselect__input");
+        expect(input.exists()).toBe(true);
+        expect(input.attributes("aria-label")).toBeUndefined();
+    });
+});
