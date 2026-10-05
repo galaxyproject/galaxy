@@ -1147,3 +1147,92 @@ $breakpoint-xl: 1200px;
     }
 }
 </style>
+
+<style lang="scss">
+// Baseline for consumers without Bootstrap (the Tool Shed), scoped to the table's own container
+// so it adds no global utilities. Every rule sits in :where() at zero specificity, and only sets
+// properties Bootstrap's table, reboot and (!important) utility rules also set, so the client's
+// look is unchanged.
+:where(.g-table-container) {
+    :where(.table) {
+        width: 100%;
+        margin-bottom: var(--spacing-4);
+        border-collapse: collapse;
+    }
+    // Browsers center <th> by default; Bootstrap's reboot resets it to the row's alignment
+    :where(th) {
+        text-align: inherit;
+    }
+    :where(.table th, .table td) {
+        padding: var(--spacing-3);
+        vertical-align: top;
+        border-top: 1px solid var(--color-grey-300);
+    }
+    :where(.table thead th) {
+        vertical-align: bottom;
+        border-bottom: 2px solid var(--color-grey-300);
+    }
+    :where(.table-striped tbody tr:nth-of-type(odd)) {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    :where(.table-hover tbody tr:hover) {
+        background-color: rgba(0, 0, 0, 0.075);
+    }
+    :where(.table-bordered, .table-bordered th, .table-bordered td) {
+        border: 1px solid var(--color-grey-300);
+    }
+    :where(caption) {
+        padding-top: var(--spacing-3);
+        padding-bottom: var(--spacing-3);
+        color: var(--color-grey-600);
+        text-align: left;
+        caption-side: bottom;
+    }
+    :where(.caption-top) {
+        caption-side: top;
+    }
+
+    // Utilities last: at equal (zero) specificity they must win over the .table defaults above,
+    // e.g. the table's own mb-0 over .table's margin
+    :where(.position-relative) {
+        position: relative;
+    }
+    :where(.w-100) {
+        width: 100%;
+    }
+    :where(.m-0) {
+        margin: 0;
+    }
+    :where(.mb-0) {
+        margin-bottom: 0;
+    }
+    :where(.ml-1) {
+        margin-left: 0.25rem;
+    }
+    :where(.py-3) {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    :where(.d-flex) {
+        display: flex;
+    }
+    :where(.align-items-center) {
+        align-items: center;
+    }
+    :where(.flex-grow-1) {
+        flex-grow: 1;
+    }
+    :where(.flex-shrink-0) {
+        flex-shrink: 0;
+    }
+    :where(.text-left) {
+        text-align: left;
+    }
+    :where(.text-center) {
+        text-align: center;
+    }
+    :where(.text-right) {
+        text-align: right;
+    }
+}
+</style>
