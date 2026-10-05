@@ -206,7 +206,7 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
         </component-showcase>
 
         <!-- MetadataInspector Components -->
-        <div class="text-h5 q-my-lg">MetadataInspector Components</div>
+        <h2 class="metadata-inspector-heading">MetadataInspector Components</h2>
 
         <component-showcase title="ChangesetSummaryTable">
             <component-showcase-example
@@ -334,3 +334,11 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
         </component-showcase>
     </page-container>
 </template>
+
+<style scoped>
+.metadata-inspector-heading {
+    margin-top: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+    font-size: 1.5rem;
+}
+</style>

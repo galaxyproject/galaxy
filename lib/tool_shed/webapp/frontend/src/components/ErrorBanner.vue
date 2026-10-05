@@ -31,7 +31,7 @@ const effectiveShow = computed(() => props.error && show.value)
 </script>
 
 <template>
-    <div class="q-pa-md q-gutter-sm">
+    <div class="error-banner-wrapper">
         <GAlert v-if="effectiveShow" variant="danger" aria-live="assertive" class="error-banner">
             <strong>{{ props.error }}</strong>
             <GButton transparent class="error-banner-dismiss" @click="dismiss">Dismiss</GButton>
@@ -40,6 +40,10 @@ const effectiveShow = computed(() => props.error && show.value)
 </template>
 
 <style scoped>
+.error-banner-wrapper {
+    padding: var(--spacing-4);
+}
+
 .error-banner {
     display: flex;
     align-items: center;

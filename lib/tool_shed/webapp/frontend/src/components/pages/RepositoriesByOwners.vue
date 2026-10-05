@@ -30,7 +30,7 @@ function onCleared() {
             v-if="!props.username"
             @selected-user="onSelectUser"
             @cleared="onCleared"
-            class="q-ma-md"
+            class="owner-select"
             :dense="false"
         >
         </select-user>
@@ -39,3 +39,9 @@ function onCleared() {
         </div>
     </page-container>
 </template>
+
+<style scoped>
+.owner-select {
+    margin: var(--spacing-4);
+}
+</style>

@@ -12,8 +12,8 @@ withDefaults(defineProps<LoadingProps>(), {
 </script>
 
 <template>
-    <div class="q-pa-md" role="status" aria-live="polite" aria-busy="true">
-        <div class="fit q-gutter-md row loading-row">
+    <div class="loading-wrapper" role="status" aria-live="polite" aria-busy="true">
+        <div class="loading-row">
             <FontAwesomeIcon :icon="faSpinner" spin class="loading-spinner" aria-hidden="true" />
             <span class="loading-message">{{ message }}.<span class="blinking">..</span></span>
         </div>
@@ -21,8 +21,15 @@ withDefaults(defineProps<LoadingProps>(), {
 </template>
 
 <style scoped>
+.loading-wrapper {
+    padding: var(--spacing-4);
+}
+
 .loading-row {
+    display: flex;
     align-items: center;
+    gap: var(--spacing-4);
+    width: 100%;
 }
 
 .loading-spinner {
