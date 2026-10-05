@@ -130,7 +130,7 @@ def sanitize_fts5_query(query: str, preserve_phrases: bool = True) -> str:
 
 _ELLIPSIS = "..."
 # Kramdown/Liquid constructs FTS5 can cut off at either end of a snippet.
-_LEADING_FRAGMENT = re.compile(r"^(?:[^{}<>]*?%\}|[^\[\]]*\]\([^)]*\)?|[^<>]*?-->|[\w-]+>)")
+_LEADING_FRAGMENT = re.compile(r"^(?:[^{}<>]*?%\}|[^\[\]]*\]\([^)]*\)?|[^<>]*?--!?>|[\w-]+>)")
 _TRAILING_FRAGMENT = re.compile(r"(?:\{[%:{][^}]*|!\[[^\]]*(?:\]\([^)]*)?|<[^>]*)$")
 
 
@@ -149,7 +149,7 @@ def plain_excerpt(text: str) -> str:
     if trail:
         text = _TRAILING_FRAGMENT.sub("", text)
     text = re.sub(r"\{%\s*tool\s*\[([^\]]*)\]\([^)]*\)\s*%\}", r"\1", text)
-    text = re.sub(r"\s*\{%.*?%\}|\{\{.*?\}\}|<!--.*?-->", "", text, flags=re.DOTALL)
+    text = re.sub(r"\s*\{%.*?%\}|\{\{.*?\}\}|<!--.*?--!?>", "", text, flags=re.DOTALL)
     text = re.sub(r"\{:[^}]*\}", "", text)
     text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)?|\[([^\]]*)$", r"\1\2", text)
