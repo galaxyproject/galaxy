@@ -61,7 +61,7 @@ describe("layout.ts", () => {
                             input_type: "dataset",
                         },
                     ],
-                    when: "${check_value}",
+                    when: "$(inputs.check_value)",
                     inputConnections: {
                         check_value: { output_name: "output", id: 0 },
                     },
@@ -98,7 +98,7 @@ describe("layout.ts", () => {
             // First conditional step
             const cond1 = stepStore.addStep(
                 createTestStep(1, {
-                    when: "${flag1}",
+                    when: "$(inputs.flag1)",
                     inputConnections: { flag1: { output_name: "output", id: 0 } },
                 }),
             );
@@ -106,7 +106,7 @@ describe("layout.ts", () => {
             // Second conditional step
             const cond2 = stepStore.addStep(
                 createTestStep(2, {
-                    when: "${flag2}",
+                    when: "$(inputs.flag2)",
                     inputConnections: { flag2: { output_name: "output", id: 0 } },
                 }),
             );
