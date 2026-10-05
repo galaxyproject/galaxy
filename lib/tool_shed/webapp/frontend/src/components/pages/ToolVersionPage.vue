@@ -115,79 +115,65 @@ const linkedFromOlderRevision = computed(() => {
             </div>
             <hr />
             <div class="tool-card-section">
-                <q-list bordered separator>
-                    <q-item v-if="repository && repositoryRevision && repositoryLink">
-                        <q-item-section>
-                            <q-item-label overline>Repository</q-item-label>
-                            <q-item-label
-                                ><router-link :to="repositoryLink"
-                                    >{{ repository.owner }} / {{ repository.name }} (@
-                                    {{ repositoryRevision.changeset_revision }})</router-link
-                                ></q-item-label
+                <dl class="tool-details">
+                    <div v-if="repository && repositoryRevision && repositoryLink" class="tool-detail">
+                        <dt>Repository</dt>
+                        <dd>
+                            <router-link :to="repositoryLink"
+                                >{{ repository.owner }} / {{ repository.name }} (@
+                                {{ repositoryRevision.changeset_revision }})</router-link
                             >
-                        </q-item-section>
-                    </q-item>
-                    <q-item>
-                        <q-item-section>
-                            <q-item-label overline>TRS ID</q-item-label>
-                            <q-item-label>{{ trsToolId }}</q-item-label>
-                        </q-item-section>
-                    </q-item>
-                    <q-item>
-                        <q-item-section>
-                            <q-item-label overline>LICENSE</q-item-label>
-                            <q-item-label v-if="tool?.license">
-                                <license-link :id="tool.license" />
-                            </q-item-label>
-                            <q-item-label v-else><i>no license specified</i></q-item-label>
-                        </q-item-section>
-                    </q-item>
-                    <q-item>
-                        <q-item-section>
-                            <q-item-label overline>PROFILE</q-item-label>
-                            <q-item-label v-if="tool?.profile">
-                                {{ tool.profile }}
-                            </q-item-label>
-                            <q-item-label v-else><i>no profile specified - default of 16.01 assumed</i></q-item-label>
-                        </q-item-section>
-                    </q-item>
-                    <q-item v-for="edamOperation in tool?.edam_operations" :key="edamOperation">
-                        <q-item-section>
-                            <q-item-label overline>EDAM OPERATION</q-item-label>
-                            <q-item-label>
-                                <edam-link :term="edamOperation" />
-                            </q-item-label>
-                        </q-item-section>
-                    </q-item>
-                    <q-item v-for="edamTopic in tool?.edam_topics" :key="edamTopic">
-                        <q-item-section>
-                            <q-item-label overline>EDAM TOPIC</q-item-label>
-                            <q-item-label>
-                                <edam-link :term="edamTopic" />
-                            </q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-list>
+                        </dd>
+                    </div>
+                    <div class="tool-detail">
+                        <dt>TRS ID</dt>
+                        <dd>{{ trsToolId }}</dd>
+                    </div>
+                    <div class="tool-detail">
+                        <dt>LICENSE</dt>
+                        <dd v-if="tool?.license">
+                            <license-link :id="tool.license" />
+                        </dd>
+                        <dd v-else><i>no license specified</i></dd>
+                    </div>
+                    <div class="tool-detail">
+                        <dt>PROFILE</dt>
+                        <dd v-if="tool?.profile">
+                            {{ tool.profile }}
+                        </dd>
+                        <dd v-else><i>no profile specified - default of 16.01 assumed</i></dd>
+                    </div>
+                    <div v-for="edamOperation in tool?.edam_operations" :key="edamOperation" class="tool-detail">
+                        <dt>EDAM OPERATION</dt>
+                        <dd>
+                            <edam-link :term="edamOperation" />
+                        </dd>
+                    </div>
+                    <div v-for="edamTopic in tool?.edam_topics" :key="edamTopic" class="tool-detail">
+                        <dt>EDAM TOPIC</dt>
+                        <dd>
+                            <edam-link :term="edamTopic" />
+                        </dd>
+                    </div>
+                </dl>
             </div>
             <hr />
             <div v-if="xrefs.length > 0" class="tool-card-section">
                 <h2 class="tool-section-heading">External links</h2>
-                <q-list bordered separator>
-                    <q-item v-for="xref in xrefs" :key="xref.value">
-                        <q-item-section>
-                            <q-item-label overline>Catalog {{ xref.type }}</q-item-label>
-                            <q-item-label v-if="xref.type == 'bio.tools'">
-                                <bio-tools-link :id="xref.value" />
-                            </q-item-label>
-                            <q-item-label v-else-if="xref.type == 'bioconductor'">
-                                <bioconductor-link :id="xref.value" />
-                            </q-item-label>
-                            <q-item-label v-else>
-                                {{ xref.value }}
-                            </q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-list>
+                <dl class="tool-details">
+                    <div v-for="xref in xrefs" :key="xref.value" class="tool-detail">
+                        <dt>Catalog {{ xref.type }}</dt>
+                        <dd v-if="xref.type == 'bio.tools'">
+                            <bio-tools-link :id="xref.value" />
+                        </dd>
+                        <dd v-else-if="xref.type == 'bioconductor'">
+                            <bioconductor-link :id="xref.value" />
+                        </dd>
+                        <dd v-else>
+                            {{ xref.value }}
+                        </dd>
+                    </div>
+                </dl>
             </div>
             <hr />
             <div class="tool-card-section">
@@ -198,14 +184,12 @@ const linkedFromOlderRevision = computed(() => {
             <div class="tool-card-section">
                 <h2 class="tool-section-heading">References</h2>
                 <span v-if="citations.length < 1"><i>This tool does not define any references.</i></span>
-                <q-list bordered separator v-else>
-                    <q-item v-for="(citation, index) in tool?.citations" :key="index">
-                        <q-item-section>
-                            <q-item-label overline>{{ citation.type }}</q-item-label>
-                            <q-item-label>{{ citation.content }}</q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-list>
+                <dl v-else class="tool-details">
+                    <div v-for="(citation, index) in tool?.citations" :key="index" class="tool-detail">
+                        <dt>{{ citation.type }}</dt>
+                        <dd>{{ citation.content }}</dd>
+                    </div>
+                </dl>
             </div>
         </section>
     </q-page>
@@ -235,6 +219,31 @@ const linkedFromOlderRevision = computed(() => {
 
 .tool-card-section {
     padding: var(--spacing-4);
+}
+
+.tool-details {
+    margin: 0;
+    border: 1px solid var(--color-grey-200);
+}
+
+.tool-detail {
+    padding: var(--spacing-2) var(--spacing-4);
+}
+
+.tool-detail + .tool-detail {
+    border-top: 1px solid var(--color-grey-200);
+}
+
+.tool-detail dt {
+    color: var(--color-grey-600);
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 2;
+}
+
+.tool-detail dd {
+    margin: 0;
 }
 
 .tool-section-heading {

@@ -47,7 +47,7 @@ describe("RevisionsTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            expect(wrapper.find(".q-list").exists()).toBe(true)
+            expect(wrapper.find(".revision-list").exists()).toBe(true)
         })
 
         it("shows revision identifiers in format [num:hash]", () => {

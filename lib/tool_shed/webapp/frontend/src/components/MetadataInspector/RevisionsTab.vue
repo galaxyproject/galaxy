@@ -58,37 +58,34 @@ watch(
 
 <template>
     <div>
-        <div v-if="sortedRevisions.length === 0" class="text-grey">No revisions found.</div>
+        <div v-if="sortedRevisions.length === 0" class="revisions-empty">No revisions found.</div>
 
-        <q-list bordered separator v-else>
-            <div v-for="rev in sortedRevisions" :key="rev.key" class="revision-entry">
-                <q-item>
-                    <q-item-section avatar>
-                        <FontAwesomeIcon
-                            :icon="rev.data.downloadable ? faCircleCheck : faCircleXmark"
-                            :class="rev.data.downloadable ? 'text-positive' : 'text-negative'"
-                        />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>[{{ rev.numericRevision }}:{{ rev.hash.substring(0, 7) }}]</q-item-label>
-                        <q-item-label caption>{{ toolSummary(rev.data) }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side v-if="rev.data.invalid_tools?.length > 0">
-                        <span class="invalid-tools-badge">{{ rev.data.invalid_tools.length }} invalid</span>
-                    </q-item-section>
-                    <q-item-section side>
-                        <GButton
-                            class="revision-toggle"
-                            transparent
-                            :aria-expanded="expandedRevisions.has(rev.key)"
-                            :aria-controls="`revision-${rev.numericRevision}-details`"
-                            :aria-label="`Details for revision ${rev.numericRevision}`"
-                            @click="toggleExpand(rev.key)"
-                        >
-                            <FontAwesomeIcon :icon="expandedRevisions.has(rev.key) ? faChevronDown : faChevronRight" />
-                        </GButton>
-                    </q-item-section>
-                </q-item>
+        <ul v-else class="revision-list">
+            <li v-for="rev in sortedRevisions" :key="rev.key" class="revision-entry">
+                <div class="revision-item">
+                    <FontAwesomeIcon
+                        class="revision-status"
+                        :icon="rev.data.downloadable ? faCircleCheck : faCircleXmark"
+                        :class="rev.data.downloadable ? 'revision-status--downloadable' : 'revision-status--blocked'"
+                    />
+                    <div class="revision-summary">
+                        <div>[{{ rev.numericRevision }}:{{ rev.hash.substring(0, 7) }}]</div>
+                        <div class="revision-caption">{{ toolSummary(rev.data) }}</div>
+                    </div>
+                    <span v-if="rev.data.invalid_tools?.length > 0" class="invalid-tools-badge"
+                        >{{ rev.data.invalid_tools.length }} invalid</span
+                    >
+                    <GButton
+                        class="revision-toggle"
+                        transparent
+                        :aria-expanded="expandedRevisions.has(rev.key)"
+                        :aria-controls="`revision-${rev.numericRevision}-details`"
+                        :aria-label="`Details for revision ${rev.numericRevision}`"
+                        @click="toggleExpand(rev.key)"
+                    >
+                        <FontAwesomeIcon :icon="expandedRevisions.has(rev.key) ? faChevronDown : faChevronRight" />
+                    </GButton>
+                </div>
 
                 <GCollapse :id="`revision-${rev.numericRevision}-details`" :value="expandedRevisions.has(rev.key)">
                     <template #default="{ contentActive }">
@@ -108,12 +105,54 @@ watch(
                         </div>
                     </template>
                 </GCollapse>
-            </div>
-        </q-list>
+            </li>
+        </ul>
     </div>
 </template>
 
 <style scoped>
+.revisions-empty {
+    color: var(--color-grey-500);
+}
+
+.revision-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--color-grey-200);
+}
+
+.revision-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    min-height: 3rem;
+    padding: var(--spacing-2) var(--spacing-4);
+}
+
+.revision-status {
+    flex: none;
+    width: 1.5rem;
+}
+
+.revision-status--downloadable {
+    color: var(--color-green-500);
+}
+
+.revision-status--blocked {
+    color: var(--color-red-600);
+}
+
+.revision-summary {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.revision-caption {
+    color: var(--color-grey-600);
+    font-size: var(--font-size-small);
+}
+
 .revision-entry + .revision-entry {
     border-top: 1px solid var(--color-grey-200);
 }

@@ -55,8 +55,8 @@ class TestFrontendRepositories(PlaywrightTestCase):
         page = self._page
 
         page.locator("[role=tab]").filter(has_text="Revisions").click()
-        # RevisionsTab uses a q-list of collapsible revisions showing changeset hashes
-        expect(page.locator(".q-list")).to_be_visible()
+        # RevisionsTab renders a list of collapsible revisions showing changeset hashes
+        expect(page.locator(".revision-list")).to_be_visible()
 
     def test_metadata_inspector_reset_tab(self):
         """Verify Reset Metadata tab with admin login."""
