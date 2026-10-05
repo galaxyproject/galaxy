@@ -74,7 +74,7 @@ watch(
                         <q-item-label caption>{{ toolSummary(rev.data) }}</q-item-label>
                     </q-item-section>
                     <q-item-section side v-if="rev.data.invalid_tools?.length > 0">
-                        <q-badge color="warning" :label="`${rev.data.invalid_tools.length} invalid`" />
+                        <span class="invalid-tools-badge">{{ rev.data.invalid_tools.length }} invalid</span>
                     </q-item-section>
                     <q-item-section side>
                         <GButton
@@ -116,5 +116,16 @@ watch(
 <style scoped>
 .revision-entry + .revision-entry {
     border-top: 1px solid var(--color-grey-200);
+}
+
+.invalid-tools-badge {
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--spacing-1);
+    background: var(--color-yellow-600);
+    color: var(--color-yellow-900);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
 }
 </style>

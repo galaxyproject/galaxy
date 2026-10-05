@@ -104,7 +104,7 @@ function toggleTool(toolId: string) {
                     <template #title>
                         <div class="row items-center q-gutter-sm">
                             <span class="text-weight-medium">{{ ver.version }}</span>
-                            <q-badge color="grey-6">[{{ ver.numericRevision }}]</q-badge>
+                            <span class="revision-badge">[{{ ver.numericRevision }}]</span>
                             <GButton size="small" transparent @click="emit('goToRevision', ver.revision)">
                                 <FontAwesomeIcon :icon="faArrowRight" class="q-mr-xs" />
                                 Rev {{ ver.numericRevision }}
@@ -143,3 +143,15 @@ function toggleTool(toolId: string) {
         </q-card>
     </div>
 </template>
+
+<style scoped>
+.revision-badge {
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--spacing-1);
+    background: var(--color-grey-500);
+    color: var(--color-grey-100);
+    font-size: var(--font-size-small);
+    line-height: 1;
+    white-space: nowrap;
+}
+</style>

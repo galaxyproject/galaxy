@@ -61,6 +61,20 @@ describe("ToolHistoryTab", () => {
         })
     })
 
+    describe("revision badge", () => {
+        it("labels each version with its revision number", () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: fixtureMetadata },
+            })
+
+            const badges = wrapper.findAll(".revision-badge")
+            expect(badges.length).toBeGreaterThan(0)
+            for (const badge of badges) {
+                expect(badge.text()).toMatch(/^\[\d+\]$/)
+            }
+        })
+    })
+
     describe("tool history sorting", () => {
         it("sorts versions with newest revision first", () => {
             const wrapper = mount(ToolHistoryTab, {

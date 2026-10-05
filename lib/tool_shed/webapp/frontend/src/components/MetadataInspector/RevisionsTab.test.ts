@@ -111,6 +111,15 @@ describe("RevisionsTab", () => {
             })
 
             expect(wrapper.text()).toMatch(/\d+ invalid/)
+            expect(wrapper.find(".invalid-tools-badge").text()).toMatch(/^\d+ invalid$/)
+        })
+
+        it("shows no badge for revisions without invalid tools", () => {
+            const wrapper = mount(RevisionsTab, {
+                props: { metadata: fixtureMetadata },
+            })
+
+            expect(wrapper.find(".invalid-tools-badge").exists()).toBe(false)
         })
 
         it("shows invalid tool paths when revision is expanded", async () => {
@@ -234,6 +243,7 @@ describe("RevisionsTab", () => {
             })
 
             expect(wrapper.text()).toContain("5 invalid")
+            expect(wrapper.find(".invalid-tools-badge").text()).toBe("5 invalid")
         })
     })
 })
