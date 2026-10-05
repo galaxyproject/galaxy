@@ -1,6 +1,7 @@
-import { computed, ref, unref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-import { useConfig } from "@/composables/config";
+import { useConfigStore } from "@/stores/configurationStore";
 
 /**
  * Shared open/close state for the global command palette. The palette
@@ -10,14 +11,15 @@ import { useConfig } from "@/composables/config";
 const isPaletteOpen = ref(false);
 
 export function useCommandPalette() {
-    const { config, isConfigLoaded } = useConfig();
+    // Not useConfig(): its mount hook would reload the config, and App owns startup loading.
+    const { config, isLoaded } = storeToRefs(useConfigStore());
 
     /**
      * Whether the instance offers the palette at all, to anonymous and registered users alike. The
      * configuration has to have landed first: until it does an instance that
      * turned the palette off would still answer ctrl/cmd+k.
      */
-    const paletteEnabled = computed(() => unref(isConfigLoaded) && config.value?.enable_command_palette !== false);
+    const paletteEnabled = computed(() => isLoaded.value && config.value?.enable_command_palette !== false);
 
     function openPalette() {
         if (!paletteEnabled.value) {

@@ -37,6 +37,8 @@ const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
 
 const DEBOUNCE_WAIT = 250;
+/** The palette only opens once the configuration store holds a configuration */
+const CONFIG_LOADED = { configurationStore: { config: {} } };
 
 async function settle() {
     await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_WAIT));
@@ -116,7 +118,7 @@ describe("CommandPalette", () => {
         wrapper = mount(MountTarget as object, {
             localVue,
             router,
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true, initialState: CONFIG_LOADED }),
         });
         useCommandPalette().openPalette();
         await settle();
@@ -1152,7 +1154,7 @@ describe("CommandPalette", () => {
             wrapper = mount(MountTarget as object, {
                 localVue,
                 router,
-                pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true }),
+                pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true, initialState: CONFIG_LOADED }),
             });
             useCommandPalette().openPalette();
             await settle();
@@ -1182,7 +1184,7 @@ describe("CommandPalette", () => {
         wrapper.unmount();
         useCommandPalette().closePalette();
 
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: true });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: true, initialState: CONFIG_LOADED });
         const toolStore = useToolStore();
         let hydrate: () => void = () => {};
         const fetching = new Promise<void>((resolve) => {

@@ -7,6 +7,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadMastheadWebhooks } from "./_webhooks";
@@ -45,7 +46,7 @@ describe("Masthead.vue", () => {
         setupMockConfig({});
         originalUrl = window.location.href;
         localVue = getLocalVue();
-        testPinia = createTestingPinia({ createSpy: vi.fn });
+        testPinia = createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
 
         windowTab = {
             id: "enable-window-manager",
@@ -79,6 +80,7 @@ describe("Masthead.vue", () => {
     async function remount(config, user = currentUser) {
         wrapper.unmount();
         setupMockConfig(config);
+        useConfigStore().config = config;
         const userStore = useUserStore();
         userStore.currentUser = user;
         wrapper = mount(Masthead, {

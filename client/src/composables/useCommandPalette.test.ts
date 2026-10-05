@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AnonymousUser, AnyUser } from "@/api";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { useCommandPalette } from "./useCommandPalette";
@@ -15,14 +15,17 @@ const ANONYMOUS_USER: AnonymousUser = {
     nice_total_disk_usage: "0.0 bytes",
 };
 
+function setupConfig(config: Record<string, unknown>, isLoaded = true) {
+    useConfigStore().config = isLoaded ? config : null;
+}
+
 function login(user: AnyUser) {
     useUserStore().currentUser = user;
 }
 
 describe("useCommandPalette", () => {
     beforeEach(() => {
-        createTestingPinia({ createSpy: vi.fn });
-        setupMockConfig({});
+        createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
         login(REGISTERED_USER);
         useCommandPalette().closePalette();
     });
@@ -49,7 +52,7 @@ describe("useCommandPalette", () => {
         [false, "a registered", REGISTERED_USER, false],
         [false, "an anonymous", ANONYMOUS_USER, false],
     ])("is %s for %s user: %s", (enablePalette, _who, user, expected) => {
-        setupMockConfig({ enable_command_palette: enablePalette });
+        setupConfig({ enable_command_palette: enablePalette });
         login(user);
 
         expect(useCommandPalette().paletteEnabled.value).toBe(expected);
@@ -62,13 +65,13 @@ describe("useCommandPalette", () => {
     });
 
     it("stays disabled until the configuration has landed", () => {
-        setupMockConfig({ enable_command_palette: true }, false);
+        setupConfig({ enable_command_palette: true }, false);
 
         expect(useCommandPalette().paletteEnabled.value).toBe(false);
     });
 
     it("refuses to open while it is disabled", () => {
-        setupMockConfig({ enable_command_palette: false });
+        setupConfig({ enable_command_palette: false });
         const { isPaletteOpen, openPalette, togglePalette } = useCommandPalette();
 
         openPalette();
