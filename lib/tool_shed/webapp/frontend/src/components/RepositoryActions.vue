@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { faArrowsRotate, faGear, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { GDropdownItemButton } from "@galaxyproject/galaxy-ui"
+import ActionMenu from "@/components/ActionMenu.vue"
 import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
 
@@ -33,22 +37,18 @@ type Emits = {
 const emits = defineEmits<Emits>()
 </script>
 <template>
-    <q-fab
-        class="q-px-sm"
-        color="secondary"
-        text-color="primary"
-        icon="settings"
-        direction="down"
-        aria-label="Repository settings"
-    >
-        <q-fab-action color="primary" icon="history" @click="resetMetadata" label="Reset Metadata" />
-        <q-fab-action
-            color="primary"
-            icon="warning"
-            @click="$emit('undeprecate')"
-            label="Un-mark as Deprecated"
-            v-if="deprecated"
-        />
-        <q-fab-action color="primary" icon="warning" @click="$emit('deprecate')" label="Mark as Deprecated" v-else />
-    </q-fab>
+    <ActionMenu :icon="faGear" label="Repository settings">
+        <GDropdownItemButton @click="resetMetadata">
+            <FontAwesomeIcon :icon="faArrowsRotate" fixed-width />
+            Reset Metadata
+        </GDropdownItemButton>
+        <GDropdownItemButton v-if="deprecated" @click="$emit('undeprecate')">
+            <FontAwesomeIcon :icon="faTriangleExclamation" fixed-width />
+            Un-mark as Deprecated
+        </GDropdownItemButton>
+        <GDropdownItemButton v-else @click="$emit('deprecate')">
+            <FontAwesomeIcon :icon="faTriangleExclamation" fixed-width />
+            Mark as Deprecated
+        </GDropdownItemButton>
+    </ActionMenu>
 </template>
