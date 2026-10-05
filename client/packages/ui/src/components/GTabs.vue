@@ -259,3 +259,65 @@ const TabTitleContent = defineComponent({
     }
 }
 </style>
+
+<style lang="scss">
+// Baseline for consumers without Bootstrap (the Tool Shed). Every rule sits in :where(), so
+// it has zero specificity and Bootstrap plus the client's theme still win wherever they load.
+// Keep to properties Bootstrap's nav rules also set, or the client picks up the extra.
+:where(.tabs .nav) {
+    display: flex;
+    flex-wrap: wrap;
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+}
+
+:where(.tabs .nav-link) {
+    display: block;
+    padding: var(--spacing-2) var(--spacing-4);
+    color: var(--color-blue-700);
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+        text-decoration: none;
+    }
+
+    &.disabled {
+        color: var(--color-grey-500);
+        pointer-events: none;
+        cursor: default;
+    }
+}
+
+:where(.tabs .nav-tabs) {
+    border-bottom: 1px solid var(--color-grey-300);
+}
+
+:where(.tabs .nav-tabs .nav-link) {
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+
+    &:hover,
+    &:focus {
+        border-color: var(--color-grey-200) var(--color-grey-200) var(--color-grey-300);
+    }
+
+    &.active {
+        color: var(--color-grey-800);
+        background-color: white;
+        border-color: var(--color-grey-300) var(--color-grey-300) white;
+    }
+}
+
+:where(.tabs .nav-pills .nav-link) {
+    border-radius: 0.25rem;
+
+    &.active {
+        color: white;
+        background-color: var(--color-blue-600);
+    }
+}
+</style>
