@@ -119,7 +119,6 @@ function onViewCollection(collection: object) {
             v-else
             :history="history"
             :filter="filter"
-            :show-controls="false"
             is-multi-view-item
             @view-collection="onViewCollection" />
     </div>
