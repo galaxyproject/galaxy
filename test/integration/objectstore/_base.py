@@ -4,6 +4,7 @@ import string
 import subprocess
 import time
 from typing import Any
+from unittest import SkipTest
 
 import boto3
 from botocore.client import Config
@@ -137,9 +138,16 @@ def wait_rucio_ready(container_name):
 
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
-    docker_run("savannah.ornl.gov/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
+    try:
+        docker_run("savannah.ornl.gov/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
+    except subprocess.CalledProcessError as e:
+        raise SkipTest(f"cannot start Rucio container: {e}")
 
-    wait_rucio_ready(container_name)
+    try:
+        wait_rucio_ready(container_name)
+    except TimeoutError as e:
+        docker_rm(container_name)
+        raise SkipTest(str(e))
 
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, integration_util.ConfiguresObjectStores):
