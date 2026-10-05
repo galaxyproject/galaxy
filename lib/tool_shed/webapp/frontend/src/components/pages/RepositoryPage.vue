@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
-import { GAlert } from "@galaxyproject/galaxy-ui"
+import { GAlert, GHeading } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
@@ -182,23 +182,20 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 </script>
 
 <template>
-    <q-page class="q-ma-lg">
+    <div class="repository-page">
         <loading-div v-if="loading" />
         <error-banner error="Failed to load repository" v-else-if="!repository"> </error-banner>
-        <q-card v-else>
-            <q-card-section horizontal class="row">
-                <q-card-section class="bg-primary text-white col-grow">
-                    <div class="text-h6">{{ repository.name }}</div>
-                    <div class="text-subtitle">
-                        <router-link
-                            class="text-white"
-                            style="text-decoration: none"
-                            :to="`/repositories_by_owner/${repository.owner}`"
-                            >{{ repository.owner }}</router-link
-                        >
+        <section class="repository-card" v-else>
+            <div class="repository-header-row">
+                <div class="repository-header repository-header-main">
+                    <GHeading h2 size="md" class="repository-name">{{ repository.name }}</GHeading>
+                    <div class="repository-owner">
+                        <router-link class="repository-owner-link" :to="`/repositories_by_owner/${repository.owner}`">{{
+                            repository.owner
+                        }}</router-link>
                     </div>
-                </q-card-section>
-                <q-card-section class="bg-primary">
+                </div>
+                <div class="repository-header repository-header-actions">
                     <repository-explore :repository="repository" :current-revision="currentRevision" />
                     <repository-actions
                         :repository-id="repository.id"
@@ -215,35 +212,35 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         :downloadable="latestRevisionDownloadable"
                     >
                     </repository-health>
-                </q-card-section>
-            </q-card-section>
-            <q-card-section>
+                </div>
+            </div>
+            <div class="repository-section">
                 <p class="description">
                     {{ longDescription }}
                 </p>
                 <repository-links :repository="repository" :current-revision="currentRevision" v-if="repository" />
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section>
+            <div class="repository-section">
                 <InstallingHowto
                     v-if="repositoryName && repositoryOwner"
                     :repository-name="repositoryName"
                     :repository-owner="repositoryOwner"
                 />
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section v-if="canManage">
+            <div class="repository-section" v-if="canManage">
                 <manage-push-access :repository-id="repositoryId"> </manage-push-access>
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section v-if="empty">
+            <div class="repository-section" v-if="empty">
                 This repository is empty.
                 <span v-if="canPush">
                     Check out the
                     <a :href="UPDATING_WITH_PLANEMO_URL">Planemo documentation on updating repositories</a>.
                 </span>
-            </q-card-section>
-            <q-card-section v-else>
+            </div>
+            <div class="repository-section" v-else>
                 <p v-if="repositoryMetadata">
                     <revision-select :revisions="repositoryMetadata" v-model="currentRevision">
                         <revision-actions
@@ -264,9 +261,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                     <p v-for="(content, key) of readmes" :key="key">
                         <span class="repository-readme" v-html="content"></span>
                     </p>
-                    <!-- <span class="repository-select-label text-h6 q-mr-lg">Tools</span> -->
                     <q-list bordered class="rounded-borders" v-if="tools && tools.length > 0">
-                        <!-- style="max-width: 600px"> -->
                         <q-item-label header>Tools</q-item-label>
                         <repository-tool
                             v-for="tool in tools"
@@ -292,7 +287,58 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         </q-item>
                     </q-list>
                 </div>
-            </q-card-section>
-        </q-card>
-    </q-page>
+            </div>
+        </section>
+    </div>
 </template>
+
+<style scoped>
+.repository-page {
+    margin: var(--spacing-6);
+}
+
+.repository-card {
+    background: #fff;
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.repository-header-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.repository-header {
+    padding: var(--spacing-4);
+    background: var(--color-galaxy-primary);
+    color: #fff;
+}
+
+.repository-header-main {
+    flex: 1 1 auto;
+}
+
+.repository-name {
+    margin: 0;
+    color: inherit;
+}
+
+.repository-owner {
+    margin-top: var(--spacing-1);
+}
+
+.repository-owner-link {
+    color: #fff;
+    text-decoration: none;
+}
+
+.repository-owner-link:hover,
+.repository-owner-link:focus-visible {
+    text-decoration: underline;
+}
+
+.repository-section {
+    padding: var(--spacing-4);
+}
+</style>
