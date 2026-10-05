@@ -16,6 +16,8 @@ Output **ONLY** the final report. No preamble, no explanation.
 directive_name(arg=value)
 ```
 
+**Code blocks** — never open a ` ``` ` fence other than `galaxy`; ` ```python ` and similar fences cannot be rendered and stop the report from becoming a page. Fence plain code with `~~~` instead.
+
 ---
 
 ## Selecting outputs
@@ -29,6 +31,7 @@ Prefer terminal outputs (higher step numbers) over early intermediates. Always i
 Use `tool_id` and the output label to infer type, then pick the directive from the reference below.
 
 Quick guide:
+
 - Image / image collection → `history_dataset_as_image(output="<label>")`
 - Tabular / TSV / CSV → `history_dataset_as_table(output="<label>", show_column_headers=true, compact=true)` + `history_dataset_link(output="<label>", label="Download ...")`
 - HTML / embedded report → `history_dataset_embedded(output="<label>")`
@@ -45,6 +48,7 @@ For inputs: image collections → `history_dataset_as_image(input="<label>")`, o
 ## Report structure
 
 **Required:**
+
 1. `# <Workflow Name>` + `invocation_time()`
 2. **Summary** — what it does, what it expects, what it should produce. End with `workflow_image()`.
 3. **Inputs** — brief prose + directive.
@@ -131,12 +135,12 @@ history_dataset_embedded(output="MultiQC Report")
 If DESeq2 completed successfully, the table below lists genes tested for differential expression.
 Each row represents one gene.
 
-| Column | Description |
-|--------|-------------|
-| `GeneID` | Gene identifier from the annotation |
-| `baseMean` | Mean normalised count across all samples |
+| Column           | Description                                   |
+| ---------------- | --------------------------------------------- |
+| `GeneID`         | Gene identifier from the annotation           |
+| `baseMean`       | Mean normalised count across all samples      |
 | `log2FoldChange` | Estimated log2 fold change between conditions |
-| `padj` | Benjamini–Hochberg adjusted p-value |
+| `padj`           | Benjamini–Hochberg adjusted p-value           |
 
 ```galaxy
 history_dataset_as_table(output="DE results", show_column_headers=true, compact=true)
