@@ -1,22 +1,39 @@
 import subprocess
 import sys
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 
-import pyarrow.parquet as parquet
 import pytest
 
-from galaxy.datatypes.binary import Parquet
-from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.tabular import (
+pytest.importorskip("pyarrow")
+
+import pyarrow.parquet as parquet  # noqa: E402
+
+from galaxy.datatypes.binary import Parquet  # noqa: E402
+from galaxy.datatypes.registry import Registry  # noqa: E402
+from galaxy.datatypes.tabular import (  # noqa: E402
     CSV,
     Tabular,
     TSV,
 )
-from ._parquet_converter_test_utils import (
+from .test_parquet_converter_utils import (  # noqa: E402
     CONVERTERS,
     ROOT,
     to_parquet,
 )
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.abstract_tool import AbstractTool
+
+
+def _find_element(element: Element, path: str) -> Element:
+    found = element.find(path)
+    assert found is not None, f"Could not find {path}"
+    return found
 
 
 def test_converter_commands_and_datatype_registration(tmp_path):
@@ -51,25 +68,33 @@ def test_converter_commands_and_datatype_registration(tmp_path):
     assert to_parquet.read_table(tsv, input_format="tsv", header_mode="first").equals(parquet.read_table(binary))
     tool = ElementTree.parse(CONVERTERS / "parquet_to_tabular_converter.xml")
     assert tool.getroot().get("id") == "CONVERTER_parquet_to_tabular"
-    assert tool.find("outputs/data").get("format") == "tabular"
+    assert _find_element(tool.getroot(), "outputs/data").get("format") == "tabular"
     tsv_tool = ElementTree.parse(CONVERTERS / "parquet_to_tsv_converter.xml")
     assert tsv_tool.getroot().get("id") == "CONVERTER_parquet_to_tsv"
-    assert tsv_tool.find("outputs/data").get("format") == "tsv"
-    assert "--output-format tsv" in tsv_tool.find("command").text
+    assert _find_element(tsv_tool.getroot(), "outputs/data").get("format") == "tsv"
+    assert "--output-format tsv" in (_find_element(tsv_tool.getroot(), "command").text or "")
     registry = ElementTree.parse(ROOT / "lib/galaxy/config/sample/datatypes_conf.xml.sample")
     assert (
-        registry.find(".//datatype[@extension='parquet']/converter[@file='parquet_to_tabular_converter.xml']").get(
-            "target_datatype"
-        )
+        _find_element(
+            registry.getroot(),
+            ".//datatype[@extension='parquet']/converter[@file='parquet_to_tabular_converter.xml']",
+        ).get("target_datatype")
         == "tabular"
     )
     assert (
-        registry.find(".//datatype[@extension='parquet']/converter[@file='parquet_to_tsv_converter.xml']").get(
-            "target_datatype"
-        )
+        _find_element(
+            registry.getroot(),
+            ".//datatype[@extension='parquet']/converter[@file='parquet_to_tsv_converter.xml']",
+        ).get("target_datatype")
         == "tsv"
     )
-    assert registry.find(".//datatype[@extension='tsv']/converter[@file='tsv_to_parquet_converter.xml']") is not None
+    assert (
+        _find_element(
+            registry.getroot(),
+            ".//datatype[@extension='tsv']/converter[@file='tsv_to_parquet_converter.xml']",
+        )
+        is not None
+    )
 
 
 @pytest.mark.parametrize("accepted_format", ["tabular", "tsv", "csv"])
@@ -77,12 +102,17 @@ def test_parquet_is_offered_to_tools_accepting_each_output_format(accepted_forma
     config = ElementTree.parse(ROOT / "lib/galaxy/config/sample/datatypes_conf.xml.sample")
     registry = Registry()
     registry.datatypes_by_extension = {"parquet": Parquet(), "tabular": Tabular(), "tsv": TSV(), "csv": CSV()}
-    registry.datatype_converters = {
-        "parquet": {
-            converter.get("target_datatype"): object()
-            for converter in config.findall(".//datatype[@extension='parquet']/converter")
-        }
-    }
+    registry.datatype_converters = cast(
+        "dict[str, dict[str, AbstractTool]]",
+        {
+            "parquet": {
+                converter.get("target_datatype"): object()
+                for converter in _find_element(config.getroot(), ".//datatype[@extension='parquet']").findall(
+                    "converter"
+                )
+            }
+        },
+    )
     assert registry.find_conversion_destination_for_dataset_by_extensions("parquet", [accepted_format]) == (
         False,
         accepted_format,

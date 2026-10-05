@@ -2,11 +2,14 @@ import csv
 import subprocess
 import sys
 
-import pyarrow as pa
-import pyarrow.parquet as parquet
 import pytest
 
-from ._parquet_converter_test_utils import (
+pytest.importorskip("pyarrow")
+
+import pyarrow as pa  # noqa: E402
+import pyarrow.parquet as parquet  # noqa: E402
+
+from .test_parquet_converter_utils import (  # noqa: E402
     converter_script,
     run_converter,
     to_parquet,

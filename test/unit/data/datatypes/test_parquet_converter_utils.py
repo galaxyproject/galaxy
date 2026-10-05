@@ -3,12 +3,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[4]
 CONVERTERS = ROOT / "lib/galaxy/datatypes/converters"
+
+pytest.importorskip("pyarrow")
 
 
 def load_converter(name):
     spec = importlib.util.spec_from_file_location(name, CONVERTERS / f"{name}.py")
+    assert spec is not None, "spec is None"
+    assert spec.loader is not None, "spec.loader is None"
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
