@@ -129,8 +129,8 @@ describe("useJobDetails", () => {
         const jobId = ref<string | undefined>(undefined);
         const { job } = mountJobDetails(jobId);
         await flushPromises();
-
         expect(job.value).toBeNull();
+
         expect(callCount).toBe(0);
     });
 

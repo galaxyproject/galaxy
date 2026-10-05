@@ -23,7 +23,7 @@ export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRef
     const { autoRefresh = true, full = true } = options;
     const jobStore = useJobStore();
 
-    const job = computed(() => jobStore.getJob(jobId.value ?? "") ?? null);
+    const job = computed(() => (jobId.value ? (jobStore.getJob(jobId.value) ?? null) : null));
     const error = computed(() => (jobId.value ? jobStore.getJobLoadError(jobId.value) : null));
     const loading = computed(() => (jobId.value ? jobStore.isLoadingJob(jobId.value) : false));
 
