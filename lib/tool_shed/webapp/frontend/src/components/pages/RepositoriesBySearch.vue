@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
+import { watchDebounced } from "@vueuse/core"
 import { ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import PageContainer from "@/components/PageContainer.vue"
@@ -15,8 +17,13 @@ import { notifyOnCatch, queryParamToString } from "@/util"
 
 const route = useRoute()
 const router = useRouter()
-const searchQuery = ref(queryParamToString(route.query.q) ?? "")
+// searchInput tracks what's typed immediately; searchQuery is debounced off of it
+// so a search (and the URL/grid update that follows) only fires once typing settles.
+const searchInput = ref(queryParamToString(route.query.q) ?? "")
+const searchQuery = ref(searchInput.value)
 let currentSearchId = 0
+
+watchDebounced(searchInput, (newValue) => (searchQuery.value = newValue), { debounce: 1000 })
 
 type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
@@ -80,6 +87,7 @@ watch(
     (newQ) => {
         const queryValue = queryParamToString(newQ) ?? ""
         if (queryValue !== searchQuery.value) {
+            searchInput.value = queryValue
             searchQuery.value = queryValue
         }
     },
@@ -87,7 +95,9 @@ watch(
 </script>
 <template>
     <page-container>
-        <q-input debounce="1000" filled v-model="searchQuery" label="Search Repositories" />
+        <GFormLabel title="Search Repositories">
+            <GFormInput :model-value="searchInput" @update:model-value="searchInput = $event ?? ''" />
+        </GFormLabel>
         <PaginatedRepositoriesGrid
             ref="grid"
             v-if="searchQuery && searchQuery.length > 1"

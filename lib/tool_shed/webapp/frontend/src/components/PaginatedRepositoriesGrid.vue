@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { QTableColumn, type QTableProps } from "quasar"
@@ -177,7 +178,9 @@ onMounted(() => {
                         <div class="q-table__title">{{ title }}</div>
                     </div>
                     <div class="col-4 justify-end q-pa-md" v-if="allowSearch">
-                        <q-input v-model="search" autogrow label="Filter"></q-input>
+                        <GFormLabel title="Filter">
+                            <GFormInput :model-value="search" @update:model-value="search = $event ?? ''" />
+                        </GFormLabel>
                     </div>
                 </div>
             </template>
