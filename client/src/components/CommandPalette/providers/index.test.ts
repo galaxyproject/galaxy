@@ -1,7 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { makeCtx } from "../test-utils";
 import type { PaletteItem } from "../types";
-import { findPaletteProvider, paletteProviders, parsePaletteQuery, rankPaletteItems } from "./index";
+import {
+    enabledPaletteProviders,
+    findPaletteProvider,
+    paletteProviders,
+    parsePaletteQuery,
+    rankPaletteItems,
+    resetUnknownProviderWarnings,
+} from "./index";
 import { ACTIONS_SCOPE, PALETTE_SCOPES } from "./scopes";
 
 function item(id: string, title: string, extras: Partial<PaletteItem> = {}): PaletteItem {
@@ -15,6 +23,10 @@ function scopeKey(raw: string) {
 }
 
 describe("paletteProviders", () => {
+    beforeEach(() => {
+        resetUnknownProviderWarnings();
+    });
+
     it("serves every registered scope", () => {
         [ACTIONS_SCOPE, ...PALETTE_SCOPES].forEach((scope) => {
             expect(findPaletteProvider(scope.providerId)?.id).toBe(scope.providerId);
@@ -24,6 +36,42 @@ describe("paletteProviders", () => {
     it("registers each provider exactly once", () => {
         const ids = paletteProviders.map((provider) => provider.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("warns once about a disabled provider id the registry does not know", () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        try {
+            const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows", "interactive_tools"] } });
+            enabledPaletteProviders(ctx);
+            enabledPaletteProviders(ctx);
+
+            expect(warn).toHaveBeenCalledTimes(1);
+            expect(warn.mock.calls[0]?.[0]).toContain('"interactive_tools"');
+            expect(warn.mock.calls[0]?.[0]).toContain("interactiveTools");
+        } finally {
+            warn.mockRestore();
+        }
+    });
+
+    it("drops the providers the instance disabled, keeping the registry order", () => {
+        expect(enabledPaletteProviders(makeCtx())).toEqual(paletteProviders);
+        const enabled = enabledPaletteProviders(
+            makeCtx({ config: { command_palette_disabled_providers: ["workflows", "tools"] } }),
+        ).map((provider) => provider.id);
+        expect(enabled).not.toContain("workflows");
+        expect(enabled).not.toContain("tools");
+        expect(enabled).toEqual(
+            paletteProviders.map((provider) => provider.id).filter((id) => !["workflows", "tools"].includes(id)),
+        );
+    });
+
+    it("skips the providers whose every scope needs an account for anonymous users", () => {
+        const anonymous = enabledPaletteProviders(makeCtx({ isAnonymous: true })).map((provider) => provider.id);
+        expect(anonymous).toEqual(
+            paletteProviders
+                .map((provider) => provider.id)
+                .filter((id) => !["datasets", "visualizations", "invocations"].includes(id)),
+        );
     });
 
     it("gives every scope variant a sectioned search", () => {
@@ -54,7 +102,7 @@ describe("parsePaletteQuery", () => {
     it("scopes two-letter tokens", () => {
         expect(scopeKey("hs: shared")).toBe("hs");
         expect(scopeKey("wp:")).toBe("wp");
-        expect(scopeKey("pp: news")).toBe("pp");
+        expect(scopeKey("rp: news")).toBe("rp");
         expect(scopeKey("it: jupyter")).toBe("it");
     });
 

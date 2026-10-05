@@ -14,10 +14,12 @@ import type {
 import {
     createHistoryPage,
     createPage,
+    createPageFromTitle,
     deleteHistoryPage,
     fetchHistoryPage,
     fetchHistoryPages,
     loadPages,
+    PageSlugConflictError,
     savePage,
     updateHistoryPage,
 } from "./pages";
@@ -365,14 +367,78 @@ describe("pages API", () => {
             });
         });
 
-        it("throws when the slug is already taken", async () => {
+        it("throws a slug conflict on the backend's duplicate slug code alone", async () => {
+            server.use(
+                http.post("/api/pages", ({ response }) => {
+                    return response("4XX").json(
+                        { err_msg: "Page identifier must be unique", err_code: 400006 },
+                        { status: 400 },
+                    );
+                }),
+            );
+
+            await expect(createPage({ title: "My Notes", slug: "my-notes" })).rejects.toBeInstanceOf(
+                PageSlugConflictError,
+            );
+        });
+
+        it("throws a plain error for any other failure", async () => {
             server.use(
                 http.post("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "Slug already exists", err_code: 400 }, { status: 400 });
                 }),
             );
 
-            await expect(createPage({ title: "My Notes", slug: "my-notes" })).rejects.toThrow();
+            const created = createPage({ title: "My Notes", slug: "my-notes" });
+
+            await expect(created).rejects.toThrow("Slug already exists");
+            await expect(created).rejects.not.toBeInstanceOf(PageSlugConflictError);
+        });
+    });
+
+    describe("createPageFromTitle", () => {
+        /** Answers each create with `conflicts` in turn, recording the slugs sent */
+        function useCreateResponses(...conflicts: boolean[]) {
+            const slugs: unknown[] = [];
+            server.use(
+                http.post("/api/pages", async ({ request, response }) => {
+                    const body = (await request.json()) as Record<string, unknown>;
+                    slugs.push(body.slug);
+                    if (conflicts[slugs.length - 1]) {
+                        return response("4XX").json(
+                            { err_msg: "Page identifier must be unique", err_code: 400006 },
+                            { status: 400 },
+                        );
+                    }
+                    return response(200).json({ ...TEST_PAGE_DETAILS, slug: body.slug as string });
+                }),
+            );
+            return slugs;
+        }
+
+        it("slugs the title, falling back for a title without usable characters", async () => {
+            const slugs = useCreateResponses(false, false);
+
+            await createPageFromTitle({ title: "My New Page" });
+            await createPageFromTitle({ title: "!!!" });
+
+            expect(slugs).toEqual(["my-new-page", "page"]);
+        });
+
+        it("retries a slug the user already owns once with a suffix", async () => {
+            const slugs = useCreateResponses(true, false);
+
+            const page = await createPageFromTitle({ title: "Lab notes" });
+
+            expect(slugs).toEqual(["lab-notes", "lab-notes-2"]);
+            expect(page.slug).toBe("lab-notes-2");
+        });
+
+        it("reports a suffixed slug that is taken too", async () => {
+            const slugs = useCreateResponses(true, true);
+
+            await expect(createPageFromTitle({ title: "Lab notes" })).rejects.toThrow("Page identifier must be unique");
+            expect(slugs).toEqual(["lab-notes", "lab-notes-2"]);
         });
     });
 

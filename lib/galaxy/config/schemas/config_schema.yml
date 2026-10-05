@@ -4736,6 +4736,34 @@ mapping:
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
 
+      enable_command_palette:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Master toggle for the command palette, the searchable overlay that lets users jump to
+          tools, workflows, histories, datasets and other Galaxy resources from anywhere in the
+          interface.
+
+          When disabled, the search button in the masthead is hidden and the Ctrl/Cmd-K keyboard
+          shortcut that opens the palette is not registered.
+
+      command_palette_disabled_providers:
+        type: seq
+        sequence:
+          - type: str
+        required: false
+        desc: |
+          List of command palette providers to disable.
+
+          Valid provider ids are: ``actions``, ``navigation``, ``tools``, ``workflows``,
+          ``histories``, ``datasets``, ``visualizations``, ``invocations``, ``reports`` and
+          ``interactiveTools``.
+
+          Disabling a provider removes its search scopes, its category tab and its results from
+          the palette. This only hides palette UI: the API endpoints the provider searches stay
+          available. An unknown id is ignored, with a warning in the browser console.
+
       enable_mcp_server:
         type: bool
         default: false

@@ -7,6 +7,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadMastheadWebhooks } from "./_webhooks";
@@ -45,7 +46,7 @@ describe("Masthead.vue", () => {
         setupMockConfig({});
         originalUrl = window.location.href;
         localVue = getLocalVue();
-        testPinia = createTestingPinia({ createSpy: vi.fn });
+        testPinia = createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
 
         windowTab = {
             id: "enable-window-manager",
@@ -79,6 +80,7 @@ describe("Masthead.vue", () => {
     async function remount(config, user = currentUser) {
         wrapper.unmount();
         setupMockConfig(config);
+        useConfigStore().config = config;
         const userStore = useUserStore();
         userStore.currentUser = user;
         wrapper = mount(Masthead, {
@@ -103,6 +105,18 @@ describe("Masthead.vue", () => {
         await wrapper.find("[data-description='masthead search button']").trigger("click");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         useCommandPalette().closePalette();
+    });
+
+    it("labels the search button with the localized search phrase", () => {
+        const button = wrapper.find("[data-description='masthead search button']");
+        expect(button.find(".search-placeholder").text()).toBe("Search Galaxy");
+        expect(button.attributes("title")).toBe("Search Galaxy (Ctrl+K)");
+    });
+
+    it("hides the search button when the palette is disabled", async () => {
+        await remount({ enable_command_palette: false });
+
+        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
     });
 
     it("should display window manager button", async () => {

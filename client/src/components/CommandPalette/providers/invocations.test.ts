@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
+import { PaletteFetchError } from "./errors";
 import { invocationsProvider } from "./invocations";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -69,10 +70,6 @@ const INVOCATIONS = [
 ];
 
 const SCOPE: ScopeDefinition = { key: "i", label: "Invocations", providerId: "invocations" };
-
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
-}
 
 describe("invocationsProvider", () => {
     beforeEach(() => {
@@ -213,12 +210,15 @@ describe("invocationsProvider", () => {
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["invocations:inv2"]);
     });
 
-    it("keeps the scope empty rather than failing when the first fetch fails", async () => {
-        vi.mocked(getInvocationsData).mockRejectedValue(new Error("boom"));
+    it("reports a failed first fetch and retries it on the next search", async () => {
+        vi.mocked(getInvocationsData).mockRejectedValueOnce(new Error("boom"));
+
+        await expect(invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())).rejects.toBeInstanceOf(
+            PaletteFetchError,
+        );
 
         const sections = (await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())) ?? [];
-
-        expect(sections).toEqual([]);
+        expect(sections.at(-1)?.items.map((i) => i.id)).toEqual(INVOCATIONS.map((i) => `invocations:${i.id}`));
     });
 
     it("returns a single results section for a scoped query", async () => {

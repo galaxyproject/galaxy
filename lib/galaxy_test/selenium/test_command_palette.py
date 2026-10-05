@@ -55,7 +55,7 @@ class TestCommandPalette(SeleniumTestCase):
         self.command_palette_wait_for_option("Workflows")
         self.screenshot("command_palette_category_navigation")
         assert self.components.command_palette.category(category="navigation").has_class("active")
-        self.components.command_palette.section(section="navigation").wait_for_visible()
+        self.components.command_palette.section(section="navigation:results").wait_for_visible()
         assert "Create workflow" not in self.command_palette_option_titles()
 
     @selenium_test
