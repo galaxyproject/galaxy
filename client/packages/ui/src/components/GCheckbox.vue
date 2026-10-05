@@ -20,6 +20,8 @@ const props = defineProps<{
     disabled?: boolean;
     /** Render as a toggle switch instead of a checkbox */
     toggle?: boolean;
+    /** Partly-checked state, e.g. a select-all box when only some rows are selected */
+    indeterminate?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -54,6 +56,7 @@ function onChange(event: Event) {
             class="g-checkbox-input"
             :data-test-id="id ? `${id}-input` : undefined"
             :checked="currentValue"
+            :indeterminate="indeterminate"
             :disabled="disabled"
             @change="onChange" />
         <span v-if="toggle" class="g-switch-slider" />

@@ -49,6 +49,16 @@ describe("GCheckbox", () => {
         expect(change![0]![0]).toBeInstanceOf(Event);
     });
 
+    it("shows a partly-checked state while indeterminate", async () => {
+        const wrapper = mount(GCheckbox, { props: { indeterminate: true } });
+        const input = wrapper.get("input").element as HTMLInputElement;
+
+        expect(input.indeterminate).toBe(true);
+
+        await wrapper.setProps({ indeterminate: false });
+        expect(input.indeterminate).toBe(false);
+    });
+
     it("renders as a switch in toggle mode", () => {
         const wrapper = mount(GCheckbox, { props: { modelValue: false, toggle: true } });
 
