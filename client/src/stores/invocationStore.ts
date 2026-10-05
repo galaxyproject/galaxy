@@ -159,9 +159,14 @@ export const useInvocationStore = defineStore("invocationStore", () => {
      * the entire collection completed.
      *
      * `undefined` means metrics haven't been fetched for this invocation yet; `null` means the last
-     * fetch happened before the step jobs summary was available, so there is no baseline.
+     * fetch started before the step jobs summary was available, so there is no baseline.
+     *
+     * Reactive, so recording a fetch's snapshot re-runs the staleness check in consumers.
      */
-    const terminalCountsByStepIdAtLastMetricsFetch: Record<string, Record<string, number> | null> = {};
+    const terminalCountsByStepIdAtLastMetricsFetch = ref<Record<string, Record<string, number> | null>>({});
+
+    /** Invocation ids with a metrics fetch in flight, so repeated reads don't start another. */
+    const invocationIdsFetchingMetrics = new Set<string>();
 
     /**
      * Returns `null` if the step jobs summary hasn't loaded yet (it's fetched/kept fresh
@@ -182,15 +187,23 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     /** Fetches invocation metrics and records the terminal-count mapping for the fetch. */
     async function fetchInvocationMetricsForId(params: FetchParams) {
-        // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
-        // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
-        const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
-        const result = await fetchInvocationMetricsRawForId(params);
-        // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
-        // fall back to whatever it looks like now (still `null` if it hasn't loaded).
-        terminalCountsByStepIdAtLastMetricsFetch[params.id] =
-            snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
-        return result;
+        if (invocationIdsFetchingMetrics.has(params.id)) {
+            return;
+        }
+        invocationIdsFetchingMetrics.add(params.id);
+        try {
+            // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
+            // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
+            const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
+            const result = await fetchInvocationMetricsRawForId(params);
+            // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
+            // fall back to whatever it looks like now (still `null` if it hasn't loaded).
+            terminalCountsByStepIdAtLastMetricsFetch.value[params.id] =
+                snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
+            return result;
+        } finally {
+            invocationIdsFetchingMetrics.delete(params.id);
+        }
     }
 
     /**
@@ -205,19 +218,16 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const getInvocationMetricsById = computed(() => {
         return (invocationId: string) => {
             const metrics = storedInvocationMetrics.value[invocationId];
-            const oldTerminalCountsByStepId = terminalCountsByStepIdAtLastMetricsFetch[invocationId];
-
-            if (oldTerminalCountsByStepId === undefined) {
-                // Never fetched for this invocation -- kick off the initial fetch (via the wrapper,
-                // so the terminal-count snapshot gets recorded once it lands).
-                fetchInvocationMetricsForId({ id: invocationId });
-                return metrics ?? null;
-            }
-
+            const oldTerminalCountsByStepId = terminalCountsByStepIdAtLastMetricsFetch.value[invocationId];
+            // Read on every call so consumers always track the step jobs summary.
             const newTerminalCountsByStepId = currentTerminalCountsByStepId(invocationId);
+
             let shouldFetch: boolean;
-            if (newTerminalCountsByStepId === null) {
-                // Step jobs summary not loaded (yet, or anymore) -- don't fetch on incomplete information.
+            if (oldTerminalCountsByStepId === undefined) {
+                // Never fetched for this invocation.
+                shouldFetch = true;
+            } else if (newTerminalCountsByStepId === null) {
+                // Step jobs summary not loaded (yet, or anymore) so don't fetch on incomplete information.
                 shouldFetch = false;
             } else if (oldTerminalCountsByStepId === null) {
                 // Last fetch had no baseline; refetch once now that the summary is available.

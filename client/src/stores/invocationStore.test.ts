@@ -1,6 +1,8 @@
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia, getActivePinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
+import { computed, defineComponent, h } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type {
@@ -361,6 +363,77 @@ describe("stores/invocationStore", () => {
             const store = useInvocationStore();
 
             expect(store.getInvocationJobRuntimeById("inv1")).toEqual({});
+        });
+
+        describe("while a component is viewing it", () => {
+            let doneJobIds: string[];
+            let metricsDelayMs: number;
+
+            function mountRuntimeViewer() {
+                const RuntimeViewer = defineComponent({
+                    setup() {
+                        const store = useInvocationStore();
+                        const runtimeByJobId = computed(() => store.getInvocationJobRuntimeById("inv1"));
+                        return () =>
+                            h("div", ["job1", "job2"].map((id) => runtimeByJobId.value[id] ?? "N/A").join(","));
+                    },
+                });
+                return mount(RuntimeViewer, { global: { plugins: [getActivePinia()!] } });
+            }
+
+            /** Mirrors `WorkflowInvocationState.vue`'s polling of the step jobs summary. */
+            async function pollStepJobsSummary(states: Record<string, number>) {
+                stepJobsSummary = stepJobsSummaryResponse(states);
+                await useInvocationStore().fetchInvocationStepJobsSummaryForId({ id: "inv1" });
+                await flushPromises();
+            }
+
+            beforeEach(async () => {
+                doneJobIds = [];
+                metricsDelayMs = 0;
+                server.use(
+                    http.get("/api/invocations/{invocation_id}/metrics", async ({ response }) => {
+                        metricsCallCount++;
+                        const jobIds = [...doneJobIds];
+                        if (metricsDelayMs) {
+                            await new Promise((resolve) => setTimeout(resolve, metricsDelayMs));
+                        }
+                        return response(200).json(metricsResponse(jobIds));
+                    }),
+                );
+                stepJobsSummary = stepJobsSummaryResponse({ running: 2 });
+                await useInvocationStore().fetchInvocationStepJobsSummaryForId({ id: "inv1" });
+            });
+
+            it("shows a job's runtime once it finishes", async () => {
+                const wrapper = mountRuntimeViewer();
+                await flushPromises();
+                expect(wrapper.text()).toBe("N/A,N/A");
+
+                doneJobIds = ["job1"];
+                await pollStepJobsSummary({ running: 1, ok: 1 });
+                await flushPromises();
+
+                expect(wrapper.text()).toBe("job1-runtime,N/A");
+                expect(metricsCallCount).toBe(2);
+            });
+
+            it("shows a job's runtime when it finishes while a metrics fetch is in flight", async () => {
+                metricsDelayMs = 50;
+                const wrapper = mountRuntimeViewer();
+                await flushPromises();
+
+                doneJobIds = ["job1"];
+                await pollStepJobsSummary({ running: 1, ok: 1 });
+                // Jobs finish before the in-flight fetch lands, and polling then stops.
+                doneJobIds = ["job1", "job2"];
+                await pollStepJobsSummary({ ok: 2 });
+
+                await new Promise((resolve) => setTimeout(resolve, 4 * metricsDelayMs));
+                await flushPromises();
+
+                expect(wrapper.text()).toBe("job1-runtime,job2-runtime");
+            });
         });
     });
 });
