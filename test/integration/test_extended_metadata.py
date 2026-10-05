@@ -299,7 +299,7 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
             output = self.dataset_populator.get_history_dataset_details(
                 history_id=history_id, content_id=response["outputs"][0]["id"], assert_ok=False
             )
-            assert "Job setup failed during remote_tool_eval" in output["misc_info"]
+            assert "Job setup failed" in output["misc_info"]
             assert "Error occurred while building command line" in output["misc_info"]
 
     def test_purge_while_job_running(self):

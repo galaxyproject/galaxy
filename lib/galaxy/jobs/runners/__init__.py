@@ -744,11 +744,11 @@ class BaseJobRunner:
             tool_stdout = tool_streams["stdout"]
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
             if any(error["errno"] == errno.ENOENT for error in stdio_errors):
-                # tool_stdout/tool_stderr are missing — this can happen when
-                # remote_tool_eval.py fails and the && chain prevents cd working, so the
-                # shell redirection creates files at the wrong path.  Surface
-                # the remote_tool_eval traceback as a job-level error (not a
-                # tool error) since the tool never actually ran.
+                # tool_stdout/tool_stderr are missing — this happens when a setup step
+                # running before the tool (remote_tool_eval.py, decrypting protected inputs)
+                # fails, so the tool command and its output redirection never run. Surface
+                # the saved traceback as a job-level error (not a tool error) since the tool
+                # never actually ran.
                 eval_traceback_path = os.path.join(
                     job_wrapper.working_directory, "metadata", "outputs_populated", "traceback.txt"
                 )
@@ -758,7 +758,7 @@ class BaseJobRunner:
                     # The full traceback is already part of job_stderr, only surface the final exception line.
                     eval_error = eval_traceback_lines[-1] if eval_traceback_lines else "unknown error"
                     job_wrapper.fail(
-                        f"Job setup failed during remote_tool_eval: {eval_error}",
+                        f"Job setup failed: {eval_error}",
                         tool_stdout="",
                         tool_stderr="",
                         exit_code=exit_code,
