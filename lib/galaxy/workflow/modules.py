@@ -2215,15 +2215,17 @@ class PickValueModule(WorkflowModule):
         """Delay until the inputs that could be picked are produced.
 
         Picking reads the inputs, and the output aliases the picked dataset (so post job
-        actions would mutate it). first_* modes stop at the first ready non-null dataset.
+        actions would mutate it). first_* modes stop at the first ready dataset they would
+        pick - for first_ok_or_skip that excludes failed datasets.
         """
-        stops_at_first_value = mode in ("first_non_null", "first_or_skip")
+        stops_at_first_value = mode in ("first_non_null", "first_or_skip", "first_ok_or_skip")
         for input_dict in all_inputs:
             replacement = progress.replacement_for_input(trans, step, input_dict, require_ready=True)
             if (
                 stops_at_first_value
                 and isinstance(replacement, model.HistoryDatasetAssociation)
                 and not self._is_null_or_skipped(replacement, step)
+                and not (mode == "first_ok_or_skip" and self._is_failed(replacement))
             ):
                 return
 

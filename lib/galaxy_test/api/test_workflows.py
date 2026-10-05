@@ -3566,6 +3566,57 @@ exit_code:
             assert picked_details["state"] == "ok", picked_details
 
     @skip_without_tool("exit_code_from_file")
+    def test_pick_value_first_ok_or_skip_ignores_paused_later_input(self):
+        # Inputs downstream of the failed job are paused; they must not block the pick.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_code:
+    type: data
+steps:
+  failed:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  downstream:
+    tool_id: cat1
+    in:
+      input1: failed/out_file1
+  pick:
+    type: pick_value
+    state:
+      mode: first_ok_or_skip
+    in:
+      input_0: failed/out_file1
+      input_1: exit_code
+      input_2: downstream/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+  paused:
+    outputSource: downstream/out_file1
+""",
+                test_data="""
+exit_code:
+  content: "1"
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            paused = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["paused"]["id"], assert_ok=False
+            )
+            assert paused["state"] == "paused", paused
+            picked = invocation["outputs"]["picked"]
+            input_dataset = next(iter(invocation["inputs"].values()))
+            assert picked["id"] == input_dataset["id"]
+
+    @skip_without_tool("exit_code_from_file")
     def test_pick_value_first_ok_or_skip_all_failed(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
