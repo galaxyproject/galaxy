@@ -2,13 +2,19 @@
 /**
  * A checkbox/switch component with optional label.
  * Supports v-model for two-way binding.
+ *
+ * `class`, `style`, `title` and native listeners (`@click.stop`, ...) land on the root label, so
+ * non-bubbling `@focus`/`@blur` never fire there (use `@focusin`/`@focusout`). Every other
+ * attribute (`data-test-id`, `aria-*`) lands on the input, so give an unlabeled
+ * checkbox an `aria-label`.
  */
 
-import { computed } from "vue";
+import { computed, useAttrs } from "vue";
 
 defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
+    inheritAttrs: false,
+    // Under @vue/compat: keep v-model on modelValue, and keep class/style/listeners in $attrs so they can be split below
+    compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
 const props = defineProps<{
@@ -31,6 +37,24 @@ const emit = defineEmits<{
     (e: "change", event: Event): void;
 }>();
 
+const attrs = useAttrs();
+
+// Plain functions, not computeds: $attrs is not reactive, so the render function must read it each time
+function rootAttrs() {
+    return {
+        "data-test-id": props.id ? `${props.id}-label` : undefined,
+        ...Object.fromEntries(Object.entries(attrs).filter(([key]) => isRootAttr(key))),
+    };
+}
+
+// Caller attributes win over the defaults derived from props
+function inputAttrs() {
+    return {
+        "data-test-id": props.id ? `${props.id}-input` : undefined,
+        ...Object.fromEntries(Object.entries(attrs).filter(([key]) => !isRootAttr(key))),
+    };
+}
+
 const currentValue = computed({
     get() {
         return props.modelValue ?? false;
@@ -40,6 +64,11 @@ const currentValue = computed({
     },
 });
 
+// title stays on the label so v-g-tooltip, which binds to the root, can read and suppress it
+function isRootAttr(key: string) {
+    return key === "class" || key === "style" || key === "title" || /^on[A-Z]/.test(key);
+}
+
 function onChange(event: Event) {
     const target = event.target as HTMLInputElement;
     currentValue.value = target.checked;
@@ -48,16 +77,13 @@ function onChange(event: Event) {
 </script>
 
 <template>
-    <label
-        class="g-checkbox"
-        :class="{ 'g-disabled': disabled, 'g-switch': toggle }"
-        :data-test-id="id ? `${id}-label` : undefined">
+    <label v-bind="rootAttrs()" class="g-checkbox" :class="{ 'g-disabled': disabled, 'g-switch': toggle }">
         <input
+            v-bind="inputAttrs()"
             :id="id"
             :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
-            :data-test-id="id ? `${id}-input` : undefined"
             :checked="currentValue"
             :indeterminate="indeterminate"
             :disabled="disabled"
