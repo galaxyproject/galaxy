@@ -44,7 +44,7 @@ function dismiss() {
 
 <template>
     <modal-form title="Choose a New Password">
-        <q-card-section>
+        <div class="modal-form-section">
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
             <GForm name="reset_password" class="reset-password-form" action="#" @submit.prevent="onSubmit">
                 <GFormLabel title="New Password">
@@ -69,12 +69,12 @@ function dismiss() {
                     >Set Password</GButton
                 >
             </GForm>
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">
                 Link expired? <router-link to="/user/forgot_password">Request a new one.</router-link>
             </p>
-        </q-card-section>
+        </div>
     </modal-form>
 </template>
 
@@ -83,5 +83,18 @@ function dismiss() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.modal-form-section {
+    padding: var(--spacing-4);
+}
+
+.modal-form-section-footer {
+    padding: 0;
+    text-align: center;
+}
+
+.modal-form-footer-text {
+    color: var(--color-grey-600);
 }
 </style>

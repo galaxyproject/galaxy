@@ -32,14 +32,14 @@ function dismiss() {
 
 <template>
     <modal-form title="Forgot Password">
-        <q-card-section>
+        <div class="modal-form-section">
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
-            <p v-if="sent" class="text-body1 reset-password-sent">
+            <p v-if="sent" class="reset-password-sent">
                 If an account exists for that address, a password reset link is on its way. The link expires in 24
                 hours.
             </p>
             <GForm v-else name="forgot_password" class="forgot-password-form" action="#" @submit.prevent="onSubmit">
-                <p class="text-grey-8">
+                <p class="forgot-password-intro">
                     Enter the email address of your account and we will send you a link to choose a new password.
                 </p>
                 <GFormLabel title="E-Mail">
@@ -55,10 +55,10 @@ function dismiss() {
                     >Send Reset Link</GButton
                 >
             </GForm>
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">Remembered it? <router-link to="/login">Login.</router-link></p>
-        </q-card-section>
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">Remembered it? <router-link to="/login">Login.</router-link></p>
+        </div>
     </modal-form>
 </template>
 
@@ -67,5 +67,22 @@ function dismiss() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.forgot-password-intro {
+    color: var(--color-grey-800);
+}
+
+.modal-form-section {
+    padding: var(--spacing-4);
+}
+
+.modal-form-section-footer {
+    padding: 0;
+    text-align: center;
+}
+
+.modal-form-footer-text {
+    color: var(--color-grey-600);
 }
 </style>

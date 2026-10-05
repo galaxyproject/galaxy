@@ -48,9 +48,9 @@ async function onLogin() {
                 @update:model-value="password = $event ?? ''"
             />
         </GFormLabel>
-        <q-card-actions class="q-px-md">
+        <div class="login-form-actions">
             <GButton color="blue" size="large" class="full-width" type="submit" name="login_button">Login</GButton>
-        </q-card-actions>
+        </div>
     </GForm>
 </template>
 
@@ -59,5 +59,11 @@ async function onLogin() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.login-form-actions {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-2) var(--spacing-4);
 }
 </style>

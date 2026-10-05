@@ -14,10 +14,20 @@ defineProps({
                 <h5 class="text-primary text-h5 q-my-md">{{ title }}</h5>
             </div>
             <div class="row">
-                <q-card square bordered class="q-pa-lg shadow-1">
+                <section class="modal-form-card">
                     <slot></slot>
-                </q-card>
+                </section>
             </div>
         </div>
     </q-page>
 </template>
+
+<style scoped>
+.modal-form-card {
+    background-color: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: var(--spacing-6);
+}
+</style>

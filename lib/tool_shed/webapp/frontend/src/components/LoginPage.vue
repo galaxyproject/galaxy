@@ -5,16 +5,31 @@ import LoginForm from "@/components/LoginForm.vue"
 
 <template>
     <ModalForm title="Login">
-        <q-card-section>
+        <div class="modal-form-section">
             <login-form />
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">
                 Not registered? <router-link to="/register" class="register-link">Create an account</router-link>.
             </p>
-            <p class="text-grey-6">
+            <p class="modal-form-footer-text">
                 <router-link to="/user/forgot_password" class="forgot-password-link">Forgot your password?</router-link>
             </p>
-        </q-card-section>
+        </div>
     </ModalForm>
 </template>
+
+<style scoped>
+.modal-form-section {
+    padding: var(--spacing-4);
+}
+
+.modal-form-section-footer {
+    padding: 0;
+    text-align: center;
+}
+
+.modal-form-footer-text {
+    color: var(--color-grey-600);
+}
+</style>

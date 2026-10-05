@@ -27,9 +27,9 @@ async function downloadContents() {
 const props = defineProps<ConfigFileContentsProps>()
 </script>
 <template>
-    <q-card flat bordered class="q-ma-sm">
-        <q-card-section class="q-pt-xs">
-            <div class="text-overline">
+    <section class="config-file-contents">
+        <div class="config-file-contents-section">
+            <div class="config-file-contents-heading">
                 {{ name }}
                 <GButton icon-only transparent aria-label="Copy contents" @click="copyContents">
                     <FontAwesomeIcon :icon="faCopy" />
@@ -39,6 +39,30 @@ const props = defineProps<ConfigFileContentsProps>()
                 </GButton>
             </div>
             <preformatted-content :contents="contents" />
-        </q-card-section>
-    </q-card>
+        </div>
+    </section>
 </template>
+
+<style scoped>
+.config-file-contents {
+    margin: var(--spacing-2);
+    background-color: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+}
+
+.config-file-contents-section {
+    padding: var(--spacing-4);
+    padding-top: var(--spacing-1);
+}
+
+.config-file-contents-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+</style>

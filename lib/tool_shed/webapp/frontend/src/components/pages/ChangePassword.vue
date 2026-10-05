@@ -35,7 +35,7 @@ function dismiss() {
 </script>
 <template>
     <modal-form title="Change Password">
-        <q-card-section>
+        <div class="modal-form-section">
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
             <GForm class="change-password-form" action="#" @submit.prevent="onChange">
                 <GFormLabel title="Current Password">
@@ -67,7 +67,7 @@ function dismiss() {
                 </GFormLabel>
                 <GButton color="blue" size="large" class="full-width" type="submit">Change Password</GButton>
             </GForm>
-        </q-card-section>
+        </div>
     </modal-form>
 </template>
 
@@ -76,5 +76,9 @@ function dismiss() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.modal-form-section {
+    padding: var(--spacing-4);
 }
 </style>

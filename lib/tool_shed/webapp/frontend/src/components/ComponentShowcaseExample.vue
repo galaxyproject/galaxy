@@ -11,7 +11,7 @@ defineProps({
 })
 </script>
 <template>
-    <span>
+    <div class="component-showcase-example">
         <q-item class="fit">
             <q-item-section>
                 <q-item-label caption>{{ title }}</q-item-label>
@@ -19,8 +19,16 @@ defineProps({
             </q-item-section>
         </q-item>
         <hr />
-        <q-card-section vertical>
+        <div class="component-showcase-example-body">
             <slot></slot>
-        </q-card-section>
-    </span>
+        </div>
+    </div>
 </template>
+
+<style scoped>
+.component-showcase-example-body {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-4);
+}
+</style>

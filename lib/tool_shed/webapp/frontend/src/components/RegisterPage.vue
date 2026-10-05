@@ -46,7 +46,7 @@ async function onRegister() {
 
 <template>
     <ModalForm :title="title">
-        <q-card-section>
+        <div class="modal-form-section">
             <GForm name="registration" class="registration-form" action="#" @submit.prevent="onRegister">
                 <GFormLabel title="E-Mail">
                     <GFormInput
@@ -88,10 +88,10 @@ async function onRegister() {
                     Register
                 </GButton>
             </GForm>
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">Already registered? <router-link to="/login">Login.</router-link></p>
-        </q-card-section>
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">Already registered? <router-link to="/login">Login.</router-link></p>
+        </div>
     </ModalForm>
 </template>
 
@@ -100,5 +100,18 @@ async function onRegister() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.modal-form-section {
+    padding: var(--spacing-4);
+}
+
+.modal-form-section-footer {
+    padding: 0;
+    text-align: center;
+}
+
+.modal-form-footer-text {
+    color: var(--color-grey-600);
 }
 </style>
