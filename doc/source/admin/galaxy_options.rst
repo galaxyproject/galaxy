@@ -1239,6 +1239,22 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~
+``crypt4gh_enabled``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable support for Crypt4GH-encrypted datasets. When enabled,
+    uploads carrying the Crypt4GH magic bytes are detected and typed
+    as ``<inner_ext>.c4gh`` wrapper datatypes (for example
+    ``fastqsanger.c4gh``), and these wrappers can be used as inputs
+    for tools accepting their inner datatype. When disabled (the
+    default), no Crypt4GH datatypes are registered and uploads are
+    handled exactly as before.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

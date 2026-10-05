@@ -907,6 +907,19 @@ mapping:
           With this option set to false the compressed datatypes will be unpacked
           before sniffing.
 
+      crypt4gh_enabled:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable support for Crypt4GH-encrypted datasets. When enabled, uploads
+          carrying the Crypt4GH magic bytes are detected and typed as
+          ``<inner_ext>.c4gh`` wrapper datatypes (for example
+          ``fastqsanger.c4gh``), and these wrappers can be used as inputs for
+          tools accepting their inner datatype. When disabled (the default),
+          no Crypt4GH datatypes are registered and uploads are handled exactly
+          as before.
+
       datatypes_disable_auto:
         type: bool
         default: false

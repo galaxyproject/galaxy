@@ -990,6 +990,15 @@ galaxy:
   # compressed datatypes will be unpacked before sniffing.
   #sniff_compressed_dynamic_datatypes_default: true
 
+  # Enable support for Crypt4GH-encrypted datasets. When enabled,
+  # uploads carrying the Crypt4GH magic bytes are detected and typed as
+  # ``<inner_ext>.c4gh`` wrapper datatypes (for example
+  # ``fastqsanger.c4gh``), and these wrappers can be used as inputs for
+  # tools accepting their inner datatype. When disabled (the default),
+  # no Crypt4GH datatypes are registered and uploads are handled exactly
+  # as before.
+  #crypt4gh_enabled: false
+
   # Disable the 'Auto-detect' option for file uploads
   #datatypes_disable_auto: false
 
