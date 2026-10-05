@@ -84,7 +84,7 @@ class TestLearningMode(SeleniumTestCase):
         job_id = self.api_get(f"datasets/{dataset['id']}")["creating_job"]
 
         self.galaxyai_dock_to_side_panel()
-        self.driver.get(self.build_url(f"jobs/{job_id}/view"))
+        self.get(f"jobs/{job_id}/view")
         galaxyai.docked_panel.wait_for_visible()
 
         galaxyai.context_badge.wait_for_visible()
