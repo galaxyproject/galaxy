@@ -149,6 +149,20 @@ defineExpose({
         display: block;
     }
 
+    // Visually hidden while not showing. Bootstrap's global .sr-only does this in the client,
+    // but consumers without Bootstrap would otherwise show every tooltip permanently.
+    &.sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
     .g-tooltip-arrow {
         visibility: hidden;
 
