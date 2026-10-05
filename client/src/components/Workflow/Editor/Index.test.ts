@@ -94,6 +94,8 @@ function editorStubs() {
                 flashSavedIndicator: mockFlashSavedIndicator,
             },
         },
+        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
+        GFormInput: false,
     };
 }
 
@@ -409,7 +411,7 @@ describe("Index", () => {
                 .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 });
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
-            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
             // config (`{ prop: "value", event: "update" }`), so the emit event to
             // drive `v-model="saveAsAnnotation"` is "update", not "input".
@@ -435,7 +437,7 @@ describe("Index", () => {
                 .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 });
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
-            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             await nextTick();
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
@@ -446,16 +448,16 @@ describe("Index", () => {
         });
 
         it("resets save-as fields when the modal is cancelled", async () => {
-            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
             await nextTick();
 
-            expect(wrapper.findComponent(GFormInput).props("value")).toBe("My New Workflow");
+            expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("cancel");
             await nextTick();
 
-            expect(wrapper.findComponent(GFormInput).props("value")).toBeNull();
+            expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
             expect(wrapper.findComponent({ name: "BFormTextarea" }).props("value")).toBeNull();
         });
 
