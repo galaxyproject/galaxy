@@ -13,6 +13,7 @@ axe-selenium-python==2.1.6 ; python_full_version < '3.12'
 axe-selenium-python==3.0.0 ; python_full_version >= '3.12'
 babel==2.18.0
 backports-tarfile==1.2.0 ; python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x'
+bcrypt==5.0.0
 black==26.10.1
 boto3==1.43.117
 botocore==1.43.117
@@ -31,6 +32,7 @@ colorlog==6.12.0
 contourpy==1.3.3 ; python_full_version < '3.12'
 contourpy==1.4.0 ; python_full_version >= '3.12'
 coverage==7.17.4
+crypt4gh==1.8.6
 cryptography==50.0.2
 cwltest==2.7.20261106145043
 cycler==0.12.1
@@ -38,6 +40,7 @@ darker==3.0.0
 darkgraylib==2.4.1
 decorator==5.3.1
 defusedxml==0.7.1
+docopt-ng==0.9.0
 docutils==0.22.4
 dogpile-cache==1.5.0
 enum-tools==0.12.0
