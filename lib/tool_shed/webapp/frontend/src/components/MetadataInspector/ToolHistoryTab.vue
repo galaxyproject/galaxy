@@ -95,13 +95,10 @@ function toggleTool(toolId: string) {
                 <div class="text-h6">{{ history.toolId }}</div>
             </q-card-section>
 
-            <q-timeline color="primary" layout="dense" class="q-px-md">
-                <q-timeline-entry
-                    v-for="(ver, versionIndex) in history.versions"
-                    :key="ver.revision"
-                    :subtitle="`${ver.name} ${ver.description}`"
-                >
-                    <template #title>
+            <ol class="tool-history-timeline">
+                <li v-for="(ver, versionIndex) in history.versions" :key="ver.revision" class="tool-history-entry">
+                    <div class="tool-history-subtitle">{{ ver.name }} {{ ver.description }}</div>
+                    <div class="tool-history-title">
                         <div class="row items-center q-gutter-sm">
                             <span class="text-weight-medium">{{ ver.version }}</span>
                             <span class="revision-badge">[{{ ver.numericRevision }}]</span>
@@ -110,7 +107,7 @@ function toggleTool(toolId: string) {
                                 Rev {{ ver.numericRevision }}
                             </GButton>
                         </div>
-                    </template>
+                    </div>
 
                     <GButton
                         class="tool-details-toggle"
@@ -138,13 +135,63 @@ function toggleTool(toolId: string) {
                             />
                         </template>
                     </GCollapse>
-                </q-timeline-entry>
-            </q-timeline>
+                </li>
+            </ol>
         </q-card>
     </div>
 </template>
 
 <style scoped>
+.tool-history-timeline {
+    margin: 0;
+    padding: 0 var(--spacing-4) var(--spacing-2);
+    list-style: none;
+}
+
+.tool-history-entry {
+    position: relative;
+    padding: 0 0 var(--spacing-4) var(--spacing-8);
+}
+
+.tool-history-entry::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--spacing-3) - 1px);
+    width: 2px;
+    background: var(--color-grey-200);
+}
+
+.tool-history-entry:last-child::before {
+    bottom: auto;
+    height: var(--spacing-3);
+}
+
+.tool-history-entry::after {
+    content: "";
+    position: absolute;
+    top: var(--spacing-1);
+    left: calc(var(--spacing-3) - var(--spacing-2));
+    width: var(--spacing-4);
+    height: var(--spacing-4);
+    box-sizing: border-box;
+    border: 3px solid var(--color-galaxy-primary);
+    border-radius: 50%;
+    background: var(--background-color);
+}
+
+.tool-history-subtitle {
+    color: var(--color-grey-500);
+    font-size: var(--font-size-small);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.tool-history-title {
+    margin-bottom: var(--spacing-1);
+}
+
 .revision-badge {
     padding: var(--spacing-1) var(--spacing-2);
     border-radius: var(--spacing-1);

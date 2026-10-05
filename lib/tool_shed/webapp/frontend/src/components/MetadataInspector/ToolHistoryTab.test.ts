@@ -75,6 +75,34 @@ describe("ToolHistoryTab", () => {
         })
     })
 
+    describe("timeline", () => {
+        it("lists each tool's versions as an ordered list with name and description", () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: simulatedMetadataMultiTool },
+            })
+
+            const timelines = wrapper.findAll("ol.tool-history-timeline")
+            expect(timelines.length).toBe(4)
+
+            const versionCount = Object.values(simulatedMetadataMultiTool).reduce(
+                (count, revision) => count + (revision.tools?.length ?? 0),
+                0,
+            )
+            const entries = wrapper.findAll("li.tool-history-entry")
+            expect(entries.length).toBe(versionCount)
+
+            // Tools sort alphabetically and versions newest first, so the first entry is
+            // align_sequences at its highest revision.
+            const newestAlign = Object.entries(simulatedMetadataMultiTool)
+                .sort(([a], [b]) => parseInt(b) - parseInt(a))
+                .flatMap(([, revision]) => revision.tools ?? [])
+                .find((tool) => tool.id === "align_sequences")
+            expect(entries[0].find(".tool-history-subtitle").text()).toBe(
+                `${newestAlign?.name} ${newestAlign?.description}`,
+            )
+        })
+    })
+
     describe("tool history sorting", () => {
         it("sorts versions with newest revision first", () => {
             const wrapper = mount(ToolHistoryTab, {
