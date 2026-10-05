@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { defineComponent, h, ref, withDirectives } from "vue";
+import { computed, defineComponent, h, ref, withDirectives } from "vue";
 
 import { vGTooltip } from "../directives/vGTooltip";
+import { type CheckboxGroupContext, checkboxGroupKey } from "./checkboxGroupContext";
+import type { ComponentSize } from "./componentVariants";
 
 import GCheckbox from "./GCheckbox.vue";
 
@@ -192,5 +194,74 @@ describe("GCheckbox", () => {
                 .classes()
                 .filter((name) => /^g-(small|medium|large)$/.test(name)),
         ).toEqual([]);
+    });
+
+    describe("inside a group", () => {
+        function mountInGroup(
+            childProps: Record<string, unknown>,
+            group: {
+                disabled?: boolean;
+                name?: string;
+                selected?: unknown[];
+                size?: ComponentSize;
+                switches?: boolean;
+            } = {},
+        ) {
+            const toggle = vi.fn();
+            const context: CheckboxGroupContext = {
+                disabled: computed(() => group.disabled ?? false),
+                name: computed(() => group.name ?? "group-name"),
+                size: computed(() => group.size),
+                switches: computed(() => group.switches ?? false),
+                isChecked: (value) => (group.selected ?? []).includes(value),
+                toggle,
+            };
+            const wrapper = mount(GCheckbox, {
+                props: childProps,
+                global: { provide: { [checkboxGroupKey]: context } },
+            });
+            return { checkbox: wrapper, toggle, wrapper };
+        }
+
+        it("takes its checked state from the group", () => {
+            const { wrapper } = mountInGroup({ value: "b", modelValue: false }, { selected: ["a", "b"] });
+
+            expect((wrapper.find("input").element as HTMLInputElement).checked).toBe(true);
+        });
+
+        it("asks the group to toggle its value instead of emitting update:modelValue", async () => {
+            const { checkbox, toggle, wrapper } = mountInGroup({ value: "b" });
+
+            await wrapper.find("input").setValue(true);
+            expect(toggle).toHaveBeenCalledWith("b", true);
+            expect(checkbox.emitted("update:modelValue")).toBeUndefined();
+            expect(checkbox.emitted("change")).toHaveLength(1);
+        });
+
+        it("inherits name, size, disabled and switch mode from the group", () => {
+            const { wrapper } = mountInGroup(
+                { value: "b" },
+                { disabled: true, name: "shared", size: "small", switches: true },
+            );
+            const input = wrapper.find("input");
+
+            expect(input.attributes("name")).toBe("shared");
+            expect(input.attributes("disabled")).toBeDefined();
+            expect(input.attributes("role")).toBe("switch");
+            expect(wrapper.find("label").classes()).toEqual(
+                expect.arrayContaining(["g-small", "g-disabled", "g-switch"]),
+            );
+        });
+
+        it("lets its own name and size win over the group's", () => {
+            const { wrapper } = mountInGroup(
+                { name: "own", size: "large", value: "b" },
+                { name: "shared", size: "small" },
+            );
+
+            expect(wrapper.find("input").attributes("name")).toBe("own");
+            expect(wrapper.find("label").classes()).toContain("g-large");
+            expect(wrapper.find("label").classes()).not.toContain("g-small");
+        });
     });
 });

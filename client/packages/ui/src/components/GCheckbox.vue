@@ -7,10 +7,15 @@
  * non-bubbling `@focus`/`@blur` never fire there (use `@focusin`/`@focusout`). Every other
  * attribute (`data-test-id`, `aria-*`) lands on the input, so give an unlabeled
  * checkbox an `aria-label`.
+ *
+ * Inside a GCheckboxGroup the group owns the state: the checkbox is checked when its `value` is in
+ * the group's v-model, emits `change` but not `update:modelValue`, and takes the group's name, size,
+ * disabled and switch mode unless it sets its own.
  */
 
-import { computed, useAttrs } from "vue";
+import { computed, inject, useAttrs } from "vue";
 
+import { checkboxGroupKey } from "./checkboxGroupContext";
 import { type ComponentSize, prefix } from "./componentVariants";
 
 defineOptions({
@@ -49,6 +54,8 @@ const emit = defineEmits<{
 
 const attrs = useAttrs();
 
+const group = inject(checkboxGroupKey, null);
+
 // Plain functions, not computeds: $attrs is not reactive, so the render function must read it each time
 function rootAttrs() {
     return {
@@ -65,15 +72,17 @@ function inputAttrs() {
     };
 }
 
-const sizeClass = computed(() => (props.size ? prefix(props.size) : undefined));
+const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.modelValue ?? false)));
 
-const currentValue = computed({
-    get() {
-        return props.modelValue ?? false;
-    },
-    set(newValue: boolean) {
-        emit("update:modelValue", newValue);
-    },
+const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
+
+const isSwitch = computed(() => props.toggle || Boolean(group?.switches.value));
+
+const inputName = computed(() => props.name ?? group?.name.value);
+
+const sizeClass = computed(() => {
+    const size = props.size ?? group?.size.value;
+    return size ? prefix(size) : undefined;
 });
 
 // title stays on the label so v-g-tooltip, which binds to the root, can read and suppress it
@@ -83,25 +92,32 @@ function isRootAttr(key: string) {
 
 function onChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    currentValue.value = target.checked;
+    if (group) {
+        group.toggle(props.value, target.checked);
+    } else {
+        emit("update:modelValue", target.checked);
+    }
     emit("change", event);
 }
 </script>
 
 <template>
-    <label v-bind="rootAttrs()" class="g-checkbox" :class="[sizeClass, { 'g-disabled': disabled, 'g-switch': toggle }]">
+    <label
+        v-bind="rootAttrs()"
+        class="g-checkbox"
+        :class="[sizeClass, { 'g-disabled': isDisabled, 'g-switch': isSwitch }]">
         <input
             v-bind="inputAttrs()"
             :id="id"
             :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
-            :checked="currentValue"
+            :checked="isChecked"
             :indeterminate="indeterminate"
-            :disabled="disabled"
-            :name="name"
+            :disabled="isDisabled"
+            :name="inputName"
             :required="required"
-            :role="toggle ? 'switch' : undefined"
+            :role="isSwitch ? 'switch' : undefined"
             :value="value"
             @change="onChange" />
         <span v-if="$slots.default" class="g-checkbox-label">
