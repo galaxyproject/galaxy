@@ -2,9 +2,10 @@
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, toRef } from "vue";
+import { computed, ref } from "vue";
 
 import { isRegisteredUser } from "@/api";
+import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
 import { useJobDetails } from "@/composables/jobDetails.js";
 import { useToast } from "@/composables/toast";
@@ -16,6 +17,9 @@ import GButton from "../BaseComponents/GButton.vue";
 
 const props = defineProps<{
     jobId: string;
+    /** A job object. `undefined` fetches/polls it here instead; `null` means
+     * the parent confirms there's deliberately no job yet (also skips fetching). */
+    job?: JobBaseModel | ShowFullJobResponse | null;
 }>();
 
 const badgeClass = computed(() => {
@@ -28,7 +32,9 @@ const badgeClass = computed(() => {
     };
 });
 
-const { job } = useJobDetails(toRef(props, "jobId"));
+const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
+const { job: fetchedJob } = useJobDetails(fetchJobId);
+const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 
 const stateIcon = computed(() => (job.value ? iconClasses[job.value.state] : null));
 

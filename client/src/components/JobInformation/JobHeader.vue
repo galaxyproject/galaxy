@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
-import { toRef } from "vue";
+import { computed } from "vue";
 
+import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import { useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
 
@@ -13,6 +14,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
     jobId: string;
+    /** A job object. `undefined` fetches/polls it here instead; `null` means
+     * the parent confirms there's deliberately no job yet (also skips fetching). */
+    job?: JobBaseModel | ShowFullJobResponse | null;
     noToolName?: boolean;
     noHr?: boolean;
     animateSuccess?: boolean;
@@ -20,7 +24,9 @@ const props = defineProps<{
 
 const toolStore = useToolStore();
 
-const { job } = useJobDetails(toRef(props, "jobId"));
+const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
+const { job: fetchedJob } = useJobDetails(fetchJobId);
+const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 </script>
 
 <template>
@@ -37,9 +43,9 @@ const { job } = useJobDetails(toRef(props, "jobId"));
                 <span v-else>{{ toolStore.getToolNameById(job.tool_id, "Job Details") }}</span>
             </Heading>
             <div class="job-header-end">
-                <JobState class="job-information-state-badge" :job-id="props.jobId" />
+                <JobState class="job-information-state-badge" :job-id="props.jobId" :job="job" />
                 <slot name="pagination" />
-                <RerunJobButton :job-id="props.jobId" outline />
+                <RerunJobButton :job-id="props.jobId" :job="job" outline />
             </div>
         </div>
         <hr v-if="!props.noHr" />

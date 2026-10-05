@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, toRef, watch } from "vue";
+import { computed, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import { useJobDetails } from "@/composables/jobDetails.js";
 import { useToolStore } from "@/stores/toolStore";
 
@@ -13,10 +14,15 @@ const route = useRoute();
 
 const props = defineProps<{
     jobId: string;
+    /** A job object. `undefined` fetches/polls it here instead; `null` means
+     * the parent confirms there's deliberately no job yet (also skips fetching). */
+    job?: JobBaseModel | ShowFullJobResponse | null;
     outline?: boolean;
 }>();
 
-const { job } = useJobDetails(toRef(props, "jobId"));
+const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
+const { job: fetchedJob } = useJobDetails(fetchJobId);
+const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 const toolStore = useToolStore();
 
 const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
