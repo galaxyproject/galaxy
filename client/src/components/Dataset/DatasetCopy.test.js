@@ -238,3 +238,12 @@ it("shows success for new history creation", async () => {
     expect(wrapper.text()).toContain("1 item copied to");
     expect(wrapper.text()).toContain("New History");
 });
+
+it("labels the history search inputs with their visible captions", async () => {
+    const wrapper = await setupBase([{ id: "h1", name: "H1" }], []);
+    const labels = wrapper.findAll("input.multiselect__input").map((input) => {
+        expect(input.attributes("aria-label")).toBeUndefined();
+        return wrapper.find(`label[for="${input.attributes("id")}"]`).text();
+    });
+    expect(labels).toEqual(["Select a Source History:", "Select a Target History:"]);
+});
