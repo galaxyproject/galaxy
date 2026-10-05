@@ -2,6 +2,16 @@ import type { ComputedRef, InjectionKey } from "vue";
 
 import type { ComponentSize } from "./componentVariants";
 
+/** One entry of GCheckboxGroup's `options` prop. */
+export interface CheckboxGroupOption {
+    /** Label shown next to the checkbox */
+    text: string;
+    /** Value added to the group's v-model when checked */
+    value: unknown;
+    /** Disables this option only */
+    disabled?: boolean;
+}
+
 /** What a GCheckboxGroup shares with the GCheckbox children it renders or wraps. */
 export interface CheckboxGroupContext {
     disabled: ComputedRef<boolean>;
