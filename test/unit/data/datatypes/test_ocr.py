@@ -2,6 +2,7 @@ import pytest
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.sniff import (
+    FilePrefix,
     get_test_fname,
     guess_ext,
 )
@@ -163,10 +164,11 @@ def test_generic_fallback(tmp_path, registry, content, extension):
 )
 def test_ocr_fixtures(tmp_path, registry, filename, datatype):
     source = get_test_fname(filename)
-    assert datatype().sniff(source)
+    file_prefix = FilePrefix(source)
+    assert datatype().sniff_prefix(file_prefix)
     for other in (PageXml, Alto, AbbyyXml, Hocr):
         if other is not datatype:
-            assert not other().sniff(source)
+            assert not other().sniff_prefix(file_prefix)
 
     # Preserve BOMs and line endings, but remove the filename's format hint.
     path = tmp_path / "unknown.dat"
