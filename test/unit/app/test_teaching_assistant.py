@@ -132,7 +132,7 @@ class TestTeachingAssistantAgent:
         """Fallback message should mention training.galaxyproject.org."""
         agent = TeachingAssistantAgent(self.deps)
         fallback = agent._get_fallback_content()
-        assert "training.galaxyproject.org" in fallback
+        assert "explore tutorials at https://training.galaxyproject.org/ or ask" in fallback
 
     @pytest.mark.parametrize("job_id", [123, "encoded-job"])
     def test_prompt_exposes_encoded_job_id(self, job_id):
