@@ -34,6 +34,11 @@ cd "$(dirname "$0")"
 
 TEST_PYTHON=${TEST_PYTHON:-"python3"}
 
+# TEMP: requirements pin pulsar-galaxy-lib to a git revision until 0.15.16 is
+# released. Pulsar's setup.py names itself "pulsar-app" unless this is set, and
+# pip/uv then refuse the install on a name mismatch. Drop with the git pin.
+export PULSAR_GALAXY_LIB=1
+
 if command -v uv >/dev/null; then
     VENV_CMD="uv venv --python $TEST_PYTHON"
     PIP_CMD="$(command -v uv) pip"
