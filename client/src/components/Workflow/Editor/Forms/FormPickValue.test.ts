@@ -86,14 +86,20 @@ describe("FormPickValue", () => {
     });
 
     describe("mode changes", () => {
-        it("emits the failure-tolerant selection mode", () => {
+        it("offers the failure-tolerant selection mode", () => {
             const wrapper = mountPickValue();
-            const formElement = wrapper.findComponent(FormElement);
-            formElement.vm.$emit("input", "first_ok_or_skip");
+            // options reach FormElement as an attribute, not a declared prop
+            const options = wrapper.findComponent(FormElement).vm.$attrs.options as string[][];
+            expect(options.map(([, value]) => value)).toContain("first_ok_or_skip");
+        });
 
-            const state = getLastEmittedState(wrapper);
-            expect(state.mode).toBe("first_ok_or_skip");
-            expect(state.num_inputs).toBe(2);
+        it("explains failure handling only for the failure-tolerant mode", () => {
+            const help = (mode: string) =>
+                mountPickValue(makeStep({ tool_state: { mode, num_inputs: 2 } }))
+                    .findComponent(FormElement)
+                    .props("help") as string;
+            expect(help("first_ok_or_skip")).toMatch(/failed/i);
+            expect(help("first_or_skip")).not.toMatch(/failed/i);
         });
 
         it("emits onChange with updated mode", () => {

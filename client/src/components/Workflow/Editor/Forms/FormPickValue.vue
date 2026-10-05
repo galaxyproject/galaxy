@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRef, watch } from "vue";
+import { computed, toRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { InputTerminalSource, PostJobActions, Step } from "@/stores/workflowStepStore";
@@ -56,6 +56,14 @@ const modeOptions = [
     ["The only non-null (error if != 1)", "the_only_non_null"],
     ["All non-null (as collection)", "all_non_null"],
 ];
+
+const modeHelp = computed(() => {
+    const help = "How to select among the connected inputs.";
+    if (asToolState(toolState.value).mode === "first_ok_or_skip") {
+        return `${help} Failed inputs are ignored, and the step is skipped when none remain.`;
+    }
+    return help;
+});
 
 function onMode(newMode: string) {
     const state = cleanToolState();
@@ -125,7 +133,7 @@ if (connections) {
             title="Selection Mode"
             type="select"
             :options="modeOptions"
-            help="How to select among the connected inputs. The non-failed mode ignores failed inputs and skips when none remain."
+            :help="modeHelp"
             @input="onMode" />
         <div v-if="datatypes && step.outputs && step.outputs.length > 0" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm"> Additional Options </Heading>
