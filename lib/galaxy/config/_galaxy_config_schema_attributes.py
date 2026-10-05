@@ -97,6 +97,7 @@ class GalaxyAppConfigurationAttributes:
     datatypes_config_file: str
     sniff_compressed_dynamic_datatypes_default: bool
     crypt4gh_enabled: bool
+    crypt4gh_user_service_url: str
     datatypes_disable_auto: bool
     visualization_plugins_directory: str
     tour_config_dir: str

@@ -947,6 +947,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/protection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show whether the dataset is protected and whether the current user can compute on it. */
+        get: operations["show_protection_api_datasets__dataset_id__protection_get"];
+        /**
+         * Register the current user's grant to compute on a protected dataset.
+         * @description The grant is bound to the current user and the underlying dataset. It is never
+         *     returned by the API and does not travel with copies of the dataset, so sharing a
+         *     protected dataset does not share the ability to compute on it.
+         */
+        put: operations["update_protection_api_datasets__dataset_id__protection_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{dataset_id}/report": {
         parameters: {
             query?: never;
@@ -10452,6 +10475,31 @@ export interface components {
              */
             value?: string | null;
         };
+        /** Crypt4GHGrantPayload */
+        Crypt4GHGrantPayload: {
+            /**
+             * Crypt4Gh Compute Header
+             * @description Base64-encoded Crypt4GH header of the dataset, re-encrypted by the user-side recryptor service to the compute keypair.
+             */
+            crypt4gh_compute_header: string;
+            /**
+             * Crypt4Gh Compute Keypair Expiration Date
+             * Format: date-time
+             * @description Expiration date of the compute keypair, including the timezone.
+             */
+            crypt4gh_compute_keypair_expiration_date: string;
+            /**
+             * Crypt4Gh Compute Keypair Id
+             * @description Identifier of the compute keypair the header was re-encrypted to.
+             */
+            crypt4gh_compute_keypair_id: string;
+            /**
+             * Scheme
+             * @description The protection scheme of the dataset.
+             * @constant
+             */
+            scheme: "crypt4gh";
+        };
         /** CsvDialect */
         CsvDialect: {
             /** Delimiter */
@@ -11764,6 +11812,30 @@ export interface components {
              * @default []
              */
             manage: string[];
+        };
+        /** DatasetProtectionStatus */
+        DatasetProtectionStatus: {
+            /**
+             * Expires At
+             * @description Expiration (UTC) of the current user's grant, if any.
+             */
+            expires_at?: string | null;
+            /**
+             * Protected
+             * @description Whether the dataset is encrypted with a supported protection scheme.
+             */
+            protected: boolean;
+            /**
+             * Ready
+             * @description Whether the current user holds a valid grant to compute on this dataset.
+             * @default false
+             */
+            ready: boolean;
+            /**
+             * Scheme
+             * @description The protection scheme of the dataset, if protected.
+             */
+            scheme?: string | null;
         };
         /** DatasetSource */
         DatasetSource: {
@@ -35911,6 +35983,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_protection_api_datasets__dataset_id__protection_get: {
+        parameters: {
+            query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetProtectionStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_protection_api_datasets__dataset_id__protection_put: {
+        parameters: {
+            query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Crypt4GHGrantPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetProtectionStatus"];
                 };
             };
             /** @description Request Error */

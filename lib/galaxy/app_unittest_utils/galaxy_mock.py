@@ -235,6 +235,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.galaxy_data_manager_data_path = self.tool_data_path
         self.tool_dependency_dir = None
         self.metadata_strategy = "directory"
+        self.crypt4gh_enabled = kwargs.get("crypt4gh_enabled", False)
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False

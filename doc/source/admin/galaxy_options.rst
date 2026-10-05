@@ -1255,6 +1255,23 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``crypt4gh_user_service_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL of the user-side Crypt4GH recryptor service
+    (``crypt4gh-recryptor-service user``), called from the user's
+    browser to authorize computation on Crypt4GH-encrypted datasets.
+    The service runs on the user's own machine and holds the user's
+    private key, so this normally points to ``localhost``. Users can
+    override the port in their preferences when the
+    ``crypt4gh_recrypt_service`` extra user preference is configured.
+    Only used when ``crypt4gh_enabled`` is set.
+:Default: ``https://localhost:61357``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
