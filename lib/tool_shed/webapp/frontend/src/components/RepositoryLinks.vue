@@ -29,24 +29,36 @@ const dev_url = computed(() => props.repository.remote_repository_url)
 </script>
 <template>
     <p v-if="currentRevision">
-        <FontAwesomeIcon :icon="faLink" class="q-pl-xs q-pr-md" style="font-size: 32px" />
-        <a class="text-primary text-bold" :href="link">{{ link }}</a>
+        <FontAwesomeIcon :icon="faLink" class="repository-link-icon" style="font-size: 32px" />
+        <a class="repository-link-url" :href="link">{{ link }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(link)">
             <FontAwesomeIcon :icon="faCopy" />
         </GButton>
     </p>
     <p v-if="homepage">
-        <FontAwesomeIcon :icon="faHouse" class="q-pl-xs q-pr-md" style="font-size: 32px" />
-        <a class="text-primary text-bold" :href="homepage">{{ homepage }}</a>
+        <FontAwesomeIcon :icon="faHouse" class="repository-link-icon" style="font-size: 32px" />
+        <a class="repository-link-url" :href="homepage">{{ homepage }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(homepage)">
             <FontAwesomeIcon :icon="faCopy" />
         </GButton>
     </p>
     <p v-if="dev_url">
-        <FontAwesomeIcon :icon="faCode" class="q-pl-xs q-pr-md" style="font-size: 32px" />
-        <a class="text-primary text-bold" :href="dev_url">{{ dev_url }}</a>
+        <FontAwesomeIcon :icon="faCode" class="repository-link-icon" style="font-size: 32px" />
+        <a class="repository-link-url" :href="dev_url">{{ dev_url }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(dev_url)">
             <FontAwesomeIcon :icon="faCopy" />
         </GButton>
     </p>
 </template>
+
+<style scoped>
+.repository-link-icon {
+    padding-left: var(--spacing-1);
+    padding-right: var(--spacing-4);
+}
+
+.repository-link-url {
+    color: var(--color-galaxy-primary);
+    font-weight: bold;
+}
+</style>

@@ -20,7 +20,7 @@ const toolsYaml = computed(
 </script>
 
 <template>
-    <div class="repository-select-label text-h5 q-mr-lg">Installing</div>
+    <h3 class="repository-select-label">Installing</h3>
     This repository can be installed by Galaxy admins by searching for it in the
     <code>Admin -> Tool Management -> Install and Uninstall</code> and choosing to install it. It can also be installed
     using the Galaxy API via
@@ -31,3 +31,10 @@ const toolsYaml = computed(
     Be sure to check out the <a :href="EPHEMERIS_TRAINING">tool installation training materials</a> for more
     information.
 </template>
+
+<style scoped>
+.repository-select-label {
+    font-size: 1.5rem;
+    margin: 0 var(--spacing-6) 0 0;
+}
+</style>
