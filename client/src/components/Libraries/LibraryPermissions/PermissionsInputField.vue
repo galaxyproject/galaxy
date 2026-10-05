@@ -9,6 +9,7 @@
                     <Multiselect
                         :id="id"
                         v-model="value"
+                        :aria-label="title"
                         :name="id"
                         :options="fetched_options"
                         :clear-on-select="true"

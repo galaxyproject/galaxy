@@ -45,6 +45,16 @@ describe("PermissionsInputField", () => {
         expect(wrapper.emitted("input")).toEqual([[[QA_ROLE], "add_library_item_role_list"]]);
     });
 
+    it("names the role search input after its title", async () => {
+        const wrapper = mount(PermissionsInputField, {
+            props: PROPS,
+            global: getLocalVue(),
+        });
+        await flushPromises();
+
+        expect(wrapper.find("input.multiselect__input").attributes("aria-label")).toBe(PROPS.title);
+    });
+
     describe("paging through roles", () => {
         let observed: { callback: IntersectionObserverCallback; element: Element } | undefined;
 
