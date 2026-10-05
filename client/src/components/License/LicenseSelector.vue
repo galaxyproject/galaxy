@@ -90,6 +90,7 @@ watchImmediate(
             v-else
             id="license-selector"
             v-model="currentLicense"
+            aria-label="License"
             name="license-selector"
             data-description="license select"
             track-by="licenseId"
