@@ -1289,6 +1289,7 @@ steps:
         noop = [{"action_type": "update_name", "name": name}]
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, noop, version=0)
         refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is False
         assert len(self._workflow_versions(workflow_id)) == 3
         assert self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["label"] == "input1"
 

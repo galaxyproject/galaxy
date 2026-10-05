@@ -22145,7 +22145,7 @@ export interface components {
             action_executions: components["schemas"]["RefactorActionExecution"][];
             /**
              * Changed
-             * @description Whether the actions changed the workflow. If false and not a dry run, no new version was saved.
+             * @description Whether the actions changed the refactored version. A refactor of the latest version that changes nothing saves no new version; refactoring an older version always saves one.
              */
             changed: boolean;
             /** Dry Run */

@@ -2484,7 +2484,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def do_refactor(
         self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
-    ):
+    ) -> tuple[Workflow, list[RefactorActionExecution], bool]:
         """Apply supplied actions to either the latest version of the workflow or a specific version to build a new version."""
         # Get the workflow version to refactor (latest or specific version)
         workflow = stored_workflow.get_internal_version(refactor_request.version)
@@ -2709,7 +2709,10 @@ class RefactorResponse(BaseModel):
     dry_run: bool
     changed: bool = Field(
         ...,
-        description="Whether the actions changed the workflow. If false and not a dry run, no new version was saved.",
+        description=(
+            "Whether the actions changed the refactored version. A refactor of the latest version "
+            "that changes nothing saves no new version; refactoring an older version always saves one."
+        ),
     )
 
 
