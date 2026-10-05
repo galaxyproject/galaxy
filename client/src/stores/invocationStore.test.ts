@@ -127,6 +127,59 @@ describe("stores/invocationStore", () => {
 
             expect(metricsCallCount).toBe(1);
         });
+
+        describe("when the step jobs summary is unavailable at fetch time", () => {
+            beforeEach(() => {
+                server.use(
+                    http.get("/api/invocations/{invocation_id}/step_jobs_summary", ({ response }) => {
+                        return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
+                    }),
+                );
+            });
+
+            it("does not refetch on later reads", async () => {
+                const store = useInvocationStore();
+
+                for (let i = 0; i < 3; i++) {
+                    store.getInvocationMetricsById("inv1");
+                    await flushPromises();
+                }
+
+                expect(metricsCallCount).toBe(1);
+            });
+
+            it("refetches once the summary loads, then on newly terminal jobs", async () => {
+                const store = useInvocationStore();
+
+                store.getInvocationMetricsById("inv1");
+                await flushPromises();
+                expect(metricsCallCount).toBe(1);
+
+                server.use(
+                    http.get("/api/invocations/{invocation_id}/step_jobs_summary", ({ response }) => {
+                        return response(200).json(stepJobsSummary);
+                    }),
+                );
+                stepJobsSummary = stepJobsSummaryResponse({ running: 1, ok: 1 });
+                await store.fetchInvocationStepJobsSummaryForId({ id: "inv1" });
+
+                // The first fetch had no baseline, so the summary's arrival triggers one refetch.
+                store.getInvocationMetricsById("inv1");
+                await flushPromises();
+                expect(metricsCallCount).toBe(2);
+
+                store.getInvocationMetricsById("inv1");
+                await flushPromises();
+                expect(metricsCallCount).toBe(2);
+
+                stepJobsSummary = stepJobsSummaryResponse({ ok: 2 });
+                await store.fetchInvocationStepJobsSummaryForId({ id: "inv1" });
+
+                store.getInvocationMetricsById("inv1");
+                await flushPromises();
+                expect(metricsCallCount).toBe(3);
+            });
+        });
     });
 
     describe("fetchLatestInvocations", () => {

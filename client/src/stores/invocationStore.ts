@@ -158,15 +158,15 @@ export const useInvocationStore = defineStore("invocationStore", () => {
      * can have multiple jobs and their metrics (e.g. `runtime_seconds`) wouldn't show up until
      * the entire collection completed.
      *
-     * `undefined` means metrics haven't been fetched for this invocation yet.
+     * `undefined` means metrics haven't been fetched for this invocation yet; `null` means the last
+     * fetch happened before the step jobs summary was available, so there is no baseline.
      */
-    const terminalCountsByStepIdAtLastMetricsFetch: Record<string, Record<string, number>> = {};
+    const terminalCountsByStepIdAtLastMetricsFetch: Record<string, Record<string, number> | null> = {};
 
     /**
      * Returns `null` if the step jobs summary hasn't loaded yet (it's fetched/kept fresh
      * independently, e.g. by `WorkflowInvocationState.vue`'s polling) -- callers must treat that as
-     * "unknown" rather than "zero terminal jobs", otherwise the summary arriving a moment later would
-     * look like a burst of newly-terminal jobs and trigger a spurious extra fetch.
+     * "unknown" rather than "zero terminal jobs".
      */
     function currentTerminalCountsByStepId(invocationId: string): Record<string, number> | null {
         const stepsJobsSummary = getInvocationStepJobsSummaryById.value(invocationId);
@@ -187,12 +187,9 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
         const result = await fetchInvocationMetricsRawForId(params);
         // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
-        // fall back to whatever it looks like now, so we don't leave the snapshot permanently
-        // unrecorded (which would make every future read think metrics were "never fetched").
-        const snapshot = snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
-        if (snapshot !== null) {
-            terminalCountsByStepIdAtLastMetricsFetch[params.id] = snapshot;
-        }
+        // fall back to whatever it looks like now (still `null` if it hasn't loaded).
+        terminalCountsByStepIdAtLastMetricsFetch[params.id] =
+            snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
         return result;
     }
 
@@ -218,14 +215,19 @@ export const useInvocationStore = defineStore("invocationStore", () => {
             }
 
             const newTerminalCountsByStepId = currentTerminalCountsByStepId(invocationId);
-            // Step jobs summary not loaded (yet, or anymore) -- nothing to compare against, so don't
-            // fetch based on incomplete information.
-            const hasNewlyTerminalJob =
-                newTerminalCountsByStepId !== null &&
-                Object.entries(newTerminalCountsByStepId).some(
+            let shouldFetch: boolean;
+            if (newTerminalCountsByStepId === null) {
+                // Step jobs summary not loaded (yet, or anymore) -- don't fetch on incomplete information.
+                shouldFetch = false;
+            } else if (oldTerminalCountsByStepId === null) {
+                // Last fetch had no baseline; refetch once now that the summary is available.
+                shouldFetch = true;
+            } else {
+                shouldFetch = Object.entries(newTerminalCountsByStepId).some(
                     ([stepId, count]) => count > (oldTerminalCountsByStepId[stepId] ?? 0),
                 );
-            if (hasNewlyTerminalJob) {
+            }
+            if (shouldFetch) {
                 fetchInvocationMetricsForId({ id: invocationId });
             }
             return metrics ?? null;
