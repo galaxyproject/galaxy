@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCircleQuestion, faXmark } from "@fortawesome/free-solid-svg-icons"
+import { GTooltip } from "@galaxyproject/galaxy-ui"
+import { ref } from "vue"
 import type { components } from "@/schema"
 
 type ChangesetMetadataStatus = components["schemas"]["ChangesetMetadataStatus"]
@@ -41,6 +43,12 @@ const comparisonTooltips: Record<string, string> = {
         "Tools or dependencies were removed or modified - previous revision was saved as an installable snapshot",
     no_metadata: "No tools or dependencies found in this changeset",
 }
+
+// Single static instances per column header, so one template ref each is enough. The
+// per-row comparison_result tooltip below can't share this pattern -- q-table calls that
+// slot once per row -- so it falls back to a native title attribute instead.
+const comparisonHeaderHelpRef = ref<HTMLElement | null>(null)
+const recordOperationHeaderHelpRef = ref<HTMLElement | null>(null)
 </script>
 
 <template>
@@ -56,22 +64,26 @@ const comparisonTooltips: Record<string, string> = {
         <template #header-cell-comparison_result="props">
             <q-th :props="props">
                 {{ props.col.label }}
-                <span class="q-ml-xs cursor-help">
+                <span
+                    ref="comparisonHeaderHelpRef"
+                    class="q-ml-xs cursor-help"
+                    tabindex="0"
+                    role="img"
+                    aria-label="About comparison results"
+                >
                     <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
-                    <q-tooltip max-width="300px">
-                        How this changeset's metadata changed compared to the previous revision. Snapshots are created
-                        when tools are removed or modified, preserving installable history.
-                    </q-tooltip>
                 </span>
+                <GTooltip
+                    class="changeset-help-tooltip"
+                    :reference="comparisonHeaderHelpRef"
+                    text="How this changeset's metadata changed compared to the previous revision. Snapshots are created when tools are removed or modified, preserving installable history."
+                />
             </q-th>
         </template>
         <template #body-cell-comparison_result="props">
             <q-td :props="props">
-                <span v-if="props.value" class="cursor-help">
+                <span v-if="props.value" class="cursor-help" :title="comparisonTooltips[props.value]">
                     {{ comparisonLabels[props.value] || props.value }}
-                    <q-tooltip v-if="comparisonTooltips[props.value]" max-width="300px">
-                        {{ comparisonTooltips[props.value] }}
-                    </q-tooltip>
                 </span>
                 <span v-else class="text-grey">—</span>
             </q-td>
@@ -79,13 +91,20 @@ const comparisonTooltips: Record<string, string> = {
         <template #header-cell-record_operation="props">
             <q-th :props="props">
                 {{ props.col.label }}
-                <span class="q-ml-xs cursor-help">
+                <span
+                    ref="recordOperationHeaderHelpRef"
+                    class="q-ml-xs cursor-help"
+                    tabindex="0"
+                    role="img"
+                    aria-label="About record operations"
+                >
                     <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
-                    <q-tooltip max-width="300px">
-                        Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was
-                        made; "updated" means an existing snapshot was refreshed.
-                    </q-tooltip>
                 </span>
+                <GTooltip
+                    class="changeset-help-tooltip"
+                    :reference="recordOperationHeaderHelpRef"
+                    text='Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was made; "updated" means an existing snapshot was refreshed.'
+                />
             </q-th>
         </template>
         <template #body-cell-record_operation="props">
@@ -121,6 +140,11 @@ const comparisonTooltips: Record<string, string> = {
 </template>
 
 <style scoped>
+/* Paragraph-length help reads as a block, as the q-tooltips did at 300px */
+.changeset-help-tooltip {
+    max-width: min(300px, calc(100vw - 2rem));
+}
+
 .record-operation-badge {
     display: inline-block;
     padding: var(--spacing-1) var(--spacing-2);

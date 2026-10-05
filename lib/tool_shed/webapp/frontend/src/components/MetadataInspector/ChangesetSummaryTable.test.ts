@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { mount } from "@vue/test-utils"
+import { nextTick } from "vue"
 import ChangesetSummaryTable from "./ChangesetSummaryTable.vue"
 import { getChangesetDetails, resetMetadataPreview, makeChangeset } from "./__fixtures__"
 
@@ -103,6 +104,50 @@ describe("ChangesetSummaryTable", () => {
             const cells = wrapper.findAll("td")
             const hasEmDash = cells.some((cell) => cell.text().includes("—"))
             expect(hasEmDash).toBe(true)
+        })
+    })
+
+    describe("tooltips", () => {
+        it("wires each header help icon to a tooltip via aria-describedby", async () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+            // GTooltip sets aria-describedby on its reference reactively, once the template
+            // ref to the trigger span is flushed -- that happens a tick after mount.
+            await nextTick()
+
+            const triggers = wrapper.findAll("th .cursor-help")
+            expect(triggers).toHaveLength(2)
+
+            for (const trigger of triggers) {
+                const describedBy = trigger.attributes("aria-describedby")
+                expect(describedBy).toBeTruthy()
+                expect(wrapper.find(`#${describedBy}`).exists()).toBe(true)
+            }
+        })
+
+        it("explains both columns in the header tooltips", () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+
+            const tooltips = wrapper.findAll('[role="tooltip"]')
+            expect(tooltips).toHaveLength(2)
+            expect(tooltips.some((t) => t.text().includes("Snapshots are created"))).toBe(true)
+            expect(tooltips.some((t) => t.text().includes("refreshed"))).toBe(true)
+        })
+
+        it("puts the per-row comparison_result explanation in a title, since each row needs its own", () => {
+            const changesets = [makeChangeset({ comparison_result: "subset" })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
+
+            const cell = wrapper.find("td .cursor-help")
+            expect(cell.attributes("title")).toContain("changes accumulate")
+            // A title never shows on keyboard focus, so the cell isn't a tab stop
+            expect(cell.attributes("tabindex")).toBeUndefined()
+        })
+
+        it("names the focusable header help icons", () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+
+            const labels = wrapper.findAll("th .cursor-help").map((trigger) => trigger.attributes("aria-label"))
+            expect(labels).toEqual(["About comparison results", "About record operations"])
         })
     })
 
