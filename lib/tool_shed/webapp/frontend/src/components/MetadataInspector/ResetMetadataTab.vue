@@ -100,13 +100,16 @@ function clearPreview() {
                             <span class="text-weight-bold">
                                 {{ previewResult.dry_run ? "Preview Results" : "Reset Complete" }}
                             </span>
-                            <q-chip
-                                :color="previewResult.status === 'ok' ? 'positive' : 'warning'"
-                                size="sm"
-                                class="q-ml-sm"
+                            <span
+                                class="reset-status-chip q-ml-sm"
+                                :class="
+                                    previewResult.status === 'ok'
+                                        ? 'reset-status-chip--ok'
+                                        : 'reset-status-chip--warning'
+                                "
                             >
                                 {{ previewResult.status }}
-                            </q-chip>
+                            </span>
                             <span v-if="previewResult.dry_run" class="text-caption q-ml-sm">(dry run)</span>
                         </div>
                         <div>
@@ -171,5 +174,22 @@ function clearPreview() {
 
 .reset-metadata-banner-content {
     flex: 1 1 auto;
+}
+
+.reset-status-chip {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--spacing-4);
+    font-size: var(--font-size-small);
+}
+
+.reset-status-chip--ok {
+    background-color: var(--color-green-200);
+    color: var(--color-green-900);
+}
+
+.reset-status-chip--warning {
+    background-color: var(--color-orange-200);
+    color: var(--color-orange-900);
 }
 </style>

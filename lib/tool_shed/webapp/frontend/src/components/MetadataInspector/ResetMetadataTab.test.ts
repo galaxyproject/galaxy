@@ -123,6 +123,7 @@ describe("ResetMetadataTab", () => {
             await flushPromises()
 
             expect(wrapper.text()).toContain("ok")
+            expect(wrapper.find(".reset-status-chip--ok").exists()).toBe(true)
         })
 
         it("keeps the accessible name on the Preview Changes button while loading", async () => {
@@ -389,6 +390,7 @@ describe("ResetMetadataTab", () => {
             await flushPromises()
 
             expect(wrapper.text()).toContain("warning")
+            expect(wrapper.find(".reset-status-chip--warning").exists()).toBe(true)
         })
     })
 })

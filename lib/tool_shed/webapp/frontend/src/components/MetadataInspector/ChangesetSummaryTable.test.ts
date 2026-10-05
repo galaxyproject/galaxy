@@ -71,28 +71,28 @@ describe("ChangesetSummaryTable", () => {
     })
 
     describe("record_operation display", () => {
-        it("displays created in a chip with positive color", () => {
+        it("displays created in a badge with a distinct created class", () => {
             const changesets = [
                 makeChangeset({ comparison_result: "not equal and not subset", record_operation: "created" }),
             ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const chip = wrapper.find(".q-chip")
-            expect(chip.exists()).toBe(true)
-            expect(chip.text()).toContain("created")
-            expect(chip.classes().some((c) => c.includes("positive") || c.includes("bg-positive"))).toBe(true)
+            const badge = wrapper.find(".record-operation-badge")
+            expect(badge.exists()).toBe(true)
+            expect(badge.text()).toContain("created")
+            expect(badge.classes()).toContain("record-operation-badge--created")
         })
 
-        it("displays updated in a chip with info color", () => {
+        it("displays updated in a badge with a distinct updated class", () => {
             const changesets = [
                 makeChangeset({ comparison_result: "not equal and not subset", record_operation: "updated" }),
             ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const chip = wrapper.find(".q-chip")
-            expect(chip.exists()).toBe(true)
-            expect(chip.text()).toContain("updated")
-            expect(chip.classes().some((c) => c.includes("info") || c.includes("bg-info"))).toBe(true)
+            const badge = wrapper.find(".record-operation-badge")
+            expect(badge.exists()).toBe(true)
+            expect(badge.text()).toContain("updated")
+            expect(badge.classes()).toContain("record-operation-badge--updated")
         })
 
         it("shows dash when record_operation is null", () => {

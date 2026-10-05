@@ -90,14 +90,17 @@ const comparisonTooltips: Record<string, string> = {
         </template>
         <template #body-cell-record_operation="props">
             <q-td :props="props">
-                <q-chip
+                <span
                     v-if="props.value"
-                    :color="props.value === 'created' ? 'positive' : 'info'"
-                    text-color="white"
-                    size="sm"
+                    class="record-operation-badge"
+                    :class="
+                        props.value === 'created'
+                            ? 'record-operation-badge--created'
+                            : 'record-operation-badge--updated'
+                    "
                 >
                     {{ props.value }}
-                </q-chip>
+                </span>
                 <span v-else class="text-grey">—</span>
             </q-td>
         </template>
@@ -116,3 +119,21 @@ const comparisonTooltips: Record<string, string> = {
         </template>
     </q-table>
 </template>
+
+<style scoped>
+.record-operation-badge {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--spacing-4);
+    font-size: var(--font-size-small);
+    color: var(--color-grey-100);
+}
+
+.record-operation-badge--created {
+    background-color: var(--color-green-700);
+}
+
+.record-operation-badge--updated {
+    background-color: var(--color-blue-700);
+}
+</style>

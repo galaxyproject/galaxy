@@ -129,6 +129,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
 
         # Verify dry run indicator is gone and status shows success
         expect(page.locator("text=(dry run)")).not_to_be_visible()
-        expect(page.locator(".q-chip").filter(has_text="ok")).to_be_visible()
+        expect(page.locator(".reset-status-chip").filter(has_text="ok")).to_be_visible()
 
         self.screenshot("metadata_inspector_reset_complete")
