@@ -1,5 +1,8 @@
+import pytest
+
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
+from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.run_request import (
     _normalize_inputs,
     _normalize_step_parameters,
@@ -7,6 +10,19 @@ from galaxy.workflow.run_request import (
 from .workflow_support import MockTrans
 
 STEP_ID_OFFSET = 4  # Offset a little so ids and order index are different.
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_expand_scalar_parameter_inputs(legacy):
+    values = [100, 0.1, False, None, "ND"]
+    batch = {"batch": True, "values": values}
+    if legacy:
+        expansion = expand_workflow_inputs({"0": {"input": batch}})
+        assert expansion.param_combinations == [{"0": {"input": value}} for value in values]
+    else:
+        expansion = expand_workflow_inputs({}, inputs={"0": batch})
+        assert expansion.input_combinations == [{"0": value} for value in values]
+    assert expansion.param_keys == [[] for _ in values]
 
 
 def test_normalize_parameters_empty():

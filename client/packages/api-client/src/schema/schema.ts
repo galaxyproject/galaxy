@@ -17676,7 +17676,7 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description Specify values for formal inputs to the workflow
+             * @description Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. Input keys are interpreted according to 'inputs_by'.
              */
             inputs?: {
                 [key: string]: unknown;
@@ -17725,7 +17725,7 @@ export interface components {
                 | null;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}.
              * @default {}
              */
             parameters: {
@@ -27275,7 +27275,7 @@ export interface components {
             instance: true;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
              */
             parameters?: {
                 [key: string]: unknown;

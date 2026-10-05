@@ -7250,6 +7250,102 @@ data_input:
             # Optional step parameter without default value will not be recorded.
             assert "int_input" not in invocation["input_step_parameters"]
 
+    @pytest.mark.parametrize(
+        "parameter_type,value", [("integer", 100), ("float", 0.1), ("boolean", False), ("text", "ND")]
+    )
+    def test_run_with_wrapped_parameter_input(self, history_id, parameter_type, value):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  parameter: {parameter_type}
+steps: []
+""")
+        url = f"workflows/{workflow_id}/invocations"
+        response = self._post(
+            url,
+            data={"history_id": history_id, "inputs_by": "step_index", "inputs": {"0": {"parameter_value": value}}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "parameter")
+        assert_error_message_contains(response, "Pass the parameter value directly")
+        assert self._history_jobs(history_id) == []
+
+        response = self._post(
+            url,
+            data={"history_id": history_id, "inputs_by": "step_index", "inputs": {"0": value}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        actual_value = invocation["input_step_parameters"]["parameter"]["parameter_value"]
+        assert actual_value == value
+        assert type(actual_value) is type(value)
+
+    @pytest.mark.parametrize(
+        "parameter_type,values",
+        [("integer", [100, 2500]), ("float", [0.1, 0.2]), ("boolean", [False, True]), ("text", ["ND", "MT"])],
+    )
+    def test_run_with_batched_parameter_input(self, history_id, parameter_type, values):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  parameter: {parameter_type}
+steps: []
+""")
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "inputs_by": "name",
+                "batch": True,
+                "inputs": {"parameter": {"batch": True, "values": values}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocations = response.json()
+        assert len(invocations) == 2
+        for invocation, value in zip(invocations, values):
+            invocation = self.workflow_populator.get_invocation(invocation["id"])
+            assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == value
+
+    @pytest.mark.parametrize("parameters_normalized", [False, True])
+    def test_run_with_invalid_legacy_parameter_input(self, history_id, parameters_normalized):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parameter:
+    type: integer
+    optional: true
+steps: []
+""")
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "parameters_normalized": parameters_normalized,
+                "parameters": {"0": {"parameter_value": 100}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "parameter")
+        assert_error_message_contains(response, "must specify an 'input' value")
+
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "parameters_normalized": parameters_normalized,
+                "parameters": {"0": {"input": 100}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
