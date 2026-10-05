@@ -30,9 +30,7 @@ describe("ResetPassword", () => {
     it("submits the typed password and confirm along with the route token", async () => {
         mockPut.mockResolvedValue({})
 
-        const wrapper = mount(ResetPassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ResetPassword)
 
         await wrapper.find("input[name='password']").setValue("newpass")
         await wrapper.find("input[name='confirm']").setValue("newpass")
@@ -51,9 +49,7 @@ describe("ResetPassword", () => {
     it("shows an error banner when the request fails", async () => {
         mockPut.mockRejectedValue(new Error("link expired"))
 
-        const wrapper = mount(ResetPassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ResetPassword)
         await wrapper.find("form[name='reset_password']").trigger("submit")
         await flushPromises()
 

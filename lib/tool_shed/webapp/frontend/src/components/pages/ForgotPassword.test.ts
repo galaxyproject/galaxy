@@ -17,9 +17,7 @@ describe("ForgotPassword", () => {
     it("submits the typed email and shows the sent confirmation", async () => {
         mockPost.mockResolvedValue({})
 
-        const wrapper = mount(ForgotPassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ForgotPassword)
 
         await wrapper.find("input[name='email']").setValue("a@b.com")
         await wrapper.find("form[name='forgot_password']").trigger("submit")
@@ -35,9 +33,7 @@ describe("ForgotPassword", () => {
     it("shows an error banner when the request fails", async () => {
         mockPost.mockRejectedValue(new Error("no such account"))
 
-        const wrapper = mount(ForgotPassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ForgotPassword)
         await wrapper.find("form[name='forgot_password']").trigger("submit")
         await flushPromises()
 

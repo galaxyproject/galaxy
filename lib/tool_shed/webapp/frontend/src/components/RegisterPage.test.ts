@@ -22,9 +22,7 @@ describe("RegisterPage", () => {
     it("submits the typed email, password, confirm and username", async () => {
         mockPost.mockResolvedValue({ data: { activation_error: false, activation_sent: true, email: "a@b.com" } })
 
-        const wrapper = mount(RegisterPage, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(RegisterPage)
 
         await wrapper.find("input[name='email']").setValue("a@b.com")
         await wrapper.find("input[name='password']").setValue("secretpass")

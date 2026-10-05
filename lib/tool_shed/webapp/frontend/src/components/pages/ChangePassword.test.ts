@@ -22,9 +22,7 @@ describe("ChangePassword", () => {
     it("submits the typed current, new and confirm passwords", async () => {
         mockPut.mockResolvedValue({})
 
-        const wrapper = mount(ChangePassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ChangePassword)
 
         await wrapper.find("input[name='current']").setValue("oldpass")
         await wrapper.find("input[name='password']").setValue("newpass")
@@ -44,9 +42,7 @@ describe("ChangePassword", () => {
     it("shows an error banner when the change fails", async () => {
         mockPut.mockRejectedValue(new Error("wrong password"))
 
-        const wrapper = mount(ChangePassword, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ChangePassword)
         await wrapper.find("form").trigger("submit")
         await flushPromises()
 
