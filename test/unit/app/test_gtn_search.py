@@ -132,18 +132,24 @@ def test_sanitize_fts5_query_handles_only_operators():
             "...Using Merge collections merge both quality processed reads...",
         ),
         (
-            "...hands-on-title>Quality control with FastQC</hands-on-title>\n>\n> 1. **FastQC** {% icon tool %}: "
-            "Run the tool **FastQC** on each FASTQ file...",
+            (
+                "...hands-on-title>Quality control with FastQC</hands-on-title>\n>\n> 1. **FastQC** {% icon tool %}: "
+                "Run the tool **FastQC** on each FASTQ file..."
+            ),
             "...Quality control with FastQC 1. FastQC: Run the tool FastQC on each FASTQ file...",
         ),
         (
-            "...any column using simple expressions](Filter1) %} with\n> >\n> >    - {% icon param-file %} "
-            '*"Filter"*: **Combined Variant Report**\n> >    - *"With following conidition"*: `c15 == "SRR1"`',
+            (
+                "...any column using simple expressions](Filter1) %} with\n> >\n> >    - {% icon param-file %} "
+                '*"Filter"*: **Combined Variant Report**\n> >    - *"With following conidition"*: `c15 == "SRR1"`'
+            ),
             '...with - "Filter": Combined Variant Report - "With following conidition": c15 == "SRR1"',
         ),
         (
-            "...some short inserts.\n>\n> ![Adapter Content](../../images/quality-control/adapter.png)\n>\n"
-            "{: .details}\n\nWe can run a [trimming tool](https://cutadapt.readthedocs.io) such as Cutadapt...",
+            (
+                "...some short inserts.\n>\n> ![Adapter Content](../../images/quality-control/adapter.png)\n>\n"
+                "{: .details}\n\nWe can run a [trimming tool](https://cutadapt.readthedocs.io) such as Cutadapt..."
+            ),
             "...some short inserts. We can run a trimming tool such as Cutadapt...",
         ),
         (
