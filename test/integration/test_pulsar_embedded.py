@@ -100,7 +100,8 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
                 if m["plugin"] == "pulsar"
             }
         assert metrics["client_version"]
-        assert metrics["target_version_source"]
+        # pulsar-galaxy-lib 0.15.15 doesn't say where the target version came from.
+        assert metrics["target_version_source"] == "unreported"
         # The embedded Pulsar is this client library, and it reports its version when the job finishes.
         assert metrics["server_version"] == metrics["target_version"] == metrics["client_version"]
         assert metrics["server_version_source"] == "status"

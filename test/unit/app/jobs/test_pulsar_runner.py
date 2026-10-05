@@ -78,7 +78,6 @@ def test_finishing_uses_the_version_the_job_was_submitted_for(tmp_path):
     PulsarPlugin.write_version_target(
         str(tmp_path), client_version="0.15.16", target_version="0.15.0.dev1", source="container_image"
     )
-    # Polling coexecution status comes from the platform and carries no version at all.
     assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {}) == Version("0.15.0.dev1")
     assert PulsarJobRunner.submitted_pulsar_version(str(tmp_path), {"pulsar_version": "0.16.0"}) == Version(
         "0.15.0.dev1"
@@ -93,7 +92,7 @@ def test_finishing_a_job_submitted_before_versions_were_recorded(tmp_path):
 def test_finish_job_describes_outputs_for_the_submitted_version(tmp_path, monkeypatch):
     metadata_directory = tmp_path / "metadata"
     PulsarPlugin.write_version_target(
-        str(metadata_directory), client_version="0.15.16", target_version="0.15.16", source="container_image"
+        str(metadata_directory), client_version="0.15.16", target_version="0.15.16", source="destination"
     )
     # Polling coexecution status comes from the platform and carries no version at all.
     client = SimpleNamespace(full_status=lambda: {}, destination_params={})
