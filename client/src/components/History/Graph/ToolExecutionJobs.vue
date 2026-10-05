@@ -45,7 +45,7 @@ const paginationPage = computed<number>({
         <template v-else-if="currentJob">
             <GTabs>
                 <template v-slot:nav-end>
-                    <JobHeader v-if="currentJob" :job-id="currentJob.id" no-tool-name>
+                    <JobHeader v-if="currentJob" :job-id="currentJob.id" no-tool-name no-hr>
                         <template v-slot:pagination>
                             <BPagination
                                 v-if="hasMany"

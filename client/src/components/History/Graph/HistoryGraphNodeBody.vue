@@ -43,7 +43,7 @@ const { jobId: creatingJobId, loading: lookupLoading, error: lookupError } = use
         <GAlert v-else-if="isDatasetLike && lookupError" variant="info" show class="mb-0">{{ lookupError }}</GAlert>
         <GTabs v-else-if="isDatasetLike && creatingJobId">
             <template v-slot:nav-end>
-                <JobHeader v-if="creatingJobId" :job-id="creatingJobId" no-tool-name />
+                <JobHeader v-if="creatingJobId" :job-id="creatingJobId" no-tool-name no-hr />
             </template>
             <JobDetailsTabs
                 :key="creatingJobId"
