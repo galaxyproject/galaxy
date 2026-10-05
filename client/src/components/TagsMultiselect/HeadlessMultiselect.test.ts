@@ -107,6 +107,51 @@ describe("HeadlessMultiselect", () => {
             const button = wrapper.find(selectors.openButton);
             expect(button.element).toBe(document.activeElement);
         });
+
+        it("keeps Escape in the input from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            input.element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(findAllOptions().length).toBe(0);
+        });
+
+        it("keeps Escape on an option from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            nth(findAllOptions(), 0).element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(findAllOptions().length).toBe(0);
+        });
+
+        it("keeps Escape on the close button from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            wrapper.find("fieldset button").element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(wrapper.find(selectors.input).exists()).toBe(false);
+        });
     });
 
     describe("while inputting text", () => {

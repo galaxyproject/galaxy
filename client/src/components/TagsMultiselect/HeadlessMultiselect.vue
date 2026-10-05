@@ -183,6 +183,8 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     } else if (event.key === "ArrowDown") {
         getOptionWithId(index + 1)?.focus();
     } else if (event.key === "Escape") {
+        // keep Escape from also cancelling a parent <dialog>
+        event.preventDefault();
         close();
     }
 }
@@ -313,12 +315,13 @@ onClickOutside(
                 @keydown.up="onInputUp"
                 @keydown.down="onInputDown"
                 @keydown.enter="onInputEnter"
-                @keydown.escape="close(true)" />
+                @keydown.escape.prevent="close(true)" />
             <button
                 ref="closeButton"
                 :data-parent-id="props.id"
                 title="close"
                 @click="close(true)"
+                @keydown.escape.prevent="close(true)"
                 @keydown.tab="onCloseButtonTab">
                 <FontAwesomeIcon :icon="faChevronUp" />
             </button>
