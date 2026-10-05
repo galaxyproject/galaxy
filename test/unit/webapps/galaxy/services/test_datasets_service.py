@@ -41,7 +41,7 @@ def _service_for_display(
     remote_size: int = 4,
 ):
     """Build a DatasetsService whose object store yields ``data_stream`` for the dataset."""
-    service = DatasetsService(*(MagicMock() for _ in range(10)))
+    service = DatasetsService(*(MagicMock() for _ in range(11)))
     dataset_instance = MagicMock()
     dataset_instance.datatype.is_archive_download.return_value = is_archive
     dataset_instance.datatype.content_disposition.return_value = 'attachment; filename="Galaxy1.txt"'
