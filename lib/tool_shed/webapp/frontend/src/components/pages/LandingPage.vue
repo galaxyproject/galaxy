@@ -20,11 +20,11 @@ if (props.message != null) {
         <landing-search-box />
 
         <div class="landing-content">
-            <div class="row q-mt-lg q-col-gutter-lg justify-center">
-                <div class="col-12 col-md-4">
+            <div class="landing-columns">
+                <div class="landing-column landing-column-info">
                     <landing-info-sections />
                 </div>
-                <div class="col-12 col-md-5">
+                <div class="landing-column landing-column-recent">
                     <recently-created-repositories />
                 </div>
             </div>
@@ -36,5 +36,27 @@ if (props.message != null) {
 .landing-content {
     max-width: 1200px;
     margin: 0 auto;
+}
+
+.landing-columns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-6);
+    margin-top: var(--spacing-6);
+}
+
+.landing-column {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .landing-column-info {
+        width: 33.3333%;
+    }
+
+    .landing-column-recent {
+        width: 41.6667%;
+    }
 }
 </style>

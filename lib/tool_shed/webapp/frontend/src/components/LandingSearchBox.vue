@@ -23,10 +23,10 @@ function doSearch() {
 }
 </script>
 <template>
-    <div class="text-center q-pa-xl">
-        <h1 class="text-h4 q-mb-md">Find Galaxy Tools</h1>
-        <div class="row justify-center">
-            <div class="col-12 col-md-8 col-lg-6 landing-search">
+    <div class="landing-search-wrapper">
+        <h1 class="landing-title">Find Galaxy Tools</h1>
+        <div class="landing-search-row">
+            <div class="landing-search">
                 <GFormInput
                     :model-value="searchQuery"
                     placeholder="Search repositories..."
@@ -43,9 +43,37 @@ function doSearch() {
 </template>
 
 <style scoped>
+.landing-search-wrapper {
+    text-align: center;
+    padding: calc(var(--spacing-8) + var(--spacing-4));
+}
+
+.landing-title {
+    margin: 0 0 var(--spacing-4) 0;
+    font-size: 2.125rem;
+}
+
+.landing-search-row {
+    display: flex;
+    justify-content: center;
+}
+
 .landing-search {
     display: flex;
     gap: var(--spacing-2);
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .landing-search {
+        width: 66.6667%;
+    }
+}
+
+@media (min-width: 1440px) {
+    .landing-search {
+        width: 50%;
+    }
 }
 
 .landing-search :deep(.g-form-input) {
