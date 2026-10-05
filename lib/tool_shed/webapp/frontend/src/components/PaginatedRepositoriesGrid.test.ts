@@ -44,3 +44,85 @@ describe("PaginatedRepositoriesGrid filter input", () => {
         expect(wrapper.find("input").exists()).toBe(false)
     })
 })
+
+function makeItems(page: number, count: number) {
+    return Array.from({ length: count }, (_, i) => ({
+        index: (page - 1) * 25 + i,
+        id: `r${page}-${i}`,
+        name: `repo${page}-${i}`,
+        owner: "devteam",
+        update_time: "2024-01-01T00:00:00",
+        description: `Repository ${page}-${i}`,
+        homepage_url: null,
+        remote_repository_url: null,
+    }))
+}
+
+describe("PaginatedRepositoriesGrid paging", () => {
+    it("lists the first page and pages forward and back through the server", async () => {
+        const onRequest = vi.fn((query: { page: number }) =>
+            Promise.resolve({ items: makeItems(query.page, query.page < 3 ? 25 : 10), rowsNumber: 60 }),
+        )
+        const wrapper = mount(PaginatedRepositoriesGrid, { props: { onRequest } })
+        await flushPromises()
+
+        expect(onRequest).toHaveBeenLastCalledWith({ page: 1, rowsPerPage: 25 })
+        expect(wrapper.findAll(".repository-entry")).toHaveLength(25)
+        expect(wrapper.get(".grid-range").text()).toBe("1-25 of 60")
+        expect(wrapper.get(".grid-page").text()).toBe("Page 1 of 3")
+
+        await wrapper.get('[aria-label="Next page"]').trigger("click")
+        await flushPromises()
+        expect(onRequest).toHaveBeenLastCalledWith({ page: 2, rowsPerPage: 25 })
+        expect(wrapper.get(".grid-range").text()).toBe("26-50 of 60")
+
+        await wrapper.get('[aria-label="Previous page"]').trigger("click")
+        await flushPromises()
+        expect(onRequest).toHaveBeenLastCalledWith({ page: 1, rowsPerPage: 25 })
+    })
+
+    it("restarts from the first page with the filter when the filter changes", async () => {
+        const onRequest = vi.fn((query: { page: number }) =>
+            Promise.resolve({ items: makeItems(query.page, 25), rowsNumber: 60 }),
+        )
+        const wrapper = mount(PaginatedRepositoriesGrid, { props: { onRequest, allowSearch: true } })
+        await flushPromises()
+        await wrapper.get('[aria-label="Next page"]').trigger("click")
+        await flushPromises()
+
+        await wrapper.get("input").setValue("bowtie")
+        await flushPromises()
+
+        expect(onRequest).toHaveBeenLastCalledWith({ page: 1, rowsPerPage: 25, filter: "bowtie" })
+    })
+
+    it("ignores a response that arrives after a newer request", async () => {
+        let resolveSlow: ((value: unknown) => void) | undefined
+        const onRequest = vi
+            .fn()
+            .mockResolvedValueOnce({ items: makeItems(1, 2), rowsNumber: 2 })
+            .mockReturnValueOnce(new Promise((resolve) => (resolveSlow = resolve)))
+            .mockResolvedValueOnce({ items: makeItems(9, 1), rowsNumber: 1 })
+        const wrapper = mount(PaginatedRepositoriesGrid, { props: { onRequest, allowSearch: true } })
+        await flushPromises()
+
+        await wrapper.get("input").setValue("b")
+        await wrapper.get("input").setValue("bo")
+        await flushPromises()
+        resolveSlow?.({ items: makeItems(5, 3), rowsNumber: 3 })
+        await flushPromises()
+
+        expect(wrapper.findAll(".repository-entry")).toHaveLength(1)
+        expect(wrapper.text()).toContain("repo9-0")
+    })
+
+    it("says so when there are no repositories", async () => {
+        const wrapper = mount(PaginatedRepositoriesGrid, {
+            props: { onRequest: vi.fn().mockResolvedValue(emptyQueryResults()), noDataLabel: "Nothing here" },
+        })
+        await flushPromises()
+
+        expect(wrapper.get(".grid-empty").text()).toBe("Nothing here")
+        expect(wrapper.find(".grid-pager").exists()).toBe(false)
+    })
+})
