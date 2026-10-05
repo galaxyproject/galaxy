@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { GButton } from "@galaxyproject/galaxy-ui"
+import { GButton, GCollapse } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons"
+import { faArrowRight, faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons"
 import { computed, ref } from "vue"
 import MetadataJsonViewer from "./MetadataJsonViewer.vue"
 import type { components } from "@/schema"
@@ -69,6 +69,14 @@ const toolHistories = computed<ToolHistory[]>(() => {
     return result
 })
 
+function detailsKey(toolId: string, revision: string): string {
+    return `${toolId}-${revision}`
+}
+
+function isExpanded(toolId: string, revision: string): boolean {
+    return expandedTools.value.has(detailsKey(toolId, revision))
+}
+
 function toggleTool(toolId: string) {
     if (expandedTools.value.has(toolId)) {
         expandedTools.value.delete(toolId)
@@ -82,14 +90,14 @@ function toggleTool(toolId: string) {
     <div>
         <div v-if="toolHistories.length === 0" class="text-grey">No tools found in this repository.</div>
 
-        <q-card v-for="history in toolHistories" :key="history.toolId" class="q-mb-md">
+        <q-card v-for="(history, historyIndex) in toolHistories" :key="history.toolId" class="q-mb-md">
             <q-card-section>
                 <div class="text-h6">{{ history.toolId }}</div>
             </q-card-section>
 
             <q-timeline color="primary" layout="dense" class="q-px-md">
                 <q-timeline-entry
-                    v-for="ver in history.versions"
+                    v-for="(ver, versionIndex) in history.versions"
                     :key="ver.revision"
                     :subtitle="`${ver.name} ${ver.description}`"
                 >
@@ -104,14 +112,32 @@ function toggleTool(toolId: string) {
                         </div>
                     </template>
 
-                    <q-expansion-item
-                        dense
-                        label="Tool Details"
-                        :model-value="expandedTools.has(`${history.toolId}-${ver.revision}`)"
-                        @update:model-value="toggleTool(`${history.toolId}-${ver.revision}`)"
+                    <GButton
+                        class="tool-details-toggle"
+                        size="small"
+                        transparent
+                        :aria-expanded="isExpanded(history.toolId, ver.revision)"
+                        :aria-controls="`tool-details-${historyIndex}-${versionIndex}`"
+                        @click="toggleTool(detailsKey(history.toolId, ver.revision))"
                     >
-                        <MetadataJsonViewer :data="ver.tool" model-name="RepositoryTool" :deep="3" />
-                    </q-expansion-item>
+                        <FontAwesomeIcon
+                            :icon="isExpanded(history.toolId, ver.revision) ? faChevronDown : faChevronRight"
+                        />
+                        Tool Details
+                    </GButton>
+                    <GCollapse
+                        :id="`tool-details-${historyIndex}-${versionIndex}`"
+                        :value="isExpanded(history.toolId, ver.revision)"
+                    >
+                        <template #default="{ contentActive }">
+                            <MetadataJsonViewer
+                                v-if="contentActive"
+                                :data="ver.tool"
+                                model-name="RepositoryTool"
+                                :deep="3"
+                            />
+                        </template>
+                    </GCollapse>
                 </q-timeline-entry>
             </q-timeline>
         </q-card>

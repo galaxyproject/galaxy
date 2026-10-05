@@ -122,8 +122,33 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const expansionItems = wrapper.findAll(".q-expansion-item")
-            expect(expansionItems.length).toBeGreaterThan(0)
+            const toggles = wrapper.findAll(".tool-details-toggle")
+            expect(toggles.length).toBeGreaterThan(0)
+        })
+
+        it("toggles tool details from an accessible button", async () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: fixtureMetadata },
+            })
+
+            const toggle = wrapper.find(".tool-details-toggle")
+            expect(toggle.element.tagName).toBe("BUTTON")
+            expect(toggle.text()).toContain("Tool Details")
+            expect(toggle.attributes("aria-expanded")).toBe("false")
+
+            const details = wrapper.find(`#${toggle.attributes("aria-controls")}`)
+            expect(details.exists()).toBe(true)
+            expect(details.find(".mock-json-viewer").exists()).toBe(false)
+
+            await toggle.trigger("click")
+
+            expect(toggle.attributes("aria-expanded")).toBe("true")
+            expect(details.find(".mock-json-viewer").exists()).toBe(true)
+            expect(wrapper.findAll(".tool-details-toggle[aria-expanded=true]").length).toBe(1)
+
+            await toggle.trigger("click")
+
+            expect(toggle.attributes("aria-expanded")).toBe("false")
         })
     })
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCircleCheck, faCircleXmark } from "@fortawesome/free-solid-svg-icons"
+import { faChevronDown, faChevronRight, faCircleCheck, faCircleXmark } from "@fortawesome/free-solid-svg-icons"
+import { GButton, GCollapse } from "@galaxyproject/galaxy-ui"
 import { ref, computed, watch } from "vue"
 import MetadataJsonViewer from "./MetadataJsonViewer.vue"
 import type { components } from "@/schema"
@@ -60,14 +61,8 @@ watch(
         <div v-if="sortedRevisions.length === 0" class="text-grey">No revisions found.</div>
 
         <q-list bordered separator v-else>
-            <q-expansion-item
-                v-for="rev in sortedRevisions"
-                :key="rev.key"
-                :model-value="expandedRevisions.has(rev.key)"
-                @update:model-value="toggleExpand(rev.key)"
-                expand-icon-toggle
-            >
-                <template #header>
+            <div v-for="rev in sortedRevisions" :key="rev.key" class="revision-entry">
+                <q-item>
                     <q-item-section avatar>
                         <FontAwesomeIcon
                             :icon="rev.data.downloadable ? faCircleCheck : faCircleXmark"
@@ -81,23 +76,45 @@ watch(
                     <q-item-section side v-if="rev.data.invalid_tools?.length > 0">
                         <q-badge color="warning" :label="`${rev.data.invalid_tools.length} invalid`" />
                     </q-item-section>
-                </template>
+                    <q-item-section side>
+                        <GButton
+                            class="revision-toggle"
+                            transparent
+                            :aria-expanded="expandedRevisions.has(rev.key)"
+                            :aria-controls="`revision-${rev.numericRevision}-details`"
+                            :aria-label="`Details for revision ${rev.numericRevision}`"
+                            @click="toggleExpand(rev.key)"
+                        >
+                            <FontAwesomeIcon :icon="expandedRevisions.has(rev.key) ? faChevronDown : faChevronRight" />
+                        </GButton>
+                    </q-item-section>
+                </q-item>
 
-                <q-card>
-                    <q-card-section v-if="rev.data.invalid_tools?.length > 0">
-                        <div class="text-subtitle2 text-negative">Invalid Tools:</div>
-                        <ul class="q-my-none">
-                            <li v-for="tool in rev.data.invalid_tools" :key="tool.tool_config">
-                                <code>{{ tool.tool_config }}</code
-                                >: {{ tool.error_message }}
-                            </li>
-                        </ul>
-                    </q-card-section>
-                    <q-card-section>
-                        <MetadataJsonViewer :data="rev.data" model-name="RepositoryRevisionMetadata" />
-                    </q-card-section>
-                </q-card>
-            </q-expansion-item>
+                <GCollapse :id="`revision-${rev.numericRevision}-details`" :value="expandedRevisions.has(rev.key)">
+                    <template #default="{ contentActive }">
+                        <q-card v-if="contentActive">
+                            <q-card-section v-if="rev.data.invalid_tools?.length > 0">
+                                <div class="text-subtitle2 text-negative">Invalid Tools:</div>
+                                <ul class="q-my-none">
+                                    <li v-for="tool in rev.data.invalid_tools" :key="tool.tool_config">
+                                        <code>{{ tool.tool_config }}</code
+                                        >: {{ tool.error_message }}
+                                    </li>
+                                </ul>
+                            </q-card-section>
+                            <q-card-section>
+                                <MetadataJsonViewer :data="rev.data" model-name="RepositoryRevisionMetadata" />
+                            </q-card-section>
+                        </q-card>
+                    </template>
+                </GCollapse>
+            </div>
         </q-list>
     </div>
 </template>
+
+<style scoped>
+.revision-entry + .revision-entry {
+    border-top: 1px solid var(--color-grey-200);
+}
+</style>

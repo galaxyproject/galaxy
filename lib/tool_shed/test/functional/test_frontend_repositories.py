@@ -55,7 +55,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
         page = self._page
 
         page.locator("[role=tab]").filter(has_text="Revisions").click()
-        # RevisionsTab uses q-list with expansion items showing changeset hashes
+        # RevisionsTab uses a q-list of collapsible revisions showing changeset hashes
         expect(page.locator(".q-list")).to_be_visible()
 
     def test_metadata_inspector_reset_tab(self):
@@ -94,7 +94,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
         self.screenshot("metadata_inspector_tool_history")
 
         # Tool History with 1.3.0 details expanded
-        page.locator(".q-expansion-item").first.click()
+        page.locator(".tool-details-toggle").first.click()
         page.wait_for_timeout(500)  # Wait for expansion animation
         self.screenshot("metadata_inspector_tool_history_expanded")
 
