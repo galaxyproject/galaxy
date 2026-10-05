@@ -11,6 +11,8 @@
 
 import { computed, useAttrs } from "vue";
 
+import { type ComponentSize, prefix } from "./componentVariants";
+
 defineOptions({
     inheritAttrs: false,
     // Under @vue/compat: keep v-model on modelValue, and keep class/style/listeners in $attrs so they can be split below
@@ -26,10 +28,18 @@ const props = defineProps<{
     ariaLabel?: string;
     /** Disabled state */
     disabled?: boolean;
-    /** Render as a toggle switch instead of a checkbox */
-    toggle?: boolean;
     /** Partly-checked state, e.g. a select-all box when only some rows are selected */
     indeterminate?: boolean;
+    /** Name attribute for the checkbox input */
+    name?: string;
+    /** Required attribute for the checkbox input */
+    required?: boolean;
+    /** Displayed size; unset keeps the surrounding font size */
+    size?: ComponentSize;
+    /** Render as a toggle switch instead of a checkbox */
+    toggle?: boolean;
+    /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+    value?: unknown;
 }>();
 
 const emit = defineEmits<{
@@ -55,6 +65,8 @@ function inputAttrs() {
     };
 }
 
+const sizeClass = computed(() => (props.size ? prefix(props.size) : undefined));
+
 const currentValue = computed({
     get() {
         return props.modelValue ?? false;
@@ -77,7 +89,7 @@ function onChange(event: Event) {
 </script>
 
 <template>
-    <label v-bind="rootAttrs()" class="g-checkbox" :class="{ 'g-disabled': disabled, 'g-switch': toggle }">
+    <label v-bind="rootAttrs()" class="g-checkbox" :class="[sizeClass, { 'g-disabled': disabled, 'g-switch': toggle }]">
         <input
             v-bind="inputAttrs()"
             :id="id"
@@ -87,7 +99,10 @@ function onChange(event: Event) {
             :checked="currentValue"
             :indeterminate="indeterminate"
             :disabled="disabled"
+            :name="name"
+            :required="required"
             :role="toggle ? 'switch' : undefined"
+            :value="value"
             @change="onChange" />
         <span v-if="$slots.default" class="g-checkbox-label">
             <slot></slot>
@@ -125,6 +140,24 @@ function onChange(event: Event) {
 
 .g-checkbox-label {
     margin-left: var(--spacing-2, 0.5rem);
+}
+
+.g-small {
+    font-size: var(--font-size-small, 0.75rem);
+
+    &:not(.g-switch) .g-checkbox-input {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}
+
+.g-large {
+    font-size: var(--font-size-large, 1rem);
+
+    &:not(.g-switch) .g-checkbox-input {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
 }
 
 // Switch: the input itself is the track, so it stays visible, clickable and focusable
@@ -168,5 +201,15 @@ function onChange(event: Event) {
         width: auto;
         height: auto;
     }
+}
+
+.g-switch.g-small .g-checkbox-input {
+    --g-switch-width: 1.5rem;
+    --g-switch-height: 0.875rem;
+}
+
+.g-switch.g-large .g-checkbox-input {
+    --g-switch-width: 2.5rem;
+    --g-switch-height: 1.375rem;
 }
 </style>

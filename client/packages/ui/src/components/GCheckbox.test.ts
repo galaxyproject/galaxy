@@ -155,4 +155,42 @@ describe("GCheckbox", () => {
         expect(wrapper.classes()).not.toContain("g-switch");
         expect(wrapper.find("input").attributes("role")).toBeUndefined();
     });
+
+    it("renders name, value and required on the input", () => {
+        const wrapper = mount(GCheckbox, {
+            props: { modelValue: false, name: "include", required: true, value: "hidden" },
+        });
+        const input = wrapper.find("input");
+
+        expect(input.attributes("name")).toBe("include");
+        expect(input.attributes("value")).toBe("hidden");
+        expect(input.attributes("required")).toBeDefined();
+        expect(wrapper.find("label").attributes("name")).toBeUndefined();
+    });
+
+    it("renders non-string values as their string form", () => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false, value: 0 } });
+
+        expect(wrapper.find("input").attributes("value")).toBe("0");
+    });
+
+    it.each([
+        ["small", "g-small"],
+        ["large", "g-large"],
+    ] as const)("applies the %s size class", (size, className) => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false, size } });
+
+        expect(wrapper.find("label").classes()).toContain(className);
+    });
+
+    it("adds no size class by default", () => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false } });
+
+        expect(
+            wrapper
+                .find("label")
+                .classes()
+                .filter((name) => /^g-(small|medium|large)$/.test(name)),
+        ).toEqual([]);
+    });
 });
