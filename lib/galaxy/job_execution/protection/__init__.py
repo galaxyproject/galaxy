@@ -123,8 +123,26 @@ class ProtectionDestination:
             )
 
 
+@dataclass
+class ProtectedFileResult:
+    """An output file that was encrypted in place for the job's user."""
+
+    # SHA-256 of the header the file now starts with, encrypted to the user's key.
+    header_sha256: str
+    # Base64 header of the file encrypted to the compute keypair, i.e. the grant to compute on it again.
+    compute_header: str
+
+
 class ProtectedJobRuntime(Protocol):
+    @property
+    def key_ref(self) -> str: ...
+
+    @property
+    def key_expiration(self) -> str | None: ...
+
     def stage_inputs(self) -> None: ...
+
+    def protect_file(self, path: str) -> ProtectedFileResult: ...
 
     def cleanup_inputs(self) -> None: ...
 

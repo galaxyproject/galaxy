@@ -1,11 +1,14 @@
 import base64
+import hashlib
 import json
 import logging
 import os
+import uuid
 from datetime import timedelta
 
 import pytest
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.job_execution.protection import (
     ProtectedFile,
     ProtectedInput,
@@ -15,15 +18,22 @@ from galaxy.job_execution.protection import (
     STATE_FILENAME,
 )
 from galaxy.job_execution.protection.crypt4gh import Crypt4GHJobRuntime
+from galaxy.job_execution.protection.outputs import (
+    OutputProtector,
+    SIDECAR_FILE,
+)
 from galaxy.job_execution.protection.stage import (
     CLEANUP_FAILURE_FILE,
     run,
     SETUP_FAILURE_FILE,
 )
+from galaxy.util.bunch import Bunch
 from galaxy_test.base.crypt4gh import (
+    decrypt,
     encrypt,
     generate_keypair,
     MockRecryptorService,
+    split_header,
 )
 
 PLAINTEXT = b"@read1\nACGT\n+\nIIII\n" * 1000
@@ -220,3 +230,108 @@ def test_cleanup_removes_plaintext(tmp_path, service, user):
     assert run("cleanup", plan_path) == 0
     assert not os.path.exists(plan.protected_directory)
     assert not os.path.exists(os.path.join(plan.job_directory, CLEANUP_FAILURE_FILE))
+
+
+def _staged_runtime(tmp_path, service, user):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(tmp_path, service, key_ref, [_protected_input(tmp_path, service, user, key_ref)])
+    runtime = Crypt4GHJobRuntime(plan)
+    runtime.stage_inputs()
+    service.requests.clear()
+    return runtime, key_ref
+
+
+def test_protect_file_encrypts_for_the_user(tmp_path, service, user):
+    runtime, key_ref = _staged_runtime(tmp_path, service, user)
+    output = tmp_path / "job" / "outputs" / "dataset.dat"
+    output.parent.mkdir()
+    output.write_bytes(b"result computed from decrypted data")
+
+    result = runtime.protect_file(str(output))
+
+    encrypted = output.read_bytes()
+    assert decrypt(encrypted, user.secret) == b"result computed from decrypted data"
+    header, _ = split_header(encrypted)
+    assert hashlib.sha256(header).hexdigest() == result.header_sha256
+    assert service.routes_called() == ["recrypt_header_to_user_key"]
+    # The compute header lets the user's further jobs decrypt the output again.
+    compute_header = base64.b64decode(result.compute_header)
+    compute = service.keypairs[key_ref].keypair
+    assert decrypt(compute_header + encrypted[len(header) :], compute.secret) == b"result computed from decrypted data"
+    assert sorted(os.listdir(output.parent)) == ["dataset.dat"]
+
+
+def test_protect_file_failure_raises(tmp_path, service, user):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    service.failures["recrypt_header_to_user_key"] = [422]
+    output = tmp_path / "out.dat"
+    output.write_bytes(b"plaintext")
+    with pytest.raises(ProtectionError, match="could not open the header"):
+        runtime.protect_file(str(output))
+    assert not {".out.dat.c4gh", ".out.dat.c4gh-body"} & set(os.listdir(tmp_path))
+
+
+class _FakeDatasetInstance:
+    def __init__(self, extension):
+        self.extension = extension
+        self.name = "output"
+        self.dataset = Bunch(uuid=uuid.uuid4(), purged=False)
+
+
+@pytest.fixture(scope="module")
+def registry():
+    return example_datatype_registry_for_sample(crypt4gh_enabled=True)
+
+
+@pytest.mark.parametrize(
+    "extension,content,expected",
+    [
+        ("txt", b"text\n", "txt.c4gh"),
+        ("fastqsanger.c4gh", b"@r\nA\n+\nI\n", "fastqsanger.c4gh"),
+        ("auto", b"@r\nACGT\n+\nIIII\n", "fastqsanger.c4gh"),
+        ("not_a_datatype", b"x", "c4gh"),
+    ],
+)
+def test_output_protector_wraps_extensions(tmp_path, service, user, registry, extension, content, expected):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    path = tmp_path / "out.dat"
+    path.write_bytes(content)
+    dataset_instance = _FakeDatasetInstance(extension)
+    protector.protect(dataset_instance, str(path))  # type: ignore[arg-type]
+    assert dataset_instance.extension == expected
+    assert protector.protected_ext(dataset_instance) == expected  # type: ignore[arg-type]
+
+
+def test_output_protector_protects_extra_files_and_reports_gaps(tmp_path, service, user, registry):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    path = tmp_path / "out.dat"
+    path.write_bytes(b"<html/>")
+    extra_files = tmp_path / "out_files"
+    (extra_files / "sub").mkdir(parents=True)
+    (extra_files / "sub" / "part.txt").write_bytes(b"part")
+    protected = _FakeDatasetInstance("html")
+    protector.protect(protected, str(path), str(extra_files))  # type: ignore[arg-type]
+    assert decrypt((extra_files / "sub" / "part.txt").read_bytes(), user.secret) == b"part"
+
+    bypassed = _FakeDatasetInstance("txt")
+    protector.check_complete([protected, bypassed])  # type: ignore[list-item]
+    protector.write_sidecar(str(tmp_path))
+    sidecar = json.load(open(tmp_path / SIDECAR_FILE))
+    assert sidecar["datasets"][str(protected.dataset.uuid)]["extra_files"].keys() == {"sub/part.txt"}
+    assert sidecar["datasets"][str(bypassed.dataset.uuid)] == {"outcome": "failed"}
+    assert sidecar["errors"] == ["Output 'output' was not protected."]
+    assert os.stat(tmp_path / SIDECAR_FILE).st_mode & 0o777 == 0o600
+
+
+def test_output_protector_discards_plaintext_on_failure(tmp_path, service, user, registry):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    service.failures["recrypt_header_to_user_key"] = [422]
+    path = tmp_path / "out.dat"
+    path.write_bytes(b"plaintext")
+    with pytest.raises(ProtectionError):
+        protector.protect(_FakeDatasetInstance("txt"), str(path))  # type: ignore[arg-type]
+    assert not path.exists()
+    assert protector.errors
