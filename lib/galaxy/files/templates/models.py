@@ -525,6 +525,7 @@ class XRootDFileSourceTemplateConfiguration(StrictModel):
     root: str | TemplateExpansion
     hostid: str | TemplateExpansion
     timeout: int | TemplateExpansion = 30
+    writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
 
@@ -533,6 +534,7 @@ class XRootDFileSourceConfiguration(StrictModel):
     type: Literal["xrootd"]
     root: str
     hostid: str
+    writable: bool = False
     timeout: int = 30
 
 

@@ -1,5 +1,5 @@
 import posixpath
-from typing import Literal
+import shutil
 
 from fsspec import AbstractFileSystem
 from pydantic import field_validator
@@ -16,7 +16,9 @@ from galaxy.files.sources._fsspec import (
 from galaxy.util.config_templates import TemplateExpansion
 
 try:
-    from fsspec_xrootd import XRootDFileSystem
+    import fsspec_xrootd
+
+    XRootDFileSystem: type[AbstractFileSystem] | None = fsspec_xrootd.XRootDFileSystem
 except ImportError:
     XRootDFileSystem = None
 
@@ -40,7 +42,6 @@ class XRootDFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigur
     root: str | TemplateExpansion
     hostid: str | TemplateExpansion
     timeout: int | TemplateExpansion = 30
-    writable: Literal[False] = False
 
     @field_validator("root")
     @classmethod
@@ -53,7 +54,6 @@ class XRootDFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     root: str
     hostid: str
     timeout: int = 30
-    writable: Literal[False] = False
 
     @field_validator("root")
     @classmethod
@@ -101,11 +101,18 @@ class XRootDFilesSource(FsspecFilesSource[XRootDFileSourceTemplateConfiguration,
 
     def _write_from(
         self,
-        _target_path: str,
-        _native_path: str,
-        _context: FilesSourceRuntimeContext[XRootDFileSourceConfiguration],
+        target_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[XRootDFileSourceConfiguration],
     ) -> None:
-        raise MessageException("XRootD file sources are read-only and do not support exporting files.")
+        target_path = self._to_filesystem_path(target_path, context.config)
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
+        # fsspec-xrootd supports file writes but does not implement put_file().
+        with open(native_path, "rb") as source:
+            with fs.open(target_path, "wb") as destination:
+                shutil.copyfileobj(source, destination, length=1024 * 1024)
+        fs.invalidate_cache(posixpath.dirname(target_path))
 
     def get_scheme(self) -> str:
         return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "xrootd"

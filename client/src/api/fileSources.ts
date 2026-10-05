@@ -97,7 +97,7 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     xrootd: {
         icon: faNetworkWired,
-        message: "This is a read-only file source for browsing and importing files from an XRootD server.",
+        message: "This file source supports browsing and importing files from an XRootD server, with optional uploads.",
     },
     ipfs: {
         icon: faNetworkWired,
