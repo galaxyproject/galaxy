@@ -1,8 +1,3 @@
-from test.evals.calibration_report import (
-    render_calibration_summary,
-    summarize_calibration,
-)
-
 from pydantic_evals.evaluators import (
     EvaluationResult,
     EvaluatorFailure,
@@ -12,6 +7,11 @@ from pydantic_evals.reporting import (
     EvaluationReport,
     ReportCase,
     ReportCaseFailure,
+)
+
+from .calibration_report import (
+    render_calibration_summary,
+    summarize_calibration,
 )
 
 SYNTHETIC_SOURCE = EvaluatorSpec(name="synthetic", arguments=None)

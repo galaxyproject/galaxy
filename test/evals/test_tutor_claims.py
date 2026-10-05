@@ -6,17 +6,24 @@ import pytest
 
 pytest.importorskip("pydantic_evals")
 
-from test.evals.calibrate_tutor import (
+from pydantic_ai.messages import (
+    ModelResponse,
+    TextPart,
+)
+from pydantic_ai.models.function import FunctionModel
+from pydantic_evals.evaluators import EvaluationReason
+
+from .calibrate_tutor import (
     answer_verdict,
     calibration_dataset,
     missed_critical_claims,
     replay_answer,
 )
-from test.evals.run_evals import (
+from .run_evals import (
     DatasetResult,
     evaluation_exit_code,
 )
-from test.evals.tutor_claims import (
+from .tutor_claims import (
     _candidate_propositions,
     assessment_checks,
     ClaimAssessment,
@@ -25,13 +32,6 @@ from test.evals.tutor_claims import (
     response_blocks,
     review_claims,
 )
-
-from pydantic_ai.messages import (
-    ModelResponse,
-    TextPart,
-)
-from pydantic_ai.models.function import FunctionModel
-from pydantic_evals.evaluators import EvaluationReason
 
 
 def assessment(quote="FastQC diagnoses quality.", **claim_changes):

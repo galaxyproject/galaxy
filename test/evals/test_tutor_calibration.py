@@ -8,24 +8,24 @@ import pytest
 
 pytest.importorskip("pydantic_evals")
 
-from test.evals.calibrate_tutor import (
+from pydantic_ai.messages import (
+    ModelResponse,
+    ToolCallPart,
+)
+from pydantic_ai.models.function import FunctionModel
+
+from .calibrate_tutor import (
     calibration_dataset,
     calibration_output,
     load_calibration_examples,
     REGRESSIONS,
     replay_answer,
 )
-from test.evals.run_evals import (
+from .run_evals import (
     DatasetResult,
     evaluation_exit_code,
 )
-from test.evals.tutor_evaluators import QUALITY_ASSERTIONS
-
-from pydantic_ai.messages import (
-    ModelResponse,
-    ToolCallPart,
-)
-from pydantic_ai.models.function import FunctionModel
+from .tutor_evaluators import QUALITY_ASSERTIONS
 
 
 def approving_judge(messages, info):

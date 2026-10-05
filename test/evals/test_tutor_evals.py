@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import (
+    Any,
     cast,
     TYPE_CHECKING,
 )
@@ -13,33 +14,6 @@ from unittest.mock import MagicMock
 import pytest
 
 pytest.importorskip("pydantic_evals")
-
-from test.evals import run_evals
-from test.evals.calibrate_tutor import (
-    calibration_dataset,
-    calibration_output,
-    EXAMPLES,
-    replay_answer,
-)
-from test.evals.run_evals import (
-    case_verdict,
-    DatasetResult,
-    evaluation_exit_code,
-    render_markdown,
-)
-from test.evals.tutor import (
-    _fixture_deps,
-    _FixtureTutor,
-    JOB_ID,
-    QC_URL,
-    run_tutor_case,
-)
-from test.evals.tutor_evaluators import (
-    QUALITY_ASSERTIONS,
-    tutor_metadata,
-    TutorEvidence,
-    TutorQuality,
-)
 
 from pydantic_ai.messages import (
     ModelResponse,
@@ -58,6 +32,32 @@ from pydantic_evals.evaluators import (
 from pydantic_evals.reporting import EvaluationReport
 
 from galaxy.agents.base import GalaxyAgentDependencies
+from . import run_evals
+from .calibrate_tutor import (
+    calibration_dataset,
+    calibration_output,
+    EXAMPLES,
+    replay_answer,
+)
+from .run_evals import (
+    case_verdict,
+    DatasetResult,
+    evaluation_exit_code,
+    render_markdown,
+)
+from .tutor import (
+    _fixture_deps,
+    _FixtureTutor,
+    JOB_ID,
+    QC_URL,
+    run_tutor_case,
+)
+from .tutor_evaluators import (
+    QUALITY_ASSERTIONS,
+    tutor_metadata,
+    TutorEvidence,
+    TutorQuality,
+)
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -220,7 +220,7 @@ async def test_tutor_renders_source_records_and_evaluator_checks_provenance(tool
     assert r"> Assess short\-read FASTQ quality" in result["content"]
     assert "[[tutorial:" not in result["content"]
     assert "[[tutorial:" in result["attempts"][0]["model_responses"][-1]
-    ctx = SimpleNamespace(inputs={"scenario": "search_qc"}, output=result, metadata={})
+    ctx: Any = SimpleNamespace(inputs={"scenario": "search_qc"}, output=result, metadata={})
     assert TutorEvidence().evaluate(ctx)["CitationsSupported"].value
     result["attempts"][0]["retrieved_materials"].clear()
     assert not TutorEvidence().evaluate(ctx)["CitationsSupported"].value
@@ -400,7 +400,7 @@ async def test_raw_source_id_leak_fails_even_when_provenance_passes():
         return ModelResponse(parts=[TextPart(f"The tutorial source ID is `{marker[11:-2]}`.")])
 
     output = await run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": "search_qc"})
-    ctx = SimpleNamespace(inputs={"scenario": "search_qc"}, output=output, metadata={})
+    ctx: Any = SimpleNamespace(inputs={"scenario": "search_qc"}, output=output, metadata={})
     result = TutorEvidence().evaluate(ctx)
     assert result["CitationsSupported"].value
     assert not result["SourceIdsHidden"].value
