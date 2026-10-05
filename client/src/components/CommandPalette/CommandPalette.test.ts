@@ -1,4 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
@@ -142,13 +141,13 @@ describe("CommandPalette", () => {
         return wrapper.find("[data-description='palette badge']");
     }
 
-    /** Icon names rendered in the input row, the leading mode icon included */
+    /** Icon names in the input row, the leading mode icon included */
     function inputIcons() {
         // vue-fontawesome resolves a second Vue under vitest, so its svg never re-renders; read the bound prop
         return wrapper
             .find(".palette-input")
-            .findAllComponents(FontAwesomeIcon)
-            .map((icon) => icon.props("icon").iconName);
+            .findAllComponents({ name: "FontAwesomeIcon" })
+            .map((icon: VueWrapper) => (icon.props() as { icon: { iconName: string } }).icon.iconName);
     }
 
     async function type(query: string) {
@@ -358,7 +357,7 @@ describe("CommandPalette", () => {
 
         await type("rna seq");
         expect(prompt().exists()).toBe(false);
-        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("rna seq");
+        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("rna seq");
 
         await type("");
         expect(prompt().exists()).toBe(true);
