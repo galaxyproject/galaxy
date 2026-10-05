@@ -26,6 +26,8 @@ function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwn
     const wrapper = shallowMount(CopyModal, {
         props: { history, showModal },
         global: withPlugins(localVue, pinia),
+        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
+        stubs: { GFormInput: false },
     });
     const userStore = useUserStore();
     userStore.currentUser = userData;
@@ -44,39 +46,39 @@ describe("CopyModal", () => {
 
     it("pre-fills name input as \"Copy of 'history name'\"", () => {
         const { wrapper } = createWrapper();
-        expect(wrapper.findComponent(GFormInput).props("value")).toBe("Copy of 'My History'");
+        expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("Copy of 'My History'");
     });
 
     it("updates name input when history prop changes", async () => {
         const { wrapper } = createWrapper();
         await wrapper.setProps({ history: getFakeHistorySummary({ id: "h2", name: "Other History" }) });
-        expect(wrapper.findComponent(GFormInput).props("value")).toBe("Copy of 'Other History'");
+        expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("Copy of 'Other History'");
     });
 
     it("ok button is disabled when name is empty", async () => {
         const { wrapper } = createWrapper();
-        wrapper.findComponent(GFormInput).vm.$emit("input", "");
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "");
         await wrapper.vm.$nextTick();
         expect(wrapper.findComponent(GModal).props("okDisabled")).toBe(true);
     });
 
     it("ok button is disabled for owner when name matches history name", async () => {
         const { wrapper } = createWrapper(ownedHistory, fakeOwner);
-        wrapper.findComponent(GFormInput).vm.$emit("input", ownedHistory.name);
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", ownedHistory.name);
         await wrapper.vm.$nextTick();
         expect(wrapper.findComponent(GModal).props("okDisabled")).toBe(true);
     });
 
     it("ok button is enabled for non-owner with same name as history", async () => {
         const { wrapper } = createWrapper(ownedHistory, otherUser);
-        wrapper.findComponent(GFormInput).vm.$emit("input", ownedHistory.name);
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", ownedHistory.name);
         await wrapper.vm.$nextTick();
         expect(wrapper.findComponent(GModal).props("okDisabled")).toBe(false);
     });
 
     it("calls copyHistory with entered name and copyAll=false on ok", async () => {
         const { wrapper, historyStore } = createWrapper();
-        wrapper.findComponent(GFormInput).vm.$emit("input", "New Name");
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "New Name");
         await wrapper.vm.$nextTick();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
@@ -85,7 +87,7 @@ describe("CopyModal", () => {
 
     it("emits update:show-modal false after copy completes", async () => {
         const { wrapper } = createWrapper();
-        wrapper.findComponent(GFormInput).vm.$emit("input", "New Name");
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "New Name");
         await wrapper.vm.$nextTick();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();

@@ -241,10 +241,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <GFormInput
                         id="composite-dataset-name"
                         class="form-control"
-                        :value="currentItem?.name ?? ''"
+                        :model-value="currentItem?.name ?? ''"
                         :disabled="!currentItem"
                         placeholder="Provide a name for the dataset"
-                        @input="onDatasetNameInput" />
+                        @update:model-value="onDatasetNameInput" />
                 </div>
 
                 <!-- DB key / Reference -->

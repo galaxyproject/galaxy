@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps<{
-    value?: string | null;
+    modelValue?: string | null;
 }>();
 
 const emit = defineEmits<{
-    (e: "input", value: string | null): void;
+    (e: "update:modelValue", value: string | null): void;
     (e: "keydown", event: KeyboardEvent): void;
     (e: "blur", event: FocusEvent): void;
 }>();
@@ -15,10 +20,10 @@ const inputElement = ref<HTMLInputElement | null>(null);
 
 const inputValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(value) {
-        emit("input", value ?? null);
+        emit("update:modelValue", value ?? null);
     },
 });
 

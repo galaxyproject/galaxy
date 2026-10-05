@@ -160,14 +160,16 @@ async function mountForm(historyId = "history-1") {
     const wrapper = shallowMount(WorkflowExtractionForm as object, {
         propsData: { historyId },
         localVue,
+        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
+        stubs: { GFormInput: false },
     });
     await flushPromises();
     return wrapper;
 }
 
-/** Set the workflow name by simulating GFormInput's `input` event (v-model). */
+/** Set the workflow name by simulating GFormInput's `update:modelValue` event (v-model). */
 async function setWorkflowName(wrapper: ReturnType<typeof shallowMount>, name: string) {
-    wrapper.findComponent(GFormInput).vm.$emit("input", name);
+    wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", name);
     await wrapper.vm.$nextTick();
 }
 
