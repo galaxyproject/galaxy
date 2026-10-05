@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
+import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
@@ -253,13 +254,13 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         />
                     </revision-select>
                 </p>
-                <q-banner inline-actions rounded class="bg-negative text-white" v-if="isUnknownRevision">
+                <GAlert v-if="isUnknownRevision" variant="danger">
                     <strong>The change log does not include revision {{ currentRevision }}.</strong>
-                </q-banner>
+                </GAlert>
                 <div v-if="currentMetadata">
-                    <q-banner inline-actions rounded class="bg-negative text-white" v-if="malicious">
+                    <GAlert v-if="malicious" variant="danger">
                         <strong>This repository revision has been marked as malicious and cannot be installed.</strong>
-                    </q-banner>
+                    </GAlert>
                     <p v-for="(content, key) of readmes" :key="key">
                         <span class="repository-readme" v-html="content"></span>
                     </p>

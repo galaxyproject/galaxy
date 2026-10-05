@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GAlert, GButton } from "@galaxyproject/galaxy-ui"
 import { ref, watch, computed } from "vue"
 
 const show = ref(true)
@@ -31,18 +32,22 @@ const effectiveShow = computed(() => props.error && show.value)
 
 <template>
     <div class="q-pa-md q-gutter-sm">
-        <q-banner
-            inline-actions
-            rounded
-            class="bg-negative text-white"
-            role="alert"
-            aria-live="assertive"
-            v-if="effectiveShow"
-        >
+        <GAlert v-if="effectiveShow" variant="danger" aria-live="assertive" class="error-banner">
             <strong>{{ props.error }}</strong>
-            <template #action>
-                <q-btn flat label="Dismiss" @click="dismiss" />
-            </template>
-        </q-banner>
+            <GButton transparent class="error-banner-dismiss" @click="dismiss">Dismiss</GButton>
+        </GAlert>
     </div>
 </template>
+
+<style scoped>
+.error-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-2);
+}
+
+.error-banner-dismiss {
+    flex-shrink: 0;
+}
+</style>

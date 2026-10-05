@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, ref, watch } from "vue"
 import { getParsedTool, ParsedTool } from "@/api"
 import { errorMessageAsString } from "@/util"
@@ -86,22 +87,23 @@ const linkedFromOlderRevision = computed(() => {
 <template>
     <q-page class="q-ma-lg">
         <div class="q-mb-md q-gutter-sm" v-if="linkedFromOlderRevision">
-            <q-banner inline-actions rounded class="bg-warning text-white">
+            <!-- Page content rather than an event, so no assertive announcement -->
+            <GAlert variant="warning" role="status">
                 <strong
                     >Warning: Showing tool information from a newer repository revision (the latest repository revision
                     containing this tool version).</strong
                 >
-            </q-banner>
+            </GAlert>
         </div>
         <loading-div v-if="loading" message="Loading tool information" />
         <div v-else-if="errorMessage">
             <error-banner :error="errorMessage" />
-            <q-banner rounded class="bg-info text-white q-mx-md">
+            <GAlert variant="info" class="q-mx-md">
                 <p>
                     This error may be caused by stale repository metadata. The repository owner or a Tool Shed
                     administrator can fix this by resetting the repository metadata.
                 </p>
-            </q-banner>
+            </GAlert>
         </div>
         <q-card v-else>
             <q-card-section class="bg-primary text-white col-grow">
