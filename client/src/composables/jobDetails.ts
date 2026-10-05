@@ -65,6 +65,12 @@ export function useJobConsoleOutput(
     const error = ref<unknown>(null);
 
     let currentJobId: string | undefined;
+    /**
+     * Incremented on every `restart()` call. A response belongs to the current restart only if
+     * this still matches the value captured when its fetch began; comparing `id` alone isn't
+     * enough, since switching away from a job and back to it reuses the same id for a new restart.
+     */
+    let restartCount = 0;
 
     async function fetchConsoleOutput(id: string) {
         const { data, error: fetchError } = await GalaxyApi().GET("/api/jobs/{job_id}/console_output", {
@@ -86,12 +92,13 @@ export function useJobConsoleOutput(
 
     const watcher = useResourceWatcher<string>(
         async (id?: unknown) => {
+            const fetchRestartCount = restartCount;
             if (typeof id !== "string" || id !== currentJobId) {
                 return;
             }
             try {
                 const result = await fetchConsoleOutput(id);
-                if (id !== currentJobId) {
+                if (fetchRestartCount !== restartCount) {
                     return;
                 }
                 if (result.stdout != null) {
@@ -103,14 +110,14 @@ export function useJobConsoleOutput(
                 state.value = result.state;
                 error.value = null;
             } catch (e) {
-                if (id !== currentJobId) {
+                if (fetchRestartCount !== restartCount) {
                     return;
                 }
                 error.value = e;
             }
             // `autoRefresh: false` means "fetch once, never schedule a repeat" -- same as a
             // terminal state, stopping the watcher after this single tick satisfies that.
-            if (id === currentJobId && (!autoRefresh || stateIsTerminal({ state: state.value }))) {
+            if (fetchRestartCount === restartCount && (!autoRefresh || stateIsTerminal({ state: state.value }))) {
                 watcher.stopWatchingResource();
             }
         },
@@ -119,6 +126,7 @@ export function useJobConsoleOutput(
 
     function restart(id: string | undefined) {
         watcher.stopWatchingResource();
+        restartCount++;
         currentJobId = id;
         stdout.value = "";
         stderr.value = "";

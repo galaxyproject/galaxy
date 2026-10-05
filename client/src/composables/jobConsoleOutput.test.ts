@@ -144,4 +144,44 @@ describe("useJobConsoleOutput", () => {
         await advanceTimersAndFlush(5000);
         expect(callCount).toBe(1);
     });
+
+    it("ignores a stale response from a previous visit to the same job id", async () => {
+        // job1's first fetch is held open so it resolves only after we've switched away and back
+        // to job1, by which point it's a leftover from an earlier visit, not the current one.
+        let resolveFirstFetchForJob1: (output: JobConsoleOutput) => void;
+        let sawFirstFetchForJob1 = false;
+        server.use(
+            http.get("/api/jobs/{job_id}/console_output", ({ response, params }) => {
+                if (params.job_id === "job1" && !sawFirstFetchForJob1) {
+                    sawFirstFetchForJob1 = true;
+                    return new Promise((resolve) => {
+                        resolveFirstFetchForJob1 = (output) => resolve(response(200).json(output));
+                    });
+                }
+                if (params.job_id === "job1") {
+                    return response(200).json(buildConsoleOutput({ stdout: "second visit to job1\n" }));
+                }
+                return response(200).json(buildConsoleOutput({ stdout: "job2 output\n" }));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        const { stdout, wrapper } = mountJobConsoleOutput(jobId);
+        await flushPromises();
+
+        // Switch away to job2 (its own fetch resolves normally) and then back to job1, all while
+        // job1's first fetch above is still pending.
+        jobId.value = "job2";
+        await flushPromises();
+
+        jobId.value = "job1";
+        await flushPromises();
+
+        // The stale response from job1's first visit arrives now. It must not be appended.
+        resolveFirstFetchForJob1!(buildConsoleOutput({ stdout: "stale, from the first visit to job1\n" }));
+        await flushPromises();
+
+        expect(stdout.value).toBe("second visit to job1\n");
+        wrapper.unmount();
+    });
 });
