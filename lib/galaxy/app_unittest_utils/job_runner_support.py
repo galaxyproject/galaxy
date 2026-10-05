@@ -65,6 +65,7 @@ class MockJobWrapper:
         self.entry_points_checked = False
         self.cleanup_called = False
         self.user = None
+        self.protection_plan_path = None
 
         self.external_output_metadata: bunch.Bunch | None = bunch.Bunch()
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(

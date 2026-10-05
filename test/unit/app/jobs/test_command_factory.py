@@ -1,10 +1,12 @@
 import os
 import shutil
+import subprocess
 from os import getcwd
 from tempfile import mkdtemp
 
 from galaxy.jobs.command_factory import (
     build_command,
+    PROTECTED_STAGE_SOURCE_COMMAND,
     SETUP_GALAXY_FOR_METADATA,
 )
 from galaxy.model import Dataset
@@ -204,6 +206,59 @@ class TestCommandFactory(TestCase):
             self.__command()
         return self.job_wrapper.configured_external_metadata_kwds
 
+    def test_protected_job_stages_inputs_around_the_tool(self):
+        self.include_work_dir_outputs = False
+        self.include_metadata = True
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        plan = "/jobs/1/configs/protection_plan.json"
+        self.job_wrapper.protection_plan_path = plan
+        command = self.__command()
+        assert command.startswith(f"if {PROTECTED_STAGE_SOURCE_COMMAND} stage-in {plan}; then ")
+        assert "else false; fi; return_code=$?" in command
+        # Decrypted inputs are removed before collecting outputs, everything else after.
+        positions = [
+            command.index(MOCK_COMMAND_LINE),
+            command.index("return_code=$?"),
+            command.index(f"cleanup-inputs {plan}"),
+            command.index(TEST_METADATA_LINE),
+            command.index(f"stage cleanup {plan}"),
+        ]
+        assert positions == sorted(positions)
+        assert command.endswith('sh -c "exit $return_code"')
+
+    def test_protected_job_command_for_pulsar_defers_to_remote_layout(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.protection_plan_path = "/jobs/1/configs/protection_plan.json"
+        command = self.__command(remote_command_params={"pulsar_version": "0.15.0"})
+        assert '[ -f "$GALAXY_LIB/galaxy/job_execution/protection/stage.py" ]' in command
+        assert "else galaxy-protected-stage stage-in /jobs/1/configs/protection_plan.json; fi" in command
+
+    def test_protected_job_skips_tool_when_staging_fails(self):
+        for staging_status, tool_runs in ((1, False), (0, True)):
+            for name in ("working", "outputs"):
+                os.makedirs(os.path.join(self.job_dir, name), exist_ok=True)
+            actions = os.path.join(self.job_dir, "actions")
+            tool_ran = os.path.join(self.job_dir, "tool_ran")
+            for path in (actions, tool_ran):
+                if os.path.exists(path):
+                    os.remove(path)
+            self.include_work_dir_outputs = False
+            self.job_wrapper.galaxy_lib_dir = None
+            self.job_wrapper.command_line = f"touch {tool_ran}"
+            self.job_wrapper.protection_plan_path = "plan.json"
+            fake_stage = (
+                f'galaxy-protected-stage() {{ echo "$1" >> {actions}; '
+                f'[ "$1" != "stage-in" ] || return {staging_status}; }}\n'
+            )
+            result = subprocess.run(
+                ["bash", "-c", fake_stage + self.__command()], cwd=os.path.join(self.job_dir, "working")
+            )
+            assert os.path.exists(tool_ran) is tool_runs
+            assert open(actions).read().split() == ["stage-in", "cleanup-inputs", "cleanup"]
+            assert result.returncode == staging_status
+            with open(os.path.join(self.job_dir, "galaxy_1.ec")) as f:
+                assert f.read().strip() == str(staging_status)
+
     def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
         assert command == expected_command
@@ -269,6 +324,7 @@ class MockJobWrapper:
         self.job_id = 1
         self.galaxy_lib_dir: str | None = "/galaxy/lib"
         self.remote_command_line = False
+        self.protection_plan_path: str | None = None
 
     def get_command_line(self):
         return self.command_line

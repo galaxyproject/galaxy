@@ -45,6 +45,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -591,7 +592,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
-                if isinstance(e, ParameterValueError):
+                if isinstance(e, (ParameterValueError, ProtectionError)):
                     log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)

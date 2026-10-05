@@ -87,3 +87,4 @@ boto3
 
 # For Rucio storage plugin
 rucio-clients>=40.2.0
+crypt4gh

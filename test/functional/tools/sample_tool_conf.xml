@@ -301,6 +301,7 @@
        with a repeat, multiple datasets with a multiple input data
        parameter, and multiple datasets from a collection. -->
   <tool file="for_workflows/cat.xml" />
+  <tool file="crypt4gh_encrypted_input.xml" />
   <tool file="for_workflows/cat_list.xml" />
   <tool file="for_workflows/cat_default.xml" />
   <tool file="for_workflows/cat_collection.xml" />

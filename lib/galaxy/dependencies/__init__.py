@@ -327,6 +327,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_python_pam(self):
         return "PAM" in self.authenticators
 
+    def check_crypt4gh(self):
+        return asbool(self.config.get("crypt4gh_enabled", False))
+
     def check_azure_storage(self):
         return "azure_blob" in self.object_stores
 
