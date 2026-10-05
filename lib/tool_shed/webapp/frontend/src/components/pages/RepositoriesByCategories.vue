@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PageContainer from "@/components/PageContainer.vue"
+import LoadingDiv from "@/components/LoadingDiv.vue"
 import { computed } from "vue"
 import { storeToRefs } from "pinia"
 import { useCategoriesStore } from "@/stores"
@@ -24,9 +25,7 @@ void categoriesStore.getAll()
 <template>
     <page-container>
         <h4 class="q-mt-none q-mb-md">Categories</h4>
-        <div v-if="loading">
-            <q-spinner />
-        </div>
+        <LoadingDiv v-if="loading" message="Loading categories" />
         <q-table
             v-else
             :rows="viewableCategories"
