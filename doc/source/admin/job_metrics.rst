@@ -212,8 +212,8 @@ with ``expose_potentially_sensitive_job_metrics``):
 ``server_version_source``
     How Galaxy learned ``server_version``: ``status`` (reported when the job finished) or
     ``job_files`` (written by Pulsar into the job's files - the only report from polling
-    Kubernetes, TES, GCP Batch, and AWS Batch runners, which need Pulsar 0.15.16 or newer
-    for it). Absent if the job never reported it.
+    Kubernetes, TES, and GCP Batch runners, whose staging image needs Pulsar 0.15.16 or
+    newer for it). Absent if the job never reported it.
 
 A ``target_version`` that differs from ``server_version`` means Galaxy submitted the job for
 a Pulsar other than the one that ran it.
