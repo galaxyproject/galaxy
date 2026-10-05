@@ -8,10 +8,10 @@ const { classes, size } = useCommonProps(props)
 </script>
 
 <template>
-    <FontAwesomeIcon :icon="faDownload" class="text-primary" :style="{ fontSize: size }" />
+    <FontAwesomeIcon :icon="faDownload" class="help-icon" :style="{ fontSize: size }" />
     <div :class="classes">
-        <div class="text-subtitle1 text-weight-bold">Installing</div>
-        <div class="text-body1">
+        <h3 class="help-heading">Installing</h3>
+        <div>
             There best, most updated resource for information on installing tools in Galaxy from the tool shed can be
             found in tutorial
             <a
@@ -22,3 +22,32 @@ const { classes, size } = useCommonProps(props)
         </div>
     </div>
 </template>
+
+<style scoped>
+.help-icon {
+    color: var(--color-galaxy-primary);
+}
+
+.help-heading {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.help-align-left,
+.help-align-center {
+    margin-top: var(--spacing-4);
+    /* Quasar's text-body1, which this text carried */
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.help-align-left {
+    text-align: left;
+    padding-bottom: calc(var(--spacing-8) + var(--spacing-4));
+}
+
+.help-align-center {
+    text-align: center;
+}
+</style>

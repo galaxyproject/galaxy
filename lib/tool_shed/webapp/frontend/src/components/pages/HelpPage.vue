@@ -9,8 +9,8 @@ const commonProps = { hAlign: "left" as "left" | "center" }
 </script>
 <template>
     <page-container>
-        <div class="fit row wrap justify-center items-start content-start">
-            <div class="col-9" style="overflow: auto">
+        <div class="help-page-row">
+            <div class="help-page-column" style="overflow: auto">
                 <h2>Tool Shed Help</h2>
                 <HelpSearch v-bind="commonProps" />
                 <HelpInstall v-bind="commonProps" />
@@ -20,3 +20,18 @@ const commonProps = { hAlign: "left" as "left" | "center" }
         </div>
     </page-container>
 </template>
+
+<style scoped>
+.help-page-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+}
+
+.help-page-column {
+    width: 75%;
+}
+</style>

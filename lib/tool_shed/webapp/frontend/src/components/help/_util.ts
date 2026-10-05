@@ -8,8 +8,6 @@ export interface CommonProps {
 }
 
 export function useCommonProps(props: CommonProps) {
-    const classes = computed(() => {
-        return [`text-${props.hAlign}`, "q-mt-md", props.hAlign == "left" ? "q-pb-xl" : null]
-    })
+    const classes = computed(() => [`help-align-${props.hAlign}`])
     return { classes, size }
 }
