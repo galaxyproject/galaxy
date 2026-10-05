@@ -21,6 +21,7 @@ from galaxy.model import (
     Workflow,
     WorkflowOutput,
     WorkflowStep,
+    WorkflowStepAnnotationAssociation,
     WorkflowStepConnection,
 )
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
@@ -734,22 +735,65 @@ steps:
         sa_session.commit()
 
         def last_ids():
-            classes = (StoredWorkflow, Workflow, WorkflowStep, WorkflowOutput)
-            return [sa_session.scalar(select(func.max(clazz.id))) for clazz in classes]
+            classes = (
+                StoredWorkflow,
+                Workflow,
+                WorkflowStep,
+                WorkflowOutput,
+                WorkflowStepConnection,
+                PostJobAction,
+                WorkflowStepAnnotationAssociation,
+            )
+            return [sa_session.scalar(select(func.max(clazz.id))) or 0 for clazz in classes]
 
-        stored_workflow_last_id, workflow_last_id, step_last_id, output_last_id = last_ids()
+        (
+            stored_workflow_last_id,
+            workflow_last_id,
+            step_last_id,
+            output_last_id,
+            connection_last_id,
+            pja_last_id,
+            annotation_last_id,
+        ) = last_ids()
         # drops the outer workflow output, since the new subworkflow no longer has it
         response = self._refactor([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
         assert response.changed
         sa_session.commit()
         new_workflow = self._latest_workflow
-        num_outputs = sum(len(step.workflow_outputs) for step in new_workflow.steps)
+        steps = new_workflow.steps
         assert last_ids() == [
             stored_workflow_last_id,
             workflow_last_id + 1,
-            step_last_id + len(new_workflow.steps),
-            output_last_id + num_outputs,
+            step_last_id + len(steps),
+            output_last_id + sum(len(step.workflow_outputs) for step in steps),
+            connection_last_id + sum(len(step.input_connections) for step in steps),
+            pja_last_id + sum(len(step.post_job_actions) for step in steps),
+            annotation_last_id + sum(len(step.annotations) for step in steps),
         ]
+
+    def test_refactor_of_annotated_subworkflow_step_saves_no_orphan_annotations(self):
+        self.workflow_populator.upload_yaml_workflow(
+            WORKFLOW_NESTED_SIMPLE.replace("  nested_workflow:\n", "  nested_workflow:\n    doc: the step annotation\n")
+        )
+        sa_session = self._app.model.session
+        name = self._most_recent_stored_workflow.name
+
+        def orphan_annotations():
+            stmt = select(func.count(WorkflowStepAnnotationAssociation.id)).where(
+                WorkflowStepAnnotationAssociation.workflow_step_id.is_(None)
+            )
+            return sa_session.scalar(stmt)
+
+        assert orphan_annotations() == 0
+        self._dry_run([{"action_type": "update_name", "name": f"{name} renamed"}])
+        assert orphan_annotations() == 0
+        response = self._refactor([{"action_type": "update_name", "name": f"{name} renamed"}])
+        assert response.changed
+        sa_session.commit()
+        assert orphan_annotations() == 0
+        sa_session.expire_all()
+        new_step = self._latest_workflow.step_by_label("nested_workflow")
+        assert [a.annotation for a in new_step.annotations] == ["the step annotation"]
 
     def test_subworkflow_upgrade_dry_run_writes_nothing(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
@@ -1198,6 +1242,9 @@ class MockTrans(ProvidesAppContext):
         self.workflow_building_mode = workflow_building_modes.ENABLED
         self.tag_handler = app.tag_handler
         self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
+
+    def get_user(self):
+        return self.user
 
     @property
     def galaxy_session(self):

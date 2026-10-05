@@ -787,7 +787,8 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
-        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
+        if not detached:
+            ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):
