@@ -167,8 +167,10 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
     Pedagogical orchestrator that guides users through learning
     rather than providing direct answers.
 
-    Delegates to specialist agents (error analysis, tool recommendation,
-    GTN training) and reframes their responses as learning opportunities.
+    Delegates to the error analysis and tool recommendation agents and
+    reframes their responses as learning opportunities. It searches the GTN
+    index directly rather than through the GTN training agent, so the
+    citation check can see exactly which records a search returned.
     """
 
     agent_type = AgentType.TEACHING_ASSISTANT
