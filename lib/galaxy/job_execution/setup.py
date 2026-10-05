@@ -89,6 +89,7 @@ class JobIO(UsesDictVisibleKeys):
         "tool_source_class",
         "tool_dir",
         "is_task",
+        "protection_plan_path",
     )
 
     def __init__(
@@ -117,6 +118,7 @@ class JobIO(UsesDictVisibleKeys):
         tool_source_class: Optional["str"] = "XmlToolSource",
         tool_dir: StrPath | None = None,
         is_task: bool = False,
+        protection_plan_path: str | None = None,
     ):
         user_context_instance: FileSourcesUserContext
         self.file_sources_dict = file_sources_dict
@@ -145,6 +147,7 @@ class JobIO(UsesDictVisibleKeys):
         self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
         self.tool_dir = tool_dir
         self.is_task = is_task
+        self.protection_plan_path = protection_plan_path
         self.tool_source = tool_source
         self.tool_source_class = tool_source_class
         self.job_outputs = JobOutputs()

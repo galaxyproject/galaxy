@@ -10,6 +10,7 @@ importing or exporting a dataset never transfers the ability to decrypt it.
 import base64
 import io
 import logging
+import os
 from datetime import (
     datetime,
     timedelta,
@@ -18,6 +19,7 @@ from datetime import (
 from typing import (
     Any,
     Protocol,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -28,10 +30,20 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     RequestParameterInvalidException,
 )
+from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
+from galaxy.job_execution.protection import (
+    protected_directory,
+    ProtectedFile,
+    ProtectedInput,
+    ProtectionDestination,
+    ProtectionError,
+    ProtectionPlan,
+)
 from galaxy.model import (
     Dataset,
     DatasetInstance,
     DatasetProtectionGrant,
+    Job,
     User,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -39,12 +51,40 @@ from galaxy.schema.dataset_protection import (
     Crypt4GHGrantPayload,
     DatasetProtectionStatus,
 )
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.basic import BaseDataToolParameter
 from galaxy.util import now
-from galaxy.util.crypt4gh import read_crypt4gh_header
+from galaxy.util.crypt4gh import (
+    is_crypt4gh_file_ext,
+    read_crypt4gh_header,
+    unwrap_crypt4gh_file_ext,
+)
+
+if TYPE_CHECKING:
+    from galaxy.job_execution.compute_environment import ComputeEnvironment
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
 GRANT_SOURCE_USER = "user"
+# Tool types that run a plain command line on the compute host. Others (interactive tools,
+# data managers, expression tools, ...) would expose decrypted data outside of the job.
+PROTECTED_TOOL_TYPES = ("default",)
+# Outputs are encrypted after the tool ran, the compute key must outlive the job.
+JOB_TTL_MARGIN = timedelta(hours=1)
+
+
+def _dataset_instances(value: Any) -> list[DatasetInstance]:
+    if value is None:
+        return []
+    if isinstance(value, DatasetInstance):
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return [instance for item in value for instance in _dataset_instances(item)]
+    if hasattr(value, "dataset_instances"):
+        # Collections, collection elements and collection adapters.
+        return list(value.dataset_instances)
+    return []
 
 
 class GrantRecord:
@@ -168,6 +208,150 @@ class DatasetProtectionManager:
         self.sa_session.commit()
         log.info("Registered %s grant for user %s on dataset %s", scheme.name, user.id, dataset.id)
         return self.grant_status(user, dataset_instance)
+
+    def inputs_needing_decryption(self, tool: "Tool", param_values: dict[str, Any]) -> list[DatasetInstance]:
+        """Protected datasets the tool reads as their inner datatype, so must be decrypted.
+
+        Inputs of parameters explicitly accepting Crypt4GH formats are passed encrypted.
+        """
+        if not self.enabled or (tool.id or "").startswith("__"):
+            # Galaxy's internal tools (metadata, export, ...) work with the encrypted data.
+            return []
+        decrypted: dict[int, DatasetInstance] = {}
+        encrypted: set[int] = set()
+
+        def visitor(input: Any, value: Any, **kwargs: Any) -> None:
+            if not isinstance(input, BaseDataToolParameter):
+                return
+            accepts_encrypted = any(is_crypt4gh_file_ext(ext) for ext in input.extensions)
+            for dataset_instance in _dataset_instances(value):
+                dataset = dataset_instance.dataset
+                if dataset is None or not self.is_protected(dataset_instance):
+                    continue
+                if accepts_encrypted:
+                    encrypted.add(dataset.id)
+                else:
+                    decrypted[dataset.id] = dataset_instance
+
+        visit_input_values(tool.inputs, param_values, visitor)
+        if encrypted & decrypted.keys():
+            raise ProtectionError(
+                "The same encrypted dataset can't be used both as an encrypted and as a decrypted input of a job."
+            )
+        return list(decrypted.values())
+
+    def check_job_inputs(self, user: User | None, tool: "Tool", param_values: dict[str, Any]) -> None:
+        """Early, user-facing version of the :meth:`authorize_job` checks, run when a job is requested.
+
+        Inputs that are not ready yet (e.g. outputs of upstream workflow steps) are checked when the
+        job is prepared.
+        """
+        try:
+            to_decrypt = self.inputs_needing_decryption(tool, param_values)
+        except ProtectionError as e:
+            raise RequestParameterInvalidException(str(e))
+        if not to_decrypt:
+            return
+        if tool.tool_type not in PROTECTED_TOOL_TYPES:
+            raise RequestParameterInvalidException(f"Tool '{tool.name}' can't be used with encrypted datasets.")
+        for dataset_instance in to_decrypt:
+            if dataset_instance.state != DatasetInstance.states.OK:
+                continue
+            if user is None or self.get_usable_grant(user, dataset_instance) is None:
+                raise RequestParameterInvalidException(
+                    f"Dataset '{dataset_instance.name}' is encrypted and you are not authorized to decrypt it in jobs. "
+                    "Authorize the dataset first (key icon)."
+                )
+
+    def authorize_job(
+        self,
+        job: Job,
+        tool: "Tool",
+        param_values: dict[str, Any],
+        destination: ProtectionDestination,
+        compute_environment: "ComputeEnvironment",
+    ) -> ProtectionPlan | None:
+        """Check the job may decrypt its protected inputs and build its protection plan.
+
+        Returns ``None`` for jobs without inputs to decrypt, raises :class:`ProtectionError`
+        when the job must not run.
+        """
+        to_decrypt = self.inputs_needing_decryption(tool, param_values)
+        if not to_decrypt:
+            return None
+        if tool.tool_type not in PROTECTED_TOOL_TYPES:
+            raise ProtectionError(f"Tool '{tool.name}' can't be used with encrypted datasets.")
+        destination.check()
+        assert destination.recryptor
+        margin = JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
+
+        job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
+        inputs_directory = os.path.join(protected_directory(job_directory), "inputs")
+        protected_inputs: list[ProtectedInput] = []
+        grants: list[DatasetProtectionGrant] = []
+        for dataset_instance in to_decrypt:
+            scheme = self.scheme_for(dataset_instance)
+            assert scheme
+            grant = self.get_usable_grant(job.user, dataset_instance) if job.user else None
+            if grant is None or grant.is_expired(max(scheme.expiry_margin, margin)):
+                raise ProtectionError(
+                    f"You are not authorized to decrypt dataset '{dataset_instance.name}', or your authorization "
+                    "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
+                )
+            grants.append(grant)
+            protected_inputs.append(
+                self._protected_input(dataset_instance, grant, compute_environment, inputs_directory)
+            )
+
+        return ProtectionPlan(
+            scheme="crypt4gh",
+            job_directory=job_directory,
+            output_key_ref=max(grants, key=lambda grant: grant.expires_at).key_ref,
+            recryptor=destination.recryptor,
+            inputs=protected_inputs,
+        )
+
+    def _protected_input(
+        self,
+        dataset_instance: DatasetInstance,
+        grant: DatasetProtectionGrant,
+        compute_environment: "ComputeEnvironment",
+        inputs_directory: str,
+    ) -> ProtectedInput:
+        dataset = dataset_instance.dataset
+        assert dataset
+        staged_directory = os.path.join(inputs_directory, str(dataset.id))
+        inner_ext = unwrap_crypt4gh_file_ext(dataset_instance.extension) or "dat"
+        staged_extra_files_path = os.path.join(staged_directory, "plaintext_files")
+        source_extra_files_path = compute_environment.input_extra_files_rewrite(dataset_instance)
+        extra_files = {
+            relpath: ProtectedFile(
+                source_path=os.path.join(source_extra_files_path, relpath),
+                staged_path=os.path.join(staged_extra_files_path, relpath),
+                compute_header=compute_header,
+            )
+            for relpath, compute_header in grant.grant_data.get("extra_files", {}).items()
+        }
+        return ProtectedInput(
+            dataset_id=dataset.id,
+            key_ref=grant.key_ref,
+            primary=ProtectedFile(
+                source_path=compute_environment.input_path_rewrite(dataset_instance),
+                staged_path=os.path.join(staged_directory, f"plaintext.{inner_ext}"),
+                compute_header=grant.grant_data["compute_header"],
+            ),
+            staged_extra_files_path=staged_extra_files_path,
+            source_extra_files_path=source_extra_files_path,
+            extra_files=extra_files,
+        )
+
+    def finish_job(self, job: Job, job_directory: str) -> str | None:
+        """Return why a finished protected job must fail, if it must."""
+        cleanup_failure = os.path.join(job_directory, CLEANUP_FAILURE_FILE)
+        if os.path.exists(cleanup_failure):
+            with open(cleanup_failure) as f:
+                return f.read().strip() or "Could not remove the decrypted data of this job."
+        return None
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:
         scheme = self.scheme_for(dataset_instance)
