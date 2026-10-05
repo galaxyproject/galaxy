@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons"
-import { GButton } from "@galaxyproject/galaxy-ui"
-import { ref, computed } from "vue"
+import { GButton, GTab, GTabs } from "@galaxyproject/galaxy-ui"
+import { ref, computed, nextTick } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
@@ -25,6 +25,20 @@ repositoryStore.setId(props.repositoryId)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const activeTab = ref("revisions")
 
+// GTabs selects by index, so map the named tabs onto it. Reset is last because it's conditional.
+const tabNames = computed(() => {
+    const names = ["revisions", "tool-history", "raw-json"]
+    if (canManage.value) {
+        names.push("reset")
+    }
+    return names
+})
+const activeTabIndex = computed(() => Math.max(0, tabNames.value.indexOf(activeTab.value)))
+
+function onTabInput(index: number) {
+    activeTab.value = tabNames.value[index] ?? "revisions"
+}
+
 const revisionCount = computed(() => {
     if (!repositoryMetadata.value) return 0
     return Object.keys(repositoryMetadata.value).length
@@ -43,7 +57,11 @@ const totalInvalidTools = computed(() => {
 // Cross-tab navigation support
 const expandRevision = ref<string | null>(null)
 
-function goToRevision(revision: string) {
+async function goToRevision(revision: string) {
+    // RevisionsTab stays mounted across tab switches, so clear first to re-trigger its watcher
+    // when the same revision is requested again after being collapsed.
+    expandRevision.value = null
+    await nextTick()
     expandRevision.value = revision
     activeTab.value = "revisions"
 }
@@ -83,29 +101,63 @@ function onResetComplete() {
                 </template>
             </q-banner>
 
-            <q-tabs v-model="activeTab" class="text-primary" align="left">
-                <q-tab name="revisions" :label="`Revisions (${revisionCount})`" />
-                <q-tab name="tool-history" label="Tool History" />
-                <q-tab name="raw-json" label="Raw JSON" />
-                <q-tab name="reset" label="Reset Metadata" v-if="canManage" />
-            </q-tabs>
-
-            <hr />
-
-            <q-tab-panels v-model="activeTab">
-                <q-tab-panel name="revisions">
+            <GTabs class="inspector-tabs" lazy :value="activeTabIndex" @input="onTabInput">
+                <GTab :title="`Revisions (${revisionCount})`">
                     <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
-                </q-tab-panel>
-                <q-tab-panel name="tool-history">
+                </GTab>
+                <GTab title="Tool History">
                     <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
-                </q-tab-panel>
-                <q-tab-panel name="raw-json">
+                </GTab>
+                <GTab title="Raw JSON">
                     <OverviewTab :metadata="repositoryMetadata" />
-                </q-tab-panel>
-                <q-tab-panel name="reset" v-if="canManage">
+                </GTab>
+                <GTab v-if="canManage" title="Reset Metadata">
                     <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
-                </q-tab-panel>
-            </q-tab-panels>
+                </GTab>
+            </GTabs>
         </q-card>
     </q-page>
 </template>
+
+<style scoped>
+.inspector-tabs :deep(.nav) {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0 var(--spacing-2);
+    list-style: none;
+    border-bottom: 1px solid var(--color-grey-200);
+}
+
+.inspector-tabs :deep(.nav-link) {
+    display: block;
+    padding: var(--spacing-3) var(--spacing-4);
+    color: var(--color-grey-600);
+    font-weight: 500;
+    text-decoration: none;
+    /* Underline tabs rather than the baseline's boxed ones */
+    border: 0;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.inspector-tabs :deep(.nav-link:hover) {
+    color: var(--color-galaxy-primary);
+}
+
+.inspector-tabs :deep(.nav-link.active) {
+    color: var(--color-galaxy-primary);
+    background: none;
+    border-bottom-color: var(--color-galaxy-primary);
+}
+
+.inspector-tabs :deep(.nav-link:focus-visible) {
+    outline: 2px solid var(--color-galaxy-primary);
+    outline-offset: -2px;
+}
+
+.inspector-tabs :deep(.tab-content) {
+    padding: var(--spacing-4);
+}
+</style>
