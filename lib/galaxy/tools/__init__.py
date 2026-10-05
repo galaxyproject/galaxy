@@ -172,6 +172,7 @@ from galaxy.tools.parameters import (
     params_to_strings,
     populate_state,
     populate_state_async,
+    qualify_legacy_data_input_reference,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -1576,7 +1577,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.raw_help = None
 
         if self.app.is_webapp:
-            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
+            self.raw_help = self._parse_help(tool_source)
         self._parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1805,6 +1806,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
+        for name, output_collection in self.output_collections.items():
+            type_source = output_collection.structure.collection_type_source
+            if type_source and (qualified := qualify_legacy_data_input_reference(self.inputs, type_source)):
+                raise ToolLoadError(
+                    f"Output collection '{name}' has type_source '{type_source}', which must be qualified as '{qualified}'."
+                )
 
     def _parse_citations(self, tool_source):
         citation_models = tool_source.parse_citations()
@@ -2031,6 +2038,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         cheetah_context["tool"] = self
         cheetah_context["on_string"] = on_text
         return fill_template(label, context=cheetah_context, python_template_version=self.python_template_version)
+
+    def _parse_help(self, tool_source: ToolSource) -> HelpContent | None:
+        return self.__get_help_with_images(tool_source.parse_help())
 
     def __get_help_with_images(self, help_content: HelpContent | None) -> HelpContent | None:
         if help_content and help_content.format == "restructuredtext":
@@ -2941,19 +2951,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
         if tool_help:
-            # create tool help
-            help_txt = ""
-            help_format = "restructuredtext"
+            # The toolbox index returns this for every tool at once, so help is
+            # returned as written rather than rendered.
             help_content = self.raw_help
-            if help_content:
-                help_format = help_content.format
-                if help_format == "restructuredtext":
-                    help_txt = self.render_help(
-                        static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
-                    )
-
-            tool_dict["help"] = help_txt
-            tool_dict["help_format"] = help_format
+            tool_dict["help"] = help_content.content if help_content else ""
+            tool_dict["help_format"] = help_content.format if help_content else "restructuredtext"
 
         return tool_dict
 
@@ -3303,6 +3305,14 @@ class UserDefinedTool(Tool):
                 f"{'; '.join(self.dropped_representation_fields)}. Edit the tool and save it again to remove them."
             )
         return tool_model
+
+    def _parse_help(self, tool_source: ToolSource) -> HelpContent | None:
+        # Help is author text and is only ever rendered as Markdown, including
+        # stored tools whose help declares another format.
+        help_content = tool_source.parse_help()
+        if help_content and help_content.format != "markdown":
+            help_content = HelpContent(format="markdown", content=help_content.content)
+        return help_content
 
 
 class ExpressionTool(Tool):
@@ -3787,6 +3797,12 @@ class DataManagerTool(OutputParameterJSONTool):
         return False
 
 
+def _element_count(collection: model.DatasetCollection) -> int:
+    if collection.element_count is not None:
+        return collection.element_count
+    return len(collection.elements)
+
+
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_terminal_states = True
@@ -3841,6 +3857,14 @@ class DatabaseOperationTool(Tool):
             states = summary.states
             for state in states.keys():
                 check_dataset_state(input_key, state)
+
+    def _check_output_count(self, count: int) -> None:
+        max_outputs = self.app.config.max_discovered_files
+        if max_outputs is not None and count > max_outputs:
+            raise exceptions.RequestParameterInvalidException(
+                f"{self.name} would create {count} datasets, "
+                f"more than the maximum number ({max_outputs}) of output datasets"
+            )
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         for element_object in elements:
@@ -3920,6 +3944,7 @@ class CrossProductFlatCollectionTool(DatabaseOperationTool):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
         join_identifier = incoming["join_identifier"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -3955,6 +3980,7 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -4757,7 +4783,9 @@ class ApplyRulesTool(DatabaseOperationTool):
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
-        new_elements = self.app.dataset_collection_manager.apply_rules(hdca, rule_set, copy_dataset)
+        new_elements = self.app.dataset_collection_manager.apply_rules(
+            hdca, rule_set, copy_dataset, check_row_count=self._check_output_count
+        )
         self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())),
@@ -4912,6 +4940,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
         number = int(incoming["number"])
+        self._check_output_count(number)
         element_identifier = incoming["element_identifier"]
         elements = {
             f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(1, number + 1)

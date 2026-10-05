@@ -1,0 +1,53 @@
+<tool id="collection_type_source_section_repeat" name="collection_type_source_section_repeat" version="0.1.0">
+  <command>
+    mkdir section_output repeat_output;
+    #for $key in $sect.input_collect.keys()#
+    cat "$sect.input_collect[$key]" > section_output/"$key";
+    #end for#
+    #for $key in $rep[0].input_collect.keys()#
+    cat "$rep[0].input_collect[$key]" > repeat_output/"$key";
+    #end for#
+  </command>
+  <inputs>
+    <section name="sect" title="Section">
+      <param name="input_collect" type="data_collection" collection_type="list" />
+    </section>
+    <repeat name="rep" title="Repeat" min="1" max="1">
+      <param name="input_collect" type="data_collection" collection_type="paired" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <collection name="section_output" type_source="sect|input_collect" format="txt">
+      <discover_datasets pattern="__name__" directory="section_output" visible="true" />
+    </collection>
+    <collection name="repeat_output" type_source="rep_0|input_collect" format="txt">
+      <discover_datasets pattern="__name__" directory="repeat_output" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <section name="sect">
+        <param name="input_collect">
+          <collection type="list">
+            <element name="samp1" value="simple_line.txt" />
+          </collection>
+        </param>
+      </section>
+      <repeat name="rep">
+        <param name="input_collect">
+          <collection type="paired">
+            <element name="forward" value="simple_line.txt" />
+            <element name="reverse" value="simple_line_alternative.txt" />
+          </collection>
+        </param>
+      </repeat>
+      <output_collection name="section_output" type="list" count="1">
+        <element name="samp1" file="simple_line.txt" />
+      </output_collection>
+      <output_collection name="repeat_output" type="paired">
+        <element name="forward" file="simple_line.txt" />
+        <element name="reverse" file="simple_line_alternative.txt" />
+      </output_collection>
+    </test>
+  </tests>
+</tool>

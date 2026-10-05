@@ -10,6 +10,7 @@ from collections.abc import (
 from typing import (
     Any,
     cast,
+    NamedTuple,
     TYPE_CHECKING,
 )
 
@@ -67,6 +68,7 @@ from galaxy.tools.execution_helpers import (
 )
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
+    BaseDataToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     SelectToolParameter,
@@ -93,6 +95,16 @@ log = logging.getLogger(__name__)
 
 OutputDatasetsT = dict[str, "DatasetInstance"]
 ToolActionExecuteResult = tuple[Job, OutputDatasetsT, History | None] | tuple[Job, OutputDatasetsT]
+
+
+class CollectedToolInputs(NamedTuple):
+    history: History
+    inp_data: LegacyUnprefixedDict
+    inp_dataset_collections: LegacyUnprefixedDict
+    input_collection_parameters: dict[str, BaseDataToolParameter]
+    preserved_tags: dict[str, Any]
+    preserved_hdca_tags: dict[str, Any]
+    all_permissions: Any
 
 
 class ToolAction:
@@ -374,7 +386,9 @@ class DefaultToolAction(ToolAction):
         tool.visit_inputs(param_values, visitor)
         return input_datasets, all_permissions
 
-    def collect_input_dataset_collections(self, tool, param_values):
+    def collect_input_dataset_collections(
+        self, tool, param_values
+    ) -> tuple[LegacyUnprefixedDict, dict[str, BaseDataToolParameter]]:
         def append_to_key(the_dict: LegacyUnprefixedDict, key, legacy_key, value):
             if key not in the_dict:
                 the_dict[key] = []
@@ -382,6 +396,11 @@ class DefaultToolAction(ToolAction):
             the_dict[key].append(value)
 
         input_dataset_collections = LegacyUnprefixedDict()
+        input_collection_parameters: dict[str, BaseDataToolParameter] = {}
+
+        def record(input: BaseDataToolParameter, value: Any, prefix: str, prefixed_name: str, reduced: bool) -> None:
+            append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, reduced))
+            input_collection_parameters[prefixed_name] = input
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -392,7 +411,7 @@ class DefaultToolAction(ToolAction):
                     if isinstance(value, model.HistoryDatasetCollectionAssociation) or isinstance(
                         value, model.DatasetCollectionElement
                     ):
-                        append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, True))
+                        record(input, value, prefix, prefixed_name, True)
                         target_dict = parent
                         if not target_dict:
                             target_dict = param_values
@@ -413,17 +432,17 @@ class DefaultToolAction(ToolAction):
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
             elif isinstance(input, DataCollectionToolParameter):
-                append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, False))
+                record(input, value, prefix, prefixed_name, False)
 
         tool.visit_inputs(param_values, visitor)
-        return input_dataset_collections
+        return input_dataset_collections, input_collection_parameters
 
     def _check_access(self, tool, trans: ProvidesUserContext):
         assert tool.allow_user_access(trans.user), f"User ({trans.user}) is not allowed to access this tool."
 
     def _collect_inputs(
         self, tool, trans: ProvidesHistoryContext, incoming, history, current_user_roles, collection_info
-    ):
+    ) -> "CollectedToolInputs":
         """Collect history as well as input datasets and collections."""
         # Set history.
         if not history:
@@ -431,7 +450,7 @@ class DefaultToolAction(ToolAction):
 
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
-        inp_dataset_collections = self.collect_input_dataset_collections(tool, incoming)
+        inp_dataset_collections, input_collection_parameters = self.collect_input_dataset_collections(tool, incoming)
         # Collect any input datasets from the incoming parameters
         inp_data, all_permissions = self._collect_input_datasets(
             tool,
@@ -459,7 +478,15 @@ class DefaultToolAction(ToolAction):
                     for tag in collection.auto_propagated_tags:
                         preserved_hdca_tags[tag.value] = tag
         preserved_tags.update(preserved_hdca_tags)
-        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
+        return CollectedToolInputs(
+            history,
+            inp_data,
+            inp_dataset_collections,
+            input_collection_parameters,
+            preserved_tags,
+            preserved_hdca_tags,
+            all_permissions,
+        )
 
     def execute(
         self,
@@ -496,6 +523,7 @@ class DefaultToolAction(ToolAction):
             history,
             inp_data,
             inp_dataset_collections,
+            input_collection_parameters,
             preserved_tags,
             preserved_hdca_tags,
             all_permissions,
@@ -559,14 +587,14 @@ class DefaultToolAction(ToolAction):
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data: dict[str, DatasetInstance] = {}
-        input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
-        input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
+        input_collections = inp_dataset_collections.map_values(lambda pairs: pairs[0][0])
         output_collections = OutputCollections(
             trans,
             history,
             tool=tool,
             tool_action=self,
             input_collections=input_collections,
+            input_collection_parameters=input_collection_parameters,
             dataset_collection_elements=dataset_collection_elements,
             on_text=on_text,
             incoming=incoming,
@@ -1156,6 +1184,7 @@ class OutputCollections:
         tool,
         tool_action,
         input_collections,
+        input_collection_parameters,
         dataset_collection_elements,
         on_text,
         incoming,
@@ -1170,6 +1199,7 @@ class OutputCollections:
         self.tool = tool
         self.tool_action = tool_action
         self.input_collections = input_collections
+        self.input_collection_parameters = input_collection_parameters
         self.dataset_collection_elements = dataset_collection_elements
         self.on_text = on_text
         self.incoming = incoming
@@ -1192,23 +1222,11 @@ class OutputCollections:
                 # TODO: Not a new problem, but this should be determined
                 # sooner.
                 raise Exception("Could not determine collection type to create.")
-            if collection_type_source not in input_collections:
-                raise Exception(f"Could not find collection type source with name [{collection_type_source}].")
-
-            # Using the collection_type_source string we get the DataCollectionToolParameter
-            data_param = self.tool.inputs
-            groups = collection_type_source.split("|")
-            for group in groups:
-                values = group.split("_")
-                if values[-1].isdigit():
-                    key = "_".join(values[0:-1])
-                    # We don't care about the repeat index, we just need to find the correct DataCollectionToolParameter
-                else:
-                    key = group
-                if isinstance(data_param, dict):
-                    data_param = data_param.get(key)
-                else:
-                    data_param = data_param.inputs.get(key)
+            data_param = self.input_collection_parameters.get(collection_type_source)
+            if data_param is None:
+                raise Exception(
+                    f"Output collection '{output.name}' has type_source '{collection_type_source}', which does not name a collection input."
+                )
             collection_type_description = data_param._history_query(self.trans).can_map_over(
                 input_collections[collection_type_source]
             )

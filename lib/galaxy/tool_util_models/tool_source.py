@@ -285,6 +285,10 @@ class HelpContent(ToolSourceBaseModel):
     content: str
 
 
+class MarkdownHelpContent(HelpContent):
+    format: Literal["markdown"]
+
+
 StdioExitCodeRangeValue = int | float | Literal["-inf", "inf"]
 
 

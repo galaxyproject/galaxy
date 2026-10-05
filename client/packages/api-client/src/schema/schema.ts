@@ -18198,7 +18198,7 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description Specify values for formal inputs to the workflow
+             * @description Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. Input keys are interpreted according to 'inputs_by'.
              */
             inputs?: {
                 [key: string]: unknown;
@@ -18247,7 +18247,7 @@ export interface components {
                 | null;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}.
              * @default {}
              */
             parameters: {
@@ -20093,6 +20093,16 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
+        /** MarkdownHelpContent */
+        MarkdownHelpContent: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @constant
+             */
+            format: "markdown";
+        };
         /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
@@ -27456,9 +27466,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -27598,9 +27608,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -28565,7 +28575,7 @@ export interface components {
             instance: true;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
              */
             parameters?: {
                 [key: string]: unknown;

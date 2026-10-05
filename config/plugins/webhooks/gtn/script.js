@@ -122,6 +122,10 @@
                     if (safe) {
                         persistLocation();
                     }
+                    // Cross-origin pages (the public GTN, or a link followed inside the iframe) can't be modified.
+                    if (!gtnEmbed.contentDocument) {
+                        return;
+                    }
                     // Add the class to the entire GTN page
                     document
                         .getElementById("gtn-embed")

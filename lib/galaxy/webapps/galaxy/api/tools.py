@@ -548,6 +548,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param q: if present search on the given query will be performed
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
+        :param tool_help: if true, include each tool's help as written (``help``)
+                          and its format (``help_format``)
 
         Note: When cached toolbox is enabled, search and flat listing use a
         pre-computed index for O(1) access instead of iterating over all tools.

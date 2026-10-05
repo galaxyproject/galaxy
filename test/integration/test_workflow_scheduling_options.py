@@ -111,7 +111,9 @@ input1:
   value: 1.fasta
   type: File
   name: fasta1
-text_input: foo
+text_input:
+  value: foo
+  type: raw
 """,
                 history_id=history_id,
             )

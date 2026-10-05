@@ -3,6 +3,7 @@ import type { Ref } from "vue";
 
 /**
  * Reactively filter an array of objects, by comparing `filter` to all `fields`.
+ * Matches are ordered exact first, then prefix, then other substring matches.
  * All parameters can optionally be refs.
  * @param array array of objects to filter
  * @param filter string to filter by

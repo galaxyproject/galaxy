@@ -1,0 +1,16 @@
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list:list
+outputs:
+  out:
+    outputSource: tool_step/list_output
+steps:
+  tool_step:
+    tool_id: collection_type_source_conditional
+    state:
+      cond:
+        sel: a
+    in:
+      cond|input_collect: input1

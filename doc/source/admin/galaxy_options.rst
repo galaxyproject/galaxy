@@ -4416,7 +4416,10 @@
     accidentally creating large numbers of datasets when running tools
     that create a potentially unlimited number of output datasets,
     such as tools that split a file into a collection of datasets for
-    each line in an input dataset.
+    each line in an input dataset. Collection operation tools that
+    multiply their inputs (cross product, duplicate file to
+    collection, apply rules) are subject to the same limit and refuse
+    to run if they would create more datasets than this.
 :Default: ``10000``
 :Type: int
 

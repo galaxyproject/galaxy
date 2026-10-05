@@ -12,11 +12,13 @@
             :select-label="noLabel"
             :disabled="disabled"
             :label="label"
-            :options="items"
+            :options="rankedItems"
             :searchable="true"
+            :internal-search="false"
             :title="title"
             :track-by="trackBy"
-            @select="onSelectItem">
+            @select="onSelectItem"
+            @search-change="onSearchChange">
             <template v-slot:option="{ option }">
                 <span data-test-id="single-item-selector-option" :data-id="option[trackBy]" :data-label="option[label]">
                     {{ option[label] }}
@@ -30,6 +32,7 @@
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { useRankedSearch } from "@/composables/useRankedSearch";
 import { uid } from "@/utils/utils";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -80,6 +83,10 @@ const emit = defineEmits<{
 }>();
 
 const selectedItem = ref<Item | null>(getInitialSelection());
+const { rankedItems, onSearchChange } = useRankedSearch(
+    () => props.items,
+    () => [props.label, props.trackBy],
+);
 
 const loadingMessage = computed(() => `Loading ${props.collectionName}...`);
 
