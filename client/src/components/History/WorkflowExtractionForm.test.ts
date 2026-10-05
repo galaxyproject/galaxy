@@ -610,7 +610,7 @@ describe("WorkflowExtractionForm", () => {
 
     describe("step labels", () => {
         function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
-            return wrapper.findAllComponents(WorkflowExtractionCard).at(index);
+            return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
         }
 
         async function labelStepVia(wrapper: ReturnType<typeof shallowMount>, index: number, label: string) {
@@ -699,15 +699,15 @@ describe("WorkflowExtractionForm", () => {
         it("pre-checks seeded rows and unchecks unseeded rows regardless of backend `checked`", async () => {
             const wrapper = await mountForm();
             const cards = wrapper.findAllComponents(WorkflowExtractionCard);
-            expect(cards.at(0).props("job").checked).toBe(true); // seeded tool (backend checked=false)
-            expect(cards.at(1).props("job").checked).toBe(false); // unseeded tool (backend checked=true)
-            expect(cards.at(2).props("job").checked).toBe(true); // seeded input (backend checked=false)
+            expect(nth(cards, 0).props("job").checked).toBe(true); // seeded tool (backend checked=false)
+            expect(nth(cards, 1).props("job").checked).toBe(false); // unseeded tool (backend checked=true)
+            expect(nth(cards, 2).props("job").checked).toBe(true); // seeded input (backend checked=false)
         });
 
         it("pre-stars referenced (exposed) outputs", async () => {
             const wrapper = await mountForm();
-            const seededTool = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
-            expect(seededTool.props("job").outputs[0].exposed).toBe(true);
+            const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
         });
 
         it("submits only the seeded subgraph by default", async () => {
@@ -752,8 +752,8 @@ describe("WorkflowExtractionForm", () => {
             vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
             const wrapper = await mountForm();
             const cards = wrapper.findAllComponents(WorkflowExtractionCard);
-            expect(cards.at(0).props("job").checked).toBe(true); // seeded mapped (backend checked=false)
-            expect(cards.at(1).props("job").checked).toBe(false); // unseeded mapped (backend checked=true)
+            expect(nth(cards, 0).props("job").checked).toBe(true); // seeded mapped (backend checked=false)
+            expect(nth(cards, 1).props("job").checked).toBe(false); // unseeded mapped (backend checked=true)
             await setWorkflowName(wrapper, "From Notebook Mapped");
             await clickCreateButton(wrapper);
             const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
@@ -782,7 +782,7 @@ describe("WorkflowExtractionCard seed_warning", () => {
             propsData: { job: toExtractionRow(job) },
             localVue,
         });
-        return wrapper.findComponent(GCard).props("badges");
+        return wrapper.getComponent(GCard).props("badges") ?? [];
     }
 
     it("renders a seed warning badge when seed_warning is set", () => {

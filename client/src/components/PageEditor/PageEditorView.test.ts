@@ -11,6 +11,7 @@ import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
 import SaveChangesModal from "../Common/SaveChangesModal.vue";
+import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageEditorView from "./PageEditorView.vue";
@@ -77,6 +78,7 @@ const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
 const SELECTORS = {
+    PERMISSIONS_BUTTON: "[data-description='page permissions button']",
     EXTRACT_WORKFLOW_BUTTON: "[data-description='page extract workflow button']",
 };
 
@@ -87,6 +89,7 @@ function mountComponent(propsData: { pageId: string; historyId?: string; display
         localVue,
         propsData,
         pinia,
+        stubs: { PageDisplayToolbar: false, GButton: false },
     });
     // shallowMount replaces the modal with a stub, which has none of its exposed methods.
     // A `stubs` entry can't supply one either -- those are keyed by registered name, and a
@@ -176,6 +179,49 @@ describe("PageEditorView", () => {
         it("shows Extract Workflow button in history mode", () => {
             expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(true);
         });
+
+        it("navigates to page-seeded extraction without saving an unchanged notebook", async () => {
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(usePageEditorStore().savePage).not.toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("waits for pending notebook edits to save before extracting", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            let completeSave!: () => void;
+            vi.mocked(store.savePage).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        completeSave = resolve;
+                    }),
+            );
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            expect(store.savePage).toHaveBeenCalledOnce();
+            expect(mockPush).not.toHaveBeenCalled();
+
+            completeSave();
+            await flushPromises();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("keeps the editor open and displays an error when saving for extraction fails", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            vi.mocked(store.savePage).mockImplementation(async () => {
+                store.error = "Could not save notebook";
+                throw new Error(store.error);
+            });
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(mockPush).not.toHaveBeenCalled();
+            expect(wrapper.text()).toContain("Could not save notebook");
+        });
     });
 
     describe("Editor view (standalone mode)", () => {
@@ -199,6 +245,18 @@ describe("PageEditorView", () => {
 
         it("hides Extract Workflow button in standalone mode", () => {
             expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(false);
+        });
+
+        it("opens and closes standalone permissions through the toolbar slot", async () => {
+            const permissions = wrapper.getComponent(ObjectPermissionsModal);
+            expect(permissions.props("show")).toBe(false);
+
+            await wrapper.get(SELECTORS.PERMISSIONS_BUTTON).trigger("click");
+            expect(permissions.props("show")).toBe(true);
+
+            permissions.vm.$emit("update:show", false);
+            await nextTick();
+            expect(permissions.props("show")).toBe(false);
         });
 
         it("back button navigates to pages list", async () => {

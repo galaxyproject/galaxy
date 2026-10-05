@@ -165,13 +165,19 @@ async function handleExtractWorkflow() {
     }
     // The summary scans the last saved revision, so flush any edits first.
     if (store.isDirty) {
-        await store.savePage();
+        try {
+            await store.savePage();
+        } catch {
+            // savePage records the error displayed by this view.
+            return;
+        }
         if (store.error) {
             return;
         }
     }
-    router.push(`/histories/${props.historyId}/extract_workflow?from_page=${props.pageId}`);
+    pushIgnoringNavCancel(router, `/histories/${props.historyId}/extract_workflow?from_page=${props.pageId}`);
 }
+
 function handleContentUpdate(newContent: string) {
     store.updateContent(newContent);
 }
@@ -217,7 +223,9 @@ function handleRevisionRestore(revisionId: string) {
             <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
                 <template v-slot:extra-actions>
                     <template v-if="isStandalone">
-                        <ObjectPermissionsModal v-model:show="showPermissions" :markdown-content="store.currentContent" />
+                        <ObjectPermissionsModal
+                            v-model:show="showPermissions"
+                            :markdown-content="store.currentContent" />
                         <GButton
                             color="blue"
                             outline
