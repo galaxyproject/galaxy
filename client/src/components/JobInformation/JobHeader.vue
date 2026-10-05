@@ -14,6 +14,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const props = defineProps<{
     jobId: string;
     noToolName?: boolean;
+    noHr?: boolean;
     animateSuccess?: boolean;
 }>();
 
@@ -41,7 +42,7 @@ const { job } = useJobDetails(toRef(props, "jobId"));
                 <RerunJobButton :job-id="props.jobId" outline />
             </div>
         </div>
-        <hr />
+        <hr v-if="!props.noHr" />
     </div>
 </template>
 
