@@ -90,6 +90,32 @@ describe("useJobConsoleOutput", () => {
         expect(callCount).toBe(1);
     });
 
+    it("keeps polling after a failed request instead of treating it as terminal", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                callCount++;
+                if (callCount === 1) {
+                    return response("5XX").json({ err_msg: "Server error", err_code: 500 }, { status: 500 });
+                }
+                return response(200).json(buildConsoleOutput({ stdout: "still running\n" }));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        const { stdout, error } = mountJobConsoleOutput(jobId);
+        await flushPromises();
+
+        // The first request failed, and nothing is known about the job's actual state yet
+        // (state defaults to undefined). That must not be read as "terminal" and stop polling.
+        expect(error.value).toBeTruthy();
+        expect(stdout.value).toBe("");
+
+        await advanceTimersAndFlush(3000);
+        expect(callCount).toBe(2);
+        expect(stdout.value).toBe("still running\n");
+    });
+
     it("resets accumulated output when jobId changes", async () => {
         server.use(
             http.get("/api/jobs/{job_id}/console_output", ({ params, response }) => {

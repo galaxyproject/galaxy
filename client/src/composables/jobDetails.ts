@@ -109,16 +109,16 @@ export function useJobConsoleOutput(
                 }
                 state.value = result.state;
                 error.value = null;
+                // `autoRefresh: false` means "fetch once, never schedule a repeat", same as a
+                // terminal state, stopping the watcher after this single tick satisfies that.
+                if (!autoRefresh || stateIsTerminal({ state: state.value })) {
+                    watcher.stopWatchingResource();
+                }
             } catch (e) {
                 if (fetchRestartCount !== restartCount) {
                     return;
                 }
                 error.value = e;
-            }
-            // `autoRefresh: false` means "fetch once, never schedule a repeat" -- same as a
-            // terminal state, stopping the watcher after this single tick satisfies that.
-            if (fetchRestartCount === restartCount && (!autoRefresh || stateIsTerminal({ state: state.value }))) {
-                watcher.stopWatchingResource();
             }
         },
         { shortPollingInterval: pollInterval, longPollingInterval: pollInterval },
