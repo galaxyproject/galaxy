@@ -51,17 +51,18 @@ export default {
     overflow: auto;
 }
 
+// :deep() because rows and columns may come from the parent's slots, which Vue 3 does not give this scope id
 table {
-    td,
-    th {
+    :deep(td),
+    :deep(th) {
         text-align: left;
         padding: 5px;
         line-height: $line-height-base;
     }
-    th {
+    :deep(th) {
         background-color: $table-heading-bg;
     }
-    tr:nth-child(even) {
+    :deep(tr:nth-child(even)) {
         background-color: $table-bg-accent;
     }
 }
