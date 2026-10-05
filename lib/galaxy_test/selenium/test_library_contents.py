@@ -148,7 +148,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.assert_num_displayed_items_is(1)
 
         self.click_label("1.txt")
-        self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
+        self.wait_for_visible(self.navigation.libraries.dataset.selectors.table_rows)
         rows = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
         table_as_dict = {}
         for row in rows:
