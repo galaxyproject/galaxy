@@ -111,4 +111,34 @@ describe("MetadataInspectorPage", () => {
         expect(activeTitle(wrapper)).toBe("Revisions (2)")
         expect(wrapper.find(".stub-RevisionsTab").text()).toContain("3:abcdef0")
     })
+
+    describe("invalid tools alert", () => {
+        it("is absent when no revision has invalid tools", async () => {
+            const wrapper = await mountPage()
+
+            expect(wrapper.find(".invalid-tools-alert").exists()).toBe(false)
+        })
+
+        it("counts invalid tools across revisions and links back to Revisions", async () => {
+            store.repositoryMetadata.value = {
+                "0:aaaaaaa": { invalid_tools: [{ tool_config: "a.xml" }] },
+                "1:bbbbbbb": { invalid_tools: [{ tool_config: "b.xml" }, { tool_config: "c.xml" }] },
+            }
+            const wrapper = await mountPage()
+
+            const alert = wrapper.find(".invalid-tools-alert")
+            expect(alert.classes()).toContain("alert-warning")
+            // A standing finding, announced politely rather than as an interrupting alert
+            expect(alert.attributes("role")).toBe("status")
+            expect(alert.text()).toContain("3 invalid tool(s) found across revisions.")
+
+            await wrapper.findAll("[role=tab]")[2].trigger("click")
+            expect(activeTitle(wrapper)).toBe("Raw JSON")
+
+            const viewButton = alert.findAll("button").find((button) => button.text() === "View in Revisions")
+            expect(viewButton).toBeDefined()
+            await viewButton?.trigger("click")
+            expect(activeTitle(wrapper)).toBe("Revisions (2)")
+        })
+    })
 })

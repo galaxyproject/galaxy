@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons"
-import { GButton, GTab, GTabs } from "@galaxyproject/galaxy-ui"
+import { GAlert, GButton, GTab, GTabs } from "@galaxyproject/galaxy-ui"
 import { ref, computed, nextTick } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
@@ -91,15 +91,14 @@ function onResetComplete() {
             </q-card-section>
 
             <!-- Invalid tools warning banner -->
-            <q-banner v-if="totalInvalidTools > 0" class="bg-warning text-white">
-                <template #avatar>
-                    <FontAwesomeIcon :icon="faTriangleExclamation" />
-                </template>
-                {{ totalInvalidTools }} invalid tool(s) found across revisions.
-                <template #action>
-                    <GButton transparent class="text-white" @click="activeTab = 'revisions'">View in Revisions</GButton>
-                </template>
-            </q-banner>
+            <!-- A finding about the repository, not an event: announce it politely rather than as an alert -->
+            <GAlert v-if="totalInvalidTools > 0" variant="warning" role="status" class="invalid-tools-alert">
+                <FontAwesomeIcon :icon="faTriangleExclamation" />
+                <span class="invalid-tools-message"
+                    >{{ totalInvalidTools }} invalid tool(s) found across revisions.</span
+                >
+                <GButton transparent @click="activeTab = 'revisions'">View in Revisions</GButton>
+            </GAlert>
 
             <GTabs class="inspector-tabs" lazy :value="activeTabIndex" @input="onTabInput">
                 <GTab :title="`Revisions (${revisionCount})`">
@@ -120,6 +119,21 @@ function onResetComplete() {
 </template>
 
 <style scoped>
+.invalid-tools-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin: 0;
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--color-yellow-200);
+    color: var(--color-yellow-900);
+    border-bottom: 1px solid var(--color-yellow-600);
+}
+
+.invalid-tools-message {
+    flex: 1;
+}
+
 .inspector-tabs :deep(.nav) {
     display: flex;
     flex-wrap: wrap;
