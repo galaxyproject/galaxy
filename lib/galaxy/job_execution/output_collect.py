@@ -467,6 +467,8 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
                 if not outdata.dataset.purged:
                     assert job_context.object_store
                     ensure_path_in_directory(filename, job_working_directory)
+                    if job_context.output_protector:
+                        job_context.output_protector.protect(outdata, filename)
                     job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue

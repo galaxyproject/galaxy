@@ -12,6 +12,7 @@ Only headers ever travel to the service, never the encrypted bodies or plaintext
 """
 
 import base64
+import hashlib
 import io
 import json
 import logging
@@ -31,6 +32,7 @@ import requests
 from galaxy.util.crypt4gh import read_crypt4gh_header
 from . import (
     ProtectedFile,
+    ProtectedFileResult,
     ProtectionError,
     ProtectionPlan,
     RecryptorSettings,
@@ -144,6 +146,72 @@ class Crypt4GHJobRuntime:
     def __init__(self, plan: ProtectionPlan, client: RecryptorClient | None = None):
         self.plan = plan
         self.client = client or RecryptorClient(plan.recryptor)
+        self._state: dict[str, Any] | None = None
+        self._writer_secret_key: bytes | None = None
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """The compute key outputs get encrypted to, as found when staging the inputs."""
+        if self._state is None:
+            state_path = os.path.join(self.plan.protected_directory, STATE_FILENAME)
+            if not os.path.exists(state_path):
+                raise ProtectionError("The protected inputs of this job were not staged, outputs can't be protected.")
+            with open(state_path) as f:
+                self._state = json.load(f)
+        return self._state
+
+    @property
+    def key_ref(self) -> str:
+        key_ref: str = self.state["key_ref"]
+        return key_ref
+
+    @property
+    def key_expiration(self) -> str | None:
+        return self.state.get("compute_keypair_expiration_date")
+
+    def protect_file(self, path: str) -> ProtectedFileResult:
+        """Encrypt ``path`` in place for the job's user.
+
+        The file is encrypted to the compute keypair, then the recryptor service re-encrypts
+        that header to the user's key. The compute header is returned as the grant to use
+        the file in further jobs.
+        """
+        from crypt4gh import lib as crypt4gh_lib
+
+        if self._writer_secret_key is None:
+            self._writer_secret_key = os.urandom(32)
+        compute_public_key = parse_public_key(self.state["compute_public_key"])
+        directory, name = os.path.split(path)
+        body_path = os.path.join(directory, f".{name}.c4gh-body")
+        protected_path = os.path.join(directory, f".{name}.c4gh")
+        try:
+            compute_header = io.BytesIO()
+            with open(path, "rb") as plaintext, open(body_path, "wb") as body:
+                crypt4gh_lib.encrypt(
+                    [(0, self._writer_secret_key, compute_public_key)], plaintext, body, headerfile=compute_header
+                )
+            encoded_compute_header = base64.b64encode(compute_header.getvalue()).decode()
+            response = self.client.recrypt_header_to_user_key(encoded_compute_header, self.key_ref)
+            user_header = base64.b64decode(response["crypt4gh_header"])
+            if read_crypt4gh_header(io.BytesIO(user_header)) != user_header:
+                raise ProtectionError("The key service returned an invalid header.")
+            with open(protected_path, "wb") as protected, open(body_path, "rb") as body:
+                protected.write(user_header)
+                shutil.copyfileobj(body, protected)
+            # Replacing the file drops the plaintext.
+            os.replace(protected_path, path)
+        except ProtectionError:
+            raise
+        except Exception as e:
+            raise ProtectionError(f"Failed to encrypt an output of this job ({type(e).__name__}).") from e
+        finally:
+            for temporary_path in (body_path, protected_path):
+                if os.path.exists(temporary_path):
+                    os.remove(temporary_path)
+        return ProtectedFileResult(
+            header_sha256=hashlib.sha256(user_header).hexdigest(),
+            compute_header=encoded_compute_header,
+        )
 
     @property
     def inputs_directory(self) -> str:

@@ -1055,6 +1055,8 @@ class MinimalJobWrapper(HasResourceParameters):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
+        # Set while preparing jobs that decrypt protected inputs: where the compute host finds the plan.
+        self.protection_plan_path: str | None = None
         if use_persisted_destination:
             self.set_cached_job_destination(JobDestination(from_job=job))
 
@@ -2383,10 +2385,8 @@ class MinimalJobWrapper(HasResourceParameters):
             log.warning("(%s) Protected job failed: %s", self.get_id_tag(), protection_error)
             final_job_state = job.states.ERROR
             job.info = protection_error
-            job.job_messages = [
-                *(job.job_messages or []),
-                {"type": "protection", "desc": protection_error, "error_level": StdioErrorLevel.FATAL},
-            ]
+            for dataset_assoc in output_dataset_associations:
+                dataset_assoc.dataset.info = protection_error
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -2781,6 +2781,7 @@ class MinimalJobWrapper(HasResourceParameters):
             max_discovered_files=self.app.config.max_discovered_files,
             validate_outputs=self.validate_outputs,
             link_data_only=self.__link_file_check(),
+            protection_plan=self.protection_plan_path,
             **kwds,
         )
         if resolve_metadata_dependencies:

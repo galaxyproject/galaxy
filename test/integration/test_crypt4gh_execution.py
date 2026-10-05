@@ -7,6 +7,7 @@ from typing import Any
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import Job
 from galaxy_test.base.crypt4gh import (
+    decrypt,
     encrypt,
     generate_keypair,
     Keypair,
@@ -92,6 +93,17 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         )
         return job, output
 
+    def _decrypted_content(self, history_id: str, dataset: dict, filename: str | None = None) -> bytes:
+        """Download a dataset and decrypt it with the user's key, failing if it isn't encrypted for them."""
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=dataset["id"], filename=filename, type="bytes"
+        )
+        assert content.startswith(b"crypt4gh"), f"{dataset['name']} is not encrypted"
+        return decrypt(content, self.user.secret)
+
+    def _ready(self, dataset_id: str) -> bool:
+        return self._get(f"datasets/{dataset_id}/protection").json()["ready"]
+
     def _job_directory_exists(self, encoded_job_id: str) -> bool:
         job = self._app.model.session.get(Job, self._app.security.decode_id(encoded_job_id))
         assert job
@@ -111,7 +123,7 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
             "limits": [{"type": "walltime", "value": "48:00:00"}],
         }
 
-    def test_authorized_job_reads_decrypted_inputs(self, history_id):
+    def test_authorized_job_outputs_are_encrypted_for_the_user(self, history_id):
         encrypted_1 = self._upload_authorized(history_id, PLAINTEXT_1)
         encrypted_2 = self._upload_authorized(history_id, PLAINTEXT_2)
         plain = self.dataset_populator.new_dataset(history_id, content="plain\n", file_type="txt", wait=True)
@@ -119,11 +131,97 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, encrypted_1, encrypted_2, plain))
 
         assert job["state"] == "ok", job
-        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, type="bytes")
-        assert content == PLAINTEXT_1 + PLAINTEXT_2 + b"plain\n"
-        assert self.service.routes_called() == ["recrypt_header_to_job_key"] * 2
+        assert output["extension"] == "fastqsanger.c4gh"
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1 + PLAINTEXT_2 + b"plain\n"
+        assert self.service.routes_called() == ["recrypt_header_to_job_key"] * 2 + ["recrypt_header_to_user_key"]
+        # The user can use the output in further jobs right away.
+        assert self._ready(output["id"])
         # Protected jobs never keep their working directory, whatever cleanup_job says.
         assert not self._job_directory_exists(job["id"])
+
+    def test_every_kind_of_output_is_encrypted(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_output_kinds", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, _ = self._wait_for_job(history_id, response)
+        assert job["state"] == "ok", job
+
+        results: dict[str, Any] = {}
+        for output_name, output in job["outputs"].items():
+            details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=output["id"], assert_ok=False
+            )
+            try:
+                content: Any = self._decrypted_content(history_id, details)
+            except Exception as e:
+                content = f"not decryptable: {e}"
+            results[output_name] = (details["state"], details["extension"], self._ready(output["id"]), content)
+
+        protected_outputs = {
+            "declared": PLAINTEXT_1,
+            "work_dir": PLAINTEXT_1,
+            "assigned": PLAINTEXT_1,
+            # Outputs only used to discover others are empty.
+            "discovered": b"",
+            "__new_primary_file_discovered|disc1__": PLAINTEXT_1,
+            "__new_primary_file_discovered|disc2__": PLAINTEXT_1,
+            "reports": b"",
+            "__new_primary_file_reports|with_metadata__": PLAINTEXT_1,
+            "composite": b"<html/>\n",
+            "__new_primary_file_split|element1__": PLAINTEXT_1,
+            "__new_primary_file_split|element2__": PLAINTEXT_1,
+        }
+        for output_name, expected_content in protected_outputs.items():
+            state, extension, ready, content = results.pop(output_name)
+            assert (state, extension.endswith("c4gh"), ready, content) == ("ok", True, True, expected_content), (
+                output_name,
+                results,
+            )
+        assert not results, f"unexpected outputs {results}"
+
+        with_metadata = self.dataset_populator.get_history_dataset_details(
+            history_id, content_id=job["outputs"]["__new_primary_file_reports|with_metadata__"]["id"]
+        )
+        # Tool provided metadata may come from decrypted data, it is ignored.
+        assert with_metadata["extension"] == "tabular.c4gh"
+        assert with_metadata.get("metadata_columns") != 99
+        composite = self.dataset_populator.get_history_dataset_details(
+            history_id, content_id=job["outputs"]["composite"]["id"]
+        )
+        assert self._decrypted_content(history_id, composite, filename="part.txt") == PLAINTEXT_1
+
+    def test_outputs_can_be_used_in_further_jobs(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        first = self._run_cat(history_id, dataset)
+        self._assert_status_code_is(first, 200)
+        # Requested before the first job finished, like a workflow step: its input isn't ready (nor
+        # authorized) yet, the job has to wait for the grant recorded when the first job finishes.
+        second = self._run_cat(history_id, first.json()["outputs"][0])
+        job, second_output = self._wait_for_job(history_id, second)
+        assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, second_output) == PLAINTEXT_1
+
+    def test_outputs_failing_to_be_encrypted_are_purged(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        self.service.failures["recrypt_header_to_user_key"] = [422]
+
+        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+
+        assert job["state"] == "error"
+        assert output["purged"], output
+        assert "could not be protected" in output["misc_info"], output["misc_info"]
+        assert self.service.routes_called()[-1] == "recrypt_header_to_user_key"
+
+    def test_tool_output_is_kept_out_of_dataset_info(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_echo_input", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+        assert job["state"] == "ok", job
+        assert "ACGT" not in (output["misc_info"] or "")
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1
 
     def test_unauthorized_input_is_refused_before_any_service_call(self, history_id):
         dataset, _ = self._upload_encrypted(history_id, PLAINTEXT_1)
@@ -191,12 +289,11 @@ class TestCrypt4GHRemoteToolEvaluationIntegration(BaseCrypt4GHExecutionIntegrati
         super().handle_galaxy_config_kwds(config)
         config["tool_evaluation_strategy"] = "remote"
 
-    def test_authorized_job_reads_decrypted_inputs(self, history_id):
+    def test_authorized_job_outputs_are_encrypted_for_the_user(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
         assert job["state"] == "ok", job
-        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, type="bytes")
-        assert content == PLAINTEXT_1
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1
 
 
 class TestCrypt4GHUnsafeDestinationIntegration(BaseCrypt4GHExecutionIntegrationTestCase):

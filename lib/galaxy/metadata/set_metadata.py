@@ -19,6 +19,7 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -32,6 +33,12 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
 from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
+from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection.outputs import (
+    OUTCOME_DEFERRED,
+    OUTCOME_PURGED,
+    OutputProtector,
+)
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
@@ -342,6 +349,10 @@ def set_metadata_portable(
         max_discovered_files=max_discovered_files,
         job=job,
     )
+    output_protector = OutputProtector.for_job(metadata_params, datatypes_registry)
+    if output_protector and not extended_metadata_collection:
+        raise ProtectionError("Outputs of protected jobs can only be protected with extended metadata collection.")
+    job_context.output_protector = output_protector
 
     output_collection_security_error = None
     try:
@@ -423,6 +434,8 @@ def set_metadata_portable(
                         command_line_lines.append(line)
                     job.command_line = "".join(command_line_lines).strip()
 
+    if output_protector and unnamed_outputs:
+        raise ProtectionError("Tools writing unnamed outputs can't be used with encrypted datasets.")
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
     for unnamed_output_dict in unnamed_outputs:
@@ -524,6 +537,15 @@ def set_metadata_portable(
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
+            if output_protector:
+                file_dict = _protect_declared_output(
+                    output_protector,
+                    dataset,
+                    file_dict,
+                    external_filename=None if is_deferred else external_filename,
+                    is_deferred=is_deferred,
+                    link_data_only=bool(metadata_params.get("link_data_only")),
+                )
 
             if extended_metadata_collection:
                 if not object_store or not export_store:
@@ -556,10 +578,11 @@ def set_metadata_portable(
                 dataset.blurb = "done"
                 dataset.peek = "no peek"
                 dataset.info = dataset.info or ""
-                if context["stdout"].strip():
+                # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
+                if not output_protector and context["stdout"].strip():
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-                if context["stderr"].strip():
+                if not output_protector and context["stderr"].strip():
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
@@ -586,6 +609,12 @@ def set_metadata_portable(
             for action in object_store_update_actions:
                 action()
 
+    if output_protector:
+        assert export_store
+        output_protector.check_complete([*output_instances.values(), *export_store.included_datasets])
+        output_protector.write_sidecar(str(tool_job_working_directory))
+        if output_protector.errors and job:
+            job.state = Job.states.ERROR
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
@@ -599,7 +628,39 @@ def set_metadata_portable(
             # once here so perform_import on the host side picks it up from
             # the jobs attrs file.
             export_store.export_job(job, include_job_data=False)
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
+    if not output_protector:
+        # This would read outputs as their inner datatype, protected outputs are encrypted by now.
+        write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
+
+
+def _protect_declared_output(
+    output_protector: OutputProtector,
+    dataset: DatasetInstance,
+    file_dict: dict[str, Any],
+    external_filename: str | None,
+    is_deferred: bool,
+    link_data_only: bool,
+) -> dict[str, Any]:
+    """Protect a declared output before anything queues it for the object store.
+
+    Returns the tool provided attributes to use for it, without tool provided metadata:
+    that may be derived from the decrypted data.
+    """
+    assert dataset.dataset
+    if is_deferred:
+        output_protector.record_outcome(dataset, OUTCOME_DEFERRED)
+    elif dataset.dataset.purged:
+        output_protector.record_outcome(dataset, OUTCOME_PURGED)
+    elif link_data_only:
+        raise ProtectionError("Outputs of protected jobs can't be linked data.")
+    elif protected_ext := output_protector.protected_ext(dataset):
+        # Already protected while discovering outputs (assign_primary_output), the tool
+        # provided extension may have been applied again since.
+        dataset.extension = protected_ext
+    else:
+        assert external_filename
+        output_protector.protect(dataset, external_filename, dataset.dataset.external_extra_files_path)
+    return {key: value for key, value in file_dict.items() if key != "metadata"}
 
 
 def validate_and_load_datatypes_config(datatypes_config):
