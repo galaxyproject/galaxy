@@ -57,7 +57,7 @@
                     "revision_or_access_date": "2026-09-12"
                 },
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "lib/galaxy/datatypes/sequence.py"
                 }
@@ -92,12 +92,12 @@
             "fact": "In the checked Galaxy client, the dataset information icon opens Dataset Details, which includes the dataset information component and the creating job information when available.",
             "sources": [
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/History/Content/Dataset/DatasetActions.vue"
                 },
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/DatasetInformation/DatasetDetails.vue"
                 }
@@ -108,12 +108,12 @@
             "fact": "The checked Galaxy client displays Tool Standard Error as an inline job-information row with an expand/collapse control. There is no separate Standard Error tab or selectable View Tool Standard Error action.",
             "sources": [
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/JobInformation/JobInformation.vue"
                 },
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/JobInformation/CodeRow.vue"
                 }
@@ -134,12 +134,12 @@
             "fact": "Job Information displays a Job API ID as a job field; this is distinct from the history content or dataset ID shown in Dataset Information.",
             "sources": [
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/JobInformation/JobInformation.vue"
                 },
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/DatasetInformation/DatasetInformation.vue"
                 }
@@ -150,12 +150,12 @@
             "fact": "Dataset Information has no fixed Number of reads field in the checked client. FASTQ sequence metadata and a history sequences blurb can be optional or unset, including when metadata processing is skipped for large files.",
             "sources": [
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "client/src/components/DatasetInformation/DatasetInformation.vue"
                 },
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "lib/galaxy/datatypes/sequence.py"
                 }
@@ -166,7 +166,7 @@
             "fact": "Galaxy tool-panel sections, labels, and tools come from configured tool-panel files and installation order, so a category such as Quality Control is not guaranteed across deployments.",
             "sources": [
                 {
-                    "revision_or_access_date": "f99f7ea3cd1",
+                    "revision_or_access_date": "5be307bcec8",
                     "repository": "galaxyproject/galaxy",
                     "path": "doc/source/admin/tool_panel.rst"
                 }

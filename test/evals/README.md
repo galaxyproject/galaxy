@@ -268,7 +268,8 @@ PYTHONPATH=lib:test .venv/bin/python -m evals.run_evals \
 
 Calibration replays fixed answers; it does not ask a candidate model to regenerate
 them. The legacy `tutor-calibration.json` uses declared tool fixtures. The separate
-`tutor-regressions.json` preserves captured outputs from f99f7ea3cd1: twelve
+`tutor-regressions.json` preserves outputs captured on 2026-09-12 from an earlier,
+unpublished revision of this branch (each case's `source` records it): twelve
 failures paired with corrected answers, plus nine unresolved concerns. Corrected
 answers override only delivered prose; their original tool traces and drafts stay
 intact and their edited origin is explicit. All labels are development reviews,
