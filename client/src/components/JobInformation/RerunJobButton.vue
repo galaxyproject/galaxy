@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faRedo } from "@fortawesome/free-solid-svg-icons";
+import { faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, toRef } from "vue";
+import { computed, toRef, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { useJobDetails } from "@/composables/jobDetails.js";
@@ -21,20 +21,35 @@ const toolStore = useToolStore();
 
 const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
 
-const canRerunJob = computed(() => job.value && toolStore.getToolForId(job.value.tool_id)?.is_workflow_compatible);
+const tool = computed(() => (job.value ? toolStore.getToolForId(job.value.tool_id) : undefined));
+const toolLoading = computed(() => !!job.value && !tool.value);
+
+const canRerunJob = computed(() => !!tool.value?.is_workflow_compatible);
+
+watch(
+    () => job.value?.tool_id,
+    (toolId) => {
+        if (toolId && !toolStore.getToolForId(toolId)) {
+            toolStore.fetchToolForId(toolId);
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
     <GButton
-        v-if="canRerunJob"
+        v-if="job"
         title="Run Job Again"
+        :disabled-title="toolLoading ? 'Checking if this job can be rerun...' : 'This job cannot be rerun'"
+        :disabled="toolLoading || !canRerunJob"
         size="small"
         color="blue"
         :outline="props.outline"
         :transparent="!props.outline"
         :pressed="route.fullPath === rerunUrl"
         :to="rerunUrl">
-        <FontAwesomeIcon fixed-width :icon="faRedo" />
+        <FontAwesomeIcon fixed-width :icon="toolLoading ? faSpinner : faRedo" :spin="toolLoading" />
         <span class="text-nowrap">Run again</span>
     </GButton>
 </template>
