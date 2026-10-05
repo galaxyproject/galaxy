@@ -378,7 +378,8 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
-        toolsById.value[toolId] = toolData;
+        // `toolsById` is a `shallowRef`, so only reassigning `.value` notifies watchers.
+        toolsById.value = { ...toolsById.value, [toolId]: toolData };
     }
 
     function saveToolResults(whooshQuery: string, toolsData: Array<string>) {
