@@ -66,6 +66,11 @@ describe("HeadlessMultiselect", () => {
         await keyPress(wrapper.find(selectors.input), "Escape");
     }
 
+    async function nextAnimationFrame() {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await nextTick();
+    }
+
     // The options popup is teleported to `#app`, so it's no longer a
     // descendant of `wrapper.element` -- query the DOM directly for it.
     function findAllOptions() {
@@ -106,6 +111,37 @@ describe("HeadlessMultiselect", () => {
             await close(wrapper);
             const button = wrapper.find(selectors.openButton);
             expect(button.element).toBe(document.activeElement);
+        });
+
+        it("stays open when opened from the keyboard", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.element).toBe(document.activeElement);
+
+            // the open button is removed while focused, so focusout fires without a relatedTarget
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+            await nextAnimationFrame();
+
+            expect(findAllOptions().length).toBe(sampleOptions.length);
+            await close(wrapper);
+        });
+
+        it("closes when focus moves outside", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            (input.element as HTMLInputElement).blur();
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+            await nextAnimationFrame();
+
+            expect(findAllOptions().length).toBe(0);
         });
 
         it("keeps Escape in the input from reaching a parent dialog", async () => {

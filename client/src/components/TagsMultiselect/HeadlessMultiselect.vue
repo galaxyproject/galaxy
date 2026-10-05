@@ -204,13 +204,16 @@ function onFocusOut(e: FocusEvent) {
 
     // Delay until after click completes
     requestAnimationFrame(() => {
-        if (!mouseDownInside.value) {
-            if (!newTarget || newTarget.getAttribute("data-parent-id") !== props.id) {
-                close(false);
-            }
+        // a keyboard open removes the focused toggle button (no relatedTarget) before focusing the input
+        if (!mouseDownInside.value && !isOwnElement(newTarget) && !isOwnElement(document.activeElement)) {
+            close(false);
         }
         mouseDownInside.value = false;
     });
+}
+
+function isOwnElement(element: Element | null) {
+    return element?.getAttribute("data-parent-id") === props.id;
 }
 
 /** emulates tab behavior, because options list is teleported to the app layer */
