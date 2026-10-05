@@ -31,7 +31,8 @@ interface SelectOption {
 }
 
 const props = defineProps({
-    id: { type: String, default: `form-select-${uid()}` },
+    // Factory so each instance gets its own id; a literal default is evaluated once per module.
+    id: { type: String, default: () => `form-select-${uid()}` },
     disabled: {
         type: Boolean,
         default: false,

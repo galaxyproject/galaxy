@@ -5,6 +5,7 @@ import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
+import FormSelect from "./FormSelect.vue";
 import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
@@ -136,5 +137,15 @@ describe("FormSelect accessible names", () => {
         const input = wrapper.find("input.multiselect__input");
         expect(input.exists()).toBe(true);
         expect(input.attributes("aria-label")).toBeUndefined();
+    });
+
+    it("gives each instance its own default id", () => {
+        const options = [{ label: "label_1", value: "value_1" }];
+        const ids = [0, 1].map(() => {
+            const wrapper = mount(FormSelect, { global: localVue, props: { options } });
+            return wrapper.find("input.multiselect__input").attributes("id");
+        });
+        expect(ids[0]).toMatch(/^form-select-/);
+        expect(ids[0]).not.toBe(ids[1]);
     });
 });
