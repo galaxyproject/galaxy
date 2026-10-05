@@ -47,7 +47,7 @@ INPUTS_BY_DESCRIPTION = (
 STEP_PARAMETERS_NORMALIZED_TITLE = "Legacy Step Parameters Normalized"
 STEP_PARAMETERS_NORMALIZED_DESCRIPTION = "Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID."
 STEP_PARAMETERS_TITLE = "Legacy Step Parameters"
-STEP_PARAMETERS_DESCRIPTION = "Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead."
+STEP_PARAMETERS_DESCRIPTION = "Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}."
 ReplacementParametersField = Field(
     None,
     title="Replacement Parameters",
@@ -193,7 +193,12 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     inputs: dict[str, Any] | None = Field(
         None,
         title="Inputs",
-        description="Specify values for formal inputs to the workflow",
+        description=(
+            "Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' "
+            "and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, "
+            'for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. '
+            "Input keys are interpreted according to 'inputs_by'."
+        ),
     )
     ds_map: dict[str, dict[str, Any]] | None = Field(
         {},
