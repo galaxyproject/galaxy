@@ -386,8 +386,8 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         Hold a drag of source over target, dropping on exit.
 
         A real pointer drag rather than the scripted one drag_and_drop uses:
-        the point is to leave the browser mid-drag, which a single scripted
-        sequence cannot do.
+        the point is to hand control back to the test mid-drag, which a single
+        scripted sequence cannot do.
 
         See HasDriverProtocol.drag_over.
         """

@@ -949,8 +949,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _drag_release(self, held: JSHandle) -> None:
         """Drop what _drag_hold is holding, on the deepest target still in the document."""
-        self._frame_or_page.evaluate(
-            """({ source, ancestors, dataTransfer }) => {
+        try:
+            self._frame_or_page.evaluate(
+                """({ source, ancestors, dataTransfer }) => {
                 const drag = (element, type) =>
                     element.dispatchEvent(
                         new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer })
@@ -960,8 +961,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
                 drag(source, "dragend");
                 source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
             }""",
-            held,
-        )
+                held,
+            )
+        finally:
+            held.dispose()
 
     def action_chains(self):
         """
