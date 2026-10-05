@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCircleQuestion, faXmark } from "@fortawesome/free-solid-svg-icons"
-import { GTooltip } from "@galaxyproject/galaxy-ui"
+import { GTable, GTooltip, type TableField } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import type { components } from "@/schema"
 
@@ -12,17 +12,17 @@ interface Props {
 }
 defineProps<Props>()
 
-const columns = [
+const fields: TableField[] = [
     {
-        name: "revision",
+        key: "revision",
         label: "Revision",
-        field: (row: ChangesetMetadataStatus) => `${row.numeric_revision}:${row.changeset_revision.substring(0, 7)}`,
-        align: "left" as const,
+        formatter: (_value, _key, item: ChangesetMetadataStatus) =>
+            `${item.numeric_revision}:${item.changeset_revision.substring(0, 7)}`,
     },
-    { name: "comparison_result", label: "Change Type", field: "comparison_result", align: "left" as const },
-    { name: "record_operation", label: "Snapshot", field: "record_operation", align: "left" as const },
-    { name: "tools", label: "Tools", field: "has_tools", align: "center" as const },
-    { name: "error", label: "Error", field: "error", align: "left" as const },
+    { key: "comparison_result", label: "Change Type" },
+    { key: "record_operation", label: "Snapshot" },
+    { key: "has_tools", label: "Tools", align: "center" },
+    { key: "error", label: "Error" },
 ]
 
 // Display labels for comparison results (friendlier than raw API values)
@@ -45,101 +45,96 @@ const comparisonTooltips: Record<string, string> = {
 }
 
 // Single static instances per column header, so one template ref each is enough. The
-// per-row comparison_result tooltip below can't share this pattern -- q-table calls that
+// per-row comparison_result tooltip below can't share this pattern -- the table renders that
 // slot once per row -- so it falls back to a native title attribute instead.
 const comparisonHeaderHelpRef = ref<HTMLElement | null>(null)
 const recordOperationHeaderHelpRef = ref<HTMLElement | null>(null)
 </script>
 
 <template>
-    <q-table
-        :rows="changesets"
-        :columns="columns"
-        row-key="changeset_revision"
-        dense
-        flat
-        :pagination="{ rowsPerPage: 0 }"
-        hide-pagination
-    >
-        <template #header-cell-comparison_result="props">
-            <q-th :props="props">
-                {{ props.col.label }}
-                <span
-                    ref="comparisonHeaderHelpRef"
-                    class="q-ml-xs cursor-help"
-                    tabindex="0"
-                    role="img"
-                    aria-label="About comparison results"
-                >
-                    <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
-                </span>
-                <GTooltip
-                    class="changeset-help-tooltip"
-                    :reference="comparisonHeaderHelpRef"
-                    text="How this changeset's metadata changed compared to the previous revision. Snapshots are created when tools are removed or modified, preserving installable history."
-                />
-            </q-th>
+    <GTable :items="changesets" :fields="fields" primary-key="changeset_revision" compact>
+        <template #head(comparison_result)="{ field }">
+            {{ field.label }}
+            <span
+                ref="comparisonHeaderHelpRef"
+                class="header-help"
+                tabindex="0"
+                role="img"
+                aria-label="About comparison results"
+            >
+                <FontAwesomeIcon :icon="faCircleQuestion" />
+            </span>
+            <GTooltip
+                class="changeset-help-tooltip"
+                :reference="comparisonHeaderHelpRef"
+                text="How this changeset's metadata changed compared to the previous revision. Snapshots are created when tools are removed or modified, preserving installable history."
+            />
         </template>
-        <template #body-cell-comparison_result="props">
-            <q-td :props="props">
-                <span v-if="props.value" class="cursor-help" :title="comparisonTooltips[props.value]">
-                    {{ comparisonLabels[props.value] || props.value }}
-                </span>
-                <span v-else class="text-grey">—</span>
-            </q-td>
+        <template #cell(comparison_result)="{ value }">
+            <span v-if="value" class="comparison-result" :title="comparisonTooltips[value]">
+                {{ comparisonLabels[value] || value }}
+            </span>
+            <span v-else class="no-value">—</span>
         </template>
-        <template #header-cell-record_operation="props">
-            <q-th :props="props">
-                {{ props.col.label }}
-                <span
-                    ref="recordOperationHeaderHelpRef"
-                    class="q-ml-xs cursor-help"
-                    tabindex="0"
-                    role="img"
-                    aria-label="About record operations"
-                >
-                    <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
-                </span>
-                <GTooltip
-                    class="changeset-help-tooltip"
-                    :reference="recordOperationHeaderHelpRef"
-                    text='Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was made; "updated" means an existing snapshot was refreshed.'
-                />
-            </q-th>
+        <template #head(record_operation)="{ field }">
+            {{ field.label }}
+            <span
+                ref="recordOperationHeaderHelpRef"
+                class="header-help"
+                tabindex="0"
+                role="img"
+                aria-label="About record operations"
+            >
+                <FontAwesomeIcon :icon="faCircleQuestion" />
+            </span>
+            <GTooltip
+                class="changeset-help-tooltip"
+                :reference="recordOperationHeaderHelpRef"
+                text='Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was made; "updated" means an existing snapshot was refreshed.'
+            />
         </template>
-        <template #body-cell-record_operation="props">
-            <q-td :props="props">
-                <span
-                    v-if="props.value"
-                    class="record-operation-badge"
-                    :class="
-                        props.value === 'created'
-                            ? 'record-operation-badge--created'
-                            : 'record-operation-badge--updated'
-                    "
-                >
-                    {{ props.value }}
-                </span>
-                <span v-else class="text-grey">—</span>
-            </q-td>
+        <template #cell(record_operation)="{ value }">
+            <span
+                v-if="value"
+                class="record-operation-badge"
+                :class="value === 'created' ? 'record-operation-badge--created' : 'record-operation-badge--updated'"
+            >
+                {{ value }}
+            </span>
+            <span v-else class="no-value">—</span>
         </template>
-        <template #body-cell-tools="props">
-            <q-td :props="props">
-                <FontAwesomeIcon
-                    :icon="props.value ? faCheck : faXmark"
-                    :class="props.value ? 'text-positive' : 'text-grey'"
-                />
-            </q-td>
+        <template #cell(has_tools)="{ value }">
+            <FontAwesomeIcon :icon="value ? faCheck : faXmark" :class="value ? 'has-tools' : 'no-value'" />
         </template>
-        <template #body-cell-error="props">
-            <q-td :props="props">
-                <span v-if="props.value" class="text-negative">{{ props.value }}</span>
-            </q-td>
+        <template #cell(error)="{ value }">
+            <span v-if="value" class="changeset-error">{{ value }}</span>
         </template>
-    </q-table>
+    </GTable>
 </template>
 
 <style scoped>
+.header-help {
+    margin-left: var(--spacing-1);
+    font-size: 1.1rem;
+    cursor: help;
+}
+
+.comparison-result {
+    cursor: help;
+}
+
+.no-value {
+    color: var(--color-grey-500);
+}
+
+.has-tools {
+    color: var(--color-green-700);
+}
+
+.changeset-error {
+    color: var(--color-red-700);
+}
+
 /* Paragraph-length help reads as a block, as the q-tooltips did at 300px */
 .changeset-help-tooltip {
     max-width: min(300px, calc(100vw - 2rem));

@@ -18,7 +18,7 @@ describe("ChangesetSummaryTable", () => {
                 props: { changesets: fixtureChangesets },
             })
 
-            expect(wrapper.find("table").exists() || wrapper.find(".q-table").exists()).toBe(true)
+            expect(wrapper.find("table").exists()).toBe(true)
         })
 
         it("displays all changesets from fixture", () => {
@@ -114,7 +114,7 @@ describe("ChangesetSummaryTable", () => {
             // ref to the trigger span is flushed -- that happens a tick after mount.
             await nextTick()
 
-            const triggers = wrapper.findAll("th .cursor-help")
+            const triggers = wrapper.findAll("th .header-help")
             expect(triggers).toHaveLength(2)
 
             for (const trigger of triggers) {
@@ -137,7 +137,7 @@ describe("ChangesetSummaryTable", () => {
             const changesets = [makeChangeset({ comparison_result: "subset" })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const cell = wrapper.find("td .cursor-help")
+            const cell = wrapper.find("td .comparison-result")
             expect(cell.attributes("title")).toContain("changes accumulate")
             // A title never shows on keyboard focus, so the cell isn't a tab stop
             expect(cell.attributes("tabindex")).toBeUndefined()
@@ -146,7 +146,7 @@ describe("ChangesetSummaryTable", () => {
         it("names the focusable header help icons", () => {
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
 
-            const labels = wrapper.findAll("th .cursor-help").map((trigger) => trigger.attributes("aria-label"))
+            const labels = wrapper.findAll("th .header-help").map((trigger) => trigger.attributes("aria-label"))
             expect(labels).toEqual(["About comparison results", "About record operations"])
         })
     })
@@ -189,7 +189,7 @@ describe("ChangesetSummaryTable", () => {
         it("renders empty table when changesets array is empty", () => {
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets: [] } })
 
-            expect(wrapper.find("table").exists() || wrapper.find(".q-table").exists()).toBe(true)
+            expect(wrapper.find("table").exists()).toBe(true)
         })
 
         it("truncates changeset hash to 7 characters", () => {
