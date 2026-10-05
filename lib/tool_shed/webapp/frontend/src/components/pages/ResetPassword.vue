@@ -65,7 +65,7 @@ function dismiss() {
                         @update:model-value="confirm = $event ?? ''"
                     />
                 </GFormLabel>
-                <GButton color="blue" size="large" class="full-width" type="submit" name="set_password_button"
+                <GButton color="blue" size="large" class="submit-button" type="submit" name="set_password_button"
                     >Set Password</GButton
                 >
             </GForm>
@@ -83,6 +83,10 @@ function dismiss() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
 }
 
 .modal-form-section {

@@ -51,7 +51,7 @@ function dismiss() {
                         @update:model-value="email = $event ?? ''"
                     />
                 </GFormLabel>
-                <GButton color="blue" size="large" class="full-width" type="submit" name="reset_password_button"
+                <GButton color="blue" size="large" class="submit-button" type="submit" name="reset_password_button"
                     >Send Reset Link</GButton
                 >
             </GForm>
@@ -67,6 +67,10 @@ function dismiss() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
 }
 
 .forgot-password-intro {

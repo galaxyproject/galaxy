@@ -49,7 +49,7 @@ async function onLogin() {
             />
         </GFormLabel>
         <div class="login-form-actions">
-            <GButton color="blue" size="large" class="full-width" type="submit" name="login_button">Login</GButton>
+            <GButton color="blue" size="large" class="submit-button" type="submit" name="login_button">Login</GButton>
         </div>
     </GForm>
 </template>
@@ -65,5 +65,9 @@ async function onLogin() {
     display: flex;
     align-items: center;
     padding: var(--spacing-2) var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
 }
 </style>

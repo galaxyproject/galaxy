@@ -84,7 +84,7 @@ async function onRegister() {
                         @update:model-value="username = $event ?? ''"
                     />
                 </GFormLabel>
-                <GButton color="blue" size="large" class="full-width" type="submit" name="create_user_button">
+                <GButton color="blue" size="large" class="submit-button" type="submit" name="create_user_button">
                     Register
                 </GButton>
             </GForm>
@@ -100,6 +100,10 @@ async function onRegister() {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
 }
 
 .modal-form-section {
