@@ -582,7 +582,9 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
                 exception = e
         else:
             try:
-                self.close()
+                # quit(), not close(): close() only closes the window and leaves
+                # the chromedriver process running after the test exits.
+                self.quit()
             except Exception as e:
                 if "cannot kill Chrome" in str(e):
                     print(f"Ignoring likely harmless error in Selenium shutdown {e}")
