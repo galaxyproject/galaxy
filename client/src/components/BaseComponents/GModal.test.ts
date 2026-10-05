@@ -14,15 +14,15 @@ describe("GModal", () => {
 
     it("does not open an already open dialog again", async () => {
         const showModal = vi.spyOn(HTMLDialogElement.prototype, "showModal");
-        const wrapper = mount(GModal as object, {
-            localVue,
-            propsData: { show: true, title: "Title" },
+        const wrapper = mount(GModal, {
+            global: localVue,
+            props: { show: true, title: "Title" },
             attachTo: document.body,
         });
         await flushPromises();
         expect(showModal).toHaveBeenCalledOnce();
         (wrapper.vm as unknown as { showModal: () => void }).showModal();
         expect(showModal).toHaveBeenCalledOnce();
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

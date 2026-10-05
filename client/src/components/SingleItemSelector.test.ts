@@ -94,10 +94,13 @@ describe("SingleItemSelector", () => {
             const wrapper = mountComponent({ items: EXTENSIONS });
             const multiselect = wrapper.findComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect").trigger("focus");
             await wrapper.find(".multiselect__input").setValue("fasta");
 
-            expect(multiselect.props("options").map((item: { id: string }) => item.id)).toEqual(["fasta", "csfasta"]);
+            expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
+                "fasta",
+                "csfasta",
+            ]);
             const firstOption = wrapper.find("[data-test-id='single-item-selector-option']");
             expect(firstOption.attributes("data-id")).toBe("fasta");
         });
@@ -110,17 +113,20 @@ describe("SingleItemSelector", () => {
             const wrapper = mountComponent({ items: dbKeys });
             const multiselect = wrapper.findComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect").trigger("focus");
             await wrapper.find(".multiselect__input").setValue("hg19");
 
-            expect(multiselect.props("options").map((item: { id: string }) => item.id)).toEqual(["hg19", "hg19_rCRS"]);
+            expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
+                "hg19",
+                "hg19_rCRS",
+            ]);
         });
 
         it("restores the full item list when the search is cleared", async () => {
             const wrapper = mountComponent({ items: EXTENSIONS });
             const multiselect = wrapper.findComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect").trigger("focus");
             await wrapper.find(".multiselect__input").setValue("fasta");
             await wrapper.find(".multiselect__input").setValue("");
 

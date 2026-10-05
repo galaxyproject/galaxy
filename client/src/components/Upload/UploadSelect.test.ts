@@ -9,10 +9,10 @@ const localVue = getLocalVue();
 
 const OPTIONS = ["csfasta", "fasta", "fastq"].map((id) => ({ id, text: id }));
 
-function mountComponent(propsData: object = {}) {
-    return mount(UploadSelect as object, {
-        propsData: { options: OPTIONS, ...propsData },
-        localVue,
+function mountComponent(props: object = {}) {
+    return mount(UploadSelect, {
+        props: { options: OPTIONS, ...props },
+        global: localVue,
     });
 }
 
@@ -20,8 +20,8 @@ describe("UploadSelect", () => {
     it("emits the id of the selected option", async () => {
         const wrapper = mountComponent({ value: "fasta" });
 
-        await wrapper.find(".multiselect").trigger("click");
-        await wrapper.findAll(".multiselect__option").at(2).trigger("click");
+        await wrapper.find(".multiselect").trigger("focus");
+        await wrapper.findAll(".multiselect__option")[2]!.trigger("click");
 
         expect(wrapper.emitted("input")).toEqual([["fastq"]]);
     });
@@ -29,7 +29,7 @@ describe("UploadSelect", () => {
     it("keeps the current value when the selected option is clicked again", async () => {
         const wrapper = mountComponent({ value: "fasta" });
 
-        await wrapper.find(".multiselect").trigger("click");
+        await wrapper.find(".multiselect").trigger("focus");
         await wrapper.find(".multiselect__option--selected").trigger("click");
 
         expect(wrapper.emitted("input")).toBeUndefined();
@@ -38,7 +38,7 @@ describe("UploadSelect", () => {
     it("keeps the current value when backspace is pressed in an empty search", async () => {
         const wrapper = mountComponent({ value: "fasta" });
 
-        await wrapper.find(".multiselect").trigger("click");
+        await wrapper.find(".multiselect").trigger("focus");
         await wrapper.find(".multiselect__input").trigger("keydown.delete");
 
         expect(wrapper.emitted("input")).toBeUndefined();
@@ -59,10 +59,13 @@ describe("UploadSelect", () => {
         ];
         const wrapper = mountComponent({ options: dbKeys });
 
-        await wrapper.find(".multiselect").trigger("click");
+        await wrapper.find(".multiselect").trigger("focus");
         await wrapper.find(".multiselect__input").setValue("hg19");
 
         const multiselect = wrapper.findComponent(Multiselect);
-        expect(multiselect.props("options").map((option: { id: string }) => option.id)).toEqual(["hg19", "hg19_rCRS"]);
+        expect((multiselect.props("options") as { id: string }[]).map((option) => option.id)).toEqual([
+            "hg19",
+            "hg19_rCRS",
+        ]);
     });
 });
