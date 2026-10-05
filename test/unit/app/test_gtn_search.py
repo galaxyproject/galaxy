@@ -167,6 +167,7 @@ def test_sanitize_fts5_query_handles_only_operators():
             "...trim with: cutadapt -a ADAPTER reads.fq Then...",
         ),
         ("...labelling --> <!-- TODO: fix --> The data {{page.zenodo_link}} here...", "...The data here..."),
+        ("...labelling --!> <!-- TODO: fix --!> The data here...", "...The data here..."),
         ("Plain description with no markup.", "Plain description with no markup."),
     ],
 )
