@@ -47,7 +47,7 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const cards = wrapper.findAll(".q-card")
+            const cards = wrapper.findAll(".tool-history-card")
             expect(cards.length).toBeGreaterThan(0)
             expect(wrapper.text()).toContain("Add_a_column1")
         })

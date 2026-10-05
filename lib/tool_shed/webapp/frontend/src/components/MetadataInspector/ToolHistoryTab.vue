@@ -88,22 +88,20 @@ function toggleTool(toolId: string) {
 
 <template>
     <div>
-        <div v-if="toolHistories.length === 0" class="text-grey">No tools found in this repository.</div>
+        <div v-if="toolHistories.length === 0" class="tool-history-empty">No tools found in this repository.</div>
 
-        <q-card v-for="(history, historyIndex) in toolHistories" :key="history.toolId" class="q-mb-md">
-            <q-card-section>
-                <div class="text-h6">{{ history.toolId }}</div>
-            </q-card-section>
+        <section v-for="(history, historyIndex) in toolHistories" :key="history.toolId" class="tool-history-card">
+            <h2 class="tool-history-card-title">{{ history.toolId }}</h2>
 
             <ol class="tool-history-timeline">
                 <li v-for="(ver, versionIndex) in history.versions" :key="ver.revision" class="tool-history-entry">
                     <div class="tool-history-subtitle">{{ ver.name }} {{ ver.description }}</div>
                     <div class="tool-history-title">
-                        <div class="row items-center q-gutter-sm">
-                            <span class="text-weight-medium">{{ ver.version }}</span>
+                        <div class="tool-history-title-row">
+                            <span class="tool-history-version">{{ ver.version }}</span>
                             <span class="revision-badge">[{{ ver.numericRevision }}]</span>
                             <GButton size="small" transparent @click="emit('goToRevision', ver.revision)">
-                                <FontAwesomeIcon :icon="faArrowRight" class="q-mr-xs" />
+                                <FontAwesomeIcon :icon="faArrowRight" />
                                 Rev {{ ver.numericRevision }}
                             </GButton>
                         </div>
@@ -137,11 +135,31 @@ function toggleTool(toolId: string) {
                     </GCollapse>
                 </li>
             </ol>
-        </q-card>
+        </section>
     </div>
 </template>
 
 <style scoped>
+.tool-history-empty {
+    color: var(--color-grey-500);
+}
+
+.tool-history-card {
+    margin-bottom: var(--spacing-4);
+    background: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tool-history-card-title {
+    margin: 0;
+    padding: var(--spacing-4);
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 2rem;
+}
+
 .tool-history-timeline {
     margin: 0;
     padding: 0 var(--spacing-4) var(--spacing-2);
@@ -190,6 +208,17 @@ function toggleTool(toolId: string) {
 
 .tool-history-title {
     margin-bottom: var(--spacing-1);
+}
+
+.tool-history-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.tool-history-version {
+    font-weight: 500;
 }
 
 .revision-badge {

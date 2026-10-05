@@ -76,19 +76,15 @@ function onResetComplete() {
     <q-page class="q-ma-lg">
         <loading-div v-if="loading" message="Loading metadata..." />
         <error-banner v-else-if="!repository" error="Failed to load repository" />
-        <q-card v-else>
-            <q-card-section class="bg-primary text-white">
-                <div class="text-h6">{{ repository.name }} – <em>Metadata Inspector</em></div>
-                <div class="text-subtitle">
-                    <router-link
-                        class="text-white"
-                        style="text-decoration: none"
-                        :to="`/repositories_by_owner/${repository.owner}`"
-                    >
+        <section v-else class="inspector-card">
+            <header class="inspector-header">
+                <h1 class="inspector-title">{{ repository.name }} – <em>Metadata Inspector</em></h1>
+                <div>
+                    <router-link class="inspector-owner-link" :to="`/repositories_by_owner/${repository.owner}`">
                         {{ repository.owner }}
                     </router-link>
                 </div>
-            </q-card-section>
+            </header>
 
             <!-- Invalid tools warning banner -->
             <!-- A finding about the repository, not an event: announce it politely rather than as an alert -->
@@ -114,11 +110,41 @@ function onResetComplete() {
                     <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
                 </GTab>
             </GTabs>
-        </q-card>
+        </section>
     </q-page>
 </template>
 
 <style scoped>
+.inspector-card {
+    background: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.inspector-header {
+    padding: var(--spacing-4);
+    background: var(--color-galaxy-primary);
+    color: var(--background-color);
+    border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.inspector-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 2rem;
+}
+
+.inspector-owner-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.inspector-owner-link:hover {
+    text-decoration: underline;
+}
+
 .invalid-tools-alert {
     display: flex;
     align-items: center;

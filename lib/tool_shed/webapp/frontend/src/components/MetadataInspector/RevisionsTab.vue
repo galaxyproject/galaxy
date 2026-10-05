@@ -92,20 +92,20 @@ watch(
 
                 <GCollapse :id="`revision-${rev.numericRevision}-details`" :value="expandedRevisions.has(rev.key)">
                     <template #default="{ contentActive }">
-                        <q-card v-if="contentActive">
-                            <q-card-section v-if="rev.data.invalid_tools?.length > 0">
-                                <div class="text-subtitle2 text-negative">Invalid Tools:</div>
-                                <ul class="q-my-none">
+                        <div v-if="contentActive" class="revision-details">
+                            <div v-if="rev.data.invalid_tools?.length > 0" class="revision-details-section">
+                                <div class="invalid-tools-heading">Invalid Tools:</div>
+                                <ul class="invalid-tools-list">
                                     <li v-for="tool in rev.data.invalid_tools" :key="tool.tool_config">
                                         <code>{{ tool.tool_config }}</code
                                         >: {{ tool.error_message }}
                                     </li>
                                 </ul>
-                            </q-card-section>
-                            <q-card-section>
+                            </div>
+                            <div class="revision-details-section">
                                 <MetadataJsonViewer :data="rev.data" model-name="RepositoryRevisionMetadata" />
-                            </q-card-section>
-                        </q-card>
+                            </div>
+                        </div>
                     </template>
                 </GCollapse>
             </div>
@@ -116,6 +116,28 @@ watch(
 <style scoped>
 .revision-entry + .revision-entry {
     border-top: 1px solid var(--color-grey-200);
+}
+
+.revision-details {
+    background: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.revision-details-section {
+    padding: var(--spacing-4);
+}
+
+.invalid-tools-heading {
+    color: var(--color-red-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.invalid-tools-list {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .invalid-tools-badge {

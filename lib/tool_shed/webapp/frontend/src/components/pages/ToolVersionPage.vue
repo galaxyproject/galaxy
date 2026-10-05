@@ -105,16 +105,16 @@ const linkedFromOlderRevision = computed(() => {
                 </p>
             </GAlert>
         </div>
-        <q-card v-else>
-            <q-card-section class="bg-primary text-white col-grow">
-                <div class="text-h6">{{ toolTitle }}</div>
-                <div class="text-subtitle">{{ version }}</div>
-            </q-card-section>
-            <q-card-section>
+        <section v-else class="tool-card">
+            <header class="tool-card-header">
+                <h1 class="tool-title">{{ toolTitle }}</h1>
+                <div>{{ version }}</div>
+            </header>
+            <div class="tool-card-section">
                 {{ tool?.description }}
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section>
+            <div class="tool-card-section">
                 <q-list bordered separator>
                     <q-item v-if="repository && repositoryRevision && repositoryLink">
                         <q-item-section>
@@ -168,10 +168,10 @@ const linkedFromOlderRevision = computed(() => {
                         </q-item-section>
                     </q-item>
                 </q-list>
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section v-if="xrefs.length > 0">
-                <div class="text-h5 q-mr-lg">External links</div>
+            <div v-if="xrefs.length > 0" class="tool-card-section">
+                <h2 class="tool-section-heading">External links</h2>
                 <q-list bordered separator>
                     <q-item v-for="xref in xrefs" :key="xref.value">
                         <q-item-section>
@@ -188,15 +188,15 @@ const linkedFromOlderRevision = computed(() => {
                         </q-item-section>
                     </q-item>
                 </q-list>
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section>
-                <div class="text-h5 q-mr-lg">Help</div>
+            <div class="tool-card-section">
+                <h2 class="tool-section-heading">Help</h2>
                 <preformatted-content :contents="tool?.help?.content ?? ''" />
-            </q-card-section>
+            </div>
             <hr />
-            <q-card-section>
-                <div class="text-h5 q-mr-lg">References</div>
+            <div class="tool-card-section">
+                <h2 class="tool-section-heading">References</h2>
                 <span v-if="citations.length < 1"><i>This tool does not define any references.</i></span>
                 <q-list bordered separator v-else>
                     <q-item v-for="(citation, index) in tool?.citations" :key="index">
@@ -206,7 +206,41 @@ const linkedFromOlderRevision = computed(() => {
                         </q-item-section>
                     </q-item>
                 </q-list>
-            </q-card-section>
-        </q-card>
+            </div>
+        </section>
     </q-page>
 </template>
+
+<style scoped>
+.tool-card {
+    background: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tool-card-header {
+    padding: var(--spacing-4);
+    background: var(--color-galaxy-primary);
+    color: var(--background-color);
+    border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.tool-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 2rem;
+}
+
+.tool-card-section {
+    padding: var(--spacing-4);
+}
+
+.tool-section-heading {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 2rem;
+}
+</style>
