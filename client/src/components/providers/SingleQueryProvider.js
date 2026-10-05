@@ -17,6 +17,8 @@ import { HasAttributesMixin } from "./utils";
 export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
     return {
+        // Renders the slot as a fragment, and its attributes are lookup parameters, not DOM attributes.
+        inheritAttrs: false,
         mixins: [HasAttributesMixin],
         props: {
             useCache: {
