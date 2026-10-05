@@ -6,6 +6,7 @@ import csv
 import math
 import re
 import sys
+from collections.abc import Iterable
 from decimal import (
     Decimal,
     InvalidOperation,
@@ -25,7 +26,7 @@ INTEGER = re.compile(r"[+-]?(?:0|[1-9][0-9]*)\Z")
 NUMBER = re.compile(r"[+-]?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
 
 
-def _column_array(lexemes):
+def _column_array(lexemes: Iterable[str]) -> "pa.Array":
     """Infer a whole column before coercion; mixed columns retain their text."""
     values = [value if value != "" else None for value in lexemes]
     non_null = [value for value in values if value is not None]
@@ -41,7 +42,7 @@ def _column_array(lexemes):
     return pa.array(values, type=pa.string())
 
 
-def _safe_float(text, number):
+def _safe_float(text: str, number: float) -> bool:
     if not math.isfinite(number):
         return False
     try:
@@ -55,7 +56,7 @@ def _safe_float(text, number):
     return exact.copy_abs() <= 2**53
 
 
-def read_table(infile, input_format="tabular", header_mode="none"):
+def read_table(infile: str, input_format: str = "tabular", header_mode: str = "none") -> "pa.Table":
     if input_format not in ("tabular", "tsv") or header_mode not in ("first", "none"):
         raise ValueError("Unsupported input format or header mode")
     has_header = header_mode == "first"
@@ -90,11 +91,11 @@ def read_table(infile, input_format="tabular", header_mode="none"):
     return pa.Table.from_arrays(arrays, names=names)
 
 
-def convert(infile, outfile, input_format="tabular", header_mode="none"):
+def convert(infile: str, outfile: str, input_format: str = "tabular", header_mode: str = "none") -> None:
     parquet.write_table(read_table(infile, input_format=input_format, header_mode=header_mode), outfile)
 
 
-def __main__():
+def __main__() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("infile")
     parser.add_argument("outfile")

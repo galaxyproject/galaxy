@@ -7,6 +7,7 @@ import csv
 import json
 import math
 import sys
+from collections.abc import Sequence
 from datetime import (
     date,
     datetime,
@@ -14,6 +15,7 @@ from datetime import (
     timedelta,
 )
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 try:
@@ -27,7 +29,7 @@ except ImportError as exc:
     ) from exc
 
 
-def _json_value(value):
+def _json_value(value: Any) -> Any:
     """Represent Arrow's nested Python values using JSON-compatible values."""
     if isinstance(value, (datetime, date, time)):
         return value.isoformat()
@@ -48,7 +50,7 @@ def _json_value(value):
     return value
 
 
-def _cell_text(value):
+def _cell_text(value: Any) -> str:
     if value is None:
         return ""
     if isinstance(value, (list, tuple, dict, bytes)):
@@ -58,7 +60,7 @@ def _cell_text(value):
     return str(value)
 
 
-def _plain_record(values, is_header=False):
+def _plain_record(values: Sequence[str], is_header: bool = False) -> str:
     if any(any(character in value for character in "\t\r\n") for value in values):
         raise ValueError("Embedded tabs or newlines cannot be represented as plain tabular; use quoted TSV instead")
     if not is_header and (values[0].startswith("#") or (len(values) == 1 and not values[0])):
@@ -66,7 +68,7 @@ def _plain_record(values, is_header=False):
     return "\t".join(values) + "\n"
 
 
-def _write_tabular(table, outfile, output_format="tabular"):
+def _write_tabular(table: "pa.Table", outfile: str, output_format: str = "tabular") -> None:
     if output_format not in ("tabular", "tsv"):
         raise ValueError("Unsupported output format")
     if not table.num_columns:
@@ -88,11 +90,11 @@ def _write_tabular(table, outfile, output_format="tabular"):
                     handle.write(_plain_record(values))
 
 
-def convert(infile, outfile, output_format="tabular"):
+def convert(infile: str, outfile: str, output_format: str = "tabular") -> None:
     _write_tabular(parquet.read_table(infile), outfile, output_format=output_format)
 
 
-def __main__():
+def __main__() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("infile")
     parser.add_argument("outfile")

@@ -37,7 +37,7 @@ def test_delimited_metadata_counts_logical_records(tmp_path, datatype, header, r
         writer.writerows(rows)
     dataset = MockDataset(id=1)
     dataset.set_file_name(str(source))
-    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    datatype.set_meta(dataset)
     assert dataset.metadata.data_lines == len(rows)
     assert dataset.metadata.comment_lines == 1
     assert dataset.metadata.columns == 2
@@ -53,7 +53,7 @@ def test_delimited_metadata_empty_input(tmp_path, datatype):
     source.touch()
     dataset = MockDataset(id=1)
     dataset.set_file_name(str(source))
-    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    datatype.set_meta(dataset)
     assert dataset.metadata.data_lines == 0
     assert dataset.metadata.comment_lines == 0
     assert dataset.metadata.column_types == []
