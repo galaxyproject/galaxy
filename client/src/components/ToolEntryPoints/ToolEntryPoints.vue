@@ -10,8 +10,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, toRef } from "vue";
+import { computed } from "vue";
 
+import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useJobDetails } from "@/composables/jobDetails";
 import { useEntryPointStore } from "@/stores/entryPointStore";
@@ -23,10 +24,15 @@ import GCard from "@/components/Common/GCard.vue";
 
 const props = defineProps<{
     jobId: string;
+    /** A job object. `undefined` fetches/polls it here instead; `null` means
+     * the parent confirms there's deliberately no job yet (also skips fetching). */
+    job?: JobBaseModel | ShowFullJobResponse | null;
 }>();
 
 const { entryPointsForJob } = storeToRefs(useEntryPointStore());
-const { job } = useJobDetails(toRef(props, "jobId"));
+const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
+const { job: fetchedJob } = useJobDetails(fetchJobId);
+const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 
 const badges = computed<CardBadge[]>(() => {
     const total = entryPointsForJob.value(props.jobId).length;

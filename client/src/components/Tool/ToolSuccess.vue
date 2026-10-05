@@ -61,7 +61,7 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
     </GAlert>
     <div v-else>
         <template v-if="viewedJob">
-            <JobHeader :job-id="viewedJob.id" animate-success>
+            <JobHeader :job-id="viewedJob.id" :job="viewedJob" animate-success>
                 <template v-slot:pagination>
                     <BPagination
                         v-if="nJobs > 1"
@@ -78,7 +78,7 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
             </JobHeader>
 
             <div v-if="jobResponse.produces_entry_points">
-                <ToolEntryPoints :job-id="viewedJob.id" />
+                <ToolEntryPoints :job-id="viewedJob.id" :job="viewedJob" />
             </div>
 
             <JobInformation :job-id="viewedJob.id" collapsible include-view-full-details-button />
