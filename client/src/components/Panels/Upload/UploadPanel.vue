@@ -25,7 +25,7 @@ function showProgressDetails() {
 <template>
     <ActivityPanel title="Import Data" data-description="upload panel">
         <template v-slot:activity-panel-header-top>
-            <h2 id="activity-panel-heading" class="activity-panel-heading h-sm d-inline-flex align-items-center">
+            <h2 id="activity-panel-heading" class="activity-panel-heading h-sm d-inline-flex align-items-center mb-0">
                 <span>Import Data</span>
             </h2>
         </template>
