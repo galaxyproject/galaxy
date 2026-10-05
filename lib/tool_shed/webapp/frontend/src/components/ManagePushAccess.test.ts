@@ -20,7 +20,7 @@ describe("ManagePushAccess", () => {
             props: { repositoryId: "repository-id" },
             global: { stubs: { SelectUser: true } },
         })
-        const entries = wrapper.findAll(".q-item")
+        const entries = wrapper.findAll(".push-access-owner, .push-access-user")
         expect(entries[0].text()).toBe("devteam (owner)")
         expect(entries[0].find(".push-access-remove").exists()).toBe(false)
         expect(entries[1].text()).toContain("collaborator")

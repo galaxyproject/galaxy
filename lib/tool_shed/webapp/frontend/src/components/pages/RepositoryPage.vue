@@ -261,31 +261,37 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                     <p v-for="(content, key) of readmes" :key="key">
                         <span class="repository-readme" v-html="content"></span>
                     </p>
-                    <q-list bordered class="rounded-borders" v-if="tools && tools.length > 0">
-                        <q-item-label header>Tools</q-item-label>
-                        <repository-tool
-                            v-for="tool in tools"
-                            :key="tool.id"
-                            :tool="tool"
-                            :trs-tool-id="trsToolId(tool)"
-                            :changeset-revision="currentMetadata.changeset_revision"
-                        ></repository-tool>
-                    </q-list>
+                    <div class="repository-tools" v-if="tools && tools.length > 0">
+                        <h3 class="repository-list-heading">Tools</h3>
+                        <ul class="repository-tools-list">
+                            <repository-tool
+                                v-for="tool in tools"
+                                :key="tool.id"
+                                :tool="tool"
+                                :trs-tool-id="trsToolId(tool)"
+                                :changeset-revision="currentMetadata.changeset_revision"
+                            ></repository-tool>
+                        </ul>
+                    </div>
 
-                    <q-list bordered class="rounded-borders q-mt-md" v-if="invalidTools && invalidTools.length > 0">
-                        <q-item-label header>Invalid Tools</q-item-label>
-                        <q-item v-for="invalidTool in invalidTools" :key="invalidTool.tool_config">
-                            <q-item-section>
-                                <q-item-label>
-                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-negative q-mr-xs" />
+                    <div class="repository-invalid-tools" v-if="invalidTools && invalidTools.length > 0">
+                        <h3 class="repository-list-heading">Invalid Tools</h3>
+                        <ul class="repository-invalid-tools-list">
+                            <li
+                                class="invalid-tool-item"
+                                v-for="invalidTool in invalidTools"
+                                :key="invalidTool.tool_config"
+                            >
+                                <div class="invalid-tool-name">
+                                    <FontAwesomeIcon :icon="faCircleExclamation" class="invalid-tool-icon" />
                                     <code>{{ invalidTool.tool_config }}</code>
-                                </q-item-label>
-                                <q-item-label caption v-if="invalidTool.error_message">
+                                </div>
+                                <div class="invalid-tool-message" v-if="invalidTool.error_message">
                                     {{ invalidTool.error_message }}
-                                </q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -340,5 +346,45 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 
 .repository-section {
     padding: var(--spacing-4);
+}
+
+.repository-list-heading {
+    margin: 0;
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-2);
+    color: var(--color-grey-600);
+    font-size: var(--font-size-medium);
+    font-weight: 600;
+}
+
+.repository-tools,
+.repository-invalid-tools {
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+}
+
+.repository-invalid-tools {
+    margin-top: var(--spacing-4);
+}
+
+.repository-tools-list,
+.repository-invalid-tools-list {
+    margin: 0;
+    padding: 0 0 var(--spacing-2);
+    list-style: none;
+}
+
+.invalid-tool-item {
+    padding: var(--spacing-2) var(--spacing-4);
+}
+
+.invalid-tool-icon {
+    margin-right: var(--spacing-1);
+    color: var(--color-red-600);
+}
+
+.invalid-tool-message {
+    margin-top: var(--spacing-1);
+    color: var(--color-grey-600);
+    font-size: var(--font-size-small);
 }
 </style>

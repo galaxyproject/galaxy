@@ -24,18 +24,36 @@ onMounted(async () => {
 </script>
 
 <template>
-    <!-- style="max-width: 350px" -->
-    <div class="q-pa-md">
-        <q-list bordered padding>
-            <q-item-label header>Newest Repositories</q-item-label>
-            <error-banner :error="error" v-if="error" />
-            <loading-div message="Loading most recently created repositories" v-else-if="loading" />
-            <div v-else>
-                <hr class="spaced" />
-                <span v-for="repository of repositories" :key="repository.id">
-                    <repository-creation :repository="repository" />
-                </span>
-            </div>
-        </q-list>
+    <div class="recently-created-repositories">
+        <h2 class="recently-created-repositories-heading">Newest Repositories</h2>
+        <error-banner :error="error" v-if="error" />
+        <loading-div message="Loading most recently created repositories" v-else-if="loading" />
+        <div v-else>
+            <hr class="spaced" />
+            <ul class="recently-created-repositories-list">
+                <repository-creation v-for="repository of repositories" :key="repository.id" :repository="repository" />
+            </ul>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.recently-created-repositories {
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+}
+
+.recently-created-repositories-heading {
+    margin: 0;
+    color: var(--color-grey-600);
+    font-size: var(--font-size-medium);
+    font-weight: 600;
+}
+
+.recently-created-repositories-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+</style>

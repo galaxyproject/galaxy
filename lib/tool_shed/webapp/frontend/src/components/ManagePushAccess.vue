@@ -24,24 +24,12 @@ function removeUserAccess(username: string) {
 }
 </script>
 <template>
-    <q-list
-        bordered
-        padding
-        class="rounded-borders push-access"
-        style="max-width: 325px"
-        v-if="repository && repositoryPermissions"
-    >
-        <q-item-label header>Who can push to this repository?</q-item-label>
-        <q-item class="push-access-owner">
-            <q-item-section>
-                <q-item-label>{{ repository.owner }} (owner)</q-item-label>
-            </q-item-section>
-        </q-item>
-        <q-item class="push-access-user" v-for="username in repositoryPermissions.allow_push" :key="username">
-            <q-item-section>
-                <q-item-label class="push-access-username">{{ username }}</q-item-label>
-            </q-item-section>
-            <q-item-section avatar>
+    <div class="push-access" v-if="repository && repositoryPermissions">
+        <h3 class="push-access-heading">Who can push to this repository?</h3>
+        <ul class="push-access-list">
+            <li class="push-access-owner">{{ repository.owner }} (owner)</li>
+            <li class="push-access-user" v-for="username in repositoryPermissions.allow_push" :key="username">
+                <span class="push-access-username">{{ username }}</span>
                 <GButton
                     class="push-access-remove"
                     icon-only
@@ -51,8 +39,44 @@ function removeUserAccess(username: string) {
                 >
                     <FontAwesomeIcon :icon="faTrash" />
                 </GButton>
-            </q-item-section>
-        </q-item>
-        <select-user @selected-user="addUserAccess" class="q-ma-md push-access-add"> </select-user>
-    </q-list>
+            </li>
+        </ul>
+        <select-user @selected-user="addUserAccess" class="push-access-add"> </select-user>
+    </div>
 </template>
+
+<style scoped>
+.push-access {
+    max-width: 325px;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+}
+
+.push-access-heading {
+    margin: 0 0 var(--spacing-2);
+    color: var(--color-grey-600);
+    font-size: var(--font-size-medium);
+    font-weight: 600;
+}
+
+.push-access-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.push-access-owner,
+.push-access-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) 0;
+}
+
+.push-access-add {
+    display: block;
+    margin-top: var(--spacing-4);
+}
+</style>
