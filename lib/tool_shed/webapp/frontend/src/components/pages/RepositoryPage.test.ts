@@ -4,10 +4,13 @@ import { createPinia, setActivePinia } from "pinia"
 import { useRepositoryStore } from "@/stores"
 import RepositoryPage from "./RepositoryPage.vue"
 
-const readmes = vi.hoisted(() => ({ value: {} as Record<string, string> }))
+const { readmes, mockGet } = vi.hoisted(() => {
+    const readmes = { value: {} as Record<string, string> }
+    return { readmes, mockGet: vi.fn(async () => ({ data: readmes.value })) }
+})
 vi.mock("@/schema", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@/schema")>()),
-    ToolShedApi: () => ({ GET: vi.fn().mockImplementation(async () => ({ data: readmes.value })) }),
+    ToolShedApi: () => ({ GET: mockGet }),
 }))
 
 function repository(overrides: Record<string, unknown> = {}) {
@@ -65,6 +68,7 @@ describe("RepositoryPage", () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         readmes.value = {}
+        mockGet.mockClear()
     })
 
     it("flags a deprecated repository and a malicious revision", async () => {
@@ -84,12 +88,16 @@ describe("RepositoryPage", () => {
         expect(wrapper.text()).not.toContain("malicious")
     })
 
-    it("renders READMEs in a scrollable wrapper, since plain-text ones cannot wrap", async () => {
+    it("loads the newest revision's READMEs and renders them as HTML", async () => {
         readmes.value = { "README.txt": "<p>hello&nbsp;readme</p>" }
         const wrapper = await mountPage({ repository: repository(), repositoryMetadata: revision() })
 
+        expect(mockGet).toHaveBeenCalledWith(
+            "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
+            { params: { path: { encoded_repository_id: "repo1", changeset_revision: "abc123" } } },
+        )
         const readme = wrapper.get(".repository-readme-wrapper")
-        expect(readme.text()).toContain("hello")
+        expect(readme.find("p").text()).toBe("hello\u00a0readme")
     })
 
     it("puts the description in the header and leaves out an About card with nothing more to say", async () => {
