@@ -21,10 +21,10 @@
                 :state="showState ? (!currentValue ? (optional ? null : false) : true) : null"
                 :style="style"
                 :type="acceptedTypes"
-                :list="datalist ? `${id}-datalist` : undefined"
+                :list="datalist?.length ? `${id}-datalist` : undefined"
                 @focus="onFocus"
                 @blur="onBlur" />
-            <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
+            <datalist v-if="datalist?.length && !inputArea" :id="`${id}-datalist`">
                 <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value" />
             </datalist>
         </BCol>
