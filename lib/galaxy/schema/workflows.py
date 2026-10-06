@@ -355,13 +355,18 @@ class WorkflowExtractionOutput(Model):
     )
 
 
+# A history item named by kind and id: an HDA or an HDCA.
+ContentKind = Literal["hda", "hdca"]
+ContentRef = tuple[ContentKind, int]
+
+
 class OutputLabelHint(Model):
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="Decoded ID of the concrete HDA/HDCA output to expose.",
     )
-    kind: Literal["hda", "hdca"] = Field(
+    kind: ContentKind = Field(
         ...,
         title="Kind",
         description="Whether the output ID identifies an HDA or an HDCA.",
