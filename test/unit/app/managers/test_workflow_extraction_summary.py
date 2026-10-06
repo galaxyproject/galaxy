@@ -10,11 +10,9 @@ from typing import (
 )
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.workflow_extraction_summary import (
-    _backward_job_closure,
-    _content_key,
-)
+from galaxy.managers.workflow_extraction_summary import _backward_job_closure
 from galaxy.model import HistoryItem
+from galaxy.workflow.extract import original_content_ref
 
 TARGET_HISTORY = 1
 
@@ -335,7 +333,7 @@ def test_cycle_guard_terminates():
 def test_copied_dataset_normalized_to_original():
     original = MockHda(10)
     copy = MockHda(11, copied_from=original)
-    assert _content_key(cast(HistoryItem, copy)) == ("hda", 10)
+    assert original_content_ref(cast(HistoryItem, copy)) == ("hda", 10)
 
 
 def test_plain_job_ref_seeds_producing_subgraph():

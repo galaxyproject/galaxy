@@ -61,6 +61,7 @@ from galaxy.model import (
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.tasks import GeneratePdfDownload
+from galaxy.schema.workflows import ContentRef
 from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
@@ -688,9 +689,6 @@ def ready_galaxy_markdown_for_export(trans: ProvidesHistoryContext, internal_gal
     export_markdown, export_markdown_embed_expanded = directive_handler.walk(trans, internal_galaxy_markdown)
     export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
     return export_markdown, export_markdown_embed_expanded, extra_rendering_data
-
-
-ContentRef = tuple[str, int]  # ("hda", hda.id) or ("hdca", hdca.id)
 
 
 @dataclass

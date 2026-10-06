@@ -46,8 +46,8 @@ class FakeIndex:
         self._content_args = content_args or {}
         self._job_args = job_args or {}
 
-    def content_label(self, kind, content):
-        return self._content_args.get((kind, content.id))
+    def content_label(self, content):
+        return self._content_args.get(content.id)
 
     def job_label(self, job):
         return self._job_args.get(job.id)
@@ -61,11 +61,15 @@ def _rewriter(**index_args) -> _ReportLabelRewriter:
 
 
 def _hda(id_):
-    return SimpleNamespace(id=id_)
+    return SimpleNamespace(id=id_, history_content_type="dataset")
+
+
+def _hdca(id_):
+    return SimpleNamespace(id=id_, history_content_type="dataset_collection")
 
 
 def test_rewrite_dataset_to_output_label():
-    rewriter = _rewriter(content_args={("hda", 7): ("output", "aligned")})
+    rewriter = _rewriter(content_args={7: ("output", "aligned")})
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
     assert line == 'history_dataset_display(output="aligned")\n'
     assert whole_block is False
@@ -73,7 +77,7 @@ def test_rewrite_dataset_to_output_label():
 
 
 def test_rewrite_dataset_preserves_other_args():
-    rewriter = _rewriter(content_args={("hda", 7): ("output", "aligned")})
+    rewriter = _rewriter(content_args={7: ("output", "aligned")})
     line, _ = rewriter.handle_dataset_as_table(
         'history_dataset_as_table(history_dataset_id=abc123, title="Peek")\n', _hda(7)
     )
@@ -81,9 +85,9 @@ def test_rewrite_dataset_preserves_other_args():
 
 
 def test_rewrite_collection_to_input_label():
-    rewriter = _rewriter(content_args={("hdca", 5): ("input", "samples")})
+    rewriter = _rewriter(content_args={5: ("input", "samples")})
     line, _ = rewriter.handle_dataset_collection_display(
-        "history_dataset_collection_display(history_dataset_collection_id=def456)\n", _hda(5)
+        "history_dataset_collection_display(history_dataset_collection_id=def456)\n", _hdca(5)
     )
     assert line == 'history_dataset_collection_display(input="samples")\n'
 
@@ -201,26 +205,31 @@ def _tool_step(label=None):
 def _content_stub(id_, copied_from=None):
     # Plain copies carry no creating job, so get_original_hda normalizes them back to
     # their source; collection-operation outputs that record one are kept as-is.
-    return SimpleNamespace(id=id_, copied_from_history_dataset_association=copied_from, creating_job_associations=())
+    return SimpleNamespace(
+        id=id_,
+        history_content_type="dataset",
+        copied_from_history_dataset_association=copied_from,
+        creating_job_associations=(),
+    )
 
 
 def test_index_input_resolves_to_input_label():
     step = _input_step("my_input")
     index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
-    assert index.content_label("hda", _content_stub(11)) == ("input", "my_input")
+    assert index.content_label(_content_stub(11)) == ("input", "my_input")
 
 
 def test_index_tool_output_resolves_to_output_label():
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label="aligned", uuid=None)
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    assert index.content_label("hda", _content_stub(12)) == ("output", "aligned")
+    assert index.content_label(_content_stub(12)) == ("output", "aligned")
 
 
 def test_index_tool_output_without_label_is_unresolved():
     step = _tool_step()
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    assert index.content_label("hda", _content_stub(12)) is None
+    assert index.content_label(_content_stub(12)) is None
 
 
 def test_index_normalizes_copied_dataset_to_original():
@@ -229,7 +238,7 @@ def test_index_normalizes_copied_dataset_to_original():
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     original = _content_stub(12)
     copy = _content_stub(99, copied_from=original)
-    assert index.content_label("hda", copy) == ("output", "aligned")
+    assert index.content_label(copy) == ("output", "aligned")
 
 
 def test_index_plain_job_resolves_to_step_label():
@@ -251,10 +260,8 @@ def _referenced(refs=None, job_refs=None, icj_refs=None):
 
 
 def _patch_resolution(monkeypatch, contents, suggested):
-    monkeypatch.setattr(report, "_resolve_content", lambda trans, kind, content_id: contents.get((kind, content_id)))
-    monkeypatch.setattr(
-        report, "suggested_output_name", lambda trans, content_id, kind: SimpleNamespace(name=suggested)
-    )
+    monkeypatch.setattr(report, "resolve_content", lambda trans, ref: contents.get(ref))
+    monkeypatch.setattr(report, "suggested_output_name", lambda trans, content: SimpleNamespace(name=suggested))
 
 
 def test_reconcile_exposes_unstarred_output(monkeypatch):
@@ -297,7 +304,7 @@ def test_reconcile_label_from_quoted_name_is_directive_safe(monkeypatch):
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, 'say "hi"\nagain')
     report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
 
-    assert index.content_label("hda", _content_stub(12)) == ("output", "say hi again")
+    assert index.content_label(_content_stub(12)) == ("output", "say hi again")
     validate_galaxy_markdown('```galaxy\nhistory_dataset_display(output="say hi again")\n```\n')
 
 

@@ -10,6 +10,8 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Optional,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -34,6 +36,8 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.schema.workflows import (
+    ContentKind,
+    ContentRef,
     OutputLabelHint,
     StepLabelHint,
 )
@@ -54,6 +58,9 @@ from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels,
 )
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
 
 # Type alias for tool input parameter values (param name -> string value)
 ToolInputs = dict[str, Any]
@@ -698,21 +705,21 @@ def extract_workflow_by_ids(
     return _finalize_workflow(trans, user, workflow_name, steps, reports_config), report_warnings
 
 
+# Extraction wires steps by ``IdKey`` (original HDA/HDCA id); callers name content by
+# ``ContentRef`` ("hda"/"hdca"). ``output_label_to_id_key`` maps one to the other.
 IdKey = tuple[Literal["dataset", "collection"], int]
 IdAssociations = list[tuple[IdKey, str]]
-OutputLabelKind = Literal["hda", "hdca"]
-OutputLabelKey = tuple[OutputLabelKind, int]
 OutputStepKey = tuple[Literal["job", "icj"], int, str]
 
 
 @dataclass(frozen=True)
 class OutputLabelTarget:
-    key: OutputLabelKey
+    key: ContentRef
     step_key: OutputStepKey
     output_name: str
 
 
-def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
+def output_label_to_id_key(kind: ContentKind, content_id: int) -> IdKey:
     if kind == "hda":
         return ("dataset", content_id)
     return ("collection", content_id)
@@ -744,14 +751,10 @@ class ExtractionLabelIndex:
     job_to_step: dict[int, WorkflowStep]
     icj_to_step: dict[int, WorkflowStep]
 
-    def content_label(self, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveLabel | None:
+    def content_label(self, content: HistoryItem) -> DirectiveLabel | None:
         """``input``/``output`` label for a referenced HDA/HDCA, or None when it is
         not in the extracted subgraph / not labeled."""
-        if content_kind == "hda":
-            id_key: IdKey = ("dataset", get_original_hda(cast(HistoryDatasetAssociation, content)).id)
-        else:
-            id_key = ("collection", get_original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
-        pair = self.content_to_step.get(id_key)
+        pair = self.step_for_content(content)
         if pair is None:
             return None
         step, output_name = pair
@@ -774,11 +777,36 @@ class ExtractionLabelIndex:
             return None
         return ("step", step.label)
 
-    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
-        return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
+    def step_for_content(self, content: HistoryItem) -> tuple[WorkflowStep, str] | None:
+        return self.content_to_step.get(output_label_to_id_key(*original_content_ref(content)))
 
 
-def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelKind, content_id: int) -> OutputLabelKey:
+def original_content_ref(content: HistoryItem) -> ContentRef:
+    """``content``'s kind and the id of the original it was copied from."""
+    if content.history_content_type == "dataset_collection":
+        return ("hdca", get_original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
+    return ("hda", get_original_hda(cast(HistoryDatasetAssociation, content)).id)
+
+
+def resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryItem | None:
+    kind, content_id = ref
+    content: HistoryItem | None
+    if kind == "hdca":
+        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
+    else:
+        content = trans.sa_session.get(HistoryDatasetAssociation, content_id)
+    return content
+
+
+def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
+    """The job's tool, or None when it is not installed or the user may not use it."""
+    try:
+        return trans.app.toolbox.tool_for_job(job, user=trans.user)
+    except exceptions.InsufficientPermissionsException:
+        return None
+
+
+def normalize_output_label_key(trans: ProvidesHistoryContext, kind: ContentKind, content_id: int) -> ContentRef:
     """Normalize a visible HDA/HDCA output id to the original id used by extraction wiring."""
     user = getattr(trans, "user", None)
     if kind == "hda":
@@ -793,11 +821,11 @@ def collect_output_label_targets(
     job_manager: JobManager | None = None,
     job_ids: list[int] | None = None,
     implicit_collection_jobs_ids: list[int] | None = None,
-) -> dict[OutputLabelKey, OutputLabelTarget]:
+) -> dict[ContentRef, OutputLabelTarget]:
     """Collect concrete outputs produced by the selected extraction steps."""
     job_ids = list(job_ids or [])
     implicit_collection_jobs_ids = list(implicit_collection_jobs_ids or [])
-    targets: dict[OutputLabelKey, OutputLabelTarget] = {}
+    targets: dict[ContentRef, OutputLabelTarget] = {}
 
     for job_id in job_ids:
         assert job_manager is not None, "job_manager required when job_ids supplied"
@@ -807,7 +835,7 @@ def collect_output_label_targets(
             if skip_output_assoc_name(output_name):
                 continue
             original_hda = get_original_hda(hda_assoc.dataset)
-            key: OutputLabelKey = ("hda", original_hda.id)
+            key: ContentRef = ("hda", original_hda.id)
             targets[key] = OutputLabelTarget(key=key, step_key=("job", job.id, output_name), output_name=output_name)
         for hdca_assoc in job.output_dataset_collection_instances:
             output_name = hdca_assoc.name
@@ -1118,6 +1146,12 @@ __all__ = (
     "DirectiveLabel",
     "ExtractionLabelIndex",
     "ReportBuilder",
+    "get_original_hda",
+    "get_original_hdca",
     "normalize_output_label_key",
+    "original_content_ref",
     "output_label_to_id_key",
+    "resolve_content",
+    "skip_output_assoc_name",
+    "tool_for_job",
 )
