@@ -1,9 +1,15 @@
-import type { Ref } from "vue";
+import { defineStore, storeToRefs } from "pinia";
 import { computed, readonly } from "vue";
 
 import type { MonitoringData, MonitoringRequest } from "./persistentProgressMonitor";
 import { getPersistentKey, getStoredProgressDataByKey, storeProgressData } from "./persistentProgressMonitor";
 import { useUserLocalStorage } from "./userLocalStorage";
+
+// One list for the whole page: separate copies would each write their own list over the others' in local storage.
+const useDownloadTrackerKeys = defineStore("downloadTrackerKeys", () => {
+    const keys = useUserLocalStorage<string[]>("download-tracker", []);
+    return { keys };
+});
 
 /**
  * This composable stores in local storage the progress of downloads/exports initiated by the user.
@@ -12,7 +18,7 @@ import { useUserLocalStorage } from "./userLocalStorage";
  * @returns An object with methods to track download requests, untrack them, and retrieve all download monitoring data.
  */
 export function useDownloadTracker() {
-    const downloadProgressKeys: Ref<string[]> = useUserLocalStorage("download-tracker", []);
+    const { keys: downloadProgressKeys } = storeToRefs(useDownloadTrackerKeys());
 
     const downloadMonitoringData = computed<MonitoringData[]>(() => {
         return downloadProgressKeys.value
