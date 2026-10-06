@@ -77,7 +77,7 @@ class JobFilesManager:
             raise exceptions.RequestParameterInvalidException("Invalid session id format.")
         upload_path = os.path.abspath(os.path.join(self._app.config.job_files_tus_upload_dir, session_id))
         if not os.path.isfile(upload_path):
-            raise exceptions.RequestParameterInvalidException("No completed upload found for session id.")
+            raise exceptions.RequestParameterInvalidException("No upload found for session id.")
         return upload_path
 
     def write(self, path: str, source_path: str) -> None:

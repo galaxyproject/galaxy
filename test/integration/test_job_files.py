@@ -219,16 +219,21 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def test_write_with_missing_upload_source(self):
         job = self._running_job()
         missing_nginx_path = os.path.join(self.nginx_upload_job_files_store, "missing")
-        for data in [{"session_id": "missing-session"}, {"__file_path": missing_nginx_path}]:
+        for data, err_msg in [
+            ({"session_id": "missing-session"}, "No upload found for session id."),
+            ({"__file_path": missing_nginx_path}, "File provided by nginx does not exist."),
+        ]:
             response = self._post_job_file(job, job.output_path, data=data)
             api_asserts.assert_status_code_is(response, 400)
             api_asserts.assert_error_code_is(response, 400008)
+            assert response.json()["err_msg"] == err_msg
         _assert_file_contents(job.output_path, "")
 
     def test_write_without_file(self):
         job = self._running_job()
         response = requests.post(job.files_url, params={"path": job.output_path, "job_key": job.job_key})
         api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_code_is(response, 400007)
         _assert_file_contents(job.output_path, "")
 
     def test_write_with_malformed_multipart(self):
