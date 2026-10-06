@@ -102,6 +102,7 @@ skip_if_workflowhub_down = skip_if_site_down(
 )
 skip_if_quay_down = skip_if_site_down("https://quay.io/")
 skip_if_galaxy_depot_down = skip_if_site_down("https://depot.galaxyproject.org/")
+skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:

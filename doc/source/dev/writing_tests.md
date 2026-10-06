@@ -1083,6 +1083,30 @@ def test_with_message_queue(self):
 | ``skip_if_github_workflow()`` | Not in GitHub Actions |
 | ``skip_unless_environ(var)`` | Environment variable set |
 
+``skip_unless_docker()`` and ``skip_unless_kubernetes()`` are built on
+``skip_unless_executable(name)``, which skips unless ``name`` is on ``PATH``.
+It and ``skip_unless_environ(var)`` come from ``galaxy.util.unittest_utils``
+(``integration_util`` re-exports ``skip_unless_environ``), so unit tests can
+use them too:
+
+```python
+from galaxy.util.unittest_utils import (
+    skip_unless_environ,
+    skip_unless_executable,
+)
+
+@skip_unless_executable("singularity")
+def test_docker_to_singularity(tmp_path):
+    ...
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+def test_real_azure_blob_store(tmp_path):
+    ...
+```
+
+For tests that depend on a remote service rather than a local tool or
+setting, see [Skipping Tests When a Remote Service Is Down](#remote_service_down).
+
 ### External Services
 
 Some integration tests require external services (databases, message queues,
@@ -1697,11 +1721,11 @@ HTTP 200:
 | ``skip_if_galaxy_depot_down`` | ``https://depot.galaxyproject.org/`` |
 | ``skip_if_dockstore_down`` | ``https://dockstore.org/`` |
 | ``skip_if_workflowhub_down`` | ``https://workflowhub.eu/`` |
+| ``skip_if_toolshed_down`` | ``https://toolshed.g2.bx.psu.edu`` (the main Tool Shed) |
 | ``skip_if_site_down(url)`` | Any other ``url`` |
 
-``skip_if_toolshed_down`` (the main Tool Shed) lives in
-``galaxy_test.base.populators``. The decorators work on unit, API, integration
-and Selenium tests alike, and can be stacked when a test needs several services:
+The decorators work on unit, API, integration and Selenium tests alike, and
+can be stacked when a test needs several services:
 
 ```python
 from galaxy.util.unittest_utils import (
