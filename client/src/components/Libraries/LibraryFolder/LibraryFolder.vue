@@ -22,7 +22,7 @@
             @toggleReadme="toggleReadme" />
 
         <div class="library-content-container">
-            <div :class="showReadme.value ? 'library-main-content with-readme' : 'library-main-content'">
+            <div class="library-main-content" :class="{ 'with-readme': showReadme.value && renderedReadme }">
                 <GTable
                     id="folder_list_body"
                     ref="folderTable"
@@ -743,7 +743,9 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
 /* Table and pagination styles */
 th:focus {
     outline: none !important;
@@ -786,56 +788,46 @@ th:focus {
 /* Library content container with split pane */
 .library-content-container {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
 }
 
 .library-main-content {
-    flex: 1;
+    flex: 2 1 30rem;
     min-width: 0;
 }
 
-.library-main-content.with-readme {
-    flex: 2;
-    min-width: 0;
-}
-
-/* Make table responsive within flex container */
 .library-main-content :deep(table) {
     table-layout: auto;
     width: 100%;
 }
 
-.library-main-content :deep(.description-field) {
+.library-main-content.with-readme :deep(.description-field) {
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* README panel */
+/* README panel; wraps below the table when there isn't room beside it */
 .readme-panel {
-    flex: 1;
-    min-width: 400px;
-    border-left: 1px solid #d0d7de;
+    flex: 1 1 22rem;
+    min-width: 0;
+    border-left: 1px solid $gray-200;
     padding-left: 1rem;
     overflow-y: auto;
     max-height: calc(100vh - 200px);
 }
 
 .readme-panel-content {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-    color: #24292f;
     line-height: 1.6;
-    font-size: 14px;
 }
 
-/* Markdown content styling */
 .readme-panel-content :deep(h1),
 .readme-panel-content :deep(h2),
 .readme-panel-content :deep(h3) {
     margin-top: 1.25em;
     margin-bottom: 0.5em;
-    font-weight: 600;
-    border-bottom: 1px solid #eaecef;
+    border-bottom: 1px solid $gray-200;
     padding-bottom: 0.3em;
 }
 
@@ -851,46 +843,15 @@ th:focus {
     font-size: 1.1rem;
 }
 
-.readme-panel-content :deep(p) {
-    margin: 0.75em 0;
-}
-
-.readme-panel-content :deep(ul),
-.readme-panel-content :deep(ol) {
-    padding-left: 2em;
-    margin: 1em 0;
-}
-
-.readme-panel-content :deep(code) {
-    background-color: rgba(27, 31, 35, 0.05);
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    font-size: 85%;
-}
-
 .readme-panel-content :deep(pre) {
-    background-color: #f6f8fa;
+    background-color: $gray-100;
     padding: 1em;
-    overflow-x: auto;
     border-radius: 6px;
-    font-size: 14px;
-}
-
-.readme-panel-content :deep(a) {
-    color: #0366d6;
-    text-decoration: none;
-}
-
-.readme-panel-content :deep(a:hover) {
-    text-decoration: underline;
 }
 
 .readme-panel-content :deep(blockquote) {
-    margin: 1em 0;
     padding: 0.5em 1em;
-    color: #6a737d;
-    background-color: #f6f8fa;
-    border-left: 0.25em solid #dfe2e5;
+    color: $gray-600;
+    border-left: 0.25em solid $gray-300;
 }
 </style>
