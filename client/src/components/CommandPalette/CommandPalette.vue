@@ -485,7 +485,7 @@ async function hydrateTools() {
     const epoch = openEpoch;
     try {
         await toolStore.fetchTools();
-    } catch (e) {
+    } catch {
         // a failed hydration is retried the next time the palette opens
         return;
     }

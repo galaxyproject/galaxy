@@ -53,7 +53,6 @@ const statusSpy = vi.fn();
 function registerDefaultHandlers({ enableSseUpdates }: { enableSseUpdates: boolean }) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return response(200).json({
                 enable_notification_system: true,
                 enable_sse_updates: enableSseUpdates,

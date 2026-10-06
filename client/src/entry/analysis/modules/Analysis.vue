@@ -104,6 +104,7 @@ onUnmounted(() => {
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
                     <transition name="slide">
+                        <!-- eslint-disable-next-line vue/require-toggle-inside-transition -- no toggle; slide transition is vestigial and a no-op -->
                         <span>History</span>
                     </transition>
                 </GButton>

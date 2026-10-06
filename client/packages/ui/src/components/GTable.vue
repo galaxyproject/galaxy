@@ -462,7 +462,7 @@ const localItems = computed(() => {
         }
 
         // Compare values
-        let comparison = 0;
+        let comparison: number;
         if (typeof aVal === "string" && typeof bVal === "string") {
             comparison = aVal.localeCompare(bVal);
         } else if (typeof aVal === "number" && typeof bVal === "number") {

@@ -11,8 +11,8 @@ import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
-import { buildPreparedUpload } from "@/utils/upload";
 import * as uploadUtils from "@/utils/upload";
+import { buildPreparedUpload } from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
 

@@ -293,8 +293,8 @@ const tableItems = computed<ItemInterface[]>(() => {
 });
 
 async function makeAccessible(item: ItemInterface) {
-    let accessibleResult: boolean | undefined = undefined;
-    let errorResult: MessageException | undefined = undefined;
+    let accessibleResult: boolean | undefined;
+    let errorResult: MessageException | undefined;
     let accessibleMap: AccessibleMapRef;
     if (item.type == "history") {
         const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/enable_link_access", {
