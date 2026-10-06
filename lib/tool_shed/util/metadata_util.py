@@ -127,7 +127,7 @@ def get_latest_changeset_revision(app, repository):
     return INITIAL_CHANGELOG_HASH
 
 
-def get_latest_downloadable_changeset_revision(app, repository):
+def get_latest_downloadable_changeset_revision(app: "ToolShedApp", repository: Repository) -> str:
     repository_tip = repository.tip()
     repository_metadata = get_repository_metadata_by_changeset_revision(
         app, app.security.encode_id(repository.id), repository_tip
