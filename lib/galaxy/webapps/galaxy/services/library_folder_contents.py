@@ -87,7 +87,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
+        readme = self.folder_manager.get_readme(trans, folder)
+        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme)
         return LibraryFolderContentsIndexResult(metadata=metadata, folder_contents=folder_contents)
 
     def create(
@@ -214,6 +215,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         folder: model.LibraryFolder,
         user_permissions: UserFolderPermissions,
         total_rows: int,
+        readme: str | None,
     ) -> LibraryFolderMetadata:
         full_path = self.folder_manager.build_folder_path(trans.sa_session, folder)
         parent_library_id = folder.parent_library.id if folder.parent_library else None
@@ -225,5 +227,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_name=folder.name,
             folder_description=folder.description,
             parent_library_id=parent_library_id,
+            readme=readme,
         )
         return metadata
