@@ -1,3 +1,4 @@
+<!-- Test tool for Crypt4GH support: stdout of jobs reading encrypted data is kept out of dataset info. -->
 <tool id="crypt4gh_echo_input" name="crypt4gh_echo_input" version="1.0.0">
     <description>copies its input to its output and to stdout</description>
     <command><![CDATA[
@@ -10,7 +11,4 @@ cat '$input1' > '$output1'
     <outputs>
         <data name="output1" format_source="input1"/>
     </outputs>
-    <help>
-Test tool for Crypt4GH support: stdout of jobs reading encrypted data is kept out of dataset info.
-    </help>
 </tool>
