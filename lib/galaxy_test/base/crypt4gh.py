@@ -9,6 +9,7 @@ tests can assert that no request was made.
 import base64
 import io
 import json
+import logging
 import os
 import threading
 import uuid
@@ -34,6 +35,9 @@ from crypt4gh import (
 )
 
 from galaxy.util.crypt4gh import read_crypt4gh_header
+
+# The crypt4gh library logs keys at debug level, keep them out of test logs.
+logging.getLogger("crypt4gh").setLevel(logging.WARNING)
 
 
 @dataclass
