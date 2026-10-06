@@ -240,10 +240,10 @@ describe("ChatMessageCell", () => {
             expect(wrapper.find(".links-count").text()).toBe("1");
 
             await wrapper.find(".links-toggle").trigger("click");
-            const links = wrapper.findAll(".reference-link");
-            expect(links.length).toBe(1);
-            expect(links.at(0).attributes("href")).toBe(tutorialUrl);
-            expect(links.at(0).text()).toContain("Reference-based RNA-Seq");
+            expect(wrapper.findAll(".reference-link").length).toBe(1);
+            const link = wrapper.find(".reference-link");
+            expect(link.attributes("href")).toBe(tutorialUrl);
+            expect(link.text()).toContain("Reference-based RNA-Seq");
         });
 
         it("hides the references button when there are no sources", () => {
