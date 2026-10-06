@@ -81,8 +81,4 @@ function dismiss() {
 .submit-button {
     width: 100%;
 }
-
-.modal-form-section {
-    padding: var(--spacing-4);
-}
 </style>

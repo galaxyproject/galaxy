@@ -11,18 +11,18 @@ const email = queryParamToString(route.query.email)
 <template>
     <ModalForm title="Registration Successful">
         <div class="modal-form-section">
-            <div v-if="activationError">
+            <p v-if="activationError" class="registration-message">
                 There was an error sending you an activation e-mail, please contact {{ route.query.contact_email }} to
                 this.
-            </div>
-            Created new user account. Login in with your credentials as {{ email }}.
+            </p>
+            <p class="registration-message">Created new user account. Login in with your credentials as {{ email }}.</p>
             <login-form :initial-login="email" />
         </div>
     </ModalForm>
 </template>
 
 <style scoped>
-.modal-form-section {
-    padding: var(--spacing-4);
+.registration-message {
+    margin: 0 0 1rem;
 }
 </style>

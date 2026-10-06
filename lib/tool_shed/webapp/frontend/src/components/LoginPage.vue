@@ -18,18 +18,3 @@ import LoginForm from "@/components/LoginForm.vue"
         </div>
     </ModalForm>
 </template>
-
-<style scoped>
-.modal-form-section {
-    padding: var(--spacing-4);
-}
-
-.modal-form-section-footer {
-    padding: 0;
-    text-align: center;
-}
-
-.modal-form-footer-text {
-    color: var(--color-grey-600);
-}
-</style>

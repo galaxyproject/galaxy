@@ -64,7 +64,7 @@ async function onLogin() {
 .login-form-actions {
     display: flex;
     align-items: center;
-    padding: var(--spacing-2) var(--spacing-4);
+    padding-top: var(--spacing-2);
 }
 
 .submit-button {
