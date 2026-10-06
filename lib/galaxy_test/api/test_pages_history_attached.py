@@ -859,6 +859,27 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert self._connected_step_id(tool_steps[0], "input1") == input_steps[0]["id"], tool_steps[0]
 
     @skip_without_tool("cat1")
+    def test_non_owner_user_tool_output_seeded_as_input(self):
+        """A copied output of another user's tool is a closure boundary even when the
+        viewer holds the execute role; the summary still renders."""
+        output_id = self._run_user_tool_in_published_history()
+        with (
+            self._different_user("udt_page_non_owner@bx.psu.edu"),
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            history_id = self.dataset_populator.new_history()
+            copied = self._copy_hda_to_history(history_id, {"id": output_id})
+            run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": copied["id"]}}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            copied_row = self._row_with_output_id(summary, copied["id"])
+            assert copied_row is not None and copied_row["step_type"] == "input_dataset", summary["jobs"]
+            assert copied_row["seeded"] is True, copied_row
+
+    @skip_without_tool("cat1")
     def test_unreferenced_history_seeds_nothing(self):
         with self.dataset_populator.test_history() as history_id:
             self._cat1_history(history_id)
