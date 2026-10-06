@@ -44,6 +44,14 @@ describe("FormText", () => {
         expect(el.exists()).toBe(true);
     });
 
+    it("should not point at a datalist without options", async () => {
+        for (const datalist of [undefined, []]) {
+            const wrapper = await mountFormText({ id: "section|text-input", datalist });
+            expect(wrapper.find("datalist").exists()).toBe(false);
+            expect(wrapper.find("[list]").exists()).toBe(false);
+        }
+    });
+
     it("should be able to render border and text color from props", async () => {
         const wrapper = await mountFormText({});
         const el = wrapper.find("input");
