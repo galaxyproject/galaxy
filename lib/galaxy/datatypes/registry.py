@@ -30,8 +30,8 @@ from galaxy.util import (
     RW_R__R__,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.path import StrPath
 from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
+from galaxy.util.path import StrPath
 from . import (
     binary,
     coverage,

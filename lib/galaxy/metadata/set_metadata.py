@@ -36,12 +36,6 @@ from galaxy.datatypes.data import (
 )
 from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
-from galaxy.job_execution.protection import ProtectionError
-from galaxy.job_execution.protection.outputs import (
-    OUTCOME_DEFERRED,
-    OUTCOME_PURGED,
-    OutputProtector,
-)
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
@@ -51,6 +45,12 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
     SessionlessJobContext,
     validate_unnamed_outputs,
+)
+from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection.outputs import (
+    OUTCOME_DEFERRED,
+    OUTCOME_PURGED,
+    OutputProtector,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
