@@ -229,6 +229,10 @@ Every destination running jobs that decrypt datasets must use:
 - Tools writing their outputs into the job directory, so they never write
   unencrypted data to the object store: `outputs_to_working_directory: true`, or
   outputs staged to the remote job directory on Pulsar.
+- Metadata collected within the job, so outputs are encrypted on the compute
+  host before the decrypted data is removed. Destinations with
+  `embed_metadata_in_job: false`, and runners that always collect metadata after
+  the job (Kubernetes, AWS Batch, GCP Batch, Chronos, GoDocker), can't run them.
 - No task splitting.
 - `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
 
