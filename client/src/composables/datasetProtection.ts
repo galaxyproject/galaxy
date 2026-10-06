@@ -53,9 +53,12 @@ async function recryptHeader(serviceUrl: string, userHeader: string): Promise<Re
             );
         }
         if (status === 422) {
-            throw new Error("Your Crypt4GH key cannot open this dataset, it was not encrypted for you.", {
-                cause: err,
-            });
+            throw new Error(
+                "The Crypt4GH recryptor service on your machine could not open this dataset with your key. " +
+                    "Either the dataset was not encrypted for you, or the service could not read your private key " +
+                    "(check its passphrase configuration).",
+                { cause: err },
+            );
         }
         throw new Error(
             `The Crypt4GH recryptor service on your machine failed (HTTP ${status}). ` +
