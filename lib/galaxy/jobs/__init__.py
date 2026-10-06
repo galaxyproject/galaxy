@@ -1485,10 +1485,10 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         return ProtectionDestination(
             metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
-            outputs_to_working_directory=self.outputs_to_working_directory,
             has_tasks=self.__has_tasks,
             is_pulsar=(self.job_destination.runner or "").startswith("pulsar"),
             remote_metadata=util.asbool(self.job_destination.params.get("remote_metadata", False)),
+            rewrite_parameters=util.asbool(self.job_destination.params.get("rewrite_parameters", False)),
             recryptor=recryptor,
             walltime=self.app.job_config.limits.walltime_delta,
         )
@@ -2236,6 +2236,20 @@ class MinimalJobWrapper(HasResourceParameters):
             # could also mean that a job was broken up into tasks and one of
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
+
+        if job.protection_scheme and (
+            setup_failure := self.app.dataset_protection.setup_failure(self.working_directory)
+        ):
+            # The tool never ran, there are no outputs to collect.
+            return self.fail(
+                f"Job setup failed: {setup_failure}",
+                tool_stdout="",
+                tool_stderr="",
+                exit_code=tool_exit_code,
+                job_stdout=job_stdout,
+                job_stderr=job_stderr,
+                job_metrics_directory=job_metrics_directory,
+            )
 
         extended_metadata = self.external_output_metadata.extended
 

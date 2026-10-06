@@ -22,6 +22,9 @@ log = logging.getLogger(__name__)
 COMMANDS = ("stage-in", "cleanup-inputs", "cleanup")
 # Read by Galaxy when the tool never ran (see BaseJobRunner._finish_or_resubmit_job).
 SETUP_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "traceback.txt")
+# Also read by Galaxy when finishing a protected job, for runners only staging back outputs_populated
+# (Pulsar with remote extended metadata), where traceback.txt may also come from metadata collection.
+PROTECTION_SETUP_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "protection_setup_failed")
 # Read by Galaxy when finishing a protected job.
 CLEANUP_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "protection_cleanup_failed")
 
@@ -48,6 +51,7 @@ def run(command: str, plan_path: str) -> int:
         if command == "stage-in":
             message = f"Could not decrypt the protected inputs of this job: {message}"
             _report(plan.job_directory, SETUP_FAILURE_FILE, message)
+            _report(plan.job_directory, PROTECTION_SETUP_FAILURE_FILE, message)
         else:
             message = f"Could not remove the decrypted data of this job: {message}"
             _report(plan.job_directory, CLEANUP_FAILURE_FILE, message)

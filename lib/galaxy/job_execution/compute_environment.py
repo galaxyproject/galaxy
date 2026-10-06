@@ -202,6 +202,15 @@ class ProtectedInputsComputeEnvironment(ComputeEnvironment):
         # Runner specific attributes, e.g. Pulsar's path mapper.
         return getattr(self.base, name)
 
+    @property
+    def materialized_objects(self) -> dict[str, DeferrableObjectsT]:
+        return self.base.materialized_objects
+
+    @materialized_objects.setter
+    def materialized_objects(self, value: dict[str, DeferrableObjectsT]) -> None:
+        # Set by the tool evaluator, read by runners from the environment they created.
+        self.base.materialized_objects = value
+
     def input_path_rewrite(self, dataset):
         base_path = self.base.input_path_rewrite(dataset)
         protected_input = self.plan.staged_input(dataset.dataset.id)
