@@ -11,7 +11,7 @@
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
             :has-readme="!!renderedReadme"
-            :readme-visible="showReadme.value"
+            :readme-visible="showReadme.value && !!renderedReadme"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
             @refreshTableContent="refreshTableContent"
@@ -424,7 +424,7 @@ export default {
         this.services = new Services({ root: this.root });
         this.perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
         this.perPage = this.perPageRef.value;
-        const readmeToggle = usePersistentToggle("library-folder-readme");
+        const readmeToggle = usePersistentToggle("library-folder-readme", true);
         this.showReadme = readmeToggle.toggled;
         this.toggleReadme = readmeToggle.toggle;
         this.getFolder(this.folder_id, this.page);

@@ -7,9 +7,9 @@ interface ToggleStateInterface {
     toggle: () => void;
 }
 
-export function usePersistentToggle(uniqueId: string): ToggleStateInterface {
+export function usePersistentToggle(uniqueId: string, initialValue = false): ToggleStateInterface {
     const localStorageKey = `toggle-state-${uniqueId}`;
-    const toggled = useUserLocalStorage(localStorageKey, false);
+    const toggled = useUserLocalStorage(localStorageKey, initialValue);
 
     // Expose a function for toggling state
     const toggle = () => {
