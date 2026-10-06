@@ -144,6 +144,36 @@ def test_extra_files_can_use_another_compute_key(tmp_path, service, user):
     assert used_keys == sorted([renewed_key_ref, job_key_ref])
 
 
+def test_missing_tls_files_are_reported_by_setting(tmp_path, service, user):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(
+        tmp_path,
+        service,
+        key_ref,
+        [_protected_input(tmp_path, service, user, key_ref)],
+        ca_cert=str(tmp_path / "missing-ca.pem"),
+    )
+    with pytest.raises(ProtectionError, match="crypt4gh_recryptor_ca_cert doesn't exist on the compute host"):
+        Crypt4GHJobRuntime(plan).stage_inputs()
+    assert service.requests == []
+
+
+def test_stage_command_errors_dont_reveal_the_service_address(tmp_path, service, user, capsys):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(tmp_path, service, key_ref, [_protected_input(tmp_path, service, user, key_ref)], retries=0)
+    # Nothing listens there.
+    plan.recryptor.url = "https://127.0.0.1:9"
+    plan_path = str(tmp_path / "plan.json")
+    plan.write(plan_path)
+
+    assert run("stage-in", plan_path) == 1
+
+    stderr = capsys.readouterr().err
+    assert "Could not reach the key service" in stderr
+    assert "127.0.0.1" not in stderr
+    assert "Traceback" not in stderr
+
+
 def test_unlisted_extra_files_are_refused(tmp_path, service, user):
     key_ref = service.get_compute_key_info(user.public)
     protected_input = _protected_input(tmp_path, service, user, key_ref, extra_files={"listed": b"a"})
