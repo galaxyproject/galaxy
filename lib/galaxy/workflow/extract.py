@@ -791,7 +791,8 @@ def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
     """The job's tool, or None when it is not installed or the user may not use it."""
     try:
         return trans.app.toolbox.tool_for_job(job, user=trans.user)
-    except exceptions.InsufficientPermissionsException:
+    except (exceptions.InsufficientPermissionsException, exceptions.ItemAccessibilityException):
+        # No execute role, or a user tool the viewer doesn't own / that was deactivated.
         return None
 
 

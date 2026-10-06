@@ -278,6 +278,22 @@ test_data:
     def _job_id_for_tool(self, jobs, tool_id):
         return self._job_for_tool(jobs, tool_id)["id"]
 
+    def _run_user_tool_in_published_history(self) -> str:
+        """Run a user-defined tool in a new published history; return its output id."""
+        history_id = self.dataset_populator.new_history()
+        with self.dataset_populator.user_tool_execute_permissions():
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            hda = self.dataset_populator.new_dataset(history_id, content="hello", wait=True)
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id=None, inputs={"input": {"src": "hda", "id": hda["id"]}}, history_id=history_id
+            )
+            payload["tool_uuid"] = dynamic_tool["uuid"]
+            response = self.dataset_populator.tools_post(payload)
+            self._assert_status_code_is(response, 200)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.make_public(history_id)
+        return response.json()["outputs"][0]["id"]
+
 
 class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     @skip_without_tool("param_value_from_file")
@@ -2084,6 +2100,18 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
             assert len(tool_jobs) == 1
             assert tool_jobs[0]["invalid"] == "custom_tool_inaccessible"
             assert tool_jobs[0]["checked"] is False
+
+    def test_extraction_summary_udt_step_invalid_for_non_owner(self):
+        # Holding the execute role does not grant access to another user's tool.
+        output_id = self._run_user_tool_in_published_history()
+        with self._different_user("udt_non_owner@bx.psu.edu"), self.dataset_populator.user_tool_execute_permissions():
+            history_id = self.dataset_populator.new_history()
+            copied = self._copy_hda_to_history(history_id, {"id": output_id})
+            summary = self._get_extraction_summary(history_id)
+            row = self._row_with_output_id(summary, copied["id"])
+            assert row is not None and row["step_type"] == "tool", summary["jobs"]
+            assert row["invalid"] == "custom_tool_inaccessible", row
+            assert row["checked"] is False, row
 
     @skip_without_tool("random_lines1")
     def test_extraction_summary_mapped_tool_step_icj_metadata(self):
