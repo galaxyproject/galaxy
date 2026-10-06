@@ -43,22 +43,26 @@ def normalize_label(value: str | None) -> str:
 
 def normalize_generated_label(value: str | None) -> str:
     """``normalize_label`` minus characters a report directive cannot quote."""
-    return UNQUOTABLE_PATTERN.sub("", normalize_label(value)).strip()
+    return normalize_label(UNQUOTABLE_PATTERN.sub(" ", value or ""))
 
 
 def suggested_output_name(
     trans: ProvidesHistoryContext, content_id: int, content_kind: OutputContentKind
 ) -> SuggestedName | None:
     """Return a best-effort workflow output label suggestion for an HDA/HDCA."""
+    suggested: SuggestedName | None = None
     if content_kind == "hda":
         hda = trans.sa_session.get(HistoryDatasetAssociation, content_id)
-        if hda is None:
-            return None
-        return _suggested_hda_output_name(trans, get_original_hda(hda))
-    hdca = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
-    if hdca is None:
+        if hda is not None:
+            suggested = _suggested_hda_output_name(trans, get_original_hda(hda))
+    else:
+        hdca = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
+        if hdca is not None:
+            suggested = _suggested_hdca_output_name(trans, get_original_hdca(hdca))
+    if suggested is None:
         return None
-    return _suggested_hdca_output_name(trans, get_original_hdca(hdca))
+    name = normalize_generated_label(suggested.name)
+    return SuggestedName(name=name, source=suggested.source) if name else None
 
 
 def _suggested_hda_output_name(trans: ProvidesHistoryContext, hda: HistoryDatasetAssociation) -> SuggestedName | None:

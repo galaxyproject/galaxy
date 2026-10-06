@@ -20,7 +20,6 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import JobManager
-from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.model import (
     DatasetCollectionElement,
     History,
@@ -724,16 +723,8 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
 ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any] | None, list[str]]]
 
 
-def _label_arg(argument: str, label: str | None) -> str | None:
-    """Directive argument for a workflow label, or None when it has no directive form.
-
-    A label the directive grammar cannot quote is reported as unresolved rather than
-    emitted, so the rewriter drops the directive with a warning instead of producing
-    markdown that fails validation.
-    """
-    if not label or not is_quotable_argument_value(label):
-        return None
-    return f'{argument}="{label}"'
+# A directive argument name (``input``/``output``/``step``) and the workflow label it targets.
+DirectiveLabel = tuple[Literal["input", "output", "step"], str]
 
 
 @dataclass(frozen=True)
@@ -753,9 +744,9 @@ class ExtractionLabelIndex:
     job_to_step: dict[int, WorkflowStep]
     icj_to_step: dict[int, WorkflowStep]
 
-    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> str | None:
-        """Directive argument (``input="x"`` / ``output="y"``) for a referenced
-        HDA/HDCA, or None when it is not in the extracted subgraph / not labeled."""
+    def content_label(self, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveLabel | None:
+        """``input``/``output`` label for a referenced HDA/HDCA, or None when it is
+        not in the extracted subgraph / not labeled."""
         if content_kind == "hda":
             id_key: IdKey = ("dataset", get_original_hda(cast(HistoryDatasetAssociation, content)).id)
         else:
@@ -765,23 +756,23 @@ class ExtractionLabelIndex:
             return None
         step, output_name = pair
         if step.type in ("data_input", "data_collection_input"):
-            return _label_arg("input", step.label)
+            return ("input", step.label) if step.label else None
         workflow_output = step.workflow_output_for(output_name)
-        if workflow_output is None:
+        if workflow_output is None or not workflow_output.label:
             return None
-        return _label_arg("output", workflow_output.label)
+        return ("output", workflow_output.label)
 
-    def job_label_arg(self, job: Job) -> str | None:
-        """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
-        element job to its ICJ step exactly as the seeding collector does."""
+    def job_label(self, job: Job) -> DirectiveLabel | None:
+        """``step`` label for a referenced job/ICJ, folding an element job to its
+        ICJ step exactly as the seeding collector does."""
         icj_assoc = job.implicit_collection_jobs_association
         if icj_assoc is not None:
             step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
         else:
             step = self.job_to_step.get(job.id)
-        if step is None:
+        if step is None or not step.label:
             return None
-        return _label_arg("step", step.label)
+        return ("step", step.label)
 
     def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
         return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
@@ -1124,6 +1115,7 @@ __all__ = (
     "extract_workflow",
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
+    "DirectiveLabel",
     "ExtractionLabelIndex",
     "ReportBuilder",
     "normalize_output_label_key",

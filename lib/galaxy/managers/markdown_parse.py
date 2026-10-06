@@ -62,7 +62,7 @@ UNQUOTABLE_ARGUMENT_CHARS = '"\r\n'
 
 def is_quotable_argument_value(value: str) -> bool:
     """Whether ``value`` can be embedded in a directive as a double-quoted argument."""
-    return not any(char in value for char in UNQUOTABLE_ARGUMENT_CHARS)
+    return '"' not in value and value.splitlines() == [value]
 
 
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
