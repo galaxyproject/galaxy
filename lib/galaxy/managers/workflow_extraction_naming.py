@@ -32,6 +32,7 @@ class SuggestedName:
     source: SuggestedNameSource
 
 
+MAX_LABEL_LENGTH = 255
 UNQUOTABLE_PATTERN = re.compile(f"[{re.escape(UNQUOTABLE_ARGUMENT_CHARS)}]")
 
 
@@ -39,7 +40,7 @@ def normalize_label(value: str | None) -> str:
     """Collapse internal whitespace and clamp to the workflow-label length limit."""
     if not value:
         return ""
-    return re.sub(r"\s+", " ", value.strip())[:255]
+    return re.sub(r"\s+", " ", value.strip())[:MAX_LABEL_LENGTH]
 
 
 def normalize_generated_label(value: str | None) -> str:
