@@ -18,7 +18,6 @@ from typing import (
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_util import referenced_content_ids
 from galaxy.managers.workflow_extraction_naming import suggested_output_name
@@ -368,12 +367,7 @@ def _extraction_row(
             seed_warning=seed_warning,
         )
 
-    custom_tools_inaccessible = False
-    try:
-        tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
-    except InsufficientPermissionsException:
-        tool = None
-        custom_tools_inaccessible = True
+    tool = tool_for_job(trans, job)
 
     referenced = closure.referenced_output_refs if closure else set()
     tool_outputs = [
@@ -389,7 +383,7 @@ def _extraction_row(
     if tool is None:
         invalid_reason = (
             InvalidWorkflowExtractionJobReason.CUSTOM_TOOL_INACCESSIBLE
-            if custom_tools_inaccessible
+            if job.dynamic_tool is not None
             else InvalidWorkflowExtractionJobReason.TOOL_MISSING_OR_INACCESSIBLE
         )
         return WorkflowExtractionJob(
