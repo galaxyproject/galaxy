@@ -1,5 +1,5 @@
 diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
-index 82db370..156c1a6 100644
+index 82db370faaa2623639583fccf1b061a50b1c23c1..7e004b3ee4122e7912f72dba843630082e06374d 100644
 --- a/dist/vue-multiselect.esm.js
 +++ b/dist/vue-multiselect.esm.js
 @@ -790,10 +790,14 @@ var pointerMixin = {
@@ -27,7 +27,17 @@ index 82db370..156c1a6 100644
      "aria-activedescendant": _ctx.isOpen && _ctx.pointer !== null ? _ctx.id + '-' + _ctx.pointer : null
    }, [
      renderSlot(_ctx.$slots, "caret", { toggle: _ctx.toggle }, () => [
-@@ -1338,7 +1342,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
+@@ -1326,7 +1330,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
+             value: _ctx.search,
+             disabled: $props.disabled,
+             tabindex: $props.tabindex,
+-            "aria-label": $props.name + '-searchbox',
++            // Take the caller's aria-label; otherwise <label for> or the placeholder names the input.
++            "aria-label": _ctx.$attrs['aria-label'] || null,
+             onInput: _cache[2] || (_cache[2] = $event => (_ctx.updateSearch($event.target.value))),
+             onFocus: _cache[3] || (_cache[3] = withModifiers($event => (_ctx.activate()), ["prevent"])),
+             onBlur: _cache[4] || (_cache[4] = withModifiers($event => (_ctx.deactivate()), ["prevent"])),
+@@ -1338,7 +1343,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
                _cache[9] || (_cache[9] = withKeys(withModifiers($event => (_ctx.removeLastElement()), ["stop"]), ["delete"]))
              ],
              class: "multiselect__input",

@@ -46,6 +46,7 @@ onMounted(() => {
         <Multiselect
             id="database-build"
             v-model="selectedGenome"
+            :aria-label="localize('Database/Build')"
             class="database-dropdown"
             name="database-build"
             deselect-label="Can't remove this value"

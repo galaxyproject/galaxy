@@ -73,6 +73,7 @@ describe("WorkflowAttributes", () => {
         const version = wrapper.findComponent(WorkflowVersionSelector);
         expect(version.props("version")).toBe(0);
         expect(version.props("versions")).toHaveLength(TEST_VERSIONS.length);
+        expect(version.find("input.multiselect__input").attributes("aria-label")).toBe("Version");
 
         // When not on latest version, "switch to latest" link should be visible
         expect(wrapper.find("#workflow-version-area").text()).toContain("switch to latest");
