@@ -51,7 +51,7 @@ interface Props {
     includeDeleted: boolean;
     isAllSelectedMode: boolean;
     canAddLibraryItem?: boolean;
-    showReadme?: boolean;
+    hasReadme?: boolean;
     readmeVisible?: boolean;
 }
 
@@ -415,7 +415,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         :title="props.readmeVisible ? 'Hide README' : 'Show README'"
                         disabled-title="No README available"
                         :pressed="props.readmeVisible"
-                        :disabled="!props.showReadme"
+                        :disabled="!props.hasReadme"
                         class="primary-button ml-auto"
                         type="button"
                         @click="$emit('toggleReadme')">

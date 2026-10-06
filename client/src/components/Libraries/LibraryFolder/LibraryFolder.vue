@@ -10,7 +10,7 @@
             :metadata="folder_metadata"
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
-            :show-readme="!!renderedReadme"
+            :has-readme="!!renderedReadme"
             :readme-visible="showReadme.value"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
@@ -272,7 +272,7 @@
             </div>
             <div v-if="showReadme.value && renderedReadme" class="readme-panel">
                 <div class="readme-panel-content">
-                    <div v-sanitize-html:markdown="renderedReadme" />
+                    <div v-sanitize-html:links="renderedReadme" />
                 </div>
             </div>
         </div>
@@ -382,7 +382,6 @@ export default {
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
-                renderedReadme: "",
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -400,6 +399,9 @@ export default {
                 .filter(({ item }) => this.isRowSelected(item))
                 .map(({ index }) => index);
         },
+        renderedReadme() {
+            return this.folder_metadata.readme_raw ? renderMarkdown(this.folder_metadata.readme_raw) : "";
+        },
     },
     watch: {
         perPage(newValue) {
@@ -416,9 +418,6 @@ export default {
         },
         sortDesc() {
             this.fetchFolderContents();
-        },
-        "folder_metadata.readme_raw"() {
-            this.renderReadme();
         },
     },
     created() {
@@ -440,7 +439,6 @@ export default {
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
-            this.renderedReadme = "";
             // Restore perPage from localStorage after reset
             if (this.perPageRef) {
                 this.perPage = this.perPageRef.value;
@@ -467,7 +465,6 @@ export default {
                     this.folder_metadata = response.metadata;
                     this.canAddLibraryItem = response.metadata.can_add_library_item;
                     this.total_rows = response.metadata.total_rows;
-                    this.renderReadme();
                     if (this.isAllSelectedMode) {
                         this.selected = [];
                         this.selectAllRenderedRows();
@@ -691,13 +688,6 @@ export default {
         },
         changePage(page) {
             this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
-        },
-        renderReadme() {
-            if (this.folder_metadata.readme_raw) {
-                this.renderedReadme = renderMarkdown(this.folder_metadata.readme_raw);
-            } else {
-                this.renderedReadme = "";
-            }
         },
         /*
          Former code, adopted to work with Vue
