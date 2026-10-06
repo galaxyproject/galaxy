@@ -407,7 +407,10 @@ export function getRouter(Galaxy) {
                         component: WorkflowExtractionForm,
                         props: (route) => ({
                             historyId: route.params.historyId,
-                            fromPageId: route.query.from_page || undefined,
+                            fromPageId:
+                                typeof route.query.from_page === "string"
+                                    ? route.query.from_page || undefined
+                                    : undefined,
                         }),
                     },
                     {
