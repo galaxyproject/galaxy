@@ -2,9 +2,9 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
-import { computed, toRef, watch } from "vue";
+import { computed, toRef } from "vue";
 
-import { useJobStore } from "@/stores/jobStore";
+import { useJobDetails } from "@/composables/jobDetails";
 import localize from "@/utils/localization";
 
 import { useMappingJobs } from "./handlesMappingJobs";
@@ -30,18 +30,16 @@ const props = withDefaults(defineProps<JobParametersProps>(), {
     footer: undefined,
 });
 
-const jobStore = useJobStore();
-
 const toolId = computed(() => {
     if (targetJobId.value) {
-        return jobStore.getJob(targetJobId.value)?.tool_id;
+        return job.value?.tool_id;
     }
     return undefined;
 });
 const toolVersion = computed(() => {
     if (targetJobId.value) {
         // TODO: `ShowFullJobResponse` does not have a `tool_version` property
-        return (jobStore.getJob(targetJobId.value) as any)?.tool_version;
+        return (job.value as any)?.tool_version;
     }
     return undefined;
 });
@@ -50,19 +48,7 @@ const implicitCollectionJobsIdRef = toRef(props, "implicitCollectionJobsId");
 
 const { selectJobOptions, selectedJob, targetJobId } = useMappingJobs(jobIdRef, implicitCollectionJobsIdRef);
 
-async function init() {
-    if (targetJobId.value) {
-        jobStore.fetchJob({ id: targetJobId.value });
-    }
-}
-
-watch(
-    targetJobId,
-    () => {
-        init();
-    },
-    { immediate: true },
-);
+const { job } = useJobDetails(targetJobId, { poll: false });
 </script>
 
 <template>

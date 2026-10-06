@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, toRef } from "vue";
 
-import { useJobStore } from "@/stores/jobStore";
+import { useJobDetails } from "@/composables/jobDetails";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
@@ -19,17 +19,8 @@ const emit = defineEmits<{
     (e: "dismissed"): void;
 }>();
 
-const jobStore = useJobStore();
-
-const historyId = computed(() => {
-    return jobStore.getJob(props.jobId)?.history_id;
-});
-
-async function init() {
-    jobStore.fetchJob({ id: props.jobId });
-}
-
-watch(() => props.jobId, init, { immediate: true });
+const { job } = useJobDetails(toRef(props, "jobId"), { poll: false });
+const historyId = computed(() => job.value?.history_id);
 </script>
 
 <template>

@@ -5,8 +5,8 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs.js";
 import { useConfig } from "@/composables/config";
+import { useJobDetails } from "@/composables/jobDetails";
 import { useJobStore } from "@/stores/jobStore";
 
 import LoadingSpan from "../LoadingSpan.vue";
@@ -47,9 +47,10 @@ watch(jobResponse, () => {
     currentIndex.value = 0;
 });
 
-const viewedJob = computed<JobBaseModel | ShowFullJobResponse | null>(
-    () => jobResponse.value?.jobs?.[currentIndex.value] ?? jobResponse.value?.jobs?.[0] ?? null,
+const viewedJobId = computed(
+    () => jobResponse.value?.jobs?.[currentIndex.value]?.id ?? jobResponse.value?.jobs?.[0]?.id,
 );
+const { job: viewedJob } = useJobDetails(viewedJobId);
 
 const webhook = ref<InstanceType<typeof Webhook> | null>(null);
 const webhookId = computed(() => webhook.value?.webhookId ?? null);
@@ -60,8 +61,8 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
         <LoadingSpan message="Waiting on data" />
     </GAlert>
     <div v-else>
-        <template v-if="viewedJob">
-            <JobHeader :job-id="viewedJob.id" :job="viewedJob" animate-success>
+        <template v-if="viewedJobId">
+            <JobHeader :job-id="viewedJobId" :job="viewedJob" animate-success>
                 <template v-slot:pagination>
                     <BPagination
                         v-if="nJobs > 1"
@@ -78,10 +79,10 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
             </JobHeader>
 
             <div v-if="jobResponse.produces_entry_points">
-                <ToolEntryPoints :job-id="viewedJob.id" :job="viewedJob" />
+                <ToolEntryPoints :job-id="viewedJobId" :job="viewedJob" />
             </div>
 
-            <JobInformation :job-id="viewedJob.id" collapsible include-view-full-details-button />
+            <JobInformation :job-id="viewedJobId" collapsible include-view-full-details-button />
         </template>
 
         <ToolSuccessOutputs :job-response="jobResponse" />

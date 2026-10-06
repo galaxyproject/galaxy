@@ -10,6 +10,9 @@ import { MAX_CACHED_JOBS, useJobStore } from "./jobStore";
 
 const { server, http } = useServerMock();
 
+// Cache eviction exercises many requests; API rate limiting has its own tests.
+vi.mock("@/api/client/rateLimiter", () => ({ createRateLimiterMiddleware: () => ({ onRequest() {} }) }));
+
 vi.useFakeTimers();
 
 function buildJob(id: string, state: JobState): ShowFullJobResponse {
@@ -460,47 +463,30 @@ describe("useJobStore eviction", () => {
         vi.clearAllTimers();
     });
 
-    it("never evicts a terminal job, but does evict a stale non-terminal one, once over cap", async () => {
-        const callCounts: Record<string, number> = {};
+    it("evicts unused jobs while retaining displayed terminal jobs", async () => {
         server.use(
-            http.get("/api/jobs/{job_id}", ({ response, params }) => {
-                const id = params.job_id as string;
-                callCounts[id] = (callCounts[id] ?? 0) + 1;
-                return response(200).json(buildJob(id, id === "stale-running" ? "running" : "ok"));
-            }),
+            http.get("/api/jobs/{job_id}", ({ response, params }) =>
+                response(200).json(buildJob(params.job_id as string, "ok")),
+            ),
         );
-
         const store = useJobStore();
-
-        // "stale-running" is polled, then that poll is stopped while the job is still running.
-        // It's the oldest entry, and (being non-terminal) is still eligible for eviction.
-        const { stopWatchingJob } = store.pollJobUntilTerminal({ id: "stale-running" });
-        await flushPromises();
-        expect(callCounts["stale-running"]).toBe(1);
-        stopWatchingJob();
-
+        const release = store.retainJob("displayed");
+        await store.fetchJob({ id: "displayed" });
         await pollManyJobs(
             store,
-            Array.from({ length: MAX_CACHED_JOBS + 1 }, (_, i) => `job-${i}`),
+            Array.from({ length: MAX_CACHED_JOBS }, (_, i) => `job-${i}`),
         );
 
-        // "job-0" is terminal, so its data never changes again and evicting it would just cause a
-        // wasted re-fetch, therefore, it must still be cached, unevicted, despite being the oldest terminal entry.
-        store.pollJobUntilTerminal({ id: "job-0" });
-        await flushPromises();
-        expect(callCounts["job-0"]).toBe(1);
+        expect(store.getCachedJob("job-0")).toBeNull();
+        expect(store.getCachedJob(`job-${MAX_CACHED_JOBS - 1}`)?.state).toBe("ok");
+        expect(store.getCachedJob("displayed")?.state).toBe("ok");
 
-        // "stale-running" is non-terminal and was the least-recently-touched such
-        // entry, so it should have been evicted and reading it again must trigger a fresh fetch.
-        const { stopWatchingJob: rePollStop } = store.pollJobUntilTerminal({ id: "stale-running" });
-        await flushPromises();
-        expect(callCounts["stale-running"]).toBe(2);
-        rePollStop();
-
-        // The most recently added (still-cached, terminal) job is not re-fetched.
-        store.pollJobUntilTerminal({ id: `job-${MAX_CACHED_JOBS}` });
-        await flushPromises();
-        expect(callCounts[`job-${MAX_CACHED_JOBS}`]).toBe(1);
+        release();
+        await pollManyJobs(
+            store,
+            Array.from({ length: MAX_CACHED_JOBS }, (_, i) => `next-${i}`),
+        );
+        expect(store.getCachedJob("displayed")).toBeNull();
     });
 
     it("never evicts a job that is still actively being polled", async () => {
@@ -537,5 +523,65 @@ describe("useJobStore eviction", () => {
         expect(runningJobCallCount).toBe(2);
 
         stopWatchingJob();
+    });
+});
+
+describe("full job freshness", () => {
+    beforeEach(() => setActivePinia(createPinia()));
+    afterEach(() => vi.clearAllTimers());
+
+    it("fetches final full details after a base poll observes completion", async () => {
+        let completed = false;
+        const fullRequests: boolean[] = [];
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, request }) => {
+                const full = new URL(request.url).searchParams.get("full") === "true";
+                fullRequests.push(full);
+                const job = buildJob("job", completed ? "ok" : "running");
+                return response(200).json(full ? { ...job, tool_stdout: completed ? "final output" : "" } : job);
+            }),
+        );
+        const store = useJobStore();
+        await store.fetchJob({ id: "job", full: true });
+        completed = true;
+        store.pollJobUntilTerminal({ id: "job", full: false });
+        await flushPromises();
+        store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+
+        expect(store.getCachedJob("job")?.tool_stdout).toBe("final output");
+        expect(fullRequests).toEqual([true, false, true]);
+        store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+        expect(fullRequests).toEqual([true, false, true]);
+    });
+
+    it("retries a failed full upgrade instead of caching incomplete terminal details", async () => {
+        let fullCalls = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, request }) => {
+                if (new URL(request.url).searchParams.get("full") === "true") {
+                    fullCalls++;
+                    if (fullCalls === 1) {
+                        return response("5XX").json(
+                            { err_msg: "Temporarily unavailable", err_code: 503 },
+                            { status: 503 },
+                        );
+                    }
+                    return response(200).json({ ...buildJob("job", "ok"), tool_stdout: "final output" });
+                }
+                return response(200).json(buildJob("job", "ok"));
+            }),
+        );
+        const store = useJobStore();
+        await store.fetchJob({ id: "job", full: false });
+        store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+        expect(store.getJobLoadError("job")).toBeTruthy();
+        await advanceTimersAndFlush(1000);
+        expect(store.getCachedJob("job")?.tool_stdout).toBe("final output");
+        expect(store.getJobLoadError("job")).toBeNull();
+        await advanceTimersAndFlush(1000);
+        expect(fullCalls).toBe(2);
     });
 });

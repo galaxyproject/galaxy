@@ -118,7 +118,7 @@ describe("JobInformation/JobInformation.vue", () => {
         wrapper = mount(JobInformation, {
             propsData: { jobId: JOB_ID },
             localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
         await flushPromises();
 
@@ -158,7 +158,7 @@ describe("JobInformation/JobInformation.vue invocation lookup", () => {
         const wrapper = mount(JobInformation, {
             propsData: { jobId: JOB_ID },
             localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
         await flushPromises();
 
