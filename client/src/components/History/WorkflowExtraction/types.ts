@@ -26,7 +26,7 @@ interface RowBase {
     invalid?: InvalidReason | null;
     /** Part of the producing subgraph of a notebook's referenced outputs. False for plain history summaries. */
     seeded: boolean;
-    /** Set when a job directive seeded this row but its tool is not a workflow step, so it became an input. */
+    /** Set when a job directive seeded this row but its job cannot be a workflow step here, so it became an input. */
     seed_warning?: string | null;
     outputs: ExtractionOutput[];
 }
