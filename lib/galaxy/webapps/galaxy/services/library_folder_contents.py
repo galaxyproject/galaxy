@@ -1,11 +1,6 @@
 import logging
 from dataclasses import dataclass
 
-from sqlalchemy import (
-    func,
-    select,
-)
-
 from galaxy import (
     exceptions,
     model,
@@ -35,11 +30,6 @@ from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
-
-README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
-README_EXTENSIONS = {"txt", "md", "markdown"}
-# The README goes out with every page of the folder listing, so keep it bounded.
-README_MAX_CHARS = 1_000_000
 
 
 @dataclass
@@ -97,14 +87,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        readme_raw = self._get_readme_raw(trans, current_user_roles, folder)
-        base_metadata = self._serialize_library_folder_metadata(
-            trans, folder, user_permissions, total_rows, readme_raw=readme_raw
-        )
-        return LibraryFolderContentsIndexResult(
-            metadata=base_metadata,
-            folder_contents=folder_contents,
-        )
+        readme = self.folder_manager.get_readme(trans, folder)
+        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme)
+        return LibraryFolderContentsIndexResult(metadata=metadata, folder_contents=folder_contents)
 
     def create(
         self,
@@ -169,37 +154,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         )
         log.warning(warning_message)
         raise exceptions.ObjectNotFound(f"Folder with the id provided ( F{self.encode_id(folder.id)} ) was not found")
-
-    def _get_readme_raw(
-        self,
-        trans: ProvidesUserContext,
-        current_user_roles: list[model.Role],
-        folder: model.LibraryFolder,
-    ) -> str | None:
-        # Queried separately from the paginated contents so the README shows on every page.
-        # Match on the LDDA name, which is what the listing displays and what renames change.
-        ldda = model.LibraryDatasetDatasetAssociation
-        stmt = (
-            select(model.LibraryDataset)
-            .join(model.LibraryDataset.library_dataset_dataset_association.of_type(ldda))
-            .where(model.LibraryDataset.folder_id == folder.id)
-            .where(model.LibraryDataset.deleted.is_(False))
-            .where(func.lower(func.trim(ldda.name)).in_(README_FILENAMES))
-            .order_by(model.LibraryDataset.id)
-        )
-        security_agent = trans.app.security_agent
-        for library_dataset in trans.sa_session.scalars(stmt):
-            readme = library_dataset.library_dataset_dataset_association
-            if readme.extension not in README_EXTENSIONS or not readme.dataset.has_data():
-                continue
-            if not trans.user_is_admin and not security_agent.can_access_dataset(current_user_roles, readme.dataset):
-                continue
-            try:
-                with open(readme.dataset.get_file_name(), encoding="utf-8", errors="replace") as f:
-                    return f.read(README_MAX_CHARS)
-            except Exception as e:  # a broken README should never break the folder listing
-                log.warning(f"Could not read README for folder {folder.id}: {e}")
-        return None
 
     def _serialize_library_dataset(
         self,
