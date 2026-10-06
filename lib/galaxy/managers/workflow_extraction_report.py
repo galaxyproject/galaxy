@@ -38,6 +38,7 @@ from galaxy.managers.markdown_util import (
     ReferencedContent,
 )
 from galaxy.managers.workflow_extraction_naming import (
+    MAX_LABEL_LENGTH,
     normalize_generated_label,
     suggested_output_name,
 )
@@ -391,7 +392,8 @@ def _generate_label(base: str | None, used: set[str]) -> str:
     candidate = label
     suffix = 2
     while candidate in used:
-        candidate = f"{label}_{suffix}"
+        suffix_str = f"_{suffix}"
+        candidate = label[: MAX_LABEL_LENGTH - len(suffix_str)] + suffix_str
         suffix += 1
     used.add(candidate)
     return candidate
