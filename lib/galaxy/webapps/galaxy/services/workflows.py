@@ -18,6 +18,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import is_quotable_argument_value
+from galaxy.managers.pages import PageManager
 from galaxy.managers.workflow_extraction_naming import normalize_label
 from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
@@ -170,6 +171,7 @@ class WorkflowsService(ServiceBase):
         tool_shed_registry: Registry,
         notification_service: NotificationService,
         job_manager: JobManager,
+        page_manager: PageManager,
         workflow_scheduling_manager: WorkflowSchedulingManager,
         config: GalaxyAppConfiguration,
     ):
@@ -180,6 +182,7 @@ class WorkflowsService(ServiceBase):
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
         self._job_manager = job_manager
+        self._page_manager = page_manager
         self._config = config
 
     def index(
@@ -431,7 +434,7 @@ class WorkflowsService(ServiceBase):
         self._validate_extract_by_ids_payload(trans, payload)
         build_report = None
         if payload.from_page_id is not None:
-            page = self._load_report_page(trans, payload.from_page_id)
+            page, _ = self._page_manager.get_accessible_notebook(trans, payload.from_page_id)
             build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
         stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
@@ -449,21 +452,6 @@ class WorkflowsService(ServiceBase):
             build_report=build_report,
         )
         return _to_extraction_result(stored_workflow, report_warnings)
-
-    def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):
-        """Load and gate a notebook page used to build the workflow report.
-
-        Mirrors the page workflow-extraction-summary endpoint: only history-backed
-        pages are extractable, and page accessibility must not leak the underlying
-        history - require access to the history too.
-        """
-        page = self.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
-        if page.history_id is None:
-            raise exceptions.RequestParameterInvalidException(
-                "Workflow report extraction is only available for history-backed pages (notebooks)."
-            )
-        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
-        return page
 
     def _validate_extract_by_ids_payload(
         self,
