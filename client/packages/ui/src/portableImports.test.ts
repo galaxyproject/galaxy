@@ -17,7 +17,7 @@ const VERSION_LOCKED_SPECIFIERS = [
     "vue-router/composables",
     // Vue 2 only; Vue 3 has the composition API built in.
     "@vue/composition-api",
-    // Build-specific Vue entry points differ between the two majors.
+    // Build-specific Vue entry points; which one exists depends on the consumer's build.
     "vue/dist/vue.esm-bundler",
     "vue/dist/vue.esm.js",
     "vue/dist/vue.runtime.esm-bundler",
@@ -46,5 +46,16 @@ describe("galaxy-ui source portability", () => {
         const importPattern = new RegExp(`(?:from|import|require)\\s*\\(?\\s*["']${escaped}["']`);
         const offenders = files.filter((file) => importPattern.test(sources[file]!));
         expect(offenders, `${specifier} resolves for only one of the supported peer versions`).toEqual([]);
+    });
+
+    // `.native` is Vue 2 syntax. @vue/compat honours it, so the client never notices, but plain Vue 3
+    // drops the modifier and binds an ordinary listener: next to a plain @click, the handler runs twice.
+    it("uses no .native event modifiers", () => {
+        const offenders = files.filter(
+            (file) =>
+                file.endsWith(".vue") &&
+                /@[\w-]+(?:\.[\w-]+)*\.native\b|v-on:[\w-]+(?:\.[\w-]+)*\.native\b/.test(sources[file]!),
+        );
+        expect(offenders, ".native is Vue 2 syntax that plain Vue 3 consumers silently drop").toEqual([]);
     });
 });
