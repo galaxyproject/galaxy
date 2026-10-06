@@ -59,7 +59,9 @@ def run(command: str, plan_path: str) -> int:
             message = f"Could not remove the decrypted data of this job: {message}"
             _report(job_directory, CLEANUP_FAILURE_FILE, message)
         print(message, file=sys.stderr)
-        traceback.print_exc()
+        if not isinstance(e, ProtectionError):
+            # Job stderr is shown to users: only unexpected errors, i.e. bugs, need their traceback.
+            traceback.print_exc()
         return 1
     return 0
 
