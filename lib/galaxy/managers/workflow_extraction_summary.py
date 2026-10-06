@@ -519,10 +519,8 @@ def build_extraction_summary(
     )
 
 
-def summary_from_page(trans: ProvidesHistoryContext, page: Page) -> WorkflowExtractionSummary:
-    """Extraction summary for a notebook page, seeded from the outputs it references."""
-    history = page.history
-    assert history is not None, "summary_from_page requires a history-attached page"
+def summary_from_page(trans: ProvidesHistoryContext, page: Page, history: History) -> WorkflowExtractionSummary:
+    """Extraction summary for a notebook page's ``history``, seeded from the outputs the page references."""
     revision = page.latest_revision
     content = revision.content if revision is not None else None
     referenced = referenced_content_ids(trans, content or "")

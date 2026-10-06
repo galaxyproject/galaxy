@@ -146,15 +146,8 @@ class PagesService(ServiceBase):
 
         Only history-backed pages (notebooks) can be seeded; reports without a history are rejected.
         """
-        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
-        if page.history_id is None:
-            raise exceptions.RequestParameterInvalidException(
-                "Workflow extraction is only available for history-backed pages (notebooks)."
-            )
-        # Page accessibility (shared/published) must not leak the full history's job
-        # list — require access to the underlying history too, as the history endpoint does.
-        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
-        return summary_from_page(trans, page)
+        page, history = self.manager.get_accessible_notebook(trans, id)
+        return summary_from_page(trans, page, history)
 
     def show_pdf(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField):
         """
