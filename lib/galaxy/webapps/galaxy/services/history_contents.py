@@ -22,6 +22,7 @@ from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     bulk_move_storage,
     change_datatype,
+    import_model_store,
     materialize as materialize_task,
     prepare_dataset_collection_download,
     prepare_history_content_download,
@@ -66,6 +67,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.store import payload_to_source_uri
 from galaxy.objectstore import BaseObjectStore
 from galaxy.schema import (
     FilterQueryParams,
@@ -121,6 +123,7 @@ from galaxy.schema.tasks import (
     CopyDatasetsPayload,
     CopyDatasetsResponse,
     GenerateHistoryContentDownload,
+    ImportModelStoreTaskRequest,
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
     WriteHistoryContentTo,
@@ -593,6 +596,35 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             )
             rval.append(hdca_dict)
         return rval
+
+    def create_from_store_async(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        payload: CreateHistoryContentFromStore,
+    ) -> AsyncTaskResultSummary:
+        if trans.anonymous:
+            raise exceptions.AuthenticationRequired("You need to be logged in to import into a history.")
+        history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
+        uri = (payload.store_content_uri or "").strip()
+        if payload.store_dict is None and not uri:
+            raise exceptions.RequestParameterMissingException("Pass a store_content_uri or a store_dict.")
+        if trans.user_is_admin:
+            source_uri = payload_to_source_uri(payload)
+        elif payload.store_dict is None and uri.startswith(("http://", "https://")):
+            source_uri = uri
+        else:
+            raise exceptions.AdminRequiredException("Only an admin can import a store from anything but a web link.")
+        ensure_celery_tasks_enabled(trans.app.config)
+        request = ImportModelStoreTaskRequest(
+            user=trans.async_request_user,
+            history_id=history.id,
+            source_uri=source_uri,
+            for_library=False,
+            model_store_format=payload.model_store_format,
+        )
+        result = import_model_store.delay(request=request, task_user_id=getattr(trans.user, "id", None))
+        return async_task_summary(result)
 
     def materialize(
         self,
