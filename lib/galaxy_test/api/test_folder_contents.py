@@ -344,6 +344,46 @@ class TestFolderContentsApi(ApiTestCase):
         assert readme_raw.strip() == readme_content.strip()
 
     @requires_new_library
+    def test_index_readme_filenames(self, history_id):
+        for name in ["readme.txt", "README", " README.markdown "]:
+            folder_id = self._create_folder_in_library(f"Test Folder Contents Readme {name.strip()}")
+            self._create_dataset_in_folder(history_id, folder_id, name=name, content="# Hi\n", file_type="txt")
+            self.dataset_populator.wait_for_history(history_id)
+            readme_raw = self._get_readme_raw(folder_id)
+            assert readme_raw is not None, f"README named {name!r} was not found"
+            assert readme_raw.strip() == "# Hi"
+
+    @requires_new_library
+    def test_index_readme_ignores_other_folders(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Scope")
+        sibling_id = self._create_folder_in_library("Test Folder Contents Readme Scope Sibling")
+        self._create_dataset_in_folder(
+            history_id, sibling_id, name="README.md", content="# Sibling\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme_raw(sibling_id) is not None
+        assert self._get_readme_raw(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_ignores_deleted(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Deleted")
+        ld_id, _ = self._create_dataset_in_folder(
+            history_id, folder_id, name="README.md", content="# Gone\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme_raw(folder_id) is not None
+
+        self._delete_library_dataset(ld_id)
+        assert self._get_readme_raw(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_ignores_non_text_datatypes(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Datatype")
+        self._create_dataset_in_folder(history_id, folder_id, name="README", content="a\tb\n", file_type="tabular")
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme_raw(folder_id) is None
+
+    @requires_new_library
     def test_index_readme_follows_rename(self, history_id):
         folder_id = self._create_folder_in_library("Test Folder Contents Readme Rename")
         ld_id, _ = self._create_dataset_in_folder(
