@@ -4,6 +4,9 @@ import subprocess
 from os import getcwd
 from tempfile import mkdtemp
 
+import pytest
+
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.jobs.command_factory import (
     build_command,
     PROTECTED_STAGE_SOURCE_COMMAND,
@@ -228,6 +231,8 @@ class TestCommandFactory(TestCase):
 
     def test_protected_job_command_for_pulsar_defers_to_remote_layout(self):
         self.include_work_dir_outputs = False
+        self.include_metadata = True
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
         self.job_wrapper.protection_plan_path = "/jobs/1/configs/protection_plan.json"
         command = self.__command(remote_command_params={"pulsar_version": "0.15.0"})
         assert '[ -f "$GALAXY_LIB/galaxy/job_execution/protection/stage.py" ]' in command
@@ -243,6 +248,9 @@ class TestCommandFactory(TestCase):
                 if os.path.exists(path):
                     os.remove(path)
             self.include_work_dir_outputs = False
+            self.include_metadata = True
+            # The metadata step must be part of the job, it's a no-op here.
+            self.job_wrapper.metadata_line = "true"
             self.job_wrapper.galaxy_lib_dir = None
             self.job_wrapper.command_line = f"touch {tool_ran}"
             self.job_wrapper.protection_plan_path = "plan.json"
@@ -258,6 +266,14 @@ class TestCommandFactory(TestCase):
             assert result.returncode == staging_status
             with open(os.path.join(self.job_dir, "galaxy_1.ec")) as f:
                 assert f.read().strip() == str(staging_status)
+
+    def test_protected_job_requires_metadata_in_the_job(self):
+        self.job_wrapper.protection_plan_path = "/jobs/1/configs/protection_plan.json"
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        # Runners collecting metadata after the job (e.g. embed_metadata_in_job: false, Kubernetes).
+        self.include_metadata = False
+        with pytest.raises(ProtectionError, match="embed_metadata_in_job"):
+            self.__command()
 
     def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
