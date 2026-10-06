@@ -356,5 +356,5 @@ class TestCrypt4GHUnsafeDestinationIntegration(BaseCrypt4GHExecutionIntegrationT
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
         assert job["state"] == "error"
-        assert "outputs_to_working_directory must be enabled" in output["misc_info"]
+        assert "tools must write outputs into the job directory" in output["misc_info"]
         assert self.service.requests == []
