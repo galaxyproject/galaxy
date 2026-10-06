@@ -5,7 +5,10 @@ from urllib.parse import urljoin
 import yaml
 
 from .driver_factory import ConfiguredDriver
-from .navigates_galaxy import NavigatesGalaxy
+from .navigates_galaxy import (
+    galaxy_timeout_handler,
+    NavigatesGalaxy,
+)
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
@@ -59,10 +62,12 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
 
     def __init__(self, from_dict: dict | None = None) -> None:
         from_dict = from_dict or {}
-        self.configured_driver = ConfiguredDriver(**from_dict.get("driver", {}))
+        self.timeout_multiplier = from_dict.get("timeout_multiplier", 1)
+        self.configured_driver = ConfiguredDriver.from_dict(
+            galaxy_timeout_handler(self.timeout_multiplier), from_dict.get("driver", {})
+        )
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")
         self.target_url_from_selenium = from_dict.get("selenium_galaxy_url", self.url)
-        self.timeout_multiplier = from_dict.get("timeout_multiplier", 1)
 
     def _screenshot_path(self, label, extension=".png"):
         return label + extension
