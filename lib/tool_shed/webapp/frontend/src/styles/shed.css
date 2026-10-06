@@ -1,0 +1,309 @@
+/*
+ * Tool Shed surface styles, built on @galaxyproject/brand-tokens (see that package's DESIGN.md):
+ * a light-bg page, white rounded cards, dark-to-primary gradient page headers, and gold kept for
+ * the few moments that should read as Galaxy's signature.
+ */
+:root {
+    --shed-page-bg: var(--color-light-bg, #edf4fa);
+    --shed-surface: #fff;
+    --shed-border: var(--color-ebony-clay-100, #d3d6e2);
+    --shed-border-subtle: color-mix(in srgb, var(--color-ebony-clay-100, #d3d6e2) 60%, white);
+    --shed-radius: 0.5rem;
+    --shed-radius-sm: 0.375rem;
+    --shed-shadow-sm: 0 1px 2px rgba(44, 49, 67, 0.06), 0 1px 3px rgba(44, 49, 67, 0.08);
+    --shed-shadow-md: 0 4px 12px rgba(44, 49, 67, 0.1), 0 2px 4px rgba(44, 49, 67, 0.06);
+    --shed-heading: var(--color-galaxy-dark, #2c3143);
+    --shed-text: var(--color-chicago-800, #454446);
+    --shed-muted: var(--color-chicago-500, #6c6c6e);
+    --shed-link: var(--color-galaxy-primary, #25537b);
+    --shed-link-hover: var(--color-bay-of-many-950, #1f4465);
+    --shed-gold: var(--color-galaxy-gold, #ffd700);
+    --shed-content-width: 1200px;
+    --shed-masthead-height: 3.25rem;
+    --shed-transition: 150ms ease;
+}
+
+body {
+    background: var(--shed-page-bg);
+    color: var(--shed-text);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+    color: var(--shed-heading);
+}
+
+/*
+ * Content links: brand blue with a soft underline that turns gold on hover. Scoped to the main
+ * region and kept off component-owned anchors (menu items, tabs, buttons), whose package
+ * baselines sit at zero specificity and would otherwise take these colors.
+ */
+.shed-main a:where(:not(.dropdown-item, .nav-link, .g-button, .g-link)) {
+    color: var(--shed-link);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--shed-link) 35%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition:
+        color var(--shed-transition),
+        text-decoration-color var(--shed-transition);
+}
+
+.shed-main a:where(:not(.dropdown-item, .nav-link, .g-button, .g-link)):hover {
+    color: var(--shed-link-hover);
+    text-decoration-color: var(--shed-gold);
+    text-decoration-thickness: 2px;
+}
+
+code,
+kbd,
+pre {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+:not(pre) > code {
+    padding: 0.1em 0.35em;
+    font-size: 0.88em;
+    color: var(--color-ebony-clay-900, #2c3143);
+    background: var(--color-ebony-clay-50, #dfe2ea);
+    border-radius: 0.25rem;
+}
+
+/* A white content card -- the standard reading surface on the light page */
+.shed-card {
+    background: var(--shed-surface);
+    border: 1px solid var(--shed-border);
+    border-radius: var(--shed-radius);
+    box-shadow: var(--shed-shadow-sm);
+}
+
+.shed-card-body {
+    padding: 1.25rem 1.5rem;
+}
+
+/* Section title with the gold left bar from the brand system */
+.shed-section-title {
+    margin: 0 0 1rem;
+    padding-left: 0.75rem;
+    border-left: 4px solid var(--shed-gold);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+/* Small uppercase label above a group of fields or links */
+.shed-eyebrow {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shed-muted);
+}
+
+/* Pill for counts and metadata */
+.shed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-bay-of-many-900, #25537b);
+    background: var(--color-bay-of-many-100, #edf4fa);
+    border: 1px solid var(--color-bay-of-many-200, #cde0f0);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* Dark grid mesh, as on the Galaxy Hub's dark sections */
+.shed-grid-dark {
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* Tabs: an underline strip with a gold bar under the active tab, rather than boxed folder tabs */
+.shed-main .tabs .nav-tabs {
+    gap: 0.25rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--shed-border);
+}
+
+.shed-main .tabs .nav-tabs .nav-link {
+    margin-bottom: -1px;
+    padding: 0.75rem 0.85rem 0.65rem;
+    font-weight: 700;
+    color: var(--shed-muted);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    transition:
+        color var(--shed-transition),
+        border-color var(--shed-transition);
+}
+
+.shed-main .tabs .nav-tabs .nav-link:hover {
+    color: var(--shed-heading);
+    border-bottom-color: var(--shed-border);
+}
+
+.shed-main .tabs .nav-tabs .nav-link.active {
+    color: var(--shed-heading);
+    background: none;
+    border-bottom-color: var(--shed-gold);
+}
+
+/*
+ * Tables: tinted header, hairline row dividers, no vertical rules or stripes. The extra
+ * .g-table-container/.table qualifiers outrank GTable's own scoped header rules.
+ */
+.shed-main .g-table-container .g-table.table th,
+.shed-main .g-table-container .g-table.table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--shed-border-subtle);
+    border-left: none;
+    border-right: none;
+}
+
+.shed-main .g-table-container .g-table.table thead th {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--shed-muted);
+    background: color-mix(in srgb, var(--shed-page-bg) 55%, white);
+    border-top: none;
+    border-bottom: 1px solid var(--shed-border);
+}
+
+.shed-main .g-table-container .g-table.table.g-table-compact th,
+.shed-main .g-table-container .g-table.table.g-table-compact td {
+    padding: 0.5rem 0.75rem;
+}
+
+.shed-main .g-table-container .g-table.table thead th.g-table-sorted {
+    color: var(--shed-heading);
+    background: color-mix(in srgb, var(--shed-page-bg) 55%, white);
+}
+
+.shed-main .g-table-container .g-table.table tbody tr {
+    background: none;
+    transition: background-color var(--shed-transition);
+}
+
+.shed-main .g-table-container .g-table.table tbody tr:hover {
+    background: color-mix(in srgb, var(--shed-page-bg) 45%, white);
+}
+
+.shed-main .g-table-container .g-table.table-bordered {
+    border: none;
+}
+
+.shed-main .g-table-container .g-table caption {
+    padding: 0;
+}
+
+/* A table that stands alone on the page gets the card frame */
+.shed-main .shed-table-card {
+    overflow: hidden;
+    background: var(--shed-surface);
+    border: 1px solid var(--shed-border);
+    border-radius: var(--shed-radius);
+    box-shadow: var(--shed-shadow-sm);
+}
+
+/* Form fields: a little taller and softer than the package default, with a brand focus ring */
+.shed-main input.g-form-input,
+.shed-main textarea.g-form-input {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.95rem;
+    color: var(--shed-heading);
+    background: #fff;
+    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    border-radius: var(--shed-radius-sm);
+    transition:
+        border-color var(--shed-transition),
+        box-shadow var(--shed-transition);
+}
+
+.shed-main input.g-form-input:hover {
+    border-color: var(--color-ebony-clay-400, #8992b2);
+}
+
+.shed-main input.g-form-input:focus {
+    border-color: var(--color-galaxy-primary, #25537b);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-galaxy-primary, #25537b) 25%, transparent);
+}
+
+.shed-main .g-form-label .label-text {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--shed-heading);
+}
+
+/*
+ * The remaining Quasar selects, dressed to match the inputs above until a galaxy-ui select
+ * replaces them: white field, hairline border, brand focus ring, no filled-grey underline.
+ */
+.shed-main .q-field--filled .q-field__control,
+.shed-main .q-field--outlined .q-field__control {
+    background: #fff;
+    border-radius: var(--shed-radius-sm);
+}
+
+.shed-main .q-field--filled .q-field__control::before,
+.shed-main .q-field--outlined .q-field__control::before {
+    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    border-radius: var(--shed-radius-sm);
+    background: none;
+    /* Quasar fades this layer in only on hover */
+    opacity: 1;
+}
+
+.shed-main .q-field--filled .q-field__control::after,
+.shed-main .q-field--outlined .q-field__control::after {
+    display: none;
+}
+
+.shed-main .q-field--focused .q-field__control {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-galaxy-primary, #25537b) 25%, transparent);
+}
+
+.shed-main .q-field--focused .q-field__control::before {
+    border-color: var(--color-galaxy-primary, #25537b);
+}
+
+.shed-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.shed-muted {
+    color: var(--shed-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --shed-transition: 0ms;
+    }
+}

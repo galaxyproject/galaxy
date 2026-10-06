@@ -40,11 +40,13 @@ body
   position: sticky
   top: 0
   z-index: 1000
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2)
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 8px rgba(25, 31, 51, 0.25)
 
 .shed-main
   // The skip link lands here; keep its start clear of the sticky masthead
-  scroll-margin-top: 50px
+  scroll-margin-top: var(--shed-masthead-height)
+  // Fill the window so short pages still sit on the page background
+  min-height: calc(100vh - var(--shed-masthead-height))
   &:focus
     outline: none
 
@@ -66,7 +68,7 @@ body
 hr
   // Quasar's reset zeroes hr height, so draw the line as a border instead
   border: none
-  border-top: 1px solid var(--color-grey-200)
+  border-top: 1px solid var(--shed-border-subtle)
   margin: 0
   &.spaced
     margin: 0.5rem 0

@@ -104,9 +104,16 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
 // Galaxy masthead idiom: flat dark bar, gold hover/active accents.
 .shed-masthead {
     display: flex;
+    // Long usernames on a phone wrap the controls onto a second row rather than covering the logo
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
-    min-height: 50px;
-    padding: 0 var(--spacing-3);
+    min-height: var(--shed-masthead-height);
+    padding: 0 var(--spacing-3) 0 var(--spacing-4);
+
+    @media (max-width: 599px) {
+        padding: 0 var(--spacing-1) 0 var(--spacing-3);
+    }
     color: white;
     background: var(--color-galaxy-dark, #2c3143);
 
@@ -118,13 +125,20 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
         background: none;
         border: none;
         // Full masthead height, so the whole strip is the hit area as with Quasar's stretched buttons
-        height: 50px;
+        height: var(--shed-masthead-height);
         padding: 0 var(--spacing-3);
         font-weight: bold;
 
         &:hover,
         &[aria-expanded="true"] {
             color: var(--color-galaxy-gold, #ffd700);
+        }
+    }
+
+    @media (max-width: 599px) {
+        :deep(.masthead-toggle),
+        :deep(.g-button.masthead-icon) {
+            padding: 0 0.4rem;
         }
     }
 
@@ -155,8 +169,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
     .masthead-brand {
         display: inline-block;
         vertical-align: middle;
-        // The logo is a wordmark, so the title follows it as the next word
-        margin-right: 0.4rem;
+        margin-right: 0.75rem;
 
         img {
             display: block;
@@ -165,15 +178,20 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
     }
 
     .masthead-title {
-        flex: 1;
+        flex: 1 0 auto;
         display: flex;
         align-items: center;
-        min-width: 0;
         font-size: 1.3rem;
     }
 
+    // The logo is the Galaxy wordmark; the product name sits beside it behind a hairline divider
     .masthead-name {
-        font-weight: bold;
+        padding-left: 0.75rem;
+        border-left: 1px solid rgba(255, 255, 255, 0.25);
+        font-size: 1.1rem;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+        color: var(--color-ebony-clay-50, #dfe2ea);
 
         // Phones get the logo alone, which already reads "Galaxy"
         @media (max-width: 599px) {
