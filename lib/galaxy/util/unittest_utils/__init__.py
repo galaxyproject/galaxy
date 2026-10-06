@@ -13,6 +13,7 @@ from typing_extensions import ParamSpec
 
 from galaxy.util import requests
 from galaxy.util.commands import which
+from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 
 
 def site_down_reason(url: str) -> str | None:
@@ -31,6 +32,13 @@ def site_down_reason(url: str) -> str | None:
 
 def is_site_up(url: str) -> bool:
     return site_down_reason(url) is None
+
+
+def raise_skip_if_site_down(url: str) -> None:
+    """Raise ``SkipTest`` if ``url`` does not answer with HTTP 200, for setup code that isn't a test."""
+    reason = site_down_reason(url)
+    if reason:
+        raise SkipTest(f"Test depends on [{url}] being up and it appears to be down ({reason}).")
 
 
 P = ParamSpec("P")
@@ -57,9 +65,7 @@ def skip_if_site_down(url: str, unavailable_pattern: str | None = None) -> Calla
     def method_wrapper(method: Callable[P, T]) -> Callable[P, T]:
         @wraps(method)
         def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
-            reason = site_down_reason(url)
-            if reason:
-                raise SkipTest(f"Test depends on [{url}] being up and it appears to be down ({reason}).")
+            raise_skip_if_site_down(url)
             if unavailable_pattern is None:
                 return method(*args, **kwargs)
             try:
@@ -102,7 +108,7 @@ skip_if_workflowhub_down = skip_if_site_down(
 )
 skip_if_quay_down = skip_if_site_down("https://quay.io/")
 skip_if_galaxy_depot_down = skip_if_site_down("https://depot.galaxyproject.org/")
-skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
+skip_if_toolshed_down = skip_if_site_down(DEFAULT_TOOL_SHED_URL)
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:
