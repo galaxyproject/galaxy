@@ -142,6 +142,25 @@ describe("Node", () => {
         }
     });
 
+    it("keeps Enter on the tool recommendations button from activating the node", async () => {
+        galaxyConfig.enable_tool_recommendations = true;
+        const { wrapper } = mountNode(mount);
+        try {
+            await flushPromises();
+
+            await wrapper.find("button.node-recommendations").trigger("keyup.enter");
+
+            expect(wrapper.emitted("onActivate")).toBeUndefined();
+
+            await wrapper.find(".card-header").trigger("keyup.enter");
+
+            expect(wrapper.emitted("onActivate")).toEqual([[0]]);
+        } finally {
+            wrapper.unmount();
+            galaxyConfig.enable_tool_recommendations = false;
+        }
+    });
+
     describe("double click", () => {
         async function clickNode(wrapper: ReturnType<typeof mount>) {
             const header = wrapper.find(".card-header");

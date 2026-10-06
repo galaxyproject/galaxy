@@ -22,7 +22,7 @@
             @pointerup.exact="onPointerUp"
             @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
-            @keyup.enter="makeActive">
+            @keyup.enter="onHeaderEnter">
             <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <GButton
@@ -441,6 +441,13 @@ function onClone() {
 
 function makeActive() {
     emit("onActivate", props.id);
+}
+
+// Enter on the recommendations button toggles its popover and must not also activate the node.
+function onHeaderEnter(event: KeyboardEvent) {
+    if (!(event.target instanceof Element && event.target.closest(".node-recommendations"))) {
+        makeActive();
+    }
 }
 
 function toggleSelected() {
