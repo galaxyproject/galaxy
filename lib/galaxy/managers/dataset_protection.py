@@ -37,7 +37,10 @@ from galaxy.job_execution.protection.outputs import (
     OUTCOME_PROTECTED,
     SIDECAR_FILE,
 )
-from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
+from galaxy.job_execution.protection.stage import (
+    CLEANUP_FAILURE_FILE,
+    PROTECTION_SETUP_FAILURE_FILE,
+)
 from galaxy.job_execution.protection import (
     protected_directory,
     ProtectedFile,
@@ -96,6 +99,17 @@ def _job_outputs(job: Job) -> list[DatasetInstance]:
             for dataset_instance in collection.dataset_instances:
                 outputs[dataset_instance.id] = dataset_instance
     return list(outputs.values())
+
+
+def _outputs_in_directory(job: Job, compute_environment: "ComputeEnvironment", directory: str) -> bool:
+    """Whether the tool writes every declared output of the job inside ``directory``."""
+    associations: list[Any] = [*job.output_datasets, *job.output_library_datasets]
+    for association in associations:
+        # None when a runner doesn't relocate the output: the tool writes to its final location.
+        path = compute_environment.output_path_rewrite(association.dataset)
+        if not path or not os.path.abspath(path).startswith(os.path.join(os.path.abspath(directory), "")):
+            return False
+    return True
 
 
 def _has_content(dataset_instance: DatasetInstance) -> bool:
@@ -319,11 +333,11 @@ class DatasetProtectionManager:
             return None
         if tool.tool_type not in PROTECTED_TOOL_TYPES:
             raise ProtectionError(f"Tool '{tool.name}' can't be used with encrypted datasets.")
-        destination.check()
+        job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
+        destination.check(outputs_in_job_directory=_outputs_in_directory(job, compute_environment, job_directory))
         assert destination.recryptor
         margin = JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
 
-        job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
         inputs_directory = os.path.join(protected_directory(job_directory), "inputs")
         protected_inputs: list[ProtectedInput] = []
         grants: list[DatasetProtectionGrant] = []
@@ -361,15 +375,19 @@ class DatasetProtectionManager:
         staged_directory = os.path.join(inputs_directory, str(dataset.id))
         inner_ext = unwrap_crypt4gh_file_ext(dataset_instance.extension) or "dat"
         staged_extra_files_path = os.path.join(staged_directory, "plaintext_files")
-        source_extra_files_path = compute_environment.input_extra_files_rewrite(dataset_instance)
-        extra_files = {
-            relpath: ProtectedFile(
-                source_path=os.path.join(source_extra_files_path, relpath),
-                staged_path=os.path.join(staged_extra_files_path, relpath),
-                compute_header=compute_header,
-            )
-            for relpath, compute_header in grant.grant_data.get("extra_files", {}).items()
-        }
+        source_extra_files_path = None
+        extra_files: dict[str, ProtectedFile] = {}
+        # Only ask for extra files that exist: Pulsar stages every directory it is asked about.
+        if dataset_instance.extra_files_path_exists():
+            source_extra_files_path = compute_environment.input_extra_files_rewrite(dataset_instance)
+            extra_files = {
+                relpath: ProtectedFile(
+                    source_path=os.path.join(source_extra_files_path, relpath),
+                    staged_path=os.path.join(staged_extra_files_path, relpath),
+                    compute_header=compute_header,
+                )
+                for relpath, compute_header in grant.grant_data.get("extra_files", {}).items()
+            }
         return ProtectedInput(
             dataset_id=dataset.id,
             key_ref=grant.key_ref,
@@ -382,6 +400,14 @@ class DatasetProtectionManager:
             source_extra_files_path=source_extra_files_path,
             extra_files=extra_files,
         )
+
+    def setup_failure(self, job_directory: str) -> str | None:
+        """Why decrypting the inputs of a protected job failed, if it did: the tool never ran."""
+        path = os.path.join(job_directory, PROTECTION_SETUP_FAILURE_FILE)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return f.read().strip() or "Could not decrypt the protected inputs of this job."
 
     def finish_job(self, job: Job, job_directory: str) -> str | None:
         """Verify every output of a finished protected job was protected, record the grants to reuse them.
