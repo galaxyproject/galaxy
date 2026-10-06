@@ -204,6 +204,14 @@ describe("test helpers in tool searching utilities", () => {
                 panel: tempToolPanel.default,
             },
             {
+                // a full Tool Shed GUID (with `.`, `/` and `+`) is searchable if provided "id:"
+                q: "id:toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
+                expectedResults: ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"],
+                keys: { description: 1, name: 2 },
+                tools: Object.values(tempToolsList.tools),
+                panel: tempToolPanel.default,
+            },
+            {
                 // section is searchable if provided "section:"
                 q: "section:Lift-Over",
                 expectedResults: ["liftOver1"],
