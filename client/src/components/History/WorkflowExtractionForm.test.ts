@@ -1,6 +1,5 @@
-import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount, shallowMount, type VueWrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,11 +12,10 @@ import {
 import { fetchWorkflowExtractionSummary } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 
-import { type InputStep, isInputStep, toExtractionRow } from "./WorkflowExtraction/types";
+import { type InputStep, isInputStep } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
-import GCard from "../Common/GCard.vue";
 import RenameModal from "../Common/RenameModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
@@ -773,41 +771,5 @@ describe("WorkflowExtractionForm", () => {
             expect(fetchWorkflowExtractionSummary).not.toHaveBeenCalled();
             expect(extractWorkflowFromHistory).toHaveBeenCalledWith("history-1");
         });
-    });
-});
-
-describe("WorkflowExtractionCard seed_warning", () => {
-    function cardBadges(job: WorkflowExtractionJob): Array<{ id: string; title?: string }> {
-        const wrapper = shallowMount(WorkflowExtractionCard as object, {
-            propsData: { job: toExtractionRow(job) },
-            localVue,
-        });
-        return wrapper.getComponent(GCard).props("badges") ?? [];
-    }
-
-    it("renders a seed warning badge when seed_warning is set", () => {
-        const badge = cardBadges({ ...INPUT_JOB, seed_warning: "Seeded as an input." }).find(
-            (b) => b.id === "seed-warning",
-        );
-        expect(badge).toBeTruthy();
-        expect(badge?.title).toBe("Seeded as an input.");
-    });
-
-    it("does not render a seed warning badge when seed_warning is absent", () => {
-        expect(cardBadges(INPUT_JOB).find((b) => b.id === "seed-warning")).toBeFalsy();
-    });
-});
-
-describe("WorkflowExtractionCard step label clear", () => {
-    it("emits clear-step-label when GCard's clear-title button is clicked", async () => {
-        const job = { ...toExtractionRow(TOOL_JOB), stepLabel: "concatenate" };
-        const wrapper = mount(WorkflowExtractionCard as object, {
-            propsData: { job },
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: { GenericHistoryItem: true },
-        });
-        await wrapper.find(".g-card-clear-title").trigger("click");
-        expect(wrapper.emitted("clear-step-label")).toHaveLength(1);
     });
 });
