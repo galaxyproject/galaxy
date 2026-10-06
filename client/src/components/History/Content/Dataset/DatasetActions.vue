@@ -70,7 +70,9 @@ const authorizeComputeTitle = computed(() => {
     if (expiresAt) {
         return `${localize("Authorized for your jobs until")} ${new Date(`${expiresAt}Z`).toLocaleString()}. ${localize("Click to renew.")}`;
     }
-    return localize("Authorize your jobs to decrypt this dataset");
+    return `${localize("Authorize your jobs to decrypt this dataset.")} ${localize(
+        "Authorization is personal: sharing this dataset does not let others compute on it.",
+    )}`;
 });
 
 const reportErrorUrl = computed(() => {
