@@ -112,6 +112,14 @@ def _outputs_in_directory(job: Job, compute_environment: "ComputeEnvironment", d
     return True
 
 
+def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> bool:
+    """Whether extra files kept from an earlier grant use a compute keypair expiring within ``margin``."""
+    extra_files_key = grant.grant_data.get("extra_files_key")
+    if not extra_files_key or not grant.grant_data.get("extra_files"):
+        return False
+    return datetime.fromisoformat(extra_files_key["expires_at"]) <= now() + margin
+
+
 def _has_content(dataset_instance: DatasetInstance) -> bool:
     dataset = dataset_instance.dataset
     return bool(dataset and not dataset.purged and dataset.state != Dataset.states.DEFERRED and dataset.file_size)
@@ -250,12 +258,21 @@ class DatasetProtectionManager:
         record = scheme.validate_user_grant(payload)
 
         grant = self.get_grant(user, dataset, scheme.name)
+        grant_data = dict(record.grant_data)
         if grant is None:
             grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme.name)
             self.sa_session.add(grant)
+        elif extra_files := (grant.grant_data or {}).get("extra_files"):
+            # Users only authorize the primary file again: keep the extra files of protected job outputs,
+            # with the compute keypair they are encrypted to, until it expires.
+            grant_data["extra_files"] = extra_files
+            grant_data["extra_files_key"] = grant.grant_data.get("extra_files_key") or {
+                "key_ref": grant.key_ref,
+                "expires_at": grant.expires_at.isoformat(),
+            }
         grant.key_ref = record.key_ref
         grant.expires_at = record.expires_at
-        grant.grant_data = record.grant_data
+        grant.grant_data = grant_data
         grant.source = GRANT_SOURCE_USER
         self.sa_session.commit()
         log.info("Registered %s grant for user %s on dataset %s", scheme.name, user.id, dataset.id)
@@ -350,6 +367,11 @@ class DatasetProtectionManager:
                     f"You are not authorized to decrypt dataset '{dataset_instance.name}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
+            if _extra_files_expire(grant, max(scheme.expiry_margin, margin)):
+                raise ProtectionError(
+                    f"The extra files of dataset '{dataset_instance.name}' can't be decrypted anymore: their "
+                    "authorization comes from the job that created them, and it expires before this job can finish."
+                )
             grants.append(grant)
             protected_inputs.append(
                 self._protected_input(dataset_instance, grant, compute_environment, inputs_directory)
@@ -377,6 +399,7 @@ class DatasetProtectionManager:
         staged_extra_files_path = os.path.join(staged_directory, "plaintext_files")
         source_extra_files_path = None
         extra_files: dict[str, ProtectedFile] = {}
+        extra_files_key = grant.grant_data.get("extra_files_key") or {}
         # Only ask for extra files that exist: Pulsar stages every directory it is asked about.
         if dataset_instance.extra_files_path_exists():
             source_extra_files_path = compute_environment.input_extra_files_rewrite(dataset_instance)
@@ -385,6 +408,7 @@ class DatasetProtectionManager:
                     source_path=os.path.join(source_extra_files_path, relpath),
                     staged_path=os.path.join(staged_extra_files_path, relpath),
                     compute_header=compute_header,
+                    key_ref=extra_files_key.get("key_ref"),
                 )
                 for relpath, compute_header in grant.grant_data.get("extra_files", {}).items()
             }
