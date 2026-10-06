@@ -260,7 +260,10 @@ class Crypt4GHJobRuntime:
         files: list[tuple[ProtectedFile, str]] = []
         for protected_input in self.plan.inputs:
             files.append((protected_input.primary, protected_input.key_ref))
-            files.extend((extra_file, protected_input.key_ref) for extra_file in protected_input.extra_files.values())
+            files.extend(
+                (extra_file, extra_file.key_ref or protected_input.key_ref)
+                for extra_file in protected_input.extra_files.values()
+            )
             source_extra = protected_input.source_extra_files_path
             if source_extra and os.path.isdir(source_extra):
                 for root, _, filenames in os.walk(source_extra):
