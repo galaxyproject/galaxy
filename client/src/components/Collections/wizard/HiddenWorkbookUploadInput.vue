@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-interface Props {
+defineProps<{
     // Lets tests tell the wizard header's input apart from the one in the upload card.
-    dataDescription?: string;
-}
-
-withDefaults(defineProps<Props>(), {
-    dataDescription: "workbook file input",
-});
+    dataDescription: string;
+}>();
 
 const emit = defineEmits(["onFileUpload"]);
 const fileInputRef = ref<HTMLInputElement>();

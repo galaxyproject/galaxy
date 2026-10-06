@@ -1,4 +1,4 @@
-"""Import datasets and collections from filled-in workbooks.
+"""Rule builder mappings inferred from filled-in workbooks.
 
 Galaxy infers the rule builder mapping from the workbook's column headers, so
 these tests upload a workbook and assert the mapping it produced rather than
@@ -12,7 +12,7 @@ from .framework import (
 from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestWorkbookImport(SeleniumTestCase, UsesUploadActivity):
+class TestWorkbookMapping(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     def _workbook(self, index: int) -> str:
@@ -37,14 +37,14 @@ class TestWorkbookImport(SeleniumTestCase, UsesUploadActivity):
         self._assert_mapping(mapping, 2, "dbkey", [2])
 
     @selenium_test
-    def test_dataset_import_from_workbook(self):
+    def test_dataset_mapping_from_workbook(self):
         """Dataset name, URL and genome columns are recognized by their headers."""
         self.upload_context("rule").upload_workbook(self._workbook(1))
         self._assert_example_1_mapping()
 
     @selenium_test
-    def test_dataset_import_from_workbook_full_wizard(self):
-        """The same import stepped through the wizard instead of the upload shortcut."""
+    def test_dataset_mapping_from_workbook_full_wizard(self):
+        """The same mapping stepped through the wizard instead of the upload shortcut."""
         rule_import = self.upload_context("rule").creating("datasets").from_source("workbook")
         assert "type=datasets" in rule_import.workbook_download_url()
         rule_import.upload_workbook_from_card(self._workbook(1))
@@ -64,7 +64,7 @@ class TestWorkbookImport(SeleniumTestCase, UsesUploadActivity):
         assert "collection_type=list:paired" in download_url.replace("%3A", ":"), download_url
 
     @selenium_test
-    def test_list_collection_import_from_workbook(self):
+    def test_list_collection_mapping_from_workbook(self):
         """URI and TYPE are recognized as alternate spellings of url and file type."""
         self.upload_context("rule").upload_workbook(self._workbook(2))
 
@@ -74,7 +74,7 @@ class TestWorkbookImport(SeleniumTestCase, UsesUploadActivity):
         self._assert_mapping(mapping, 2, "file_type", [2])
 
     @selenium_test
-    def test_list_paired_collection_import_from_workbook(self):
+    def test_list_paired_collection_mapping_from_workbook(self):
         """Two URL columns per row are split into forward and reverse elements."""
         self.upload_context("rule").upload_workbook(self._workbook(3))
 
@@ -85,7 +85,7 @@ class TestWorkbookImport(SeleniumTestCase, UsesUploadActivity):
         self._assert_mapping(mapping, 3, "paired_identifier", [3])
 
     @selenium_test
-    def test_nested_list_paired_collection_import_from_workbook(self):
+    def test_nested_list_paired_collection_mapping_from_workbook(self):
         """Two identifier columns nest, outermost first, around the split pairs."""
         self.upload_context("rule").upload_workbook(self._workbook(4))
 
