@@ -24,6 +24,7 @@ from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
 from galaxy.model import (
+    History,
     Job,
     StoredWorkflow,
     User,
@@ -52,8 +53,11 @@ class FakeIndex:
         return self._job_args.get(job.id)
 
 
+PAGE_HISTORY_ID = 3
+
+
 def _rewriter(**index_args) -> _ReportLabelRewriter:
-    return _ReportLabelRewriter(cast(ExtractionLabelIndex, FakeIndex(**index_args)))
+    return _ReportLabelRewriter(cast(ExtractionLabelIndex, FakeIndex(**index_args)), PAGE_HISTORY_ID)
 
 
 def _hda(id_):
@@ -103,7 +107,7 @@ def test_unquotable_content_label_dropped_with_warning(label):
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label=label, uuid=None)
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    rewriter = _ReportLabelRewriter(index)
+    rewriter = _ReportLabelRewriter(index, PAGE_HISTORY_ID)
     line, whole_block = rewriter.handle_dataset_display(
         "history_dataset_display(history_dataset_id=abc123)\n", _content_stub(12)
     )
@@ -121,7 +125,7 @@ def test_unquotable_input_label_dropped_with_warning():
     index = ExtractionLabelIndex(
         content_to_step={("dataset", 11): (_input_step('my "input"'), "output")}, job_to_step={}, icj_to_step={}
     )
-    rewriter = _ReportLabelRewriter(index)
+    rewriter = _ReportLabelRewriter(index, PAGE_HISTORY_ID)
     line, _ = rewriter.handle_dataset_peek("history_dataset_peek(history_dataset_id=abc123)\n", _content_stub(11))
     assert line == ""
     assert "contains a double quote or line break" in rewriter.warnings[0]
@@ -129,7 +133,7 @@ def test_unquotable_input_label_dropped_with_warning():
 
 def test_unquotable_step_label_dropped_with_warning():
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: _tool_step("bwa\nmem")}, icj_to_step={})
-    rewriter = _ReportLabelRewriter(index)
+    rewriter = _ReportLabelRewriter(index, PAGE_HISTORY_ID)
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
     line, _ = rewriter.handle_job_metrics("job_metrics(job_id=abc123)\n", cast(Job, job))
     assert line == ""
@@ -145,6 +149,26 @@ def test_unportable_directive_dropped_with_warning():
     rewriter = _rewriter()
     line, whole_block = rewriter.handle_workflow_display(
         "workflow_display(workflow_id=abc123)\n", cast(StoredWorkflow, object()), None
+    )
+    assert line == ""
+    assert whole_block is True
+    assert "cannot be expressed" in rewriter.warnings[0]
+
+
+def test_history_link_to_page_history_becomes_argless():
+    rewriter = _rewriter()
+    line, whole_block = rewriter.handle_history_link(
+        "history_link(history_id=abc123)\n", cast(History, SimpleNamespace(id=PAGE_HISTORY_ID))
+    )
+    assert line == "history_link()\n"
+    assert whole_block is False
+    assert rewriter.warnings == []
+
+
+def test_history_link_to_other_history_dropped_with_warning():
+    rewriter = _rewriter()
+    line, whole_block = rewriter.handle_history_link(
+        "history_link(history_id=abc123)\n", cast(History, SimpleNamespace(id=PAGE_HISTORY_ID + 1))
     )
     assert line == ""
     assert whole_block is True
@@ -294,7 +318,7 @@ def test_rewrite_invalid_markdown_raises_galaxy_exception(monkeypatch):
         lambda self, trans, markdown: '```galaxy\nhistory_dataset_display(output="a"b")\n```\n',
     )
     with pytest.raises(MalformedContents):
-        report._rewrite_page_markdown(_NO_TRANS, "irrelevant", cast(ExtractionLabelIndex, FakeIndex()))
+        report._rewrite_page_markdown(_NO_TRANS, "irrelevant", cast(ExtractionLabelIndex, FakeIndex()), PAGE_HISTORY_ID)
 
 
 def _patch_extraction(monkeypatch, finalized):
