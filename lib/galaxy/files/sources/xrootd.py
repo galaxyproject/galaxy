@@ -12,6 +12,7 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceConfiguration,
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
+    normalize_rooted_relative_path,
 )
 from galaxy.util.config_templates import TemplateExpansion
 
@@ -28,14 +29,6 @@ def _normalize_root(value: str) -> str:
     if not root or not root.startswith("/"):
         raise ValueError("XRootD root must be an absolute directory path.")
     return "/" + posixpath.normpath(root).lstrip("/")
-
-
-def _normalize_relative_path(path: str) -> str:
-    # Normalize a relative path: an absolute normpath would hide leading '..'.
-    relative = posixpath.normpath(path.lstrip("/"))
-    if relative == ".." or relative.startswith("../"):
-        raise MessageException("Invalid path: outside configured XRootD root.")
-    return "" if relative == "." else relative
 
 
 class XRootDFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -80,13 +73,12 @@ class XRootDFilesSource(FsspecFilesSource[XRootDFileSourceTemplateConfiguration,
         return XRootDFileSystem(
             hostid=context.config.hostid,
             timeout=context.config.timeout,
-            skip_instance_cache=True,
             asynchronous=False,
             **cache_options,
         )
 
     def _to_filesystem_path(self, path: str, config: XRootDFileSourceConfiguration) -> str:
-        relative_path = _normalize_relative_path(path)
+        relative_path = normalize_rooted_relative_path(path, "XRootD")
         return f"{config.root.rstrip('/')}/{relative_path}" if relative_path else config.root
 
     def _adapt_entry_path(self, filesystem_path: str, config: XRootDFileSourceConfiguration) -> str:
@@ -96,7 +88,7 @@ class XRootDFilesSource(FsspecFilesSource[XRootDFileSourceTemplateConfiguration,
         root_prefix = config.root.rstrip("/") + "/"
         if not normalized_path.startswith(root_prefix):
             raise MessageException(f"Unexpected XRootD listing entry outside configured root: {filesystem_path!r}")
-        relative_path = _normalize_relative_path(normalized_path[len(root_prefix) :])
+        relative_path = normalize_rooted_relative_path(normalized_path[len(root_prefix) :], "XRootD")
         return f"/{relative_path}"
 
     def _write_from(
@@ -109,10 +101,10 @@ class XRootDFilesSource(FsspecFilesSource[XRootDFileSourceTemplateConfiguration,
         cache_options = self._get_cache_options(context.config)
         fs = self._open_fs(context, cache_options)
         # fsspec-xrootd supports file writes but does not implement put_file().
+        # Unlike put_file(), parent directories are not created; uploads target existing directories.
         with open(native_path, "rb") as source:
             with fs.open(target_path, "wb") as destination:
                 shutil.copyfileobj(source, destination, length=1024 * 1024)
-        fs.invalidate_cache(posixpath.dirname(target_path))
 
     def get_scheme(self) -> str:
         return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "xrootd"
