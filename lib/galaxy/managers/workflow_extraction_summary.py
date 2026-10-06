@@ -22,7 +22,6 @@ from dataclasses import (
     field,
 )
 from typing import (
-    Any,
     cast,
     Literal,
 )
@@ -52,6 +51,8 @@ from galaxy.schema.workflows import (
     WorkflowExtractionSummary,
 )
 from galaxy.workflow.extract import (
+    DatasetCollectionCreationJob,
+    FakeJob,
     get_original_hda,
     get_original_hdca,
     original_content_ref,
@@ -64,8 +65,7 @@ from galaxy.workflow.extract import (
 log = logging.getLogger(__name__)
 
 # The job-like keys and dataset lists of :func:`galaxy.workflow.extract.summarize`.
-# Keys are Jobs or the FakeJob / DatasetCollectionCreationJob stand-ins for inputs.
-SummaryJob = Any
+SummaryJob = Job | FakeJob | DatasetCollectionCreationJob
 SummaryDatasets = list[tuple[str | None, HistoryItem]]
 
 SEED_AS_INPUT_WARNING = (
@@ -340,7 +340,6 @@ def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str 
 
 def _input_extraction_row(
     trans: ProvidesHistoryContext,
-    job: SummaryJob,
     datasets: SummaryDatasets,
     *,
     seeded: bool,
@@ -385,11 +384,10 @@ def _extraction_row(
 ) -> WorkflowExtractionJob:
     input_seeded, seed_warning = _input_seeding(datasets, closure)
 
-    if getattr(job, "is_fake", False):
+    if not isinstance(job, Job):
         # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
         return _input_extraction_row(
             trans,
-            job,
             datasets,
             seeded=input_seeded,
             tool_name=getattr(job, "name", None),
@@ -438,7 +436,7 @@ def _extraction_row(
     if not tool.is_workflow_compatible:
         # Not a workflow step (e.g. upload, data fetch) — treat as input.
         return _input_extraction_row(
-            trans, job, datasets, seeded=input_seeded, tool_name=tool.name, seed_warning=seed_warning
+            trans, datasets, seeded=input_seeded, tool_name=tool.name, seed_warning=seed_warning
         )
 
     tool_version_warning = (
@@ -492,9 +490,7 @@ def _synthesize_boundary_inputs(
             continue
         seed_warning = SEED_AS_INPUT_WARNING if ref in closure.seed_warning_refs else None
         synthesized.append(
-            _input_extraction_row(
-                trans, content, [(None, content)], seeded=True, tool_name=None, seed_warning=seed_warning
-            )
+            _input_extraction_row(trans, [(None, content)], seeded=True, tool_name=None, seed_warning=seed_warning)
         )
     return synthesized
 
@@ -510,17 +506,13 @@ def _summary_rows(
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
     rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
     for job, datasets in jobs.items():
-        if (
-            closure is not None
-            and not getattr(job, "is_fake", False)
-            and _produced_elsewhere(job, history_id, local_keys)
-        ):
+        if closure is not None and isinstance(job, Job) and _produced_elsewhere(job, history_id, local_keys):
             # Same boundary as the closure walk: each copy here is its own workflow input.
             tool = tool_for_job(trans, job)
             for item in datasets:
                 seeded, seed_warning = _input_seeding([item], closure)
                 row = _input_extraction_row(
-                    trans, job, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
+                    trans, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
                 )
                 rows.append((row, [item]))
         else:
