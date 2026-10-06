@@ -30,9 +30,9 @@ from galaxy.config import (
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
-from galaxy.managers.dataset_protection import DatasetProtectionManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.dataset_protection import DatasetProtectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager

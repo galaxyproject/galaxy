@@ -32,6 +32,14 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     RequestParameterInvalidException,
 )
+from galaxy.job_execution.protection import (
+    protected_directory,
+    ProtectedFile,
+    ProtectedInput,
+    ProtectionDestination,
+    ProtectionError,
+    ProtectionPlan,
+)
 from galaxy.job_execution.protection.outputs import (
     CONTENTLESS_OUTCOMES,
     OUTCOME_PROTECTED,
@@ -40,14 +48,6 @@ from galaxy.job_execution.protection.outputs import (
 from galaxy.job_execution.protection.stage import (
     CLEANUP_FAILURE_FILE,
     PROTECTION_SETUP_FAILURE_FILE,
-)
-from galaxy.job_execution.protection import (
-    protected_directory,
-    ProtectedFile,
-    ProtectedInput,
-    ProtectionDestination,
-    ProtectionError,
-    ProtectionPlan,
 )
 from galaxy.model import (
     Dataset,
@@ -86,10 +86,11 @@ JOB_TTL_MARGIN = timedelta(hours=1)
 
 def _job_outputs(job: Job) -> list[DatasetInstance]:
     """Every dataset a job produced, including discovered datasets and collection elements."""
-    outputs: dict[int, DatasetInstance] = {}
+    # HDAs and LDDAs have separate id sequences.
+    outputs: dict[tuple[type, int], DatasetInstance] = {}
     associations: list[Any] = [*job.output_datasets, *job.output_library_datasets]
     for association in associations:
-        outputs[association.dataset.id] = association.dataset
+        outputs[(type(association.dataset), association.dataset.id)] = association.dataset
     collections: list[Any] = [
         association.dataset_collection_instance for association in job.output_dataset_collection_instances
     ]
@@ -97,7 +98,7 @@ def _job_outputs(job: Job) -> list[DatasetInstance]:
     for collection in collections:
         if collection is not None:
             for dataset_instance in collection.dataset_instances:
-                outputs[dataset_instance.id] = dataset_instance
+                outputs[(type(dataset_instance), dataset_instance.id)] = dataset_instance
     return list(outputs.values())
 
 
