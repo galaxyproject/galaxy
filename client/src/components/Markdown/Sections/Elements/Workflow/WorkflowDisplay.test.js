@@ -8,6 +8,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./WorkflowDisplay.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
+import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
 
 const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
@@ -91,6 +92,14 @@ describe("WorkflowDisplay", () => {
         const popover = wrapper.findComponent(ToolLinkPopover);
         expect(popover.props("target")).toBe(button.attributes("id"));
         expect(popover.props("interactive")).toBe(true);
+    });
+
+    it("shows no tool details button for a tool step without a tool", async () => {
+        const wrapper = mountWithSteps([{ order_index: 0, type: "tool" }]);
+        await flushPromises();
+
+        expect(wrapper.find("[aria-label='Tool details']").exists()).toBe(false);
+        expect(wrapper.findComponent(WorkflowStepIcon).props("stepType")).toBe("tool");
     });
 
     it("gives each instance its own step button ids", async () => {

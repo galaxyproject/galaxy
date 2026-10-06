@@ -129,7 +129,7 @@ function toolButtonId(orderIndex: number) {
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
                         <GLink
-                            v-if="step.type == 'tool'"
+                            v-if="step.type == 'tool' && step.tool_id"
                             :id="toolButtonId(step.order_index)"
                             dark
                             thin
@@ -140,7 +140,7 @@ function toolButtonId(orderIndex: number) {
                         </GLink>
                         <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <ToolLinkPopover
-                            v-if="step.type == 'tool'"
+                            v-if="step.type == 'tool' && step.tool_id"
                             interactive
                             :target="toolButtonId(step.order_index)"
                             :tool-id="step.tool_id"

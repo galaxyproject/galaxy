@@ -66,7 +66,7 @@ watch(
     <BCard nobody>
         <BCardTitle v-if="title">
             <b>{{ title }}</b>
-            <GLink ref="info" dark thin type="button" aria-label="Tool details">
+            <GLink v-if="toolId" ref="info" dark thin type="button" aria-label="Tool details">
                 <FontAwesomeIcon :icon="faInfoCircle" size="sm" />
             </GLink>
             <ToolLinkPopover interactive :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
