@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue"
 import { getParsedTool, ParsedTool } from "@/api"
 import { errorMessageAsString } from "@/util"
 import LoadingDiv from "@/components/LoadingDiv.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import PreformattedContent from "@/components/PreformattedContent.vue"
 import BioToolsLink from "@/components/BioToolsLink.vue"
@@ -86,17 +87,8 @@ const linkedFromOlderRevision = computed(() => {
 
 <template>
     <div class="tool-version-page">
-        <div v-if="linkedFromOlderRevision" class="newer-revision-notice">
-            <!-- Page content rather than an event, so no assertive announcement -->
-            <GAlert variant="warning" role="status">
-                <strong
-                    >Warning: Showing tool information from a newer repository revision (the latest repository revision
-                    containing this tool version).</strong
-                >
-            </GAlert>
-        </div>
-        <loading-div v-if="loading" message="Loading tool information" />
-        <div v-else-if="errorMessage">
+        <loading-div v-if="loading" message="Loading tool information" class="tool-status" />
+        <div v-else-if="errorMessage" class="tool-status">
             <error-banner :error="errorMessage" />
             <GAlert variant="info" class="stale-metadata-hint">
                 <p>
@@ -105,163 +97,209 @@ const linkedFromOlderRevision = computed(() => {
                 </p>
             </GAlert>
         </div>
-        <section v-else class="tool-card">
-            <header class="tool-card-header">
-                <h1 class="tool-title">{{ toolTitle }}</h1>
-                <div>{{ version }}</div>
-            </header>
-            <div class="tool-card-section">
-                {{ tool?.description }}
-            </div>
-            <hr />
-            <div class="tool-card-section">
-                <dl class="tool-details">
-                    <div v-if="repository && repositoryRevision && repositoryLink" class="tool-detail">
-                        <dt>Repository</dt>
-                        <dd>
-                            <router-link :to="repositoryLink"
-                                >{{ repository.owner }} / {{ repository.name }} (@
-                                {{ repositoryRevision.changeset_revision }})</router-link
+        <template v-else>
+            <page-header :title="toolTitle" :subtitle="tool?.description ?? undefined">
+                <template v-if="repository && repositoryLink" #eyebrow>
+                    <router-link :to="repositoryLink">{{ repository.owner }} / {{ repository.name }}</router-link>
+                </template>
+                <template #meta>
+                    <span class="tool-version-chip">Version {{ version }}</span>
+                </template>
+            </page-header>
+            <div class="tool-body">
+                <div v-if="linkedFromOlderRevision" class="newer-revision-notice">
+                    <!-- Page content rather than an event, so no assertive announcement -->
+                    <GAlert variant="warning" role="status">
+                        <strong
+                            >Warning: Showing tool information from a newer repository revision (the latest repository
+                            revision containing this tool version).</strong
+                        >
+                    </GAlert>
+                </div>
+                <div class="tool-main">
+                    <section class="tool-card shed-card">
+                        <h2 class="tool-section-heading shed-section-title">Help</h2>
+                        <preformatted-content :contents="tool?.help?.content ?? ''" />
+                    </section>
+                    <section class="tool-card tool-references-card shed-card">
+                        <h2 class="tool-section-heading shed-section-title">References</h2>
+                        <p v-if="citations.length < 1" class="shed-muted">
+                            <i>This tool does not define any references.</i>
+                        </p>
+                        <dl v-else class="tool-details">
+                            <div v-for="(citation, index) in tool?.citations" :key="index" class="tool-detail">
+                                <dt>{{ citation.type }}</dt>
+                                <dd>{{ citation.content }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </div>
+                <aside class="tool-aside">
+                    <section class="tool-card tool-details-card shed-card">
+                        <h2 class="tool-section-heading shed-section-title">Details</h2>
+                        <dl class="tool-details">
+                            <div v-if="repository && repositoryRevision && repositoryLink" class="tool-detail">
+                                <dt>Repository</dt>
+                                <dd>
+                                    <router-link :to="repositoryLink"
+                                        >{{ repository.owner }} / {{ repository.name }} (@
+                                        {{ repositoryRevision.changeset_revision }})</router-link
+                                    >
+                                </dd>
+                            </div>
+                            <div class="tool-detail">
+                                <dt>TRS ID</dt>
+                                <dd>{{ trsToolId }}</dd>
+                            </div>
+                            <div class="tool-detail">
+                                <dt>LICENSE</dt>
+                                <dd v-if="tool?.license">
+                                    <license-link :id="tool.license" />
+                                </dd>
+                                <dd v-else><i>no license specified</i></dd>
+                            </div>
+                            <div class="tool-detail">
+                                <dt>PROFILE</dt>
+                                <dd v-if="tool?.profile">
+                                    {{ tool.profile }}
+                                </dd>
+                                <dd v-else><i>no profile specified - default of 16.01 assumed</i></dd>
+                            </div>
+                            <div
+                                v-for="edamOperation in tool?.edam_operations"
+                                :key="edamOperation"
+                                class="tool-detail"
                             >
-                        </dd>
-                    </div>
-                    <div class="tool-detail">
-                        <dt>TRS ID</dt>
-                        <dd>{{ trsToolId }}</dd>
-                    </div>
-                    <div class="tool-detail">
-                        <dt>LICENSE</dt>
-                        <dd v-if="tool?.license">
-                            <license-link :id="tool.license" />
-                        </dd>
-                        <dd v-else><i>no license specified</i></dd>
-                    </div>
-                    <div class="tool-detail">
-                        <dt>PROFILE</dt>
-                        <dd v-if="tool?.profile">
-                            {{ tool.profile }}
-                        </dd>
-                        <dd v-else><i>no profile specified - default of 16.01 assumed</i></dd>
-                    </div>
-                    <div v-for="edamOperation in tool?.edam_operations" :key="edamOperation" class="tool-detail">
-                        <dt>EDAM OPERATION</dt>
-                        <dd>
-                            <edam-link :term="edamOperation" />
-                        </dd>
-                    </div>
-                    <div v-for="edamTopic in tool?.edam_topics" :key="edamTopic" class="tool-detail">
-                        <dt>EDAM TOPIC</dt>
-                        <dd>
-                            <edam-link :term="edamTopic" />
-                        </dd>
-                    </div>
-                </dl>
+                                <dt>EDAM OPERATION</dt>
+                                <dd>
+                                    <edam-link :term="edamOperation" />
+                                </dd>
+                            </div>
+                            <div v-for="edamTopic in tool?.edam_topics" :key="edamTopic" class="tool-detail">
+                                <dt>EDAM TOPIC</dt>
+                                <dd>
+                                    <edam-link :term="edamTopic" />
+                                </dd>
+                            </div>
+                        </dl>
+                    </section>
+                    <section v-if="xrefs.length > 0" class="tool-card tool-xrefs-card shed-card">
+                        <h2 class="tool-section-heading shed-section-title">External links</h2>
+                        <dl class="tool-details">
+                            <div v-for="xref in xrefs" :key="xref.value" class="tool-detail">
+                                <dt>Catalog {{ xref.type }}</dt>
+                                <dd v-if="xref.type == 'bio.tools'">
+                                    <bio-tools-link :id="xref.value" />
+                                </dd>
+                                <dd v-else-if="xref.type == 'bioconductor'">
+                                    <bioconductor-link :id="xref.value" />
+                                </dd>
+                                <dd v-else>
+                                    {{ xref.value }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
             </div>
-            <hr />
-            <div v-if="xrefs.length > 0" class="tool-card-section">
-                <h2 class="tool-section-heading">External links</h2>
-                <dl class="tool-details">
-                    <div v-for="xref in xrefs" :key="xref.value" class="tool-detail">
-                        <dt>Catalog {{ xref.type }}</dt>
-                        <dd v-if="xref.type == 'bio.tools'">
-                            <bio-tools-link :id="xref.value" />
-                        </dd>
-                        <dd v-else-if="xref.type == 'bioconductor'">
-                            <bioconductor-link :id="xref.value" />
-                        </dd>
-                        <dd v-else>
-                            {{ xref.value }}
-                        </dd>
-                    </div>
-                </dl>
-            </div>
-            <hr />
-            <div class="tool-card-section">
-                <h2 class="tool-section-heading">Help</h2>
-                <preformatted-content :contents="tool?.help?.content ?? ''" />
-            </div>
-            <hr />
-            <div class="tool-card-section">
-                <h2 class="tool-section-heading">References</h2>
-                <span v-if="citations.length < 1"><i>This tool does not define any references.</i></span>
-                <dl v-else class="tool-details">
-                    <div v-for="(citation, index) in tool?.citations" :key="index" class="tool-detail">
-                        <dt>{{ citation.type }}</dt>
-                        <dd>{{ citation.content }}</dd>
-                    </div>
-                </dl>
-            </div>
-        </section>
+        </template>
     </div>
 </template>
 
 <style scoped>
-.tool-version-page {
-    margin: var(--spacing-6);
-}
-
-.newer-revision-notice {
-    margin-bottom: var(--spacing-4);
+.tool-status {
+    max-width: var(--shed-content-width);
+    margin: 2rem auto;
+    padding: 0 1.5rem;
 }
 
 .stale-metadata-hint {
-    margin-inline: var(--spacing-4);
+    margin-top: 1rem;
+}
+
+.tool-version-chip {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+/* Help and references lead; the details sit beside them on wide screens and below them on phones */
+.tool-body {
+    display: grid;
+    grid-template-areas:
+        "notice"
+        "main"
+        "aside";
+    gap: 1.25rem;
+    max-width: var(--shed-content-width);
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
+}
+
+@media (min-width: 1024px) {
+    .tool-body {
+        grid-template-columns: minmax(0, 1fr) 22rem;
+        grid-template-areas:
+            "notice notice"
+            "main aside";
+        align-items: start;
+    }
+}
+
+.newer-revision-notice {
+    grid-area: notice;
+}
+
+.tool-aside {
+    grid-area: aside;
+}
+
+.tool-main {
+    grid-area: main;
+}
+
+.tool-aside,
+.tool-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
 }
 
 .tool-card {
-    background: var(--background-color);
-    border: 1px solid var(--color-grey-300);
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.tool-card-header {
-    padding: var(--spacing-4);
-    background: var(--color-galaxy-primary);
-    color: var(--background-color);
-    border-radius: 0.25rem 0.25rem 0 0;
-}
-
-.tool-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 2rem;
-}
-
-.tool-card-section {
-    padding: var(--spacing-4);
+    padding: 1.25rem 1.5rem;
 }
 
 .tool-details {
     margin: 0;
-    border: 1px solid var(--color-grey-200);
 }
 
 .tool-detail {
-    padding: var(--spacing-2) var(--spacing-4);
+    padding: 0.55rem 0;
 }
 
 .tool-detail + .tool-detail {
-    border-top: 1px solid var(--color-grey-200);
+    border-top: 1px solid var(--shed-border-subtle);
 }
 
 .tool-detail dt {
-    color: var(--color-grey-600);
-    font-size: var(--font-size-small);
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    line-height: 2;
+    color: var(--shed-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .tool-detail dd {
-    margin: 0;
+    margin: 0.1rem 0 0;
+    overflow-wrap: anywhere;
 }
 
-.tool-section-heading {
+.tool-card p {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: 400;
-    line-height: 2rem;
 }
 </style>

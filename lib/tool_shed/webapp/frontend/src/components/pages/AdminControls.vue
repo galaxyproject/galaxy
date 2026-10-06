@@ -4,6 +4,7 @@ import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { ToolShedApi, components } from "@/schema"
 import PageContainer from "@/components/PageContainer.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import SelectUser from "@/components/SelectUser.vue"
 import { useUsersStore } from "@/stores"
 import { notify, notifyOnCatch } from "@/util"
@@ -53,57 +54,82 @@ async function onResetPassword() {
 
 <template>
     <page-container>
-        <GButton @click="onIndex">Re-index search</GButton>
-        <div v-if="searchResults">
-            {{ searchResults }}
+        <template #header>
+            <page-header title="Admin controls" subtitle="Maintenance tasks for this Tool Shed." />
+        </template>
+        <div class="admin-grid">
+            <section class="admin-card shed-card">
+                <h2 class="shed-section-title">Search index</h2>
+                <p class="admin-card-text">Rebuild the repository and tool search index from the current database.</p>
+                <GButton color="blue" @click="onIndex">Re-index search</GButton>
+                <pre v-if="searchResults" class="admin-results">{{ searchResults }}</pre>
+            </section>
+            <section class="admin-card shed-card">
+                <h2 class="reset-password-heading shed-section-title">Reset a user's password</h2>
+                <GForm class="reset-password-form" action="#" @submit.prevent="onResetPassword">
+                    <select-user
+                        label="Select user"
+                        persist-selection
+                        @selected-user="selectedUsername = $event"
+                        @cleared="selectedUsername = null"
+                    />
+                    <GFormLabel title="New Password">
+                        <GFormInput
+                            :model-value="password"
+                            type="password"
+                            name="password"
+                            autocomplete="new-password"
+                            @update:model-value="password = $event ?? ''"
+                        />
+                    </GFormLabel>
+                    <GFormLabel title="Re-enter New Password">
+                        <GFormInput
+                            :model-value="confirm"
+                            type="password"
+                            name="confirm"
+                            autocomplete="new-password"
+                            @update:model-value="confirm = $event ?? ''"
+                        />
+                    </GFormLabel>
+                    <div>
+                        <GButton color="blue" type="submit" name="reset_password_button">Reset Password</GButton>
+                    </div>
+                </GForm>
+            </section>
         </div>
-        <hr class="reset-password-divider" />
-        <h2 class="reset-password-heading">Reset a user's password</h2>
-        <GForm class="reset-password-form" style="max-width: 30rem" action="#" @submit.prevent="onResetPassword">
-            <select-user
-                label="Select user"
-                persist-selection
-                @selected-user="selectedUsername = $event"
-                @cleared="selectedUsername = null"
-            />
-            <GFormLabel title="New Password">
-                <GFormInput
-                    :model-value="password"
-                    type="password"
-                    name="password"
-                    autocomplete="new-password"
-                    @update:model-value="password = $event ?? ''"
-                />
-            </GFormLabel>
-            <GFormLabel title="Re-enter New Password">
-                <GFormInput
-                    :model-value="confirm"
-                    type="password"
-                    name="confirm"
-                    autocomplete="new-password"
-                    @update:model-value="confirm = $event ?? ''"
-                />
-            </GFormLabel>
-            <GButton color="blue" type="submit" name="reset_password_button">Reset Password</GButton>
-        </GForm>
     </page-container>
 </template>
 
 <style scoped>
-.reset-password-divider {
-    margin-top: var(--spacing-6);
-    margin-bottom: var(--spacing-6);
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    gap: 1.25rem;
+    align-items: start;
 }
 
-.reset-password-heading {
-    margin-top: var(--spacing-4);
-    margin-bottom: var(--spacing-4);
-    font-size: 1.25rem;
+.admin-card {
+    padding: 1.5rem;
+}
+
+.admin-card-text {
+    margin: 0 0 1rem;
+    color: var(--shed-muted);
+}
+
+.admin-results {
+    margin: 1rem 0 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    background: color-mix(in srgb, var(--shed-page-bg) 60%, white);
+    border: 1px solid var(--shed-border-subtle);
+    border-radius: var(--shed-radius-sm);
 }
 
 .reset-password-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-4);
+    gap: 1rem;
 }
 </style>

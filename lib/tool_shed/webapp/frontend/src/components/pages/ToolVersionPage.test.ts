@@ -46,7 +46,7 @@ async function mountPage() {
     return wrapper
 }
 
-function detailPairs(list: DOMWrapper<Element>) {
+function detailPairs(list: Pick<DOMWrapper<Element>, "findAll">) {
     return list.findAll(".tool-detail").map((detail) => [detail.find("dt").text(), detail.find("dd").text()])
 }
 
@@ -67,31 +67,31 @@ describe("ToolVersionPage", () => {
         getParsedTool.mockResolvedValue(parsedTool())
         const wrapper = await mountPage()
 
-        const details = wrapper.findAll("dl.tool-details")
-        expect(detailPairs(details[0])).toEqual([
+        const details = wrapper.get(".tool-details-card dl.tool-details")
+        expect(detailPairs(details)).toEqual([
             ["Repository", "devteam / concat (@ abc123)"],
             ["TRS ID", "devteam~concat~cat1"],
             ["LICENSE", "MIT"],
             ["PROFILE", "no profile specified - default of 16.01 assumed"],
             ["EDAM OPERATION", "operation_3436"],
         ])
-        expect(details[0].find("a").attributes("href")).toBe("/view/devteam/concat/abc123")
-        expect(detailPairs(details[1])).toEqual([["Catalog bio.tools", "cat"]])
+        expect(details.find("a").attributes("href")).toBe("/view/devteam/concat/abc123")
+        expect(detailPairs(wrapper.get(".tool-xrefs-card dl.tool-details"))).toEqual([["Catalog bio.tools", "cat"]])
     })
 
     it("lists citations when the tool has them", async () => {
         getParsedTool.mockResolvedValue(parsedTool({ citations: [{ type: "doi", content: "10.1000/xyz" }] }))
         const wrapper = await mountPage()
 
-        const details = wrapper.findAll("dl.tool-details")
-        expect(detailPairs(details[details.length - 1])).toEqual([["doi", "10.1000/xyz"]])
+        expect(detailPairs(wrapper.get(".tool-references-card dl.tool-details"))).toEqual([["doi", "10.1000/xyz"]])
     })
 
     it("says so when the tool defines no references", async () => {
         getParsedTool.mockResolvedValue(parsedTool({ xrefs: [] }))
         const wrapper = await mountPage()
 
-        expect(wrapper.findAll("dl.tool-details").length).toBe(1)
-        expect(wrapper.text()).toContain("This tool does not define any references.")
+        expect(wrapper.find(".tool-xrefs-card").exists()).toBe(false)
+        expect(wrapper.find(".tool-references-card dl").exists()).toBe(false)
+        expect(wrapper.get(".tool-references-card").text()).toContain("This tool does not define any references.")
     })
 })

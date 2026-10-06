@@ -6,6 +6,7 @@ import { ref, computed, nextTick } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import OverviewTab from "@/components/MetadataInspector/OverviewTab.vue"
 import ToolHistoryTab from "@/components/MetadataInspector/ToolHistoryTab.vue"
@@ -74,79 +75,65 @@ function onResetComplete() {
 
 <template>
     <div class="metadata-inspector-page">
-        <loading-div v-if="loading" message="Loading metadata..." />
-        <error-banner v-else-if="!repository" error="Failed to load repository" />
-        <section v-else class="inspector-card">
-            <header class="inspector-header">
-                <h1 class="inspector-title">{{ repository.name }} – <em>Metadata Inspector</em></h1>
-                <div>
-                    <router-link class="inspector-owner-link" :to="`/repositories_by_owner/${repository.owner}`">
-                        {{ repository.owner }}
-                    </router-link>
-                </div>
-            </header>
+        <loading-div v-if="loading" message="Loading metadata..." class="inspector-status" />
+        <error-banner v-else-if="!repository" error="Failed to load repository" class="inspector-status" />
+        <template v-else>
+            <page-header title="Metadata Inspector">
+                <template #eyebrow>
+                    <router-link class="inspector-owner-link" :to="`/repositories_by_owner/${repository.owner}`">{{
+                        repository.owner
+                    }}</router-link>
+                    /
+                    <router-link :to="`/repositories/${repositoryId}`">{{ repository.name }}</router-link>
+                </template>
+            </page-header>
+            <div class="inspector-body">
+                <section class="inspector-card shed-card">
+                    <!-- Invalid tools warning banner -->
+                    <!-- A finding about the repository, not an event: announce it politely rather than as an alert -->
+                    <GAlert v-if="totalInvalidTools > 0" variant="warning" role="status" class="invalid-tools-alert">
+                        <FontAwesomeIcon :icon="faTriangleExclamation" />
+                        <span class="invalid-tools-message"
+                            >{{ totalInvalidTools }} invalid tool(s) found across revisions.</span
+                        >
+                        <GButton transparent @click="activeTab = 'revisions'">View in Revisions</GButton>
+                    </GAlert>
 
-            <!-- Invalid tools warning banner -->
-            <!-- A finding about the repository, not an event: announce it politely rather than as an alert -->
-            <GAlert v-if="totalInvalidTools > 0" variant="warning" role="status" class="invalid-tools-alert">
-                <FontAwesomeIcon :icon="faTriangleExclamation" />
-                <span class="invalid-tools-message"
-                    >{{ totalInvalidTools }} invalid tool(s) found across revisions.</span
-                >
-                <GButton transparent @click="activeTab = 'revisions'">View in Revisions</GButton>
-            </GAlert>
-
-            <GTabs class="inspector-tabs" lazy :value="activeTabIndex" @input="onTabInput">
-                <GTab :title="`Revisions (${revisionCount})`">
-                    <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
-                </GTab>
-                <GTab title="Tool History">
-                    <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
-                </GTab>
-                <GTab title="Raw JSON">
-                    <OverviewTab :metadata="repositoryMetadata" />
-                </GTab>
-                <GTab v-if="canManage" title="Reset Metadata">
-                    <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
-                </GTab>
-            </GTabs>
-        </section>
+                    <GTabs class="inspector-tabs" lazy :value="activeTabIndex" @input="onTabInput">
+                        <GTab :title="`Revisions (${revisionCount})`">
+                            <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
+                        </GTab>
+                        <GTab title="Tool History">
+                            <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
+                        </GTab>
+                        <GTab title="Raw JSON">
+                            <OverviewTab :metadata="repositoryMetadata" />
+                        </GTab>
+                        <GTab v-if="canManage" title="Reset Metadata">
+                            <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
+                        </GTab>
+                    </GTabs>
+                </section>
+            </div>
+        </template>
     </div>
 </template>
 
 <style scoped>
-.metadata-inspector-page {
-    margin: var(--spacing-6);
+.inspector-status {
+    max-width: var(--shed-content-width);
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.inspector-body {
+    max-width: var(--shed-content-width);
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
 }
 
 .inspector-card {
-    background: var(--background-color);
-    border: 1px solid var(--color-grey-300);
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.inspector-header {
-    padding: var(--spacing-4);
-    background: var(--color-galaxy-primary);
-    color: var(--background-color);
-    border-radius: 0.25rem 0.25rem 0 0;
-}
-
-.inspector-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 2rem;
-}
-
-.inspector-owner-link {
-    color: inherit;
-    text-decoration: none;
-}
-
-.inspector-owner-link:hover {
-    text-decoration: underline;
+    overflow: hidden;
 }
 
 .invalid-tools-alert {
@@ -154,54 +141,19 @@ function onResetComplete() {
     align-items: center;
     gap: var(--spacing-3);
     margin: 0;
-    padding: var(--spacing-3) var(--spacing-4);
-    background: var(--color-yellow-200);
+    padding: var(--spacing-3) 1.25rem;
+    background: var(--color-yellow-100);
     color: var(--color-yellow-900);
-    border-bottom: 1px solid var(--color-yellow-600);
+    border: none;
+    border-bottom: 1px solid var(--color-yellow-300);
+    border-radius: 0;
 }
 
 .invalid-tools-message {
     flex: 1;
 }
 
-.inspector-tabs :deep(.nav) {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 0;
-    padding: 0 var(--spacing-2);
-    list-style: none;
-    border-bottom: 1px solid var(--color-grey-200);
-}
-
-.inspector-tabs :deep(.nav-link) {
-    display: block;
-    padding: var(--spacing-3) var(--spacing-4);
-    color: var(--color-grey-600);
-    font-weight: 500;
-    text-decoration: none;
-    /* Underline tabs rather than the baseline's boxed ones */
-    border: 0;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-}
-
-.inspector-tabs :deep(.nav-link:hover) {
-    color: var(--color-galaxy-primary);
-}
-
-.inspector-tabs :deep(.nav-link.active) {
-    color: var(--color-galaxy-primary);
-    background: none;
-    border-bottom-color: var(--color-galaxy-primary);
-}
-
-.inspector-tabs :deep(.nav-link:focus-visible) {
-    outline: 2px solid var(--color-galaxy-primary);
-    outline-offset: -2px;
-}
-
 .inspector-tabs :deep(.tab-content) {
-    padding: var(--spacing-4);
+    padding: 1.25rem;
 }
 </style>
