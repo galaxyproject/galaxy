@@ -17,6 +17,7 @@
           label: Writable?
           type: boolean
           optional: true
+          default: false
           help: Allow uploading files to existing directories on the XRootD server.
   configuration:
       type: xrootd
