@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import localize from "@/utils/localization";
+
 import ToolLink from "./ToolLink.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
@@ -25,7 +27,7 @@ const boundary = "window";
     <GPopover
         v-if="toolId"
         :interactive="interactive"
-        aria-label="Tool"
+        :aria-label="localize('Tool')"
         :boundary="boundary"
         :target="target"
         triggers="hover">

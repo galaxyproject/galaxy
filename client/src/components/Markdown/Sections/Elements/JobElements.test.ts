@@ -11,6 +11,14 @@ import JobMetrics from "./JobMetrics.vue";
 import JobParameters from "./JobParameters.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
+// Translates only what a test asks for, so the other assertions see the source strings.
+const translations = vi.hoisted(() => ({}) as Record<string, string>);
+vi.mock("@/utils/localization", async (importOriginal) => {
+    const actual = await importOriginal<{ localize: (text: string) => string }>();
+    const localize = (text: string) => translations[text] ?? actual.localize(text);
+    return { ...actual, default: localize, localize };
+});
+
 const localVue = getLocalVue();
 // Keeps requests the imported stores make off the network.
 useServerMock();
@@ -20,6 +28,7 @@ let wrapper: VueWrapper | undefined;
 afterEach(() => {
     wrapper?.unmount();
     wrapper = undefined;
+    Object.keys(translations).forEach((text) => delete translations[text]);
 });
 
 describe.each([
@@ -59,6 +68,12 @@ describe.each([
         expect(button.exists()).toBe(true);
         expect(target.$el ?? target).toBe(button.element);
         expect(popover.props("interactive")).toBe(true);
+    });
+
+    it("localizes the tool details button's accessible name", () => {
+        translations["Tool details"] = "Werkzeugdetails";
+
+        expect(mountElement("cat1").find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
     });
 
     it("shows no tool details button until the job's tool is known", () => {

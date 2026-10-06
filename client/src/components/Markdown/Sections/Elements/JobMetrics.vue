@@ -5,6 +5,7 @@ import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
 import { computed, toRef, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
+import localize from "@/utils/localization";
 
 import { useMappingJobs } from "./handlesMappingJobs";
 
@@ -66,7 +67,7 @@ watch(
     <BCard nobody>
         <BCardTitle v-if="title">
             <b>{{ title }}</b>
-            <GLink v-if="toolId" ref="info" dark thin type="button" aria-label="Tool details">
+            <GLink v-if="toolId" ref="info" dark thin type="button" :aria-label="localize('Tool details')">
                 <FontAwesomeIcon :icon="faInfoCircle" size="sm" />
             </GLink>
             <ToolLinkPopover interactive :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />

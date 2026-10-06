@@ -4,6 +4,7 @@ import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
+import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
@@ -131,8 +132,8 @@ function toolButtonId(orderIndex: number) {
                             :id="toolButtonId(step.order_index)"
                             dark
                             thin
-                            aria-label="Tool details"
-                            type="button">
+                            type="button"
+                            :aria-label="localize('Tool details')">
                             <WorkflowStepIcon step-type="tool" />
                         </GLink>
                         <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
