@@ -125,6 +125,24 @@ def test_stage_inputs_decrypts_extra_files(tmp_path, service, user):
     assert open(os.path.join(staged_extra, "sub", "part.txt"), "rb").read() == b"part"
 
 
+def test_extra_files_can_use_another_compute_key(tmp_path, service, user):
+    # A renewed grant: the primary file was authorized again, extra files keep the key of the job that wrote them.
+    job_key_ref = service.get_compute_key_info(user.public, expires_in=timedelta(days=3))
+    protected_input = _protected_input(tmp_path, service, user, job_key_ref, extra_files={"part.txt": b"part"})
+    renewed_key_ref = service.get_compute_key_info(user.public)
+    encrypted = open(protected_input.primary.source_path, "rb").read()
+    protected_input.primary.compute_header = service.user_recrypt(encrypted, user, renewed_key_ref)["crypt4gh_header"]
+    protected_input.key_ref = renewed_key_ref
+    protected_input.extra_files["part.txt"].key_ref = job_key_ref
+
+    Crypt4GHJobRuntime(_plan(tmp_path, service, renewed_key_ref, [protected_input])).stage_inputs()
+
+    assert open(protected_input.primary.staged_path, "rb").read() == PLAINTEXT
+    assert open(os.path.join(protected_input.staged_extra_files_path, "part.txt"), "rb").read() == b"part"
+    used_keys = sorted(payload["crypt4gh_compute_keypair_id"] for _, payload in service.requests)
+    assert used_keys == sorted([renewed_key_ref, job_key_ref])
+
+
 def test_unlisted_extra_files_are_refused(tmp_path, service, user):
     key_ref = service.get_compute_key_info(user.public)
     protected_input = _protected_input(tmp_path, service, user, key_ref, extra_files={"listed": b"a"})
