@@ -88,12 +88,12 @@ def reconcile_and_build_report(
         return "", []
     referenced = referenced_content_ids(trans, content)
     reconcile_report_labels(trans, index, referenced)
-    markdown, warnings = _rewrite_page_markdown(trans, content, index)
+    markdown, warnings = _rewrite_page_markdown(trans, content, index, page.history_id)
     return markdown, referenced.warnings + warnings
 
 
 def _rewrite_page_markdown(
-    trans: ProvidesHistoryContext, internal_markdown: str, index: ExtractionLabelIndex
+    trans: ProvidesHistoryContext, internal_markdown: str, index: ExtractionLabelIndex, page_history_id: int | None
 ) -> tuple[str, list[str]]:
     """Rewrite a notebook page's internal markdown into a workflow report.
 
@@ -102,7 +102,7 @@ def _rewrite_page_markdown(
     extraction time rather than at report render, as a MalformedContents rather
     than the bare ValueError the parser raises.
     """
-    rewriter = _ReportLabelRewriter(index)
+    rewriter = _ReportLabelRewriter(index, page_history_id)
     markdown = rewriter.walk_directives(trans, internal_markdown)
     check_galaxy_markdown(markdown)
     # Only removes whole directives/embeds/cells, so the result stays valid.
@@ -181,14 +181,16 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
 
     A portable report must never embed an instance id. So a content/job directive
     that cannot resolve to a label, and any id-bearing directive with no
-    workflow-relative form (history/workflow/invocation links), is dropped with a
-    warning rather than leaked. Id-less directives pass through;
-    :func:`_drop_instance_references` then sweeps what this walk does not visit
-    (embeds, visualization cells, unrecognized lines).
+    workflow-relative form (links to other histories, workflows, invocations), is
+    dropped with a warning rather than leaked. A link to the notebook's own
+    history becomes ``history_link()``, i.e. the invocation's history. Id-less
+    directives pass through; :func:`_drop_instance_references` then sweeps what
+    this walk does not visit (embeds, visualization cells, unrecognized lines).
     """
 
-    def __init__(self, label_index: ExtractionLabelIndex) -> None:
+    def __init__(self, label_index: ExtractionLabelIndex, page_history_id: int | None) -> None:
         self.index = label_index
+        self.page_history_id = page_history_id
         self.warnings: list[str] = []
 
     def _rewrite(self, line: str, target: DirectiveLabel | None, description: str) -> DirectiveResult:
@@ -256,10 +258,13 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     def handle_job_parameters(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
-    # Id-bearing directives with no workflow-relative form -> dropped with a warning.
     def handle_history_link(self, line: str, history: History) -> DirectiveResult:
+        if history.id == self.page_history_id:
+            return ("history_link()\n", False)
         return self._drop_unportable(line, "history link")
 
+    # Id-bearing directives pointing at other objects -> dropped with a warning. Their
+    # argument-less forms resolve against the invocation, which would silently retarget them.
     def handle_workflow_display(
         self, line: str, stored_workflow: StoredWorkflow, workflow_version: int | None
     ) -> DirectiveResult:
