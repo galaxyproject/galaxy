@@ -19,4 +19,15 @@ describe("vitest setup createStubs hook", () => {
         await wrapper.vm.$nextTick();
         expect((wrapper.vm as unknown as { name: string }).name).toBe("second");
     });
+
+    it("still stubs components that keep compat v-model", () => {
+        const Child = defineComponent({ template: "<span>real</span>" });
+        const Parent = defineComponent({
+            components: { Child },
+            template: `<Child />`,
+        });
+        const wrapper = shallowMount(Parent);
+        expect(wrapper.html()).toContain("child-stub");
+        expect(wrapper.text()).not.toContain("real");
+    });
 });
