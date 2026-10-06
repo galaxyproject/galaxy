@@ -347,7 +347,7 @@ Supported outputs:
 | `from_work_dir` outputs, including globs                          | yes                                                   |
 | discovered datasets (`discover_datasets` patterns, `galaxy.json`) | yes                                                   |
 | collection elements, including discovered ones                    | yes                                                   |
-| extra files of composite outputs                                  | yes, each as its own Crypt4GH file                    |
+| extra files of composite outputs                                  | yes, each as its own Crypt4GH file (see limitations)  |
 | outputs written directly to the object store                      | refused: outputs must be written in the job directory |
 | unnamed outputs (`__unnamed_outputs` in `galaxy.json`)            | refused                                               |
 | linked data (`link_data_only`)                                    | refused                                               |
@@ -361,7 +361,10 @@ Limitations:
 - Metadata files of encrypted inputs, such as BAM indexes, are not available to
   tools.
 - Composite datasets uploaded by users can't be decrypted: the user service only
-  authorizes the primary file. Composite outputs of protected jobs are supported.
+  authorizes the primary file. Composite outputs of protected jobs are supported,
+  but their extra files are authorized by the job that wrote them: further jobs
+  can use them until that job's compute key expires, about 7 days later.
+  Authorizing such an output again (key icon) only renews its primary file.
 - The same encrypted dataset can't be passed both decrypted and encrypted to the
   same job.
 - With the job cache, jobs decrypting data are only reused from the same user's

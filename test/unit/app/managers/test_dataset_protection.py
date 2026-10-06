@@ -20,8 +20,14 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.job_execution.protection.outputs import SIDECAR_FILE
 from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
 from galaxy.managers.dataset_protection import (
+    _extra_files_expire,
     Crypt4GHProtectionScheme,
     DatasetProtectionManager,
+)
+from galaxy.model import (
+    DatasetInstance,
+    DatasetProtectionGrant,
+    User,
 )
 from galaxy.schema.dataset_protection import Crypt4GHGrantPayload
 from galaxy.util.bunch import Bunch
@@ -203,3 +209,24 @@ def test_finish_job_fails_on_cleanup_failure_without_purging(tmp_path):
     error = _manager().finish_job(_job(output), str(tmp_path))
     assert error and "boom" in error
     assert not output.dataset.purged
+
+
+def test_renewing_a_grant_keeps_extra_files_of_job_outputs(tmp_path):
+    manager = _manager()
+    job_expiration = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3)
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:job",
+        expires_at=job_expiration,
+        grant_data={"compute_header": "job header", "extra_files": {"part.txt": "extra header"}},
+    )
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    output = _FakeOutput(str(tmp_path / "output.dat"))
+
+    manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+
+    assert grant.key_ref == "cnk:0123456789abcdef"
+    assert grant.grant_data["extra_files"] == {"part.txt": "extra header"}
+    # Extra files stay encrypted to the job's compute keypair, the user only authorized the primary file again.
+    assert grant.grant_data["extra_files_key"] == {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()}
+    assert not _extra_files_expire(grant, timedelta(days=1))
+    assert _extra_files_expire(grant, timedelta(days=4))
