@@ -35,18 +35,15 @@ UNQUOTABLE_PATTERN = re.compile(f"[{re.escape(UNQUOTABLE_ARGUMENT_CHARS)}]")
 
 
 def normalize_label(value: str | None) -> str:
-    """Collapse internal whitespace, drop characters a report directive cannot
-    quote, and clamp to the workflow-label length limit.
-
-    Returns ``""`` for empty/blank input; callers decide whether that is an error
-    (user-supplied labels) or a fall-back trigger (auto-generated labels). Dropping
-    rather than rejecting suits the auto-generated case, where the label is derived
-    from a dataset name the user never typed here and so cannot correct.
-    """
+    """Collapse internal whitespace and clamp to the workflow-label length limit."""
     if not value:
         return ""
-    collapsed = re.sub(r"\s+", " ", value.strip())
-    return UNQUOTABLE_PATTERN.sub("", collapsed)[:255]
+    return re.sub(r"\s+", " ", value.strip())[:255]
+
+
+def normalize_generated_label(value: str | None) -> str:
+    """``normalize_label`` minus characters a report directive cannot quote."""
+    return UNQUOTABLE_PATTERN.sub("", normalize_label(value)).strip()
 
 
 def suggested_output_name(

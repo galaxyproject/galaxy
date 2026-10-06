@@ -31,7 +31,7 @@ from galaxy.managers.markdown_util import (
     ReferencedContent,
 )
 from galaxy.managers.workflow_extraction_naming import (
-    normalize_label,
+    normalize_generated_label,
     suggested_output_name,
 )
 from galaxy.model import (
@@ -302,7 +302,7 @@ def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -
 
 
 def _generate_label(base: str | None, used: set[str]) -> str:
-    label = normalize_label(base) or "label"
+    label = normalize_generated_label(base) or "label"
     candidate = label
     suffix = 2
     while candidate in used:
