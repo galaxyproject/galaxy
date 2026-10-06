@@ -158,9 +158,7 @@ const titleIcon = computed<TitleIcon>(() => {
     return { icon, title: label };
 });
 
-/** Card title: input rows show their (editable) name; tool rows show the step
- *  label when one is set, falling back to the tool name. Mirrors the workflow
- *  editor, where a labeled node displays its label rather than the tool name. */
+/** Inputs show their name; tool steps their label, else tool name (as in the workflow editor). */
 const cardTitle = computed(() => {
     if (isInputStep(props.job)) {
         return props.job.newName;
@@ -168,8 +166,6 @@ const cardTitle = computed(() => {
     return props.job.stepLabel || props.job.tool_name || props.job.tool_id || "Unnamed Step";
 });
 
-/** Title pencil tooltip: inputs are renamed, tool steps are labeled (add vs.
- *  edit depending on whether a label is already set). */
 const renameTitle = computed(() => {
     if (isInputStep(props.job)) {
         return "Rename";
@@ -177,14 +173,11 @@ const renameTitle = computed(() => {
     return props.job.stepLabel ? "Edit this workflow step's label" : "Add a workflow step label";
 });
 
-/** Tool steps with a label set get a clear (x) beside the pencil to drop it
- *  back to the unlabeled default. Inputs always have a name, so no clear. */
+/** Only tool step labels are optional; input names can't be cleared. */
 const canClearStepLabel = computed(
     () => props.job.step_type === "tool" && Boolean(props.job.stepLabel) && props.job.checked && !props.job.invalid,
 );
 
-/** The title pencil drives input rename for inputs and label add/edit for tool
- *  steps, so both step kinds share the same title-adjacent affordance. */
 function onTitleRename() {
     if (props.job.step_type === "tool") {
         emit("label-step");
