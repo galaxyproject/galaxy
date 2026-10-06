@@ -71,6 +71,7 @@ const markdownConfig = computed(() => {
 const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.currentPage?.username));
 
 const showPermissions = ref(false);
+const savingForExtraction = ref(false);
 
 const saveChangesModal = ref<{ guardNavigation: (navigate: () => void) => void } | null>(null);
 
@@ -160,16 +161,19 @@ async function handleEdit() {
 }
 
 async function handleExtractWorkflow() {
-    if (!props.historyId || !store.currentPage) {
+    if (!props.historyId || !store.currentPage || savingForExtraction.value) {
         return;
     }
     // The summary scans the last saved revision, so flush any edits first.
     if (store.isDirty) {
+        savingForExtraction.value = true;
         try {
             await store.savePage();
         } catch {
             // savePage records the error displayed by this view.
             return;
+        } finally {
+            savingForExtraction.value = false;
         }
         if (store.error) {
             return;
@@ -242,8 +246,9 @@ function handleRevisionRestore(revisionId: string) {
                         outline
                         size="small"
                         data-description="page extract workflow button"
+                        :loading="savingForExtraction"
                         @click="handleExtractWorkflow">
-                        <FontAwesomeIcon :icon="faSitemap" />
+                        <FontAwesomeIcon v-if="!savingForExtraction" :icon="faSitemap" />
                         Extract Workflow
                     </GButton>
                 </template>
