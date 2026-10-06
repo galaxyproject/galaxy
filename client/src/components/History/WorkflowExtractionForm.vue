@@ -217,9 +217,7 @@ const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
     return outputLabels;
 });
 
-/** Step labels for checked tool steps that carry one. Mapped steps are keyed by
- *  their ICJ id; plain tool steps by job id. Steps without a label are omitted —
- *  labeling is off by default. */
+/** Trimmed labels of checked, labeled tool steps, keyed by ICJ id (mapped) or job id. */
 const selectedStepLabels = computed<StepLabelHint[]>(() => {
     const hints: StepLabelHint[] = [];
     for (const job of jobsList.value ?? []) {
@@ -242,10 +240,7 @@ const selectedStepLabels = computed<StepLabelHint[]>(() => {
 /** No workflow steps are selected: the workflow would have no steps */
 const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.checked));
 
-/** Opened from a notebook whose markdown referenced nothing that maps to an
- *  extractable step — every row loaded unchecked. Distinct from an empty history
- *  (`!jobsList.length`), which keeps its own message; here the full history is
- *  shown and the user can still check steps by hand. */
+/** Opened from a notebook that seeded no rows (unlike an empty history, rows still show). */
 const nothingSeeded = computed(
     () => !!props.fromPageId && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
 );
@@ -276,10 +271,8 @@ const hasDuplicateOutputLabels = computed(() => {
     return hasDuplicates(labels);
 });
 
-/** Step labels share one namespace with input names on the backend. Compared
- *  RAW (no `_sanitize_output_label`-style whitespace collapse) so the prediction
- *  matches the backend's raw reject-not-sanitize rule for step labels and input
- *  names exactly. */
+/** Step labels share one namespace with input names. Compared as submitted (step labels
+ *  trimmed, input names as-is, no whitespace collapse) to match the backend's exact check. */
 const hasDuplicateStepLabels = computed(() => {
     const stepLabels = selectedStepLabels.value.map((hint) => hint.label);
     const inputNames = selectedInputs.value.map((input) => input.newName);
