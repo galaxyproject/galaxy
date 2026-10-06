@@ -24,31 +24,29 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="recently-created-repositories">
-        <h2 class="recently-created-repositories-heading">Newest Repositories</h2>
-        <error-banner :error="error" v-if="error" />
-        <loading-div message="Loading most recently created repositories" v-else-if="loading" />
-        <div v-else>
-            <hr class="spaced" />
-            <ul class="recently-created-repositories-list">
+    <section class="recently-created-repositories shed-card">
+        <h2 class="recently-created-repositories-heading">Newest repositories</h2>
+        <div class="recently-created-repositories-body">
+            <error-banner :error="error" v-if="error" />
+            <loading-div message="Loading most recently created repositories" v-else-if="loading" />
+            <ul v-else class="recently-created-repositories-list">
                 <repository-creation v-for="repository of repositories" :key="repository.id" :repository="repository" />
             </ul>
         </div>
-    </div>
+    </section>
 </template>
 
 <style scoped>
 .recently-created-repositories {
-    padding: var(--spacing-4);
-    border: 1px solid var(--color-grey-300);
-    border-radius: 0.25rem;
+    overflow: hidden;
 }
 
 .recently-created-repositories-heading {
     margin: 0;
-    color: var(--color-grey-600);
-    font-size: var(--font-size-medium);
-    font-weight: 600;
+    padding: 1rem 1.25rem 0.85rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--shed-border-subtle);
 }
 
 .recently-created-repositories-list {
