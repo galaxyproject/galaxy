@@ -1924,48 +1924,47 @@ test_data:
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_step_label_with_quote_rejected(self, history_id):
-        """Labels become double-quoted arguments in a workflow report directive and
-        the grammar has no escape syntax, so a quote has no representable form."""
+    def test_extract_step_label_with_quote_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
-            {
-                "workflow_name": "quoted step label",
-                "hda_ids": [d1["id"], d2["id"]],
-                "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
-            },
-            (400,),
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            step_labels=[{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
         )
+        tool_steps = [s for s in downloaded["steps"].values() if s["type"] == "tool"]
+        assert [s["label"] for s in tool_steps] == ['say "hi"']
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_input_name_with_quote_rejected(self, history_id):
+    def test_extract_input_names_with_quote_and_newline_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
-            {
-                "workflow_name": "quoted input name",
-                "hda_ids": [d1["id"], d2["id"]],
-                "job_ids": [cat1_job_id],
-                "dataset_names": ['my "input"', "other"],
-            },
-            (400,),
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            dataset_names=['my "input"', "first\nsecond"],
         )
+        input_labels = {s["label"] for s in downloaded["steps"].values() if s["type"] == "data_input"}
+        assert input_labels == {'my "input"', "first\nsecond"}
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_input_name_with_newline_rejected(self, history_id):
-        """A directive occupies a single line, so a line break is unrepresentable too."""
+    def test_extract_from_history_quoted_dataset_name_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
-            {
-                "workflow_name": "multiline input name",
-                "hda_ids": [d1["id"], d2["id"]],
+        response = self._post(
+            f"histories/{history_id}/extract_workflow",
+            data={
+                "workflow_name": "quoted name from history",
+                "dataset_hids": [d1["hid"], d2["hid"]],
+                "dataset_names": ['Sample "A".csv', "other"],
                 "job_ids": [cat1_job_id],
-                "dataset_names": ["first\nsecond", "other"],
             },
-            (400,),
+            json=True,
         )
+        self._assert_status_code_is(response, 200)
+        download = self._get(f"workflows/{response.json()['id']}/download")
+        self._assert_status_code_is(download, 200)
+        input_labels = {s["label"] for s in download.json()["steps"].values() if s["type"] == "data_input"}
+        assert input_labels == {'Sample "A".csv', "other"}
 
 
 class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase):
@@ -2298,6 +2297,27 @@ class TestNotebookWorkflowExtractionReport(
             assert 'step="' in markdown, markdown
             assert "implicit_collection_jobs_id=" not in markdown, markdown
             assert result["report_warnings"] == [], result["report_warnings"]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_directive_for_unquotable_step_label(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[cat1_job_id])
+
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                step_labels=[{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
+            )
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None
+            assert "# Analysis" in markdown, markdown
+            assert "job_metrics" not in markdown, markdown
+            assert len(result["report_warnings"]) == 1, result["report_warnings"]
+            downloaded = self._get(f"workflows/{result['id']}/download").json()
+            tool_labels = [s["label"] for s in downloaded["steps"].values() if s["type"] == "tool"]
+            assert tool_labels == ['say "hi"']
 
     def test_400_on_page_without_history(self):
         page_response = self.dataset_populator._post(
