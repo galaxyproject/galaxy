@@ -125,7 +125,7 @@ decrypts and encrypts the data. The following are **outside** the protection:
 - **The compute service** must be reachable from the compute hosts, and its
   `/get_compute_key_info` route from the users' machines. See
   [Compute service](#compute-service).
-- **Job destinations** need extended metadata and outputs written to the working
+- **Job destinations** need extended metadata and outputs written to the job
   directory. See [Job destinations](#job-destinations).
 - **Containers.** Custom `docker_volumes` or `singularity_volumes` must still
   include `$job_directory`, where the decrypted inputs are.
@@ -136,13 +136,29 @@ decrypts and encrypts the data. The following are **outside** the protection:
 
 ### Pulsar
 
-The recommended production topology is Pulsar without a shared filesystem, so
-that the Galaxy server never has access to plaintext. Galaxy already refuses
-protected jobs on Pulsar destinations that don't set `remote_metadata`, but
-protected jobs on Pulsar have not yet been tested and are not supported yet.
-Until they are, run protected jobs on destinations sharing the job directory with
-the Galaxy server, keeping in mind that such a deployment is a single trust
-domain.
+The recommended production topology is [Pulsar](https://pulsar.readthedocs.io/)
+without a shared filesystem, so that the Galaxy server never has access to
+plaintext. Inputs are staged to the Pulsar host encrypted, decrypted there, and
+outputs are encrypted there before they are stored. Pulsar destinations running
+protected jobs need, in addition to the requirements below:
+
+- `remote_metadata: true`, so outputs are encrypted on the Pulsar host. With
+  `metadata_strategy: extended`, the Pulsar host then writes outputs directly to
+  Galaxy's object store, which must be reachable from it.
+- `rewrite_parameters: true`, the default of the REST, message queue and
+  embedded Pulsar runners.
+- Outputs staged to the remote job directory: don't map outputs to the `none`
+  file action. Don't set `outputs_to_working_directory` either, Pulsar relocates
+  outputs anyway.
+- `crypt4gh` installed on the Pulsar host (see [Installation](#installation)), and
+  the compute service reachable from it.
+
+Galaxy always asks Pulsar to remove the remote job directory of protected jobs.
+Protected jobs have been tested with Pulsar's embedded and message queue runners;
+validate them on your own Pulsar hosts before production use.
+
+When the compute hosts share the job directory with the Galaxy server instead,
+keep in mind that such a deployment is a single trust domain.
 
 ## Installation
 
@@ -210,10 +226,11 @@ Every destination running jobs that decrypt datasets must use:
 - `metadata_strategy: extended`. Output encryption runs in the metadata step,
   which must run on the compute host. `celery_extended`, `directory` and `legacy`
   are refused.
-- `outputs_to_working_directory: true`, so tools never write unencrypted data to
-  the object store.
+- Tools writing their outputs into the job directory, so they never write
+  unencrypted data to the object store: `outputs_to_working_directory: true`, or
+  outputs staged to the remote job directory on Pulsar.
 - No task splitting.
-- `remote_metadata: true` on Pulsar destinations.
+- `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
 
 The `crypt4gh_recryptor_*` options can be overridden per destination, for
 instance when the compute hosts reach the compute service through another network
@@ -320,16 +337,16 @@ internal tools, such as metadata setting and collection operations.
 
 Supported outputs:
 
-| Output                                                            | Protected                                           |
-| ----------------------------------------------------------------- | --------------------------------------------------- |
-| declared outputs                                                  | yes                                                 |
-| `from_work_dir` outputs, including globs                          | yes                                                 |
-| discovered datasets (`discover_datasets` patterns, `galaxy.json`) | yes                                                 |
-| collection elements, including discovered ones                    | yes                                                 |
-| extra files of composite outputs                                  | yes, each as its own Crypt4GH file                  |
-| outputs written directly to the object store                      | refused: `outputs_to_working_directory` is required |
-| unnamed outputs (`__unnamed_outputs` in `galaxy.json`)            | refused                                             |
-| linked data (`link_data_only`)                                    | refused                                             |
+| Output                                                            | Protected                                             |
+| ----------------------------------------------------------------- | ----------------------------------------------------- |
+| declared outputs                                                  | yes                                                   |
+| `from_work_dir` outputs, including globs                          | yes                                                   |
+| discovered datasets (`discover_datasets` patterns, `galaxy.json`) | yes                                                   |
+| collection elements, including discovered ones                    | yes                                                   |
+| extra files of composite outputs                                  | yes, each as its own Crypt4GH file                    |
+| outputs written directly to the object store                      | refused: outputs must be written in the job directory |
+| unnamed outputs (`__unnamed_outputs` in `galaxy.json`)            | refused                                               |
+| linked data (`link_data_only`)                                    | refused                                               |
 
 Limitations:
 
