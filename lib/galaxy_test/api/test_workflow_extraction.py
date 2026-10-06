@@ -2397,6 +2397,89 @@ class TestNotebookWorkflowExtractionReport(
             tool_labels = [s["label"] for s in downloaded["steps"].values() if s["type"] == "tool"]
             assert tool_labels == ['say "hi"']
 
+    @skip_without_tool("cat1")
+    def test_report_drops_inline_object_embeds(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"Merged ${{galaxy history_dataset_name(history_dataset_id={out_id})}} "
+                    "on Galaxy ${galaxy generate_galaxy_version()}.\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert "history_dataset_name" not in markdown, markdown
+            assert "history_dataset_id" not in markdown, markdown
+            assert "${galaxy generate_galaxy_version()}" in markdown, markdown
+            assert 'history_dataset_display(output="' in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped an inline [history_dataset_name] reference from the report: inline object references "
+                    "do not resolve in workflow reports."
+                )
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_visualization_cell_naming_a_dataset(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            visualization = dumps({"visualization_name": "csv", "dataset_id": out_id, "dataset_name": "merged"})
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    f"# Analysis\n\n```visualization\n{visualization}\n```\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert "visualization" not in markdown, markdown
+            assert out_id not in markdown, markdown
+            assert 'history_dataset_display(output="' in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [visualization] cell from the report: it names a specific dataset or invocation, which "
+                    "has no workflow-relative form."
+                )
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_invocation_scoped_directive(self):
+        """A notebook seeded from an invocation report carries invocation_id-scoped
+        label lines; the walk passes them through, so they must not leak the id."""
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            # Any encoded id stands in for a prior invocation; nothing resolves it.
+            prior_invocation_id = history_id
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f'```galaxy\nhistory_dataset_display(invocation_id={prior_invocation_id}, output="merged")\n```\n'
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert "# Analysis" in markdown, markdown
+            assert "invocation_id" not in markdown, markdown
+            assert prior_invocation_id not in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [history_dataset_display] directive from the report: it names a specific Galaxy object "
+                    "(invocation_id), which has no workflow-relative form."
+                )
+            ]
+
     def test_400_on_page_without_history(self):
         page_response = self.dataset_populator._post(
             "pages",
