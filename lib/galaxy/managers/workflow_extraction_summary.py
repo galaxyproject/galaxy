@@ -109,6 +109,11 @@ def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryI
     return content
 
 
+def _produced_elsewhere(job: Job, history_id: int) -> bool:
+    """A job from another history is a boundary: its outputs here are workflow inputs."""
+    return bool(job.history_id != history_id)
+
+
 def _tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
     try:
         return trans.app.toolbox.tool_for_job(job, user=trans.user)
@@ -190,7 +195,7 @@ def _backward_job_closure(
         # A directly job-referenced non-step (upload, data fetch, cross-history) becomes a
         # seeded input row; flag its outputs so the form can explain why. An upstream upload
         # reached only by an ordinary walk below is not flagged.
-        not_a_step = tool is None or not tool.is_workflow_compatible or job.history_id != history_id
+        not_a_step = tool is None or not tool.is_workflow_compatible or _produced_elsewhere(job, history_id)
         for content in _job_output_contents(job):
             if not_a_step:
                 result.seed_warning_refs.add(_content_key(content))
@@ -242,8 +247,7 @@ def _backward_job_closure(
         produced_in_history = False
         for assoc in creating:
             job = assoc.job
-            if job.history_id != history_id:
-                # Cross-history producer: treat the content as a boundary input.
+            if _produced_elsewhere(job, history_id):
                 continue
             produced_in_history = True
             if job.id in seen_jobs:
@@ -375,9 +379,12 @@ def _extraction_row(
     datasets: SummaryDatasets,
     icj_assoc_by_job_id: dict[int, ImplicitCollectionJobsJobAssociation],
     closure: ClosureResult | None,
+    history_id: int,
 ) -> WorkflowExtractionJob:
-    referenced = closure.referenced_output_refs if closure else set()
-    content_keys = {_content_key(data) for _, data in datasets}
+    output_keys: list[ContentRef | None] = (
+        [_content_key(data) for _, data in datasets] if closure else [None] * len(datasets)
+    )
+    content_keys = set(output_keys)
     input_seeded = bool(closure and (content_keys & closure.content_refs))
     seed_warning = SEED_AS_INPUT_WARNING if closure and (content_keys & closure.seed_warning_refs) else None
 
@@ -399,11 +406,16 @@ def _extraction_row(
         tool = None
         custom_tools_inaccessible = True
 
-    tool_outputs = [
-        _serialize_output(
-            trans, data, _workflow_output_name(data, output_name), exposed=_content_key(data) in referenced
+    if closure is not None and _produced_elsewhere(job, history_id):
+        # Same boundary as the closure walk: the copies here are workflow inputs.
+        return _input_extraction_row(
+            trans, job, datasets, seeded=input_seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
         )
-        for output_name, data in datasets
+
+    referenced = closure.referenced_output_refs if closure else set()
+    tool_outputs = [
+        _serialize_output(trans, data, _workflow_output_name(data, output_name), exposed=key in referenced)
+        for (output_name, data), key in zip(datasets, output_keys)
     ]
 
     if tool is None:
@@ -503,10 +515,19 @@ def build_extraction_summary(
     jobs, warnings = summarize(trans, history)
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
 
-    jobs_list = [_extraction_row(trans, job, datasets, icj_assoc_by_job_id, closure) for job, datasets in jobs.items()]
+    jobs_list = [
+        _extraction_row(trans, job, datasets, icj_assoc_by_job_id, closure, history.id)
+        for job, datasets in jobs.items()
+    ]
     all_warnings = list(warnings)
     if closure is not None:
-        represented_keys = {_content_key(data) for datasets in jobs.values() for _, data in datasets}
+        # An unseeded tool row (e.g. an invalid one) does not feed the seeded subgraph.
+        represented_keys = {
+            _content_key(data)
+            for row, datasets in zip(jobs_list, jobs.values())
+            if row.seeded or row.step_type != "tool"
+            for _, data in datasets
+        }
         jobs_list.extend(_synthesize_cross_history_inputs(trans, represented_keys, closure))
         all_warnings.extend(closure.warnings)
 
