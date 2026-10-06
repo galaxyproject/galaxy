@@ -2337,11 +2337,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.components.workflow_extract._.wait_for_visible()
 
-    def history_page_open_chat(self):
-        """Click chat button in page toolbar, wait for chat panel visible."""
-        self.components.pages.history.chat_button.wait_for_and_click()
-        self.components.pages.history.chat_panel.wait_for_visible()
-
     @retry_during_transitions
     def click_history_options(self):
         component = self.components.history_panel.options_button_icon

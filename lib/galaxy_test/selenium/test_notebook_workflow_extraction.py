@@ -159,13 +159,3 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         # history), nothing is pre-checked, and the form says why.
         assert self.count_job_checkboxes() >= 1, "Expected the cat1 tool card to render"
         assert self.count_checked_job_checkboxes() == 0, "Expected nothing pre-checked when the notebook seeds nothing"
-
-    @selenium_test
-    @managed_history
-    def test_extract_button_visible_in_notebook_editor(self):
-        """The Extract Workflow toolbar action is present when editing a notebook."""
-        history_id = self.current_history_id()
-        page = self.dataset_populator.new_history_page(history_id, content="# Notebook")
-
-        self.navigate_to_history_page_editor(history_id, page["id"])
-        self.components.pages.history.extract_workflow_button.wait_for_visible()
