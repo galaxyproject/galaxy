@@ -87,12 +87,18 @@ STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 
 # Matches encoded and unencoded ids in galaxy blocks
-UNENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
+OBJECT_ID_ARGUMENTS = (
+    "history_id",
+    "workflow_id",
+    "history_dataset_id",
+    "history_dataset_collection_id",
+    "job_id",
+    "implicit_collection_jobs_id",
+    "invocation_id",
 )
-ENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
-)
+_OBJECT_ID_ARGUMENT_ALTERNATION = "|".join(OBJECT_ID_ARGUMENTS)
+UNENCODED_ID_PATTERN = re.compile(rf"({_OBJECT_ID_ARGUMENT_ALTERNATION})=([\d]+)")
+ENCODED_ID_PATTERN = re.compile(rf"({_OBJECT_ID_ARGUMENT_ALTERNATION})=([a-z0-9]+)")
 
 # Matches blocks of various types
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re.DOTALL)
@@ -143,8 +149,8 @@ def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_
 
         return whole_match
 
-    internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
-    internal_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, internal_markdown)
+    internal_markdown = remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, internal_markdown)
     internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
@@ -240,10 +246,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
             return whole_match
 
-        export_markdown = _remap_galaxy_markdown_embedded_containers(
+        export_markdown = remap_galaxy_markdown_embedded_containers(
             _remap_embed_container_ids, export_markdown_raw_embed
         )
-        export_markdown_embed_expanded = _remap_galaxy_markdown_embedded_containers(
+        export_markdown_embed_expanded = remap_galaxy_markdown_embedded_containers(
             _remap_embed_container, export_markdown_raw_embed
         )
         return export_markdown, export_markdown_embed_expanded
@@ -420,7 +426,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 line, *_ = self._encode_line(trans, line)
                 return self.handle_error(container, line, str(e))
 
-        return _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
+        return remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
 
     def _encode_line(self, trans: ProvidesAppContext, line):
         object_type = None
@@ -1259,8 +1265,8 @@ def populate_invocation_markdown(trans: ProvidesHistoryContext, invocation, work
 
         return whole_match
 
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    galaxy_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, galaxy_markdown)
+    galaxy_markdown = remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, galaxy_markdown)
     galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
     return galaxy_markdown
 
@@ -1435,8 +1441,8 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
 
         return whole_match
 
-    workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    workflow_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, workflow_markdown)
+    workflow_markdown = remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    workflow_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, workflow_markdown)
     return workflow_markdown
 
 
@@ -1509,7 +1515,7 @@ def resolve_job_markdown(trans: ProvidesHistoryContext, job, job_markdown):
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, job_markdown)
+    galaxy_markdown = remap_galaxy_markdown_calls(_remap, job_markdown)
     return galaxy_markdown
 
 
@@ -1569,7 +1575,7 @@ def _remap_galaxy_markdown_containers(func, markdown):
     return new_markdown
 
 
-def _remap_galaxy_markdown_embedded_containers(func, markdown):
+def remap_galaxy_markdown_embedded_containers(func, markdown):
     new_markdown = markdown
 
     searching_from = 0
@@ -1600,7 +1606,7 @@ def _parse_directive_argument_value(arg_name: str, line: str) -> str | None:
     return value
 
 
-def _remap_galaxy_markdown_calls(func, markdown):
+def remap_galaxy_markdown_calls(func, markdown):
     def _remap_container(container):
         match = None
         for line in container.splitlines():
@@ -1628,6 +1634,9 @@ def check_galaxy_markdown(*args, **kwds):
 
 __all__ = (
     "check_galaxy_markdown",
+    "OBJECT_ID_ARGUMENTS",
+    "remap_galaxy_markdown_calls",
+    "remap_galaxy_markdown_embedded_containers",
     "internal_galaxy_markdown_to_pdf",
     "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",

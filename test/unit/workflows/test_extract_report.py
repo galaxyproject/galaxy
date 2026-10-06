@@ -356,6 +356,16 @@ def test_drop_instance_references_drops_hid_directive():
     assert "(hid)" in warnings[0]
 
 
+@pytest.mark.parametrize(
+    "argument",
+    ['history_dataset_id="5"', "history_dataset_id='abc123'", "history_dataset_id = 5"],
+)
+def test_drop_instance_references_drops_quoted_or_spaced_id_argument(argument):
+    swept, warnings = report._drop_instance_references(f"```galaxy\nhistory_dataset_display({argument})\n```\n")
+    assert "history_dataset_id" not in swept
+    assert "(history_dataset_id)" in warnings[0]
+
+
 def test_drop_instance_references_keeps_label_and_argless_directives():
     markdown = (
         '```galaxy\nhistory_dataset_display(output="my job_id=3 output")\n```\n'
