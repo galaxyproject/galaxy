@@ -17,7 +17,7 @@
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
-                    :validation-scroll-to="validationScrollTo"
+                    :validation-scroll-to="formValidationScrollTo"
                     collapsed-enable-text="Edit"
                     :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
@@ -31,12 +31,15 @@
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { debounce } from "lodash";
-import { mapState } from "pinia";
+import { storeToRefs } from "pinia";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
+import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName, visitInputs } from "@/components/Form/utilities";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -48,187 +51,211 @@ import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormMessage from "@/components/Form/FormMessage.vue";
 import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
 
-export default {
-    components: {
-        FontAwesomeIcon,
-        ToolCredentials,
-        FormDisplay,
-        FormCard,
-        FormMessage,
-    },
-    props: {
-        model: {
-            type: Object,
-            required: true,
-        },
-        replaceParams: {
-            type: Object,
-            default: null,
-        },
-        validationScrollTo: {
-            type: Array,
-            required: true,
-        },
-        historyId: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            faEdit,
-            faKey,
-            faUndo,
-            expanded: this.model.expanded,
-            errorText: null,
-            modelData: {},
-            modelIndex: {},
-            modelInputs: this.model.inputs,
-        };
-    },
-    computed: {
-        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
-        credentialInfo() {
-            if (!this.model.credentials?.length) {
-                return null;
-            }
+type StepInput = FormInputNode & Record<string, any>;
+type OptionsPagination = Record<string, Record<string, { offset: number; limit?: number; search?: string }>>;
 
-            return {
-                toolId: this.model.id,
-                toolVersion: this.model.version,
-                toolCredentials: this.model.credentials,
-            };
-        },
-        icon() {
-            return WorkflowIcons[this.model.step_type];
-        },
-        historyStatusKey() {
-            return `${this.historyId}_${this.lastUpdateTime}`;
-        },
-    },
-    watch: {
-        validationScrollTo() {
-            if (this.validationScrollTo.length > 0) {
-                this.expanded = true;
-            }
-        },
-        historyStatusKey() {
-            this.onHistoryChange();
-        },
-    },
-    created() {
-        // Debounce the per-keystroke options refetch so rapid typing in the
-        // dropdown search box coalesces into a single backend round trip.
-        this.onSearchChange = debounce(this.onSearchChange, 400);
-    },
-    beforeUnmount() {
-        this.onSearchChange.cancel?.();
-    },
-    methods: {
-        onCreateIndex() {
-            this.modelIndex = {};
-            visitInputs(this.modelInputs, (input, name) => {
-                this.modelIndex[name] = input;
+interface Props {
+    /**
+     * Workflow run step, an entry of ``WorkflowRunModel.steps``
+     */
+    model: Record<string, any>;
+    /**
+     * ``[inputName, message]`` of the invalid input to scroll to, or empty
+     */
+    validationScrollTo: [string, string] | [];
+    /**
+     * History used to build the tool form
+     * @default null
+     */
+    historyId?: string | null;
+    /**
+     * Values of linked workflow parameters and data steps, keyed by input name
+     * @default null
+     */
+    replaceParams?: Record<string, unknown> | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    historyId: null,
+    replaceParams: null,
+});
+
+const emit = defineEmits<{
+    (e: "onChange", index: string, data: FormData): void;
+    (e: "onValidation", index: string, validation: [string, string] | null): void;
+}>();
+
+const { lastUpdateTime } = storeToRefs(useHistoryItemsStore());
+
+const expanded = ref<boolean>(props.model.expanded);
+const errorText = ref<string>();
+const modelInputs = ref<StepInput[]>(props.model.inputs);
+// Not render state: only read when requesting the tool model.
+let modelData: FormData = {};
+let modelIndex: Record<string, StepInput> = {};
+
+const credentialInfo = computed(() => {
+    if (!props.model.credentials?.length) {
+        return null;
+    }
+
+    return {
+        toolId: props.model.id,
+        toolVersion: props.model.version,
+        toolCredentials: props.model.credentials,
+    };
+});
+
+const icon = computed(() => (WorkflowIcons as Record<string, string>)[props.model.step_type]);
+
+const historyStatusKey = computed(() => `${props.historyId}_${lastUpdateTime.value}`);
+
+// FormDisplay takes null rather than an empty array.
+const formValidationScrollTo = computed(() =>
+    props.validationScrollTo.length === 2 ? props.validationScrollTo : null,
+);
+
+function onCreateIndex() {
+    modelIndex = {};
+    visitInputs(modelInputs.value, (input: StepInput, name: string) => {
+        modelIndex[name] = input;
+    });
+}
+
+function onHistoryChange() {
+    onUpdate();
+}
+
+function onChange(data: FormData, refreshRequest?: boolean) {
+    modelData = data;
+    if (refreshRequest) {
+        onUpdate();
+    }
+    emit("onChange", props.model.index, data);
+}
+
+function onUpdate() {
+    getTool(props.model.id, props.model.version, modelData, props.historyId).then(
+        (newModel) => {
+            onCreateIndex();
+            visitInputs(newModel.inputs, (newInput: StepInput, name: string) => {
+                const input = modelIndex[name]!;
+                input.options = newInput.options;
+                input.textable = newInput.textable;
             });
+            modelInputs.value = JSON.parse(JSON.stringify(modelInputs.value));
         },
-        onHistoryChange() {
-            this.onUpdate();
+        (error) => {
+            errorText.value = error;
         },
-        onChange(data, refreshRequest) {
-            this.modelData = data;
-            if (refreshRequest) {
-                this.onUpdate();
-            }
-            this.$emit("onChange", this.model.index, data);
+    );
+}
+
+function onValidation(validation: [string, string] | null) {
+    emit("onValidation", props.model.index, validation);
+}
+
+/**
+ * Lazy-load the next page of options for a paginated data parameter
+ * dropdown. Mirrors ``ToolForm.vue:onLoadMore`` but routes through
+ * ``getTool`` since the workflow run form fetches per-step tool data
+ * via ``Workflow/Run/services.js``. Append-merges the new options into
+ * the matching parameter so already-loaded items stay visible.
+ */
+function onLoadMore({
+    name,
+    src,
+    offset,
+    limit,
+    search,
+}: {
+    name: string;
+    src: string;
+    offset: number;
+    limit: number;
+    search?: string;
+}) {
+    const spec: { offset: number; limit: number; search?: string } = { offset, limit };
+    if (search) {
+        spec.search = search;
+    }
+    const optionsPagination: OptionsPagination = { [name]: { [src]: spec } };
+    getTool(props.model.id, props.model.version, modelData, props.historyId, optionsPagination).then(
+        (newModel) => mergeFetchedOptions(name, src, newModel),
+        (error) => {
+            errorText.value = error;
         },
-        onUpdate() {
-            getTool(this.model.id, this.model.version, this.modelData, this.historyId).then(
-                (newModel) => {
-                    this.onCreateIndex();
-                    visitInputs(newModel.inputs, (newInput, name) => {
-                        const input = this.modelIndex[name];
-                        input.options = newInput.options;
-                        input.textable = newInput.textable;
-                    });
-                    this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
-                },
-                (errorText) => {
-                    this.errorText = errorText;
-                },
-            );
-        },
-        onValidation(validation) {
-            this.$emit("onValidation", this.model.index, validation);
-        },
-        /**
-         * Lazy-load the next page of options for a paginated data parameter
-         * dropdown. Mirrors ``ToolForm.vue:onLoadMore`` but routes through
-         * ``getTool`` since the workflow run form fetches per-step tool data
-         * via ``Workflow/Run/services.js``. Append-merges the new options into
-         * the matching parameter so already-loaded items stay visible.
-         */
-        onLoadMore({ name, src, offset, limit, search }) {
-            const spec = { offset, limit };
-            if (search) {
-                spec.search = search;
-            }
-            const optionsPagination = { [name]: { [src]: spec } };
-            getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
-                (newModel) => this.mergeFetchedOptions(name, src, newModel),
-                (errorText) => {
-                    this.errorText = errorText;
-                },
-            );
-        },
-        /**
-         * Refetch the parameter's options filtered by the typed search query.
-         * The fetched matches are merged into the loaded options so the list
-         * cannot become empty and unmount the focused multiselect mid-typing;
-         * FormSelect's client-side filter still narrows the visible union.
-         */
-        onSearchChange({ name, src, query, limit }) {
-            const spec = { offset: 0, limit };
-            if (query) {
-                spec.search = query;
-            }
-            const optionsPagination = { [name]: { [src]: spec } };
-            getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
-                (newModel) => this.mergeFetchedOptions(name, src, newModel),
-                (errorText) => {
-                    this.errorText = errorText;
-                },
-            );
-        },
-        mergeFetchedOptions(name, src, newModel) {
-            const target = findInputByDottedName(this.modelInputs, name);
-            const incoming = findInputByDottedName(newModel.inputs, name);
-            if (!target || !incoming) {
-                return;
-            }
-            const existing = (target.options && target.options[src]) || [];
-            const newOptions = (incoming.options && incoming.options[src]) || [];
-            const seen = new Set(existing.map((option) => `${option.id}_${option.src}`));
-            const merged = existing.concat(
-                newOptions.filter((option) => {
-                    const key = `${option.id}_${option.src}`;
-                    if (seen.has(key)) {
-                        return false;
-                    }
-                    seen.add(key);
-                    return true;
-                }),
-            );
-            target.options = { ...target.options, [src]: merged };
-            if (incoming.options_meta && incoming.options_meta[src]) {
-                target.options_meta = {
-                    ...(target.options_meta || {}),
-                    [src]: incoming.options_meta[src],
-                };
-            }
-            // FormDisplay renders from an internal clone and only syncs
-            // server-owned attributes when the inputs prop changes by identity.
-            this.modelInputs = [...this.modelInputs];
-        },
+    );
+}
+
+/**
+ * Refetch the parameter's options filtered by the typed search query.
+ * The fetched matches are merged into the loaded options so the list
+ * cannot become empty and unmount the focused multiselect mid-typing;
+ * FormSelect's client-side filter still narrows the visible union.
+ * Debounced so rapid typing coalesces into a single backend round trip.
+ */
+const onSearchChange = debounce(
+    ({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) => {
+        const spec: { offset: number; limit?: number; search?: string } = { offset: 0, limit };
+        if (query) {
+            spec.search = query;
+        }
+        const optionsPagination: OptionsPagination = { [name]: { [src]: spec } };
+        getTool(props.model.id, props.model.version, modelData, props.historyId, optionsPagination).then(
+            (newModel) => mergeFetchedOptions(name, src, newModel),
+            (error) => {
+                errorText.value = error;
+            },
+        );
     },
-};
+    400,
+);
+
+function mergeFetchedOptions(name: string, src: string, newModel: { inputs: StepInput[] }) {
+    const target = findInputByDottedName(modelInputs.value, name) as StepInput | null;
+    const incoming = findInputByDottedName(newModel.inputs, name) as StepInput | null;
+    if (!target || !incoming) {
+        return;
+    }
+    const existing = (target.options as Record<string, DataOption[]> | undefined)?.[src] || [];
+    const newOptions = (incoming.options as Record<string, DataOption[]> | undefined)?.[src] || [];
+    const seen = new Set(existing.map((option) => `${option.id}_${option.src}`));
+    const merged = existing.concat(
+        newOptions.filter((option) => {
+            const key = `${option.id}_${option.src}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        }),
+    );
+    target.options = { ...target.options, [src]: merged };
+    if (incoming.options_meta && incoming.options_meta[src]) {
+        target.options_meta = {
+            ...(target.options_meta || {}),
+            [src]: incoming.options_meta[src],
+        };
+    }
+    // FormDisplay only syncs server-owned attributes when the inputs prop changes by identity.
+    modelInputs.value = [...modelInputs.value];
+}
+
+watch(
+    () => props.validationScrollTo,
+    () => {
+        if (props.validationScrollTo.length > 0) {
+            expanded.value = true;
+        }
+    },
+);
+
+watch(historyStatusKey, () => {
+    onHistoryChange();
+});
+
+onBeforeUnmount(() => {
+    onSearchChange.cancel();
+});
 </script>
