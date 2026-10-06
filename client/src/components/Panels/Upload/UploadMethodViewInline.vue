@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { DEFAULT_ALLOWED_METHODS } from "@/composables/upload/useUploadMethodModal";
@@ -40,7 +40,8 @@ const { submitPreparedUpload } = useUploadSubmission();
 const modalConfig = computed<UploadModalConfig>(() => props.config ?? {});
 const allowedMethods = computed(() => modalConfig.value.allowedMethods ?? DEFAULT_ALLOWED_METHODS);
 const availableMethods = useFilteredUploadMethods(allowedMethods);
-const selectedMethod = ref<UploadMethodConfig | null>(null);
+// Shallow so the method's async component is not wrapped in a reactive proxy; the value is only ever replaced.
+const selectedMethod = shallowRef<UploadMethodConfig | null>(null);
 const uploadMethodRef = ref<UploadMethodComponent | null>(null);
 const canUpload = ref(false);
 const uploading = ref(false);

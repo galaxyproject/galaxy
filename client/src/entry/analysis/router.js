@@ -747,7 +747,6 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             url: `/visualization/edit?id=${route.query.id}`,
                             redirect: "/visualizations/list",
-                            active_tab: "visualization",
                         }),
                     },
                     {

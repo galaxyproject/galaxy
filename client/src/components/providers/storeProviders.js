@@ -8,6 +8,8 @@ import { prependPath } from "@/utils/redirect";
 import { useDatatypeStore } from "../../stores/datatypeStore";
 
 export const SimpleProviderMixin = {
+    // Renders the slot as a fragment, so there is no root element to put attributes on.
+    inheritAttrs: false,
     props: {
         id: { type: String, required: true },
     },
