@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import GLink from "./GLink.vue";
@@ -77,5 +77,46 @@ describe("GLink.vue link targets", () => {
         });
 
         expect(wrapper.get("a").attributes("title")).toBeUndefined();
+    });
+});
+
+describe("GLink.vue clicks", () => {
+    // The click listener reaches the RouterLink's rendered anchor by fallthrough, alongside
+    // RouterLink's own navigation handler.
+    it("emits click exactly once from a router link", async () => {
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
+        });
+        const wrapper = mount(GLink as object, { propsData: { to: "/pages/create" }, localVue, router });
+
+        await wrapper.get("a").trigger("click");
+
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+
+    it("emits click exactly once from a plain anchor", async () => {
+        const wrapper = mount(GLink as object, { propsData: { href: "https://example.org/data.txt" }, localVue });
+
+        await wrapper.get("a").trigger("click");
+
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+
+    it("emits no click and stops the event when disabled", async () => {
+        const parentClick = vi.fn();
+        const wrapper = mount(
+            {
+                components: { GLink },
+                template: `<div @click="parentClick"><GLink href="https://example.org/data.txt" disabled /></div>`,
+                methods: { parentClick },
+            },
+            { localVue },
+        );
+
+        await wrapper.get("button").trigger("click");
+
+        expect(wrapper.findComponent(GLink as object).emitted("click")).toBeUndefined();
+        expect(parentClick).not.toHaveBeenCalled();
     });
 });
