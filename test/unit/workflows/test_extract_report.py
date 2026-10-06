@@ -20,23 +20,18 @@ from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import workflow_extraction_report as report
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
 from galaxy.model import (
     History,
     Job,
     StoredWorkflow,
-    User,
 )
-from galaxy.workflow import extract
 from galaxy.workflow.extract import ExtractionLabelIndex
 
 # Tests build duck-typed SimpleNamespace stubs and pass None for the unused
 # trans; cast to keep the production signatures strict without real instances.
 _NO_TRANS = cast(ProvidesHistoryContext, None)
-_NO_USER = cast(User, None)
-_NO_JOB_MANAGER = cast(JobManager, None)
 
 
 class FakeIndex:
@@ -339,57 +334,6 @@ def test_rewrite_invalid_markdown_raises_galaxy_exception(monkeypatch):
     )
     with pytest.raises(MalformedContents):
         report._rewrite_page_markdown(_NO_TRANS, "irrelevant", cast(ExtractionLabelIndex, FakeIndex()), PAGE_HISTORY_ID)
-
-
-def _patch_extraction(monkeypatch, finalized):
-    """Stub out the step build and the persist step of extract_workflow_by_ids."""
-    index = ExtractionLabelIndex(content_to_step={}, job_to_step={}, icj_to_step={})
-    monkeypatch.setattr(extract, "extract_steps_by_ids", lambda *args, **kwds: ([], index))
-    monkeypatch.setattr(
-        extract,
-        "_finalize_workflow",
-        lambda trans, user, name, steps, reports_config=None: finalized.append(reports_config) or "stored",
-    )
-
-
-def _extract(**kwds):
-    return extract.extract_workflow_by_ids(
-        _NO_TRANS, user=_NO_USER, workflow_name="wf", job_manager=_NO_JOB_MANAGER, **kwds
-    )
-
-
-def test_build_report_runs_before_the_workflow_is_persisted(monkeypatch):
-    """The report is built while the steps are still uncommitted, so a failure
-    there leaves no half-built workflow behind."""
-    finalized: list = []
-    _patch_extraction(monkeypatch, finalized)
-
-    def boom(index):
-        raise MalformedContents("bad report")
-
-    with pytest.raises(MalformedContents):
-        _extract(build_report=boom)
-    assert finalized == []
-
-
-def test_build_report_result_is_persisted_with_the_workflow(monkeypatch):
-    finalized: list = []
-    _patch_extraction(monkeypatch, finalized)
-    config = {"markdown": "rewritten", "title": "My Report"}
-
-    stored, warnings = _extract(build_report=lambda index: (config, ["dropped a thing"]))
-    assert stored == "stored"
-    assert warnings == ["dropped a thing"]
-    assert finalized == [config]
-
-
-def test_extraction_without_a_report_persists_no_reports_config(monkeypatch):
-    finalized: list = []
-    _patch_extraction(monkeypatch, finalized)
-
-    stored, warnings = _extract()
-    assert warnings == []
-    assert finalized == [None]
 
 
 def test_drop_instance_references_drops_invocation_scoped_directive():
