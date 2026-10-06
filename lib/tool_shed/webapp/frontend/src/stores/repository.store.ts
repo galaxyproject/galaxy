@@ -93,8 +93,8 @@ export const useRepositoryStore = defineStore({
                     const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
                     repositoryPermissions = _repositoryPermissions ?? repositoryPermissions
                     this.repositoryPermissions = repositoryPermissions
-                } catch (e) {
-                    // console.log(e)
+                } catch {
+                    // permissions are optional; keep the defaults
                 }
                 const latestMetadata = Object.values(repositoryMetadata ?? {})[0]
                 if (!latestMetadata || !repository) {
