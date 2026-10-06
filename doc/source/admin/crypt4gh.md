@@ -343,6 +343,10 @@ Limitations:
   authorizes the primary file. Composite outputs of protected jobs are supported.
 - The same encrypted dataset can't be passed both decrypted and encrypted to the
   same job.
+- With the job cache, jobs decrypting data are only reused from the same user's
+  earlier jobs, since outputs are encrypted for the user who ran the job. Reused
+  outputs keep the authorization recorded by the original job, so users authorize
+  them again once it expires.
 
 ## Failures and cleanup
 
