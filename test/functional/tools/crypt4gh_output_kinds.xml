@@ -1,3 +1,4 @@
+<!-- Test tool for Crypt4GH support: every output of a job reading encrypted data must end up encrypted. -->
 <tool id="crypt4gh_output_kinds" name="crypt4gh_output_kinds" version="1.0.0">
     <description>writes its input through every kind of tool output</description>
     <command><![CDATA[
@@ -39,7 +40,4 @@ cp '$galaxy_json' galaxy.json
             <discover_datasets pattern="__name_and_ext__" directory="split"/>
         </collection>
     </outputs>
-    <help>
-Test tool for Crypt4GH support: every output of a job reading encrypted data must end up encrypted.
-    </help>
 </tool>

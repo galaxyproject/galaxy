@@ -24,6 +24,7 @@ from galaxy.job_execution.protection.outputs import (
 )
 from galaxy.job_execution.protection.stage import (
     CLEANUP_FAILURE_FILE,
+    PROTECTION_SETUP_FAILURE_FILE,
     run,
     SETUP_FAILURE_FILE,
 )
@@ -233,6 +234,17 @@ def test_stage_command_reports_failures(tmp_path, service, user):
     assert run("stage-in", plan_path) == 1
     with open(os.path.join(plan.job_directory, SETUP_FAILURE_FILE)) as f:
         assert f.read().startswith("Could not decrypt the protected inputs of this job")
+
+
+def test_stage_command_reports_missing_plan(tmp_path):
+    job_directory = tmp_path / "job"
+    (job_directory / "configs").mkdir(parents=True)
+
+    assert run("stage-in", str(job_directory / "configs" / "protection_plan.json")) == 1
+
+    for failure_file in (SETUP_FAILURE_FILE, PROTECTION_SETUP_FAILURE_FILE):
+        with open(job_directory / failure_file) as f:
+            assert f.read().startswith("Could not decrypt the protected inputs of this job")
 
 
 def test_cleanup_removes_plaintext(tmp_path, service, user):
