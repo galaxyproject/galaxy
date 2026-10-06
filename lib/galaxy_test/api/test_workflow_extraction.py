@@ -2157,6 +2157,26 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
                 assert output["suggested_name"] != sentinel_cat1_name, output
 
     @skip_without_tool("cat1")
+    def test_extraction_summary_suggested_name_is_directive_safe(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            cat1_run = self.dataset_populator.run_tool(
+                "cat1",
+                {
+                    "input1": {"src": "hda", "id": hda1["id"]},
+                    "queries_0|input2": {"src": "hda", "id": hda2["id"]},
+                },
+                history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self.dataset_populator.rename_dataset(cat1_run["outputs"][0]["id"], 'Sample "A" merged')
+
+            summary = self._get_extraction_summary(history_id)
+            cat1_job = next(j for j in summary["jobs"] if j.get("tool_id") == "cat1")
+            assert cat1_job["outputs"][0]["suggested_name"] == "Sample A merged", cat1_job["outputs"][0]
+
+    @skip_without_tool("cat1")
     def test_extraction_summary_structure(self):
         # After running cat1 the summary should contain two input steps (the
         # uploaded datasets) and one tool step — covering all three step_type
@@ -2310,6 +2330,47 @@ class TestNotebookWorkflowExtractionReport(
             assert result["report_warnings"] == [], result["report_warnings"]
 
     @skip_without_tool("cat1")
+    def test_notebook_with_only_dropped_directives_keeps_default_report(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            unrelated = self.dataset_populator.new_dataset(history_id, content="x\n", wait=True)
+            page = self.dataset_populator.new_history_page(
+                history_id, content=f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+            )
+
+            result = self._extract(hda_ids=[unrelated["id"]], from_page_id=page["id"])
+
+            assert self._report_markdown(result["id"]) is None
+            assert result["report_warnings"] == [
+                "Dropped a dataset reference from the report: it has no workflow-relative label."
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_directive_for_unquotable_output_label(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                output_labels=[{"kind": "hda", "id": out_id, "label": 'merged "lines"'}],
+            )
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None
+            assert "history_dataset_display" not in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a dataset reference from the report: its label 'merged \"lines\"' contains a double "
+                    "quote or line break, which report directives cannot express."
+                )
+            ]
+            downloaded = self._get(f"workflows/{result['id']}/download").json()
+            tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+            assert [o["label"] for o in tool_step["workflow_outputs"]] == ['merged "lines"']
+
+    @skip_without_tool("cat1")
     def test_report_drops_directive_for_unquotable_step_label(self):
         with self.dataset_populator.test_history() as history_id:
             _, cat1_job_id = self._run_cat1(history_id)
@@ -2325,7 +2386,12 @@ class TestNotebookWorkflowExtractionReport(
             assert markdown is not None
             assert "# Analysis" in markdown, markdown
             assert "job_metrics" not in markdown, markdown
-            assert len(result["report_warnings"]) == 1, result["report_warnings"]
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a job reference from the report: its label 'say \"hi\"' contains a double quote or "
+                    "line break, which report directives cannot express."
+                )
+            ]
             downloaded = self._get(f"workflows/{result['id']}/download").json()
             tool_labels = [s["label"] for s in downloaded["steps"].values() if s["type"] == "tool"]
             assert tool_labels == ['say "hi"']

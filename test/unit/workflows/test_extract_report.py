@@ -45,10 +45,10 @@ class FakeIndex:
         self._content_args = content_args or {}
         self._job_args = job_args or {}
 
-    def content_label_arg(self, kind, content):
+    def content_label(self, kind, content):
         return self._content_args.get((kind, content.id))
 
-    def job_label_arg(self, job):
+    def job_label(self, job):
         return self._job_args.get(job.id)
 
 
@@ -61,7 +61,7 @@ def _hda(id_):
 
 
 def test_rewrite_dataset_to_output_label():
-    rewriter = _rewriter(content_args={("hda", 7): 'output="aligned"'})
+    rewriter = _rewriter(content_args={("hda", 7): ("output", "aligned")})
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
     assert line == 'history_dataset_display(output="aligned")\n'
     assert whole_block is False
@@ -69,7 +69,7 @@ def test_rewrite_dataset_to_output_label():
 
 
 def test_rewrite_dataset_preserves_other_args():
-    rewriter = _rewriter(content_args={("hda", 7): 'output="aligned"'})
+    rewriter = _rewriter(content_args={("hda", 7): ("output", "aligned")})
     line, _ = rewriter.handle_dataset_as_table(
         'history_dataset_as_table(history_dataset_id=abc123, title="Peek")\n', _hda(7)
     )
@@ -77,7 +77,7 @@ def test_rewrite_dataset_preserves_other_args():
 
 
 def test_rewrite_collection_to_input_label():
-    rewriter = _rewriter(content_args={("hdca", 5): 'input="samples"'})
+    rewriter = _rewriter(content_args={("hdca", 5): ("input", "samples")})
     line, _ = rewriter.handle_dataset_collection_display(
         "history_dataset_collection_display(history_dataset_collection_id=def456)\n", _hda(5)
     )
@@ -85,7 +85,7 @@ def test_rewrite_collection_to_input_label():
 
 
 def test_rewrite_job_to_step_label():
-    rewriter = _rewriter(job_args={9: 'step="bwa_mem"'})
+    rewriter = _rewriter(job_args={9: ("step", "bwa_mem")})
     line, _ = rewriter.handle_job_metrics("job_metrics(job_id=abc123)\n", cast(Job, SimpleNamespace(id=9)))
     assert line == 'job_metrics(step="bwa_mem")\n'
 
@@ -95,7 +95,50 @@ def test_unresolved_content_dropped_with_warning():
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
     assert line == ""
     assert whole_block is True
-    assert len(rewriter.warnings) == 1
+    assert rewriter.warnings == ["Dropped a dataset reference from the report: it has no workflow-relative label."]
+
+
+@pytest.mark.parametrize("label", ['say "hi"', "bwa\nmem", "bwa\rmem", "bwa\x85mem", "bwa\u2028mem"])
+def test_unquotable_content_label_dropped_with_warning(label):
+    step = _tool_step()
+    step.create_or_update_workflow_output(output_name="out_file", label=label, uuid=None)
+    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    rewriter = _ReportLabelRewriter(index)
+    line, whole_block = rewriter.handle_dataset_display(
+        "history_dataset_display(history_dataset_id=abc123)\n", _content_stub(12)
+    )
+    assert line == ""
+    assert whole_block is True
+    assert rewriter.warnings == [
+        (
+            f"Dropped a dataset reference from the report: its label {label!r} contains a double quote or "
+            "line break, which report directives cannot express."
+        )
+    ]
+
+
+def test_unquotable_input_label_dropped_with_warning():
+    index = ExtractionLabelIndex(
+        content_to_step={("dataset", 11): (_input_step('my "input"'), "output")}, job_to_step={}, icj_to_step={}
+    )
+    rewriter = _ReportLabelRewriter(index)
+    line, _ = rewriter.handle_dataset_peek("history_dataset_peek(history_dataset_id=abc123)\n", _content_stub(11))
+    assert line == ""
+    assert "contains a double quote or line break" in rewriter.warnings[0]
+
+
+def test_unquotable_step_label_dropped_with_warning():
+    index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: _tool_step("bwa\nmem")}, icj_to_step={})
+    rewriter = _ReportLabelRewriter(index)
+    job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
+    line, _ = rewriter.handle_job_metrics("job_metrics(job_id=abc123)\n", cast(Job, job))
+    assert line == ""
+    assert rewriter.warnings == [
+        (
+            "Dropped a job reference from the report: its label 'bwa\\nmem' contains a double quote or "
+            "line break, which report directives cannot express."
+        )
+    ]
 
 
 def test_unportable_directive_dropped_with_warning():
@@ -140,20 +183,20 @@ def _content_stub(id_, copied_from=None):
 def test_index_input_resolves_to_input_label():
     step = _input_step("my_input")
     index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
-    assert index.content_label_arg("hda", _content_stub(11)) == 'input="my_input"'
+    assert index.content_label("hda", _content_stub(11)) == ("input", "my_input")
 
 
 def test_index_tool_output_resolves_to_output_label():
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label="aligned", uuid=None)
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    assert index.content_label_arg("hda", _content_stub(12)) == 'output="aligned"'
+    assert index.content_label("hda", _content_stub(12)) == ("output", "aligned")
 
 
 def test_index_tool_output_without_label_is_unresolved():
     step = _tool_step()
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    assert index.content_label_arg("hda", _content_stub(12)) is None
+    assert index.content_label("hda", _content_stub(12)) is None
 
 
 def test_index_normalizes_copied_dataset_to_original():
@@ -162,43 +205,21 @@ def test_index_normalizes_copied_dataset_to_original():
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     original = _content_stub(12)
     copy = _content_stub(99, copied_from=original)
-    assert index.content_label_arg("hda", copy) == 'output="aligned"'
-
-
-def test_index_unquotable_label_is_unresolved():
-    """Directive arguments are double-quoted with no escape syntax, so a label
-    carrying a quote or a line break has no directive form and must not be emitted."""
-    step = _tool_step()
-    step.create_or_update_workflow_output(output_name="out_file", label='say "hi"', uuid=None)
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
-    assert index.content_label_arg("hda", _content_stub(12)) is None
-
-
-def test_index_unquotable_input_label_is_unresolved():
-    step = _input_step('my "input"')
-    index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
-    assert index.content_label_arg("hda", _content_stub(11)) is None
-
-
-def test_index_unquotable_step_label_is_unresolved():
-    step = _tool_step("bwa\nmem")
-    index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
-    job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
-    assert index.job_label_arg(cast(Job, job)) is None
+    assert index.content_label("hda", copy) == ("output", "aligned")
 
 
 def test_index_plain_job_resolves_to_step_label():
     step = _tool_step("bwa_mem")
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
-    assert index.job_label_arg(cast(Job, job)) == 'step="bwa_mem"'
+    assert index.job_label(cast(Job, job)) == ("step", "bwa_mem")
 
 
 def test_index_mapped_job_folds_to_icj_step_label():
     step = _tool_step("mapped_step")
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={}, icj_to_step={4: step})
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=SimpleNamespace(implicit_collection_jobs_id=4))
-    assert index.job_label_arg(cast(Job, job)) == 'step="mapped_step"'
+    assert index.job_label(cast(Job, job)) == ("step", "mapped_step")
 
 
 def _referenced(refs=None, job_refs=None, icj_refs=None):
@@ -252,9 +273,8 @@ def test_reconcile_label_from_quoted_name_is_directive_safe(monkeypatch):
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, 'say "hi"\nagain')
     report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
 
-    arg = index.content_label_arg("hda", _content_stub(12))
-    assert arg == 'output="say hi again"'
-    validate_galaxy_markdown(f"```galaxy\nhistory_dataset_display({arg})\n```\n")
+    assert index.content_label("hda", _content_stub(12)) == ("output", "say hi again")
+    validate_galaxy_markdown('```galaxy\nhistory_dataset_display(output="say hi again")\n```\n')
 
 
 def test_reconcile_labels_referenced_step(monkeypatch):
