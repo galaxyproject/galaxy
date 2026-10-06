@@ -995,20 +995,8 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         return response.json()["id"]
 
     def _seed_two_inputs_and_run_cat1(self, history_id, c1, c2, **run_kwargs):
-        d1 = self.dataset_populator.new_dataset(history_id, content=c1)
-        d2 = self.dataset_populator.new_dataset(history_id, content=c2)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=history_id,
-            **run_kwargs,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return d1, d2, run["jobs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, (c1, c2), **run_kwargs)
+        return *run.inputs, run.job_id
 
     def _assert_single_input_single_tool(self, workflow, expected_tool_id=None):
         steps = workflow["steps"]
@@ -2257,16 +2245,8 @@ class TestNotebookWorkflowExtractionReport(
         return download.json().get("report", {}).get("markdown")
 
     def _run_cat1(self, history_id):
-        d1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
-        d2 = self.dataset_populator.new_dataset(history_id, content="4 5 6\n")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}},
-            history_id=history_id,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]["id"], run["jobs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id)
+        return run.output_id, run.job_id
 
     @skip_without_tool("cat1")
     def test_report_rewrites_output_and_job_directives(self):
