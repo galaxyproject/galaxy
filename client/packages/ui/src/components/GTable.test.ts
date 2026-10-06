@@ -1,3 +1,5 @@
+import "@testing-library/jest-dom/vitest";
+
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -16,6 +18,29 @@ function mountSelectable() {
 }
 
 describe("GTable selection", () => {
+    it.each([undefined, "Select dataset"])("names selection checkboxes without the tooltip directive (%s)", (title) => {
+        const wrapper = mount(GTable as object, {
+            props: {
+                items,
+                fields: [{ key: "name" }],
+                selectable: true,
+                showSelectAll: true,
+                selectCheckboxTitle: title,
+            },
+            global: { directives: { "g-tooltip": {} } },
+            attachTo: document.body,
+        });
+
+        try {
+            expect(wrapper.get("thead input").element).toHaveAccessibleName("Select all for bulk actions");
+            for (const checkbox of wrapper.findAll("tbody input")) {
+                expect(checkbox.element).toHaveAccessibleName(title ?? "Select for bulk actions");
+            }
+        } finally {
+            wrapper.unmount();
+        }
+    });
+
     // Selenium clicks the checkbox's label; the click must stop at the checkbox rather than
     // also reaching the row, whose own handler would toggle the selection a second time.
     it("selects a row once from its checkbox without counting a row click", async () => {

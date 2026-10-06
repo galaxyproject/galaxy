@@ -753,6 +753,7 @@ defineExpose({
                                             :model-value="allSelected"
                                             :indeterminate="indeterminateSelected"
                                             title="Select all for bulk actions"
+                                            aria-label="Select all for bulk actions"
                                             @update:model-value="onSelectAll($event)" />
                                     </span>
                                 </slot>
@@ -833,6 +834,7 @@ defineExpose({
                                             :model-value="isRowSelected(getGlobalIndex(paginatedIndex))"
                                             :indeterminate="isRowIndeterminate(getGlobalIndex(paginatedIndex))"
                                             :title="props.selectCheckboxTitle"
+                                            :aria-label="props.selectCheckboxTitle"
                                             @update:model-value="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
                                     </span>
                                 </td>

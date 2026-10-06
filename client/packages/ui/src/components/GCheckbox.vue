@@ -16,6 +16,8 @@ const props = defineProps<{
     modelValue?: boolean;
     /** ID attribute for the checkbox input */
     id?: string;
+    /** Accessible name when no visible label is provided */
+    ariaLabel?: string;
     /** Disabled state */
     disabled?: boolean;
     /** Render as a toggle switch instead of a checkbox */
@@ -52,6 +54,7 @@ function onChange(event: Event) {
         :data-test-id="id ? `${id}-label` : undefined">
         <input
             :id="id"
+            :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
             :data-test-id="id ? `${id}-input` : undefined"
