@@ -1449,6 +1449,15 @@ describe("GPopover interactive hover", () => {
         expect(isShown()).toBe(false);
     });
 
+    it("leaves an interactive popover that only the page opens out of the dialog role", async () => {
+        const { target } = await mountInteractive({ props: { triggers: "manual", show: true } });
+
+        expect(popoverEl().getAttribute("role")).toBe("tooltip");
+        expect(target.hasAttribute("aria-haspopup")).toBe(false);
+        expect(target.hasAttribute("aria-expanded")).toBe(false);
+        expect(guards()).toHaveLength(0);
+    });
+
     it("leaves popovers that are not interactive as tooltips", async () => {
         const { target } = await mountInteractive({ props: { interactive: false } });
         await focusTrigger(target);

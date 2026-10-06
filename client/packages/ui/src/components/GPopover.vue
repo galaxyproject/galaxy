@@ -505,13 +505,13 @@ const parsedTriggers = computed(() => {
     return result;
 });
 
+// Only popovers the page opens and closes on its own ("manual" alone) leave Escape to the page.
+const opensOnInteraction = computed(() => ["hover", "focus", "click"].some((t) => parsedTriggers.value.has(t)));
 // Click popovers hold content the user acts on, so they are non-modal dialogs rather than tooltips.
 const isClickDialog = computed(() => parsedTriggers.value.has("click"));
 // APG tooltips hold nothing focusable, so an interactive hover or focus popover is a non-modal dialog too.
-const isHoverDialog = computed(() => props.interactive && !isClickDialog.value);
+const isHoverDialog = computed(() => props.interactive && opensOnInteraction.value && !isClickDialog.value);
 const isDialog = computed(() => isClickDialog.value || isHoverDialog.value);
-// Only popovers the page opens and closes on its own ("manual" alone) leave Escape to the page.
-const opensOnInteraction = computed(() => ["hover", "focus", "click"].some((t) => parsedTriggers.value.has(t)));
 const titleId = computed(() => `${popoverId.value}-title`);
 const triggerId = ref<string>();
 
