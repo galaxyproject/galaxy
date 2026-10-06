@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { ColDef } from "ag-grid-community";
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 
-import type { SampleSheetColumnDefinitions } from "@/api";
+import type { SampleSheetColumnDefinition } from "@/api";
 import {
     type AgRowData,
-    buildsSampleSheetGrid,
+    modelObjectIdentifierColumn,
+    SAMPLE_SHEET_GRID_STYLE,
     toAgGridColumnDefinition,
+    useSampleSheetGrid,
 } from "@/components/Collections/sheet/useSampleSheetGrid";
 import { useDetailedCollection } from "@/composables/datasetCollections";
 import { useAgGrid } from "@/composables/useAgGrid";
@@ -22,91 +24,53 @@ const props = defineProps<Props>();
 
 const { collection, collectionLoadError } = useDetailedCollection(props);
 
-function initializeRowData(rowData: AgRowData[]) {
-    const collectionDetailed = collection.value;
-    if (collectionDetailed) {
-        for (const element of collectionDetailed.elements) {
-            const row: AgRowData = { __model_object: element };
-            (collectionDetailed.column_definitions || []).forEach((colDef, colIndex) => {
-                row[colDef.name] = element.columns ? element.columns[colIndex] : null;
-            });
-            rowData.push(row);
-        }
-    }
+const { AgGridVue, onGridReady, theme } = useAgGrid();
 
-    return [];
-}
+const columnDefinitions = computed(() => (collection.value?.column_definitions ?? []) as SampleSheetColumnDefinition[]);
 
-const { rowData, initialize, sampleSheetStyle } = buildsSampleSheetGrid(initializeRowData);
-
-const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
-
-function resize() {
-    if (gridApi.value) {
-        gridApi.value.sizeColumnsToFit();
-    }
-}
-
-// Generate Column Definitions from Schema
-function generateGridColumnDefs(columnDefinitions: SampleSheetColumnDefinitions): ColDef[] {
-    const columns: ColDef[] = [];
-    columns.push({
-        headerName: "Identifier",
-        field: "__model_object",
-        editable: false,
-        cellEditorParams: {},
-        valueFormatter: (params) => {
-            return params.data.__model_object.element_identifier;
-        },
-    });
-    (columnDefinitions || []).forEach((colDef) => {
-        const baseDef = toAgGridColumnDefinition(colDef);
-        columns.push(baseDef);
-    });
-    return columns;
-}
-
-// Column Definitions
-const columnDefs = computed(() => {
-    if (!collection.value || !collection.value.column_definitions) {
-        return [];
-    }
-    return generateGridColumnDefs(collection.value.column_definitions as SampleSheetColumnDefinitions);
-});
-
-watch(
-    () => collection.value,
-    () => {
-        initialize();
-        resize();
-    },
-    { immediate: true },
+const { rowData } = useSampleSheetGrid(() =>
+    (collection.value?.elements ?? []).map((element) => {
+        const row: AgRowData = { __model_object: element };
+        columnDefinitions.value.forEach((colDef, colIndex) => {
+            row[colDef.name] = element.columns ? element.columns[colIndex] : null;
+        });
+        return row;
+    }),
 );
 
-// Default Column Properties
-const defaultColDef = ref<ColDef>({
+const columnDefs = computed<ColDef[]>(() => [
+    modelObjectIdentifierColumn("Identifier"),
+    ...columnDefinitions.value.map(toAgGridColumnDefinition),
+]);
+
+const defaultColDef: ColDef = {
     editable: false,
     sortable: false,
     filter: true,
     resizable: true,
-});
+};
 </script>
 
 <template>
     <div>
-        <LoadingSpan v-if="!collection" />
-        <GAlert v-else-if="collectionLoadError" variant="danger" show dismissible>
+        <GAlert v-if="collectionLoadError" variant="danger" show dismissible>
             {{ collectionLoadError }}
         </GAlert>
-        <div v-else>
-            <div :class="theme">
-                <AgGridVue
-                    :row-data="rowData"
-                    :column-defs="columnDefs"
-                    :default-col-def="defaultColDef"
-                    :style="sampleSheetStyle"
-                    @gridReady="onGridReady" />
-            </div>
+        <LoadingSpan v-else-if="!collection" />
+        <div v-else :class="theme">
+            <AgGridVue
+                :row-data="rowData"
+                :column-defs="columnDefs"
+                :default-col-def="defaultColDef"
+                :style="SAMPLE_SHEET_GRID_STYLE"
+                @gridReady="onGridReady" />
         </div>
     </div>
 </template>
+
+<style scoped>
+:deep(.ag-grid-column-has-custom-header-description) {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+}
+</style>

@@ -468,7 +468,6 @@ async function download() {
                 :initial-elements="initialElements"
                 :extensions="extensions"
                 :busy="wizardIsBusy"
-                height="300px"
                 @workbook-contents="handleWorkbook"
                 @on-fetch-target="onFetchTarget"
                 @on-collection-create-payload="onCollectionCreatePayload" />

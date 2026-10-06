@@ -20,13 +20,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
-
-function resize() {
-    if (gridApi.value) {
-        gridApi.value.sizeColumnsToFit();
-    }
-}
+const { AgGridVue, onGridReady, theme } = useAgGrid();
 
 const style = computed(() => {
     return { width: "100%" };
@@ -165,25 +159,7 @@ defineExpose({
     asTarget,
 });
 
-watch(
-    () => {
-        props.target;
-    },
-    () => {
-        initialize();
-        // is this block needed?
-        if (gridApi.value) {
-            const params = {
-                force: true,
-                suppressFlash: true,
-            };
-            gridApi.value!.refreshCells(params);
-        }
-    },
-    {
-        immediate: true,
-    },
-);
+watch(() => props.target, initialize, { immediate: true });
 
 const viewRequestAction: CardAction = {
     id: "source",
