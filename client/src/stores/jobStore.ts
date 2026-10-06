@@ -18,16 +18,14 @@ interface PollEntry {
     refCount: number;
 }
 
-/** Max number of jobs to keep cached at once, to avoid unbounded memory growth over a long
- * session. Exported so tests can exercise eviction. */
+/** Cache target; mounted consumers and in-flight requests may temporarily exceed it. */
 export const MAX_CACHED_JOBS = 40;
 
 /**
  * The Job store for managing job data and tool-run responses.
  *
- * - Caches fetched jobs, capping the number of *non-terminal* ones via LRU (Least Recently Used)
- *   eviction at `MAX_CACHED_JOBS`. Once over the cap, the longest-untouched non-terminal job is
- *   dropped first.
+ * - Keeps recently used jobs, evicting unused entries above `MAX_CACHED_JOBS`.
+ *   Mounted consumers retain their entries even after polling finishes.
  * - Allows both base and full requests for the same job id to be tracked independently, but merges
  *   the full response into the cached job rather than overwriting it entirely.
  * - Polls a job until it reaches a terminal state, deduped so multiple callers watching the same
@@ -101,12 +99,15 @@ export const useJobStore = defineStore("jobStore", () => {
         const fetchPromise = (async () => {
             try {
                 const freshJob = await fetchJobFromApi(params);
-                const job = mergeJob(freshJob, storedJobs.value[params.id]);
+                const existingJob = storedJobs.value[params.id];
+                const job = mergeJob(freshJob, existingJob);
                 storedJobs.value[params.id] = job;
                 delete loadingErrors.value[params.id];
                 delete retryCounts[params.id];
-                if (params.full !== false) {
-                    fullyLoadedJobIds.add(params.id);
+                if (params.full !== false && TERMINAL_STATES.includes(freshJob.state)) {
+                    terminalFullJobIds.add(params.id);
+                } else if (params.full !== false || freshJob.state !== existingJob?.state) {
+                    terminalFullJobIds.delete(params.id);
                 }
                 return job;
             } catch (error) {
@@ -143,24 +144,38 @@ export const useJobStore = defineStore("jobStore", () => {
         lruOrder.set(id, true);
     }
 
-    function isTerminal(id: string): boolean {
-        const job = storedJobs.value[id];
-        return !!job && TERMINAL_STATES.indexOf(job.state) !== -1;
+    const consumers = new Map<string, number>();
+
+    /** Protects a displayed job from eviction until the returned release function is called. */
+    function retainJob(id: string) {
+        consumers.set(id, (consumers.get(id) ?? 0) + 1);
+        let released = false;
+        return () => {
+            if (released) {
+                return;
+            }
+            released = true;
+            const remaining = (consumers.get(id) ?? 1) - 1;
+            if (remaining > 0) {
+                consumers.set(id, remaining);
+            } else {
+                consumers.delete(id);
+            }
+            evictIfOverCap();
+        };
     }
 
-    /** Evicts the oldest cached *non-terminal* jobs that aren't being polled, until under the cap.
-     * Terminal jobs are never evicted by this because their data never changes again. */
     function evictIfOverCap() {
         for (const id of lruOrder.keys()) {
             if (lruOrder.size <= MAX_CACHED_JOBS) {
                 break;
             }
-            if (activePolls.has(id) || isTerminal(id)) {
+            if (consumers.has(id) || activePolls.has(id) || isLoadingJob.value(id)) {
                 continue;
             }
             lruOrder.delete(id);
             removeJob(id);
-            fullyLoadedJobIds.delete(id);
+            terminalFullJobIds.delete(id);
         }
     }
 
@@ -173,23 +188,26 @@ export const useJobStore = defineStore("jobStore", () => {
         return job;
     }
 
-    const getJob = computed(() => (id: string) => {
+    /** Reads the cache without starting a request. */
+    const getCachedJob = computed(() => (id: string) => {
         const job = storedJobs.value[id] ?? null;
         if (job) {
-            // Getting a cached job also marks it recently-used. Otherwise a job that's displayed
-            // but never re-fetched (already terminal) could get evicted while still on screen.
             markUsed(id);
-        } else if (id && !loadingRequests.has(requestKey({ id })) && !getJobLoadError.value(id)) {
-            // Auto-fetch on read, same as the old `useKeyedCache`-backed `getJob`: a reader that
-            // never calls `pollJobUntilTerminal` (e.g. wants a one-off, non-polled lookup) still
-            // gets the job fetched the first time it's read.
+        }
+        return job;
+    });
+
+    /** One-off lookup. Mounted readers use `useJobDetails` to retain their cache entries. */
+    const getJob = computed(() => (id: string) => {
+        const job = getCachedJob.value(id);
+        if (!job && id && !loadingRequests.has(requestKey({ id })) && !getJobLoadError.value(id)) {
             fetchJob({ id });
         }
         return job;
     });
 
-    /** Tracks job ids for which the full representation has been loaded. */
-    const fullyLoadedJobIds = new Set<string>();
+    // Full-only fields are final only when a full response itself observed completion.
+    const terminalFullJobIds = new Set<string>();
 
     /** A track of all active polls (by `job_id` and whether the stored representation is full),
      * plus a count of how many callers still want that poll running, so we don't duplicate polls
@@ -199,8 +217,7 @@ export const useJobStore = defineStore("jobStore", () => {
     /**
      * Polls a job until it reaches a terminal state. If the job is already terminal and cached,
      * it may not poll at all. If the stored job is not a full representation and a full one is
-     * requested, it will fetch the full representation once *or* switch an ongoing poll to request
-     * the full representation if needed.
+     * requested, it will poll for the final full representation, including retries on transient errors.
      *
      * Returns a `stopWatchingJob` function the caller must invoke (e.g. from `onUnmounted`) once it
      * no longer needs this job polled because the underlying poll only actually stops once every caller
@@ -215,15 +232,9 @@ export const useJobStore = defineStore("jobStore", () => {
         const cachedJobIsTerminal = !!cachedJob && TERMINAL_STATES.indexOf(cachedJob.state) !== -1;
 
         /** Whether the cached job satisfies the current request, considering the `full` option. */
-        const cacheSatisfiesRequest = full ? fullyLoadedJobIds.has(id) : !!cachedJob;
+        const cacheSatisfiesRequest = full ? terminalFullJobIds.has(id) : !!cachedJob;
         if (cachedJobIsTerminal && cacheSatisfiesRequest) {
             // Already have everything this call needs, and the job won't change anymore.
-            return stopWatchingReturn;
-        }
-
-        // The cached job is terminal but doesn't satisfy the currently requested structure
-        if (cachedJobIsTerminal) {
-            fetchJob({ id, full: true });
             return stopWatchingReturn;
         }
 
@@ -243,20 +254,22 @@ export const useJobStore = defineStore("jobStore", () => {
                 // upgraded this poll to `full: true` since it started.
                 const requestFull = activePolls.get(id)?.full ?? full;
                 let job = await fetchJob({ id, full: requestFull });
+                if (activePolls.get(id) !== pollEntry) {
+                    return;
+                }
                 if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
-                    // The poll may have been upgraded to `full` *after* the fetch above was
-                    // already made with the pre-upgrade value, in which case a terminal result
-                    // here would otherwise stop polling having only ever fetched the base
-                    // representation. Fetch full once more before disposing so the upgrade is
-                    // still honored.
-                    if (activePolls.get(id)?.full && !fullyLoadedJobIds.has(id)) {
+                    // An in-flight base request may finish after a full consumer joins.
+                    // Fetch final full fields before stopping the shared poll.
+                    if (activePolls.get(id)?.full && !terminalFullJobIds.has(id)) {
                         job = await fetchJob({ id, full: true });
                     }
-                    // Terminal jobs never poll again; dispose (not just stop) to release the
-                    // watcher's listener, since a new watcher is made if this job is polled again.
-                    watcher.dispose();
-                    activePolls.delete(id);
-                    return;
+                    if (job && TERMINAL_STATES.includes(job.state)) {
+                        watcher.dispose();
+                        if (activePolls.get(id) === pollEntry) {
+                            activePolls.delete(id);
+                        }
+                        return;
+                    }
                 }
                 if (!job && getJobLoadError.value(id) && !canRetryJob(id)) {
                     // Stop fetching if the fetch failed with a non-retryable error
@@ -296,6 +309,8 @@ export const useJobStore = defineStore("jobStore", () => {
         fetchJob,
         saveLatestResponse,
         getJob,
+        getCachedJob,
+        retainJob,
         getJobLoadError,
         isLoadingJob,
         latestResponse,

@@ -1,19 +1,21 @@
 import { createTestingPinia } from "@pinia/testing";
 import { advanceTimersAndFlush } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defineComponent, type Ref, ref } from "vue";
+import { defineComponent, h, type Ref, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { JobState, ShowFullJobResponse } from "@/api/jobs";
+import { MAX_CACHED_JOBS, useJobStore } from "@/stores/jobStore";
 
 import { useJobDetails } from "./jobDetails";
 
 const { server, http } = useServerMock();
 
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 function buildJob(id: string, state: JobState, overrides: Partial<ShowFullJobResponse> = {}): ShowFullJobResponse {
     return {
@@ -31,7 +33,7 @@ function buildJob(id: string, state: JobState, overrides: Partial<ShowFullJobRes
     } as ShowFullJobResponse;
 }
 
-function mountJobDetails(jobId: Ref<string | undefined>, options?: { full?: boolean }) {
+function mountJobDetails(jobId: Ref<string | undefined>, options?: { full?: boolean; poll?: boolean }) {
     const mounted = {
         job: ref<ShowFullJobResponse | null>(null),
         error: ref<unknown>(null),
@@ -231,5 +233,93 @@ describe("useJobDetails", () => {
         // Now that both consumers are gone, the poll must actually stop.
         await advanceTimersAndFlush(5000);
         expect(callCount).toBe(2);
+    });
+});
+
+describe("job cache consumers", () => {
+    beforeEach(() => setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false })));
+    afterEach(() => vi.clearAllTimers());
+
+    it("does not request full details when a base-only consumer renders before the response", async () => {
+        const requests: (string | null)[] = [];
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, request }) => {
+                requests.push(new URL(request.url).searchParams.get("full"));
+                return response(200).json(buildJob("base", "running"));
+            }),
+        );
+        const { job } = mountJobDetails(ref("base"), { full: false });
+        expect(job.value).toBeNull();
+        await flushPromises();
+        expect(job.value?.state).toBe("running");
+        expect(requests).toEqual(["false"]);
+        await advanceTimersAndFlush(1000);
+        expect(requests).toEqual(["false", "false"]);
+    });
+
+    it("keeps a one-shot running job visible after the terminal cache fills, without refetching", async () => {
+        const calls: Record<string, number> = {};
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                const id = params.job_id as string;
+                calls[id] = (calls[id] ?? 0) + 1;
+                return response(200).json(buildJob(id, id === "live" ? "running" : "ok"));
+            }),
+        );
+        const store = useJobStore();
+        for (let i = 0; i < MAX_CACHED_JOBS; i++) {
+            store.fetchJob({ id: `done-${i}` });
+            await flushPromises();
+        }
+        const wrapper = mount(
+            defineComponent({
+                setup() {
+                    const { job } = useJobDetails(ref("live"), { poll: false });
+                    return () => h("div", job.value?.state ?? "loading");
+                },
+            }),
+        );
+        await flushPromises();
+        expect(wrapper.text()).toBe("running");
+        for (let i = 0; i < MAX_CACHED_JOBS; i++) {
+            store.fetchJob({ id: `next-${i}` });
+            await flushPromises();
+        }
+        await advanceTimersAndFlush(5000);
+        expect(wrapper.text()).toBe("running");
+        expect(calls.live).toBe(1);
+        wrapper.unmount();
+        store.fetchJob({ id: "another" });
+        await flushPromises();
+        expect(store.getCachedJob("live")).toBeNull();
+    });
+
+    it("retains more than the cache target while displayed, then releases entries on job change and unmount", async () => {
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) =>
+                response(200).json(buildJob(params.job_id as string, "ok")),
+            ),
+        );
+        const store = useJobStore();
+        const id = ref<string | undefined>("shared");
+        const first = mountJobDetails(id, { poll: false });
+        const second = mountJobDetails(ref("shared"), { poll: false });
+        await flushPromises();
+        const others = [];
+        for (let i = 0; i < MAX_CACHED_JOBS; i++) {
+            others.push(mountJobDetails(ref(`other-${i}`), { poll: false }));
+            await flushPromises();
+        }
+        expect(first.job.value?.id).toBe("shared");
+        expect(others.every(({ job }) => job.value !== null)).toBe(true);
+
+        id.value = "replacement";
+        await flushPromises();
+        expect(second.job.value?.id).toBe("shared");
+        second.wrapper.unmount();
+        expect(store.getCachedJob("shared")).toBeNull();
+        expect(first.job.value?.id).toBe("replacement");
+        first.wrapper.unmount();
+        expect(store.getCachedJob("replacement")).toBeNull();
     });
 });

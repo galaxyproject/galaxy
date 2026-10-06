@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { advanceTimersAndFlush } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +14,7 @@ import { useJobConsoleOutput } from "./jobDetails";
 const { server, http } = useServerMock();
 
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 function buildConsoleOutput(overrides: Partial<JobConsoleOutput> = {}): JobConsoleOutput {
     return { state: "running", stdout: "", stderr: "", ...overrides };
@@ -209,5 +210,34 @@ describe("useJobConsoleOutput", () => {
 
         expect(stdout.value).toBe("second visit to job1\n");
         wrapper.unmount();
+    });
+});
+
+describe("unsupported live console output", () => {
+    afterEach(() => vi.clearAllTimers());
+
+    it("stops on the configuration refusal and can fetch a different job", async () => {
+        let unsupportedCalls = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}/console_output", ({ response, params }) => {
+                if (params.job_id === "unsupported") {
+                    unsupportedCalls++;
+                    return response("4XX").json({ err_code: 403004, err_msg: "Not enabled" }, { status: 403 });
+                }
+                return response(200).json(buildConsoleOutput({ stdout: "live output" }));
+            }),
+        );
+        const jobId = ref<string | undefined>("unsupported");
+        const { stdout, error } = mountJobConsoleOutput(jobId);
+        await flushPromises();
+        await advanceTimersAndFlush(3000);
+        await advanceTimersAndFlush(3000);
+        expect(unsupportedCalls).toBe(1);
+        expect(error.value).toBeNull();
+        jobId.value = "supported";
+        await flushPromises();
+        expect(stdout.value).toBe("live output");
+        await advanceTimersAndFlush(3000);
+        expect(stdout.value).toBe("live outputlive output");
     });
 });

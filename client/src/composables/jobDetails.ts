@@ -9,45 +9,33 @@ import { stateIsTerminal } from "@/utils/utils";
 
 const DEFAULT_POLL_INTERVAL_MS = 3000;
 
-/** Reactively reads (and keeps polling) a job's details via `jobStore`.
- *
- * @param options Has option `full?: boolean` (default `true`) which picks which representation to
- * request:
- *
- * `full = false` only needs the smaller, base job shape, and is satisfied by an already-cached job of
- * either shape.
- * A job already cached as terminal is never re-fetched, regardless of which shape is requested (unless a `full: true`
- * caller needs to upgrade a base-only cached entry).
- */
-export function useJobDetails(jobId: Ref<string | undefined>, options: { full?: boolean } = {}) {
-    const { full = true } = options;
+/** Reads a retained job and polls it until completion. Set `poll: false` for a single fetch. */
+export function useJobDetails(jobId: Ref<string | undefined>, options: { full?: boolean; poll?: boolean } = {}) {
+    const { full = true, poll = true } = options;
     const jobStore = useJobStore();
 
-    const job = computed(() => (jobId.value ? (jobStore.getJob(jobId.value) ?? null) : null));
+    const job = computed(() => (jobId.value ? jobStore.getCachedJob(jobId.value) : null));
     const error = computed(() => (jobId.value ? jobStore.getJobLoadError(jobId.value) : null));
     const loading = computed(() => (jobId.value ? jobStore.isLoadingJob(jobId.value) : false));
 
-    // Tracks this call's own interest in whichever job id it last started polling, so it can be
-    // released (stopping the underlying poll once no one else needs it) on the next id change or
-    // on unmount; otherwise the poll would keep running for the lifetime of the whole session.
-    let stopWatchingJob: (() => void) | undefined;
-
     watch(
         jobId,
-        (id) => {
-            stopWatchingJob?.();
-            stopWatchingJob = undefined;
-            if (id) {
-                // Guard against a falsy return: a stubbed/mocked store action (e.g. Pinia
-                // testing's default `stubActions: true`) returns `undefined` rather than the
-                // real `{ stopWatchingJob }`.
-                stopWatchingJob = jobStore.pollJobUntilTerminal({ id, full })?.stopWatchingJob;
+        (id, _oldId, onCleanup) => {
+            if (!id) {
+                return;
             }
+            const releaseJob = jobStore.retainJob(id);
+            const subscription = poll ? jobStore.pollJobUntilTerminal({ id, full }) : undefined;
+            if (!poll) {
+                jobStore.fetchJob({ id, full });
+            }
+            onCleanup(() => {
+                subscription?.stopWatchingJob();
+                releaseJob?.();
+            });
         },
         { immediate: true },
     );
-
-    onUnmounted(() => stopWatchingJob?.());
 
     return { job, error, loading };
 }
@@ -73,7 +61,11 @@ export function useJobConsoleOutput(
     let restartCount = 0;
 
     async function fetchConsoleOutput(id: string) {
-        const { data, error: fetchError } = await GalaxyApi().GET("/api/jobs/{job_id}/console_output", {
+        const {
+            data,
+            error: fetchError,
+            response,
+        } = await GalaxyApi().GET("/api/jobs/{job_id}/console_output", {
             params: {
                 path: { job_id: id },
                 query: {
@@ -85,6 +77,10 @@ export function useJobConsoleOutput(
             },
         });
         if (fetchError) {
+            // Destinations without live output reporting cannot satisfy subsequent polls either.
+            if (response.status === 403 && fetchError.err_code === 403004) {
+                return null;
+            }
             rethrowSimple(fetchError);
         }
         return data as JobConsoleOutput;
@@ -99,6 +95,11 @@ export function useJobConsoleOutput(
             try {
                 const result = await fetchConsoleOutput(id);
                 if (fetchRestartCount !== restartCount) {
+                    return;
+                }
+                if (result === null) {
+                    error.value = null;
+                    watcher.stopWatchingResource();
                     return;
                 }
                 if (result.stdout != null) {

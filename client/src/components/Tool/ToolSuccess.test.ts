@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { advanceTimersAndFlush, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -40,6 +40,7 @@ vi.mock("@/stores/toolStore", () => ({
 }));
 
 const { server, http } = useServerMock();
+enableAutoUnmount(afterEach);
 
 beforeEach(() => {
     server.use(
@@ -217,5 +218,50 @@ describe("ToolSuccess", () => {
             const jobState = wrapper.findComponent(JobState);
             expect(jobState.props("jobId")).toEqual(SECOND_JOB.id);
         });
+    });
+});
+
+describe("ToolSuccess live job state", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    it("shares one poll between the header, details and entry points, and stops polling the previous page", async () => {
+        const calls: string[] = [];
+        let state = "running";
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                calls.push(params.job_id as string);
+                return response(200).json({ ...jobInformationResponse, id: params.job_id, state } as never);
+            }),
+        );
+        const firstId = jobInformationResponse.id;
+        const secondId = "second-job";
+        const wrapper = await mountToolSuccess({
+            jobDef: TEST_JOB_DEF,
+            jobResponse: {
+                ...TEST_JOB_RESPONSE,
+                produces_entry_points: true,
+                jobs: [TEST_JOB_RESPONSE.jobs[0]!, { ...TEST_JOB_RESPONSE.jobs[0]!, id: secondId }],
+            },
+        });
+        expect(wrapper.findComponent(JobState).text()).toContain("running");
+        expect(calls).toEqual([firstId]);
+        const pageTwo = wrapper.findAll(SELECTORS.PAGINATION_ITEM).find((link) => link.text() === "2");
+        expect(pageTwo).toBeDefined();
+        await pageTwo!.trigger("click");
+        await flushPromises();
+        expect(calls).toEqual([firstId, secondId]);
+        state = "ok";
+        await advanceTimersAndFlush(1000);
+        expect(calls).toEqual([firstId, secondId, secondId]);
+        expect(wrapper.findComponent(JobState).text()).toContain("ok");
+        expect(wrapper.find('[data-description="galaxy-job-state"]').text()).toContain("ok");
+        expect(wrapper.text()).toContain("No Interactive Tool sessions are currently available");
+        await advanceTimersAndFlush(3000);
+        expect(calls).toEqual([firstId, secondId, secondId]);
+        wrapper.unmount();
     });
 });
