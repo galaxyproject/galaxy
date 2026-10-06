@@ -59,10 +59,17 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         assert dataset["extension"] == "fastqsanger.c4gh"
         return dataset, encrypted
 
-    def _authorize(self, dataset_id: str, encrypted: bytes, expires_in: timedelta = timedelta(days=7)) -> None:
+    def _authorize(
+        self,
+        dataset_id: str,
+        encrypted: bytes,
+        expires_in: timedelta = timedelta(days=7),
+        user: Keypair | None = None,
+    ) -> None:
         """Do what the browser does with the user-side recryptor service."""
-        key_ref = self.service.get_compute_key_info(self.user.public, expires_in=expires_in)
-        recrypted = self.service.user_recrypt(encrypted, self.user, key_ref)
+        user = user or self.user
+        key_ref = self.service.get_compute_key_info(user.public, expires_in=expires_in)
+        recrypted = self.service.user_recrypt(encrypted, user, key_ref)
         payload = {
             "scheme": "crypt4gh",
             "crypt4gh_compute_header": recrypted["crypt4gh_header"],
@@ -201,6 +208,49 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         job, second_output = self._wait_for_job(history_id, second)
         assert job["state"] == "ok", job
         assert self._decrypted_content(history_id, second_output) == PLAINTEXT_1
+
+    def test_own_jobs_decrypting_inputs_are_reused(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        first, _ = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert first["state"] == "ok", first
+
+        response = self.dataset_populator.run_tool_raw(
+            "cat", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id, use_cached_job=True
+        )
+        second, output = self._wait_for_job(history_id, response)
+
+        assert second["state"] == "ok", second
+        assert second["copied_from_job_id"] == first["id"]
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1
+        assert self.service.routes_called().count("recrypt_header_to_job_key") == 1
+
+    def test_other_users_jobs_decrypting_inputs_are_not_reused(self, history_id):
+        recipient = generate_keypair()
+        encrypted = encrypt(PLAINTEXT_1, self.user.public, recipient.public)
+        dataset = self.dataset_populator.new_dataset(
+            history_id, content=io.BytesIO(encrypted), name="reads.fastqsanger.c4gh", file_type="auto", wait=True
+        )
+        self._authorize(dataset["id"], encrypted)
+        first, _ = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert first["state"] == "ok", first
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user("crypt4gh_cache_recipient@bx.psu.edu"):
+            # The file is encrypted for the recipient too, who authorizes it with their own key.
+            self._authorize(dataset["id"], encrypted, user=recipient)
+            recipient_history_id = self.dataset_populator.new_history()
+            response = self.dataset_populator.run_tool_raw(
+                "cat", {"input1": {"src": "hda", "id": dataset["id"]}}, recipient_history_id, use_cached_job=True
+            )
+            second, output = self._wait_for_job(recipient_history_id, response)
+            content = self.dataset_populator.get_history_dataset_content(
+                recipient_history_id, dataset_id=output["id"], type="bytes"
+            )
+
+        assert second["state"] == "ok", second
+        assert second.get("copied_from_job_id") is None
+        # Outputs reused from the first job would be encrypted for its user only.
+        assert decrypt(content, recipient.secret) == PLAINTEXT_1
 
     def test_outputs_failing_to_be_encrypted_are_purged(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)

@@ -57,10 +57,11 @@ def parse_public_pem(pem: str) -> bytes:
     return base64.b64decode("".join(lines[1:-1]))
 
 
-def encrypt(plaintext: bytes, recipient: bytes, writer: Keypair | None = None) -> bytes:
+def encrypt(plaintext: bytes, *recipients: bytes, writer: Keypair | None = None) -> bytes:
     writer = writer or generate_keypair()
     output = io.BytesIO()
-    crypt4gh_lib.encrypt([(0, writer.secret, recipient)], io.BytesIO(plaintext), output)
+    keys = [(0, writer.secret, recipient) for recipient in recipients]
+    crypt4gh_lib.encrypt(keys, io.BytesIO(plaintext), output)
     return output.getvalue()
 
 
