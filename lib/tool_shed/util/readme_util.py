@@ -31,7 +31,7 @@ def build_readme_files_dict(
     app: "ToolShedApp",
     repository: "Repository",
     changeset_revision: str,
-    metadata: Any,
+    metadata: dict[str, Any],
     tool_path: str | None = None,
 ) -> dict[str, str]:
     """

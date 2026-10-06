@@ -45,6 +45,7 @@ from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed_client.schema import ChangesetMetadataStatus
 
 if TYPE_CHECKING:
+    from mercurial.interfaces.repository import IRepo
     from sqlalchemy.engine import ScalarResult
     from sqlalchemy.orm import (
         scoped_session,
@@ -273,9 +274,13 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         self.SUBSET = "subset"
         self.SUBSET_VALUES = [self.EQUAL, self.SUBSET]
 
-    def _add_tool_versions(self, id: int, repository_metadata, changeset_revisions):
+    def _add_tool_versions(
+        self, id: int, repository_metadata: RepositoryMetadata, changeset_revisions: list[str]
+    ) -> None:
         # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
         metadata = repository_metadata.metadata
+        if metadata is None:
+            return
         tool_versions_dict = {}
         for tool_dict in metadata.get("tools", []):
             # We have at least 2 changeset revisions to compare tool guids and tool ids.
@@ -585,7 +590,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         for changeset_revision in changeset_revisions:
             repository_metadata = repository_metadata_by_changeset_revision(self.app.model, id, changeset_revision)
             assert repository_metadata
-            metadata = repository_metadata.metadata
+            metadata = repository_metadata.metadata or {}
             tools_dicts = metadata.get("tools", [])
             for tool_dict in tools_dicts:
                 if tool_dict["guid"] == guid:
@@ -1009,23 +1014,33 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             regenerated_metadata=regenerated_metadata,
         )
 
-    def _reset_all_tool_versions(self, repo, dry_run: bool = False):
+    def _reset_all_tool_versions(self, repo: "IRepo", dry_run: bool = False) -> None:
         """Reset tool version lineage for those changeset revisions that include valid tools."""
         assert self.repository
-        changeset_revisions_that_contain_tools = _get_changeset_revisions_that_contain_tools(
-            self.app, repo, self.repository
-        )
-        # The list of changeset_revisions_that_contain_tools is now filtered to contain only those that
-        # are downloadable and contain tools.  If a repository includes tools, build a dictionary of
-        # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
-        for index, changeset_revision in enumerate(changeset_revisions_that_contain_tools):
-            tool_versions_dict = {}
+        # Walk the changelog once, keeping both the changeset_revision and the already-fetched
+        # repository_metadata for every changeset that is downloadable and contains tools, so we
+        # don't need to look them up again below.
+        changeset_revisions_that_contain_tools: list[str] = []
+        repository_metadata_that_contain_tools: list[RepositoryMetadata] = []
+        for changeset in repo.changelog:
+            changeset_revision = str(repo[changeset])
             repository_metadata = repository_metadata_by_changeset_revision(
                 self.app.model, self.repository.id, changeset_revision
             )
-            assert repository_metadata
+            if not repository_metadata:
+                continue
             metadata = repository_metadata.metadata
-            tool_dicts = metadata["tools"]
+            if not metadata or not metadata.get("tools", None):
+                continue
+            changeset_revisions_that_contain_tools.append(changeset_revision)
+            repository_metadata_that_contain_tools.append(repository_metadata)
+        # The list of repository_metadata_that_contain_tools is now filtered to contain only those that
+        # are downloadable and contain tools.  If a repository includes tools, build a dictionary of
+        # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
+        for index, repository_metadata in enumerate(repository_metadata_that_contain_tools):
+            tool_versions_dict: dict[str, Any] = {}
+            assert repository_metadata.metadata is not None  # already checked above
+            tool_dicts = repository_metadata.metadata["tools"]
             if index == 0:
                 # The first changeset_revision is a special case because it will have no ancestor
                 # changeset_revisions in which to match tools.  The parent tool id for tools in the
@@ -1169,7 +1184,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             if "tools" in self.metadata_dict and repository_metadata and status != "error":
                 # Set tool versions on the new downloadable change set.  The order of the list of changesets is
                 # critical, so we use the repo's changelog.
-                changeset_revisions = []
+                changeset_revisions: list[str] = []
                 for changeset in repo.changelog:
                     changeset_revision = str(repo[changeset])
                     if repository_metadata_by_changeset_revision(self.app.model, repository_id, changeset_revision):
@@ -1187,19 +1202,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             )
             status = "error"
         return message, status
-
-
-def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> list[str]:
-    changeset_revisions_that_contain_tools = []
-    for changeset in repo.changelog:
-        changeset_revision = str(repo[changeset])
-        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-            if metadata:
-                if metadata.get("tools", None):
-                    changeset_revisions_that_contain_tools.append(changeset_revision)
-    return changeset_revisions_that_contain_tools
 
 
 def get_user_by_username(session, username):
