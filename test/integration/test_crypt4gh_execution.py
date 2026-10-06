@@ -280,6 +280,20 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         assert "not authorized to decrypt" in response.json()["err_msg"]
         assert self.service.requests == []
 
+    def test_unauthorized_input_is_refused_through_tool_requests(self, history_id):
+        # The tool form submits through tool requests, which create jobs asynchronously.
+        dataset, _ = self._upload_encrypted(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.tool_request_raw(
+            "cat", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        self._assert_status_code_is(response, 200)
+        tool_request_id = response.json()["tool_request_id"]
+        assert not self.dataset_populator.wait_on_tool_request(tool_request_id)
+        tool_request = self.dataset_populator.get_tool_request(tool_request_id)
+        assert tool_request["state"] == "failed", tool_request
+        assert "not authorized to decrypt" in tool_request["state_message"]["err_msg"]
+        assert self.service.requests == []
+
     def test_shared_copy_is_refused_before_any_service_call(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         self.dataset_populator.make_public(history_id)
