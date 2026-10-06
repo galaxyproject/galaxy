@@ -400,7 +400,7 @@ export default {
                 .map(({ index }) => index);
         },
         renderedReadme() {
-            return this.folder_metadata.readme_raw ? renderMarkdown(this.folder_metadata.readme_raw) : "";
+            return this.folder_metadata.readme ? renderMarkdown(this.folder_metadata.readme) : "";
         },
     },
     watch: {
