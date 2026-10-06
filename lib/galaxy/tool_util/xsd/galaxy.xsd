@@ -1874,10 +1874,12 @@ supply an empty list of selected options:
 <param name="outputs" value_json="[]" />
 ```
 
-Use these explicit JSON forms instead of `value=""`. An empty string is not
-JSON `null`. Tool profiles before `26.1` interpret `value=""` as an empty
-multiple-select list, but this legacy convention is deprecated and rejected for
-profile `26.1` and later.
+Use these explicit JSON forms instead of `value=""`. `value=""` supplies the
+empty string as an option value, which is not a legal option unless the select
+defines `<option value="">`. On an optional single select it fails test
+validation from profile `24.2`. Tool profiles before `26.1` interpret
+`value=""` on a multiple select as an empty list, but linting flags this legacy
+convention and profile `26.1` and later reject it.
 
 Omit the test's `param` element to use the input parameter's default instead;
 this may select options if the tool declares them with `selected="true"`.
