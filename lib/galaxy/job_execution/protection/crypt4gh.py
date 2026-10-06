@@ -92,7 +92,21 @@ class RecryptorClient:
             {"crypt4gh_header": header, "crypt4gh_compute_keypair_id": key_ref},
         )
 
+    def _check_tls_files(self) -> None:
+        # requests only reports these as a generic OSError.
+        for setting, path in (
+            ("crypt4gh_recryptor_ca_cert", self.settings.ca_cert),
+            ("crypt4gh_recryptor_client_cert", self.settings.client_cert),
+            ("crypt4gh_recryptor_client_key", self.settings.client_key),
+        ):
+            if path and not os.path.exists(path):
+                raise ProtectionError(
+                    f"The file configured as {setting} doesn't exist on the compute host. "
+                    "Contact your Galaxy administrator."
+                )
+
     def _post(self, route: str, payload: dict[str, str]) -> dict[str, Any]:
+        self._check_tls_files()
         url = f"{self.settings.url.rstrip('/')}/{route}"
         verify: bool | str = self.settings.ca_cert or True
         cert: str | tuple[str, str] | None = self.settings.client_cert
@@ -105,7 +119,8 @@ class RecryptorClient:
                 response = requests.post(url, json=payload, timeout=self.settings.timeout, verify=verify, cert=cert)
             except requests.RequestException as e:
                 if last_attempt:
-                    raise ProtectionError(f"Could not reach the key service ({type(e).__name__}).")
+                    # Users can read job errors: don't chain the request error, it shows the service's address.
+                    raise ProtectionError(f"Could not reach the key service ({type(e).__name__}).") from None
                 log.warning("Key service request to %s failed (%s), retrying", route, type(e).__name__)
             else:
                 if response.status_code == 200:
