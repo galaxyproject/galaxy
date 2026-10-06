@@ -42,6 +42,9 @@ class ProtectedFile(BaseModel):
     source_path: str = Field(description="Path of the encrypted file on the compute host.")
     staged_path: str = Field(description="Path the decrypted file is written to.")
     compute_header: str = Field(description="Base64 header of the file, encrypted to the compute keypair.")
+    key_ref: str | None = Field(
+        default=None, description="Compute keypair of this header, when not the one of its input."
+    )
 
 
 class ProtectedInput(BaseModel):
