@@ -187,7 +187,8 @@
     "test:coverage": "vitest run --coverage",
     "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src packages/ui/src",
     "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src packages/ui/src",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "check-style-imports": "node scripts/check-style-imports.mjs"
   },
   "devDependencies": {
     "@galaxyproject/galaxy-ui": "workspace:*",
