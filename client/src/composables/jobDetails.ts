@@ -19,8 +19,8 @@ const DEFAULT_POLL_INTERVAL_MS = 3000;
  * A job already cached as terminal is never re-fetched, regardless of which shape is requested (unless a `full: true`
  * caller needs to upgrade a base-only cached entry).
  */
-export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRefresh?: boolean; full?: boolean } = {}) {
-    const { autoRefresh = true, full = true } = options;
+export function useJobDetails(jobId: Ref<string | undefined>, options: { full?: boolean } = {}) {
+    const { full = true } = options;
     const jobStore = useJobStore();
 
     const job = computed(() => (jobId.value ? (jobStore.getJob(jobId.value) ?? null) : null));
@@ -37,7 +37,7 @@ export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRef
         (id) => {
             stopWatchingJob?.();
             stopWatchingJob = undefined;
-            if (autoRefresh && id) {
+            if (id) {
                 // Guard against a falsy return: a stubbed/mocked store action (e.g. Pinia
                 // testing's default `stubActions: true`) returns `undefined` rather than the
                 // real `{ stopWatchingJob }`.
@@ -55,9 +55,9 @@ export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRef
 /** Fetches and auto-polls a job's console output (stdout/stderr)*/
 export function useJobConsoleOutput(
     jobId: Ref<string | undefined>,
-    options: { autoRefresh?: boolean; pollInterval?: number; chunkLength?: number } = {},
+    options: { pollInterval?: number; chunkLength?: number } = {},
 ) {
-    const { autoRefresh = true, pollInterval = DEFAULT_POLL_INTERVAL_MS, chunkLength = 50000 } = options;
+    const { pollInterval = DEFAULT_POLL_INTERVAL_MS, chunkLength = 50000 } = options;
 
     const stdout = ref("");
     const stderr = ref("");
@@ -109,9 +109,7 @@ export function useJobConsoleOutput(
                 }
                 state.value = result.state;
                 error.value = null;
-                // `autoRefresh: false` means "fetch once, never schedule a repeat", same as a
-                // terminal state, stopping the watcher after this single tick satisfies that.
-                if (!autoRefresh || stateIsTerminal({ state: state.value })) {
+                if (stateIsTerminal({ state: state.value })) {
                     watcher.stopWatchingResource();
                 }
             } catch (e) {

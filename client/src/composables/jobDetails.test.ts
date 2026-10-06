@@ -31,7 +31,7 @@ function buildJob(id: string, state: JobState, overrides: Partial<ShowFullJobRes
     } as ShowFullJobResponse;
 }
 
-function mountJobDetails(jobId: Ref<string | undefined>, options?: { autoRefresh?: boolean; full?: boolean }) {
+function mountJobDetails(jobId: Ref<string | undefined>, options?: { full?: boolean }) {
     const mounted = {
         job: ref<ShowFullJobResponse | null>(null),
         error: ref<unknown>(null),
