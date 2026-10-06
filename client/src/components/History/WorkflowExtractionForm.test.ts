@@ -24,9 +24,6 @@ import WorkflowExtractionForm from "./WorkflowExtractionForm.vue";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-// Mutable route query so individual tests can drive the `from_page` branch.
-const mockRoute = vi.hoisted(() => ({ query: {} as Record<string, string> }));
-
 vi.mock("@/api/histories", () => ({
     extractWorkflowFromHistory: vi.fn(),
     extractWorkflowByIds: vi.fn(),
@@ -42,7 +39,6 @@ vi.mock("vue-router", async (importOriginal) => {
     const actual = (await importOriginal()) as Record<string, unknown>;
     return {
         ...actual,
-        useRoute: () => mockRoute,
         // BreadcrumbHeading (rendered inside GHeading) calls router.resolve(path).path,
         // so the stub needs a resolve() alongside the push() spy.
         useRouter: () => ({
@@ -155,7 +151,7 @@ function inputJobOf(card: VueWrapper<InstanceType<typeof WorkflowExtractionCard>
 }
 
 // Seeded fixtures use `checked` values opposite to `seeded` to prove the
-// from_page branch derives checked-state from `seeded`, not the backend default.
+// fromPageId branch derives checked-state from `seeded`, not the backend default.
 const SEEDED_TOOL_JOB: WorkflowExtractionJob = {
     ...TOOL_JOB,
     checked: false,
@@ -209,9 +205,9 @@ const SUMMARY_WITH_WARNINGS = summary([TOOL_JOB], ["Tool version mismatch"]);
 
 const localVue = getLocalVue();
 
-async function mountForm(historyId = "history-1") {
+async function mountForm(historyId = "history-1", fromPageId?: string) {
     const wrapper = shallowMount(WorkflowExtractionForm as object, {
-        propsData: { historyId },
+        propsData: { historyId, fromPageId },
         localVue,
     });
     await flushPromises();
@@ -235,7 +231,6 @@ async function clickCreateButton(wrapper: ReturnType<typeof shallowMount>) {
 describe("WorkflowExtractionForm", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockRoute.query = {};
     });
 
     describe("loading state", () => {
@@ -682,20 +677,19 @@ describe("WorkflowExtractionForm", () => {
         });
     });
 
-    describe("from a notebook page (from_page query param)", () => {
+    describe("from a notebook page (fromPageId prop)", () => {
         beforeEach(() => {
-            mockRoute.query = { from_page: "page-1" };
             vi.mocked(fetchWorkflowExtractionSummary).mockResolvedValue(SEEDED_SUMMARY);
         });
 
         it("fetches the page summary instead of the history summary", async () => {
-            await mountForm();
+            await mountForm("history-1", "page-1");
             expect(fetchWorkflowExtractionSummary).toHaveBeenCalledWith("page-1");
             expect(extractWorkflowFromHistory).not.toHaveBeenCalled();
         });
 
         it("pre-checks seeded rows and unchecks unseeded rows regardless of backend `checked`", async () => {
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             const cards = wrapper.findAllComponents(WorkflowExtractionCard);
             expect(nth(cards, 0).props("job").checked).toBe(true); // seeded tool (backend checked=false)
             expect(nth(cards, 1).props("job").checked).toBe(false); // unseeded tool (backend checked=true)
@@ -703,14 +697,14 @@ describe("WorkflowExtractionForm", () => {
         });
 
         it("pre-stars referenced (exposed) outputs", async () => {
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
         });
 
         it("submits only the seeded subgraph by default", async () => {
             vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
             const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
@@ -724,7 +718,7 @@ describe("WorkflowExtractionForm", () => {
 
         it("sends from_page_id so the page markdown becomes the workflow report", async () => {
             vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
             const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
@@ -736,7 +730,7 @@ describe("WorkflowExtractionForm", () => {
                 id: "wf",
                 report_warnings: ["Dropped a workflow display from the report."],
             });
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
             expect(Toast.warning).toHaveBeenCalled();
@@ -748,7 +742,7 @@ describe("WorkflowExtractionForm", () => {
             // earlier seeded vitest fixtures (all plain job-id cards) never hit.
             vi.mocked(fetchWorkflowExtractionSummary).mockResolvedValue(SEEDED_MAPPED_SUMMARY);
             vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
-            const wrapper = await mountForm();
+            const wrapper = await mountForm("history-1", "page-1");
             const cards = wrapper.findAllComponents(WorkflowExtractionCard);
             expect(nth(cards, 0).props("job").checked).toBe(true); // seeded mapped (backend checked=false)
             expect(nth(cards, 1).props("job").checked).toBe(false); // unseeded mapped (backend checked=true)
@@ -764,7 +758,7 @@ describe("WorkflowExtractionForm", () => {
         });
     });
 
-    describe("without from_page (history default)", () => {
+    describe("without fromPageId (history default)", () => {
         it("does not call the page summary endpoint", async () => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
             await mountForm();
