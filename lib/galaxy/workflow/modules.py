@@ -787,7 +787,8 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
-        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
+        if not detached:
+            ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):
@@ -2080,9 +2081,9 @@ class PickValueModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._get_state_dict()
-        if not detached:
-            for k, v in self.post_job_actions.items():
-                pja = self._to_pja(k, v, step)
+        for k, v in self.post_job_actions.items():
+            pja = self._to_pja(k, v, step)
+            if not detached:
                 self.trans.sa_session.add(pja)
 
     @property
@@ -2737,9 +2738,9 @@ class ToolModule(WorkflowModule):
                     if tool.is_unprivileged_tool:
                         # Identified by ``dynamic_tool``, see ``WorkflowStep.effective_tool_id``.
                         step.tool_id = None
-        if not detached:
-            for k, v in self.post_job_actions.items():
-                pja = self.__to_pja(k, v, step)
+        for k, v in self.post_job_actions.items():
+            pja = self.__to_pja(k, v, step)
+            if not detached:
                 self.trans.sa_session.add(pja)
 
     # ---- General attributes ------------------------------------------------

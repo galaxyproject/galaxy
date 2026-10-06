@@ -22143,6 +22143,11 @@ export interface components {
         RefactorResponse: {
             /** Action Executions */
             action_executions: components["schemas"]["RefactorActionExecution"][];
+            /**
+             * Changed
+             * @description Whether the actions changed the refactored version. A refactor of the latest version that changes nothing saves no new version; refactoring an older version always saves one.
+             */
+            changed: boolean;
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
