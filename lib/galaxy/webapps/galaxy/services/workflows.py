@@ -95,13 +95,7 @@ def _to_extraction_result(
 def _build_report_config(
     trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
 ) -> tuple[dict[str, Any] | None, list[str]]:
-    """Turn a notebook page into the extracted workflow's ``reports_config``.
-
-    Runs while the extracted steps are still uncommitted. Reconcile mutates them
-    (assigning labels, exposing outputs the user did not star) and the rewrite can
-    fail, so both land in the single transaction that creates the workflow rather
-    than leaving a report-less workflow behind on error.
-    """
+    """The extracted workflow's ``reports_config`` from a notebook page; None when the page adds no report."""
     markdown, warnings = reconcile_and_build_report(trans, page, index)
     if not markdown.strip():
         return None, warnings
@@ -120,15 +114,7 @@ def _validate_extraction_labels(
     dataset_collection_names: list[str] | None,
     step_labels: list[str] | None = None,
 ) -> None:
-    """Validate user-supplied workflow input names and tool step labels.
-
-    Input dataset/collection names and tool step labels share one namespace
-    (the single ``step_labels`` set in ``extract_steps_by_ids``), so uniqueness
-    is checked across the combined list. Only inspects values that were actually
-    supplied — the no-names default path (the ``"Input Dataset"`` constants) and
-    unlabeled steps are untouched. Values are kept raw: limits are enforced by
-    rejection, never truncation (no whitespace collapse — unlike output labels).
-    """
+    """Reject empty, overlong or duplicate input names and step labels (one shared namespace); never truncate."""
     seen: set[str] = set()
     for name in (dataset_names or []) + (dataset_collection_names or []):
         if not name.strip():

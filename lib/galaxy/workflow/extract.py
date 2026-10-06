@@ -677,14 +677,10 @@ def extract_workflow_by_ids(
     step_labels: list[StepLabelHint] | None = None,
     build_report: "ReportBuilder | None" = None,
 ) -> tuple[StoredWorkflow, list[str]]:
-    """ID-based variant of :func:`extract_workflow`.
+    """ID-based variant of :func:`extract_workflow`; returns the workflow and any report warnings.
 
-    ``build_report`` turns the label index - which maps the ids the extraction
-    consumed to the labels it assigned - into the workflow's ``reports_config``,
-    e.g. by rewriting a notebook page's markdown. It runs *before* the workflow is
-    persisted, so the labels it assigns and the report it produces are written by
-    the same transaction that creates the workflow: a failure there leaves no
-    half-built workflow behind. Returns the workflow and any report warnings.
+    ``build_report`` runs before the workflow is persisted, so its label changes commit with it and
+    its failure creates nothing.
     """
     steps, index = extract_steps_by_ids(
         trans,
@@ -725,8 +721,7 @@ def output_label_to_id_key(kind: ContentKind, content_id: int) -> IdKey:
     return ("collection", content_id)
 
 
-# Turns the label index into a workflow ``reports_config`` (plus warnings) while the
-# extracted steps are still uncommitted.
+# Turns the label index into a workflow ``reports_config`` plus warnings.
 ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any] | None, list[str]]]
 
 
@@ -736,15 +731,9 @@ DirectiveLabel = tuple[Literal["input", "output", "step"], str]
 
 @dataclass(frozen=True)
 class ExtractionLabelIndex:
-    """Resolve an extracted-from id to the workflow-relative label extraction
-    assigned it, so a notebook page's internal-id markdown directives can be
-    rewritten to portable workflow report directives.
+    """Map extracted-from content, jobs and ICJs to the steps they became.
 
-    Holds the live ``WorkflowStep`` objects (not snapshotted label strings) so a
-    label assigned after construction - e.g. by the report auto-label reconcile -
-    is read back here. ``content_to_step`` is extraction's own connection-wiring
-    map (keyed by *original* HDA/HDCA id); ``job_to_step`` / ``icj_to_step`` map a
-    plain job id / ImplicitCollectionJobs id to the tool step it became.
+    Holds live ``WorkflowStep`` objects so labels assigned after construction are read back.
     """
 
     content_to_step: dict[IdKey, tuple[WorkflowStep, str]]
@@ -893,10 +882,7 @@ def extract_steps_by_ids(
     hdca_ids = list(hdca_ids or [])
     output_labels = list(output_labels or [])
 
-    # Step labels are keyed by the id the caller selected the step with: a plain
-    # tool job id or an ImplicitCollectionJobs id. Resolved into per-work-item
-    # labels at build time because the ICJ id is unrecoverable once work_items
-    # is sorted by representative-job id below.
+    # Keyed by the id the step was selected with (plain job or ICJ).
     job_step_labels: dict[int, str] = {}
     icj_step_labels: dict[int, str] = {}
     for label_hint in step_labels or []:
@@ -991,11 +977,7 @@ def extract_steps_by_ids(
         else:
             job_to_step[job.id] = step
         if step_label is not None:
-            # Input names already populated step_labels_seen; a tool-step label
-            # colliding here means the caller asked for a label that is already
-            # taken (e.g. a defaulted "Input Dataset" the service validator could
-            # not see). Unlike input names, which silently drop a colliding name,
-            # an explicitly requested step label raises rather than vanish.
+            # Unlike an input name, a requested step label that collides raises rather than vanishes.
             if step_label in step_labels_seen:
                 raise exceptions.RequestParameterInvalidException(
                     f"workflow step label collides with an existing label: {step_label!r}"
