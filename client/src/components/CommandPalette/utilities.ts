@@ -1,5 +1,6 @@
 import { type SearchCommonKeys, searchObjectsByKeys } from "@/components/Panels/utilities";
 
+import { PALETTE_LIMITS } from "./providers/limits";
 import { ACTIONS_SCOPE, findScope, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
 
@@ -125,4 +126,29 @@ export function visibleFor<T>(definitions: Gated<T>[], ctx: PaletteContext): T[]
     return definitions
         .filter((definition) => (definition.anonymous || !ctx.isAnonymous) && (definition.configGate?.(ctx) ?? true))
         .map((definition) => definition.item);
+}
+
+/**
+ * Whether a root search still owns the input once it has settled for {@link PALETTE_LIMITS.backendSettle}; the
+ * root answer fans out to several backends, so a keystroke inside the pause must not start any request.
+ * A search without a signal cannot be superseded and never waits.
+ */
+export function backendSettled(signal?: AbortSignal): Promise<boolean> {
+    if (!signal) {
+        return Promise.resolve(true);
+    }
+    if (signal.aborted) {
+        return Promise.resolve(false);
+    }
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+            signal.removeEventListener("abort", onAbort);
+            resolve(true);
+        }, PALETTE_LIMITS.backendSettle);
+        function onAbort() {
+            clearTimeout(timer);
+            resolve(false);
+        }
+        signal.addEventListener("abort", onAbort, { once: true });
+    });
 }

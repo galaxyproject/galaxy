@@ -10,7 +10,7 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { BACKEND_RANKED_SCORE, rankPaletteItems } from "../utilities";
+import { BACKEND_RANKED_SCORE, backendSettled, rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
 import type { ScopeDefinition } from "./scopes";
 
@@ -65,13 +65,16 @@ function localMatches(query: string, limit: number): PaletteItem[] {
 }
 
 /** Local match for short queries, backend search from `PALETTE_LIMITS.minToolBackendQuery` on */
-async function searchTools(query: string, limit: number): Promise<PaletteItem[]> {
+async function searchTools(query: string, limit: number, signal?: AbortSignal): Promise<PaletteItem[]> {
     if (!query) {
         return [];
     }
     if (query.length < PALETTE_LIMITS.minToolBackendQuery) {
         await ensureHydrated();
         return localMatches(query, limit);
+    }
+    if (!(await backendSettled(signal))) {
+        return [];
     }
     const toolStore = useToolStore();
     await toolStore.fetchTools(query);
@@ -116,7 +119,7 @@ export const toolsProvider: CommandPaletteProvider = {
             await ensureHydrated();
             return localMatches(query, MAX_RESULTS);
         }
-        return searchTools(query, MAX_RESULTS);
+        return searchTools(query, MAX_RESULTS, options.signal);
     },
     /**
      * `t:` scope — favorites and recently used tools on top, the actual search

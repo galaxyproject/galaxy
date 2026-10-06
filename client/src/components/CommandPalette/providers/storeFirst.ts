@@ -1,6 +1,6 @@
 /** Store-first search of the listing providers: the cache answers each keystroke, the backend only what it cannot */
 import type { PaletteItem, PaletteSearchOptions } from "../types";
-import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
+import { backendSettled, dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { PaletteFetchError } from "./errors";
 import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
@@ -111,11 +111,16 @@ export async function rootListItems(
         return [];
     }
     // the searches start before the cache is filtered, so they run in parallel
-    const listed = Promise.all(
-        (options.localOnly ? [] : listings).map(async (search) =>
-            rankPaletteItems(await searchQuietly(() => search(query)), query).slice(0, PALETTE_LIMITS.rootListing),
-        ),
-    );
+    const listed = (async () => {
+        if (options.localOnly || listings.length === 0 || !(await backendSettled(options.signal))) {
+            return [];
+        }
+        return Promise.all(
+            listings.map(async (search) =>
+                rankPaletteItems(await searchQuietly(() => search(query)), query).slice(0, PALETTE_LIMITS.rootListing),
+            ),
+        );
+    })();
     if (own && !options.localOnly) {
         await hydrateOnce(own);
     }
