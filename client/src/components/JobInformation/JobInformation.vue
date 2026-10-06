@@ -7,7 +7,6 @@ import { useRoute } from "vue-router";
 import { fetchInvocationForJob } from "@/api/invocations";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
@@ -37,15 +36,32 @@ const props = withDefaults(
         invocationId?: string;
         /** If `true`, the section is collapsible */
         collapsible?: boolean;
+        /** Controls collapse state externally (e.g. a parent that also needs to persist or force
+         * it open). Omit to toggle it locally, uncontrolled and unpersisted. */
+        collapsed?: boolean;
     }>(),
     { invocationId: undefined },
 );
 
+const emit = defineEmits<{
+    (e: "update:collapsed", value: boolean): void;
+}>();
+
 const route = useRoute();
 const toolStore = useToolStore();
 
-/** Whether the collapsible job information card is collapsed, remembered per-user across visits. */
-const collapsed = useUserLocalStorage("job-information-collapsed", false);
+/** Whether the collapsible job information card is collapsed. */
+const internalCollapsed = ref(false);
+const collapsed = computed({
+    get: () => (props.collapsed !== undefined ? props.collapsed : internalCollapsed.value),
+    set: (value) => {
+        if (props.collapsed !== undefined) {
+            emit("update:collapsed", value);
+        } else {
+            internalCollapsed.value = value;
+        }
+    },
+});
 
 /** Invocation ID for the run that the job might have come from. It is `null` if the job has no associated invocation,
  * or `undefined` if it has not been fetched yet.
