@@ -96,23 +96,30 @@ class ProtectionDestination:
     """What the job destination provides, as far as running protected jobs is concerned."""
 
     metadata_strategy: str
-    outputs_to_working_directory: bool
     has_tasks: bool
     is_pulsar: bool
     remote_metadata: bool
+    rewrite_parameters: bool
     recryptor: RecryptorSettings | None
     walltime: timedelta | None = None
 
-    def check(self) -> None:
+    def check(self, outputs_in_job_directory: bool) -> None:
         problems = []
         if self.metadata_strategy != "extended":
             problems.append("metadata_strategy must be 'extended'")
-        if not self.outputs_to_working_directory:
-            problems.append("outputs_to_working_directory must be enabled")
+        if not outputs_in_job_directory:
+            # Otherwise tools write decrypted data directly to the object store.
+            problems.append(
+                "tools must write outputs into the job directory (enable outputs_to_working_directory, "
+                "or stage the outputs of Pulsar destinations)"
+            )
         if self.has_tasks:
             problems.append("jobs can't be split into tasks")
         if self.is_pulsar and not self.remote_metadata:
             problems.append("Pulsar destinations must use remote_metadata")
+        if self.is_pulsar and not self.rewrite_parameters:
+            # Otherwise the protection plan would hold paths of the Galaxy server.
+            problems.append("Pulsar destinations must use rewrite_parameters")
         if self.recryptor is None:
             problems.append("no Crypt4GH recryptor service (crypt4gh_recryptor_url) is configured")
         if problems:
