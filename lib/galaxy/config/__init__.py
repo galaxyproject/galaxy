@@ -1522,6 +1522,11 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                     f"Config option '{key}' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file."
                 )
 
+    @property
+    def job_files_tus_upload_dir(self) -> str:
+        """Directory the job files TUS endpoint stores uploads in."""
+        return self.tus_upload_store_job_files or self.tus_upload_store or self.new_file_path
+
     def is_fetch_with_celery_enabled(self):
         """
         True iff celery is enabled and celery_conf["task_routes"]["galaxy.fetch_data"] != DISABLED_FLAG.

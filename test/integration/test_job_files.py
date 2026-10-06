@@ -32,6 +32,7 @@ from tusclient import client
 from galaxy import model
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.webapps.galaxy.api.job_files import UPLOAD_STAGING_PREFIX
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -212,6 +213,28 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             relative_path = os.path.relpath(outside_path)
             assert not relative_path.startswith("..")
             self._assert_nginx_upload_rejected(job, relative_path, outside_path)
+
+    def test_write_with_missing_upload_source(self):
+        job = self._running_job()
+        missing_nginx_path = os.path.join(self.nginx_upload_job_files_store, "missing")
+        for data in [{"session_id": "missing-session"}, {"__file_path": missing_nginx_path}]:
+            response = self._post_job_file(job, job.output_path, data=data)
+            api_asserts.assert_status_code_is(response, 400)
+            api_asserts.assert_error_code_is(response, 400008)
+        _assert_file_contents(job.output_path, "")
+
+    def test_unknown_job(self):
+        job = self._running_job()
+        missing_job_id = 2**31 - 1
+        encoded_job_id = self._app.security.encode_id(missing_job_id)
+        unknown_job = replace(
+            job,
+            files_url=self._api_url(f"jobs/{encoded_job_id}/files", use_key=False),
+            job_key=self._app.security.encode_id(missing_job_id, kind="jobs_files"),
+        )
+        response = requests.get(unknown_job.files_url, params={"path": job.output_path, "job_key": unknown_job.job_key})
+        api_asserts.assert_status_code_is(response, 404)
+        api_asserts.assert_status_code_is(self._post_job_file(unknown_job, job.output_path, TEST_OUTPUT_TEXT), 404)
 
     def test_write_with_underscored_file_param(self):
         job = self._running_job()
@@ -402,7 +425,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 def _staging_dirs(directory):
     if not os.path.isdir(directory):
         return []
-    return [name for name in os.listdir(directory) if name.startswith(".job_files_upload_")]
+    return [name for name in os.listdir(directory) if name.startswith(UPLOAD_STAGING_PREFIX)]
 
 
 def _wait_for_staged_upload(directory, min_size, timeout=10):

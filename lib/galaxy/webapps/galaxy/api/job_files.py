@@ -41,6 +41,8 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["jobs"])
 
+UPLOAD_STAGING_PREFIX = ".job_files_upload_"
+
 JOB_FILES_DESCRIPTION = (
     "Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, "
     "authorized by `job_key` - not part of Galaxy's stable, user facing API."
@@ -121,7 +123,7 @@ class FastAPIJobFiles:
             staging_parent = self.manager.upload_dir
         await anyio.to_thread.run_sync(release_request_sessions)
         staging_dir = await anyio.to_thread.run_sync(
-            partial(tempfile.mkdtemp, prefix=".job_files_upload_", dir=staging_parent)
+            partial(tempfile.mkdtemp, prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
         )
         try:
             fields, uploads = await _parse_body(request, staging_dir)
@@ -181,14 +183,14 @@ async def _parse_body(request: Request, upload_dir: str) -> tuple[dict[str, str]
         for file in files:
             if file.in_memory:
                 file.flush_to_disk()
+        uploads = {
+            file.field_name.decode(): os.fsdecode(file.actual_file_name)
+            for file in files
+            if file.field_name is not None and file.actual_file_name is not None
+        }
     except (FormParserError, ValueError) as e:
         raise exceptions.RequestParameterInvalidException(f"Failed to parse job files upload: {e}")
     finally:
         for file in files:
             file.close()
-    uploads = {
-        file.field_name.decode(): os.fsdecode(file.actual_file_name)
-        for file in files
-        if file.field_name is not None and file.actual_file_name is not None
-    }
     return fields, uploads
