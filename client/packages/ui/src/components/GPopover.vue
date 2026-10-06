@@ -370,10 +370,39 @@ function onTriggerKeydown(event: Event) {
     if (keyEvent.key !== "Tab" || keyEvent.shiftKey || keyEvent.defaultPrevented || !showState.value) {
         return;
     }
-    const first = popoverEl.value && tabbableElements(popoverEl.value).find((element) => !isFocusGuard(element));
+    const popover = popoverEl.value;
+    if (!popover) {
+        return;
+    }
+    keyEvent.preventDefault();
+    // Content still loading has no control yet, so focus waits on the dialog itself.
+    (firstControl(popover) ?? popover).focus();
+}
+
+function firstControl(popover: HTMLElement) {
+    return tabbableElements(popover).find((element) => !isFocusGuard(element));
+}
+
+// Focus sitting on the dialog itself skips the guards: Tab goes to the first control, or past the trigger while empty.
+function onPopoverKeydown(event: Event) {
+    const keyEvent = event as KeyboardEvent;
+    const popover = popoverEl.value;
+    if (keyEvent.key !== "Tab" || keyEvent.defaultPrevented || !popover || keyEvent.target !== popover) {
+        return;
+    }
+    keyEvent.preventDefault();
+    if (keyEvent.shiftKey) {
+        const target = resolveTarget();
+        if (target instanceof HTMLElement) {
+            target.focus();
+        }
+        return;
+    }
+    const first = firstControl(popover);
     if (first) {
-        keyEvent.preventDefault();
         first.focus();
+    } else {
+        continueAfterTrigger();
     }
 }
 
@@ -394,7 +423,7 @@ function onTriggerClick(event: Event) {
 // Shift+Tab out of the first control lands on this guard and goes back to the trigger.
 function onStartGuardFocus(event: Event) {
     const target = resolveTarget();
-    // From the trigger (nothing to focus inside) this would bounce straight back, so only focus from inside counts.
+    // Only focus leaving from inside the popover returns to the trigger.
     if (target instanceof HTMLElement && focusCameFrom(event, popoverEl.value)) {
         target.focus();
     }
@@ -407,6 +436,12 @@ function onEndGuardFocus(event: Event) {
     if (!focusCameFrom(event, popover) && !focusCameFrom(event, target)) {
         return;
     }
+    continueAfterTrigger();
+}
+
+function continueAfterTrigger() {
+    const target = resolveTarget();
+    const popover = popoverEl.value;
     if (target && popover) {
         const scope = target.closest("dialog") ?? document.body;
         nextTabbableAfter(target, scope, (element) => popover.contains(element))?.focus();
@@ -609,6 +644,9 @@ function setupListeners() {
 
     if (isHoverDialog.value) {
         listen(target, "keydown", onTriggerKeydown);
+        if (popoverEl.value) {
+            listen(popoverEl.value, "keydown", onPopoverKeydown);
+        }
         // A link keeps Enter for navigating.
         if (!target.matches("a[href]")) {
             listen(target, "click", onTriggerClick);

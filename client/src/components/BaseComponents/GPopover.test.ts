@@ -1234,11 +1234,49 @@ describe("GPopover interactive hover", () => {
         expect(target.getAttribute("aria-expanded")).toBe("true");
     });
 
-    it("leaves Tab alone when the popover has nothing to focus", async () => {
+    it("tabs from the trigger onto the popover while it has nothing to focus yet", async () => {
         const { target } = await mountInteractive({ slot: "Loading" });
         await focusTrigger(target);
 
-        expect(pressTab(target).defaultPrevented).toBe(false);
+        expect(pressTab(target).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(popoverEl());
+        expect(isShown()).toBe(true);
+        expect(guardTabindexes()).toEqual(["0", "0"]);
+    });
+
+    it("tabs from the popover into the first control once its content has loaded", async () => {
+        const { target } = await mountInteractive({ slot: "Loading" });
+        await focusTrigger(target);
+        pressTab(target);
+        await nextTick();
+
+        popoverEl().querySelector(".popover-body")!.innerHTML = LINKS;
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe("first-link");
+        expect(isShown()).toBe(true);
+    });
+
+    it("tabs from a popover that is still empty on past the trigger, or back to it with Shift+Tab", async () => {
+        const { target, next } = await mountInteractive({ slot: "Loading" });
+        await focusTrigger(target);
+        pressTab(target);
+        await nextTick();
+
+        expect(pressTab(popoverEl(), true).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(true);
+
+        pressTab(target);
+        await nextTick();
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(next);
+        expect(isShown()).toBe(false);
     });
 
     it("returns to the trigger on Shift+Tab from the first control and stays open", async () => {
