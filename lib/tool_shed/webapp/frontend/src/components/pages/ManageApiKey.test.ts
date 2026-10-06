@@ -28,9 +28,7 @@ describe("ManageApiKey", () => {
     it("displays the fetched API key in the readonly input", async () => {
         mockGet.mockResolvedValue({ data: "abc123key" })
 
-        const wrapper = mount(ManageApiKey, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ManageApiKey)
         await flushPromises()
 
         const input = wrapper.find("input").element as HTMLInputElement
@@ -42,9 +40,7 @@ describe("ManageApiKey", () => {
         mockGet.mockResolvedValue({ data: "abc123key" })
         mockPost.mockResolvedValue({ data: "newkey456" })
 
-        const wrapper = mount(ManageApiKey, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ManageApiKey)
         await flushPromises()
 
         await wrapper.find("button[aria-label='Regenerate API key']").trigger("click")
@@ -61,9 +57,7 @@ describe("ManageApiKey", () => {
         mockGet.mockResolvedValue({ data: "abc123key" })
         mockDelete.mockResolvedValue({})
 
-        const wrapper = mount(ManageApiKey, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(ManageApiKey)
         await flushPromises()
 
         await wrapper.find("button[aria-label='Deactivate API key']").trigger("click")

@@ -4,9 +4,7 @@ import { createPinia, setActivePinia } from "pinia"
 import { useAuthStore } from "@/stores"
 import LoginForm from "./LoginForm.vue"
 
-// GFormInput uses `value`/`input`, not v-model, so typing has to flow through
-// the component's own `@input` handler to update the backing refs -- these
-// tests are here to catch a regression to v-model (which silently no-ops).
+// Typed values have to reach login() through GFormInput's modelValue binding
 describe("LoginForm", () => {
     beforeEach(() => {
         setActivePinia(createPinia())

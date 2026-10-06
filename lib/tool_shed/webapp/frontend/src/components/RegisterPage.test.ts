@@ -19,7 +19,7 @@ describe("RegisterPage", () => {
         vi.clearAllMocks()
     })
 
-    it("submits the typed email, password, confirm and username", async () => {
+    it("submits the typed email, password and username, then shows the success page", async () => {
         mockPost.mockResolvedValue({ data: { activation_error: false, activation_sent: true, email: "a@b.com" } })
 
         const wrapper = mount(RegisterPage)
@@ -42,6 +42,6 @@ describe("RegisterPage", () => {
                 },
             }),
         )
-        expect(mockPush).toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ path: "/registration_success" }))
     })
 })

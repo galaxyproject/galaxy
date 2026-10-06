@@ -1,10 +1,8 @@
 import { config } from "@vue/test-utils"
 import { Quasar } from "quasar"
 
-// Initialize Quasar for tests
+// Quasar is still installed for the remaining q-selects
 config.global.plugins = [[Quasar, {}]]
 
-// Configure global stubs for Quasar components if needed
-// For now, we'll use real Quasar components but can stub if tests are slow
-config.global.stubs = {}
-
+// main.ts registers a no-op g-tooltip, since GTable reaches for the client's directive
+config.global.directives = { "g-tooltip": {} }

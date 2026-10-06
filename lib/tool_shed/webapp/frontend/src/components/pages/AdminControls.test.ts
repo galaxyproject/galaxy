@@ -29,9 +29,7 @@ describe("AdminControls", () => {
     it("resets the typed password for the selected user", async () => {
         mockPut.mockResolvedValue({})
 
-        const wrapper = mount(AdminControls, {
-            global: { renderStubDefaultSlot: true, stubs: { QPage: true } },
-        })
+        const wrapper = mount(AdminControls)
 
         await wrapper.findComponent({ name: "SelectUser" }).vm.$emit("selectedUser", "shuser")
         await wrapper.find("input[name='password']").setValue("newpass")

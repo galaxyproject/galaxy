@@ -3,7 +3,7 @@ import { mount, flushPromises } from "@vue/test-utils"
 import PaginatedRepositoriesGrid from "./PaginatedRepositoriesGrid.vue"
 import { emptyQueryResults } from "./RepositoriesGridInterface"
 
-// RepositoryExplore (rendered inside q-table's row template) pulls in @/router,
+// RepositoryExplore (rendered in each row) pulls in @/router,
 // which calls createRouter() at import time -- keep the real exports around
 // that and only override the composables this component actually calls.
 vi.mock("vue-router", async (importOriginal) => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const addToast = vi.fn()
 vi.mock("@galaxyproject/galaxy-ui", () => ({ useToast: () => ({ addToast }) }))
@@ -11,7 +11,7 @@ describe("notify", () => {
         vi.spyOn(console, "debug").mockReturnValue(undefined)
     })
 
-    it("shows an info toast for Quasar Notify's 5 seconds", () => {
+    it("shows an info toast for 5 seconds", () => {
         notify("Saved")
 
         expect(addToast).toHaveBeenCalledWith("Saved", { variant: "info", duration: 5000 })
@@ -48,6 +48,10 @@ describe("copyAndNotify", () => {
         addToast.mockClear()
     })
 
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
     it("copies through the Clipboard API and confirms", async () => {
         const writeText = vi.fn().mockResolvedValue(undefined)
         vi.stubGlobal("navigator", { clipboard: { writeText } })
@@ -60,7 +64,6 @@ describe("copyAndNotify", () => {
             "API key copied to your clipboard",
             expect.objectContaining({ variant: "info" }),
         )
-        vi.unstubAllGlobals()
     })
 
     it("reports a refused copy instead of confirming it", async () => {
@@ -73,19 +76,22 @@ describe("copyAndNotify", () => {
             "Your browser did not allow copying to the clipboard.",
             expect.objectContaining({ variant: "danger" }),
         )
-        vi.unstubAllGlobals()
     })
 })
 
 describe("downloadTextFile", () => {
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.restoreAllMocks()
+        vi.unstubAllGlobals()
+    })
+
     it("downloads the contents under the given file name", () => {
         const createObjectURL = vi.fn().mockReturnValue("blob:contents")
         const revokeObjectURL = vi.fn()
         vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL })
         const clicked: HTMLAnchorElement[] = []
-        const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
-            this: HTMLAnchorElement,
-        ) {
+        vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
             clicked.push(this)
         })
 
@@ -100,8 +106,5 @@ describe("downloadTextFile", () => {
         expect(revokeObjectURL).not.toHaveBeenCalled()
         vi.advanceTimersByTime(10000)
         expect(revokeObjectURL).toHaveBeenCalledWith("blob:contents")
-        vi.useRealTimers()
-        click.mockRestore()
-        vi.unstubAllGlobals()
     })
 })
