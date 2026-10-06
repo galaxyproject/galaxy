@@ -1722,8 +1722,8 @@ def test_api_content():
 
 To skip from setup code rather than a single test (e.g. an integration test
 class's ``handle_galaxy_config_kwds``), call ``is_site_up(url)`` from the same
-module and raise ``unittest.SkipTest`` yourself, as
-``galaxy_test/driver/uses_shed.py`` does.
+module and raise ``unittest.SkipTest`` yourself, as ``UsesShed.configure_shed``
+in ``galaxy_test/driver/uses_shed.py`` does.
 
 The probe is a single GET of that URL (for the per-service decorators, the
 site's front page), so it only catches a site that is unreachable or not
