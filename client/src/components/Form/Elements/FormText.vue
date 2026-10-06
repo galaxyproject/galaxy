@@ -21,7 +21,7 @@
                 :state="showState ? (!currentValue ? (optional ? null : false) : true) : null"
                 :style="style"
                 :type="acceptedTypes"
-                :list="`${id}-datalist`"
+                :list="datalist ? `${id}-datalist` : undefined"
                 @focus="onFocus"
                 @blur="onBlur" />
             <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
