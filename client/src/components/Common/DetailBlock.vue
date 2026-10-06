@@ -71,9 +71,19 @@ function toggleCollapse() {
             <div class="detail-block-icon">
                 <FontAwesomeIcon :icon="props.headerIcon" />
             </div>
-            <Heading inline size="sm" bold separator :collapse="collapseState" @click="toggleCollapse">
-                {{ props.title }}
-            </Heading>
+            <div class="d-flex flex-gapx-1">
+                <Heading
+                    class="flex-grow-1"
+                    inline
+                    size="sm"
+                    bold
+                    separator
+                    :collapse="collapseState"
+                    @click="toggleCollapse">
+                    {{ props.title }}
+                </Heading>
+                <slot name="header-indicators" />
+            </div>
 
             <div class="detail-block-spacer" />
             <GCollapse :visible="collapseState !== 'closed'">
