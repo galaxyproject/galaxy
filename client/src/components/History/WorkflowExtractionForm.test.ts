@@ -688,6 +688,17 @@ describe("WorkflowExtractionForm", () => {
             expect(extractWorkflowFromHistory).not.toHaveBeenCalled();
         });
 
+        it("shows the error, and no empty-state messages, when the page summary fetch fails", async () => {
+            vi.mocked(fetchWorkflowExtractionSummary).mockRejectedValue(new Error("Page not found"));
+            const wrapper = await mountForm("history-1", "page-1");
+            const alert = wrapper.find('[variant="danger"]');
+            expect(alert.exists()).toBe(true);
+            expect(alert.text()).toContain("Page not found");
+            expect(wrapper.find('[data-description="no-workflow-message"]').exists()).toBe(false);
+            expect(wrapper.find('[data-description="no-seed-message"]').exists()).toBe(false);
+            expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
+        });
+
         it("pre-checks seeded rows and unchecks unseeded rows regardless of backend `checked`", async () => {
             const wrapper = await mountForm("history-1", "page-1");
             const cards = wrapper.findAllComponents(WorkflowExtractionCard);
