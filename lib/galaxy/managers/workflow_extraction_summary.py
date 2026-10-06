@@ -243,6 +243,9 @@ def _backward_job_closure(
         if not creating:
             result.boundary_input_refs.add(key)
             continue
+        if is_collection:
+            # A map output has one association per element job; the first represents them all.
+            creating = creating[:1]
 
         produced_in_history = False
         for assoc in creating:
@@ -253,13 +256,16 @@ def _backward_job_closure(
             if job.id in seen_jobs:
                 continue
             seen_jobs.add(job.id)
+            icj_assoc = job.implicit_collection_jobs_association
+            if icj_assoc is not None and icj_assoc.implicit_collection_jobs_id in result.icj_ids:
+                # Another element job of an already-walked map step.
+                continue
             tool = _tool_for_job(trans, job)
             if tool is None or not tool.is_workflow_compatible:
                 # Upload / data-fetch / missing tool: an input, not a workflow step.
                 result.boundary_input_refs.add(key)
                 continue
             result.job_ids.add(job.id)
-            icj_assoc = job.implicit_collection_jobs_association
             if icj_assoc is not None:
                 result.icj_ids.add(icj_assoc.implicit_collection_jobs_id)
                 # This content is a loose element of a map output (a downstream
