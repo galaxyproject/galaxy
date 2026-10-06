@@ -26,8 +26,6 @@ function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwn
     const wrapper = shallowMount(CopyModal, {
         props: { history, showModal },
         global: withPlugins(localVue, pinia),
-        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
-        stubs: { GFormInput: false },
     });
     const userStore = useUserStore();
     userStore.currentUser = userData;

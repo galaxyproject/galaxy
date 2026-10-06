@@ -94,8 +94,6 @@ function editorStubs() {
                 flashSavedIndicator: mockFlashSavedIndicator,
             },
         },
-        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
-        GFormInput: false,
     };
 }
 

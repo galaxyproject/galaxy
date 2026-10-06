@@ -34,6 +34,14 @@ config.global.directives = {
 };
 vi.mock("@/directives/sanitizeHtml");
 
+// Auto-stubs drop compatConfig, so compat would rewire a modelValue component's
+// v-model back to value/input. Leave components that opted out unstubbed;
+// returning undefined falls back to VTU's default stub (its type doesn't say so).
+config.plugins.createStubs = (({ component }) =>
+    (component as { compatConfig?: { COMPONENT_V_MODEL?: boolean } }).compatConfig?.COMPONENT_V_MODEL === false
+        ? component
+        : undefined) as NonNullable<typeof config.plugins.createStubs>;
+
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");
