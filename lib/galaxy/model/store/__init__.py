@@ -977,6 +977,13 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     add_object_to_session(hdca, history_sa_session)
                     hdca.history = history
+                    tag_list = collection_attrs.get("tags")
+                    if tag_list and self.user:
+                        if not self.tag_handler:
+                            raise Exception(f"Missing self.tag_handler on {self}.")
+                        self.tag_handler.set_tags_from_list(
+                            user=self.user, item=hdca, new_tags_list=tag_list, flush=False
+                        )
                     if new_history and self.trust_hid(collection_attrs):
                         hdca.hid = collection_attrs["hid"]
                     else:
@@ -3190,6 +3197,7 @@ def source_to_import_store(
     user_context=None,
 ) -> ModelImportStore:
     galaxy_user = user_context.user if user_context else None
+    tag_handler = app.tag_handler.create_tag_handler_session(galaxy_session=None)
     if isinstance(source, dict):
         if model_store_format is not None:
             raise Exception(
@@ -3200,11 +3208,11 @@ def source_to_import_store(
             import_options=import_options,
             app=app,
             user=galaxy_user,
+            tag_handler=tag_handler,
         )
     else:
         source_uri: str = str(source)
         delete = False
-        tag_handler = app.tag_handler.create_tag_handler_session(galaxy_session=None)
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
@@ -3223,6 +3231,7 @@ def source_to_import_store(
                 import_options=import_options,
                 app=app,
                 user=galaxy_user,
+                tag_handler=tag_handler,
             )
         elif os.path.isdir(target_path):
             model_import_store = get_import_model_store_for_directory(
@@ -3243,7 +3252,7 @@ def source_to_import_store(
                 )
             elif ModelStoreFormat.is_bag(model_store_format):
                 model_import_store = BagArchiveImportModelStore(
-                    target_path, import_options=import_options, app=app, user=galaxy_user
+                    target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
             else:
                 raise Exception(f"Unknown model_store_format type encountered {model_store_format}")

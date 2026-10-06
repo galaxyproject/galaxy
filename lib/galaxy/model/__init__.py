@@ -8385,6 +8385,7 @@ class HistoryDatasetCollectionAssociation(
             hid=self.hid,
             collection=self.collection.serialize(id_encoder, serialization_options),
             implicit_output_name=self.implicit_output_name,
+            tags=self.make_tag_string_list(),
         )
         if self.history:
             rval["history_encoded_id"] = serialization_options.get_identifier(id_encoder, self.history)
