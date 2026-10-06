@@ -53,11 +53,9 @@ from galaxy.model import (
     WorkflowStep,
 )
 from galaxy.workflow.extract import (
-    get_original_hda,
-    get_original_hdca,
     DirectiveLabel,
     ExtractionLabelIndex,
-    OutputLabelKind,
+    resolve_content,
 )
 
 log = logging.getLogger(__name__)
@@ -211,37 +209,37 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
         self.warnings.append(f"Dropped a {description} from the report: it cannot be expressed relative to a workflow.")
         return ("", True)
 
-    def _content(self, line: str, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveResult:
-        return self._rewrite(line, self.index.content_label(content_kind, content), "dataset reference")
+    def _content(self, line: str, content: HistoryItem) -> DirectiveResult:
+        return self._rewrite(line, self.index.content_label(content), "dataset reference")
 
     def handle_dataset_display(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_as_image(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_as_table(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_peek(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_embedded(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_info(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_name(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_type(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_collection_display(
         self, line: str, hdca: HistoryDatasetCollectionAssociation
     ) -> DirectiveResult:
-        return self._content(line, "hdca", hdca)
+        return self._content(line, hdca)
 
     def _job(self, line: str, job: Job) -> DirectiveResult:
         return self._rewrite(line, self.index.job_label(job), "job reference")
@@ -340,22 +338,21 @@ def reconcile_report_labels(
     """
     used = _used_labels(index)
 
-    for kind, content_id in referenced.refs:
-        content = _resolve_content(trans, kind, content_id)
+    for ref in referenced.refs:
+        content = resolve_content(trans, ref)
         if content is None:
             continue
-        content_kind: OutputLabelKind = "hdca" if kind == "hdca" else "hda"
-        pair = index.step_for_content(content_kind, _original_id(kind, content))
+        pair = index.step_for_content(content)
         if pair is None:
             continue
         step, output_name = pair
         if step.type in ("data_input", "data_collection_input"):
             if not step.label:
-                step.label = _generate_label(_suggested(trans, kind, content), used)
+                step.label = _generate_label(_suggested(trans, content), used)
         else:
             workflow_output = step.workflow_output_for(output_name)
             if workflow_output is None or not workflow_output.label:
-                label = _generate_label(_suggested(trans, kind, content) or output_name, used)
+                label = _generate_label(_suggested(trans, content) or output_name, used)
                 step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
 
     for job_id in referenced.job_refs:
@@ -384,8 +381,8 @@ def _used_labels(index: ExtractionLabelIndex) -> set[str]:
     return used
 
 
-def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -> str | None:
-    suggested = suggested_output_name(trans, content.id, "hda" if kind == "hda" else "hdca")
+def _suggested(trans: ProvidesHistoryContext, content: HistoryItem) -> str | None:
+    suggested = suggested_output_name(trans, content)
     return suggested.name if suggested else None
 
 
@@ -404,18 +401,3 @@ def _tool_base_name(step: WorkflowStep) -> str:
     tool_id = step.tool_id or "step"
     segments = tool_id.split("/")
     return segments[-2] if len(segments) >= 2 else tool_id
-
-
-def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) -> HistoryItem | None:
-    content: HistoryItem | None
-    if kind == "hdca":
-        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
-    else:
-        content = trans.sa_session.get(HistoryDatasetAssociation, content_id)
-    return content
-
-
-def _original_id(kind: str, content: HistoryItem) -> int:
-    if isinstance(content, HistoryDatasetCollectionAssociation):
-        return get_original_hdca(content).id
-    return get_original_hda(content).id
