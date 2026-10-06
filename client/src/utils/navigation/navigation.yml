@@ -751,9 +751,6 @@ pages:
       permissions_button:
         type: data-description
         selector: 'page permissions button'
-      save_view_button:
-        type: data-description
-        selector: 'page save-view button'
       extract_workflow_button:
         type: data-description
         selector: 'page extract workflow button'
