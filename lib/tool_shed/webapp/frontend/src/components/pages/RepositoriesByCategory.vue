@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import PaginatedRepositoriesGrid from "@/components/PaginatedRepositoriesGrid.vue"
 import { useCategoriesStore } from "@/stores"
 import { adaptPaginatedIndexResponse, type Query, type QueryResults } from "@/components/RepositoriesGridInterface"
@@ -42,6 +43,11 @@ async function onRequest(query: Query): Promise<QueryResults> {
 
 <template>
     <page-container v-if="categoryName">
+        <template #header>
+            <page-header :title="categoryName" :subtitle="category?.description">
+                <template #eyebrow><router-link to="/repositories_by_category">Categories</router-link></template>
+            </page-header>
+        </template>
         <paginated-repositories-grid :title="categoryName" :on-request="onRequest" :allow-search="true" />
     </page-container>
 </template>

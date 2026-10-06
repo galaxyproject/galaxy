@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { GTable, type TableField } from "@galaxyproject/galaxy-ui"
 import PageContainer from "@/components/PageContainer.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import { computed } from "vue"
 import { storeToRefs } from "pinia"
@@ -25,54 +26,50 @@ void categoriesStore.getAll()
 </script>
 <template>
     <page-container>
-        <h1 class="categories-heading">Categories</h1>
+        <template #header>
+            <page-header title="Categories" subtitle="Browse repositories grouped by the kind of analysis they do." />
+        </template>
         <LoadingDiv v-if="loading" message="Loading categories" />
         <GTable
             v-else
             id="categories"
-            class="categories-table"
+            class="categories-table shed-table-card"
             :items="viewableCategories"
             :fields="fields"
             primary-key="id"
             sort-by="name"
-            bordered
         >
             <template #table-caption>
-                <span class="visually-hidden">Categories</span>
+                <span class="shed-visually-hidden">Categories</span>
             </template>
             <template #cell(name)="{ item }">
                 <router-link class="category-name" :to="`/repositories_by_category/${item.id}`">
                     {{ item.name }}
                 </router-link>
             </template>
+            <template #cell(repositories)="{ item }">
+                <span class="category-count">{{ item.repositories }}</span>
+            </template>
         </GTable>
     </page-container>
 </template>
 
 <style scoped>
-.categories-table {
-    font-size: 1.1rem;
-}
-
-.categories-heading {
-    margin: 0 0 var(--spacing-4);
-    font-size: 2.125rem;
-}
-
 .category-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--color-galaxy-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
 }
 
-/* The heading above already says "Categories"; the caption names the table for assistive tech */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
+.category-count {
+    display: inline-block;
+    min-width: 2.25rem;
+    padding: 0.05rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--color-bay-of-many-900, #25537b);
+    background: var(--color-bay-of-many-100, #edf4fa);
+    border: 1px solid var(--color-bay-of-many-200, #cde0f0);
+    border-radius: 999px;
 }
 </style>

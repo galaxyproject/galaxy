@@ -23,8 +23,12 @@ const repositoryTo = computed(() => `/repositories/${props.id}`)
     color: var(--color-galaxy-primary);
 }
 
+.owner {
+    font-weight: 400;
+    color: var(--shed-muted);
+}
+
 .name {
-    font-size: 1.2em;
-    font-weight: bold;
+    font-weight: 700;
 }
 </style>
