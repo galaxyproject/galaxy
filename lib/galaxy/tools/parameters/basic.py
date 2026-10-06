@@ -495,13 +495,15 @@ class IntegerToolParameter(TextToolParameter):
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)
     >>> p = IntegerToolParameter(None, {"name": "_name", "type": "integer", "multiple": True, "min": 1})
-    >>> p.to_python("1\\n2,3", None)
-    [1, 2, 3]
+    >>> p.to_python(["1", 2], None)
+    [1, 2]
+    >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):
+    ...     p.to_python("1,2", None)
     >>> p.from_json(p.to_json([1, 2], None, False), trans)
     [1, 2]
     >>> p.validate([1, 2])
     >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):
-    ...     p.validate("1\\ntwo")
+    ...     p.validate([1, "two"])
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
@@ -529,9 +531,11 @@ class IntegerToolParameter(TextToolParameter):
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
     def _to_int_values(self, value) -> list[int]:
-        if not isinstance(value, (str, list)):
+        if value == "":
+            return []
+        if not isinstance(value, list):
             value = [value]
-        return [int(v) for v in multiple_select_value_split(value)]
+        return [int(v) for v in value]
 
     def _is_multiple_value(self, value) -> bool:
         return self.multiple and value is not None and not contains_workflow_parameter(value)
@@ -539,7 +543,7 @@ class IntegerToolParameter(TextToolParameter):
     def _multiple_to_python(self, value) -> list[int]:
         try:
             return self._to_int_values(value)
-        except ValueError:
+        except (TypeError, ValueError):
             raise ParameterValueError("an integer is required", self.name, value) from None
 
     def validate(self, value, trans: "ProvidesHistoryContext | None" = None):

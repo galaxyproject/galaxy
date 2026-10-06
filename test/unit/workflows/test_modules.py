@@ -287,13 +287,19 @@ def test_subworkflow_new_inputs_parameter_multiple():
 
 
 def test_parameter_input_multiple_integer_list_default_round_trip():
-    module, errors = __populate_integer_parameter_from_tool_form(multiple=True, default="1,2")
+    module, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=[1, 2])
     assert not errors, errors
     step = model.WorkflowStep()
     module.save_to_step(step)
     reloaded = modules.module_factory.from_workflow_step(MockTrans(), step)
     assert reloaded.get_export_state()["default"] == [1, 2]
     assert reloaded.get_runtime_inputs(mock.MagicMock())["input"].get_initial_value(None, {}) == [1, 2]
+
+
+@pytest.mark.parametrize("default", ["1,2", "1\n2", ["1,2"]])
+def test_parameter_input_multiple_integer_rejects_separated_string(default):
+    _, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=default)
+    assert "an integer is required" in str(errors["parameter_definition|optional|specify_default|default"])
 
 
 def test_parameter_input_multiple_integer_cleared_default():
