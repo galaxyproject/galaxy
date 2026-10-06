@@ -35,6 +35,36 @@ export function getRecryptServiceUrl(serviceUrl: string, extraPreferences: unkno
     return url.toString();
 }
 
+/**
+ * Re-encrypt a dataset header to the compute keypair with the user-side recryptor service,
+ * turning its failures into messages users can act on.
+ */
+async function recryptHeader(serviceUrl: string, userHeader: string): Promise<RecryptServiceResponse> {
+    try {
+        const { data } = await axios.post<RecryptServiceResponse>(serviceUrl, { crypt4gh_header: userHeader });
+        return data;
+    } catch (err) {
+        const status = (err as { response?: { status?: number } }).response?.status;
+        if (status === undefined) {
+            throw new Error(
+                `Could not reach the Crypt4GH recryptor service on your machine at ${new URL(serviceUrl).origin}. ` +
+                    "Check that it is running and that your browser trusts its certificate.",
+                { cause: err },
+            );
+        }
+        if (status === 422) {
+            throw new Error("Your Crypt4GH key cannot open this dataset, it was not encrypted for you.", {
+                cause: err,
+            });
+        }
+        throw new Error(
+            `The Crypt4GH recryptor service on your machine failed (HTTP ${status}). ` +
+                "Check that it can reach the compute recryptor service.",
+            { cause: err },
+        );
+    }
+}
+
 async function fetchProtectionStatus(datasetId: string): Promise<DatasetProtectionStatus> {
     const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/protection", {
         params: { path: { dataset_id: datasetId } },
@@ -91,9 +121,7 @@ export function useDatasetProtection(datasetId: Ref<string>, protectedDataset: R
                 configuredServiceUrl,
                 userStore.currentPreferences?.extra_user_preferences,
             );
-            const { data: recrypted } = await axios.post<RecryptServiceResponse>(serviceUrl, {
-                crypt4gh_header: userHeader,
-            });
+            const recrypted = await recryptHeader(serviceUrl, userHeader);
             const { data, error } = await GalaxyApi().PUT("/api/datasets/{dataset_id}/protection", {
                 params: { path: { dataset_id: datasetId.value } },
                 body: {
