@@ -1,10 +1,12 @@
 """API tests for history-attached pages (pages created with history_id)."""
 
+from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_agents,
     skip_without_tool,
+    TOOL_WITH_SHELL_COMMAND,
 )
 from .test_pages import BasePagesApiTestCase
 from .test_workflow_extraction import _ExtractionHelpersMixin
@@ -691,6 +693,85 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert row["step_type"] == "input_collection", row
             assert row["seeded"] is True, row
             assert self._rows_by_type(summary, "tool") == [], summary["jobs"]
+
+    @skip_without_tool("cat1")
+    def test_copied_tool_output_seeded_as_connected_input(self):
+        """A tool output copied in from another history and consumed here is seeded
+        as a workflow input (its producer is cross-history), so extracting the seeded
+        rows wires the consumer to it rather than leaving the input dangling."""
+        source_history_id = self.dataset_populator.new_history()
+        source_output_id, source_job_id = self._cat1_history(source_history_id)
+        with self.dataset_populator.test_history() as history_id:
+            copied = self._copy_hda_to_history(history_id, {"id": source_output_id})
+            run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": copied["id"]}}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            consumer_job_id = run["jobs"][0]["id"]
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            seeded_tool_rows = [r for r in self._rows_by_type(summary, "tool") if r["seeded"]]
+            assert [r["id"] for r in seeded_tool_rows] == [consumer_job_id], summary["jobs"]
+            assert all(r["id"] != source_job_id for r in summary["jobs"]), summary["jobs"]
+            copied_row = self._row_with_output_id(summary, copied["id"])
+            assert copied_row is not None, summary["jobs"]
+            assert copied_row["step_type"] == "input_dataset", copied_row
+            assert copied_row["seeded"] is True, copied_row
+
+            seeded_inputs = [
+                o["id"] for r in self._rows_by_type(summary, "input_dataset") if r["seeded"] for o in r["outputs"]
+            ]
+            response = self._post(
+                "workflows/extract",
+                data={
+                    "workflow_name": "copied input",
+                    "job_ids": [r["id"] for r in seeded_tool_rows],
+                    "hda_ids": seeded_inputs,
+                },
+                json=True,
+            )
+            self._assert_status_code_is(response, 200)
+            steps = self._get(f"workflows/{response.json()['id']}/download").json()["steps"].values()
+            input_steps = [s for s in steps if s["type"] == "data_input"]
+            tool_steps = [s for s in steps if s["type"] == "tool"]
+            assert len(input_steps) == 1 and len(tool_steps) == 1, steps
+            connection = tool_steps[0]["input_connections"]["input1"]
+            connection = connection[0] if isinstance(connection, list) else connection
+            assert connection["id"] == input_steps[0]["id"], tool_steps[0]
+
+    @skip_without_tool("cat1")
+    def test_inaccessible_producer_output_seeded_as_input(self):
+        """An output whose producing tool became inaccessible is a closure boundary; its
+        invalid tool row cannot be extracted, so the output is seeded as an input instead."""
+        with self.dataset_populator.test_history() as history_id:
+            with self.dataset_populator.user_tool_execute_permissions():
+                dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                    UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+                )
+                hda = self.dataset_populator.new_dataset(history_id, content="hello", wait=True)
+                payload = self.dataset_populator.run_tool_payload(
+                    tool_id=None, inputs={"input": {"src": "hda", "id": hda["id"]}}, history_id=history_id
+                )
+                payload["tool_uuid"] = dynamic_tool["uuid"]
+                udt_response = self.dataset_populator.tools_post(payload)
+                self._assert_status_code_is(udt_response, 200)
+                udt_output_id = udt_response.json()["outputs"][0]["id"]
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": udt_output_id}}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            invalid_row = self._row_with_output_id(summary, udt_output_id)
+            assert invalid_row is not None and invalid_row["invalid"] == "custom_tool_inaccessible", summary["jobs"]
+            assert invalid_row["seeded"] is False, invalid_row
+            seeded_input_rows = [
+                r
+                for r in self._rows_by_type(summary, "input_dataset")
+                if r["seeded"] and any(o["id"] == udt_output_id for o in r["outputs"])
+            ]
+            assert len(seeded_input_rows) == 1, summary["jobs"]
 
     @skip_without_tool("cat1")
     def test_unreferenced_history_seeds_nothing(self):
