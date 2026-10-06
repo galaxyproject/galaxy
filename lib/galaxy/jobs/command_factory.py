@@ -18,6 +18,7 @@ from galaxy.job_execution.output_collect import (
     escape_preserving_wildcards,
     rejected_work_dir_outputs_file,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -155,6 +156,13 @@ def build_command(
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     protected_stage_command = __protected_stage_command(job_wrapper, for_pulsar=for_pulsar)
+    if protected_stage_command and not (include_metadata and job_wrapper.requires_setting_metadata):
+        # Outputs are encrypted while collecting metadata: that must happen in the job, on the compute host,
+        # before the protected data is removed. Runners collecting metadata afterwards can't do that.
+        raise ProtectionError(
+            "This job uses encrypted datasets but its destination can't run it securely: metadata must be "
+            "collected within the job (embed_metadata_in_job). Contact your Galaxy administrator."
+        )
     if protected_stage_command:
         # Decrypt protected inputs on the host, before (and outside of any container of) the tool.
         # The tool only runs if that worked.
