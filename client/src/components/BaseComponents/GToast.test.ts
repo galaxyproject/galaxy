@@ -81,6 +81,15 @@ describe("GToast.vue", () => {
         expect(wrapper.get(SELECTORS.G_TOAST).classes()).toContain("g-toast-leave-active");
     });
 
+    it("gives the icon-only close button an accessible name", async () => {
+        const wrapper = mountGToast();
+
+        addToast("Dismiss me", { duration: 0 });
+        await nextTick();
+
+        expect(wrapper.get(SELECTORS.CLOSE_BUTTON).attributes("aria-label")).toBe("Dismiss notification");
+    });
+
     it("auto-dismisses a toast after its duration elapses", async () => {
         vi.useFakeTimers();
         const wrapper = mountGToast({}, true);

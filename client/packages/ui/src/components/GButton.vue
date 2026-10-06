@@ -5,6 +5,8 @@
  */
 
 import type { Placement } from "@floating-ui/dom";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 import type { RouterLink } from "vue-router";
 
@@ -46,6 +48,8 @@ const props = defineProps<{
     pill?: boolean;
     /** Pressed state allows for a toggle-like behavior of the button. For use with the outline and transparent variants */
     pressed?: boolean;
+    /** Busy state. Shows a spinner and ignores clicks while keeping the button's color, so it reads as working rather than unavailable */
+    loading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -54,7 +58,7 @@ const emit = defineEmits<{
 }>();
 
 function onClick(event: PointerEvent) {
-    if (props.disabled) {
+    if (props.disabled || props.loading) {
         // Mirror a native disabled control, which dispatches no click event at all:
         // without stopping propagation the click still bubbles to clickable ancestors
         // and any `.stop`/`.prevent` modifier the caller put on this component is dead.
@@ -82,10 +86,23 @@ const styleClasses = computed(() => {
         "g-pill": props.pill,
         "g-transparent": props.transparent,
         "g-pressed": props.pressed,
+        "g-loading": props.loading,
     };
 });
 
-const baseComponent = useClickableElement(props);
+// A loading button is as inert as a disabled one, so it renders as a plain button too: a
+// RouterLink would navigate before onClick could ignore the click.
+const baseComponent = useClickableElement({
+    get to() {
+        return props.to;
+    },
+    get href() {
+        return props.href;
+    },
+    get disabled() {
+        return props.disabled || props.loading;
+    },
+});
 
 // Only a plain anchor takes our href. A RouterLink builds its own, including the router
 // base Galaxy may be served under, and any `href` key passed down -- even undefined --
@@ -100,27 +117,20 @@ const buttonElementRef = useResolveElement(buttonRef);
 </script>
 
 <template>
-    <!--
-        `@click` binds a DOM listener when the root is a plain `button`/`a`, where Vue 2
-        ignores `nativeOn`. When the root is a RouterLink the roles swap: vue-router 3
-        never emits a `click` component event and does not merge `$listeners`, so only
-        `@click.native` reaches the rendered `<a>`. Exactly one of the two fires for any
-        given root, so the handler never runs twice. Both can collapse to a single
-        `@click` on Vue 3, where listeners fall through to a component's root element.
-    -->
     <component
         :is="baseComponent"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"
         :class="{ ...variantClasses, ...styleClasses }"
-        :to="!props.disabled ? props.to : ''"
+        :to="!props.disabled && !props.loading ? props.to : ''"
         :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :title="props.tooltip ? undefined : currentTitle"
         :aria-disabled="props.disabled || undefined"
+        :aria-busy="props.loading || undefined"
         v-bind="{ ...anchorAttributes, ...$attrs }"
-        @click="onClick"
-        @click.native="onClick">
+        @click="onClick">
+        <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
         <slot></slot>
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
@@ -280,6 +290,10 @@ const buttonElementRef = useResolveElement(buttonRef);
 
     &.g-outline:not(.g-pressed) {
         background-color: var(--background-color);
+    }
+
+    &.g-loading {
+        cursor: progress;
     }
 
     &.g-disabled {

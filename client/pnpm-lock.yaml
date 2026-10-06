@@ -532,8 +532,8 @@ importers:
         specifier: ^5.15.0 || ^6.0.0
         version: 5.15.4
       '@fortawesome/vue-fontawesome':
-        specifier: ^2.0.9 || ^3.0.0
-        version: 2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@3.5.43(typescript@5.8.3))
+        specifier: ^3.0.0
+        version: 3.3.3(@fortawesome/fontawesome-svg-core@6.2.1)(vue@3.5.43(typescript@5.8.3))
       '@types/markdown-it':
         specifier: ^14.1.2
         version: 14.1.2
@@ -550,8 +550,8 @@ importers:
         specifier: 3.5.43
         version: 3.5.43(typescript@5.8.3)
       vue-router:
-        specifier: ^3.6.0 || ^4.0.0
-        version: 3.6.5(vue@3.5.43(typescript@5.8.3))
+        specifier: ^4.0.0 || ^5.0.0
+        version: 5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.1)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(rolldown@1.2.6)(rollup@4.60.1)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vue@3.5.43(typescript@5.8.3))
 
 packages:
 
@@ -1134,12 +1134,6 @@ packages:
   '@fortawesome/free-solid-svg-icons@6.7.2':
     resolution: {integrity: sha512-GsBrnOzU8uj0LECDfD5zomZJIjrPhIlWU82AHwa2s40FKH+kcxQaBvBo3Z4TxyZHIyX8XTDxsyA33/Vx9eFuQA==}
     engines: {node: '>=6'}
-
-  '@fortawesome/vue-fontawesome@2.0.9':
-    resolution: {integrity: sha512-tUmO92PFHbLOplitjHNBVGMJm6S57vp16tBXJVPKSI/6CfjrgLycqKxEpC6f7qsOqUdoXs5nIv4HLUfrOMHzuw==}
-    peerDependencies:
-      '@fortawesome/fontawesome-svg-core': ~1 || ~6
-      vue: 3.5.43
 
   '@fortawesome/vue-fontawesome@3.3.3':
     resolution: {integrity: sha512-Jbjze98gGcVBSdkscLbnDlHECumMAFVWDarMtycctn9qL3p92ApnV36VW4PwVrcm9IWrHnnE6ZL9x7MXStSCfA==}
@@ -5896,11 +5890,6 @@ packages:
   vue-observe-visibility@1.0.0:
     resolution: {integrity: sha512-s5TFh3s3h3Mhd3jaz3zGzkVHKHnc/0C/gNr30olO99+yw2hl3WBhK3ng3/f9OF+qkW4+l7GkmwfAzDAcY3lCFg==}
 
-  vue-router@3.6.5:
-    resolution: {integrity: sha512-VYXZQLtjuvKxxcshuRAwjHnciqZVoXAjTjcqBTz4rKc8qih9g9pI3hbDjmqXaHdgL3v8pV6P8Z335XvHzESxLQ==}
-    peerDependencies:
-      vue: 3.5.43
-
   vue-router@5.3.1:
     resolution: {integrity: sha512-GDBZzgmILxA/kFnkFbJjQZdZ2QQbngnIMMuoUcjhZIfH1RGMaPjPwX5ASnV38qamuA9uhO0RDjSBHTDNG2uXyQ==}
     peerDependencies:
@@ -6530,11 +6519,6 @@ snapshots:
   '@fortawesome/free-solid-svg-icons@6.7.2':
     dependencies:
       '@fortawesome/fontawesome-common-types': 6.2.1
-
-  '@fortawesome/vue-fontawesome@2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@3.5.43(typescript@5.8.3))':
-    dependencies:
-      '@fortawesome/fontawesome-svg-core': 6.2.1
-      vue: 3.5.43(typescript@5.8.3)
 
   '@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.2.1)(vue@3.5.43(typescript@5.8.3))':
     dependencies:
@@ -8950,10 +8934,6 @@ snapshots:
     dependencies:
       reusify: 1.0.4
 
-  fdir@6.5.0(picomatch@4.0.4):
-    optionalDependencies:
-      picomatch: 4.0.4
-
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
@@ -10970,8 +10950,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
 
   tinyrainbow@3.1.0: {}
 
@@ -11194,6 +11174,17 @@ snapshots:
       rolldown: 1.2.6
       rollup: 4.60.1
       vite: 8.0.16(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)
+
+  unplugin@3.4.0(esbuild@0.28.1)(rolldown@1.2.6)(rollup@4.60.1)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)):
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      picomatch: 4.0.7
+      webpack-virtual-modules: 0.6.2
+    optionalDependencies:
+      esbuild: 0.28.1
+      rolldown: 1.2.6
+      rollup: 4.60.1
+      vite: 8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)
 
   until-async@3.0.2:
     optional: true
@@ -11566,6 +11557,21 @@ snapshots:
       sass: 1.101.0
       yaml: 2.9.0
 
+  vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.28
+      rolldown: 1.2.6
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.4.0
+      esbuild: 0.28.1
+      fsevents: 2.3.3
+      sass: 1.101.0
+      yaml: 2.9.0
+    optional: true
+
   vitest-fail-on-console@0.10.1(@vitest/utils@4.1.11)(vite@8.0.16(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vitest@4.1.11):
     dependencies:
       '@vitest/utils': 4.1.11
@@ -11711,10 +11717,6 @@ snapshots:
 
   vue-observe-visibility@1.0.0: {}
 
-  vue-router@3.6.5(vue@3.5.43(typescript@5.8.3)):
-    dependencies:
-      vue: 3.5.43(typescript@5.8.3)
-
   vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.1)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(rolldown@1.2.6)(rollup@4.60.1)(vite@8.0.16(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vue@3.5.43(typescript@5.8.3)):
     dependencies:
       '@vue-macros/common': 3.1.4(vue@3.5.43(typescript@5.8.3))
@@ -11738,6 +11740,40 @@ snapshots:
       '@vue/compiler-sfc': 3.5.43
       pinia: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
       vite: 8.0.16(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - '@farmfe/core'
+      - '@rsbuild/core'
+      - '@rspack/core'
+      - bun-types-no-globals
+      - esbuild
+      - rolldown
+      - rollup
+      - unloader
+      - webpack
+
+  vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.1)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(rolldown@1.2.6)(rollup@4.60.1)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vue@3.5.43(typescript@5.8.3)):
+    dependencies:
+      '@vue-macros/common': 3.1.4(vue@3.5.43(typescript@5.8.3))
+      '@vue/devtools-api': 8.2.1
+      ast-walker-scope: 0.9.0
+      chokidar: 3.5.3
+      confbox: 0.2.4
+      local-pkg: 1.2.1
+      magic-string: 0.30.21
+      mlly: 1.8.2
+      muggle-string: 0.4.1
+      nostics: 1.3.0
+      pathe: 2.0.3
+      picomatch: 4.0.7
+      scule: 1.3.0
+      tinyglobby: 0.2.17
+      unplugin: 3.4.0(esbuild@0.28.1)(rolldown@1.2.6)(rollup@4.60.1)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))
+      unplugin-utils: 0.3.2
+      vue: 3.5.43(typescript@5.8.3)
+    optionalDependencies:
+      '@vue/compiler-sfc': 3.5.43
+      pinia: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3))
+      vite: 8.2.2(@types/node@26.4.0)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rsbuild/core'

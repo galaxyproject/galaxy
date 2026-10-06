@@ -79,6 +79,7 @@ const isActiveHost = computed(() => props.host === activeToastHost.value);
 
                 <GButton
                     data-description="close toast"
+                    aria-label="Dismiss notification"
                     icon-only
                     size="small"
                     transparent
@@ -101,6 +102,7 @@ const isActiveHost = computed(() => props.host === activeToastHost.value);
     flex-direction: column;
     gap: 0.5rem;
     width: 350px;
+    max-width: calc(100vw - 2rem);
 }
 
 .g-toast {

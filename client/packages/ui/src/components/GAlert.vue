@@ -223,3 +223,51 @@ export default {
     opacity: 0;
 }
 </style>
+
+<style lang="scss">
+// Baseline for consumers without Bootstrap (the Tool Shed). Every rule sits in :where(), so
+// it has zero specificity and Bootstrap plus the client's theme still win wherever they load.
+// Keep to properties Bootstrap's alert rules also set, or the client picks up the extra.
+:where(.alert) {
+    position: relative;
+    padding: var(--spacing-3) var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+$alert-variants: (
+    "primary": "blue",
+    "info": "blue",
+    "success": "green",
+    "warning": "yellow",
+    "danger": "red",
+    "secondary": "grey",
+);
+
+@each $variant, $color in $alert-variants {
+    :where(.alert-#{$variant}) {
+        color: var(--color-#{$color}-900);
+        background-color: var(--color-#{$color}-100);
+        border-color: var(--color-#{$color}-300);
+    }
+}
+
+:where(.alert-dismissible) {
+    padding-right: var(--spacing-8);
+}
+
+:where(.alert .close) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+    color: inherit;
+    background-color: transparent;
+    border: 0;
+    opacity: 0.6;
+}
+</style>

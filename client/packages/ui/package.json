@@ -23,9 +23,9 @@
     "peerDependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.2.0",
         "@fortawesome/free-solid-svg-icons": "^5.15.0 || ^6.0.0",
-        "@fortawesome/vue-fontawesome": "^2.0.9 || ^3.0.0",
+        "@fortawesome/vue-fontawesome": "^3.0.0",
         "@vueuse/core": ">=10.0.0 <13.0.0",
-        "vue": "^2.7.16 || ^3.4.0",
-        "vue-router": "^3.6.0 || ^4.0.0"
+        "vue": "^3.4.0",
+        "vue-router": "^4.0.0 || ^5.0.0"
     }
 }
