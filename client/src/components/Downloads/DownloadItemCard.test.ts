@@ -200,6 +200,19 @@ describe("DownloadItemCard.vue", () => {
         expect(nth(wrapper.emitted("onGoTo"), 0)[0]).toContain(baseMonitoringData.request.object.id);
     });
 
+    it("goes to an exported dataset or collection", async () => {
+        const pages = [
+            ["dataset", "/datasets/item1"],
+            ["collection", "/collection/item1/edit"],
+        ] as const;
+        for (const [type, page] of pages) {
+            const request = { ...baseMonitoringData.request, object: { id: "item1", type, name: "item" } };
+            const wrapper = mountDownloadItemCard({ monitoringData: { ...baseMonitoringData, request } });
+            await getActionButtonById(wrapper, actionsIds.goToObject).trigger("click");
+            expect(wrapper.emitted("onGoTo")?.[0]?.[0]).toBe(page);
+        }
+    });
+
     it("emits onDownload when Download is clicked", async () => {
         updateProgressMonitor({
             isRunning: ref(false),

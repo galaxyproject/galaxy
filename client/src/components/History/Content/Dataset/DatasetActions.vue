@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
-import type { HDADetailed } from "@/api";
+import { type HDADetailed, userOwnsHistory } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
@@ -13,6 +16,7 @@ import type { ItemUrls } from ".";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
+import ExportToAnotherGalaxy from "@/components/History/Content/ExportToAnotherGalaxy.vue";
 
 interface Props {
     item: HDADetailed;
@@ -33,6 +37,24 @@ const router = useRouter();
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
+const { currentUser } = storeToRefs(useUserStore());
+const historyStore = useHistoryStore();
+// Checked here rather than trusting `writable`, which defaults to true where a caller does not pass it.
+// A history that is not loaded yet is fetched, and the button shows once it arrives.
+const ownsActiveHistory = computed(() => {
+    const history = historyStore.getHistoryById(props.item.history_id);
+    return Boolean(history && !history.deleted && !history.archived && userOwnsHistory(currentUser.value, history));
+});
+// A hidden or deleted dataset would be imported out of sight on the other Galaxy, and one in error has no
+// data to move.
+const showExport = computed(
+    () =>
+        props.writable &&
+        props.item.visible &&
+        !props.item.deleted &&
+        props.item.state === "ok" &&
+        ownsActiveHistory.value,
+);
 const showError = computed(() => {
     return props.item.state === "error" || props.item.state === "failed_metadata";
 });
@@ -108,6 +130,12 @@ function onRerun() {
                 </GButton>
 
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
+
+                <ExportToAnotherGalaxy
+                    v-if="showDownloads && showExport"
+                    :history-id="item.history_id"
+                    :content-id="item.id"
+                    :content-name="item.name || ''" />
 
                 <GButton
                     v-if="showDownloads"

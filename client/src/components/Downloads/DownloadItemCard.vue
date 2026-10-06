@@ -65,6 +65,8 @@ const prettyObjectType = computed(() => {
             return "Workflow Invocation";
         case "collection":
             return "Dataset Collection";
+        case "dataset":
+            return "Dataset";
         default:
             return "Unknown Object Type";
     }
@@ -212,7 +214,12 @@ function onGoToObject() {
         case "invocation":
             emit("onGoTo", `/workflows/invocations/${objectId}`);
             break;
-        // case "collection": TODO use async route for collections
+        case "dataset":
+            emit("onGoTo", `/datasets/${objectId}`);
+            break;
+        case "collection":
+            emit("onGoTo", `/collection/${objectId}/edit`);
+            break;
         default:
             console.warn(`No specific route defined for object type: ${objectType}`);
             break;

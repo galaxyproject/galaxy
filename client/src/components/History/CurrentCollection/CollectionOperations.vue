@@ -9,6 +9,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import ExportToAnotherGalaxy from "@/components/History/Content/ExportToAnotherGalaxy.vue";
 import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 
 const route = useRoute();
@@ -21,7 +22,9 @@ const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${pro
 const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
-const disableDownload = props.dsc.populated_state !== "ok";
+const disableDownload = computed(() => props.dsc.populated_state !== "ok");
+// A hidden or deleted collection would be imported out of sight on the other Galaxy.
+const showExport = computed(() => !disableDownload.value && props.dsc.visible && !props.dsc.deleted);
 
 const hasSampleSheet = computed(() => {
     return props.dsc.collection_type && props.dsc.collection_type.startsWith("sample_sheet");
@@ -43,6 +46,13 @@ const sheetUrl = computed(() => `/collection/${props.dsc.id}/sheet`);
                     <FontAwesomeIcon fixed-width :icon="faDownload" />
                     <span>Download</span>
                 </GButton>
+                <ExportToAnotherGalaxy
+                    v-if="showExport"
+                    label="Export"
+                    :history-id="props.dsc.history_id"
+                    content-type="dataset_collection"
+                    :content-id="props.dsc.id"
+                    :content-name="props.dsc.name || ''" />
                 <GButton
                     v-if="showCollectionDetailsUrl"
                     class="collection-job-details-btn"
