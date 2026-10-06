@@ -33,7 +33,7 @@ const badgeClass = computed(() => {
 });
 
 const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
-const { job: fetchedJob } = useJobDetails(fetchJobId);
+const { job: fetchedJob } = useJobDetails(fetchJobId, { full: false });
 const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 
 const stateIcon = computed(() => (job.value ? iconClasses[job.value.state] : null));
