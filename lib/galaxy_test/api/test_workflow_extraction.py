@@ -2300,6 +2300,17 @@ class TestNotebookWorkflowExtractionReport(
             assert result["report_warnings"] == [], result["report_warnings"]
 
     @skip_without_tool("cat1")
+    def test_empty_notebook_keeps_default_report(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(history_id, content="")
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+
+            assert self._report_markdown(result["id"]) is None
+            assert result["report_warnings"] == [], result["report_warnings"]
+
+    @skip_without_tool("cat1")
     def test_report_drops_directive_for_unquotable_step_label(self):
         with self.dataset_populator.test_history() as history_id:
             _, cat1_job_id = self._run_cat1(history_id)

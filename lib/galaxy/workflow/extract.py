@@ -721,7 +721,7 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
 
 # Turns the label index into a workflow ``reports_config`` (plus warnings) while the
 # extracted steps are still uncommitted.
-ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any], list[str]]]
+ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any] | None, list[str]]]
 
 
 def _label_arg(argument: str, label: str | None) -> str | None:

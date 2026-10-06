@@ -91,7 +91,7 @@ def _to_extraction_result(
 
 def _build_report_config(
     trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
-) -> tuple[dict[str, Any], list[str]]:
+) -> tuple[dict[str, Any] | None, list[str]]:
     """Turn a notebook page into the extracted workflow's ``reports_config``.
 
     Runs while the extracted steps are still uncommitted. Reconcile mutates them
@@ -100,6 +100,8 @@ def _build_report_config(
     than leaving a report-less workflow behind on error.
     """
     markdown, warnings = reconcile_and_build_report(trans, page, index)
+    if not markdown.strip():
+        return None, warnings
     return {"markdown": markdown, "title": title}, warnings
 
 
