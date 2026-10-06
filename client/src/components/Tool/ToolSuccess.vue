@@ -7,6 +7,7 @@ import { useRouter } from "vue-router";
 
 import { useConfig } from "@/composables/config";
 import { useJobDetails } from "@/composables/jobDetails";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useJobStore } from "@/stores/jobStore";
 
 import LoadingSpan from "../LoadingSpan.vue";
@@ -17,6 +18,7 @@ import Webhook from "@/components/Common/Webhook.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import ToolSuccessOutputs from "@/components/Tool/ToolSuccessOutputs.vue";
+import ToolSuccessToc from "@/components/Tool/ToolSuccessToc.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 const { config } = useConfig(true);
@@ -54,6 +56,9 @@ const { job: viewedJob } = useJobDetails(viewedJobId);
 
 const webhook = ref<InstanceType<typeof Webhook> | null>(null);
 const webhookId = computed(() => webhook.value?.webhookId ?? null);
+
+const jobInformationCollapsed = useUserLocalStorage("job-information-collapsed", false);
+const toolSuccessOutputsCollapsed = useUserLocalStorage("tool-success-outputs-collapsed", false);
 </script>
 
 <template>
@@ -78,19 +83,39 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
                 </template>
             </JobHeader>
 
-            <div v-if="jobResponse.produces_entry_points">
+            <ToolSuccessToc
+                v-model:job-information-collapsed="jobInformationCollapsed"
+                v-model:tool-success-outputs-collapsed="toolSuccessOutputsCollapsed"
+                :job-response="jobResponse"
+                :job-def="jobDef"
+                :webhook-id="webhookId"
+                :show-recommendation="showRecommendation" />
+
+            <div v-if="jobResponse.produces_entry_points" id="tool-entry-points">
                 <ToolEntryPoints :job-id="viewedJobId" :job="viewedJob" />
             </div>
 
-            <JobInformation :job-id="viewedJobId" collapsible include-view-full-details-button />
+            <div id="job-execution-details">
+                <JobInformation
+                    v-model:collapsed="jobInformationCollapsed"
+                    :job-id="viewedJobId"
+                    collapsible
+                    include-view-full-details-button />
+            </div>
         </template>
 
-        <ToolSuccessOutputs :job-response="jobResponse" />
+        <div id="tool-run-outputs">
+            <ToolSuccessOutputs v-model:collapsed="toolSuccessOutputsCollapsed" :job-response="jobResponse" />
+        </div>
 
-        <DetailBlock v-if="jobDef" v-show="webhookId" :header-icon="faLightbulb" title="Before You Go">
-            <Webhook ref="webhook" type="tool" :tool-id="jobDef.tool_id || undefined" />
-        </DetailBlock>
+        <div id="tool-success-webhook">
+            <DetailBlock v-if="jobDef" v-show="webhookId" :header-icon="faLightbulb" title="Before You Go">
+                <Webhook ref="webhook" type="tool" :tool-id="jobDef.tool_id || undefined" />
+            </DetailBlock>
+        </div>
 
-        <ToolRecommendation v-if="showRecommendation && jobDef?.tool_id" :tool-id="jobDef.tool_id" />
+        <div v-if="showRecommendation && jobDef?.tool_id" id="tool-recommendation">
+            <ToolRecommendation :tool-id="jobDef.tool_id" />
+        </div>
     </div>
 </template>
