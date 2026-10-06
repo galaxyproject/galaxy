@@ -308,6 +308,19 @@ def test_reconcile_label_from_quoted_name_is_directive_safe(monkeypatch):
     validate_galaxy_markdown('```galaxy\nhistory_dataset_display(output="say hi again")\n```\n')
 
 
+def test_reconcile_deduped_label_stays_within_label_limit(monkeypatch):
+    starred = _input_step("a" * 255)
+    unstarred = _tool_step()
+    index = ExtractionLabelIndex(
+        content_to_step={("dataset", 10): (starred, "output"), ("dataset", 12): (unstarred, "out_file")},
+        job_to_step={},
+        icj_to_step={},
+    )
+    _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "a" * 300)
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
+    assert unstarred.workflow_output_for("out_file").label == "a" * 253 + "_2"
+
+
 def test_reconcile_labels_referenced_step(monkeypatch):
     step = _tool_step()
     step.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/bwa/bwa_mem/0.7"

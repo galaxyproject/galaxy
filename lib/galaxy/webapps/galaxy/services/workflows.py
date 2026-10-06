@@ -18,7 +18,10 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.pages import PageManager
-from galaxy.managers.workflow_extraction_naming import normalize_label
+from galaxy.managers.workflow_extraction_naming import (
+    MAX_LABEL_LENGTH,
+    normalize_label,
+)
 from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
     RefactorRequest,
@@ -130,16 +133,20 @@ def _validate_extraction_labels(
     for name in (dataset_names or []) + (dataset_collection_names or []):
         if not name.strip():
             raise exceptions.RequestParameterInvalidException("workflow input names must not be empty")
-        if len(name) > 255:
-            raise exceptions.RequestParameterInvalidException(f"workflow input name exceeds 255 characters: {name!r}")
+        if len(name) > MAX_LABEL_LENGTH:
+            raise exceptions.RequestParameterInvalidException(
+                f"workflow input name exceeds {MAX_LABEL_LENGTH} characters: {name!r}"
+            )
         if name in seen:
             raise exceptions.RequestParameterInvalidException(f"workflow input names must be unique: {name!r}")
         seen.add(name)
     for label in step_labels or []:
         if not label.strip():
             raise exceptions.RequestParameterInvalidException("workflow step labels must not be empty")
-        if len(label) > 255:
-            raise exceptions.RequestParameterInvalidException(f"workflow step label exceeds 255 characters: {label!r}")
+        if len(label) > MAX_LABEL_LENGTH:
+            raise exceptions.RequestParameterInvalidException(
+                f"workflow step label exceeds {MAX_LABEL_LENGTH} characters: {label!r}"
+            )
         if label in seen:
             raise exceptions.RequestParameterInvalidException(
                 f"workflow step label collides with another input name or step label: {label!r}"
