@@ -213,7 +213,7 @@ function displayLabel(output: ExtractionOutput): string {
         select-title="Include as a step in the workflow"
         dim-when-unselected
         @rename="onTitleRename"
-        @clearTitle="emit('clear-step-label')"
+        @clear-title="emit('clear-step-label')"
         @select="emit('select')">
         <template v-slot:select>
             <FontAwesomeIcon
@@ -283,18 +283,6 @@ function displayLabel(output: ExtractionOutput): string {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem 0.25rem 0 0;
-    }
-
-    // GCard renders the clear-title control as a neutral icon button; the
-    // destructive (muted -> red on hover) styling is our policy, so we keep it
-    // here rather than push it into GCard's default.
-    :deep(.g-card-clear-title) {
-        color: $text-muted;
-
-        &:hover {
-            background-color: $brand-danger;
-            color: $white;
-        }
     }
 
     .workflow-extraction-output {
