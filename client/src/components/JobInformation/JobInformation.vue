@@ -7,6 +7,7 @@ import { useRoute } from "vue-router";
 import { fetchInvocationForJob } from "@/api/invocations";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
@@ -41,6 +42,9 @@ const props = withDefaults(
 
 const route = useRoute();
 const toolStore = useToolStore();
+
+/** Whether the collapsible job information card is collapsed, remembered per-user across visits. */
+const collapsed = useUserLocalStorage("job-information-collapsed", false);
 
 /** Invocation ID for the run that the job might have come from. It is `null` if the job has no associated invocation,
  * or `undefined` if it has not been fetched yet.
@@ -187,7 +191,11 @@ function onJobInfoLeave(el: Element, done: () => void) {
 </script>
 
 <template>
-    <DetailBlock :header-icon="faInfoCircle" title="Job Execution Details" :collapsible="props.collapsible">
+    <DetailBlock
+        v-model:collapsed="collapsed"
+        :header-icon="faInfoCircle"
+        title="Job Execution Details"
+        :collapsible="props.collapsible">
         <template v-slot:custom-content>
             <GCard :primary-actions="primaryActions">
                 <template v-slot:description>
