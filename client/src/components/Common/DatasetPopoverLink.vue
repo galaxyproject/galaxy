@@ -65,7 +65,8 @@ async function ensureDatasetDetails() {
 </template>
 
 <style scoped>
-:deep(.dataset-details-popover) {
+/* Slot content keeps this scope id but moves under body, so a :deep() descendant selector never matches it. */
+.dataset-details-popover {
     max-width: 420px;
 }
 </style>
