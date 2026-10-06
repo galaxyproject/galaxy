@@ -2321,3 +2321,36 @@ class TestNotebookWorkflowExtractionReport(
                 json=True,
             )
             assert response.status_code == 400, response.text
+
+    def _workflow_count(self) -> int:
+        response = self._get("workflows")
+        self._assert_status_code_is(response, 200)
+        return len(response.json())
+
+    def _assert_other_user_extraction_from_page_forbidden(self, page_id):
+        with self._different_user():
+            with self.dataset_populator.test_history() as history_id:
+                _, cat1_job_id = self._run_cat1(history_id)
+                before = self._workflow_count()
+                response = self._post(
+                    "workflows/extract",
+                    {"workflow_name": "stolen report", "job_ids": [cat1_job_id], "from_page_id": page_id},
+                    json=True,
+                )
+                self._assert_status_code_is(response, 403)
+                assert self._workflow_count() == before
+
+    @skip_without_tool("cat1")
+    def test_403_for_other_users_private_page(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_403_for_published_page_without_history_access(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self._assert_status_code_is(self._put(f"pages/{page['id']}/publish", json=True), 200)
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
