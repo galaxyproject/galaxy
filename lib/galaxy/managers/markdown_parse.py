@@ -57,12 +57,13 @@ EMBED_DIRECTIVE_REGEX_ANY = re.compile(r"\$\{galaxy\s+.*\}")
 # Directive argument values are matched by ARG_VAL_REGEX, which accepts "..." with
 # no escape syntax, and a directive must occupy a single line. So a value carrying a
 # double quote or a line break has no representation as a quoted directive argument.
-UNQUOTABLE_ARGUMENT_CHARS = '"\r\n'
+# Line breaks are every boundary str.splitlines() honors, which fenced-block validation splits on.
+UNQUOTABLE_ARGUMENT_PATTERN = re.compile('["\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]')
 
 
 def is_quotable_argument_value(value: str) -> bool:
     """Whether ``value`` can be embedded in a directive as a double-quoted argument."""
-    return '"' not in value and value.splitlines() == [value]
+    return UNQUOTABLE_ARGUMENT_PATTERN.search(value) is None
 
 
 def validate_galaxy_markdown(galaxy_markdown, internal=True):

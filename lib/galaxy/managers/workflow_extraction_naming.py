@@ -8,7 +8,7 @@ from typing import (
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import get_output_name
-from galaxy.managers.markdown_parse import UNQUOTABLE_ARGUMENT_CHARS
+from galaxy.managers.markdown_parse import UNQUOTABLE_ARGUMENT_PATTERN
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -33,7 +33,6 @@ class SuggestedName:
 
 
 MAX_LABEL_LENGTH = 255
-UNQUOTABLE_PATTERN = re.compile(f"[{re.escape(UNQUOTABLE_ARGUMENT_CHARS)}]")
 
 
 def normalize_label(value: str | None) -> str:
@@ -45,7 +44,7 @@ def normalize_label(value: str | None) -> str:
 
 def normalize_generated_label(value: str | None) -> str:
     """``normalize_label`` minus characters a report directive cannot quote."""
-    return normalize_label(UNQUOTABLE_PATTERN.sub(" ", value or ""))
+    return normalize_label(UNQUOTABLE_ARGUMENT_PATTERN.sub(" ", value or ""))
 
 
 def suggested_output_name(trans: ProvidesHistoryContext, content: HistoryItem) -> SuggestedName | None:
