@@ -28,8 +28,10 @@ class MockToolbox:
     def __init__(self, by_job_id: dict | None = None, default_compatible: bool = True):
         self._by_job_id = by_job_id or {}
         self._default = default_compatible
+        self.calls: list[int] = []
 
     def tool_for_job(self, job, user=None):
+        self.calls.append(job.id)
         if job.id in self._by_job_id:
             return self._by_job_id[job.id]
         return MockTool(self._default)
@@ -244,6 +246,32 @@ def test_implicit_collection_job_records_icj_id():
     assert result.job_ids == {2}
     assert result.icj_ids == {99}
     assert result.referenced_output_refs == {("hdca", 1)}
+
+
+def test_map_output_walks_one_job_per_icj():
+    input_collection = MockHdca(20)
+    icj = MockImplicitCollectionJobs(7)
+    element_jobs = [MockJob(i, icj=icj, inputs=[MockHda(100 + i)]) for i in (2, 3, 4)]
+    for job in element_jobs:
+        job.input_datasets[0].name = "input"
+    impl_out = MockHdca(
+        10,
+        creating_jobs=element_jobs,
+        implicit_input_collections=[MockImplicitInputCollection(input_collection, name="input")],
+    )
+    icj.output_dataset_collection_instances = [impl_out]
+    # Loose elements of the same map reached separately must not re-walk the ICJ.
+    loose_elements = [MockHda(30 + job.id, creating_jobs=[job]) for job in element_jobs]
+    downstream_job = MockJob(1, inputs=loose_elements)
+    out = MockHda(1, creating_jobs=[downstream_job])
+    toolbox = MockToolbox()
+    trans = _trans([out, impl_out], toolbox=toolbox)
+
+    result = _closure(trans, [("hda", 1), ("hdca", 10)])
+
+    assert result.icj_ids == {7}
+    assert ("hdca", 20) in result.content_refs
+    assert toolbox.calls == [1, 2]  # downstream job + one representative element job
 
 
 def test_missing_seed_skipped_with_warning():
