@@ -8,11 +8,13 @@ import { GalaxyApi } from "./index";
 
 const { server } = useServerMock();
 
-function respondWith(body: string, status: number, contentType = "text/html") {
+const FROM_GALAXY = { "X-Request-ID": "3f2a9c" };
+
+function respondWith(body: string, status: number, headers: Record<string, string> = {}) {
     server.use(
         http.get(
             "/api/configuration",
-            () => new HttpResponse(body, { status, headers: { "content-type": contentType } }),
+            () => new HttpResponse(body, { status, headers: { "content-type": "text/html", ...headers } }),
         ),
     );
 }
@@ -22,23 +24,21 @@ async function fetchConfiguration() {
 }
 
 describe("errorResponseMiddleware", () => {
-    // Every shape a gateway might answer with. None of them parse, so all take the
-    // same branch -- listed out because these are the bodies seen in the wild.
+    // What a proxy answering in Galaxy's place might write. None carry a request id.
     it.each([
         ["a whole HTML page", "<!DOCTYPE html><html><head><title>504</title></head><body>...</body></html>", 504],
         ["a fragment with no doctype", "<h1>504 Gateway Time-out</h1><hr><center>nginx</center>", 504],
         ["a page behind an XML prologue", '<?xml version="1.0"?><!DOCTYPE html><html></html>', 503],
-        ["an empty body", "", 502],
         ["a body that claims to be JSON but does not parse", '{"err_msg": "upstream closed the conn', 502],
+        ["valid JSON in some other shape", '{"message": "upstream timeout"}', 504],
+        ["JSON in Galaxy's shape", '{"err_msg": "not really Galaxy", "err_code": 0}', 502],
     ])("normalizes %s into an error object", async (_label, body, status) => {
-        respondWith(body as string, status as number, "application/json");
+        respondWith(body as string, status as number, { "content-type": "application/json" });
 
         const { data, error } = await fetchConfiguration();
 
         expect(data).toBeUndefined();
-        expect(typeof error).toBe("object");
-        expect(error).toMatchObject({ err_code: status });
-        expect(errorMessageAsString(error)).not.toContain("<");
+        expect(error).toEqual({ err_msg: expect.stringContaining(`(${status})`), err_code: status });
     });
 
     it("names the failure in a way that suits a user", async () => {
@@ -49,20 +49,46 @@ describe("errorResponseMiddleware", () => {
         expect(errorMessageAsString(error)).toBe("Galaxy took too long to respond (504)");
     });
 
-    it("leaves a genuine JSON API error untouched", async () => {
-        respondWith(JSON.stringify({ err_msg: "Dataset not found", err_code: 404 }), 404, "application/json");
+    it("leaves a Galaxy API error untouched, whatever its content type says", async () => {
+        respondWith(JSON.stringify({ err_msg: "Quota exceeded", err_code: 403002 }), 403, {
+            ...FROM_GALAXY,
+            "content-type": "text/plain",
+        });
 
         const { error } = await fetchConfiguration();
 
-        expect(errorMessageAsString(error)).toBe("Dataset not found");
+        expect(error).toEqual({ err_msg: "Quota exceeded", err_code: 403002 });
     });
 
-    it("passes through a JSON error that was mislabelled as text", async () => {
-        respondWith(JSON.stringify({ err_msg: "Quota exceeded" }), 400, "text/plain");
+    it("normalizes a Galaxy error whose message is not a string", async () => {
+        respondWith(JSON.stringify({ err_msg: { detail: "nested" }, err_code: 0 }), 500, {
+            ...FROM_GALAXY,
+            "content-type": "application/json",
+        });
 
         const { error } = await fetchConfiguration();
 
-        expect(errorMessageAsString(error)).toBe("Quota exceeded");
+        expect(errorMessageAsString(error)).toBe("Internal Server Error (500)");
+    });
+
+    it("normalizes a Galaxy response that is not an API error", async () => {
+        respondWith(JSON.stringify({ detail: "Not Found" }), 404, {
+            ...FROM_GALAXY,
+            "content-type": "application/json",
+        });
+
+        const { error } = await fetchConfiguration();
+
+        expect(errorMessageAsString(error)).toBe("Not Found (404)");
+    });
+
+    it("keeps the original headers but not the length of the body it replaced", async () => {
+        respondWith("", 503, { "Retry-After": "120", "Content-Length": "0" });
+
+        const { error, response } = await fetchConfiguration();
+
+        expect(response.headers.get("Retry-After")).toBe("120");
+        expect(errorMessageAsString(error)).toBe("Galaxy is temporarily unavailable (503)");
     });
 
     it("gives rethrowSimpleWithStatus a readable message and the status", async () => {

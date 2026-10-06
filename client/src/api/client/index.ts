@@ -15,12 +15,11 @@ function getBaseUrl() {
 function apiClientFactory() {
     const client = createClient<GalaxyApiPaths>({ baseUrl: getBaseUrl() });
 
-    // Response middleware runs in reverse registration order, so registering this
-    // first means it normalizes whatever the chain finally settles on -- including
-    // a response the rate limiter produced by retrying outside the chain.
+    // Response middleware runs in reverse order, so registering this first lets it see
+    // the final response, including one the rate limiter got by retrying.
     client.use(errorResponseMiddleware);
 
-    // Registered first so aborted requests bypass the rate-limiter queue.
+    // Registered ahead of the rate limiter so aborted requests bypass its queue.
     client.use(pendingRequestsMiddleware);
 
     // TODO: Adjust based on server limits (maybe this goes in Galaxy config?)

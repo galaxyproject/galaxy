@@ -1,5 +1,7 @@
 import type { Middleware } from "openapi-fetch";
 
+import { REQUEST_ID_HEADER } from "@/api/staleCacheRetry";
+
 /** The error shape Galaxy's API returns. */
 interface NormalizedApiError {
     err_msg: string;
@@ -13,23 +15,28 @@ const GATEWAY_MESSAGES: Record<number, string> = {
 };
 
 function statusMessage(status: number, statusText: string): string {
-    const description = GATEWAY_MESSAGES[status] ?? statusText?.trim();
+    const description = GATEWAY_MESSAGES[status] ?? statusText.trim();
     return description ? `${description} (${status})` : `The request failed (${status})`;
 }
 
-function hasStructuredBody(body: string): boolean {
+function isGalaxyError(response: Response, body: string): boolean {
+    // Galaxy stamps every response it produces with a request id; a proxy answering
+    // in its place does not, even when what it writes happens to be JSON.
+    if (!response.headers.has(REQUEST_ID_HEADER)) {
+        return false;
+    }
     try {
         const parsed = JSON.parse(body);
-        return parsed !== null && typeof parsed === "object";
+        return typeof parsed?.err_msg === "string";
     } catch {
         return false;
     }
 }
 
 /**
- * Normalizes a failed response whose body is not JSON into the `{err_msg, err_code}`
- * shape the API returns, so callers always receive an error object rather than
- * whatever happened to answer the request.
+ * Replaces a failed response that is not a Galaxy API error with one in the
+ * `{err_msg, err_code}` shape the API returns, so callers always receive an error
+ * object rather than whatever happened to answer the request.
  */
 export const errorResponseMiddleware: Middleware = {
     async onResponse({ response }) {
@@ -37,12 +44,9 @@ export const errorResponseMiddleware: Middleware = {
             return undefined;
         }
 
-        // openapi-fetch decides string-or-object by whether the body parses rather
-        // than by content-type, so the same question has to be asked here: a malformed
-        // body labelled as JSON would otherwise still reach the caller as a string.
         // Cloned so the original stays readable when it is handed back untouched.
         const body = await response.clone().text();
-        if (hasStructuredBody(body)) {
+        if (isGalaxyError(response, body)) {
             return undefined;
         }
 
@@ -51,10 +55,16 @@ export const errorResponseMiddleware: Middleware = {
             err_code: response.status,
         };
 
+        // Keeps Retry-After and friends; the length and encoding described the old body.
+        const headers = new Headers(response.headers);
+        headers.delete("content-length");
+        headers.delete("content-encoding");
+        headers.set("content-type", "application/json");
+
         return new Response(JSON.stringify(normalized), {
             status: response.status,
             statusText: response.statusText,
-            headers: { "content-type": "application/json" },
+            headers,
         });
     },
 };
