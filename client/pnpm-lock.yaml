@@ -101,11 +101,11 @@ importers:
         specifier: ^1.39.0
         version: 1.44.0
       ag-grid-community:
-        specifier: ^30
-        version: 30.2.1
+        specifier: ^31.3.4
+        version: 31.3.4
       ag-grid-vue3:
-        specifier: ~30.2.1
-        version: 30.2.1(ag-grid-community@30.2.1)(vue@3.5.43(typescript@5.8.3))
+        specifier: ~31.3.4
+        version: 31.3.4(typescript@5.8.3)
       assert:
         specifier: ^2.1.0
         version: 2.1.0
@@ -518,7 +518,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^4.0.14
-        version: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.14.5)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
 
   packages/ui:
     dependencies:
@@ -1992,9 +1992,6 @@ packages:
   '@types/mdurl@2.0.0':
     resolution: {integrity: sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==}
 
-  '@types/node@25.9.3':
-    resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
-
   '@types/node@26.4.0':
     resolution: {integrity: sha512-faiGnoIrLH/V8cibOMEAZ8pMw6oXqSukl29ra4mN8GdaB2ZewzeaLj+INpV5N+Z1eKWzY+IzaIZH2EIR6YZRNQ==}
 
@@ -2333,14 +2330,11 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ag-grid-community@30.2.1:
-    resolution: {integrity: sha512-1slonXskJbbI9ybhTx//4YKfJpZVAEnHL8dui1rQJRSXKByUi+/f7XtvkLsbgBkawoWbqvRAySjYtvz80+kBfA==}
+  ag-grid-community@31.3.4:
+    resolution: {integrity: sha512-jOxQO86C6eLnk1GdP24HB6aqaouFzMWizgfUwNY5MnetiWzz9ZaAmOGSnW/XBvdjXvC5Fpk3gSbvVKKQ7h9kBw==}
 
-  ag-grid-vue3@30.2.1:
-    resolution: {integrity: sha512-uIsBv5H7Nu6ao1V7cuReVj27gFdlK4kfvo/4M6AWmYswghMpc1GwzczZNV8HUypGcwxONW9YSfr8zabYQNGcAg==}
-    peerDependencies:
-      ag-grid-community: ~30.2.1
-      vue: 3.5.43
+  ag-grid-vue3@31.3.4:
+    resolution: {integrity: sha512-MFsWKeWBuzexc3hkOtDsZw4xkXfVT6B267DcUmZGy92otgGfd/I8qMKhGr1qnUnel9Jy5OKeBS+jQusfmO2/SA==}
 
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -3527,8 +3521,8 @@ packages:
   handsontable@4.0.0:
     resolution: {integrity: sha512-+i9jkz5D3+Da7bIL4+YjF4hnY/nWjR8ZfcCo9BHuHaYY/ri2CYH75OobVxpMyPTspQlXjyQoWE6v0qhHuesoUw==}
 
-  happy-dom@20.10.2:
-    resolution: {integrity: sha512-5p9Sxis3eowDJKqx90QCsgbNA02XXqJ59NOHvD4V6cxp+rP4d/xOyVx7uY3hS8hiUbY1VeiFH8lbJ81AyuDVLQ==}
+  happy-dom@20.14.5:
+    resolution: {integrity: sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==}
     engines: {node: '>=20.0.0'}
 
   happy-dom@20.6.2:
@@ -5405,9 +5399,6 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
-  undici-types@7.24.6:
-    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
-
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
@@ -6007,18 +5998,6 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
-
-  ws@8.21.0:
-    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
 
   ws@8.21.3:
     resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
@@ -7257,10 +7236,6 @@ snapshots:
 
   '@types/mdurl@2.0.0': {}
 
-  '@types/node@25.9.3':
-    dependencies:
-      undici-types: 7.24.6
-
   '@types/node@26.4.0':
     dependencies:
       undici-types: 8.3.0
@@ -7289,7 +7264,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.4.0
 
   '@typescript-eslint/eslint-plugin@6.8.0(@typescript-eslint/parser@6.8.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)':
     dependencies:
@@ -7410,7 +7385,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.14.5)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
     optional: true
 
   '@vitest/expect@4.1.11':
@@ -7505,7 +7480,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.14.5)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
     optional: true
 
   '@vitest/utils@4.1.11':
@@ -7720,12 +7695,14 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  ag-grid-community@30.2.1: {}
+  ag-grid-community@31.3.4: {}
 
-  ag-grid-vue3@30.2.1(ag-grid-community@30.2.1)(vue@3.5.43(typescript@5.8.3)):
+  ag-grid-vue3@31.3.4(typescript@5.8.3):
     dependencies:
-      ag-grid-community: 30.2.1
+      ag-grid-community: 31.3.4
       vue: 3.5.43(typescript@5.8.3)
+    transitivePeerDependencies:
+      - typescript
 
   agent-base@6.0.2:
     dependencies:
@@ -9170,7 +9147,7 @@ snapshots:
       numbro: 2.3.6
       pikaday: 1.5.1
 
-  happy-dom@20.10.2:
+  happy-dom@20.14.5:
     dependencies:
       '@types/node': 26.4.0
       '@types/whatwg-mimetype': 3.0.2
@@ -9186,12 +9163,12 @@ snapshots:
 
   happy-dom@20.6.2:
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.4.0
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
-      ws: 8.21.0
+      ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -11165,8 +11142,6 @@ snapshots:
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
 
-  undici-types@7.24.6: {}
-
   undici-types@8.3.0: {}
 
   undici@7.25.0: {}
@@ -11608,7 +11583,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)):
+  vitest@4.1.8(@types/node@26.4.0)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.14.5)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.8
       '@vitest/mocker': 4.1.8(msw@2.14.6(@types/node@26.4.0)(typescript@5.8.3))(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
@@ -11634,7 +11609,7 @@ snapshots:
       '@types/node': 26.4.0
       '@vitest/coverage-v8': 4.1.8(vitest@4.1.8)
       '@vitest/ui': 4.1.8(vitest@4.1.8)
-      happy-dom: 20.10.2
+      happy-dom: 20.14.5
       jsdom: 28.1.0
     transitivePeerDependencies:
       - msw
@@ -11868,8 +11843,6 @@ snapshots:
       strip-ansi: 6.0.1
 
   wrappy@1.0.2: {}
-
-  ws@8.21.0: {}
 
   ws@8.21.3: {}
 
