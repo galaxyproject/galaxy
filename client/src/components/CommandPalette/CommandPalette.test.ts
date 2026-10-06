@@ -37,13 +37,14 @@ const localVue = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
-/** The input debounce, the pause before root searches reach the backend, and a margin */
-const DEBOUNCE_WAIT = 250 + PALETTE_LIMITS.backendSettle;
+const DEBOUNCE_WAIT = 250;
+/** The debounce wait plus the pause before root searches reach the backend */
+const BACKEND_WAIT = DEBOUNCE_WAIT + PALETTE_LIMITS.backendSettle;
 /** The palette only opens once the configuration store holds a configuration */
 const CONFIG_LOADED = { configurationStore: { config: {} } };
 
-async function settle() {
-    await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_WAIT));
+async function settle(wait = DEBOUNCE_WAIT) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
     await flushPromises();
 }
 
@@ -154,10 +155,10 @@ describe("CommandPalette", () => {
             .map((icon: VueWrapper) => (icon.props() as { icon: { iconName: string } }).icon.iconName);
     }
 
-    async function type(query: string) {
+    async function type(query: string, wait = DEBOUNCE_WAIT) {
         (input().element as HTMLInputElement).value = query;
         await input().trigger("input");
-        await settle();
+        await settle(wait);
     }
 
     async function press(key: string, options: Record<string, unknown> = {}) {
@@ -253,7 +254,7 @@ describe("CommandPalette", () => {
     });
 
     it("filters results while typing", async () => {
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         const options = wrapper.findAll("[role='option']");
         expect(options.length).toBeGreaterThan(0);
         expect(nth(options, 0).text()).toContain("Workflows");
@@ -308,7 +309,7 @@ describe("CommandPalette", () => {
         pageStore.idsByVariant.my = ["p1"];
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
-        await type("lab notes");
+        await type("lab notes", BACKEND_WAIT);
         expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         await press("Enter", { shiftKey: true });
@@ -516,7 +517,7 @@ describe("CommandPalette", () => {
 
     it("navigates to the selected item on enter and closes", async () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         await input().trigger("keydown", { key: "Enter" });
         expect(push).toHaveBeenCalledWith("/workflows/list");
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
@@ -525,7 +526,7 @@ describe("CommandPalette", () => {
     it("opens in a new tab on ctrl/cmd+enter and stays open", async () => {
         const open = vi.spyOn(window, "open").mockImplementation(() => null);
         const push = vi.spyOn(router, "push");
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         await input().trigger("keydown", { key: "Enter", ctrlKey: true });
         expect(open).toHaveBeenCalledWith(router.resolve("/workflows/list").href, "_blank", "noopener");
         expect(push).not.toHaveBeenCalled();
@@ -534,7 +535,7 @@ describe("CommandPalette", () => {
     });
 
     it("previews the new tab binding while ctrl/cmd is held", async () => {
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         expect(hint("open").classes()).toContain("hint-active");
         expect(hint("new-tab").classes()).not.toContain("hint-active");
         expect(wrapper.find("[data-description='palette option external']").exists()).toBe(false);
@@ -648,7 +649,7 @@ describe("CommandPalette", () => {
     });
 
     it("reaches the category row with arrow up and hands the selection back", async () => {
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         expect(input().attributes("aria-activedescendant")).toBeTruthy();
 
         await press("ArrowUp");
@@ -739,7 +740,7 @@ describe("CommandPalette", () => {
     });
 
     it("runs a single search while the arrow keys sweep across the category row", async () => {
-        await type("rna");
+        await type("rna", BACKEND_WAIT);
         await press("ArrowUp");
         expect(categoryRow().classes()).toContain("row-selected");
 
@@ -828,7 +829,7 @@ describe("CommandPalette", () => {
     });
 
     it("hands the selection back to the results when the query is emptied on the category row", async () => {
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         await press("ArrowUp");
         expect(input().attributes("aria-activedescendant")).toBeUndefined();
 
@@ -850,7 +851,7 @@ describe("CommandPalette", () => {
         pageStore.summariesById = { p1: { id: "p1", title: "constructor", slug: "notes" } as never };
         pageStore.idsByVariant.my = ["p1"];
 
-        await type("constructor");
+        await type("constructor", BACKEND_WAIT);
         const row = optionRow("constructor");
         expect(row).toBeDefined();
         expect(row?.text()).not.toContain("native code");
@@ -886,7 +887,7 @@ describe("CommandPalette", () => {
     it("renders every provider as it answers and holds the slow one's place", async () => {
         const tools = stallSearch(toolsProvider);
         try {
-            await type("workflows");
+            await type("workflows", BACKEND_WAIT);
 
             // one slow provider may not cost the sections that already answered
             expect(optionRow("Workflows")).toBeDefined();
@@ -908,12 +909,12 @@ describe("CommandPalette", () => {
     });
 
     it("keeps the rendered rows while the next keystroke is searched", async () => {
-        await type("workflows");
+        await type("workflows", BACKEND_WAIT);
         expect(optionRow("Workflows")).toBeDefined();
 
         const navigation = stallSearch(navigationProvider);
         try {
-            await type("workflowsx");
+            await type("workflowsx", BACKEND_WAIT);
 
             // the rows of the previous keystroke stand until the provider answers
             expect(optionRow("Workflows")).toBeDefined();
@@ -956,10 +957,24 @@ describe("CommandPalette", () => {
         await input().trigger("input");
         // an ordinary gap between keys: the "fastq" search has started, but not reached the backend yet
         await new Promise((resolve) => setTimeout(resolve, 300));
-        await type("fastqc");
+        await type("fastqc", BACKEND_WAIT);
 
         expect(vi.mocked(toolStore.fetchTools)).toHaveBeenCalledWith("fastqc");
         expect(vi.mocked(toolStore.fetchTools)).not.toHaveBeenCalledWith("fastq");
+    });
+
+    it("never sends the tool search of a palette closed before it settled", async () => {
+        const toolStore = useToolStore();
+        vi.mocked(toolStore.fetchTools).mockClear();
+
+        (input().element as HTMLInputElement).value = "fastqc";
+        await input().trigger("input");
+        // the search has started, but not reached the backend yet
+        await settle();
+        useCommandPalette().closePalette();
+        await settle(BACKEND_WAIT);
+
+        expect(vi.mocked(toolStore.fetchTools)).not.toHaveBeenCalledWith("fastqc");
     });
 
     it("keeps the selection on the same row across the final sort", async () => {
@@ -1093,7 +1108,7 @@ describe("CommandPalette", () => {
         browseAnonymously();
         const stalled = [datasetsProvider, visualizationsProvider, invocationsProvider].map(stallSearch);
         try {
-            await type("workflows");
+            await type("workflows", BACKEND_WAIT);
 
             // a provider with nothing for a visitor would only hold a skeleton section open
             expect(skeletons().length).toBe(0);
@@ -1337,7 +1352,7 @@ describe("CommandPalette", () => {
         pageStore.idsByVariant.my = ["p1"];
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
-        await type("lab notes");
+        await type("lab notes", BACKEND_WAIT);
         expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Lab notes");
 
         // the switch to the actions list is debounced, so enter lands while the

@@ -161,6 +161,7 @@ const {
     selectedIndex,
     selectedItem,
     showCategoryRow,
+    supersedeSearch,
     visibleSections,
 } = usePaletteSearch({
     activeCategory,
@@ -505,6 +506,8 @@ watchImmediate(isPaletteOpen, (open) => {
         openDialog();
     } else {
         releaseModifiers();
+        // the text is kept, but a root search still waiting to reach the backend is not
+        supersedeSearch();
         // the one exception to preserving the input: an action's argument mode
         // parses nothing, so a `>` typed into a reopened palette would be
         // collected as the argument instead of opening the actions list

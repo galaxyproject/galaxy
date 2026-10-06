@@ -418,6 +418,7 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         selectedIndex,
         selectedItem,
         showCategoryRow,
+        supersedeSearch,
         visibleSections,
     };
 }
