@@ -13,10 +13,10 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
-    _remap_galaxy_markdown_calls,
     populate_invocation_markdown,
     ready_galaxy_markdown_for_export,
     referenced_content_ids,
+    remap_galaxy_markdown_calls,
     to_basic_markdown,
 )
 from galaxy.util import now
@@ -595,7 +595,7 @@ history_dataset_display(history_dataset_id=2)
 ```
 """
         with pytest.raises(MalformedContents):
-            _remap_galaxy_markdown_calls(lambda container, line: (line, False), example)
+            remap_galaxy_markdown_calls(lambda container, line: (line, False), example)
 
 
 class TestReferencedContentCollector(BaseExportTestCase):
