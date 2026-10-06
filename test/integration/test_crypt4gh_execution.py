@@ -358,3 +358,43 @@ class TestCrypt4GHUnsafeDestinationIntegration(BaseCrypt4GHExecutionIntegrationT
         assert job["state"] == "error"
         assert "tools must write outputs into the job directory" in output["misc_info"]
         assert self.service.requests == []
+
+
+class TestCrypt4GHExternalMetadataDestinationIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config"] = {
+            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"}},
+            "execution": {
+                "default": "local",
+                # Metadata, and so output encryption, would run on the Galaxy server after the job.
+                "environments": {"local": {"runner": "local", "embed_metadata_in_job": False}},
+            },
+        }
+
+    def test_destination_collecting_metadata_after_the_job_is_refused(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert job["state"] == "error"
+        assert "metadata must be collected within the job" in output["misc_info"]
+        assert self.service.requests == []
+
+
+class TestCrypt4GHMetadataRetryIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # Galaxy's default: failed metadata is collected again on the Galaxy server.
+        config["retry_metadata_internally"] = True
+
+    def test_outputs_failing_to_be_encrypted_are_purged(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        self.service.failures["recrypt_header_to_user_key"] = [422]
+
+        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+
+        assert job["state"] == "error"
+        assert output["purged"], output
+        response = self._get(f"datasets/{output['id']}/display")
+        assert PLAINTEXT_1.decode() not in response.text
