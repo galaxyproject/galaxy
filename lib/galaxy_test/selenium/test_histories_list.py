@@ -321,9 +321,9 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             assert intersection == set()
 
     def add_tag(self, tags_cell, tag):
-        tag_button = tags_cell.find_element(By.CSS_SELECTOR, "button")
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".toggle-button")
         tag_button.click()
-        tag_input = tags_cell.find_element(By.CSS_SELECTOR, "input")
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".headless-multiselect input")
         tag_input.send_keys(tag)
         self.send_enter(tag_input)
         self.send_escape(tag_input)
