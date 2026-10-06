@@ -23,6 +23,7 @@ import logging
 from datetime import datetime
 
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.managers.markdown_util import (
     check_galaxy_markdown,
     ENCODED_ID_PATTERN,
@@ -48,6 +49,7 @@ from galaxy.model import (
 from galaxy.workflow.extract import (
     get_original_hda,
     get_original_hdca,
+    DirectiveLabel,
     ExtractionLabelIndex,
     OutputLabelKind,
 )
@@ -116,10 +118,18 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
         self.index = label_index
         self.warnings: list[str] = []
 
-    def _rewrite(self, line: str, arg: str | None, description: str) -> DirectiveResult:
-        if arg is None:
+    def _rewrite(self, line: str, target: DirectiveLabel | None, description: str) -> DirectiveResult:
+        if target is None:
             self.warnings.append(f"Dropped a {description} from the report: it has no workflow-relative label.")
             return ("", True)
+        argument, label = target
+        if not is_quotable_argument_value(label):
+            self.warnings.append(
+                f"Dropped a {description} from the report: its label {label!r} contains a double quote or "
+                "line break, which report directives cannot express."
+            )
+            return ("", True)
+        arg = f'{argument}="{label}"'
         return (ENCODED_ID_PATTERN.sub(lambda _match: arg, line, count=1), False)
 
     def _drop_unportable(self, line: str, description: str) -> DirectiveResult:
@@ -127,7 +137,7 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
         return ("", True)
 
     def _content(self, line: str, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveResult:
-        return self._rewrite(line, self.index.content_label_arg(content_kind, content), "dataset reference")
+        return self._rewrite(line, self.index.content_label(content_kind, content), "dataset reference")
 
     def handle_dataset_display(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
         return self._content(line, "hda", hda)
@@ -159,7 +169,7 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
         return self._content(line, "hdca", hdca)
 
     def _job(self, line: str, job: Job) -> DirectiveResult:
-        return self._rewrite(line, self.index.job_label_arg(job), "job reference")
+        return self._rewrite(line, self.index.job_label(job), "job reference")
 
     def handle_tool_stdout(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
