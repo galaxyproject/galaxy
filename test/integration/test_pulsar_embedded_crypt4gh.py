@@ -15,7 +15,8 @@ def _pulsar_job_config(environment: dict[str, Any], runner: dict[str, Any]) -> d
     return {
         "runners": {
             "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"},
-            "pulsar": {
+            # Not named after Pulsar: Galaxy must recognize Pulsar runners by their class.
+            "remote": {
                 **runner,
                 "pulsar_app_config": {
                     "tool_dependency_dir": "none",
@@ -26,10 +27,10 @@ def _pulsar_job_config(environment: dict[str, Any], runner: dict[str, Any]) -> d
             },
         },
         "execution": {
-            "default": "pulsar",
+            "default": "remote_environment",
             "environments": {
                 "local": {"runner": "local"},
-                "pulsar": {"runner": "pulsar", "remote_metadata": True, **environment},
+                "remote_environment": {"runner": "remote", "remote_metadata": True, **environment},
             },
         },
         "tools": [{"id": "__DATA_FETCH__", "environment": "local"}],
@@ -102,6 +103,8 @@ class TestCrypt4GHPulsarUnsafeDestinationIntegration(test_crypt4gh_execution.Bas
                 "default_file_action": "copy",
                 # Tools would write decrypted outputs directly to the object store.
                 "file_actions": {"paths": [{"path_types": "output", "action": "none"}]},
+                # The protection plan would hold paths of the Galaxy server.
+                "rewrite_parameters": False,
             },
             {"load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner"},
         )
@@ -111,4 +114,5 @@ class TestCrypt4GHPulsarUnsafeDestinationIntegration(test_crypt4gh_execution.Bas
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
         assert job["state"] == "error"
         assert "tools must write outputs into the job directory" in output["misc_info"]
+        assert "Pulsar destinations must use rewrite_parameters" in output["misc_info"]
         assert self.service.requests == []

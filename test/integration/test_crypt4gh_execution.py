@@ -398,3 +398,20 @@ class TestCrypt4GHMetadataRetryIntegration(BaseCrypt4GHExecutionIntegrationTestC
         assert output["purged"], output
         response = self._get(f"datasets/{output['id']}/display")
         assert PLAINTEXT_1.decode() not in response.text
+
+
+class TestCrypt4GHTaskSplittingIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["use_tasked_jobs"] = True
+
+    def test_jobs_that_would_be_split_into_tasks_are_refused(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "parallelism", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+        assert job["state"] == "error"
+        assert "jobs can't be split into tasks" in output["misc_info"]
+        assert self.service.requests == []

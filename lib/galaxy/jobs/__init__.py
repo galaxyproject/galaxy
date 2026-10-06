@@ -6,6 +6,7 @@ import abc
 import copy
 import datetime
 import errno
+import importlib
 import json
 import logging
 import os
@@ -1483,15 +1484,33 @@ class MinimalJobWrapper(HasResourceParameters):
                 client_cert=self.get_destination_configuration("crypt4gh_recryptor_client_cert"),
                 client_key=self.get_destination_configuration("crypt4gh_recryptor_client_key"),
             )
+        is_pulsar = self._runs_on_pulsar()
         return ProtectionDestination(
             metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
-            has_tasks=self.__has_tasks,
-            is_pulsar=(self.job_destination.runner or "").startswith("pulsar"),
+            # Like the job handler: tools with parallelism are split into tasks, except on Pulsar.
+            has_tasks=bool(self.can_split()) and not is_pulsar,
+            is_pulsar=is_pulsar,
             remote_metadata=util.asbool(self.job_destination.params.get("remote_metadata", False)),
             rewrite_parameters=util.asbool(self.job_destination.params.get("rewrite_parameters", False)),
             recryptor=recryptor,
             walltime=self.app.job_config.limits.walltime_delta,
         )
+
+    def _runs_on_pulsar(self) -> bool:
+        """Whether the destination's runner plugin is a Pulsar runner, whatever its id in the job configuration."""
+        from galaxy.jobs.runners.pulsar import PulsarJobRunner
+
+        for plugin in self.app.job_config.runner_plugins:
+            if plugin["id"] != self.job_destination.runner:
+                continue
+            load: str = plugin["load"]
+            module_name, _, class_name = load.partition(":")
+            if not class_name:
+                # Legacy '<module>' form, e.g. 'pulsar'.
+                return module_name.rsplit(".", 1)[-1] == "pulsar"
+            runner_class = getattr(importlib.import_module(module_name), class_name, None)
+            return isinstance(runner_class, type) and issubclass(runner_class, PulsarJobRunner)
+        return False
 
     def default_compute_environment(self, job=None):
         if not job:

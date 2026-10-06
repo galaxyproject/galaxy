@@ -1,8 +1,8 @@
 import json
 import re
 import shlex
-from collections.abc import Callable
 import typing
+from collections.abc import Callable
 from logging import getLogger
 from os import (
     getcwd,
@@ -45,10 +45,7 @@ REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
     'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
     f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
 )
-# Like remote_tool_eval, run with Galaxy's Python but without activating its virtualenv for the tool.
-PROTECTED_STAGE_SOURCE_COMMAND = (
-    'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" -m galaxy.job_execution.protection.stage'
-)
+PROTECTED_STAGE_SOURCE_COMMAND = "python -m galaxy.job_execution.protection.stage"
 PROTECTED_STAGE_PACKAGE_COMMAND = "galaxy-protected-stage"
 
 
@@ -270,13 +267,19 @@ def __protected_stage_command(job_wrapper: "MinimalJobWrapper", for_pulsar=False
             # As for remote_tool_eval, let the remote host pick between Galaxy's sources and the package.
             return (
                 'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/job_execution/protection/stage.py" ]; '
-                f"then {PROTECTED_STAGE_SOURCE_COMMAND} {args}; else {PROTECTED_STAGE_PACKAGE_COMMAND} {args}; fi"
+                f"then {_in_galaxy_environment(f'{PROTECTED_STAGE_SOURCE_COMMAND} {args}')}; "
+                f"else {PROTECTED_STAGE_PACKAGE_COMMAND} {args}; fi"
             )
         if job_wrapper.galaxy_lib_dir:
-            return f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}"
+            return _in_galaxy_environment(f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}")
         return f"{PROTECTED_STAGE_PACKAGE_COMMAND} {args}"
 
     return command
+
+
+def _in_galaxy_environment(command: str) -> str:
+    """Run ``command`` with Galaxy's Python environment, in a subshell so the tool's environment is unchanged."""
+    return f"({SETUP_GALAXY_FOR_METADATA}; {command})"
 
 
 def __handle_task_splitting(commands_builder, job_wrapper: "MinimalJobWrapper"):

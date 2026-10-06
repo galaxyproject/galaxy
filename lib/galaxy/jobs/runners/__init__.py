@@ -34,9 +34,9 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
-from galaxy.job_execution.protection import ProtectionError
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (

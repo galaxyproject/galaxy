@@ -37,9 +37,12 @@ def _report(job_directory: str, relative_path: str, message: str) -> None:
 
 
 def run(command: str, plan_path: str) -> int:
-    plan = ProtectionPlan.read(plan_path)
-    runtime = load_runtime(plan)
+    # The plan lives in <job directory>/configs/, failures are reported even when it can't be read.
+    job_directory = os.path.dirname(os.path.dirname(os.path.abspath(plan_path)))
     try:
+        plan = ProtectionPlan.read(plan_path)
+        job_directory = plan.job_directory
+        runtime = load_runtime(plan)
         if command == "stage-in":
             runtime.stage_inputs()
         elif command == "cleanup-inputs":
@@ -50,11 +53,11 @@ def run(command: str, plan_path: str) -> int:
         message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
         if command == "stage-in":
             message = f"Could not decrypt the protected inputs of this job: {message}"
-            _report(plan.job_directory, SETUP_FAILURE_FILE, message)
-            _report(plan.job_directory, PROTECTION_SETUP_FAILURE_FILE, message)
+            _report(job_directory, SETUP_FAILURE_FILE, message)
+            _report(job_directory, PROTECTION_SETUP_FAILURE_FILE, message)
         else:
             message = f"Could not remove the decrypted data of this job: {message}"
-            _report(plan.job_directory, CLEANUP_FAILURE_FILE, message)
+            _report(job_directory, CLEANUP_FAILURE_FILE, message)
         print(message, file=sys.stderr)
         traceback.print_exc()
         return 1

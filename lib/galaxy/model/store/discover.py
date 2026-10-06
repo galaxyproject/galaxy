@@ -46,12 +46,11 @@ from galaxy.util.hash_util import HASH_NAME_MAP
 if TYPE_CHECKING:
     from sqlalchemy.orm.scoping import scoped_session
 
-    from galaxy.job_execution.protection.outputs import OutputProtector
-
     from galaxy.job_execution.output_collect import (
         DatasetCollector,
         ToolMetadataDatasetCollector,
     )
+    from galaxy.job_execution.protection.outputs import OutputProtector
     from galaxy.model import DatasetInstance
     from galaxy.model.dataset_collections.builder import CollectionBuilder
     from galaxy.model.dataset_collections.structure import UninitializedTree

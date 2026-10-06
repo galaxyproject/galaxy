@@ -216,7 +216,9 @@ class TestCommandFactory(TestCase):
         plan = "/jobs/1/configs/protection_plan.json"
         self.job_wrapper.protection_plan_path = plan
         command = self.__command()
-        assert command.startswith(f"if {PROTECTED_STAGE_SOURCE_COMMAND} stage-in {plan}; then ")
+        assert command.startswith(
+            f"if ({SETUP_GALAXY_FOR_METADATA}; {PROTECTED_STAGE_SOURCE_COMMAND} stage-in {plan}); then "
+        )
         assert "else false; fi; return_code=$?" in command
         # Decrypted inputs are removed before collecting outputs, everything else after.
         positions = [
@@ -266,6 +268,24 @@ class TestCommandFactory(TestCase):
             assert result.returncode == staging_status
             with open(os.path.join(self.job_dir, "galaxy_1.ec")) as f:
                 assert f.read().strip() == str(staging_status)
+
+    def test_protected_job_stages_in_galaxy_environment_without_changing_the_tools(self):
+        for name in ("working", "outputs"):
+            os.makedirs(os.path.join(self.job_dir, name), exist_ok=True)
+        actions = os.path.join(self.job_dir, "actions")
+        self.include_work_dir_outputs = False
+        self.include_metadata = True
+        self.job_wrapper.metadata_line = "true"
+        self.job_wrapper.command_line = 'echo "${GALAXY_ENVIRONMENT_ACTIVE:-no}"'
+        self.job_wrapper.protection_plan_path = "plan.json"
+        fakes = (
+            # Stand-ins for the job script's environment setup and for Galaxy's Python.
+            "_galaxy_setup_environment() { export GALAXY_ENVIRONMENT_ACTIVE=yes; }\n"
+            f'python() {{ echo "$GALAXY_ENVIRONMENT_ACTIVE $3" >> {actions}; }}\n'
+        )
+        subprocess.run(["bash", "-c", fakes + self.__command()], cwd=os.path.join(self.job_dir, "working"), check=True)
+        assert open(actions).read().split("\n")[:3] == ["yes stage-in", "yes cleanup-inputs", "yes cleanup"]
+        assert open(os.path.join(self.job_dir, "outputs", "tool_stdout")).read().strip() == "no"
 
     def test_protected_job_requires_metadata_in_the_job(self):
         self.job_wrapper.protection_plan_path = "/jobs/1/configs/protection_plan.json"
