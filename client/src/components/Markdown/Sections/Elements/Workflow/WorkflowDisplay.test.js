@@ -1,4 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -87,8 +86,8 @@ describe("WorkflowDisplay", () => {
         expect(buttons).toHaveLength(1);
         const button = buttons.at(0);
         expect(button.attributes("type")).toBe("button");
-        // Drawn from an icon definition, so the button is never empty.
-        expect(button.findComponent(FontAwesomeIcon).exists()).toBe(true);
+        // The same tool icon as the other step types, so the button is never empty.
+        expect(button.findComponent(WorkflowStepIcon).props("stepType")).toBe("tool");
         const popover = wrapper.findComponent(ToolLinkPopover);
         expect(popover.props("target")).toBe(button.attributes("id"));
         expect(popover.props("interactive")).toBe(true);

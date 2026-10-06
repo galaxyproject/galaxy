@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { faWrench } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -134,9 +132,8 @@ function toolButtonId(orderIndex: number) {
                             dark
                             thin
                             aria-label="Tool details"
-                            class="mr-1"
                             type="button">
-                            <FontAwesomeIcon :icon="faWrench" />
+                            <WorkflowStepIcon step-type="tool" />
                         </GLink>
                         <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <ToolLinkPopover
