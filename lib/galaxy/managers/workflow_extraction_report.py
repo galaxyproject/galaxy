@@ -10,13 +10,14 @@ from galaxy.managers.markdown_parse import (
     VALID_ARGUMENTS,
 )
 from galaxy.managers.markdown_util import (
-    _remap_galaxy_markdown_calls,
-    _remap_galaxy_markdown_embedded_containers,
     check_galaxy_markdown,
     ENCODED_ID_PATTERN,
     GalaxyInternalMarkdownDirectiveHandler,
+    OBJECT_ID_ARGUMENTS,
     referenced_content_ids,
     ReferencedContent,
+    remap_galaxy_markdown_calls,
+    remap_galaxy_markdown_embedded_containers,
 )
 from galaxy.managers.workflow_extraction_naming import (
     MAX_LABEL_LENGTH,
@@ -45,8 +46,8 @@ log = logging.getLogger(__name__)
 # A directive handler's result: the rewritten line and whether the line was dropped.
 DirectiveResult = tuple[str, bool]
 
-# hid= points at an item of the notebook's history, like an id argument.
-_HID_ARGUMENT = re.compile(r"\b(hid)\s*=")
+# Argument names that point at a specific Galaxy object; hid= names an item of the notebook's history.
+_INSTANCE_ARGUMENT = re.compile(rf"\b({'|'.join(OBJECT_ID_ARGUMENTS)}|hid)\s*=")
 _QUOTED_VALUE = re.compile(r"\"[^\"]*\"|'[^']*'")
 _DATASET_CELL = re.compile(r"^```[ \t]*(visualization|vitessce)[ \t]*\n.*?^```[ \t]*$\n?", re.MULTILINE | re.DOTALL)
 _CELL_INSTANCE_REFERENCE = re.compile(r'"(?:dataset_id|dataset_url|__gx_dataset_id)"\s*:|"invocation_id"\s*:\s*"[^"]+"')
@@ -80,11 +81,8 @@ def _rewrite_page_markdown(
 
 def _instance_argument(directive: str) -> str | None:
     """Name of the first argument of ``directive`` that points at a specific Galaxy object."""
-    unquoted = _QUOTED_VALUE.sub('""', directive)
-    for pattern in (ENCODED_ID_PATTERN, _HID_ARGUMENT):
-        if match := pattern.search(unquoted):
-            return match.group(1)
-    return None
+    match = _INSTANCE_ARGUMENT.search(_QUOTED_VALUE.sub('""', directive))
+    return match.group(1) if match else None
 
 
 def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
@@ -107,7 +105,7 @@ def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
     def _embed(match: re.Match[str]) -> str:
         container = match.group("container")
         # Embeds that take arguments reference a dataset, invocation or workflow.
-        if not VALID_ARGUMENTS[container] and _instance_argument(match.group()) is None:
+        if not VALID_ARGUMENTS[container]:
             return match.group()
         warnings.append(
             f"Dropped an inline [{container}] reference from the report: inline object references do not "
@@ -124,8 +122,8 @@ def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
         )
         return ""
 
-    markdown = _remap_galaxy_markdown_calls(_directive, markdown)
-    markdown = _remap_galaxy_markdown_embedded_containers(_embed, markdown)
+    markdown = remap_galaxy_markdown_calls(_directive, markdown)
+    markdown = remap_galaxy_markdown_embedded_containers(_embed, markdown)
     markdown = _DATASET_CELL.sub(_cell, markdown)
     return markdown, warnings
 
