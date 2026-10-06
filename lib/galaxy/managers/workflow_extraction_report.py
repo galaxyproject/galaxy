@@ -89,7 +89,7 @@ def _rewrite_page_markdown(
     than the bare ValueError the parser raises.
     """
     rewriter = _ReportLabelRewriter(index)
-    markdown = rewriter._walk_directives(trans, internal_markdown)
+    markdown = rewriter.walk_directives(trans, internal_markdown)
     check_galaxy_markdown(markdown)
     return markdown, rewriter.warnings
 

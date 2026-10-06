@@ -270,7 +270,7 @@ def test_rewrite_invalid_markdown_raises_galaxy_exception(monkeypatch):
     MessageException (400), not the parser's bare ValueError (an unhandled 500)."""
     monkeypatch.setattr(
         _ReportLabelRewriter,
-        "_walk_directives",
+        "walk_directives",
         lambda self, trans, markdown: '```galaxy\nhistory_dataset_display(output="a"b")\n```\n',
     )
     with pytest.raises(MalformedContents):
