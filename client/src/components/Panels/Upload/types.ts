@@ -13,6 +13,7 @@ export type UploadMethod =
     | "explore-zip"
     | "data-source-tools"
     | "import-history"
+    | "galaxy-link"
     | "import-workflow"
     | "rule-based-import"
     | "composite-file";
