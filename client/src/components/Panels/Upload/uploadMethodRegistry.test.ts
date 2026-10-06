@@ -39,6 +39,10 @@ const ALL_METHOD_IDS = Object.keys(uploadMethodRegistry) as Array<keyof typeof u
 const ADVANCED_METHOD_IDS = ALL_METHOD_IDS.filter((id) => uploadMethodRegistry[id].requiresAdvancedMode);
 const STANDARD_METHOD_IDS = ALL_METHOD_IDS.filter((id) => !uploadMethodRegistry[id].requiresAdvancedMode);
 const LOGIN_METHOD_IDS = ALL_METHOD_IDS.filter((id) => uploadMethodRegistry[id].requiresLogin);
+// Every config key a method requires, switched on, so config gating hides nothing under test.
+const ALL_REQUIRED_CONFIG = Object.fromEntries(
+    ALL_METHOD_IDS.flatMap((id) => uploadMethodRegistry[id].requiresConfig ?? []).map((key) => [key, true]),
+);
 
 describe("uploadMethodRegistry", () => {
     describe("getUploadMethod", () => {
@@ -86,6 +90,7 @@ describe("uploadMethodRegistry", () => {
             advancedMode.value = false;
             userStoreState.isAnonymous = true;
             isConfigLoaded.value = true;
+            galaxyConfig.value = ALL_REQUIRED_CONFIG;
         });
 
         it("disables login-required methods when user is anonymous", () => {
