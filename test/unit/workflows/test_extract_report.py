@@ -346,3 +346,82 @@ def test_extraction_without_a_report_persists_no_reports_config(monkeypatch):
     stored, warnings = _extract()
     assert warnings == []
     assert finalized == [None]
+
+
+def test_drop_instance_references_drops_invocation_scoped_directive():
+    markdown = '# A\n\n```galaxy\nhistory_dataset_display(invocation_id=f2db41e1fa331b3e, output="x")\n```\n'
+    swept, warnings = report._drop_instance_references(markdown)
+    assert "f2db41e1fa331b3e" not in swept
+    assert "```galaxy" not in swept
+    assert "# A" in swept
+    assert warnings == [
+        (
+            "Dropped a [history_dataset_display] directive from the report: it names a specific Galaxy object "
+            "(invocation_id), which has no workflow-relative form."
+        )
+    ]
+
+
+def test_drop_instance_references_drops_hid_directive():
+    swept, warnings = report._drop_instance_references("```galaxy\nhistory_dataset_peek(hid=4)\n```\n")
+    assert "hid=" not in swept
+    assert "(hid)" in warnings[0]
+
+
+def test_drop_instance_references_keeps_label_and_argless_directives():
+    markdown = (
+        '```galaxy\nhistory_dataset_display(output="my job_id=3 output")\n```\n'
+        "```galaxy\nhistory_link()\n```\n"
+        "```galaxy\ngenerate_time()\n```\n"
+        "Prose may mention history_id=5 freely.\n"
+    )
+    swept, warnings = report._drop_instance_references(markdown)
+    assert swept == markdown
+    assert warnings == []
+
+
+def test_drop_instance_references_drops_object_embeds_keeps_idless_embeds():
+    markdown = (
+        "Name ${galaxy history_dataset_name(history_dataset_id=5)} ran at ${galaxy invocation_time()}, "
+        'image ${galaxy history_dataset_as_image(output="x")}, on ${galaxy generate_galaxy_version()} '
+        "via ${galaxy instance_access_link()}.\n"
+    )
+    swept, warnings = report._drop_instance_references(markdown)
+    assert (
+        swept == "Name  ran at , image , on ${galaxy generate_galaxy_version()} via ${galaxy instance_access_link()}.\n"
+    )
+    assert warnings == [
+        f"Dropped an inline [{container}] reference from the report: inline object references do not resolve "
+        "in workflow reports."
+        for container in ("history_dataset_name", "invocation_time", "history_dataset_as_image")
+    ]
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        '```visualization\n{"visualization_name": "csv", "dataset_id": "f2db41e1fa331b3e"}\n```\n',
+        '```visualization\n{"visualization_name": "csv", "dataset_url": "/api/datasets/f2db41e1fa331b3e/display"}\n```\n',
+        '```visualization\n{"visualization_name": "csv", "dataset_label": {"invocation_id": "7", "output": "x"}}\n```\n',
+        '```vitessce\n{"datasets": [{"files": [{"__gx_dataset_id": "f2db41e1fa331b3e"}]}]}\n```\n',
+    ],
+)
+def test_drop_instance_references_drops_dataset_cells(cell):
+    swept, warnings = report._drop_instance_references(f"# A\n\n{cell}\nAfter.\n")
+    assert swept == "# A\n\n\nAfter.\n"
+    cell_type = cell.split("\n", 1)[0][3:]
+    assert warnings == [
+        (
+            f"Dropped a [{cell_type}] cell from the report: it names a specific dataset or invocation, which has no "
+            "workflow-relative form."
+        )
+    ]
+
+
+def test_drop_instance_references_keeps_workflow_relative_visualization():
+    markdown = (
+        '```visualization\n{"visualization_name": "csv", "dataset_label": {"invocation_id": "", "output": "x"}}\n```\n'
+    )
+    swept, warnings = report._drop_instance_references(markdown)
+    assert swept == markdown
+    assert warnings == []

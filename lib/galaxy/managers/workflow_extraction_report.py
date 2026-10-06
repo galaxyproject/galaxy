@@ -20,11 +20,17 @@ so those mutations and the report are committed with it.
 """
 
 import logging
+import re
 from datetime import datetime
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.markdown_parse import is_quotable_argument_value
+from galaxy.managers.markdown_parse import (
+    is_quotable_argument_value,
+    VALID_ARGUMENTS,
+)
 from galaxy.managers.markdown_util import (
+    _remap_galaxy_markdown_calls,
+    _remap_galaxy_markdown_embedded_containers,
     check_galaxy_markdown,
     ENCODED_ID_PATTERN,
     GalaxyInternalMarkdownDirectiveHandler,
@@ -58,6 +64,12 @@ log = logging.getLogger(__name__)
 
 # A directive handler's result: the rewritten line and whether the line was dropped.
 DirectiveResult = tuple[str, bool]
+
+# hid= points at an item of the notebook's history, like an id argument.
+_HID_ARGUMENT = re.compile(r"\b(hid)\s*=")
+_QUOTED_VALUE = re.compile(r"\"[^\"]*\"|'[^']*'")
+_DATASET_CELL = re.compile(r"^```[ \t]*(visualization|vitessce)[ \t]*\n.*?^```[ \t]*$\n?", re.MULTILINE | re.DOTALL)
+_CELL_INSTANCE_REFERENCE = re.compile(r'"(?:dataset_id|dataset_url|__gx_dataset_id)"\s*:|"invocation_id"\s*:\s*"[^"]+"')
 
 
 def reconcile_and_build_report(
@@ -93,7 +105,67 @@ def _rewrite_page_markdown(
     rewriter = _ReportLabelRewriter(index)
     markdown = rewriter.walk_directives(trans, internal_markdown)
     check_galaxy_markdown(markdown)
-    return markdown, rewriter.warnings
+    # Only removes whole directives/embeds/cells, so the result stays valid.
+    markdown, sweep_warnings = _drop_instance_references(markdown)
+    return markdown, rewriter.warnings + sweep_warnings
+
+
+def _instance_argument(directive: str) -> str | None:
+    """Name of the first argument of ``directive`` that points at a specific Galaxy object."""
+    unquoted = _QUOTED_VALUE.sub('""', directive)
+    for pattern in (ENCODED_ID_PATTERN, _HID_ARGUMENT):
+        if match := pattern.search(unquoted):
+            return match.group(1)
+    return None
+
+
+def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
+    """Drop, with a warning, whatever still points at a specific Galaxy object after the rewrite.
+
+    The rewriter only resolves directives it recognizes; this sweep guarantees no
+    instance reference survives into the report: fenced directives still carrying
+    an id/hid argument (e.g. ``invocation_id=``-scoped lines the walk passes
+    through), object-referencing inline embeds, and visualization/vitessce cells
+    naming a dataset or invocation. The invocation report renders neither label
+    embeds nor label visualization cells correctly yet, so those are dropped
+    rather than rewritten.
+    """
+    warnings: list[str] = []
+
+    def _directive(container: str, line: str) -> DirectiveResult:
+        argument = _instance_argument(line)
+        if argument is None:
+            return (line, False)
+        warnings.append(
+            f"Dropped a [{container}] directive from the report: it names a specific Galaxy object "
+            f"({argument}), which has no workflow-relative form."
+        )
+        return ("", True)
+
+    def _embed(match: re.Match[str]) -> str:
+        container = match.group("container")
+        # Embeds that take arguments reference a dataset, invocation or workflow.
+        if not VALID_ARGUMENTS[container] and _instance_argument(match.group()) is None:
+            return match.group()
+        warnings.append(
+            f"Dropped an inline [{container}] reference from the report: inline object references do not "
+            "resolve in workflow reports."
+        )
+        return ""
+
+    def _cell(match: re.Match[str]) -> str:
+        if not _CELL_INSTANCE_REFERENCE.search(match.group()):
+            return match.group()
+        warnings.append(
+            f"Dropped a [{match.group(1)}] cell from the report: it names a specific dataset or invocation, "
+            "which has no workflow-relative form."
+        )
+        return ""
+
+    markdown = _remap_galaxy_markdown_calls(_directive, markdown)
+    markdown = _remap_galaxy_markdown_embedded_containers(_embed, markdown)
+    markdown = _DATASET_CELL.sub(_cell, markdown)
+    return markdown, warnings
 
 
 class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
@@ -110,8 +182,9 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     A portable report must never embed an instance id. So a content/job directive
     that cannot resolve to a label, and any id-bearing directive with no
     workflow-relative form (history/workflow/invocation links), is dropped with a
-    warning rather than leaked. Id-less directives (instance links, generated
-    values, visualizations) pass through unchanged.
+    warning rather than leaked. Id-less directives pass through;
+    :func:`_drop_instance_references` then sweeps what this walk does not visit
+    (embeds, visualization cells, unrecognized lines).
     """
 
     def __init__(self, label_index: ExtractionLabelIndex) -> None:
