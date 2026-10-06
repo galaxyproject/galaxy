@@ -80,7 +80,7 @@ describe("JobInformation/JobInformation.vue", () => {
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
         // should contain 7 rows
-        expect(rows.length).toBe(7);
+        expect(rows.length).toBe(6);
         const codeRows = wrapper.findAll(".code-row");
         // should contain 3 code rows
         expect(codeRows.length).toBe(3);
@@ -133,11 +133,11 @@ describe("JobInformation/JobInformation.vue", () => {
         const rendered_entries = [
             { id: "galaxy-tool-id", backend_key: "tool_id" },
             { id: "galaxy-tool-version", backend_key: "tool_version" },
-            { id: "encoded-job-id", backend_key: "id" },
             { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
         expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
+        expect(wrapper.find("#encoded-job-id").text()).toContain(JOB_ID);
     });
 });
 
