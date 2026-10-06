@@ -102,6 +102,29 @@ describe("useTaskMonitor", () => {
         expect(taskStatus.value).toBe("Request failed");
     });
 
+    it("should ignore a late reply for a task it no longer waits for", async () => {
+        let answerSlowTask = () => {};
+        server.use(
+            http.get("/api/tasks/{task_id}/state", async ({ response, params }) => {
+                if (params.task_id === "slow-fake-task-id") {
+                    await new Promise<void>((resolve) => (answerSlowTask = resolve));
+                    return response(200).json("FAILURE");
+                }
+                return response(200).json("SUCCESS");
+            }),
+        );
+        const { waitForTask, isCompleted, hasFailed } = useTaskMonitor();
+
+        waitForTask("slow-fake-task-id");
+        await flushPromises();
+        waitForTask(COMPLETED_TASK_ID);
+        await flushPromises();
+        answerSlowTask();
+        await flushPromises();
+        expect(isCompleted.value).toBe(true);
+        expect(hasFailed.value).toBe(false);
+    });
+
     it("should load the status from the stored monitoring data", async () => {
         const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus } = useTaskMonitor();
         const expectedStatus = "SUCCESS";
