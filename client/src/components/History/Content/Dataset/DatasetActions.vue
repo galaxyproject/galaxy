@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faInfoCircle, faKey, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+    faBug,
+    faChartBar,
+    faCheck,
+    faInfoCircle,
+    faKey,
+    faLink,
+    faRedo,
+    faSitemap,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
@@ -205,15 +214,31 @@ function onAuthorizeCompute() {
                     v-if="showAuthorizeCompute"
                     v-g-tooltip.hover
                     class="authorize-compute-btn px-1"
-                    :class="{ 'text-success': protectionStatus?.ready }"
                     :title="authorizeComputeTitle"
                     size="small"
                     transparent
                     :disabled="authorizing"
                     @click.prevent.stop="onAuthorizeCompute">
-                    <FontAwesomeIcon :icon="faKey" />
+                    <FontAwesomeLayers>
+                        <FontAwesomeIcon :icon="faKey" fixed-width />
+                        <FontAwesomeIcon
+                            v-if="protectionStatus?.ready"
+                            :icon="faCheck"
+                            class="authorized-check"
+                            fixed-width
+                            transform="shrink-6 right-6 down-6" />
+                    </FontAwesomeLayers>
                 </GButton>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.authorized-check {
+    // Readable on the green background of finished datasets.
+    color: $state-success-text;
+}
+</style>
