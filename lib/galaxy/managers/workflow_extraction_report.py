@@ -1,23 +1,4 @@
-"""Carry a notebook page's markdown into an extracted workflow's report.
-
-Extraction (:func:`galaxy.workflow.extract.extract_workflow_by_ids`) hands its
-``build_report`` hook an :class:`~galaxy.workflow.extract.ExtractionLabelIndex`
-mapping the ids the page references to the labeled workflow steps/outputs it
-built. This module turns the page's internal-id markdown into a portable
-workflow report:
-
-1. :func:`reconcile_report_labels` auto-labels/exposes any referenced item the
-   user left unlabeled, so every directive can resolve. This can expose outputs
-   the notebook displays but the user did not explicitly star.
-2. :class:`_ReportLabelRewriter` does the pure id -> label rewrite against the
-   now-complete index, reusing the directive-walk taxonomy and access checks of
-   the shared markdown directive handler.
-
-:func:`reconcile_and_build_report` runs both, and is the only entry point the
-service needs. It *mutates* the extracted workflow (step labels / workflow
-outputs) as a side effect of reconcile; it runs before the workflow is persisted,
-so those mutations and the report are committed with it.
-"""
+"""Rewrite a notebook page's internal-id markdown into an extracted workflow's label-based report."""
 
 import logging
 import re
@@ -74,13 +55,7 @@ _CELL_INSTANCE_REFERENCE = re.compile(r'"(?:dataset_id|dataset_url|__gx_dataset_
 def reconcile_and_build_report(
     trans: ProvidesHistoryContext, page: Page, index: ExtractionLabelIndex
 ) -> tuple[str, list[str]]:
-    """Build a workflow report markdown (and warnings) from a notebook page.
-
-    Reconciles the index so referenced-but-unlabeled items get labels -- which
-    *mutates* the extracted workflow's steps (assigning labels, exposing workflow
-    outputs the user did not star) -- then rewrites the page's internal markdown
-    into the workflow-relative form.
-    """
+    """Report markdown and warnings for ``page``; labels/exposes referenced steps and outputs as a side effect."""
     revision = page.latest_revision
     content = revision.content if revision is not None else None
     if not content:
@@ -94,13 +69,7 @@ def reconcile_and_build_report(
 def _rewrite_page_markdown(
     trans: ProvidesHistoryContext, internal_markdown: str, index: ExtractionLabelIndex, page_history_id: int | None
 ) -> tuple[str, list[str]]:
-    """Rewrite a notebook page's internal markdown into a workflow report.
-
-    Returns the rewritten (label-based) markdown and any warnings for directives
-    that had to be dropped. Validates the result so a malformed rewrite fails at
-    extraction time rather than at report render, as a MalformedContents rather
-    than the bare ValueError the parser raises.
-    """
+    """Label-based markdown and drop warnings; raises MalformedContents if the result does not validate."""
     rewriter = _ReportLabelRewriter(index, page_history_id)
     markdown = rewriter.walk_directives(trans, internal_markdown)
     check_galaxy_markdown(markdown)
@@ -119,15 +88,9 @@ def _instance_argument(directive: str) -> str | None:
 
 
 def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
-    """Drop, with a warning, whatever still points at a specific Galaxy object after the rewrite.
+    """Drop, with a warning, any directive, inline embed or visualization cell still naming a Galaxy object.
 
-    The rewriter only resolves directives it recognizes; this sweep guarantees no
-    instance reference survives into the report: fenced directives still carrying
-    an id/hid argument (e.g. ``invocation_id=``-scoped lines the walk passes
-    through), object-referencing inline embeds, and visualization/vitessce cells
-    naming a dataset or invocation. The invocation report renders neither label
-    embeds nor label visualization cells correctly yet, so those are dropped
-    rather than rewritten.
+    Label-form embeds and cells do not render in invocation reports yet, so they are dropped, not rewritten.
     """
     warnings: list[str] = []
 
@@ -168,23 +131,10 @@ def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
 
 
 class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
-    """Rewrite a notebook page's internal-id directives into workflow-relative
-    label directives for storage as a workflow report.
+    """Rewrite content/job directives to ``input=``/``output=``/``step=`` labels.
 
-    The inverse of :func:`resolve_invocation_markdown`: a dataset/collection
-    reference becomes ``input="x"`` / ``output="y"`` and a job reference becomes
-    ``step="z"``, read from the ``label_index`` extraction built. Reuses the
-    directive-walk taxonomy and access checks of the base handler, like
-    ``_ReferencedContentCollector``; only the content/job directives carry
-    behavior.
-
-    A portable report must never embed an instance id. So a content/job directive
-    that cannot resolve to a label, and any id-bearing directive with no
-    workflow-relative form (links to other histories, workflows, invocations), is
-    dropped with a warning rather than leaked. A link to the notebook's own
-    history becomes ``history_link()``, i.e. the invocation's history. Id-less
-    directives pass through; :func:`_drop_instance_references` then sweeps what
-    this walk does not visit (embeds, visualization cells, unrecognized lines).
+    The inverse of :func:`resolve_invocation_markdown`. Never emits an instance id: a directive with no
+    workflow-relative form is dropped with a warning.
     """
 
     def __init__(self, label_index: ExtractionLabelIndex, page_history_id: int | None) -> None:
@@ -328,15 +278,7 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
 def reconcile_report_labels(
     trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced: ReferencedContent
 ) -> None:
-    """Ensure every item the page references resolves to a label.
-
-    A referenced tool output the user did not star is exposed as a workflow
-    output; a referenced input or step the user did not name is labeled. Labels
-    are generated from the same ``suggested_name`` chain the summary surfaces and
-    deduped against the shared step/output label namespace. Items outside the
-    extracted subgraph are left alone - the pure rewriter drops them with a
-    warning so no instance id can leak into the report.
-    """
+    """Label each referenced input/step and expose each referenced tool output, if extracted and unlabeled."""
     used = _used_labels(index)
 
     for ref in referenced.refs:

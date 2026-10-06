@@ -1,15 +1,4 @@
-"""Build the workflow-extraction summary for a history or a page/notebook.
-
-The summary is the flat, whole-history list of jobs that
-:func:`galaxy.workflow.extract.summarize` produces, serialized into the
-``WorkflowExtractionSummary`` schema. This module owns that serialization so
-both the history endpoint (plain summary) and the page endpoint (summary with a
-seeded producing subgraph) share one builder.
-
-For a page, the datasets/collections the page's markdown references are walked
-backward through job provenance (:func:`_backward_job_closure`) to mark the
-producing jobs as ``seeded`` and the referenced outputs as ``exposed``.
-"""
+"""Serialize the workflow-extraction summary of a history, optionally seeded from a notebook page's references."""
 
 import logging
 from collections import deque
@@ -77,11 +66,7 @@ SEED_AS_INPUT_WARNING = (
 
 @dataclass
 class ClosureResult:
-    """Result of walking backward from a page's referenced outputs.
-
-    Identity-space-neutral content refs plus the producing job/ICJ ids the
-    summary uses to flag ``seeded`` rows.
-    """
+    """Producing jobs/ICJs and original-id content refs reached from a page's references."""
 
     job_ids: set[int] = field(default_factory=set)
     icj_ids: set[int] = field(default_factory=set)
@@ -105,11 +90,7 @@ def _produced_elsewhere(job: Job, history_id: int, local_keys: set[ContentRef]) 
 
 
 def _job_output_contents(job: Job) -> list[HistoryItem]:
-    """All of a job's output HDAs/HDCAs (visible or not).
-
-    Seeding re-derives the producing job from any one output's
-    ``creating_job_associations``, so visibility does not affect correctness.
-    """
+    """All of a job's output HDAs/HDCAs, visible or not."""
     contents: list[HistoryItem] = []
     for out_dataset in job.output_datasets:
         if out_dataset.dataset is not None:
@@ -168,18 +149,11 @@ def _backward_job_closure(
     *,
     local_keys: set[ContentRef],
 ) -> ClosureResult:
-    """Walk backward from each referenced output to its producing subgraph.
+    """Walk backward from referenced outputs and jobs to their producing subgraph.
 
-    Content ``refs`` are the page's displayed outputs: walked and marked exposed.
-    ``job_refs`` / ``icj_refs`` are jobs a notebook references via a job directive
-    (stdout/stderr/metrics/parameters); they seed their producing subgraph but
-    their outputs are *not* exposed. They are folded into the same backward walk
-    by enqueueing the referenced job's outputs unexposed.
-
-    Stops at boundary inputs: datasets with no creating job, jobs whose tool is
-    not workflow-compatible (upload, data fetch, ...), and cross-history
-    producers whose inputs are not in ``local_keys`` (the history's own content
-    keys). Copies are followed via the original HDA/HDCA.
+    Content ``refs`` are exposed; ``job_refs``/``icj_refs`` seed their subgraph without exposing outputs.
+    Stops at boundary inputs: content with no creating job, jobs whose tool is not workflow-compatible,
+    and cross-history producers whose inputs are not all in ``local_keys``.
     """
     result = ClosureResult()
     queue: deque[HistoryItem] = deque()
@@ -475,12 +449,7 @@ def _synthesize_boundary_inputs(
     represented_keys: set[ContentRef],
     closure: ClosureResult,
 ) -> list[WorkflowExtractionJob]:
-    """Boundary inputs the summary did not surface as input or seeded rows (e.g.
-    cross-history datasets, outputs of an inaccessible tool) become synthetic
-    input rows so the seeded subgraph is not left with dangling inputs.
-
-    ``represented_keys`` is in the same original-id space as
-    ``closure.boundary_input_refs`` (both via :func:`_content_key`)."""
+    """Seeded input rows for boundary inputs not already in ``represented_keys`` (both original-id refs)."""
     synthesized: list[WorkflowExtractionJob] = []
     for ref in sorted(closure.boundary_input_refs):
         if ref in represented_keys:
