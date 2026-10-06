@@ -2267,6 +2267,22 @@ class TestNotebookWorkflowExtractionReport(
         run = self.dataset_populator.run_cat1(history_id)
         return run.output_id, run.job_id
 
+    def _invoke_cat1_on_fresh_inputs(self, workflow_id):
+        history_id = self.dataset_populator.new_history()
+        n1 = self.dataset_populator.new_dataset(history_id, content="7 8 9\n")
+        n2 = self.dataset_populator.new_dataset(history_id, content="10 11 12\n")
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id,
+            history_id=history_id,
+            inputs={"0": {"src": "hda", "id": n1["id"]}, "1": {"src": "hda", "id": n2["id"]}},
+            inputs_by="step_index",
+        )
+        self.workflow_populator.wait_for_invocation_and_jobs(
+            history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_id
+        )
+        return invocation_id
+
     @skip_without_tool("cat1")
     def test_report_rewrites_output_and_job_directives(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2396,6 +2412,73 @@ class TestNotebookWorkflowExtractionReport(
             downloaded = self._get(f"workflows/{result['id']}/download").json()
             tool_labels = [s["label"] for s in downloaded["steps"].values() if s["type"] == "tool"]
             assert tool_labels == ['say "hi"']
+
+    @skip_without_tool("cat1")
+    def test_report_directives_resolve_against_invocation(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n\n"
+                    f"```galaxy\njob_metrics(job_id={cat1_job_id})\n```\n\n"
+                    f"```galaxy\nhistory_link(history_id={history_id})\n```\n"
+                ),
+            )
+            # Select the inputs too, so the workflow is runnable on fresh data.
+            input_ids = [item["id"] for item in self._history_contents(history_id) if item["hid"] in (1, 2)]
+            result = self._extract(hda_ids=input_ids, job_ids=[cat1_job_id], from_page_id=page["id"])
+            assert result["report_warnings"] == [], result["report_warnings"]
+            markdown = self._report_markdown(result["id"])
+            output_match = re.search(r'output="([^"]+)"', markdown)
+            step_match = re.search(r'step="([^"]+)"', markdown)
+            assert output_match and step_match, markdown
+            output_label, step_label = output_match.group(1), step_match.group(1)
+
+            invocation_id = self._invoke_cat1_on_fresh_inputs(result["id"])
+            report = self.workflow_populator.workflow_report_json(result["id"], invocation_id)
+
+            # The JSON report keeps label directives scoped to the invocation; the
+            # client resolves them against it.
+            assert not report.get("errors"), report.get("errors")
+            rendered = report["markdown"]
+            assert f'history_dataset_display(invocation_id={invocation_id}, output="{output_label}")' in rendered
+            assert f'job_metrics(invocation_id={invocation_id}, step="{step_label}")' in rendered
+            assert f"history_link(invocation_id={invocation_id})" in rendered
+            # No notebook object survives (encoded ids can coincide across types, so match arguments).
+            for argument in ("history_dataset_id=", "job_id=", "history_id="):
+                assert argument not in rendered, (argument, rendered)
+            # The labels name this invocation's own output and job.
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["outputs"][output_label]["id"] != out_id
+            label_steps = [step for step in invocation["steps"] if step["workflow_step_label"] == step_label]
+            assert len(label_steps) == 1, invocation["steps"]
+            assert label_steps[0]["job_id"] not in (None, cat1_job_id), label_steps[0]
+
+    @skip_without_tool("cat1")
+    def test_report_history_link_to_page_history_becomes_argless(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            other_history_id = self.dataset_populator.new_history()
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"```galaxy\nhistory_link(history_id={history_id})\n```\n\n"
+                    f"```galaxy\nhistory_link(history_id={other_history_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown.count("history_link") == 1, markdown
+            assert "```galaxy\nhistory_link()\n```" in markdown, markdown
+            assert history_id not in markdown and other_history_id not in markdown, markdown
+            assert result["report_warnings"] == [
+                "Dropped a history link from the report: it cannot be expressed relative to a workflow."
+            ]
 
     @skip_without_tool("cat1")
     def test_report_drops_inline_object_embeds(self):
