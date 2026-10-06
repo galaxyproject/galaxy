@@ -128,12 +128,14 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
 
     def test_read_missing_file(self):
-        job = self._running_job()
-        params = {"path": os.path.join(job.working_directory, "missing"), "job_key": job.job_key}
-        api_asserts.assert_status_code_is(requests.head(job.files_url, params=params), 404)
-        response = requests.get(job.files_url, params=params)
-        api_asserts.assert_status_code_is(response, 404)
-        api_asserts.assert_error_code_is(response, 404001)
+        # Without inputs, so a missing dataset-named file can't be blamed on a purged input.
+        job = self._running_job(with_input=False)
+        for name in ["missing", "dataset_missing.dat"]:
+            params = {"path": os.path.join(job.working_directory, name), "job_key": job.job_key}
+            api_asserts.assert_status_code_is(requests.head(job.files_url, params=params), 404)
+            response = requests.get(job.files_url, params=params)
+            api_asserts.assert_status_code_is(response, 404)
+            api_asserts.assert_error_code_is(response, 404001)
 
     def test_read_directory(self):
         job = self._running_job()
@@ -221,6 +223,21 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             response = self._post_job_file(job, job.output_path, data=data)
             api_asserts.assert_status_code_is(response, 400)
             api_asserts.assert_error_code_is(response, 400008)
+        _assert_file_contents(job.output_path, "")
+
+    def test_write_without_file(self):
+        job = self._running_job()
+        response = requests.post(job.files_url, params={"path": job.output_path, "job_key": job.job_key})
+        api_asserts.assert_status_code_is(response, 400)
+        _assert_file_contents(job.output_path, "")
+
+    def test_write_with_malformed_multipart(self):
+        job = self._running_job()
+        headers = {"Content-Type": f"multipart/form-data; boundary={UPLOAD_BOUNDARY}"}
+        params = {"path": job.output_path, "job_key": job.job_key}
+        response = requests.post(job.files_url, params=params, data=b"not multipart", headers=headers)
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_code_is(response, 400008)
         _assert_file_contents(job.output_path, "")
 
     def test_unknown_job(self):
@@ -321,7 +338,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def sa_session(self):
         return self._app.model.session
 
-    def create_static_job_with_state(self, state):
+    def create_static_job_with_state(self, state, with_input=True):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
         hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
@@ -341,15 +358,16 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job.handler = "unknown-handler"
         job.state = state
         sa_session.add(job)
-        job.add_input_dataset("input1", hda)
+        if with_input:
+            job.add_input_dataset("input1", hda)
         job.add_output_dataset("output1", output_hda)
         sa_session.commit()
         self._app.object_store.create(output_hda.dataset)
         working_directory = JobWorkingDirectory(job, self._app.object_store).create()
         return job, output_hda, working_directory
 
-    def _running_job(self) -> RunningJob:
-        job, output_hda, working_directory = self.create_static_job_with_state("running")
+    def _running_job(self, with_input: bool = True) -> RunningJob:
+        job, output_hda, working_directory = self.create_static_job_with_state("running", with_input=with_input)
         job_id, job_key = self._api_job_keys(job)
         output_path = self._app.object_store.get_filename(output_hda.dataset)
         assert output_path
