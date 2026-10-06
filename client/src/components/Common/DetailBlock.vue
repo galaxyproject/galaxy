@@ -11,7 +11,7 @@
  *
  * @component DetailBlock
  * @example
- * <DetailBlock header-icon="faInfoCircle" title="Job Information" :collapsible="true">
+ * <DetailBlock :header-icon="faInfoCircle" title="Job Information" :collapsible="true">
  *     <template v-slot:custom-content>
  *         <p>This is the custom content for the detail block.</p>
  *     </template>
@@ -20,7 +20,7 @@
 
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -33,13 +33,34 @@ const props = defineProps<{
     title: string;
     /** If `true`, the content is collapsible */
     collapsible?: boolean;
+    /** Controls collapse state externally (e.g. to persist it). Omit to manage it internally. */
+    collapsed?: boolean;
 }>();
 
-const collapseState = ref<"open" | "closed" | "none">(props.collapsible ? "open" : "none");
+const emit = defineEmits<{
+    (e: "update:collapsed", value: boolean): void;
+}>();
+
+const internalCollapsed = ref(false);
+const isControlled = computed(() => props.collapsed !== undefined);
+const collapsed = computed(() => (isControlled.value ? props.collapsed! : internalCollapsed.value));
+
+const collapseState = computed<"open" | "closed" | "none">(() => {
+    if (!props.collapsible) {
+        return "none";
+    }
+    return collapsed.value ? "closed" : "open";
+});
 
 function toggleCollapse() {
-    if (props.collapsible) {
-        collapseState.value = collapseState.value === "open" ? "closed" : "open";
+    if (!props.collapsible) {
+        return;
+    }
+    const next = !collapsed.value;
+    if (isControlled.value) {
+        emit("update:collapsed", next);
+    } else {
+        internalCollapsed.value = next;
     }
 }
 </script>
