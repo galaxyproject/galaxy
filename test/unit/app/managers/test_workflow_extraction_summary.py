@@ -77,7 +77,13 @@ class MockTrans:
 
 class MockOutputAssoc:
     def __init__(self, job):
-        self.job = job
+        self._job = job
+        self.reads = 0
+
+    @property
+    def job(self):
+        self.reads += 1
+        return self._job
 
 
 class MockInputDatasetAssoc:
@@ -172,8 +178,10 @@ def _trans(contents, toolbox=None, jobs=(), icjs=()):
     return cast(ProvidesHistoryContext, MockTrans(session, toolbox or MockToolbox()))
 
 
-def _closure(trans, refs, job_refs=(), icj_refs=()):
-    return _backward_job_closure(trans, refs, list(job_refs), list(icj_refs), TARGET_HISTORY)
+def _closure(trans, refs, job_refs=(), icj_refs=(), local_keys=()):
+    return _backward_job_closure(
+        trans, refs, list(job_refs), list(icj_refs), TARGET_HISTORY, local_keys=set(local_keys)
+    )
 
 
 def test_linear_chain_collects_all_upstream_jobs():
@@ -236,6 +244,32 @@ def test_cross_history_producer_is_boundary():
     assert ("hda", 1) in result.boundary_input_refs
 
 
+def test_cross_history_producer_with_local_inputs_is_step():
+    # A copied history: the producer ran in the source history, but its input was copied here too.
+    upload = MockHda(3)
+    job = MockJob(9, history_id=TARGET_HISTORY + 1, inputs=[upload])
+    out = MockHda(1, creating_jobs=[job])
+    trans = _trans([out])
+
+    result = _closure(trans, [("hda", 1)], local_keys=[("hda", 1), ("hda", 3)])
+
+    assert result.job_ids == {9}
+    assert ("hda", 1) not in result.boundary_input_refs
+    assert ("hda", 3) in result.boundary_input_refs
+
+
+def test_cross_history_producer_with_missing_input_is_boundary():
+    upload = MockHda(3)
+    job = MockJob(9, history_id=TARGET_HISTORY + 1, inputs=[upload])
+    out = MockHda(1, creating_jobs=[job])
+    trans = _trans([out])
+
+    result = _closure(trans, [("hda", 1)], local_keys=[("hda", 1)])
+
+    assert result.job_ids == set()
+    assert result.boundary_input_refs == {("hda", 1)}
+
+
 def test_implicit_collection_job_records_icj_id():
     job = MockJob(2, icj_id=99)
     out = MockHdca(1, creating_jobs=[job])
@@ -272,6 +306,8 @@ def test_map_output_walks_one_job_per_icj():
     assert result.icj_ids == {7}
     assert ("hdca", 20) in result.content_refs
     assert toolbox.calls == [1, 2]  # downstream job + one representative element job
+    # Only the representative association of the map output is dereferenced.
+    assert [assoc.reads for assoc in impl_out.creating_job_associations[1:]] == [0, 0]
 
 
 def test_missing_seed_skipped_with_warning():
