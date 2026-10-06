@@ -409,15 +409,11 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         </BFormCheckbox>
                     </div>
 
-                    <BButton
-                        v-b-tooltip.top.noninteractive
-                        :title="
-                            props.showReadme
-                                ? !props.readmeVisible
-                                    ? 'Show README'
-                                    : 'Hide README'
-                                : 'No README available'
-                        "
+                    <GButton
+                        tooltip
+                        tooltip-placement="top"
+                        :title="props.readmeVisible ? 'Hide README' : 'Show README'"
+                        disabled-title="No README available"
                         :pressed="props.readmeVisible"
                         :disabled="!props.showReadme"
                         class="primary-button ml-auto"
@@ -425,7 +421,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         @click="$emit('toggleReadme')">
                         <FontAwesomeIcon :icon="faReadme" fixed-width />
                         README
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>
