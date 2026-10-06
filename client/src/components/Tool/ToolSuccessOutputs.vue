@@ -3,6 +3,7 @@ import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
 import type { JobResponse } from "@/api/jobs";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import DetailBlock from "@/components/Common/DetailBlock.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
@@ -15,10 +16,18 @@ const outputs = computed(() => [
     ...(props.jobResponse?.outputs || []),
     ...(props.jobResponse?.output_collections || []),
 ]);
+
+/** Whether the collapsible tool run outputs card is collapsed, remembered per-user across visits. */
+const collapsed = useUserLocalStorage("tool-success-outputs-collapsed", false);
 </script>
 
 <template>
-    <DetailBlock v-if="outputs.length" :header-icon="faSignOutAlt" title="Tool Run Outputs">
+    <DetailBlock
+        v-if="outputs.length"
+        v-model:collapsed="collapsed"
+        :header-icon="faSignOutAlt"
+        title="Tool Run Outputs"
+        collapsible>
         <div class="outputs-grid">
             <GenericItem
                 v-for="output in outputs"
