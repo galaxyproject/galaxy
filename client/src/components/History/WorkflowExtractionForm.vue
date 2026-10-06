@@ -2,7 +2,7 @@
 import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 import {
     extractWorkflowByIds,
@@ -39,17 +39,11 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     historyId: string;
+    /** Notebook page whose referenced outputs' producing subgraph is pre-checked. */
+    fromPageId?: string;
 }>();
 
 const router = useRouter();
-const route = useRoute();
-
-/** When the form is opened from a notebook, the producing subgraph of the page's
- *  referenced outputs is pre-checked instead of the default non-deleted heuristic. */
-const fromPageId = computed(() => {
-    const value = route.query.from_page;
-    return typeof value === "string" && value ? value : null;
-});
 
 const Toast = useToast();
 
@@ -253,7 +247,7 @@ const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.che
  *  (`!jobsList.length`), which keeps its own message; here the full history is
  *  shown and the user can still check steps by hand. */
 const nothingSeeded = computed(
-    () => !!fromPageId.value && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
+    () => !!props.fromPageId && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
 );
 
 /** For any inputs selected for inclusion as workflow steps, check if any are missing a name/label */
@@ -320,8 +314,8 @@ function uniqueInputLabel(desired: string, taken: Set<string>): string {
 
 async function extractWorkflow() {
     try {
-        const result: WorkflowExtractionSummary = fromPageId.value
-            ? await fetchWorkflowExtractionSummary(fromPageId.value)
+        const result: WorkflowExtractionSummary = props.fromPageId
+            ? await fetchWorkflowExtractionSummary(props.fromPageId)
             : await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
             const rows = result.jobs.map(toExtractionRow);
@@ -332,7 +326,7 @@ async function extractWorkflow() {
                 }
             }
             jobsList.value = rows;
-            if (fromPageId.value) {
+            if (props.fromPageId) {
                 // Pre-check the producing subgraph rather than the default non-deleted heuristic.
                 jobsList.value.forEach((job) => {
                     job.checked = job.seeded;
@@ -487,9 +481,9 @@ async function submitWorkflow() {
         if (selectedStepLabels.value.length) {
             payload.step_labels = selectedStepLabels.value;
         }
-        if (fromPageId.value) {
+        if (props.fromPageId) {
             // Carry the notebook's markdown into the workflow as its report.
-            payload.from_page_id = fromPageId.value;
+            payload.from_page_id = props.fromPageId;
         }
 
         const data = await extractWorkflowByIds(payload);
