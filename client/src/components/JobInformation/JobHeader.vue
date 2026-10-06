@@ -25,7 +25,7 @@ const props = defineProps<{
 const toolStore = useToolStore();
 
 const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
-const { job: fetchedJob } = useJobDetails(fetchJobId);
+const { job: fetchedJob } = useJobDetails(fetchJobId, { full: false });
 const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 </script>
 
