@@ -33,7 +33,7 @@ from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
 from galaxy.util.unittest_utils import (  # noqa: F401 - skip_unless_environ re-exported
     _identity,
-    skip_unless_environ,
+    skip_unless_environ as skip_unless_environ,
     skip_unless_executable,
 )
 from galaxy_test.base.api import (

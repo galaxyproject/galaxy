@@ -1085,9 +1085,8 @@ def test_with_message_queue(self):
 
 ``skip_unless_docker()`` and ``skip_unless_kubernetes()`` are built on
 ``skip_unless_executable(name)``, which skips unless ``name`` is on ``PATH``.
-It and ``skip_unless_environ(var)`` come from ``galaxy.util.unittest_utils``
-(``integration_util`` re-exports ``skip_unless_environ``), so unit tests can
-use them too:
+It and ``skip_unless_environ(var)`` live in ``galaxy.util.unittest_utils``;
+import them from there in any kind of test:
 
 ```python
 from galaxy.util.unittest_utils import (
