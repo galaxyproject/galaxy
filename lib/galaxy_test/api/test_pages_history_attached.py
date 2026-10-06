@@ -426,6 +426,33 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         self._assert_status_code_is(response, 200)
         return response.json()
 
+    def _extract_seeded_steps(self, summary: dict) -> list[dict]:
+        """Extract exactly the seeded rows (as the form pre-checks them); return the steps."""
+        seeded = [r for r in summary["jobs"] if r["seeded"]]
+        tool_rows = [r for r in seeded if r["step_type"] == "tool"]
+
+        def input_ids(step_type):
+            return [o["id"] for r in seeded if r["step_type"] == step_type for o in r["outputs"]]
+
+        payload = {
+            "workflow_name": "seeded extraction",
+            "job_ids": [r["id"] for r in tool_rows if not r["implicit_collection_jobs_id"]],
+            "implicit_collection_jobs_ids": sorted(
+                {r["implicit_collection_jobs_id"] for r in tool_rows if r["implicit_collection_jobs_id"]}
+            ),
+            "hda_ids": input_ids("input_dataset"),
+            "hdca_ids": input_ids("input_collection"),
+        }
+        response = self._post("workflows/extract", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+        download = self._get(f"workflows/{response.json()['id']}/download")
+        self._assert_status_code_is(download, 200)
+        return list(download.json()["steps"].values())
+
+    def _connected_step_id(self, step: dict, input_name: str) -> int:
+        connection = step["input_connections"][input_name]
+        return (connection[0] if isinstance(connection, list) else connection)["id"]
+
     def _run_random_lines_mapped_over_pair(self, history_id):
         """Upload a pair and map random_lines1 over it. Returns
         (input_hdca, implicit_output_hdca, map_job_id)."""
@@ -718,26 +745,79 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert copied_row["step_type"] == "input_dataset", copied_row
             assert copied_row["seeded"] is True, copied_row
 
-            seeded_inputs = [
-                o["id"] for r in self._rows_by_type(summary, "input_dataset") if r["seeded"] for o in r["outputs"]
-            ]
-            response = self._post(
-                "workflows/extract",
-                data={
-                    "workflow_name": "copied input",
-                    "job_ids": [r["id"] for r in seeded_tool_rows],
-                    "hda_ids": seeded_inputs,
-                },
-                json=True,
-            )
-            self._assert_status_code_is(response, 200)
-            steps = self._get(f"workflows/{response.json()['id']}/download").json()["steps"].values()
+            steps = self._extract_seeded_steps(summary)
             input_steps = [s for s in steps if s["type"] == "data_input"]
             tool_steps = [s for s in steps if s["type"] == "tool"]
             assert len(input_steps) == 1 and len(tool_steps) == 1, steps
-            connection = tool_steps[0]["input_connections"]["input1"]
-            connection = connection[0] if isinstance(connection, list) else connection
-            assert connection["id"] == input_steps[0]["id"], tool_steps[0]
+            assert self._connected_step_id(tool_steps[0], "input1") == input_steps[0]["id"], tool_steps[0]
+
+    @skip_without_tool("multi_data_param")
+    @skip_without_tool("cat1")
+    def test_copied_outputs_of_one_producer_seed_one_input_each(self):
+        """Two outputs of one cross-history job copied here are separate workflow
+        inputs, not one input row carrying both."""
+        source_history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(source_history_id, content="a\n", wait=True)
+        source_run = self.dataset_populator.run_tool(
+            "multi_data_param",
+            {"f1": {"src": "hda", "id": hda["id"]}, "f2": {"src": "hda", "id": hda["id"]}},
+            source_history_id,
+        )
+        self.dataset_populator.wait_for_history(source_history_id, assert_ok=True)
+        with self.dataset_populator.test_history() as history_id:
+            out1, out2 = (self._copy_hda_to_history(history_id, o) for o in source_run["outputs"][:2])
+            run = self.dataset_populator.run_tool(
+                "cat1",
+                {"input1": {"src": "hda", "id": out1["id"]}, "queries_0|input2": {"src": "hda", "id": out2["id"]}},
+                history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            for copied in (out1, out2):
+                row = self._row_with_output_id(summary, copied["id"])
+                assert row is not None and row["step_type"] == "input_dataset", summary["jobs"]
+                assert row["seeded"] is True and len(row["outputs"]) == 1, row
+            steps = self._extract_seeded_steps(summary)
+            input_step_ids = {s["id"] for s in steps if s["type"] == "data_input"}
+            (cat1_step,) = (s for s in steps if s["type"] == "tool")
+            connected = {self._connected_step_id(cat1_step, name) for name in ("input1", "queries_0|input2")}
+            assert len(input_step_ids) == 2 and connected == input_step_ids, steps
+
+    @skip_without_tool("cat1")
+    def test_copied_history_seeds_original_producer_steps(self):
+        """In a copied (e.g. imported) history every producer ran in the source history,
+        but its inputs were copied too, so it is still a seeded step, not an input."""
+        source_history_id = self.dataset_populator.new_history()
+        source_output_id, _ = self._cat1_history(source_history_id)
+        output_hid = self.dataset_populator.get_history_dataset_details(source_history_id, dataset_id=source_output_id)[
+            "hid"
+        ]
+        copy_response = self.dataset_populator.copy_history(source_history_id)
+        self._assert_status_code_is(copy_response, 200)
+        history_id = copy_response.json()["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        copied_output = next(
+            c for c in self._history_contents(history_id) if c["hid"] == output_hid and not c["deleted"]
+        )
+        page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[copied_output["id"]])
+
+        summary = self._extraction_summary(page["id"])
+
+        cat1_row = self._row_with_output_id(summary, copied_output["id"])
+        assert cat1_row is not None and cat1_row["step_type"] == "tool", summary["jobs"]
+        assert cat1_row["tool_id"] == "cat1" and cat1_row["seeded"] is True, cat1_row
+        assert any(o["exposed"] for o in cat1_row["outputs"]), cat1_row
+        input_rows = self._rows_by_type(summary, "input_dataset")
+        assert len(input_rows) == 2 and all(r["seeded"] for r in input_rows), summary["jobs"]
+
+        steps = self._extract_seeded_steps(summary)
+        input_step_ids = {s["id"] for s in steps if s["type"] == "data_input"}
+        (cat1_step,) = (s for s in steps if s["type"] == "tool")
+        connected = {self._connected_step_id(cat1_step, name) for name in ("input1", "queries_0|input2")}
+        assert len(input_step_ids) == 2 and connected == input_step_ids, steps
 
     @skip_without_tool("cat1")
     def test_inaccessible_producer_output_seeded_as_input(self):
@@ -772,6 +852,11 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
                 if r["seeded"] and any(o["id"] == udt_output_id for o in r["outputs"])
             ]
             assert len(seeded_input_rows) == 1, summary["jobs"]
+            steps = self._extract_seeded_steps(summary)
+            input_steps = [s for s in steps if s["type"] == "data_input"]
+            tool_steps = [s for s in steps if s["type"] == "tool"]
+            assert len(input_steps) == 1 and len(tool_steps) == 1, steps
+            assert self._connected_step_id(tool_steps[0], "input1") == input_steps[0]["id"], tool_steps[0]
 
     @skip_without_tool("cat1")
     def test_unreferenced_history_seeds_nothing(self):
