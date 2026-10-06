@@ -948,11 +948,7 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
-// The client theme's values, carried here because the package can't import app SCSS
-$brand-primary: #25537b;
-$brand-secondary: #dee2e6;
-$brand-light: #f8f9fa;
-$body-bg: #ffffff;
+// Copies of the client's _breakpoints.scss; container queries can't read CSS variables
 $breakpoint-sm: 576px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 992px;
@@ -976,7 +972,7 @@ $breakpoint-xl: 1200px;
             display: block;
             position: sticky;
             top: 0;
-            background-color: $body-bg;
+            background-color: var(--background-color);
             z-index: 9;
 
             tr {
@@ -993,7 +989,7 @@ $breakpoint-xl: 1200px;
                     gap: 0.5rem;
                     width: 100%;
                     padding: 0.75rem;
-                    border-bottom: 2px solid $brand-secondary;
+                    border-bottom: 2px solid var(--color-grey-200);
 
                     &::after {
                         content: "Select all";
@@ -1012,7 +1008,7 @@ $breakpoint-xl: 1200px;
 
         tr {
             margin-bottom: 1rem;
-            border: 1px solid $brand-secondary;
+            border: 1px solid var(--color-grey-200);
             border-radius: 0.25rem;
         }
 
@@ -1021,7 +1017,7 @@ $breakpoint-xl: 1200px;
             width: 100%;
             text-align: right;
             padding: 0.5rem;
-            border-bottom: 1px solid $brand-secondary;
+            border-bottom: 1px solid var(--color-grey-200);
 
             &[data-label]::before {
                 content: attr(data-label);
@@ -1053,15 +1049,15 @@ $breakpoint-xl: 1200px;
         thead th {
             position: sticky;
             top: 0;
-            background-color: $body-bg;
+            background-color: var(--background-color);
             z-index: 10;
-            border-bottom: 2px solid $brand-secondary;
+            border-bottom: 2px solid var(--color-grey-200);
             font-weight: 600;
             padding: 0.75rem;
 
             &.g-header-dark {
-                background-color: $brand-primary;
-                color: $body-bg;
+                background-color: var(--color-blue-600);
+                color: var(--background-color);
             }
 
             &.g-table-sortable {
@@ -1069,16 +1065,16 @@ $breakpoint-xl: 1200px;
                 user-select: none;
 
                 &:hover {
-                    background-color: lighten($brand-light, 0.5);
+                    background-color: var(--color-grey-100);
                 }
             }
 
             &.g-table-sorted {
-                background-color: $brand-light;
+                background-color: var(--color-grey-100);
             }
 
             .g-table-sort-icon {
-                color: $brand-secondary;
+                color: var(--color-grey-200);
             }
         }
 
@@ -1088,18 +1084,18 @@ $breakpoint-xl: 1200px;
                     cursor: pointer;
 
                     &:hover {
-                        background-color: lighten($brand-light, 0.5);
+                        background-color: var(--color-grey-100);
                     }
                 }
 
-                box-shadow: inset 0 -1px 0 0 rgba($brand-primary, 0.2);
+                box-shadow: inset 0 -1px 0 0 color-mix(in srgb, var(--color-blue-600) 20%, transparent);
 
                 &.g-table-row-selected {
-                    background-color: $brand-light;
+                    background-color: var(--color-grey-100);
                 }
 
                 &.g-table-details-row {
-                    background-color: lighten($brand-light, 0.3);
+                    background-color: var(--color-grey-100);
                 }
             }
 
@@ -1174,7 +1170,7 @@ $breakpoint-xl: 1200px;
     }
 
     .g-table-load-more {
-        border-top: 1px solid $brand-secondary;
+        border-top: 1px solid var(--color-grey-200);
     }
 }
 </style>
