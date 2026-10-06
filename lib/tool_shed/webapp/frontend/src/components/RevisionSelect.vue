@@ -46,19 +46,17 @@ const selection = useModelWrapper(props, emit, "modelValue")
 </script>
 
 <template>
-    <span class="repository-select row items-center">
-        <span class="repository-select-label text-h5 q-mr-lg">Revision</span>
-        <!-- icon format_list_numbered -->
+    <div class="repository-select">
+        <span class="repository-select-label">Revision</span>
         <q-select
-            filled
+            outlined
             dense
             v-model="selection"
             use-input
             :options="options"
             map-options
             emit-value
-            class="q-mr-sm"
-            style="width: 350px"
+            class="repository-select-input"
         >
             <template #no-option>
                 <q-item>
@@ -66,8 +64,51 @@ const selection = useModelWrapper(props, emit, "modelValue")
                 </q-item>
             </template>
         </q-select>
-        <q-badge v-if="isLatest" color="positive"> newest revision </q-badge>
-        <q-badge color="warning" v-else> newer revision(s) available </q-badge>
+        <span v-if="isLatest" class="revision-status revision-status-latest">Newest revision</span>
+        <span v-else class="revision-status revision-status-older">Newer revision(s) available</span>
         <slot></slot>
-    </span>
+    </div>
 </template>
+
+<style scoped>
+.repository-select {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.repository-select-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shed-muted);
+}
+
+.repository-select-input {
+    width: 22rem;
+    max-width: 100%;
+    background: #fff;
+}
+
+.revision-status {
+    padding: 0.15rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1px solid;
+}
+
+.revision-status-latest {
+    color: var(--color-green-700);
+    background: var(--color-green-100);
+    border-color: var(--color-green-300);
+}
+
+.revision-status-older {
+    color: var(--color-orange-700);
+    background: var(--color-orange-100);
+    border-color: var(--color-orange-300);
+}
+</style>

@@ -33,10 +33,11 @@ const props = defineProps<RepositoryHealthProps>()
 </template>
 
 <style scoped lang="scss">
+// Sits on the dark page header, so the pills are glassy light-on-dark
 .repository-health {
     display: inline-flex;
     flex-wrap: wrap;
-    gap: var(--spacing-2);
+    gap: 0.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -46,19 +47,25 @@ const props = defineProps<RepositoryHealthProps>()
 .health-pill {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-1);
-    padding: var(--spacing-1) var(--spacing-3);
-    border-radius: 1rem;
-    background-color: var(--color-grey-100);
-    color: var(--color-grey-900);
-    font-size: var(--font-size-small);
+    gap: 0.4rem;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+
+    svg {
+        color: var(--color-ebony-clay-200, #bbc0d2);
+    }
 
     &.health-ok svg {
-        color: var(--color-green-700);
+        color: var(--color-green-400);
     }
 
     &.health-problem svg {
-        color: var(--color-red-700);
+        color: var(--color-red-400);
     }
 }
 </style>

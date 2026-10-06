@@ -28,37 +28,108 @@ const homepage = computed(() => props.repository.homepage_url)
 const dev_url = computed(() => props.repository.remote_repository_url)
 </script>
 <template>
-    <p v-if="currentRevision">
-        <FontAwesomeIcon :icon="faLink" class="repository-link-icon" style="font-size: 32px" />
-        <a class="repository-link-url" :href="link">{{ link }}</a>
-        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(link)">
-            <FontAwesomeIcon :icon="faCopy" />
-        </GButton>
-    </p>
-    <p v-if="homepage">
-        <FontAwesomeIcon :icon="faHouse" class="repository-link-icon" style="font-size: 32px" />
-        <a class="repository-link-url" :href="homepage">{{ homepage }}</a>
-        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(homepage)">
-            <FontAwesomeIcon :icon="faCopy" />
-        </GButton>
-    </p>
-    <p v-if="dev_url">
-        <FontAwesomeIcon :icon="faCode" class="repository-link-icon" style="font-size: 32px" />
-        <a class="repository-link-url" :href="dev_url">{{ dev_url }}</a>
-        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(dev_url)">
-            <FontAwesomeIcon :icon="faCopy" />
-        </GButton>
-    </p>
+    <ul class="repository-links">
+        <li v-if="currentRevision" class="repository-link">
+            <FontAwesomeIcon :icon="faLink" class="repository-link-icon" fixed-width />
+            <span class="repository-link-text">
+                <span class="repository-link-label">Permalink</span>
+                <a class="repository-link-url" :href="link">{{ link }}</a>
+            </span>
+            <GButton
+                icon-only
+                transparent
+                size="small"
+                aria-label="Copy link"
+                title="Copy link"
+                @click="copyLink(link)"
+            >
+                <FontAwesomeIcon :icon="faCopy" />
+            </GButton>
+        </li>
+        <li v-if="homepage" class="repository-link">
+            <FontAwesomeIcon :icon="faHouse" class="repository-link-icon" fixed-width />
+            <span class="repository-link-text">
+                <span class="repository-link-label">Homepage</span>
+                <a class="repository-link-url" :href="homepage">{{ homepage }}</a>
+            </span>
+            <GButton
+                icon-only
+                transparent
+                size="small"
+                aria-label="Copy link"
+                title="Copy link"
+                @click="copyLink(homepage)"
+            >
+                <FontAwesomeIcon :icon="faCopy" />
+            </GButton>
+        </li>
+        <li v-if="dev_url" class="repository-link">
+            <FontAwesomeIcon :icon="faCode" class="repository-link-icon" fixed-width />
+            <span class="repository-link-text">
+                <span class="repository-link-label">Development repository</span>
+                <a class="repository-link-url" :href="dev_url">{{ dev_url }}</a>
+            </span>
+            <GButton
+                icon-only
+                transparent
+                size="small"
+                aria-label="Copy link"
+                title="Copy link"
+                @click="copyLink(dev_url)"
+            >
+                <FontAwesomeIcon :icon="faCopy" />
+            </GButton>
+        </li>
+    </ul>
 </template>
 
 <style scoped>
+.repository-links {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.repository-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.repository-link + .repository-link {
+    border-top: 1px solid var(--shed-border-subtle);
+}
+
 .repository-link-icon {
-    padding-left: var(--spacing-1);
-    padding-right: var(--spacing-4);
+    flex: none;
+    color: var(--color-galaxy-primary);
+}
+
+.repository-link-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.repository-link-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--shed-muted);
 }
 
 .repository-link-url {
-    color: var(--color-galaxy-primary);
-    font-weight: bold;
+    display: block;
+    overflow: hidden;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.repository-link :deep(.g-button.g-transparent) {
+    flex: none;
+    color: var(--shed-muted);
 }
 </style>

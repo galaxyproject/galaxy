@@ -25,7 +25,8 @@ function removeUserAccess(username: string) {
 </script>
 <template>
     <div class="push-access" v-if="repository && repositoryPermissions">
-        <h2 class="push-access-heading">Who can push to this repository?</h2>
+        <h2 class="push-access-heading shed-section-title">Push access</h2>
+        <p class="push-access-intro">Who can push to this repository?</p>
         <ul class="push-access-list">
             <li class="push-access-owner">{{ repository.owner }} (owner)</li>
             <li class="push-access-user" v-for="username in repositoryPermissions.allow_push" :key="username">
@@ -46,18 +47,10 @@ function removeUserAccess(username: string) {
 </template>
 
 <style scoped>
-.push-access {
-    max-width: 325px;
-    padding: var(--spacing-3);
-    border: 1px solid var(--color-grey-300);
-    border-radius: 0.25rem;
-}
-
-.push-access-heading {
-    margin: 0 0 var(--spacing-2);
-    color: var(--color-grey-600);
-    font-size: var(--font-size-medium);
-    font-weight: 600;
+.push-access-intro {
+    margin: 0 0 0.5rem;
+    font-size: 0.92rem;
+    color: var(--shed-muted);
 }
 
 .push-access-list {
@@ -71,12 +64,19 @@ function removeUserAccess(username: string) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2) 0;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0;
+    font-weight: 700;
+}
+
+.push-access-user + .push-access-user,
+.push-access-owner + .push-access-user {
+    border-top: 1px solid var(--shed-border-subtle);
 }
 
 .push-access-add {
     display: block;
-    margin-top: var(--spacing-4);
+    margin-top: 0.75rem;
 }
 </style>
