@@ -92,6 +92,16 @@ describe("stores/invocationStore", () => {
             expect(metricsCallCount).toBe(1);
         });
 
+        it("resolves a fetch that joins one already in flight with the fetched metrics", async () => {
+            const store = useInvocationStore();
+
+            store.getInvocationMetricsById("inv1");
+            const joined = await store.fetchInvocationMetricsForId({ id: "inv1" });
+
+            expect(joined).toEqual(metricsResponse(["job1"]));
+            expect(metricsCallCount).toBe(1);
+        });
+
         it("refetches once a step's terminal job count increases since the last fetch", async () => {
             const store = useInvocationStore();
 

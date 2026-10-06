@@ -165,8 +165,8 @@ export const useInvocationStore = defineStore("invocationStore", () => {
      */
     const terminalCountsByStepIdAtLastMetricsFetch = ref<Record<string, Record<string, number> | null>>({});
 
-    /** Invocation ids with a metrics fetch in flight, so repeated reads don't start another. */
-    const invocationIdsFetchingMetrics = new Set<string>();
+    /** Metrics fetches in flight by invocation id, so repeated reads share one request. */
+    const metricsFetchesInFlight = new Map<string, Promise<WorkflowJobMetric[] | undefined>>();
 
     /**
      * Returns `null` if the step jobs summary hasn't loaded yet (it's fetched/kept fresh
@@ -186,24 +186,29 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     }
 
     /** Fetches invocation metrics and records the terminal-count mapping for the fetch. */
-    async function fetchInvocationMetricsForId(params: FetchParams) {
-        if (invocationIdsFetchingMetrics.has(params.id)) {
-            return;
+    function fetchInvocationMetricsForId(params: FetchParams): Promise<WorkflowJobMetric[] | undefined> {
+        const inFlight = metricsFetchesInFlight.get(params.id);
+        if (inFlight) {
+            // Callers awaiting this (e.g. `WorkflowInvocationMetrics.vue`) should resolve once the data lands.
+            return inFlight;
         }
-        invocationIdsFetchingMetrics.add(params.id);
-        try {
-            // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
-            // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
-            const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
-            const result = await fetchInvocationMetricsRawForId(params);
-            // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
-            // fall back to whatever it looks like now (still `null` if it hasn't loaded).
-            terminalCountsByStepIdAtLastMetricsFetch.value[params.id] =
-                snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
-            return result;
-        } finally {
-            invocationIdsFetchingMetrics.delete(params.id);
-        }
+        const fetchPromise = (async () => {
+            try {
+                // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
+                // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
+                const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
+                const result = await fetchInvocationMetricsRawForId(params);
+                // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
+                // fall back to whatever it looks like now (still `null` if it hasn't loaded).
+                terminalCountsByStepIdAtLastMetricsFetch.value[params.id] =
+                    snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
+                return result;
+            } finally {
+                metricsFetchesInFlight.delete(params.id);
+            }
+        })();
+        metricsFetchesInFlight.set(params.id, fetchPromise);
+        return fetchPromise;
     }
 
     /**
