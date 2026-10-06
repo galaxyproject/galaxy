@@ -53,9 +53,9 @@ from galaxy.schema.workflows import (
     WorkflowExtractionSummary,
 )
 from galaxy.workflow.extract import (
-    _original_hda,
-    _original_hdca,
-    _skip_output_assoc_name,
+    get_original_hda,
+    get_original_hdca,
+    skip_output_assoc_name,
     summarize,
 )
 
@@ -95,8 +95,8 @@ class ClosureResult:
 def _content_key(content: HistoryItem) -> ContentRef:
     """Normalize a history item to ``(kind, original_id)`` after following copies."""
     if content.history_content_type == "dataset_collection":
-        return ("hdca", _original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
-    return ("hda", _original_hda(cast(HistoryDatasetAssociation, content)).id)
+        return ("hdca", get_original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
+    return ("hda", get_original_hda(cast(HistoryDatasetAssociation, content)).id)
 
 
 def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryItem | None:
@@ -219,9 +219,9 @@ def _backward_job_closure(
 
         is_collection = key[0] == "hdca"
         original = (
-            _original_hdca(cast(HistoryDatasetCollectionAssociation, content))
+            get_original_hdca(cast(HistoryDatasetCollectionAssociation, content))
             if is_collection
-            else _original_hda(cast(HistoryDatasetAssociation, content))
+            else get_original_hda(cast(HistoryDatasetAssociation, content))
         )
 
         # Map-over recovery: when the walk reaches an implicit output collection,
@@ -334,7 +334,7 @@ def _input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_
 
 
 def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str | None:
-    if output_name and _skip_output_assoc_name(output_name):
+    if output_name and skip_output_assoc_name(output_name):
         return None
     if content.history_content_type == "dataset_collection":
         return getattr(content, "implicit_output_name", None) or output_name
