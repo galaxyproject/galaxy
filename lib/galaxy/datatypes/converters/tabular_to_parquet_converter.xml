@@ -1,5 +1,5 @@
 <!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
-<tool id="CONVERTER_tabular_to_parquet" name="Convert tabular to Parquet" version="1.1.0" profile="19.05">
+<tool id="CONVERTER_tabular_to_parquet" name="Convert tabular to Parquet" version="1.0.0" profile="19.05">
     <requirements>
         <requirement type="package" version="24.0.0">pyarrow</requirement>
     </requirements>
