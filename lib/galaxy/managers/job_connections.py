@@ -100,7 +100,7 @@ class JobConnectionsManager:
                 getattr(item_class, copied_from).label("copied_from_id"),
             )
             .where(where)
-            .cte(recursive=True)
+            .cte(name="copied_from_chain", recursive=True)
         )
         parent = aliased(item_class)
         return chain.union(
