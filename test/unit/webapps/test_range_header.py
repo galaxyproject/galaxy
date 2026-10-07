@@ -29,27 +29,29 @@ def test_get_range_header(range_header, expected):
     assert _get_range_header(range_header, 1000) == expected
 
 
-@pytest.mark.parametrize(
-    "range_header",
-    [
-        "",
-        "bytes=500-499",
-        "bytes=-",
-        "bytes=a-b",
-        "bytes=\u0661-",
-        "bytes=0-1,3-4",
-        "items=0-1",
-        "bytes=--5",
-        "bytes=" + " " * 65536 + "x",
-        "bytes=" + "1" * 5000 + "-",
-    ],
-    ids=lambda range_header: range_header if len(range_header) < 20 else f"{range_header[:10]}...",
-)
+@pytest.mark.parametrize("range_header", ["", "bytes=0-1,3-4", "items=0-1"])
 def test_get_range_header_ignored(range_header):
     assert _get_range_header(range_header, 1000) is None
 
 
-@pytest.mark.parametrize("range_header, file_size", [("bytes=1000-", 1000), ("bytes=-0", 1000), ("bytes=-1", 0)])
+@pytest.mark.parametrize(
+    "range_header, file_size",
+    [
+        ("bytes=1000-", 1000),
+        ("bytes=-0", 1000),
+        ("bytes=-1", 0),
+        ("bytes=500-499", 1000),
+        ("bytes=-", 1000),
+        ("bytes", 1000),
+        ("bytes=a-b", 1000),
+        ("bytes=\u0661-", 1000),
+        ("bytes=-1-1", 1000),
+        ("bytes=--5", 1000),
+        ("bytes=" + " " * 65536 + "x", 1000),
+        ("bytes=" + "1" * 5000 + "-", 1000),
+    ],
+    ids=lambda value: value if not isinstance(value, str) or len(value) < 20 else f"{value[:10]}...",
+)
 def test_get_range_header_unsatisfiable(range_header, file_size):
     with pytest.raises(HTTPException) as exc_info:
         _get_range_header(range_header, file_size)

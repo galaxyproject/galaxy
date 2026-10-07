@@ -151,3 +151,11 @@ def test_sendfile_multiple_ranges_serves_whole_file(test_file_handle):
     assert response.status_code == 200
     assert "content-range" not in response.headers
     assert response.content.decode() == CONTENT
+
+
+def test_sendfile_malformed_range(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=-1-1"})
+    assert response.status_code == 416
+    assert response.headers["content-range"] == f"bytes */{len(CONTENT)}"

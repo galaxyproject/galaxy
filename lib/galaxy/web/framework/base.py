@@ -569,36 +569,29 @@ def parse_byte_range(range_header: str, file_size: int) -> Optional[tuple[int, i
     Returns the inclusive ``(start, end)`` byte positions to serve. ``bytes=-N`` is a
     suffix range covering the last ``N`` bytes, and an end position past the end of the
     file is clamped to the last byte. Returns ``None`` when the whole file should be
-    served instead: the header uses another unit, is malformed, or asks for several
-    ranges. Raises :class:`RangeNotSatisfiable` when the range starts at or past the
+    served instead: the header uses another unit or asks for several ranges. Raises
+    :class:`RangeNotSatisfiable` when the byte range is malformed, starts at or past the
     end of the file, or is a zero-length suffix.
     """
     unit, _, spec = range_header.partition("=")
+    if unit.strip().lower() != "bytes" or "," in spec:
+        return None
     first, dash, last = spec.partition("-")
     first, last = first.strip(), last.strip()
-    if (
-        unit.strip().lower() != "bytes"
-        or not dash
-        or not BYTE_POSITION_RE.fullmatch(first)
-        or not BYTE_POSITION_RE.fullmatch(last)
-    ):
-        return None
+    if not dash or not BYTE_POSITION_RE.fullmatch(first) or not BYTE_POSITION_RE.fullmatch(last):
+        raise RangeNotSatisfiable()
     try:
         first_pos = int(first) if first else None
         last_pos = int(last) if last else None
     except ValueError:
         # More digits than int() accepts.
-        return None
+        raise RangeNotSatisfiable()
     if first_pos is not None:
-        if last_pos is not None and last_pos < first_pos:
-            return None
-        if first_pos >= file_size:
+        if (last_pos is not None and last_pos < first_pos) or first_pos >= file_size:
             raise RangeNotSatisfiable()
         end = min(last_pos, file_size - 1) if last_pos is not None else file_size - 1
         return first_pos, end
-    if last_pos is None:
-        return None
-    if last_pos == 0 or file_size == 0:
+    if last_pos is None or last_pos == 0 or file_size == 0:
         raise RangeNotSatisfiable()
     return max(file_size - last_pos, 0), file_size - 1
 
