@@ -523,22 +523,25 @@ class DatasetProtectionManager:
             self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
         return None
 
-    def fail_job(self, job: Job, job_directory: str) -> None:
+    def fail_job(self, job: Job, job_directory: str) -> list[str]:
         """Remove the data stored for the outputs of a failed protected job, unless it is shown to be encrypted.
 
         Failed jobs may leave plaintext behind. Their outputs stay in the history, in error state.
+        Returns the errors the compute host recorded while protecting the outputs, they explain the failure.
         """
         try:
-            records = (_read_sidecar(job_directory) or {}).get("datasets", {})
+            sidecar = _read_sidecar(job_directory) or {}
         except Exception:
             log.exception("Could not read the protection results of failed job %s", job.id)
-            records = {}
+            sidecar = {}
+        records = sidecar.get("datasets", {})
         for dataset_instance in _job_outputs(job):
             dataset = dataset_instance.dataset
             assert dataset
             record = records.get(str(dataset.uuid))
             if not dataset.purged and not (record and self._is_verified(dataset_instance, record)):
                 dataset.full_delete()
+        return list(sidecar.get("errors", []))
 
     def _is_verified(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
         try:

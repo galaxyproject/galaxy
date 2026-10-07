@@ -324,3 +324,11 @@ def test_failed_job_without_sidecar_removes_outputs(tmp_path):
     output, _ = _protected_output(tmp_path)
     _manager().fail_job(_job(output), str(tmp_path))
     assert output.dataset.purged
+
+
+def test_failed_job_reports_protection_errors(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {}, errors=["Tools writing unnamed outputs can't be used with encrypted datasets."])
+    errors = _manager().fail_job(_job(output), str(tmp_path))
+    assert errors == ["Tools writing unnamed outputs can't be used with encrypted datasets."]
+    assert output.dataset.purged
