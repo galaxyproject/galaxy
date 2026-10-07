@@ -768,7 +768,10 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm("history-1", "page-1");
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
-            expect(Toast.warning).toHaveBeenCalled();
+            expect(Toast.warning).toHaveBeenCalledWith(
+                "Dropped a workflow display from the report.",
+                "Notebook report notes",
+            );
         });
 
         it("pre-checks a seeded mapped row and submits its ICJ, excluding the unseeded one", async () => {

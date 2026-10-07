@@ -186,6 +186,15 @@ function onTitleRename() {
     }
 }
 
+function reportLockTitle(output: ExtractionOutput): string | undefined {
+    if (!output.referenced_by_report || props.job.invalid) {
+        return undefined;
+    }
+    return props.job.checked
+        ? "The notebook report uses this output, so it stays a workflow output"
+        : "The notebook report uses this output; include this step to keep it";
+}
+
 function displayLabel(output: ExtractionOutput): string {
     return output.label || output.suggested_name || output.name || output.output_name || "Output";
 }
@@ -233,11 +242,7 @@ function displayLabel(output: ExtractionOutput): string {
                             !props.job.checked ||
                             output.referenced_by_report
                         "
-                        :disabled-title="
-                            output.referenced_by_report
-                                ? 'The notebook report uses this output, so it stays a workflow output'
-                                : undefined
-                        "
+                        :disabled-title="reportLockTitle(output)"
                         :title="output.exposed ? 'Do not expose this output' : 'Expose this output'"
                         size="large"
                         transparent

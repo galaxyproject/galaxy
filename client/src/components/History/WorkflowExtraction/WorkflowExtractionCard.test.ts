@@ -96,8 +96,8 @@ describe("WorkflowExtractionCard step label clear", () => {
 });
 
 describe("WorkflowExtractionCard output star", () => {
-    function outputStar(output: Partial<typeof TOOL_OUTPUT>) {
-        const job = toExtractionRow({ ...TOOL_JOB, outputs: [{ ...TOOL_OUTPUT, ...output }] });
+    function outputStar(output: Partial<typeof TOOL_OUTPUT>, jobOverrides: Partial<WorkflowExtractionJob> = {}) {
+        const job = toExtractionRow({ ...TOOL_JOB, ...jobOverrides, outputs: [{ ...TOOL_OUTPUT, ...output }] });
         const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
         const wrapper = mount(WorkflowExtractionCard as object, {
             props: { job },
@@ -112,6 +112,21 @@ describe("WorkflowExtractionCard output star", () => {
         const star = outputStar({ exposed: true, referenced_by_report: true });
         expect(star.props("disabled")).toBe(true);
         expect(star.props("disabledTitle")).toBe("The notebook report uses this output, so it stays a workflow output");
+    });
+
+    it("tells the user to include the step when the row of a report-used output is unchecked", () => {
+        const star = outputStar({ exposed: false, referenced_by_report: true }, { checked: false });
+        expect(star.props("disabled")).toBe(true);
+        expect(star.props("disabledTitle")).toBe("The notebook report uses this output; include this step to keep it");
+    });
+
+    it("makes no report claim for a report-used output of an invalid row", () => {
+        const star = outputStar(
+            { exposed: true, referenced_by_report: true },
+            { invalid: "tool_missing_or_inaccessible" },
+        );
+        expect(star.props("disabled")).toBe(true);
+        expect(star.props("disabledTitle")).toBeUndefined();
     });
 
     it("leaves the star of an unreferenced output toggleable", () => {
