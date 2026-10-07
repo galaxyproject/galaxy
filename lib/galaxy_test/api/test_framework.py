@@ -20,6 +20,14 @@ class TestApiFramework(ApiTestCase):
         get_response = self._get("/published/page", data={"embed": "true"})
         assert "x-frame-options" not in get_response.headers
 
+    def test_client_paths_serve_the_client_app(self):
+        # "/" and "/histories" match the legacy /{action} route and "/admin/users" matches a real
+        # controller, but none of them have a server handler, so they should still get the client.
+        for path in ("/", "/histories", "/histories/list", "/admin/users"):
+            response = self._get(path)
+            self._assert_status_code_is(response, 200)
+            assert "text/html" in response.headers["content-type"]
+
     def test_multipart_empty_boundary(self):
         # /api/tools POST is still served by the legacy WSGI app.
         response = post(
