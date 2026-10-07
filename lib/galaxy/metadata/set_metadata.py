@@ -537,6 +537,9 @@ def set_metadata_portable(
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
+            # Outputs assigned a discovered file (assign_primary_output) are stored already, the declared file
+            # isn't their content and may hold plaintext.
+            stored_from_discovery = bool(output_protector and output_protector.protected_ext(dataset))
             if output_protector:
                 file_dict = _protect_declared_output(
                     output_protector,
@@ -552,7 +555,7 @@ def set_metadata_portable(
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
                 if not is_deferred and not link_data_only:
-                    if dataset_instance_id not in unnamed_id_to_path:
+                    if dataset_instance_id not in unnamed_id_to_path and not stored_from_discovery:
                         object_store_update_actions.append(
                             partial(push_if_necessary, object_store, dataset, external_filename)
                         )
@@ -654,9 +657,11 @@ def _protect_declared_output(
     elif link_data_only:
         raise ProtectionError("Outputs of protected jobs can't be linked data.")
     elif protected_ext := output_protector.protected_ext(dataset):
-        # Already protected while discovering outputs (assign_primary_output), the tool
-        # provided extension may have been applied again since.
+        # Already protected and stored while discovering outputs (assign_primary_output), the tool
+        # provided extension may have been applied again since. Read it from the object store, not
+        # from the declared file.
         dataset.extension = protected_ext
+        dataset.dataset.external_filename = None
     else:
         assert external_filename
         output_protector.protect(dataset, external_filename, dataset.dataset.external_extra_files_path)
