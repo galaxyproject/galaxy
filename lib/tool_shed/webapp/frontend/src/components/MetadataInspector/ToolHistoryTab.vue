@@ -122,7 +122,7 @@ function toggleTool(toolId: string) {
                     </GButton>
                     <GCollapse
                         :id="`tool-details-${historyIndex}-${versionIndex}`"
-                        :value="isExpanded(history.toolId, ver.revision)"
+                        :visible="isExpanded(history.toolId, ver.revision)"
                     >
                         <template #default="{ contentActive }">
                             <MetadataJsonViewer

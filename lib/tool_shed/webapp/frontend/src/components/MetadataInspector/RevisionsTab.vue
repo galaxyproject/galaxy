@@ -87,7 +87,7 @@ watch(
                     </GButton>
                 </div>
 
-                <GCollapse :id="`revision-${rev.numericRevision}-details`" :value="expandedRevisions.has(rev.key)">
+                <GCollapse :id="`revision-${rev.numericRevision}-details`" :visible="expandedRevisions.has(rev.key)">
                     <template #default="{ contentActive }">
                         <div v-if="contentActive" class="revision-details">
                             <div v-if="rev.data.invalid_tools?.length > 0" class="revision-details-section">

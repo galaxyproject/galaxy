@@ -99,7 +99,7 @@ function onResetComplete() {
                         <GButton transparent @click="activeTab = 'revisions'">View in Revisions</GButton>
                     </GAlert>
 
-                    <GTabs class="inspector-tabs" lazy :value="activeTabIndex" @input="onTabInput">
+                    <GTabs class="inspector-tabs" lazy :model-value="activeTabIndex" @update:model-value="onTabInput">
                         <GTab :title="`Revisions (${revisionCount})`">
                             <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
                         </GTab>

@@ -15,24 +15,29 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 // Module-level accordion registry: maps group name to the close callback of the currently open member
 const accordionRegistry = new Map<string, () => void>();
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(
     defineProps<{
         /** Two-way binding for open/closed state (v-model) */
-        value?: boolean;
+        modelValue?: boolean;
         /** One-way visibility control */
         visible?: boolean;
         /** Accordion group name — only one in the group can be open */
         accordion?: string;
     }>(),
     {
-        value: undefined,
+        modelValue: undefined,
         visible: undefined,
         accordion: undefined,
     },
 );
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
     (e: "show"): void;
     (e: "shown"): void;
     (e: "hide"): void;
@@ -45,8 +50,8 @@ const internalOpen = ref(false);
 const contentActive = ref(false);
 
 const isOpen = computed(() => {
-    if (props.value !== undefined) {
-        return props.value;
+    if (props.modelValue !== undefined) {
+        return props.modelValue;
     }
     if (props.visible !== undefined) {
         return props.visible;
@@ -56,7 +61,7 @@ const isOpen = computed(() => {
 
 function closeSelf() {
     internalOpen.value = false;
-    emit("input", false);
+    emit("update:modelValue", false);
 }
 
 // Sync: set contentActive true immediately so slot renders before post-flush animation

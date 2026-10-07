@@ -131,7 +131,7 @@ For example, if you test a component with long text or special characters, add s
 
 New UI uses galaxy-ui components (`GButton`, `GDropdown`, `GAlert`, `GTabs`, `GCollapse`, `GForm*`, ...), FontAwesome 6 icons, and scoped styles on the design tokens (`--color-*`, `--spacing-*`, `--color-galaxy-*`). Quasar now only provides `q-select` (RevisionSelect, SelectUser, OverviewTab) and the Quasar markup inside those selects (RevisionSelect's q-item option rows and badges), which need a galaxy-ui select before they can go.
 
-- The shed is plain Vue 3 (no `@vue/compat`). `GFormInput` and `GCheckbox` use `modelValue`, but `GTabs` and `GCollapse` still take `value` and emit `input`, so bind `:value`/`@input` on those -- `v-model` silently does nothing on them.
+- The shed is plain Vue 3 (no `@vue/compat`). galaxy-ui's form controls, `GTabs` and `GCollapse` all use `modelValue`, so plain `v-model` works on them. Anything still on Vue 2's `value`/`input` only works in the client, where compat maps it.
 - `GDropdown` names its menu from its toggle; icon-only toggles need `aria-label` (see `ActionMenu.vue`).
 - Use `aria-label` on icon-only `GButton`s.
 - Quasar's own icons (select arrows, table pagination) come from its SVG FontAwesome icon set; there is no icon webfont.

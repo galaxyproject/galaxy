@@ -1,6 +1,7 @@
-import { GButton, GDropdownItem, GLink } from "@galaxyproject/galaxy-ui"
-import { mount } from "@vue/test-utils"
+import { GButton, GCollapse, GDropdownItem, GLink, GTab, GTabs } from "@galaxyproject/galaxy-ui"
+import { flushPromises, mount } from "@vue/test-utils"
 import { describe, expect, it, vi } from "vitest"
+import { defineComponent, ref } from "vue"
 import { createMemoryHistory, createRouter } from "vue-router"
 
 function makeRouter() {
@@ -79,5 +80,38 @@ describe("galaxy-ui under Vue 3", () => {
         await wrapper.find("button").trigger("click")
 
         expect(onClick).not.toHaveBeenCalled()
+    })
+})
+
+// Vue 2's value/input v-model only works where @vue/compat maps it; here it silently does nothing
+describe("galaxy-ui v-model under Vue 3", () => {
+    it("binds the active tab both ways on GTabs", async () => {
+        const Parent = defineComponent({
+            components: { GTabs, GTab },
+            setup: () => ({ active: ref(1) }),
+            template: `<GTabs v-model="active"><GTab title="One">one</GTab><GTab title="Two">two</GTab></GTabs>`,
+        })
+        const wrapper = mount(Parent)
+        await flushPromises()
+
+        expect(wrapper.get(".nav-link.active").text()).toBe("Two")
+
+        await wrapper.findAll(".nav-link")[0]!.trigger("click")
+
+        expect((wrapper.vm as unknown as { active: number }).active).toBe(0)
+    })
+
+    it("opens GCollapse from its v-model", async () => {
+        const Parent = defineComponent({
+            components: { GCollapse },
+            setup: () => ({ open: ref(false) }),
+            template: `<GCollapse v-model="open">details</GCollapse>`,
+        })
+        const wrapper = mount(Parent)
+        await flushPromises()
+        ;(wrapper.vm as unknown as { open: boolean }).open = true
+        await flushPromises()
+
+        expect(wrapper.classes()).toContain("g-collapse-open")
     })
 })
