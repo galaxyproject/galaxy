@@ -388,6 +388,8 @@ Protected jobs fail closed:
   authorize the dataset again when that would help.
 - **Output encryption:** if an output can't be encrypted, metadata collection
   fails and the job fails. Outputs Galaxy can't verify as encrypted are purged.
+  An invalid expiration date for the compute key, for example one without a
+  timezone, also fails the job.
 - **Cleanup:** if the decrypted data can't be removed from the compute host, the
   job fails, but its verified encrypted outputs are kept.
 
