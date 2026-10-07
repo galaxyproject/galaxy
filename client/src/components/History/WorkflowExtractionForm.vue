@@ -496,7 +496,11 @@ async function submitWorkflow() {
 
         Toast.success("Workflow created successfully", "Success");
         if (data.report_warnings?.length) {
-            Toast.warning(data.report_warnings.join("\n"), "Notebook report notes");
+            Toast.addToast(data.report_warnings.join("\n"), {
+                title: "Notebook report notes",
+                variant: "warning",
+                duration: 0,
+            });
         }
 
         router.push(`/published/workflow?id=${data.id}`);
