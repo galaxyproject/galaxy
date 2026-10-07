@@ -96,6 +96,102 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
     @skip_without_tool("cat1")
     @selenium_test
     @managed_history
+    def test_notebook_report_renders_the_invocations_own_output(self):
+        """Extract from a notebook, run the workflow on fresh data; the report shows the new output, not the notebook's."""
+        history_id = self.current_history_id()
+        run = self.dataset_populator.run_cat1(history_id, ("notebook-alpha", "notebook-beta"))
+        page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run.output_id])
+
+        self.navigate_to_history_page_editor(history_id, page["id"])
+        self.notebook_click_extract_workflow()
+        self.components.workflow_extract.output_star_active_for_job(job_id=run.job_id).wait_for_present()
+        workflow_name = "Selenium Notebook Report Round Trip"
+        self.extract_workflow_name_and_submit(workflow_name)
+        workflow_id = self.find_workflow_by_name(workflow_name)
+
+        invocation_history_id = self.dataset_populator.new_history()
+        fresh = [
+            self.dataset_populator.new_dataset(invocation_history_id, content=content)
+            for content in ("fresh-alpha\n", "fresh-beta\n")
+        ]
+        self.dataset_populator.wait_for_history(invocation_history_id, assert_ok=True)
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id,
+            history_id=invocation_history_id,
+            inputs={str(index): {"src": "hda", "id": dataset["id"]} for index, dataset in enumerate(fresh)},
+            inputs_by="step_index",
+        )
+        self.workflow_populator.wait_for_invocation_and_jobs(
+            history_id=invocation_history_id, workflow_id=workflow_id, invocation_id=invocation_id
+        )
+
+        self.get(f"workflows/invocations/report?id={invocation_id}")
+        self.wait_for_selector_visible(".markdown-component")
+        self.wait_for_xpath_visible('//*[contains(@class, "markdown-component")]//*[contains(text(), "fresh-alpha")]')
+        self.screenshot("notebook_extract_report_round_trip")
+        report_text = self.find_element_by_selector(".markdown-component").text
+        assert "Analysis" in report_text, report_text
+        assert "notebook-alpha" not in report_text, report_text
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_notebook_report_warnings_show_as_a_toast(self):
+        """Report lines the extraction drops are reported to the user, not lost silently."""
+        history_id = self.current_history_id()
+        job_id, output_id = self.run_cat1(history_id)
+        page = self.dataset_populator.new_history_page(
+            history_id,
+            content=(
+                "# Analysis\n\n"
+                f"Merged ${{galaxy history_dataset_name(history_dataset_id={output_id})}}.\n\n"
+                f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```\n"
+            ),
+        )
+
+        self.navigate_to_history_page_editor(history_id, page["id"])
+        self.notebook_click_extract_workflow()
+        self.components.workflow_extract.output_star_active_for_job(job_id=job_id).wait_for_present()
+        self.extract_workflow_name_and_submit("Selenium Notebook Report Warnings")
+
+        toast = self.components.workflow_extract.report_notes_toast.wait_for_visible()
+        self.screenshot("notebook_extract_report_warnings_toast")
+        assert "Dropped an inline [history_dataset_name] reference" in toast.text, toast.text
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_notebook_seeds_copied_in_output_as_input(self):
+        """A tool output copied in from another history becomes a pre-checked input wired to its consumer."""
+        source_history_id = self.dataset_populator.new_history()
+        _, source_output_id = self.run_cat1(source_history_id)
+        history_id = self.current_history_id()
+        copied = self.dataset_populator.copy_dataset(history_id, source_output_id)
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": copied["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+        self.navigate_to_history_page_editor(history_id, page["id"])
+        self.notebook_click_extract_workflow()
+        self.components.workflow_extract.card_checkbox_by_job_id(job_id=run["jobs"][0]["id"]).wait_for_present()
+        self.components.workflow_extract.input_card_checkbox_checked.wait_for_present()
+        self.screenshot("notebook_extract_copied_input_form")
+
+        assert len(self.components.workflow_extract.input_card_checkbox_checked.all()) == 1
+        assert self.count_checked_job_checkboxes() == 1, "Expected only the consuming cat1 run pre-checked"
+
+        workflow_name = "Selenium Notebook Copied Input"
+        self.extract_workflow_name_and_submit(workflow_name)
+        workflow = self.get_workflow_by_name(workflow_name)
+        input_steps = self.assert_steps_of_type(workflow, "data_input", expected_len=1)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        connection = tool_steps[0]["input_connections"]["input1"]
+        connection = connection[0] if isinstance(connection, list) else connection
+        assert connection["id"] == input_steps[0]["id"], tool_steps[0]
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
     def test_notebook_referencing_nothing_explains_empty_seed(self):
         """A notebook referencing nothing shows the no-seed message with every card unchecked."""
         history_id = self.current_history_id()
