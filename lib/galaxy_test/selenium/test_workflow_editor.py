@@ -1577,11 +1577,10 @@ steps:
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
-        # Assert save button is disabled because of disconnected when
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("g-disabled")
+        # Best practices flag the gate that reads nothing
+        editor.tool_bar.best_practices.wait_for_and_click()
+        section_element = editor.best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
 
     @selenium_test
     def test_conditional_subworkflow_step(self):

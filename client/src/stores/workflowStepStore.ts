@@ -193,6 +193,8 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         Boolean(Object.values(steps.value).find((step) => isWorkflowInput(step.type))),
     );
 
+    const hasGatedSteps = computed(() => Object.values(steps.value).some((step) => Boolean(step.when)));
+
     const workflowOutputs = computed(() => {
         const workflowOutputs: WorkflowOutputs = {};
 
@@ -419,6 +421,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         getStepExtraInputs,
         getStepIndex,
         hasActiveOutputs,
+        hasGatedSteps,
         hasInputSteps,
         workflowOutputs,
         duplicateLabels,

@@ -8,6 +8,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
 import {
+    getDanglingGates,
     getDisconnectedInputs,
     getDuplicateLabels,
     getMissingMetadata,
@@ -15,6 +16,7 @@ import {
     getUntypedParameters,
 } from "./linting";
 import type {
+    DanglingGateState,
     DisconnectedInputState,
     DuplicateLabelState,
     MetadataLintState,
@@ -36,6 +38,7 @@ export interface LintData {
     untypedParameters: Ref<UntypedParameters | undefined>;
     untypedParameterWarnings: Ref<UntypedParameterState[]>;
     disconnectedInputs: Ref<DisconnectedInputState[]>;
+    danglingGates: Ref<DanglingGateState[]>;
     duplicateLabels: Ref<DuplicateLabelState[]>;
     unlabeledOutputs: Ref<UnlabeledOuputState[]>;
     missingMetadata: Ref<MetadataLintState[]>;
@@ -55,6 +58,7 @@ export function useLintData(
     const untypedParameters = ref<UntypedParameters>();
     const untypedParameterWarnings = ref<UntypedParameterState[]>([]);
     const disconnectedInputs = ref<DisconnectedInputState[]>([]);
+    const danglingGates = ref<DanglingGateState[]>([]);
     const duplicateLabels = ref<DuplicateLabelState[]>([]);
     const unlabeledOutputs = ref<UnlabeledOuputState[]>([]);
     const missingMetadata = ref<MetadataLintState[]>([]);
@@ -65,6 +69,7 @@ export function useLintData(
                 untypedParameters.value = getUntypedWorkflowParameters(steps.value);
                 untypedParameterWarnings.value = getUntypedParameters(untypedParameters.value);
                 disconnectedInputs.value = getDisconnectedInputs(steps.value, datatypesMapper.value, workflowStores);
+                danglingGates.value = getDanglingGates(steps.value);
                 duplicateLabels.value = getDuplicateLabels(steps.value, workflowStores);
                 unlabeledOutputs.value = getUnlabeledOutputs(steps.value);
                 missingMetadata.value = getMissingMetadata(steps.value);
@@ -80,7 +85,7 @@ export function useLintData(
     const checkCreator = computed(() => (creator?.value ? creator.value.length > 0 : false));
 
     const { stepStore } = workflowStores;
-    const { hasActiveOutputs, hasInputSteps } = storeToRefs(stepStore);
+    const { hasActiveOutputs, hasGatedSteps, hasInputSteps } = storeToRefs(stepStore);
 
     /** This computes the `LintSection`s, some of which are conditionally rendered
      * in `Lint.vue`. This is used to compute the total and resolved best practice issues.
@@ -128,6 +133,12 @@ export function useLintData(
             name: "disconnectedInputs",
             exists: Object.keys(steps.value).length > 0,
             resolved: disconnectedInputs.value.length === 0,
+            priority: "high",
+        },
+        {
+            name: "danglingGates",
+            exists: hasGatedSteps.value,
+            resolved: danglingGates.value.length === 0,
             priority: "high",
         },
         {
@@ -189,6 +200,7 @@ export function useLintData(
         untypedParameters,
         untypedParameterWarnings,
         disconnectedInputs,
+        danglingGates,
         duplicateLabels,
         unlabeledOutputs,
         missingMetadata,

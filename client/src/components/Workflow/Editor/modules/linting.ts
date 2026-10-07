@@ -1,11 +1,12 @@
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import type { useWorkflowStores } from "@/composables/workflowStores";
-import type { Steps } from "@/stores/workflowStepStore";
+import type { Step, Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { isWorkflowInput } from "../../constants";
 import type {
+    DanglingGateState,
     DisconnectedInputState,
     DuplicateLabelState,
     ExtractInputAction,
@@ -17,6 +18,8 @@ import type {
     UntypedParameterState,
 } from "./lintingTypes";
 import { terminalFactory } from "./terminals";
+import { analyzeInputReferences } from "./whenExpression";
+import { type InputPath, inputPathIsPrefix, resolveConnectionNameToInputPath } from "./workflowInputPath";
 
 export const bestPracticeWarningAnnotation =
     "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
@@ -53,6 +56,87 @@ export function getDisconnectedInputs(
         });
     });
     return inputs;
+}
+
+/**
+ * Steps whose `when` expression reads a name nothing supplies.
+ *
+ * A gate on a disconnected tool parameter evaluates false forever, because the tool
+ * state key survives as null; a gate on any other unconnected name fails the invocation.
+ * Neither is visible without this check -- `getDisconnectedInputs` walks `step.inputs`,
+ * which never contains a synthesized gate port.
+ */
+export function getDanglingGates(steps: Steps = {}) {
+    const dangling: DanglingGateState[] = [];
+    Object.values(steps).forEach((step) => {
+        if (!step.when) {
+            return;
+        }
+        if (step.errors?.length) {
+            // Nothing loaded, so nothing resolves. The missing tool is the report to make.
+            return;
+        }
+        const references = analyzeInputReferences(step.when);
+        if (references.hasDynamicInputsAccess) {
+            return;
+        }
+        const reported = new Set<string>();
+        references.staticPaths.forEach((path) => {
+            const referenceKey = JSON.stringify(path);
+            const input = connectableInputForPath(step, path);
+            if (reported.has(referenceKey) || gateReferenceIsSatisfied(step, path, input !== undefined)) {
+                return;
+            }
+            reported.add(referenceKey);
+            const name = input?.name ?? formatInputPath(path);
+            dangling.push({
+                stepId: step.id,
+                stepLabel: step.label || step.content_id || step.name,
+                warningLabel: name,
+                inputName: name,
+                autofix: false,
+                // Only the tool's own inputs have a terminal the editor can highlight; a gate port does not.
+                highlightType: input ? "input" : "step",
+                name,
+            });
+        });
+    });
+    return dangling;
+}
+
+function gateReferenceIsSatisfied(step: Step, path: InputPath, readsConnectableInput: boolean): boolean {
+    if (connectionNamesIncludePath(step, Object.keys(step.input_connections ?? {}), path)) {
+        return true;
+    }
+    if (readsConnectableInput) {
+        // A connectable tool parameter with nothing connected is the dangling case.
+        return false;
+    }
+    // Everything else the expression can legitimately read comes from the step's state.
+    const root = path[0]!;
+    return typeof root === "string" && Object.prototype.hasOwnProperty.call(step.tool_state ?? {}, root);
+}
+
+/** True when `path` names a candidate connection or one of its ancestors. */
+function connectionNamesIncludePath(step: Step, candidates: string[], path: InputPath): boolean {
+    return candidates.some((candidate) => {
+        const candidatePath = resolveConnectionNameToInputPath(candidate, step.tool_state);
+        return candidatePath ? inputPathIsPrefix(path, candidatePath) : false;
+    });
+}
+
+/** The connectable tool input `path` reads, if any. */
+function connectableInputForPath(step: Step, path: InputPath) {
+    return (step.inputs ?? []).find((input) => connectionNamesIncludePath(step, [input.name], path));
+}
+
+/** Render a path the way the expression wrote it, e.g. `queries[0].input2`. */
+function formatInputPath(path: InputPath): string {
+    return path
+        .map((segment, position) =>
+            typeof segment === "number" ? `[${segment}]` : position === 0 ? segment : `.${segment}`,
+        )
+        .join("");
 }
 
 export function getMissingMetadata(steps: Steps) {
@@ -235,6 +319,6 @@ function isMetadataLintState(state: LintState): state is MetadataLintState {
 /** Type guard for linting states that are for a workflow step input or output. */
 export function isStateForInputOrOutput(
     state: LintState,
-): state is DisconnectedInputState | DuplicateLabelState | UnlabeledOuputState {
+): state is DanglingGateState | DisconnectedInputState | DuplicateLabelState | UnlabeledOuputState {
     return "highlightType" in state;
 }
