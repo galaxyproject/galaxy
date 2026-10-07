@@ -1501,7 +1501,7 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
     def extract_workflow_toggle_output_star(self, job_id: str):
         """Star/un-star the first output of the given job's card; fails fast if the card is unchecked."""
         star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
-        assert not star.get_attribute("disabled"), f"star for job {job_id} is disabled — its card is unchecked"
+        assert star.get_attribute("aria-disabled") != "true", f"star for job {job_id} is disabled"
         self.execute_script_click(star)
         self.sleep_for(self.wait_types.UX_RENDER)
 

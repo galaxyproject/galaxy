@@ -2351,20 +2351,57 @@ class TestNotebookWorkflowExtractionReport(
 
             # No output_labels: the user un-starred the output the notebook displays.
             result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
-            markdown = self._report_markdown(result["id"])
 
-            output_match = re.search(r'output="([^"]+)"', markdown)
-            assert output_match is not None, markdown
-            output_label = output_match.group(1)
-            downloaded = self._get(f"workflows/{result['id']}/download").json()
-            output_labels = {
-                wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
-            }
-            assert output_label in output_labels, (output_label, output_labels)
             hid = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=out_id)["hid"]
-            assert result["report_warnings"] == [
-                f"Made history item {hid} a workflow output ({output_label!r}) because the notebook report uses it."
-            ], result["report_warnings"]
+            self._assert_restored_output_warning(result, hid)
+
+    def test_report_warns_when_it_restores_an_unstarred_output_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            d1 = self.dataset_populator.new_dataset(history_id, content="a\t1\nb\t2\n", wait=True)
+            split = self.dataset_populator.run_tool(
+                tool_id="collection_split_on_column",
+                inputs={"input1": {"src": "hda", "id": d1["id"]}},
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            hdca = split["output_collections"][0]
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[hdca["id"]])
+
+            result = self._extract(job_ids=[split["jobs"][0]["id"]], from_page_id=page["id"])
+
+            self._assert_restored_output_warning(result, hdca["hid"])
+
+    @skip_without_tool("random_lines1")
+    def test_report_warns_when_it_restores_an_unstarred_mapped_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            pair = self.dataset_collection_populator.create_pair_in_history(
+                history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+            ).json()["outputs"][0]
+            inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": pair["id"]}]}, "num_lines": 2}
+            run = self.dataset_populator.run_tool(tool_id="random_lines1", inputs=inputs, history_id=history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            mapped_output = run["implicit_collections"][0]
+            icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, mapped_output["id"])
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[mapped_output["id"]])
+
+            result = self._extract(implicit_collection_jobs_ids=[icj_id], from_page_id=page["id"])
+
+            self._assert_restored_output_warning(result, mapped_output["hid"])
+
+    def _assert_restored_output_warning(self, result, hid):
+        """The report's only output= label is a real workflow output, and the server warned it restored it."""
+        markdown = self._report_markdown(result["id"])
+        output_match = re.search(r'output="([^"]+)"', markdown)
+        assert output_match is not None, markdown
+        output_label = output_match.group(1)
+        downloaded = self._get(f"workflows/{result['id']}/download").json()
+        output_labels = {
+            wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
+        }
+        assert output_label in output_labels, (output_label, output_labels)
+        assert result["report_warnings"] == [
+            f"Made history item {hid} a workflow output ({output_label!r}) because the notebook report uses it."
+        ], result["report_warnings"]
 
     @skip_without_tool("random_lines1")
     def test_report_rewrites_icj_job_directive_to_step(self):
