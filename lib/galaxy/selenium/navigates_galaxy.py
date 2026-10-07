@@ -1438,11 +1438,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_editor_search_for_workflow(self, name: str):
         editor = self.components.workflow_editor
-        self.wait_for_and_click(editor.workflow_activity)
+        # The activity button toggles: clicking it with the panel open (a second insert) closes it.
+        if editor.workflow_activity_panel.is_absent:
+            self.wait_for_and_click(editor.workflow_activity)
         search = editor.workflow_activity_search.wait_for_visible()
         # Rest the pointer on the search input: hovering the list can land on a card badge's tooltip.
         self.clear_tooltips(editor.workflow_activity_search.selector)
 
+        search.clear()
         search.send_keys(name)
 
     def _workflow_editor_panel_card_action(self, name: str, action: Target):
