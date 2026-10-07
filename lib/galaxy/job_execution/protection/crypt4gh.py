@@ -29,7 +29,10 @@ from typing import (
 
 import requests
 
-from galaxy.util.crypt4gh import read_crypt4gh_header
+from galaxy.util.crypt4gh import (
+    check_crypt4gh,
+    read_crypt4gh_header,
+)
 from . import (
     ProtectedFile,
     ProtectedFileResult,
@@ -46,6 +49,8 @@ log = logging.getLogger(__name__)
 logging.getLogger("crypt4gh").setLevel(logging.WARNING)
 
 MAX_CONCURRENT_REQUESTS = 8
+# Copies of decrypted inputs made for links to them, in the protected directory.
+COPIES_FILENAME = "copied_inputs.json"
 RETRY_BACKOFF_SECONDS = 0.5
 
 ERROR_MESSAGES = {
@@ -166,6 +171,16 @@ def _body_with_header(path: str, header: bytes) -> Iterator[BinaryIO]:
     with open(path, "rb") as encrypted:
         read_crypt4gh_header(encrypted)
         yield io.BufferedReader(_HeaderThenBody(header, encrypted))
+
+
+def _remove_unless_encrypted(path: str) -> None:
+    """Remove a copy of decrypted data, unless it was encrypted since, as an output."""
+    if os.path.isdir(path):
+        paths = [os.path.join(root, filename) for root, _, filenames in os.walk(path) for filename in filenames]
+        if not all(check_crypt4gh(file_path) for file_path in paths):
+            shutil.rmtree(path)
+    elif os.path.exists(path) and not check_crypt4gh(path):
+        os.remove(path)
 
 
 def _encrypt_body(plaintext: io.BufferedReader, encrypted: BinaryIO, session_key: bytes) -> None:
@@ -351,8 +366,43 @@ class Crypt4GHJobRuntime:
 
     def cleanup_inputs(self) -> None:
         if os.path.exists(self.inputs_directory):
+            self._copy_linked_inputs()
             shutil.rmtree(self.inputs_directory)
 
+    def _copy_linked_inputs(self) -> None:
+        """Replace links to decrypted inputs, e.g. outputs the tool linked to an input, by copies.
+
+        Outputs are collected after the decrypted inputs are removed. The copies are recorded, so
+        the ones that weren't encrypted as outputs are removed with the rest of the decrypted data.
+        """
+        inputs_directory = os.path.realpath(self.inputs_directory)
+        protected_directory = os.path.realpath(self.plan.protected_directory)
+        copies: list[str] = []
+        for root, dirnames, filenames in os.walk(self.plan.job_directory):
+            if os.path.realpath(root) == protected_directory:
+                dirnames.clear()
+                continue
+            for name in dirnames + filenames:
+                path = os.path.join(root, name)
+                target = os.path.realpath(path)
+                if not os.path.islink(path) or os.path.commonpath([target, inputs_directory]) != inputs_directory:
+                    continue
+                os.remove(path)
+                if os.path.isdir(target):
+                    shutil.copytree(target, path)
+                else:
+                    shutil.copy2(target, path)
+                copies.append(path)
+        if copies:
+            with open(os.path.join(self.plan.protected_directory, COPIES_FILENAME), "w") as f:
+                json.dump(copies, f)
+
     def cleanup(self) -> None:
-        if os.path.exists(self.plan.protected_directory):
-            shutil.rmtree(self.plan.protected_directory)
+        if not os.path.exists(self.plan.protected_directory):
+            return
+        copies_path = os.path.join(self.plan.protected_directory, COPIES_FILENAME)
+        if os.path.exists(copies_path):
+            with open(copies_path) as f:
+                for path in json.load(f):
+                    _remove_unless_encrypted(path)
+        shutil.rmtree(self.plan.protected_directory)
