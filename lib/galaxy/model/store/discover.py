@@ -547,6 +547,19 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         output_name: str,
     ) -> None:
         assert self.object_store
+        if self.output_protector:
+            # Protect the whole chunk first, concurrently: each file takes a request to the key service.
+            to_protect: list[tuple[DatasetInstance, str, str | None, bool]] = []
+            for dataset, path, link_data_only, extra_file in zip(datasets, paths, link_data, extra_files):
+                if not path:
+                    self.output_protector.record_deferred(dataset)
+                    continue
+                if not link_data_only:
+                    ensure_path_in_directory(path, self.job_working_directory)
+                if extra_file:
+                    extra_file = safe_path_from_directory(extra_file, self.job_working_directory)
+                to_protect.append((dataset, path, extra_file, link_data_only))
+            self.output_protector.protect_all(to_protect)
         for dataset, path, link_data_only, extra_file in zip(datasets, paths, link_data, extra_files):
             assert dataset.dataset
             if path and not link_data_only:
@@ -557,11 +570,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             if object_store_id:
                 dataset.dataset.object_store_id = object_store_id
 
-            if self.output_protector:
-                if path:
-                    self.output_protector.protect(dataset, path, extra_file, link_data=link_data_only)
-                else:
-                    self.output_protector.record_deferred(dataset)
             if link_data_only:
                 if path:
                     dataset.link_to(path)

@@ -501,3 +501,41 @@ def test_output_protector_discards_plaintext_on_failure(tmp_path, service, user,
         protector.protect(_FakeDatasetInstance("txt"), str(path))  # type: ignore[arg-type]
     assert not path.exists()
     assert protector.errors
+
+
+def test_output_protector_protects_outputs_concurrently(tmp_path, service, user, registry):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    outputs = []
+    for i in range(20):
+        path = tmp_path / f"out{i}.dat"
+        path.write_bytes(b"plaintext %d" % i)
+        outputs.append((_FakeDatasetInstance("txt"), str(path), None, False))
+
+    protector.protect_all(outputs)  # type: ignore[arg-type]
+
+    for i, (dataset_instance, path, _, _) in enumerate(outputs):
+        assert dataset_instance.extension == "txt.c4gh"
+        with open(path, "rb") as f:
+            assert decrypt(f.read(), user.secret) == b"plaintext %d" % i
+    assert len(protector.records) == 20
+
+
+def test_output_protector_discards_failed_outputs_when_protecting_concurrently(tmp_path, service, user, registry):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    service.failures["recrypt_header_to_user_key"] = [422] * 20
+    outputs = []
+    for i in range(20):
+        path = tmp_path / f"out{i}.dat"
+        path.write_bytes(b"plaintext")
+        outputs.append((_FakeDatasetInstance("txt"), str(path), None, False))
+
+    with pytest.raises(ProtectionError):
+        protector.protect_all(outputs)  # type: ignore[arg-type]
+
+    assert protector.errors
+    for dataset_instance, path, _, _ in outputs:
+        record = protector.records.get(str(dataset_instance.dataset.uuid))
+        # Failed outputs are removed. Outputs not attempted after the failure have no record, Galaxy purges them.
+        assert record is None or (record["outcome"] == "failed" and not os.path.exists(path))

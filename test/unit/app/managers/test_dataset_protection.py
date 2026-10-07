@@ -330,8 +330,8 @@ def test_failed_job_without_sidecar_removes_outputs(tmp_path):
 def test_failed_job_reports_protection_errors(tmp_path):
     output, _ = _protected_output(tmp_path)
     _write_sidecar(str(tmp_path), {}, errors=["Tools writing unnamed outputs can't be used with encrypted datasets."])
-    errors = _manager().fail_job(_job(output), str(tmp_path))
-    assert errors == ["Tools writing unnamed outputs can't be used with encrypted datasets."]
+    error = _manager().fail_job(_job(output), str(tmp_path))
+    assert error == "Tools writing unnamed outputs can't be used with encrypted datasets."
     assert output.dataset.purged
 
 
@@ -344,3 +344,12 @@ def test_jobs_with_protected_inputs_are_detected(tmp_path):
     assert not manager.has_protected_inputs(Bunch(input_datasets=input_datasets, input_library_datasets=[]))
     job = Bunch(input_datasets=input_datasets, input_library_datasets=[Bunch(dataset=protected)])
     assert manager.has_protected_inputs(job)
+
+
+def test_many_errors_are_summarized(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {}, errors=[f"Output '{i}' could not be protected." for i in range(1000)])
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and error.startswith("Output '0' could not be protected. Output '1'")
+    assert "(998 more errors)" in error
+    assert len(error) < 300
