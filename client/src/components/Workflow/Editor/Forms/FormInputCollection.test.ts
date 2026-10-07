@@ -67,6 +67,22 @@ describe("FormInputCollection", () => {
         expect(state.column_definitions).toEqual(CONDITION_COLUMN);
     });
 
+    it("keeps any collection type in the saved state", async () => {
+        wrapper.unmount();
+        wrapper = shallowMount(FormInputCollection as object, {
+            propsData: { step: stepWithCollectionType("list"), datatypes: [] },
+            localVue,
+            stubs: { FormCollectionType: false },
+        });
+        const select = wrapper.findAllComponents(FormElement).find((field) => field.props("id") === "collection_type");
+        select!.vm.$emit("input", null);
+        await wrapper.vm.$nextTick();
+
+        // the state is sent as JSON; a dropped key makes the server default to "list"
+        const sent = JSON.parse(JSON.stringify(lastEmittedState(wrapper)));
+        expect(sent).toHaveProperty("collection_type", null);
+    });
+
     it("keeps the edited value when the step echoes an older one", async () => {
         wrapper.findComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet");
         wrapper.findComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet:paired");

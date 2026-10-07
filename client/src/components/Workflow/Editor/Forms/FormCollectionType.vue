@@ -25,6 +25,8 @@ const currentValue = ref<string | undefined>(undefined);
 const customMode = ref(false);
 const showHelp = ref(false);
 
+// "Any" must stay first: FormSelect selects its first option on mount when the value is null and
+// that option's value is truthy, which would silently change a saved "any" input.
 const selectOptions = [
     { label: "Any collection type", value: null },
     ...KNOWN_COLLECTION_TYPES.map((known) => ({

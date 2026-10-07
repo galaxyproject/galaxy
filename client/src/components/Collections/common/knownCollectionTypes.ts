@@ -33,7 +33,7 @@ export const KNOWN_COLLECTION_TYPES: KnownCollectionType[] = [
         collectionType: "list:paired_or_unpaired",
         label: "Mixed List of Paired and Unpaired Datasets",
         description:
-            "A list where each element is either a single dataset or a forward and reverse pair. For studies with a mix of paired and unpaired data. Existing tools and workflows may need to be updated to handle this modality. A list of dataset pairs can also be connected to this input.",
+            "A list where each element is either a single dataset or a forward and reverse pair. For studies with a mix of paired and unpaired data. Existing tools and workflows may need to be updated to handle this modality. A list of datasets or a list of dataset pairs can also be connected to this input.",
         group: "Lists",
     },
     {
