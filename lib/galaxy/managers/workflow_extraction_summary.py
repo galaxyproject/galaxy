@@ -279,6 +279,7 @@ def _serialize_output(
     output_name: str | None = None,
     *,
     exposed: bool = False,
+    referenced_by_report: bool = False,
 ) -> WorkflowExtractionOutput:
     suggested = suggested_output_name(trans, content) if output_name is not None else None
     return WorkflowExtractionOutput.model_validate(
@@ -293,6 +294,7 @@ def _serialize_output(
             "suggested_name": suggested.name if suggested else None,
             "suggested_name_source": suggested.source if suggested else None,
             "exposed": exposed,
+            "referenced_by_report": referenced_by_report,
         }
     )
 
@@ -375,7 +377,8 @@ def _extraction_row(
             trans,
             data,
             _workflow_output_name(data, output_name),
-            exposed=bool(referenced) and original_content_ref(data) in referenced,
+            exposed=original_content_ref(data) in referenced,
+            referenced_by_report=original_content_ref(data) in referenced,
         )
         for output_name, data in datasets
     ]

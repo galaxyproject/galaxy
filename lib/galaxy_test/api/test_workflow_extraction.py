@@ -2286,6 +2286,10 @@ class TestNotebookWorkflowExtractionReport(
         self._assert_status_code_is(response, 200)
         return response.json()
 
+    def _starred(self, output_id, label="merged"):
+        """output_labels as the form sends them for a pre-starred notebook output."""
+        return [{"kind": "hda", "id": output_id, "label": label}]
+
     def _report_markdown(self, workflow_id):
         download = self._get(f"workflows/{workflow_id}/download")
         self._assert_status_code_is(download, 200)
@@ -2319,7 +2323,11 @@ class TestNotebookWorkflowExtractionReport(
                 history_id, output_ids=[out_id], job_ids=[cat1_job_id]
             )
 
-            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                output_labels=self._starred(out_id),
+            )
             markdown = self._report_markdown(result["id"])
 
             assert markdown is not None, "extracted workflow has no report markdown"
@@ -2332,7 +2340,19 @@ class TestNotebookWorkflowExtractionReport(
             assert "job_id=" not in markdown, markdown
             assert result["report_warnings"] == [], result["report_warnings"]
 
-            # The output= label is a real workflow output the reconcile exposed.
+            # The output= label is the workflow output label the user chose.
+            assert 'output="merged"' in markdown, markdown
+
+    @skip_without_tool("cat1")
+    def test_report_warns_when_it_restores_an_unstarred_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+
+            # No output_labels: the user un-starred the output the notebook displays.
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
             output_match = re.search(r'output="([^"]+)"', markdown)
             assert output_match is not None, markdown
             output_label = output_match.group(1)
@@ -2341,6 +2361,10 @@ class TestNotebookWorkflowExtractionReport(
                 wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
             }
             assert output_label in output_labels, (output_label, output_labels)
+            hid = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=out_id)["hid"]
+            assert result["report_warnings"] == [
+                f"Made history item {hid} a workflow output ({output_label!r}) because the notebook report uses it."
+            ], result["report_warnings"]
 
     @skip_without_tool("random_lines1")
     def test_report_rewrites_icj_job_directive_to_step(self):
@@ -2456,7 +2480,9 @@ class TestNotebookWorkflowExtractionReport(
             )
             # Select the inputs too, so the workflow is runnable on fresh data.
             input_ids = [item["id"] for item in self._history_contents(history_id) if item["hid"] in (1, 2)]
-            result = self._extract(hda_ids=input_ids, job_ids=[cat1_job_id], from_page_id=page["id"])
+            result = self._extract(
+                hda_ids=input_ids, job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id)
+            )
             assert result["report_warnings"] == [], result["report_warnings"]
             markdown = self._report_markdown(result["id"])
             output_match = re.search(r'output="([^"]+)"', markdown)
@@ -2522,7 +2548,7 @@ class TestNotebookWorkflowExtractionReport(
                 ),
             )
 
-            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
             markdown = self._report_markdown(result["id"])
 
             assert "history_dataset_name" not in markdown, markdown
@@ -2549,7 +2575,7 @@ class TestNotebookWorkflowExtractionReport(
                 ),
             )
 
-            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
             markdown = self._report_markdown(result["id"])
 
             assert "visualization" not in markdown, markdown

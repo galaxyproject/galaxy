@@ -62,9 +62,9 @@ def reconcile_and_build_report(
     if not content:
         return "", []
     referenced = referenced_content_ids(trans, content)
-    reconcile_report_labels(trans, index, referenced)
+    exposure_warnings = reconcile_report_labels(trans, index, referenced)
     markdown, warnings = _rewrite_page_markdown(trans, content, index, page.history_id)
-    return markdown, referenced.warnings + warnings
+    return markdown, referenced.warnings + exposure_warnings + warnings
 
 
 def _rewrite_page_markdown(
@@ -275,9 +275,13 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
 
 def reconcile_report_labels(
     trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced: ReferencedContent
-) -> None:
-    """Label each referenced input/step and expose each referenced tool output, if extracted and unlabeled."""
+) -> list[str]:
+    """Label each referenced input/step and expose each referenced tool output, if extracted and unlabeled.
+
+    Returns a warning for each output exposed here that the request had not exposed.
+    """
     used = _used_labels(index)
+    warnings: list[str] = []
 
     for ref in referenced.refs:
         content = resolve_content(trans, ref)
@@ -295,11 +299,17 @@ def reconcile_report_labels(
             if workflow_output is None or not workflow_output.label:
                 label = _generate_label(_suggested(trans, content) or output_name, used)
                 step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
+                if workflow_output is None:
+                    warnings.append(
+                        f"Made history item {content.hid} a workflow output ({label!r}) "
+                        "because the notebook report uses it."
+                    )
 
     for job_id in referenced.job_refs:
         _label_step(index.job_to_step.get(job_id), used)
     for icj_id in referenced.icj_refs:
         _label_step(index.icj_to_step.get(icj_id), used)
+    return warnings
 
 
 def _label_step(step: WorkflowStep | None, used: set[str]) -> None:
