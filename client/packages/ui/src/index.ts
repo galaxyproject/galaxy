@@ -62,6 +62,7 @@ export { useResolveElement } from "./composables/resolveElement";
 export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
 export { activeToastHost, registerToastHost, unregisterToastHost } from "./composables/toastHost";
 export { useUid } from "./composables/uid";
+export { vGTooltip } from "./directives/vGTooltip";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,
