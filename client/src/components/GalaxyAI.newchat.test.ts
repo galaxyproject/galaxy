@@ -1,9 +1,9 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useChatStore } from "@/stores/chatStore";
 
@@ -17,14 +17,14 @@ const { mockGet, mockPost, mockPut, ChatMessageCellStub, ChatInputStub } = vi.ho
     ChatMessageCellStub: {
         name: "ChatMessageCellStub",
         props: ["message"],
-        render(this: { message: { content: string } }, h: (...args: unknown[]) => unknown) {
+        render(this: { message: { content: string } }) {
             return h("div", { class: "chat-message-stub" }, [this.message.content]);
         },
     },
     ChatInputStub: {
         name: "ChatInputStub",
         props: ["value", "busy"],
-        render(h: (...args: unknown[]) => unknown) {
+        render() {
             return h("input", { class: "chat-input-stub" });
         },
     },
@@ -38,7 +38,7 @@ vi.mock("@/api/client", () => ({
     GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => ({ path: "/", params: {}, query: {} }),
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
@@ -68,9 +68,7 @@ vi.mock("@/composables/markdown", () => ({
     useMarkdown: () => ({ renderMarkdown: (content: string) => content }),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    useToast: () => ({ error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() }),
-}));
+vi.mock("@/composables/toast");
 
 vi.mock("@/composables/useEntityMentions", () => ({
     MENTION_PATTERN_SOURCE: "@(dataset|history):(\\S+)",
@@ -101,11 +99,11 @@ function mountChat() {
     return { wrapper, chatStore };
 }
 
-function messageTexts(wrapper: Wrapper<Vue>) {
-    return wrapper.findAll(".chat-message-stub").wrappers.map((w) => w.text());
+function messageTexts(wrapper: VueWrapper) {
+    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
 }
 
-async function sendMessage(wrapper: Wrapper<Vue>, text: string) {
+async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
     input.vm.$emit("input", text);
     await wrapper.vm.$nextTick();

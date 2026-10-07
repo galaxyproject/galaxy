@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-for="(child, childIndex) in childList" :key="childIndex">
-            <p v-html="child" />
+            <p v-sanitize-html:links="child" />
         </div>
     </div>
 </template>
@@ -30,9 +30,8 @@ export default {
         processHtml(content) {
             this.childList = [];
             if (content) {
-                const vDom = document.createElement("div");
-                vDom.innerHTML = content;
-                const children = Array.from(vDom.children);
+                // DOMParser gives an inert document, so nothing in the content loads while it is split up
+                const children = Array.from(new DOMParser().parseFromString(content, "text/html").body.children);
                 children.forEach((child) => {
                     if (child.classList.contains("embedded-item")) {
                         const splitId = child.id.split("-");

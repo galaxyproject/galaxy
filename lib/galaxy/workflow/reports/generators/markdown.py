@@ -2,8 +2,12 @@
 
 import logging
 import string
+from typing import TYPE_CHECKING
 
 from . import WorkflowMarkdownGeneratorPlugin
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ workflow_display()
 class MarkdownWorkflowMarkdownReportGeneratorPlugin(WorkflowMarkdownGeneratorPlugin):
     plugin_type = "markdown"
 
-    def _generate_report_markdown(self, trans, invocation, runtime_report_config_json=None):
+    def _generate_report_markdown(self, trans: "ProvidesHistoryContext", invocation, runtime_report_config_json=None):
         reports_config = (invocation.workflow.reports_config or {}).copy()
         # TODO: more intelligent merge here.
         reports_config.update(runtime_report_config_json or {})

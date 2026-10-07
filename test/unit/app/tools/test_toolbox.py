@@ -1,6 +1,8 @@
 import logging
 import time
+from pathlib import Path
 from typing import (
+    cast,
     TYPE_CHECKING,
 )
 from unittest.mock import MagicMock
@@ -13,6 +15,7 @@ import pytest
 import routes
 
 from galaxy import model
+from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -21,6 +24,7 @@ from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
     SIMPLE_TOOL_WITH_MACRO,
 )
+from galaxy.tools import ToolBox
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
@@ -53,6 +57,17 @@ class TestToolBox(BaseToolBoxTestCase):
         tool = toolbox.get_tool("tool_with_macro")
         assert tool is not None
         assert len(tool._macro_paths) == 1
+
+    def test_wait_for_toolbox_reload_times_out_without_reload(self, caplog, monkeypatch):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+
+        monkeypatch.setattr("galaxy.app.INSTALLATION_RELOAD_TIMEOUT", 0.01)
+        with caplog.at_level(logging.WARNING, logger="galaxy.app"):
+            UniverseApplication.wait_for_toolbox_reload(self.app, toolbox)
+
+        assert "Waiting for toolbox reload timed out" in caplog.text
 
     @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_when_macro_is_altered(self):
@@ -144,6 +159,16 @@ class TestToolBox(BaseToolBoxTestCase):
             assert len(test_section["elems"]) == 1
             assert test_section["elems"][0]["id"] == "test_tool"
 
+    def test_panel_entry_matches_to_dict(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+        tool = self.toolbox.get_tool("test_tool")
+        for is_admin in (False, True):
+            trans = mock_trans(is_admin=is_admin)
+            assert tool.to_panel_entry(trans) == tool.to_dict(trans)
+            assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
     def test_to_dict_out_of_panel(self):
         for json_conf in [True, False]:
             self._init_tool_in_section(json=json_conf)
@@ -218,6 +243,37 @@ class TestToolBox(BaseToolBoxTestCase):
         assert favorites_section["model_class"] == "ToolSection"
         assert favorites_section["name"] == "Favorites"
         assert favorites_section["tools"] == []
+
+    def test_panel_view_referencing_tool_by_old_id_loads_while_toolbox_is_built(self):
+        # Panel views are rendered from within ToolBox.__init__, before any
+        # toolbox is registered on the app.
+        self._init_tool()
+        self._setup_two_versions_in_config()
+        self._setup_two_versions()
+        self.app.config.panel_views = [
+            {
+                "id": "old_id_view",
+                "name": "Old Id View",
+                "type": "generic",
+                "items": [{"type": "tool", "id": "test_tool"}],
+            }
+        ]
+
+        assert "old_id_view" in self.toolbox.panel_view_dicts()
+
+    def test_lineage_for_tool_registered_outside_of_panel_load(self):
+        # `register_tool` is how built-in converters and hidden tools enter the
+        # toolbox, and it registers no lineage. Resolving one must not depend on
+        # the toolbox already being the one registered on the app.
+        self._init_tool()
+        self._add_config("""<toolbox></toolbox>""")
+        toolbox = self.toolbox
+        hidden_tool = toolbox.load_hidden_tool(self._tool_path())
+        self.app._toolbox = None
+
+        lineage = toolbox._lineage_map.get("test_tool")
+        assert lineage is not None
+        assert hidden_tool.version in lineage.tool_versions
 
     def test_out_of_panel_filtering(self):
         self._init_tool_in_section()
@@ -613,6 +669,51 @@ class TestToolBox(BaseToolBoxTestCase):
         toolbox = self.toolbox
         assert "builtin_converters" in toolbox._tool_panel
         assert "builtin_converters" in toolbox._integrated_tool_panel
+
+    @pytest.mark.parametrize("edam_mode", ["merged", "topics", "operations"])
+    @pytest.mark.parametrize("replacement_version", [None, "1.0", "0.9", "2.0"])
+    def test_builtin_converters_in_edam_panel_after_reload(self, edam_mode, replacement_version):
+        self._init_tool(tool_id="tabular_to_dbnsfp")
+        self._add_config("""<toolbox></toolbox>""")
+        self.app.config.edam_panel_views = edam_mode
+        old_toolbox = self.toolbox
+        self.app.watchers.shutdown()
+
+        # Startup registers converters after constructing the first toolbox.
+        registry = self.app.datatypes_registry
+        datatypes_config = Path(self.test_directory) / "datatypes_conf.xml"
+        datatypes_config.write_text("""<datatypes><registration converters_path=".">
+                <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular">
+                    <converter file="tool.xml" target_datatype="snpsiftdbnsfp"/>
+                </datatype>
+            </registration></datatypes>""")
+        registry.load_datatypes(root_dir=self.test_directory, config=datatypes_config)
+        registry.load_datatype_converters(old_toolbox)
+        # The registry only holds materialized converters.
+        original = cast("Tool", registry.datatype_converters["tabular"]["snpsiftdbnsfp"])
+        if replacement_version is not None:
+            assert original.config_file and original.id
+            tool_path = Path(original.config_file)
+            contents = tool_path.read_text().replace('name="Test Tool"', 'name="Updated converter"')
+            contents = contents.replace('version="1.0"', f'version="{replacement_version}"')
+            tool_path.write_text(contents)
+            self.app.tool_cache.expire_tool(original.id)
+
+        # Match the reload order, including the converter load after construction.
+        new_toolbox = ToolBox(self.config_files, self.test_directory, self.app)
+        registry.load_datatype_converters(new_toolbox, use_cached=True)
+        converter = cast("Tool", registry.datatype_converters["tabular"]["snpsiftdbnsfp"])
+        assert self.app.toolbox is old_toolbox
+        assert converter.name == ("Updated converter" if replacement_version else "Test Tool")
+        assert converter.version == (replacement_version or "1.0")
+        assert new_toolbox.get_tool(converter.id) is converter
+        assert new_toolbox.get_tool(converter.id, tool_version=converter.version) is converter
+        assert new_toolbox.get_tool(converter.id, get_all_versions=True) == [converter]
+        assert new_toolbox._tool_panel["builtin_converters"].elems.get_tool_with_id(converter.id) is converter
+        panel = new_toolbox.to_panel_view(mock_trans(), view="default")
+        assert converter.id in panel["builtin_converters"]["tools"]
+        edam_panel = new_toolbox.to_panel_view(mock_trans(), view=f"ontology:edam_{edam_mode}")
+        assert converter.id in edam_panel["uncategorized"]["tools"]
 
     def test_default_lineage(self):
         self.__init_versioned_tools()

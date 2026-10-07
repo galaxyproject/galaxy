@@ -54,7 +54,10 @@ from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -63,10 +66,15 @@ log = logging.getLogger(__name__)
 class SecurityParams:
     """Contains security data bundled for reusability."""
 
-    user_role_ids: list[model.Role]
+    user_role_ids: list[int]
     security_agent: RBACAgent
     is_admin: bool
 
+
+README_FILENAMES = frozenset({"readme.md", "readme.markdown", "readme.txt", "readme"})
+README_EXTENSIONS = frozenset({"txt", "markdown"})
+# The README goes out with every page of the folder listing, so keep it bounded.
+README_MAX_CHARS = 1_000_000
 
 LDDA_SORT_COLUMN_MAP = {
     "name": lambda ldda, dataset: ldda.name,
@@ -148,7 +156,7 @@ class FolderManager:
             folder = self.check_accessible(trans, folder)
         return folder
 
-    def check_modifyable(self, trans, folder):
+    def check_modifyable(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the user can modify the folder (name and description).
 
@@ -165,7 +173,7 @@ class FolderManager:
         else:
             return folder
 
-    def check_manageable(self, trans, folder):
+    def check_manageable(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the user can manage the folder.
 
@@ -182,14 +190,14 @@ class FolderManager:
         else:
             return folder
 
-    def check_accessible(self, trans, folder):
+    def check_accessible(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the folder is accessible to current user.
         By default every folder is accessible (contents have their own permissions).
         """
         return folder
 
-    def get_folder_dict(self, trans, folder):
+    def get_folder_dict(self, trans: "ProvidesUserContext", folder):
         """
         Return folder data in the form of a dictionary.
 
@@ -204,7 +212,13 @@ class FolderManager:
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
-    def create(self, trans, parent_folder_id: int, new_folder_name: str, new_folder_description: str | None = None):
+    def create(
+        self,
+        trans: "ProvidesUserContext",
+        parent_folder_id: int,
+        new_folder_name: str,
+        new_folder_description: str | None = None,
+    ):
         """
         Create a new folder under the given folder.
 
@@ -240,7 +254,7 @@ class FolderManager:
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return new_folder
 
-    def update(self, trans, folder, name=None, description=None):
+    def update(self, trans: "ProvidesUserContext", folder, name=None, description=None):
         """
         Update the given folder's name or description.
 
@@ -272,7 +286,7 @@ class FolderManager:
             trans.sa_session.commit()
         return folder
 
-    def delete(self, trans, folder, undelete=False):
+    def delete(self, trans: "ProvidesUserContext", folder, undelete=False):
         """
         Mark given folder deleted/undeleted based on the flag.
 
@@ -296,7 +310,7 @@ class FolderManager:
         trans.sa_session.commit()
         return folder
 
-    def get_current_roles(self, trans, folder):
+    def get_current_roles(self, trans: "ProvidesUserContext", folder):
         """
         Find all roles currently connected to relevant permissions
         on the folder.
@@ -332,7 +346,7 @@ class FolderManager:
             add_library_item_role_list=role_name_id_pairs(add_roles, private_role_emails, encode_id),
         )
 
-    def can_add_item(self, trans, folder):
+    def can_add_item(self, trans: "ProvidesUserContext", folder):
         """
         Return true if the user has permissions to add item to the given folder.
         """
@@ -367,7 +381,7 @@ class FolderManager:
             raise MalformedId(f"Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.")
         return cut_id
 
-    def decode_folder_id(self, trans, encoded_folder_id):
+    def decode_folder_id(self, trans: "ProvidesAppContext", encoded_folder_id):
         """
         Decode the folder id given that it has already lost the prefixed 'F'.
 
@@ -381,7 +395,7 @@ class FolderManager:
         """
         return trans.security.decode_id(encoded_folder_id, object_name="folder")
 
-    def cut_and_decode(self, trans, encoded_folder_id):
+    def cut_and_decode(self, trans: "ProvidesAppContext", encoded_folder_id):
         """
         Cuts the folder prefix (the prepended 'F') and returns the decoded id.
 
@@ -395,7 +409,7 @@ class FolderManager:
 
     def get_contents(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         folder: LibraryFolder,
         payload: LibraryFolderContentsIndexQueryPayload,
     ) -> tuple[list[LibraryFolder | LibraryDataset], int]:
@@ -404,11 +418,7 @@ class FolderManager:
         limit = payload.limit
         offset = payload.offset
         sa_session = trans.sa_session
-        security_params = SecurityParams(
-            user_role_ids=[role.id for role in trans.get_current_user_roles()],
-            security_agent=trans.app.security_agent,
-            is_admin=trans.user_is_admin,
-        )
+        security_params = self._get_security_params(trans)
 
         content_items: list[LibraryFolder | LibraryDataset] = []
         sub_folders_stmt = self._get_sub_folders_statement(sa_session, folder, security_params, payload)
@@ -444,6 +454,39 @@ class FolderManager:
         content_items.extend(datasets)
         return (content_items, total_sub_folders + total_datasets)
 
+    def get_readme(self, trans: "ProvidesUserContext", folder: LibraryFolder) -> str | None:
+        """Return the text of the folder's README dataset, if the user can access one."""
+        # Match on the LDDA name, which is what the listing displays and what renames change.
+        ldda = aliased(LibraryDatasetDatasetAssociation)
+        associated_dataset = aliased(Dataset)
+        stmt = (
+            select(LibraryDataset)
+            .join(LibraryDataset.library_dataset_dataset_association.of_type(ldda))
+            .where(LibraryDataset.folder_id == folder.id)
+            .where(LibraryDataset.deleted == false())
+            .where(func.lower(func.trim(ldda.name)).in_(README_FILENAMES))
+            .where(ldda.extension.in_(README_EXTENSIONS))
+        )
+        stmt = self._filter_by_dataset_access(stmt, ldda, associated_dataset, self._get_security_params(trans))
+        stmt = stmt.group_by(LibraryDataset.id).order_by(LibraryDataset.id)
+        for library_dataset in trans.sa_session.scalars(stmt):
+            dataset = library_dataset.library_dataset_dataset_association.dataset
+            if not dataset.has_data():
+                continue
+            try:
+                with open(dataset.get_file_name(), encoding="utf-8", errors="replace") as f:
+                    return f.read(README_MAX_CHARS)
+            except Exception as e:  # a broken README should never break the folder listing
+                log.warning("Could not read README for folder %s: %s", folder.id, e)
+        return None
+
+    def _get_security_params(self, trans: "ProvidesUserContext") -> SecurityParams:
+        return SecurityParams(
+            user_role_ids=[role.id for role in trans.get_current_user_roles()],
+            security_agent=trans.app.security_agent,
+            is_admin=trans.user_is_admin,
+        )
+
     def _get_sub_folders_statement(
         self,
         sa_session: galaxy_scoped_session,
@@ -477,7 +520,6 @@ class FolderManager:
     ):
         """Builds a query to retrieve all the datasets contained in the given folder applying filters."""
         search_text = payload.search_text
-        access_action = security.security_agent.permitted_actions.DATASET_ACCESS.action
 
         stmt = select(LibraryDataset).where(LibraryDataset.folder_id == folder.id)
         stmt = self._filter_by_include_deleted(
@@ -486,27 +528,7 @@ class FolderManager:
         ldda = aliased(LibraryDatasetDatasetAssociation)
         associated_dataset = aliased(Dataset)
         stmt = stmt.outerjoin(LibraryDataset.library_dataset_dataset_association.of_type(ldda))
-        if not security.is_admin:  # Non-admin users require ACCESS permission
-            # We check against the actual dataset and not the ldda (for now?)
-            dataset_permission = aliased(DatasetPermissions)
-            is_public_dataset = not_(
-                exists()
-                .where(DatasetPermissions.dataset_id == associated_dataset.id)
-                .where(DatasetPermissions.action == access_action)
-            )
-            stmt = stmt.outerjoin(ldda.dataset.of_type(associated_dataset))
-            stmt = stmt.outerjoin(associated_dataset.actions.of_type(dataset_permission))
-            stmt = stmt.where(
-                or_(
-                    # The dataset is public
-                    is_public_dataset,
-                    # The user has explicit access
-                    and_(
-                        dataset_permission.action == access_action,
-                        dataset_permission.role_id.in_(security.user_role_ids),
-                    ),
-                )
-            )
+        stmt = self._filter_by_dataset_access(stmt, ldda, associated_dataset, security)
         if search_text:
             search_text = search_text.lower()
             stmt = stmt.where(
@@ -519,6 +541,32 @@ class FolderManager:
         stmt = stmt.order_by(sort_column.desc() if payload.sort_desc else sort_column)
         stmt = stmt.group_by(LibraryDataset.id, sort_column)
         return stmt
+
+    def _filter_by_dataset_access(self, stmt, ldda, associated_dataset, security: SecurityParams):
+        """Restrict LDDA rows to datasets the user can access; admins see everything."""
+        if security.is_admin:
+            return stmt
+        access_action = security.security_agent.permitted_actions.DATASET_ACCESS.action
+        # We check against the actual dataset and not the ldda (for now?)
+        dataset_permission = aliased(DatasetPermissions)
+        is_public_dataset = not_(
+            exists()
+            .where(DatasetPermissions.dataset_id == associated_dataset.id)
+            .where(DatasetPermissions.action == access_action)
+        )
+        stmt = stmt.outerjoin(ldda.dataset.of_type(associated_dataset))
+        stmt = stmt.outerjoin(associated_dataset.actions.of_type(dataset_permission))
+        return stmt.where(
+            or_(
+                # The dataset is public
+                is_public_dataset,
+                # The user has explicit access
+                and_(
+                    dataset_permission.action == access_action,
+                    dataset_permission.role_id.in_(security.user_role_ids),
+                ),
+            )
+        )
 
     def _filter_by_include_deleted(
         self, stmt, item_model, item_permissions_model, include_deleted: bool | None, security: SecurityParams

@@ -9,7 +9,7 @@
  */
 
 import { defineStore } from "pinia";
-import { computed, set } from "vue";
+import { computed } from "vue";
 
 import {
     GalaxyApi,
@@ -71,7 +71,7 @@ export const useDatasetCollectionStore = defineStore("datasetCollectionStore", (
     /** Single-entry write — used by the bulk save below and by callers
      *  that already have a fresh payload in hand. */
     function saveCollection(collection: CollectionEntry) {
-        set(storedItems.value, collection.id, collection);
+        storedItems.value[collection.id] = collection;
     }
 
     /** Bulk-update from a history-contents payload. Filters to collection

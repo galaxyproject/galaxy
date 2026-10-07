@@ -6,9 +6,15 @@ from functools import (
     wraps,
 )
 from multiprocessing import get_context
-from threading import local
+from threading import (
+    local,
+    Lock,
+)
 from typing import (
     Any,
+    cast,
+    overload,
+    Protocol,
 )
 
 import pebble
@@ -43,6 +49,13 @@ MAIN_TASK_MODULE = "galaxy.celery.tasks"
 DEFAULT_TASK_QUEUE = "galaxy.internal"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
+# task_serializer also serializes control (pidbox) replies, which echo task arguments.
+CELERY_APP_DEFAULTS: dict[str, Any] = {
+    "task_default_queue": DEFAULT_TASK_QUEUE,
+    "task_create_missing_queues": True,
+    "task_serializer": PYDANTIC_AWARE_SERIALIZER_NAME,
+    "timezone": "UTC",
+}
 
 APP_LOCAL = local()
 
@@ -51,7 +64,7 @@ serialization.register(
 )
 
 
-class GalaxyCelery(Celery):
+class GalaxyCelery(Celery):  # type: ignore[misc]  # celery is untyped
     fork_pool: pebble.ProcessPool
 
     def __init__(self, *args, **kwargs):
@@ -72,7 +85,7 @@ class GalaxyCelery(Celery):
         return module
 
 
-class GalaxyTask(Task):
+class GalaxyTask(Task):  # type: ignore[misc]  # celery is untyped
     """
     Custom celery task used to enforce per-user rate limits and
     concurrency limits on task executions.
@@ -112,19 +125,32 @@ def get_galaxy_app():
     return build_app()
 
 
-@lru_cache(maxsize=1)
-def build_app():
-    if kwargs := get_app_properties():
-        kwargs["check_migrate_databases"] = False
-        kwargs["use_display_applications"] = False
-        kwargs["use_converters"] = True
-        import galaxy.app
+_build_app_lock = Lock()
+_built_app = None
 
-        galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
-        # GalaxyManagerApplication has no toolbox, so the converter tools the async
-        # execution path relies on must be loaded directly into the datatypes registry.
-        galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
-        return galaxy_app
+
+def build_app():
+    # Build the app under a double-checked lock so that a cold start with N
+    # concurrent threads (celery ``--pool threads``) builds exactly one app; the
+    # losing threads wait on the lock and reuse the winner's result.
+    global _built_app
+    if _built_app is not None:
+        return _built_app
+    with _build_app_lock:
+        if _built_app is not None:
+            return _built_app
+        if kwargs := get_app_properties():
+            kwargs["check_migrate_databases"] = False
+            kwargs["use_display_applications"] = False
+            kwargs["use_converters"] = True
+            import galaxy.app
+
+            galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
+            # GalaxyManagerApplication has no toolbox, so the converter tools the async
+            # execution path relies on must be loaded directly into the datatypes registry.
+            galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
+            _built_app = galaxy_app
+    return _built_app
 
 
 @lru_cache(maxsize=1)
@@ -171,7 +197,42 @@ def tear_down_pool(sig, how, exitcode, **kwargs):
     celery_app.fork_pool.join(timeout=5)
 
 
-def galaxy_task(*args, action=None, **celery_task_kwd):
+class GalaxyTaskFunction(Protocol):
+    """A function decorated with ``galaxy_task``.
+
+    Arguments are not checked: ``app.magic_partial`` injects the DI arguments
+    when the task runs, so callers pass fewer arguments than the function takes.
+    """
+
+    name: str
+    run: Callable[..., Any]
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def delay(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def apply_async(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def s(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def si(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def signature(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+@overload
+def galaxy_task(func: Callable[..., Any], /) -> GalaxyTaskFunction: ...
+
+
+@overload
+def galaxy_task(
+    *, action: str | None = None, **celery_task_kwd: Any
+) -> Callable[[Callable[..., Any]], GalaxyTaskFunction]: ...
+
+
+def galaxy_task(
+    *args: Any, action: str | None = None, **celery_task_kwd: Any
+) -> GalaxyTaskFunction | Callable[[Callable[..., Any]], GalaxyTaskFunction]:
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
     # Galaxy tasks rely on ``app.magic_partial(func)`` (below) to inject
@@ -185,10 +246,9 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
     # individual call sites still pass their non-DI args explicitly.
     celery_task_kwd.setdefault("typing", False)
 
-    def decorate(func: Callable):
-        @shared_task(base=GalaxyTask, **celery_task_kwd)
+    def decorate(func: Callable[..., Any]) -> GalaxyTaskFunction:
         @wraps(func)
-        def wrapper(*args, **kwds):
+        def wrapper(*args: Any, **kwds: Any) -> Any:
             app = get_galaxy_app()
             assert app
 
@@ -217,7 +277,8 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 # Close and remove any open session this task has created
                 app.model.unset_request_id(scoped_id)
 
-        return wrapper
+        # celery is untyped, so shared_task returns Any
+        return cast(GalaxyTaskFunction, shared_task(base=GalaxyTask, **celery_task_kwd)(wrapper))
 
     if len(args) == 1 and callable(args[0]):
         return decorate(args[0])
@@ -226,13 +287,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
 
 
 def init_celery_app():
-    celery_app_kwd: dict[str, Any] = {
-        "include": TASKS_MODULES,
-        "task_default_queue": DEFAULT_TASK_QUEUE,
-        "task_create_missing_queues": True,
-        "timezone": "UTC",
-    }
-    celery_app = GalaxyCelery("galaxy", **celery_app_kwd)
+    celery_app = GalaxyCelery("galaxy", include=TASKS_MODULES, **CELERY_APP_DEFAULTS)
     celery_app.set_default()
     config = get_config()
     config_celery_app(config, celery_app)
@@ -292,9 +347,12 @@ def setup_periodic_tasks(config, celery_app):
     if config.inference_services and config.gtn_database_refresh_interval and config.gtn_database_path:
         schedule_task("refresh_gtn_database", config.gtn_database_refresh_interval)
 
-    # IWC manifest pre-warm only matters when the agent-ops layer is exposed --
-    # same inference_services gate as the GTN refresh above.
-    if config.inference_services and config.iwc_manifest_refresh_interval:
+    # Two consumers want the IWC manifest: the agent-ops layer, gated on
+    # inference_services like the GTN refresh above, and the curated workflows tab
+    # -- but only in iwc mode, since in local or off mode the projection is dead
+    # weight and the fetch an outbound request nobody asked for.
+    curated_reads_iwc = config.curated_workflows_source == "iwc"
+    if (config.inference_services or curated_reads_iwc) and config.iwc_manifest_refresh_interval:
         schedule_task("refresh_iwc_manifest", config.iwc_manifest_refresh_interval)
 
     if config.celery_user_concurrency_limit:

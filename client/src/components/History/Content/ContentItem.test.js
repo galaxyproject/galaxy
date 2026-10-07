@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { nextTick } from "vue";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -15,11 +15,10 @@ vi.mock("@/components/History/model/queries");
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-localVue.use(PiniaVuePlugin);
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", async (importOriginal) => ({
+    ...(await importOriginal()),
     useRoute: vi.fn(() => ({})),
     useRouter: vi.fn(() => ({})),
 }));
@@ -54,7 +53,7 @@ describe("ContentItem", () => {
         );
 
         wrapper = mount(ContentItem, {
-            propsData: {
+            props: {
                 expandDataset: true,
                 item,
                 id: 1,
@@ -65,7 +64,7 @@ describe("ContentItem", () => {
                 selectable: false,
                 filterable: true,
             },
-            localVue,
+            global: localVue,
             stubs: {
                 DatasetDetails: true,
                 vueTagsInput: false,
@@ -76,7 +75,7 @@ describe("ContentItem", () => {
                     getters: {},
                 },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             router,
         });
     });
@@ -93,7 +92,7 @@ describe("ContentItem", () => {
             expect(tags.at(i).text()).toBe(`tag${i + 1}`);
 
             await tags.at(i).trigger("click");
-            expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
+            expect(emittedArg(wrapper, "tag-click", i)).toBe(`tag${i + 1}`);
         }
 
         // close all tags
@@ -101,7 +100,7 @@ describe("ContentItem", () => {
             const tagRemover = wrapper.find(`.tag[data-option=tag${i + 1}] button`);
 
             await tagRemover.trigger("click");
-            expect(wrapper.emitted()["tag-change"][i][1]).not.toContain(`tag${i + 1}`);
+            expect(wrapper.emitted("tag-change")[i][1]).not.toContain(`tag${i + 1}`);
         }
 
         await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
@@ -110,7 +109,7 @@ describe("ContentItem", () => {
         // expansion button
         const $el = wrapper.find(".cursor-pointer");
         $el.trigger("click");
-        expect(wrapper.emitted()["update:expand-dataset"]).toBeDefined();
+        expect(wrapper.emitted("update:expand-dataset")).toBeDefined();
 
         // select and unselect
         const noSelector = wrapper.find(".selector > svg");
@@ -123,15 +122,17 @@ describe("ContentItem", () => {
         expect(selector.attributes("data-icon")).toBe("square");
         selector.trigger("click");
 
-        await localVue.nextTick();
-        expect(wrapper.emitted()["update:selected"][0][0]).toBe(true);
+        await nextTick();
+        expect(emittedArg(wrapper, "update:selected")).toBe(true);
 
         await wrapper.setProps({ selected: true });
-        selector.trigger("click");
+        // The icon re-renders as a new <svg>, so look it up again.
+        const checkedSelector = wrapper.find(".selector > svg");
+        expect(checkedSelector.attributes("data-icon")).toBe("check-square");
+        checkedSelector.trigger("click");
 
-        await localVue.nextTick();
-        expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
+        await nextTick();
+        expect(emittedArg(wrapper, "update:selected", 1)).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
-        expect(selector.attributes("data-icon")).toBe("check-square");
     });
 });

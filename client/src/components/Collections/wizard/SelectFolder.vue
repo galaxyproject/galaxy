@@ -26,7 +26,12 @@ watch(remoteUri, (newValue: string) => {
             label-for="directory"
             :description="`Select a 'remote files' directory to import from.`"
             class="mt-3">
-            <FilesInput id="directory" v-model="remoteUri" mode="directory" :require-writable="false" />
+            <FilesInput
+                id="directory"
+                :value="remoteUri"
+                mode="directory"
+                :require-writable="false"
+                @input="(v: string) => (remoteUri = v)" />
         </BFormGroup>
         <div v-if="ftpUploadSite">
             Alternatively, <BLink @click="emit('onFtp')">click here to load your Galaxy FTP directory contents</BLink>.

@@ -8,6 +8,11 @@ from typing import cast
 import pytest
 from tusclient import client
 
+from galaxy.tool_util.verify.interactor import (
+    InputStagingError,
+    JobDataT,
+    verify_tool,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
 from galaxy.util.compression_utils import decompress_bytes_to_directory
@@ -338,12 +343,12 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert not content.startswith(">hg17")
 
-    def test_upload_multiple_mixed_success(self, history_id, mock_http_server):
-        url_ok = mock_http_server.get_url(
+    def test_upload_multiple_mixed_success(self, history_id, test_http_server):
+        url_ok = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
             file_path="test-data/1.bed",
         )
-        url_error = mock_http_server.get_url(
+        url_error = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
             status=404,
             body="Not Found",
@@ -373,8 +378,8 @@ class TestToolsUpload(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
-    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
             file_path="test-data/1.bam",
         )
@@ -386,8 +391,8 @@ class TestToolsUpload(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
-    def test_fetch_html_from_url(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_fetch_html_from_url(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
             file_path="test-data/html_file.txt",
         )
@@ -417,10 +422,10 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
-    def test_abort_fetch_job(self, history_id, mock_http_server):
+    def test_abort_fetch_job(self, history_id, test_http_server):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://httpstat.us/200?sleep=10000",
             status=200,
             body="OK",
@@ -983,12 +988,31 @@ class TestToolsUpload(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
+    @pytest.mark.parametrize("name", ["../escaped.txt", "/escaped.txt"])
+    def test_upload_force_composite_rejects_escaping_name(self, history_id, name):
+        payload = self.dataset_populator.upload_payload(
+            history_id,
+            "primary\n",
+            extra_inputs={
+                "files_1|url_paste": "extra file\n",
+                "files_1|NAME": name,
+                "file_count": "2",
+                "force_composite": "True",
+            },
+        )
+        response = self.dataset_populator.tools_post(payload)
+        self.dataset_populator.wait_for_tool_run(history_id, response, assert_ok=False)
+        job_id = response.json()["jobs"][0]["id"]
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job["state"] == "error"
+        assert f"Invalid composite file name '{name}'" in job["stderr"]
+
     def test_upload_from_invalid_url(self):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
 
-    def test_upload_from_404_url(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_upload_from_404_url(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/bla123",
             status=404,
             body="Not Found",
@@ -1001,8 +1025,48 @@ class TestToolsUpload(ApiTestCase):
             dataset_details["state"] == "error"
         ), f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
-    def test_upload_from_valid_url(self, mock_http_server):
-        url = mock_http_server.get_url(
+    @pytest.mark.requires_tool_id("cat1")
+    @pytest.mark.parametrize("use_legacy_api", ["always", "never"])
+    @pytest.mark.parametrize("expect_failure", [False, True])
+    def test_tool_test_reports_failed_upload(self, history_id, test_http_server, use_legacy_api, expect_failure):
+        interactor = self.galaxy_interactor
+        test = interactor.get_tool_tests("cat1")[0]
+        filename, attributes = test["required_files"][0]
+        attributes["location"] = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/missing-staging-input.bed",
+            status=404,
+            body="Not Found",
+        )
+        test["expect_failure"] = expect_failure
+        reports: list[JobDataT] = []
+
+        with pytest.raises(InputStagingError) as exc:
+            verify_tool(
+                "cat1",
+                interactor,
+                test_history=history_id,
+                register_job_data=reports.append,
+                _tool_test_dicts=[test],
+                use_legacy_api=use_legacy_api,
+            )
+
+        dataset_id = interactor.uploads[filename]["id"]
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
+        job = self.dataset_populator.get_job_details(dataset["creating_job"]).json()
+        assert job["state"] == "ok"
+        assert dataset["state"] == "error"
+        assert "404" in dataset["misc_info"]
+        assert dataset["misc_info"] in str(exc.value)
+        assert filename in str(exc.value)
+        assert dataset_id in str(exc.value)
+        assert exc.value.__cause__ is not None
+        assert reports[0]["status"] == "error"
+        assert "Input staging problem:" in reports[0]["execution_problem"]
+        assert dataset["misc_info"] in reports[0]["execution_problem"]
+        assert str(exc.value.__cause__) in reports[0]["execution_problem"]
+
+    def test_upload_from_valid_url(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/api/version",
             status=200,
             body='{"version_major": "mock"}',
@@ -1011,8 +1075,8 @@ class TestToolsUpload(ApiTestCase):
         history_id, new_dataset = self._upload(url)
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
-    def test_upload_from_valid_url_spaces(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_upload_from_valid_url_spaces(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/api/version",
             status=200,
             body='{"version_major": "mock"}',
@@ -1193,3 +1257,22 @@ class TestToolsUpload(ApiTestCase):
         )
         assert details["state"] == "deferred"
         assert details["file_ext"] == "bam"
+
+    def test_fetch_hdca_without_collection_type_fails_the_job(self):
+        # The fetch succeeds and only the collection creation fails, so the failure has
+        # to be reported by the job rather than by the request.
+        with self.dataset_populator.test_history() as history_id:
+            targets = [
+                {
+                    "destination": {"type": "hdca"},
+                    "name": "no collection type",
+                    "elements": [{"src": "pasted", "paste_content": "hello\n", "name": "f.txt"}],
+                }
+            ]
+            payload = {"history_id": history_id, "targets": targets}
+            response = self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+            job = response.json()["jobs"][0]
+            details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert details["state"] == "error", details["state"]
+            messages = " ".join(m.get("desc") or "" for m in details.get("job_messages") or [])
+            assert "collection_type" in messages, messages

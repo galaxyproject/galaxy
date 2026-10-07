@@ -96,12 +96,16 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
     def response(self) -> GalaxyAbstractResponse: ...
 
-    @abc.abstractmethod
-    def url_builder(self): ...
-
     @property
     @abc.abstractmethod
     def session_csrf_token(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def galaxy_session(self) -> GalaxySession | None: ...
+
+    @abc.abstractmethod
+    def log_event(self, message: str) -> None: ...
 
 
 class SessionRequestContextImpl(SessionRequestContext):
@@ -116,22 +120,16 @@ class SessionRequestContextImpl(SessionRequestContext):
         response: GalaxyAbstractResponse,
         user: User | None = None,
         galaxy_session: GalaxySession | None = None,
-        url_builder=None,
     ):
         self._app = app
         self._user = user
         self._galaxy_session = galaxy_session
-        self._url_builder = url_builder
         self.__request = request
         self.__response = response
 
     @property
     def app(self) -> ToolShedApp:
         return self._app
-
-    @property
-    def url_builder(self):
-        return self._url_builder
 
     @property
     def user(self) -> User | None:
@@ -177,5 +175,5 @@ class SessionRequestContextImpl(SessionRequestContext):
     def galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
-    def log_event(self, str):
+    def log_event(self, message: str) -> None:
         pass

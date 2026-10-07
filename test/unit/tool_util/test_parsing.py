@@ -8,7 +8,12 @@ from typing import (
     TypeVar,
 )
 
-from galaxy.tool_util.parser.factory import get_tool_source
+import pytest
+
+from galaxy.tool_util.parser.factory import (
+    build_xml_tool_source,
+    get_tool_source,
+)
 from galaxy.tool_util.parser.output_objects import from_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
@@ -39,6 +44,13 @@ TOOL_XML_1 = """
             url="https://galaxyproject.org/iuc/"
             name="Galaxy IUC" />
     </creator>
+    <funding>
+        <grant
+            name="EuroScienceGateway"
+            description="A distributed computing network across 13 European countries."
+            identifier="101057388"
+            url="https://cordis.europa.eu/project/id/101057388" />
+    </funding>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -220,6 +232,18 @@ tests:
        out1:
          lines_diff: 4
          compare: sim_size
+creator:
+    - class: Person
+      givenName: Björn
+      familyName: Grüning
+      identifier: http://orcid.org/0000-0002-3079-6586
+    - class: Organization
+      name: Galaxy IUC
+      url: https://galaxyproject.org/iuc/
+funding:
+    - name: EuroScienceGateway
+      identifier: '101057388'
+      url: https://cordis.europa.eu/project/id/101057388
 """
 
 TOOL_EXPRESSION_XML_1 = """
@@ -329,7 +353,7 @@ class TestXmlLoader(BaseLoaderTestCase):
 
     def test_tool_source_to_string(self):
         # Previously this threw an Exception - test for regression.
-        str(self._tool_source)
+        assert str(self._tool_source).startswith("XmlToolSource[")
 
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"
@@ -510,6 +534,17 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert creator2["class"] == "Organization"
         assert creator2["name"] == "Galaxy IUC"
 
+    def test_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        grant = funding[0]
+        assert grant["class"] == "Grant"
+        assert grant["name"] == "EuroScienceGateway"
+        assert grant["identifier"] == "101057388"
+        assert grant["url"] == "https://cordis.europa.eu/project/id/101057388"
+        assert grant["description"] == "A distributed computing network across 13 European countries."
+
 
 class TestYamlLoader(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
@@ -666,6 +701,28 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
+
+    def test_parse_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        assert creators[0] == {
+            "class": "Person",
+            "givenName": "Björn",
+            "familyName": "Grüning",
+            "identifier": "http://orcid.org/0000-0002-3079-6586",
+        }
+        assert creators[1] == {"class": "Organization", "name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}
+
+    def test_parse_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        assert funding[0] == {
+            "class": "Grant",
+            "name": "EuroScienceGateway",
+            "identifier": "101057388",
+            "url": "https://cordis.europa.eu/project/id/101057388",
+        }
 
 
 class TestDataSourceLoader(BaseLoaderTestCase):
@@ -927,6 +984,36 @@ class TestCollectionOutputYaml(FunctionalTestToolTestCase):
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
+
+
+@pytest.mark.parametrize("format_source", [None, "input"])
+@pytest.mark.parametrize("rule_format", [None, "tabular"])
+def test_collection_format_defaults_match_xml(format_source, rule_format):
+    output = {
+        "type": "collection",
+        "collection_type": "list",
+        "format": "txt",
+        "format_source": format_source,
+        "metadata_source": "input",
+        "discover_datasets": [{"pattern": "result", "format": rule_format}],
+    }
+    source_attribute = f'format_source="{format_source}"' if format_source else ""
+    rule_attribute = f'format="{rule_format}"' if rule_format else ""
+    xml_source = build_xml_tool_source(f"""<tool profile="26.1"><outputs>
+        <collection name="output" type="list" format="txt" metadata_source="input" {source_attribute}>
+            <discover_datasets pattern="result" {rule_attribute} />
+        </collection>
+    </outputs></tool>""")
+    for source in (xml_source, YamlToolSource({"outputs": {"output": output}})):
+        _, collections = source.parse_outputs(None)
+        collection = collections["output"]
+        assert collection.dataset_collector_descriptions[0].default_ext == (
+            rule_format or (None if format_source else "txt")
+        )
+        output_model = collection.to_model()
+        assert output_model.format == "txt"
+        assert output_model.format_source == format_source
+        assert output_model.metadata_source == "input"
 
 
 def test_yaml_parser_accepts_collection_type_source_alias():

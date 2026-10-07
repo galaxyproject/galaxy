@@ -13,7 +13,10 @@
         </div>
         <b>{{ l("Converter Tool: ") }}</b>
         <Multiselect
+            id="converter-tool"
             v-model="selectedConverter"
+            :aria-label="l('Converter Tool')"
+            name="converter-tool"
             deselect-label="Can't remove this value"
             track-by="name"
             label="name"

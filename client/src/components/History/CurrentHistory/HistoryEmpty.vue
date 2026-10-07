@@ -2,10 +2,11 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
-import { BAlert } from "bootstrap-vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import localize from "@/utils/localization";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const { emit } = useEventBus<string>("open-tool-section");
 
@@ -20,23 +21,28 @@ const props = withDefaults(
     },
 );
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
+
+async function openUpload() {
+    await openUploadModal();
+}
+
 function clickDataLink() {
     emit("getext");
 }
 </script>
 
 <template>
-    <BAlert show>
+    <GAlert show>
         <h4 id="empty-history-message" class="mb-1">
             <FontAwesomeIcon :icon="faInfoCircle" />
             <span>{{ localize(message) }}</span>
         </h4>
 
         <p v-if="props.writable">
-            <a v-localize href="#" @click.prevent="openGlobalUploadModal">You can load your own data</a>
+            <a v-localize href="#" @click.prevent="openUpload">You can load your own data</a>
             <span v-localize>or</span>
             <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
         </p>
-    </BAlert>
+    </GAlert>
 </template>

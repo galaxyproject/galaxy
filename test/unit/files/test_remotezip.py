@@ -19,8 +19,8 @@ LOCALHOST_ALLOWLIST = FileSourcePluginsConfig(
 )
 
 
-def test_file_source(mock_http_server):
-    zip_url = mock_http_server.get_url(
+def test_file_source(test_http_server):
+    zip_url = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/davelopez/ro-crate-zip-explorer/refs/heads/main/tests/test-data/rocrate-test.zip",
         file_path="test-data/rocrate-test.zip",
         content_type="application/zip",
@@ -34,7 +34,7 @@ def test_file_source(mock_http_server):
 
     test_url = f"zip://extract?source={zip_url}&header_offset={header_offset}&compress_size={compress_size}&compression_method={compression_method}"
     user_context = user_context_fixture()
-    file_sources_config = LOCALHOST_ALLOWLIST if not mock_http_server.is_remote else None
+    file_sources_config = LOCALHOST_ALLOWLIST if not test_http_server.is_remote else None
     file_sources = configured_file_sources(FILE_SOURCES_CONF, file_sources_config=file_sources_config)
     file_source_pair = file_sources.get_file_source_path(test_url)
 

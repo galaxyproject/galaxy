@@ -178,8 +178,6 @@ def add_file(dataset, registry, output_path: str) -> dict[str, str]:
     info = dict(
         type="dataset", dataset_id=dataset.dataset_id, ext=ext, stdout=stdout, name=dataset.name, line_count=line_count
     )
-    if dataset.get("uuid", None) is not None:
-        info["uuid"] = dataset.get("uuid")
     # FIXME: does this belong here? also not output-adjacent-tmpdir aware =/
     if not link_data_only and datatype and datatype.dataset_content_needs_grooming(output_path):
         # Groom the dataset content if necessary

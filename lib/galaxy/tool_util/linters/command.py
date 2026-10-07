@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class CommandMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -31,7 +31,7 @@ class CommandMissing(Linter):
 
 class CommandEmpty(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -45,7 +45,7 @@ class CommandEmpty(Linter):
 
 class CommandTODO(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -56,7 +56,7 @@ class CommandTODO(Linter):
 
 class CommandInterpreterDeprecated(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -70,7 +70,7 @@ class CommandInterpreterDeprecated(Linter):
 
 class CommandInfo(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -81,3 +81,43 @@ class CommandInfo(Linter):
         if interpreter_type := command.attrib.get("interpreter", None):
             interpreter_info = f" with interpreter of type [{interpreter_type}]"
         lint_ctx.info(f"Tool contains a command{interpreter_info}.", linter=cls.name(), node=command)
+
+
+def _wraps_external_software(tool_source: "ToolSource") -> bool:
+    """Return True if the tool declares a package requirement or a container."""
+    requirements, containers, *_ = tool_source.parse_requirements()
+    return any(r.type == "package" for r in requirements) or bool(containers)
+
+
+class VersionCommandMissing(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        if tool_xml.find("./version_command") is not None:
+            return
+        if not _wraps_external_software(tool_source):
+            return
+        lint_ctx.info(
+            "No version_command found, tools wrapping packaged software should report its version.",
+            linter=cls.name(),
+            node=tool_xml.getroot(),
+        )
+
+
+class VersionCommandMissingNoRequirements(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        if tool_xml.find("./version_command") is not None:
+            return
+        if _wraps_external_software(tool_source):
+            return
+        lint_ctx.info(
+            "No version_command found, that should be OK for a tool without package requirements.",
+            linter=cls.name(),
+            node=tool_xml.getroot(),
+        )

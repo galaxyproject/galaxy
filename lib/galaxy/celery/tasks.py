@@ -1,6 +1,5 @@
 import datetime
 import json
-import shutil
 from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
@@ -34,6 +33,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
@@ -94,6 +94,7 @@ from galaxy.util import (
     now,
 )
 from galaxy.util.custom_logging import get_logger
+from galaxy.workflow import curated
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
 log = get_logger(__name__)
@@ -139,8 +140,16 @@ def purge_hda(
 
 
 @galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
-def purge_datasets(dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest, task_user_id: int | None = None):
-    dataset_manager.purge_datasets(request)
+def purge_datasets(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    request: PurgeDatasetsTaskRequest,
+    task_user_id: int | None = None,
+):
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    dataset_manager.purge_datasets(request, user)
 
 
 @galaxy_task(action="purge all datasets in a history")
@@ -553,12 +562,16 @@ def export_history(
 
 @galaxy_task(action="preparing compressed file for collection download")
 def prepare_dataset_collection_download(
+    sa_session: galaxy_scoped_session,
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
     task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target collection."""
-    collection_manager.write_dataset_collection(request)
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    collection_manager.write_dataset_collection(request, user=user)
 
 
 @galaxy_task(action="preparing Galaxy Markdown PDF for download")
@@ -784,37 +797,45 @@ def emit_queue_metrics_task(app: MinimalManagerApp):
     )
 
 
+def _cleanup_jwds(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    days: int,
+) -> int:
+    """Cleanup job working directories for failed jobs that are older than `days` days.
+
+    Returns the number of job working directories deleted.
+    """
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+
+    def _delete_jwd(job: model.Job) -> bool:
+        try:
+            return JobWorkingDirectory(job, object_store).delete()
+        except ObjectNotFound:
+            return False
+        except OSError as e:
+            log.error(f"Error deleting job working directory for job {job.id}: {e.strerror}")
+            return False
+
+    deleted_count = 0
+    stmt = select(model.Job).where(
+        model.Job.state == "error",
+        model.Job.update_time < cutoff,
+    )
+    for job in sa_session.scalars(stmt).yield_per(100):
+        if _delete_jwd(job):
+            deleted_count += 1
+
+    log.info("Deleted %d job working directories older than %d days", deleted_count, days)
+    return deleted_count
+
+
 @galaxy_task(action="clean up job working directories")
 def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, config: GalaxyAppConfiguration):
     """Cleanup job working directories for failed jobs that are older than X days"""
-
-    def get_failed_jobs():
-        return sa_session.query(model.Job.id).filter(
-            model.Job.state == "error",
-            model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
-            model.Job.object_store_id.isnot(None),
-        )
-
-    def delete_jwd(job):
-        try:
-            # Get job working directory from object store
-            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-            shutil.rmtree(path)
-        except ObjectNotFound:
-            # job working directory already deleted
-            pass
-        except OSError as e:
-            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
-
-    failed_jobs = get_failed_jobs()
     days = config.failed_jobs_working_directory_cleanup_days
-
-    if not failed_jobs:
-        log.info("No failed jobs found within the last %s days", days)
-
-    for job in failed_jobs:
-        delete_jwd(job)
-        log.info("Deleted job working directory for job %s", job.id)
+    _cleanup_jwds(sa_session, object_store, days)
 
 
 @galaxy_task(action="renewing Hashicorp Vault token")
@@ -825,20 +846,41 @@ def renew_vault_token(vault: Vault):
 
 @galaxy_task(action="refreshing IWC workflow manifest cache")
 def refresh_iwc_manifest(config: GalaxyAppConfiguration):
-    """Pre-warm the in-process IWC manifest cache.
+    """Refresh the curated workflow projection and pre-warm the agent-ops cache.
 
-    The agent-ops layer caches the manifest at module scope with an hour
-    TTL; without this task the first user-driven IWC call after a worker
-    restart pays the full network fetch. Failures are logged and swallowed
-    so an iwc.galaxyproject.org outage doesn't kill the periodic queue --
-    on-demand callers still get the prior cached copy until the TTL lapses.
+    Two independent consumers, each fetched only when something actually reads it.
+
+    The projection at ``curated_workflows_path`` is what crosses the process
+    boundary: the in-process manifest cache is a module global, and celery runs
+    as a separate service from the web workers, so only the file reaches them.
+    That refresh is conditional -- an unchanged manifest costs a HEAD.
+
+    Failures are logged and swallowed so an iwc.galaxyproject.org outage doesn't
+    kill the periodic queue; readers keep serving the previous copy either way.
     """
-    try:
-        manifest = iwc.refresh_manifest()
-    except Exception as e:  # noqa: BLE001 -- best-effort warm; resilience over precision
-        log.warning("refresh_iwc_manifest: fetch failed, keeping existing cache: %s", e)
-        return
-    log.info("refresh_iwc_manifest: cached %s top-level manifest entries", len(manifest))
+    path = config.curated_workflows_path
+    if config.curated_workflows_source == "iwc" and path:
+        try:
+            written = curated.refresh_projection(path)
+        except curated.RefreshInProgress:
+            log.info("refresh_iwc_manifest: another process is already refreshing %s, skipping", path)
+        except Exception as e:  # noqa: BLE001 -- best-effort refresh; resilience over precision
+            log.warning("refresh_iwc_manifest: could not refresh %s: %s", path, e)
+        else:
+            if written is None:
+                log.info("refresh_iwc_manifest: curated catalog at %s is already current", path)
+            else:
+                log.info("refresh_iwc_manifest: wrote %s curated workflows to %s", written, path)
+
+    # Only the agent-ops layer reads the module-level manifest cache, so warming
+    # it is worth a second fetch only when that layer is actually configured.
+    if config.inference_services:
+        try:
+            manifest = iwc.refresh_manifest()
+        except Exception as e:  # noqa: BLE001 -- best-effort warm; resilience over precision
+            log.warning("refresh_iwc_manifest: fetch failed, keeping existing cache: %s", e)
+            return
+        log.info("refresh_iwc_manifest: cached %s top-level manifest entries", len(manifest))
 
 
 @galaxy_task(action="refreshing GTN training database")

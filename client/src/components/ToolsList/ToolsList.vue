@@ -3,7 +3,7 @@ import { faBars, faGripVertical, faSitemap, faStar } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
@@ -194,9 +194,7 @@ const validFilters = computed<Record<string, ValidFilter<string | string[]>>>(()
 // See: https://whoosh.readthedocs.io/en/latest/querylang.html#query
 // For now, I've changed the `quoteStrings` param to `false` to avoid issues with the quotes, and added
 // a "hint" to the `FilterMenu` help text.
-const ToolFilters = computed<Filtering<string | string[]>>(
-    () => new Filtering(validFilters.value, undefined, false, false),
-);
+const ToolFilters = computed<Filtering<string | string[]>>(() => new Filtering(validFilters.value, undefined, false));
 
 function normalizePropsToFilterSettings(routeProps: Props): FilterSettings {
     const filters: FilterSettings = {};
@@ -373,17 +371,17 @@ function onToggleView(newView: ListViewMode) {
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
                 <FilterMenu
                     ref="toolFilterMenu"
+                    v-model:filter-text="filterText"
+                    v-model:show-advanced="showAdvanced"
                     class="w-100"
                     name="Tools"
                     placeholder="search tools"
                     :debounce-delay="400"
-                    :filter-text.sync="filterText"
                     :filter-class="ToolFilters"
                     :autocomplete-values="tagAutocompleteValues"
                     autocomplete-prefix="tag:"
                     has-help
-                    :loading="loading"
-                    :show-advanced.sync="showAdvanced">
+                    :loading="loading">
                     <template v-slot:menu-help-text>
                         <div>
                             <p>

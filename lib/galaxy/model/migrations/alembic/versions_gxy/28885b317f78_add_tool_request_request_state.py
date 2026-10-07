@@ -26,7 +26,7 @@ references are repointed first), and only then the UNIQUE is added.
 Downgrade drops the UNIQUE and the new columns; it does not un-dedupe.
 
 Revision ID: 28885b317f78
-Revises: 6925fe4c8a17
+Revises: fac9c76612f9
 Create Date: 2026-05-21 12:30:00.000000
 
 """
@@ -54,7 +54,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "28885b317f78"
-down_revision = "6925fe4c8a17"
+down_revision = "fac9c76612f9"
 branch_labels = None
 depends_on = None
 

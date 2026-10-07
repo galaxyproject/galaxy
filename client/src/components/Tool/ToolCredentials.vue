@@ -26,7 +26,7 @@
 
 import { faCaretRight, faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -36,6 +36,8 @@ import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolCredentialsContextCheck from "@/components/Tool/ToolCredentialsContextCheck.vue";
 import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
@@ -163,7 +165,7 @@ onMounted(async () => {
 
 <template>
     <div class="mt-2">
-        <BAlert show :variant="statusVariant" class="d-flex flex-column flex-gapy-1">
+        <GAlert show :variant="statusVariant" class="d-flex flex-column flex-gapy-1">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="isAnonymous">
                 <span v-if="toolHasRequiredServiceCredentials">
@@ -221,9 +223,9 @@ onMounted(async () => {
                 </div>
 
                 <div>
-                    <BButton variant="primary" size="sm" @click="toggleDialog">
+                    <GButton color="blue" size="small" @click="toggleDialog">
                         {{ provideCredentialsButtonTitle }}
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
 
@@ -248,7 +250,7 @@ onMounted(async () => {
                     </BBadge>
                 </div>
             </div>
-        </BAlert>
+        </GAlert>
 
         <ToolCredentialsManagement
             v-if="showModal"

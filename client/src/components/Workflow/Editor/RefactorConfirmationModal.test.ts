@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,7 +24,7 @@ const TEST_WORKFLOW_ID = "test123";
 const TEST_ACTION_TYPE = "upgrade_subworkflow";
 
 describe("RefactorConfirmationModal.vue", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -56,12 +56,12 @@ describe("RefactorConfirmationModal.vue", () => {
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
-        expect(wrapper.emitted().onWorkflowError!.length).toBe(1);
+        expect(wrapper.emitted("onWorkflowError")).toHaveLength(1);
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);
         expect(vi.mocked(refactor).mock.calls[0]![3]).toBeTruthy(); // dry run argument
 
         // onRefactor never emitted because there was a failure
-        expect(wrapper.emitted().onRefactor).toBeFalsy();
+        expect(wrapper.emitted("onRefactor")).toBeFalsy();
     });
 
     it("should call refactor on dryRun and run without dryRun if all fine", async () => {
@@ -76,7 +76,7 @@ describe("RefactorConfirmationModal.vue", () => {
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
-        expect(wrapper.emitted().onWorkflowError).toBeFalsy();
+        expect(wrapper.emitted("onWorkflowError")).toBeFalsy();
         // called with dry run as true...
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);
         expect(vi.mocked(refactor).mock.calls[0]![3]).toBeTruthy();
@@ -84,7 +84,7 @@ describe("RefactorConfirmationModal.vue", () => {
         expect(vi.mocked(refactor).mock.calls[1]![0]).toEqual(TEST_WORKFLOW_ID);
         expect(vi.mocked(refactor).mock.calls[1]![3]).toBeFalsy();
         // second time onRefactor emitted with the final response
-        expect(wrapper.emitted().onRefactor!.length).toBe(1);
+        expect(wrapper.emitted("onRefactor")).toHaveLength(1);
     });
 
     it("should show confirmation modal if there are messages from the server", async () => {
@@ -93,7 +93,7 @@ describe("RefactorConfirmationModal.vue", () => {
                 then({
                     action_executions: [
                         {
-                            action_type: TEST_ACTION_TYPE,
+                            action: { action_type: TEST_ACTION_TYPE },
                             messages: [
                                 {
                                     message_type: "connection_drop_forced",
@@ -113,7 +113,7 @@ describe("RefactorConfirmationModal.vue", () => {
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
-        expect(wrapper.emitted().onWorkflowError).toBeFalsy();
+        expect(wrapper.emitted("onWorkflowError")).toBeFalsy();
 
         // called with dry run...
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);

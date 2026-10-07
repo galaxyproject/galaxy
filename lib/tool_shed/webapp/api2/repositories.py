@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 import os
 import shutil
@@ -10,10 +12,15 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    Query,
     Request,
     Response,
     status,
     UploadFile,
+)
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import (
+    RedirectResponse,
 )
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
@@ -115,6 +122,36 @@ router = Router(tags=["repositories"])
 
 IndexResponse = RepositorySearchResults | list[Repository] | PaginatedRepositoryIndexResults
 
+# Install info for a given name/owner/changeset_revision only changes when the repository's
+# metadata is rebuilt, so it is worth caching. Clients that revalidate get a 304 from the
+# ETag; caches that do not revalidate serve their copy for a day.
+INSTALL_INFO_MAX_AGE = 86400
+INSTALL_INFO_CACHE_CONTROL = f"public, max-age={INSTALL_INFO_MAX_AGE}"
+
+
+def _etag_for(payload) -> str:
+    """Build an ETag from the payload the route is about to serialize."""
+    encoded = json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":"))
+    return f'"{hashlib.sha256(encoded.encode("utf-8")).hexdigest()}"'
+
+
+def _if_none_match(request: Request) -> list[str]:
+    header = request.headers.get("if-none-match")
+    if not header:
+        return []
+    # A conditional request may list several tags; weak validators are compared by value.
+    return [tag.strip().removeprefix("W/") for tag in header.split(",")]
+
+
+def _cacheable(payload, request: Request, response: Response):
+    """Attach cache headers to payload, or hand back a 304 if the client already has it."""
+    etag = _etag_for(payload)
+    headers = {"ETag": etag, "Cache-Control": INSTALL_INFO_CACHE_CONTROL}
+    if etag in _if_none_match(request):
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
+    response.headers.update(headers)
+    return payload
+
 
 @as_form
 class RepositoryUpdateRequestFormData(RepositoryUpdateRequest):
@@ -129,6 +166,7 @@ class FastAPIRepositories:
         "/api/repositories",
         description="Get a list of repositories or perform a search.",
         operation_id="repositories__index",
+        allow_cors=True,
     )
     def index(
         self,
@@ -196,6 +234,8 @@ class FastAPIRepositories:
     )
     def legacy_install_info(
         self,
+        request: Request,
+        response: Response,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -207,7 +247,7 @@ class FastAPIRepositories:
             owner,
             changeset_revision,
         )
-        return list(legacy_install_info)
+        return _cacheable(list(legacy_install_info), request, response)
 
     @router.get(
         "/api/repositories/install_info",
@@ -216,6 +256,8 @@ class FastAPIRepositories:
     )
     def install_info(
         self,
+        request: Request,
+        response: Response,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -230,7 +272,7 @@ class FastAPIRepositories:
             owner,
             changeset_revision,
         )
-        return from_legacy_install_info(legacy_install_info)
+        return _cacheable(from_legacy_install_info(legacy_install_info), request, response)
 
     @router.get(
         "/api/repositories/{encoded_repository_id}/metadata",
@@ -269,6 +311,7 @@ class FastAPIRepositories:
         "/api/repositories/get_ordered_installable_revisions",
         description="Get an ordered list of the repository changeset revisions that are installable",
         operation_id="repositories__get_ordered_installable_revisions",
+        allow_cors=True,
     )
     def get_ordered_installable_revisions(
         self,
@@ -382,7 +425,8 @@ class FastAPIRepositories:
         request: UpdateRepositoryRequest = Body(...),
     ) -> DetailedRepository:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        ensure_can_manage(trans, repository)
+        if not can_update_repo(trans, repository):
+            raise InsufficientPermissionsException("You do not have permission to update this repository.")
 
         # may want to set some of these to null, so we're using the exclude_unset feature
         # to just serialize the ones we want to use to a dictionary.
@@ -637,3 +681,13 @@ class FastAPIRepositories:
     ) -> dict:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
+
+    @router.get(
+        "/repository",
+        deprecated=True,
+        include_in_schema=False,
+    )
+    def redirect_legacy_repository_url(self, repository_id: str = Query(...)):
+        # make sure it is real ID to sanitize before redirection
+        sanitized_repository_id = self.app.security.encode_id(self.app.security.decode_id(repository_id))
+        return RedirectResponse(f"/repositories/{sanitized_repository_id}")

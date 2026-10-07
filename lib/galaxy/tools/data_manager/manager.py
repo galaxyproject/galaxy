@@ -1,6 +1,7 @@
 import errno
 import logging
 import os
+from collections.abc import Mapping
 from typing import (
     Optional,
 )
@@ -242,12 +243,14 @@ class DataManager:
     def write_bundle(
         self,
         out_data: dict[str, OutputDataset],
+        source_extra_files_paths: Mapping[str, str] | None = None,
     ) -> dict[str, OutputDataset]:
         tool_data_tables = self.data_managers.app.tool_data_tables
         return tool_data_tables.write_bundle(
             out_data,
             self.processor_description,
             self.repo_info,
+            source_extra_files_paths,
         )
 
     @property

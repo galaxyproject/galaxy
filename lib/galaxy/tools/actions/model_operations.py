@@ -40,17 +40,16 @@ log = logging.getLogger(__name__)
 
 class ModelOperationToolAction(DefaultToolAction):
     produces_real_jobs: bool = False
+    file_source_uri_discovery_complete = True
 
     def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None, collection_info=None):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, _, _, _ = self._collect_inputs(
-            tool, trans, incoming, history, current_user_roles, collection_info
-        )
+        collected = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
-        tool.check_inputs_ready(inp_data, inp_dataset_collections, security=trans.security)
+        tool.check_inputs_ready(collected.inp_data, collected.inp_dataset_collections, security=trans.security)
 
     def execute(
         self,
@@ -85,6 +84,7 @@ class ModelOperationToolAction(DefaultToolAction):
             history,
             inp_data,
             inp_dataset_collections,
+            input_collection_parameters,
             preserved_tags,
             preserved_hdca_tags,
             all_permissions,
@@ -97,13 +97,14 @@ class ModelOperationToolAction(DefaultToolAction):
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
         out_data: OutputDatasetsT = {}
-        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
+        input_collections = inp_dataset_collections.map_values(lambda pairs: pairs[0][0])
         output_collections = OutputCollections(
             trans,
             history,
             tool=tool,
             tool_action=self,
             input_collections=input_collections,
+            input_collection_parameters=input_collection_parameters,
             dataset_collection_elements=dataset_collection_elements,
             on_text=on_text,
             incoming=incoming,

@@ -6,3 +6,19 @@
 - type: ftp
   id: test2
   doc: A default ftp handler, built-in and not needed other than for tests
+
+- type: ftp
+  id: test3
+  doc: An ftp handler with an explicit root path
+  host: "ftp.gnu.org"
+  root: "/gnu"
+
+- type: ftp
+  id: test4
+  doc: An ftp handler with a path embedded in host (backward compat)
+  host: "ftp.ensemblgenomes.org/vol1/pub/"
+
+- type: ftp
+  id: test5
+  doc: An ftp handler with a protocol-prefixed host with path
+  host: "ftp://ftp.ncbi.nlm.nih.gov/pub/"

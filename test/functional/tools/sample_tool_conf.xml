@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml" />
+  <tool file="export_remote_0.1.0.xml" />
   <tool file="export_remote.xml" />
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
@@ -44,10 +45,12 @@
   <tool file="tool_provided_metadata_6.xml" />
   <tool file="tool_provided_metadata_7.xml" />
   <tool file="tool_provided_metadata_8.xml" />
+  <tool file="tool_provided_metadata_uuid.xml" />
   <tool file="tool_provided_metadata_9.xml" />
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_security.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
   <tool file="data_optional.xml" />
@@ -58,11 +61,14 @@
   <tool file="filter_multiple_splitter.xml" />
   <tool file="filter_param_value.xml" />
   <tool file="filter_param_value_ref_attribute.xml" />
+  <tool file="filter_param_value_nested_conditional.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
   <tool file="select_from_csvdataset.xml" />
+  <tool file="column_assertion_delimiter.xml" />
+  <tool file="column_assertion_delimiter_legacy.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />
@@ -93,6 +99,7 @@
   <tool file="checksum.xml" />
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
+  <tool file="infinity.xml"/>
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml" />
   <tool file="expression_tools/pick_value.xml" />
@@ -119,11 +126,15 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="format_source_in_conditional.xml" />
+  <tool file="format_source_in_collection.xml" />
   <tool file="output_filter.xml" />
   <tool file="async_conditional_no_default_nested_data.xml" />
   <tool file="async_ambiguous_unqualified_name.xml" />
   <tool file="async_nested_conditional_shared_discriminator.xml" />
   <tool file="async_nested_conditional_shared_discriminator_bare.xml" />
+  <tool file="async_posix_regex_validator.xml" />
+  <tool file="async_min_repeat_unqualified.xml" />
+  <tool file="async_repeat_unqualified_no_min.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
@@ -206,6 +217,7 @@
   <tool file="collection_creates_pair_y.yml" />
   <tool file="collection_creates_pair_format.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
+  <tool file="collection_format_source_discover.xml" />
   <tool file="collection_creates_pair_from_work_dir.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_creates_list_2.xml" />
@@ -218,6 +230,9 @@
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
   <tool file="collection_type_source_map_over.xml" />
+  <tool file="collection_type_source_conditional.xml" />
+  <tool file="collection_type_source_digit_name.xml" />
+  <tool file="collection_type_source_section_repeat.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="collection_list_or_nested_list_input.xml" />
@@ -248,6 +263,8 @@
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
   <tool file="expect_num_outputs.xml" />
+  <tool file="expect_failure_invalid_inputs.xml" />
+  <tool file="expect_failure_invalid_inputs_y.yml" />
   <tool file="text_repeat.xml" />
   <tool file="integer_default.xml" />
   <tool file="float_default.xml" />

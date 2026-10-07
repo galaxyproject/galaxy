@@ -13,13 +13,10 @@
                     <BCol md="6">
                         <BFormGroup description="Search for strings or regular expressions">
                             <BInputGroup>
-                                <BFormInput
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                <BFormInput v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
 
                                 <BInputGroupAppend>
-                                    <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </BInputGroupAppend>
                             </BInputGroup>
                         </BFormGroup>
@@ -28,7 +25,7 @@
 
                 <BRow>
                     <BCol>
-                        <GButton :pressed.sync="showCommandLine" outline>
+                        <GButton v-model:pressed="showCommandLine" outline>
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
                         </GButton>
                     </BCol>
@@ -52,8 +49,8 @@
 
                         <GButton
                             v-if="!showCommandLine"
+                            v-model:pressed="row.detailsShowing"
                             outline
-                            :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </GButton>
@@ -82,7 +79,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BBreadcrumb,
-    BButton,
     BCard,
     BCol,
     BContainer,
@@ -104,7 +100,6 @@ export default {
     components: {
         Alert,
         BBreadcrumb,
-        BButton,
         BCard,
         BCol,
         BContainer,

@@ -323,6 +323,31 @@ describe("useUserToolCredentials", () => {
             expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(true);
         });
 
+        it("should return true for hasUserProvidedAllRequiredServiceCredentials when only optional credentials exist and none are set", () => {
+            // Set up a tool with only optional credentials
+            const OPTIONAL_ONLY_TOOL_ID = "optional-only-tool";
+            const OPTIONAL_ONLY_TOOL_VERSION = "1.0.0";
+
+            toolsServiceCredentialsDefinitionsStore.setToolServiceCredentialsDefinitionFor(
+                OPTIONAL_ONLY_TOOL_ID,
+                OPTIONAL_ONLY_TOOL_VERSION,
+                [TEST_OPTIONAL_SERVICE_DEFINITION],
+            );
+
+            // No user credentials set up yet (empty array)
+            userToolsServiceCredentialsStore.userToolsServices[
+                `${TEST_USER_ID}-${OPTIONAL_ONLY_TOOL_ID}-${OPTIONAL_ONLY_TOOL_VERSION}`
+            ] = [];
+
+            const { hasUserProvidedAllRequiredServiceCredentials, toolHasRequiredServiceCredentials } =
+                useUserToolCredentials(OPTIONAL_ONLY_TOOL_ID, OPTIONAL_ONLY_TOOL_VERSION);
+
+            // Tool has no required credentials
+            expect(toolHasRequiredServiceCredentials.value).toBe(false);
+            // Should return true because there are no required credentials to provide
+            expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(true);
+        });
+
         it("should correctly compute hasUserProvidedSomeOptionalServiceCredentials", () => {
             const { hasUserProvidedSomeOptionalServiceCredentials } = useUserToolCredentials(
                 TEST_TOOL_ID,
@@ -384,13 +409,16 @@ describe("useUserToolCredentials", () => {
     });
 
     describe("status variant computation", () => {
-        it("should return info when busy", () => {
-            // Mock the isBusy property to return true
-            vi.spyOn(userToolsServiceCredentialsStore, "isBusy", "get").mockReturnValue(true);
-
+        it("should return info when busy", async () => {
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
+            // isBusy is read-only outside the store, so make it busy for real: the
+            // fetch sets it before its first await.
+            const fetching = userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
             expect(statusVariant.value).toBe("info");
+
+            await fetching;
+            expect(statusVariant.value).not.toBe("info");
         });
 
         it("should return success when all credentials provided", async () => {

@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -18,10 +18,10 @@ const SOMETHING_SELECTED = {
     selectionSize: 1,
 };
 
-async function mountHistorySelectionStatusWith(props: Record<string, any>) {
-    const wrapper = shallowMount(HistorySelectionStatus as object, {
-        propsData: props,
-        localVue,
+async function mountHistorySelectionStatusWith(props: { selectionSize: number }) {
+    const wrapper = mount(HistorySelectionStatus, {
+        props,
+        global: localVue,
     });
 
     await flushPromises();
@@ -29,7 +29,7 @@ async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     return wrapper;
 }
 
-async function expectWrapperButtonToEmitEvent(wrapper: Wrapper<Vue>, buttonSelector: string, expectedEvent: string) {
+async function expectWrapperButtonToEmitEvent(wrapper: VueWrapper, buttonSelector: string, expectedEvent: string) {
     expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
     await wrapper.find(buttonSelector).trigger("click");
     expect(wrapper.emitted()).toHaveProperty(expectedEvent);

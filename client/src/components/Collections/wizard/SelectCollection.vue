@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
+import { BCard, BCardTitle } from "bootstrap-vue";
 import { onMounted, ref, watch } from "vue";
 
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { datasetCollectionDialog } from "@/utils/dataModals";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const emit = defineEmits(["onChange", "onError"]);
 const errorMessage = ref<string | undefined>(undefined);
@@ -71,7 +73,7 @@ onMounted(() => {
             <b>Select collection</b>
         </BCardTitle>
         <div>
-            <BAlert v-if="errorMessage" show variant="danger">{{ errorMessage }}</BAlert>
+            <GAlert v-if="errorMessage" show variant="danger">{{ errorMessage }}</GAlert>
             Select a dataset collection, the contents will be loaded as tabular data and made available for supplying
             sample sheet metadata.
         </div>

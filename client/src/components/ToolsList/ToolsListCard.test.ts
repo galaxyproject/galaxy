@@ -3,7 +3,9 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -25,13 +27,20 @@ vi.mock("./useToolsListCardActions", () => ({
 const localVue = getLocalVue();
 
 function mountCard(options?: {
+    attachTo?: HTMLElement;
     currentUser?: any;
     favorites?: { tools: string[]; tags: string[]; edam_operations: string[]; edam_topics: string[] };
+    propsData?: Record<string, unknown>;
 }) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
     const toolStore = useToolStore();
     const userStore = useUserStore();
+    // userStore is a setup-syntax store, so @pinia/testing's automatic action
+    // spying (which relies on the options-API `actions` map) doesn't apply --
+    // spy on the actions this file asserts against explicitly.
+    vi.spyOn(userStore, "removeFavoriteTag");
+    vi.spyOn(userStore, "addFavoriteTag");
     toolStore.toolSections = {
         "ontology:edam_operations": {
             operation_2409: {
@@ -63,6 +72,7 @@ function mountCard(options?: {
     return {
         pinia,
         wrapper: mount(ToolsListCard as object, {
+            attachTo: options?.attachTo,
             localVue,
             pinia,
             propsData: {
@@ -74,12 +84,56 @@ function mountCard(options?: {
                 workflowCompatible: true,
                 local: true,
                 fetching: false,
+                ...options?.propsData,
             },
         }),
     };
 }
 
 describe("ToolsListCard", () => {
+    it("renders Markdown tool help", async () => {
+        const { wrapper } = mountCard({
+            propsData: {
+                help: "**Important** tool help",
+                helpFormat: "markdown",
+            },
+        });
+
+        await wrapper.find('[data-description="tools list toggle tool help"]').trigger("click");
+
+        const help = wrapper.find('[data-description="tools list tool help"]');
+        expect(help.find("strong").text()).toBe("Important");
+        expect(help.text()).not.toContain("**Important**");
+    });
+
+    it("names the icon-only button that opens the version popover", () => {
+        const { wrapper } = mountCard({ propsData: { version: "1.0.0" } });
+
+        expect(wrapper.find("#tools-list-__FILTER_FAILED_DATASETS__").attributes("aria-label")).toBe("Tool info");
+    });
+
+    it("keeps the version popover open when its keyboard-focused button is activated", async () => {
+        const mountPoint = document.createElement("div");
+        document.body.appendChild(mountPoint);
+        const { wrapper } = mountCard({ attachTo: mountPoint, propsData: { version: "1.0.0" } });
+        await nextTick();
+        await nextTick();
+        const button = wrapper.find("#tools-list-__FILTER_FAILED_DATASETS__");
+        // Other tests leave relocated popovers in the body, so find this card's one through its trigger.
+        const popover = document.getElementById(button.attributes("aria-describedby")!)!;
+        const isShown = () => popover.style.display !== "none";
+
+        (button.element as HTMLElement).focus();
+        await nextTick();
+        expect(isShown()).toBe(true);
+
+        await button.trigger("click");
+        expect(isShown()).toBe(true);
+
+        wrapper.unmount();
+        document.body.innerHTML = "";
+    });
+
     it("renders tool tags and emits an exact tag filter when a tag is clicked", async () => {
         const { wrapper } = mountCard();
 
@@ -192,5 +246,13 @@ describe("ToolsListCard", () => {
         const tags = wrapper.findAll(".curated-tag");
         expect(tags).toHaveLength(1);
         expect(tags.at(0)?.text()).toContain("Text Manipulation");
+    });
+
+    it("renders the help summary through v-sanitize-html", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const summary = "Filters <em>failed</em> datasets";
+        const { wrapper } = mountCard({ propsData: { summary } });
+        expect(sanitizeHtml).toHaveBeenCalledWith(summary, "default");
+        expect(wrapper.find("em").text()).toBe("failed");
     });
 });

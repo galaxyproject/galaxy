@@ -65,7 +65,7 @@ from typing_extensions import (
 )
 
 
-def now():
+def now() -> datetime:
     """
     Return the current time in UTC without any timezone information.
     """
@@ -1065,7 +1065,7 @@ truthy = frozenset({"true", "yes", "on", "y", "t", "1"})
 falsy = frozenset({"false", "no", "off", "n", "f", "0"})
 
 
-def asbool(obj):
+def asbool(obj: Any) -> bool:
     if isinstance(obj, str):
         obj = obj.strip().lower()
         if obj in truthy:
@@ -1224,27 +1224,95 @@ def unicodify(
 
 
 def filesystem_safe_string(
-    s, max_len=255, truncation_chars="..", strip_leading_dot=True, invalid_chars=("/",), replacement_char="_"
+    s,
+    max_len=255,
+    truncation_chars="..",
+    strip_leading_dot=True,
+    invalid_chars=("/",),
+    replacement_char="_",
+    valid_chars=None,
+    portable=False,
+    strip_leading_hyphen=False,
+    fallback="",
 ):
     """
     Strip unicode null chars, truncate at 255 characters.
-    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+    Optionally replace additional ``invalid_chars`` with `replacement_char`.
+
+    If ``valid_chars`` is supplied, replace every character outside that
+    collection. ``portable`` additionally excludes Windows path separators,
+    reserved device names, control characters, and trailing dots or spaces.
+    An empty result is replaced with ``fallback``. The result is no longer
+    than ``max_len``.
 
     Defaults are probably only safe on linux / osx.
     Needs further escaping if used in shell commands
     """
     sanitized_string = unicodify(s, strip_null=True)
-    if strip_leading_dot:
-        sanitized_string = sanitized_string.lstrip(".")
     for invalid_char in invalid_chars:
         sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if portable:
+        for invalid_char in '/\\<>:"|?*':
+            sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+        sanitized_string = "".join(replacement_char if ord(char) < 32 else char for char in sanitized_string)
+    if valid_chars is not None:
+        sanitized_string = "".join(char if char in valid_chars else replacement_char for char in sanitized_string)
+    if strip_leading_dot or strip_leading_hyphen:
+        leading_chars = ("." if strip_leading_dot else "") + ("-" if strip_leading_hyphen else "")
+        sanitized_string = sanitized_string.lstrip(leading_chars)
+    if portable:
+        sanitized_string = sanitized_string.rstrip(". ")
+        basename = sanitized_string.partition(".")[0].upper()
+        if basename in {"CON", "PRN", "AUX", "NUL"} or re.fullmatch(r"(?:COM|LPT)[1-9]", basename):
+            sanitized_string = f"{replacement_char}{sanitized_string}"
+    if not sanitized_string:
+        sanitized_string = fallback
     if len(sanitized_string) > max_len:
-        sanitized_string = sanitized_string[: max_len - len(truncation_chars)]
-        sanitized_string = f"{sanitized_string}{truncation_chars}"
+        truncation_chars = truncation_chars[:max_len]
+        sanitized_string = f"{sanitized_string[: max_len - len(truncation_chars)]}{truncation_chars}"
     return sanitized_string
 
 
-def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict"):
+def safe_filename_component(s: str, max_len: int = 255) -> str:
+    """Return a deterministic portable path component.
+
+    The result is non-empty and bounded, but is not guaranteed to be unique.
+    It must still be quoted when interpolated into a shell command.
+    """
+    valid_chars = frozenset(string.ascii_letters + string.digits + "-_.")
+    return filesystem_safe_string(
+        s,
+        max_len=max_len,
+        truncation_chars="__",
+        invalid_chars=(),
+        valid_chars=valid_chars,
+        portable=True,
+        strip_leading_hyphen=True,
+        fallback="_",
+    )
+
+
+@overload
+def smart_str(
+    s: bytearray, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray: ...
+
+
+@overload
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: Literal[False] = False, errors: str = "strict"
+) -> bytes: ...
+
+
+@overload
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray | int | None: ...
+
+
+def smart_str(
+    s: Any, encoding: str = DEFAULT_ENCODING, strings_only: bool = False, errors: str = "strict"
+) -> bytes | bytearray | int | None:
     """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
@@ -1348,6 +1416,30 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     if compare_path and url1.path and url2.path and url1.path != url2.path:
         return False
     return True
+
+
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def is_safe_local_redirect(path: Any) -> bool:
+    """Is ``path`` a relative URL that cannot leave this server?
+
+    Post-login redirect targets arrive from the query string, so they are attacker
+    supplied. Anything a browser could resolve to a different origin -- an absolute
+    URL, a protocol-relative ``//host``, or the backslash spelling browsers normalize
+    to it -- has to be refused.
+    """
+    if not isinstance(path, str) or not path:
+        return False
+    # A browser drops tabs and newlines before resolving a URL, so "/<TAB>/host" would
+    # reach the network as the protocol-relative "//host". Refuse control characters
+    # outright rather than accepting a value whose meaning changes later; surrounding
+    # whitespace gets trimmed the same way.
+    if path != path.strip() or CONTROL_CHARACTERS.search(path):
+        return False
+    if not path.startswith("/"):
+        return False
+    return path[1:2] not in ("/", "\\")
 
 
 def read_build_sites(filename, check_builds=True):
@@ -1812,11 +1904,33 @@ GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
 galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
 
 
+GALAXY_ROOT_MARKERS = ("run.sh", "lib/galaxy", "scripts/common_startup.sh")
+
+
+class GalaxyRootNotFound(Exception):
+    """Galaxy source paths were asked for by an install that has no checkout to resolve them against."""
+
+
+def is_galaxy_root(path: StrPath) -> bool:
+    return all(os.path.exists(os.path.join(path, marker)) for marker in GALAXY_ROOT_MARKERS)
+
+
 def galaxy_directory() -> str:
+    """Root of the Galaxy checkout backing this install, if there is one."""
     if in_packages() and not GALAXY_INCLUDES_ROOT:
-        # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
+        # pytest runs from <galaxy_root>/packages/<package_name>/; an installed Galaxy may
+        # also simply be run from a checkout.
         cwd = Path.cwd()
-        path = cwd.parent.parent
+        for candidate in (cwd.parent.parent, cwd):
+            if is_galaxy_root(candidate):
+                path = candidate
+                break
+        else:
+            raise GalaxyRootNotFound(
+                f"No Galaxy checkout at {cwd.parent.parent} or {cwd}. Installed packages ship no "
+                "checkout content; set GALAXY_INCLUDES_ROOT to a Galaxy source directory if this "
+                "code path needs one."
+            )
     else:
         path = galaxy_root_path
     return os.path.abspath(path)
@@ -1969,37 +2083,65 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
                 f.write(chunk)
 
 
-def stream_to_open_named_file(
-    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+def _stream_to_writer(
+    stream, write, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
 ):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     try:
         codecs.lookup(target_encoding)
     except Exception:
         target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
+    while True:
+        chunk = stream.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        if use_source_encoding:
+            # If a source encoding is given we use it to convert to the target encoding
+            try:
+                if not isinstance(chunk, str):
+                    chunk = chunk.decode(source_encoding, source_error)
+                write(chunk.encode(target_encoding, target_error))
+            except UnicodeDecodeError:
+                use_source_encoding = False
+                write(chunk)
+        else:
+            # Compressed files must be encoded after they are uncompressed in the upload utility,
+            # while binary files should not be encoded at all.
+            if isinstance(chunk, str):
+                chunk = chunk.encode(target_encoding, target_error)
+            write(chunk)
+
+
+def stream_to_path(
+    stream, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Write a stream to ``filename`` and return the filename."""
+    with open(filename, "wb") as output:
+        _stream_to_writer(stream, output.write, source_encoding, source_error, target_encoding, target_error)
+    return filename
+
+
+def stream_to_open_named_file(
+    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Deprecated: use :func:`stream_to_path` instead.
+
+    Write a stream to an open file descriptor, close it, and return the filename.
+    """
+    # Known external callers retained for compatibility:
+    # - bgruening/galaxytools: tools/mave_tools/mavedb/data_source.py
+    # - galaxyecology/tools-ecology: tools/aquainfra_importer/data_source.py
+    # - galaxyecology/tools-ecology: tools/nfdi4earth_os4a_importer/data_source.py
     try:
-        while True:
-            chunk = stream.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            if use_source_encoding:
-                # If a source encoding is given we use it to convert to the target encoding
-                try:
-                    if not isinstance(chunk, str):
-                        chunk = chunk.decode(source_encoding, source_error)
-                    os.write(fd, chunk.encode(target_encoding, target_error))
-                except UnicodeDecodeError:
-                    use_source_encoding = False
-                    os.write(fd, chunk)
-            else:
-                # Compressed files must be encoded after they are uncompressed in the upload utility,
-                # while binary files should not be encoded at all.
-                if isinstance(chunk, str):
-                    chunk = chunk.encode(target_encoding, target_error)
-                os.write(fd, chunk)
+        _stream_to_writer(
+            stream,
+            lambda chunk: os.write(fd, chunk),
+            source_encoding,
+            source_error,
+            target_encoding,
+            target_error,
+        )
     finally:
         os.close(fd)
     return filename
@@ -2076,20 +2218,17 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
 
 
-def to_content_disposition(target: str) -> str:
+def to_content_disposition(target: str, disposition: Literal["attachment", "inline"] = "attachment") -> str:
     target = target.strip()
     filename, ext = os.path.splitext(target)
     character_limit = 255 - len(ext)
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
     utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
-    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+    return f"{disposition}; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
 
 
 def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
-    prefix = "https://doi.org/|doi.org/|doi:"
-    doi_prefix = r"10\.\d+"
-    doi_suffix = r"\S+"
-    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
-    return bool(doi_re.match(doi))
+    doi_re = re.compile(r"10\.\d+/\S+$")
+    return bool(doi_re.search(doi))

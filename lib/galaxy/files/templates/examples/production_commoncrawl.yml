@@ -1,0 +1,12 @@
+- id: commoncrawl
+  version: 0
+  name: Common Crawl
+  description: |
+      [Common Crawl](https://commoncrawl.org/) is an open repository of web crawl data
+      containing petabytes of web pages collected since 2008.
+
+      Use this plugin to browse archived crawl releases and navigate to individual
+      WARC, WET, or WAT files that can be imported into Galaxy histories.
+  configuration:
+      type: commoncrawl
+      writable: false

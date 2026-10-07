@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useConfig } from "@/composables/config";
 import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import { MY_PANEL_VIEW_ID, PANEL_LABEL_IDS } from "./panelViews";
@@ -17,6 +20,8 @@ import {
     buildToolEntries,
     buildToolLabel,
     buildToolSection,
+    countUniqueToolsInList,
+    countUniqueToolsInPanel,
     FAVORITES_KEYS,
     filterPanelByToolIds,
     filterTools,
@@ -27,6 +32,7 @@ import {
 } from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
+import ToolInstallationRequestForm from "../Tool/ToolInstallationRequestForm.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 import MyToolsLanding from "./MyToolsLanding.vue";
@@ -34,8 +40,20 @@ import MyToolsLanding from "./MyToolsLanding.vue";
 /** Section IDs that are only valid for the workflow editor toolbox, and should be excluded from the regular toolbox. */
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { config, isConfigLoaded } = useConfig();
+const { isAnonymous } = storeToRefs(useUserStore());
+const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
+
+const showToolInstallationRequestForm = ref(false);
+const showRequestToolButton = computed(
+    () =>
+        !props.workflow &&
+        isConfigLoaded.value &&
+        config.value?.enable_notification_system &&
+        config.value?.enable_tool_installation_request_form &&
+        !isAnonymous.value,
+);
 
 const emit = defineEmits<{
     (e: "update:show-favorites", value: boolean): void;
@@ -179,6 +197,8 @@ const defaultSectionsById = computed<Record<string, ToolPanelItem> | null>(() =>
     return Object.keys(validSections).length > 0 ? validSections : null;
 });
 
+const myToolsDefaultSectionsById = computed(() => defaultSectionsById.value || localSectionsById.value);
+
 // Use composable for favorites and recent tools — we only need the bits that
 // drive the search-results split (favorites get their own section in mixed
 // results). The full My-Tools landing state lives inside `MyToolsLanding.vue`.
@@ -187,7 +207,12 @@ const { favoritesCollapsed, favoriteToolIdSet, recentToolIdsToShowSet } = useToo
 // Use composable for search results filtering
 const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
 
-const toolsCount = computed(() => toolsList.value.length);
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(
+        defaultSectionsById.value || localSectionsById.value,
+        countUniqueToolsInList(toolsList.value),
+    ),
+);
 
 const resultsSet = computed(() => new Set(results.value));
 const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
@@ -317,7 +342,7 @@ function onToolClick(tool: Tool, evt: Event) {
     if (!props.workflow) {
         if (tool.id === "upload1") {
             evt.preventDefault();
-            openGlobalUploadModal();
+            void openUploadModal();
         } else if (tool.form_style === "regular") {
             evt.preventDefault();
             // encode spaces in tool.id
@@ -365,6 +390,10 @@ function onSearchQuery(q: string) {
 
 function onToggle() {
     showSections.value = !showSections.value;
+}
+
+function openToolInstallationRequestForm() {
+    showToolInstallationRequestForm.value = true;
 }
 
 /**
@@ -416,6 +445,16 @@ function onLabelToggle(labelId: string) {
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
                     <BBadge class="alert-warning w-100">No results found</BBadge>
+                    <div v-if="showRequestToolButton" class="mt-2">
+                        <GButton
+                            size="small"
+                            class="w-100"
+                            data-description="request tool installation button"
+                            @click="openToolInstallationRequestForm">
+                            <FontAwesomeIcon :icon="faWrench" class="mr-1" />
+                            {{ localize("Request Tool Installation") }}
+                        </GButton>
+                    </div>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <BBadge class="alert-danger w-100">
@@ -428,12 +467,17 @@ function onLabelToggle(labelId: string) {
                 </div>
             </section>
         </div>
+
+        <ToolInstallationRequestForm
+            v-if="showToolInstallationRequestForm"
+            v-model:show="showToolInstallationRequestForm" />
+
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <MyToolsLanding
                     v-if="showMyToolsLanding"
                     :local-tools-by-id="localToolsById"
-                    :default-sections-by-id="defaultSectionsById"
+                    :default-sections-by-id="myToolsDefaultSectionsById"
                     :local-sections-by-id="localSectionsById"
                     :tools-count="toolsCount"
                     @onClick="onToolClick"

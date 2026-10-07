@@ -2,12 +2,13 @@
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce } from "@vueuse/core";
-import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
@@ -98,7 +99,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                         <input
                             :value="settings.initialX"
                             type="number"
-                            @change="(event) => onChangePosition(event, 'x')" />
+                            @change="(event: Event) => onChangePosition(event, 'x')" />
                     </label>
 
                     <label>
@@ -106,7 +107,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                         <input
                             :value="settings.initialY"
                             type="number"
-                            @change="(event) => onChangePosition(event, 'y')" />
+                            @change="(event: Event) => onChangePosition(event, 'y')" />
                     </label>
                 </div>
             </label>
@@ -117,7 +118,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                     id="embed-zoom-control"
                     :zoom-level="settings.zoom"
                     class="zoom-control"
-                    @onZoom="(level) => (settings.zoom = level)" />
+                    @onZoom="(level: number) => (settings.zoom = level)" />
             </label>
 
             <BFormCheckbox
@@ -132,14 +133,14 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                 <BInputGroup id="embed-code">
                     <BFormInput class="embed-code-input" :value="embed" readonly />
                     <BInputGroupAppend>
-                        <BButton
+                        <GButton
                             v-g-tooltip.hover
                             :title="clipboardTitle"
-                            variant="primary"
+                            color="blue"
                             @click="onCopy"
                             @blur="onCopyOut">
                             <FontAwesomeIcon :icon="faCopy" />
-                        </BButton>
+                        </GButton>
                     </BInputGroupAppend>
                 </BInputGroup>
             </label>

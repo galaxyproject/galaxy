@@ -176,7 +176,12 @@ class ToolShedPopulator:
         metadata = self.get_metadata(repository_id, True)
         return self.get_install_info(metadata)
 
-    def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
+    def get_install_info_raw(
+        self,
+        repository_metadata: RepositoryMetadata,
+        path: str = "repositories/get_repository_revision_install_info",
+        headers: dict[str, str] | None = None,
+    ) -> requests.Response:
         revision_metadata = repository_metadata.latest_revision
         repo = revision_metadata.repository
         request = GetInstallInfoRequest(
@@ -184,9 +189,10 @@ class ToolShedPopulator:
             name=repo.name,
             changeset_revision=revision_metadata.changeset_revision,
         )
-        revisions_response = self._api_interactor.get(
-            "repositories/get_repository_revision_install_info", params=request.model_dump()
-        )
+        return self._api_interactor.get(path, params=request.model_dump(), headers=headers or {})
+
+    def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
+        revisions_response = self.get_install_info_raw(repository_metadata)
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
 

@@ -71,7 +71,12 @@ Each mulled container is identified with a hash such as ``mulled-v2-8186960447c5
    $ mulled-hash samtools=1.3.1,bedtools=2.22
    mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:d52e471b5bfa168ac813d54fc5dfe7f96ade56e6
 
-The user can specify whether to generate hashes for either version 1 or version 2 containers with ``--hash``; version 2 is the default.
+The user can specify whether to generate hashes for either version 1 or version 2 containers with ``--hash``; version 2 is the default. Use ``--hash conda`` to calculate the distinct ``mulled-v1`` hash used for Galaxy's uncontainerized Conda environments:
+
+.. code-block:: bash
+
+   $ mulled-hash --hash conda bedtools=2.30.0,samtools=1.9
+   mulled-v1-ca195b12c14e35565e393a2d07f2deac7610d8126cc3460d217504efd11d4347
 
 
 Build all packages from bioconda from the last 24h
@@ -235,7 +240,8 @@ Options:
   e.g. ``samtools=1.3.1,bedtools=2.22``.
 
 ``--hash``
-  Hash version. Choices: ``v1``, ``v2`` (default).
+  Hash type. Choices: ``conda``, ``v1``, ``v2`` (default). The ``conda`` type
+  calculates Galaxy's uncontainerized Conda environment hash.
 
 
 mulled-build-channel
@@ -550,6 +556,31 @@ Options:
   Uses a shallow search on Anaconda for test commands/imports from the
   package's ``meta.yaml`` or ``run_test.sh``.
 
+
+mulled-recommend
+----------------
+
+The ``mulled-recommend`` command resolves the best ``quay.io/biocontainers`` image for one or
+more Conda packages, verified against quay.io rather than guessed. It is handy when wrapping a
+tool by hand or debugging which image a set of requirements maps to (it also backs the custom
+tool authoring assistant's container resolution).
+
+For a single, pinned package:
+
+.. code-block:: bash
+
+   $ mulled-recommend samtools=1.17
+
+When the version is omitted the newest published tag is used; multiple packages resolve to a
+mulled-v2 image, and ``--json`` emits the full result (image, match quality, and notes):
+
+.. code-block:: bash
+
+   $ mulled-recommend bwa,samtools
+   $ mulled-recommend --json "samtools=1.3.1,bedtools=2.26.0"
+
+A missing package or a transient network error is reported without raising, so the command is
+safe to script.
 
 .. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4

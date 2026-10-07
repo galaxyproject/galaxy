@@ -12,34 +12,13 @@ from typing import (
 from playwright.sync_api import (
     ElementHandle,
     JSHandle,
+    Locator,
 )
-from selenium.webdriver.common.keys import Keys
 
-# Map Selenium Key unicode constants to Playwright key names
-_SELENIUM_KEY_TO_PLAYWRIGHT = {
-    Keys.CONTROL: "Control",
-    Keys.COMMAND: "Meta",
-    Keys.META: "Meta",
-    Keys.SHIFT: "Shift",
-    Keys.ALT: "Alt",
-    Keys.ENTER: "Enter",
-    Keys.RETURN: "Enter",
-    Keys.ESCAPE: "Escape",
-    Keys.BACKSPACE: "Backspace",
-    Keys.DELETE: "Delete",
-    Keys.TAB: "Tab",
-    Keys.SPACE: " ",
-    Keys.ARROW_DOWN: "ArrowDown",
-    Keys.ARROW_UP: "ArrowUp",
-    Keys.ARROW_LEFT: "ArrowLeft",
-    Keys.ARROW_RIGHT: "ArrowRight",
-    Keys.HOME: "Home",
-    Keys.END: "End",
-    Keys.PAGE_UP: "PageUp",
-    Keys.PAGE_DOWN: "PageDown",
-}
-
-_SELENIUM_MODIFIERS = {Keys.CONTROL, Keys.COMMAND, Keys.META, Keys.SHIFT, Keys.ALT}
+from .selenium_keys import (
+    SELENIUM_KEY_TO_PLAYWRIGHT,
+    SELENIUM_MODIFIERS,
+)
 
 if TYPE_CHECKING:
     from .has_playwright_driver import HasPlaywrightDriver
@@ -71,9 +50,10 @@ class PlaywrightElement:
     WebElement API, allowing the same code to work with both backends.
     """
 
-    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver"):
+    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver", locator: Locator | None = None):
         self._element = element_handle
         self._driver = driver
+        self._locator = locator
 
     @property
     def text(self) -> str:
@@ -88,7 +68,11 @@ class PlaywrightElement:
 
     def click(self) -> None:
         """Click the element."""
-        self._element.click()
+        if self._locator is not None:
+            # Re-resolve after DOM changes between the wait and the click.
+            self._locator.click()
+        else:
+            self._element.click()
 
     def send_keys(self, *value: str) -> None:
         """
@@ -101,7 +85,7 @@ class PlaywrightElement:
         self._element.focus()
         # Flatten all args into a single character stream
         all_chars = "".join(str(v) for v in value)
-        has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+        has_special = any(c in SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
         if not has_special:
             # setSelectionRange is not supported on email, number, date, etc. inputs
             # per the HTML spec. For those types, use the End key to move cursor to end.
@@ -117,8 +101,8 @@ class PlaywrightElement:
         else:
             modifiers: list[str] = []
             for char in all_chars:
-                pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
-                if pw_key and char in _SELENIUM_MODIFIERS:
+                pw_key = SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                if pw_key and char in SELENIUM_MODIFIERS:
                     modifiers.append(pw_key)
                 elif pw_key:
                     combo = "+".join(modifiers + [pw_key])

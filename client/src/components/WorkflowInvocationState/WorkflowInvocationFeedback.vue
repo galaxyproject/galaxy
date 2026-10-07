@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -14,6 +14,7 @@ import { errorCount } from "./util";
 import EmailReportForm from "../Common/EmailReportForm.vue";
 import InvocationMessageView from "./InvocationMessage.vue";
 import WorkflowInvocationStep from "./WorkflowInvocationStep.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     invocationId: string;
@@ -31,11 +32,18 @@ const { steps, loadInvocationGraph } = useInvocationGraph(
     computed(() => workflow.value?.version),
 );
 
+const stepsError = ref("");
+
 watch(
     () => workflow.value?.id,
-    (newVal) => {
+    async (newVal) => {
         if (newVal) {
-            loadInvocationGraph(false);
+            try {
+                await loadInvocationGraph(false);
+                stepsError.value = "";
+            } catch (e) {
+                stepsError.value = errorMessageAsString(e);
+            }
         }
     },
     { immediate: true },
@@ -118,7 +126,11 @@ async function submit(message: string): Promise<string[][] | undefined> {
                 :invocation="props.invocation" />
         </div>
 
-        <div v-if="steps && stepsWithErrors.length">
+        <GAlert v-if="stepsError" variant="warning">
+            <span v-localize>Steps with errors could not be loaded:</span>
+            {{ stepsError }}
+        </GAlert>
+        <div v-else-if="steps && stepsWithErrors.length">
             <h4 class="mb-3 h-md">Steps with Errors</h4>
 
             <p>

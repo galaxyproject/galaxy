@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("FormOptionalText", () => {
     const mountFormOptionalText = async (props) =>
         await mount(FormOptionalText, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     it("should display existing values", async () => {
@@ -20,10 +20,10 @@ describe("FormOptionalText", () => {
         expect(el.element.checked).toEqual(true);
         const elText = wrapper.find("input[type='text']");
         expect(elText.element.value).toEqual(v);
-        await el.setChecked(false);
-        expect(wrapper.emitted().input[0][0]).toEqual(null);
-        await el.setChecked(true);
-        expect(wrapper.emitted().input[1][0]).toEqual("");
+        await el.setValue(false);
+        expect(emittedArg(wrapper, "input")).toEqual(null);
+        await el.setValue(true);
+        expect(emittedArg(wrapper, "input", 1)).toEqual("");
     });
 
     it("should initialize with null if value does not exist", async () => {

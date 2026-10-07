@@ -70,7 +70,6 @@ ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
-REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
 LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
     "disable_existing_loggers": False,
@@ -216,6 +215,34 @@ def configure_logging(config, facts=None):
                 conf["filename"] = conf.pop("filename_template").format(**facts)
                 logging_conf["handlers"][name] = conf
         logging.config.dictConfig(logging_conf)
+
+
+CURATED_WORKFLOWS_SOURCES = ("iwc", "local", "off")
+
+
+def resolve_curated_workflows_source(source: str | None, owners: list[str]) -> str:
+    """Validate the curated workflows mode; it depends on config alone, never on the database."""
+    normalized = (source or "").strip().lower()
+    # YAML 1.1 loads an unquoted `off` as False, which the str-typed schema then
+    # renders as "False" -- and an unquoted `off` is what an admin will write.
+    if normalized == "false":
+        normalized = "off"
+    if normalized not in CURATED_WORKFLOWS_SOURCES:
+        raise ConfigurationError(
+            f"Unrecognized value for curated_workflows_source option: {source!r} "
+            f"(expected one of: {', '.join(CURATED_WORKFLOWS_SOURCES)})"
+        )
+    if normalized == "local" and not owners:
+        # Falling back to off would hide the tab with nothing but a log line to say
+        # why; the admin asked for local curation, so make them finish configuring it.
+        raise ConfigurationError("curated_workflows_source is 'local' but curated_workflow_owners is empty")
+    if normalized != "local" and owners:
+        log.warning(
+            "curated_workflow_owners is set but curated_workflows_source is '%s', so it is ignored; "
+            "set curated_workflows_source to 'local' to list those accounts' workflows",
+            normalized,
+        )
+    return normalized
 
 
 def find_root(kwargs) -> str:
@@ -850,6 +877,8 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
+        if not self.tool_source_database_connection:
+            self.tool_source_database_connection = f"sqlite:///{self._in_data_dir('tool_sources.sqlite')}"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
         self.thread_local_log = None
@@ -885,6 +914,12 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.tool_filters = listify(self.tool_filters, do_strip=True)
         self.tool_label_filters = listify(self.tool_label_filters, do_strip=True)
         self.tool_section_filters = listify(self.tool_section_filters, do_strip=True)
+        self.curated_workflow_owners = [
+            owner for owner in listify(self.curated_workflow_owners, do_strip=True) if owner
+        ]
+        self.curated_workflows_source = resolve_curated_workflows_source(
+            self.curated_workflows_source, self.curated_workflow_owners
+        )
 
         self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
         self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
@@ -1152,6 +1187,9 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                     f"Config file ({self.user_preferences_extra_conf_path}) could not be found or is malformed."
                 )
             self.user_preferences_extra = {"preferences": {}}
+        # Lets the client hide the extra preferences entry entirely on instances
+        # that configure none, rather than linking to an empty form.
+        self.has_user_preferences_extra = bool(self.user_preferences_extra.get("preferences"))
 
         # default allow_local_account_creation to false if disable_local_accounts is true
         if "disable_local_accounts" in kwargs and self.disable_local_accounts:
@@ -1357,6 +1395,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.tool_source_database_connection, "tool_source_database_connection")
         if self.interactivetoolsproxy_map is not None:
             try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
@@ -1428,10 +1467,29 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
+    def all_tool_config_files(self) -> list[str]:
+        """Every tool config the toolbox loads: ``tool_config_file`` plus the
+        shed tool conf and, when present on disk, the migrated tools conf.
+        """
+        configs = list(self.tool_configs or [])
+        if self.shed_tool_config_file and self.shed_tool_config_file not in configs:
+            configs.append(self.shed_tool_config_file)
+        # migrated_tools_config is reserved for tools eliminated from the
+        # distribution; only load it when it exists (an existing deployment
+        # where migrations were previously run).
+        if (
+            self.migrated_tools_config
+            and os.path.exists(self.migrated_tools_config)
+            and self.migrated_tools_config not in configs
+        ):
+            configs.append(self.migrated_tools_config)
+        return configs
+
     def check(self):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,

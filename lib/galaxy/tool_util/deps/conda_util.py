@@ -104,6 +104,12 @@ class CondaContext(installable.InstallableContext):
         self.debug = debug
         self.shell_exec = shell_exec or commands.shell
         self.copy_dependencies = copy_dependencies
+        # ``conda info`` is a subprocess spawning the conda binary (~1-2s).
+        # It is queried several times over a context's life (availability
+        # probe, conda version, conda-build availability), so cache the
+        # result. ``_reset_conda_properties`` clears it after any install so
+        # a re-probe reflects the new state.
+        self._conda_info: dict[str, Any] | None = None
 
         if conda_exec is not None:
             self.conda_exec = conda_exec
@@ -121,6 +127,7 @@ class CondaContext(installable.InstallableContext):
         self._reset_conda_properties()
 
     def _reset_conda_properties(self) -> None:
+        self._conda_info = None
         self._conda_version = None
         self._conda_build_available = None
         self._libmamba_solver_available = None
@@ -183,10 +190,11 @@ class CondaContext(installable.InstallableContext):
             return 0
 
     def conda_info(self) -> dict[str, Any]:
-        cmd = listify(self.conda_exec) + ["info", "--json"]
-        info_out = commands.execute(cmd)
-        info = json.loads(info_out)
-        return info
+        if self._conda_info is None:
+            cmd = listify(self.conda_exec) + ["info", "--json"]
+            info_out = commands.execute(cmd)
+            self._conda_info = json.loads(info_out)
+        return self._conda_info
 
     def is_conda_installed(self) -> bool:
         """

@@ -135,10 +135,12 @@ class TestParseVolumeSpec:
 
     def test_read_only_with_r(self):
         result = parse_volume_spec("server:/path:/mount:r")
+        assert result is not None
         assert result["read_only"] is True
 
     def test_read_only_with_readonly(self):
         result = parse_volume_spec("server:/path:/mount:readonly")
+        assert result is not None
         assert result["read_only"] is True
 
     def test_invalid_too_few_parts(self):

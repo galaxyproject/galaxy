@@ -15,6 +15,7 @@ import zipfile
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
 )
 from functools import partial
 from typing import (
@@ -37,7 +38,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -59,6 +64,18 @@ BINARY_MIMETYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
 
+# A libmagic cookie builds its description in a buffer it owns and returns a pointer
+# to it, so it cannot be used from more than one thread at a time or the description
+# comes back torn. Datasets are sniffed concurrently (celery runs a thread pool), so
+# go through `magic.Magic`, which locks around every libmagic call.
+_MAGIC = magic.Magic(mime=True, mime_encoding=True)
+
+
+def _split_magic_description(description: str) -> tuple[str, str]:
+    """Split a libmagic ``<mime type>; charset=<encoding>`` description in two."""
+    mime_type, _, encoding = description.partition("; ")
+    return mime_type, encoding.removeprefix("charset=")
+
 
 def get_test_fname(fname):
     """Returns test data filename"""
@@ -79,15 +96,31 @@ def sniff_with_cls(cls, fname):
 stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
-def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
-    if not is_binary:
-        if upload_opts.get("space_to_tab"):
-            convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
-        else:
-            convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
-
+def handle_composite_file(
+    datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts, purge_source=True
+):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
     file_output_path = os.path.join(extra_files, name)
-    shutil.move(src_path, file_output_path)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
+    converted_path = None
+    if not is_binary:
+        convert = convert_newlines_sep2tabs if upload_opts.get("space_to_tab") else convert_newlines
+        # ``purge_source`` is false for a source Galaxy does not own, which must neither be
+        # rewritten in place nor moved out of the caller's directory.
+        converted_path = convert(src_path, in_place=purge_source, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix).converted_path
+
+    if converted_path is not None:
+        shutil.move(converted_path, file_output_path)
+    elif purge_source:
+        shutil.move(src_path, file_output_path)
+    else:
+        shutil.copy(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
     if datatype and datatype.dataset_content_needs_grooming(file_output_path):
@@ -210,7 +243,9 @@ def convert_newlines_sep2tabs(
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
-def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+def iter_headers(
+    fname_or_file_prefix: "str | FilePrefix", sep: str | None, count: int = 60, comment_designator: str | None = None
+) -> Iterator[list[str]]:
     idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
         file_iterator = fname_or_file_prefix.line_iterator()
@@ -611,15 +646,11 @@ class FilePrefix:
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
-        file_magic = magic.detect_from_content(contents_header_bytes)
-        self.encoding = file_magic.encoding
-        self.mime_type = file_magic.mime_type
+        self.mime_type, self.encoding = _split_magic_description(_MAGIC.from_buffer(contents_header_bytes))
         self.compressed_mime_type = None
         self.compressed_encoding = None
         if compressed_format:
-            compressed_magic = magic.detect_from_filename(filename)
-            self.compressed_mime_type = compressed_magic.mime_type
-            self.compressed_encoding = compressed_magic.encoding
+            self.compressed_mime_type, self.compressed_encoding = _split_magic_description(_MAGIC.from_file(filename))
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes
@@ -789,7 +820,7 @@ class HandleCompressedFileResponse(NamedTuple):
     ext: str
     uncompressed_path: str
     compressed_type: str | None
-    is_compressed: bool | None
+    is_compressed: bool
 
 
 def handle_compressed_file(
@@ -828,6 +859,8 @@ def handle_compressed_file(
     if check_compressed_function:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
         compressed_type = file_prefix.compressed_format
+    if is_compressed and not is_valid:
+        is_valid = _sniffs_as_compressed_html_container(file_prefix, datatypes_registry, ext)
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
@@ -867,6 +900,15 @@ def handle_compressed_file(
     return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type, is_compressed)
 
 
+def _sniffs_as_compressed_html_container(file_prefix: FilePrefix, datatypes_registry, ext: str) -> bool:
+    if ext in AUTO_DETECT_EXTENSIONS:
+        candidates = datatypes_registry.sniff_order
+    else:
+        candidates = [datatypes_registry.get_datatype_by_extension(ext)]
+    candidates = [d for d in candidates if d is not None and d.allow_compressed_html_content]
+    return bool(candidates) and run_sniffers_raw(file_prefix, candidates) is not None
+
+
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     file_prefix = FilePrefix(filename)
@@ -890,6 +932,11 @@ def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertF
     else:
         convert_fxn = convert_sep2tabs
     return convert_fxn
+
+
+def should_convert_text(file_prefix: FilePrefix, is_compressed: bool) -> bool:
+    """Newline and space conversion only applies to uncompressed text content."""
+    return not file_prefix.binary and not is_compressed
 
 
 def handle_uploaded_dataset_file_internal(
@@ -932,7 +979,7 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (convert_to_posix_lines or convert_spaces_to_tabs) and should_convert_text(file_prefix, is_compressed):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(

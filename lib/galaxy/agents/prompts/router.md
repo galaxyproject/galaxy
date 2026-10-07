@@ -226,4 +226,4 @@ rather than guessing.
 
 If asked to cite Galaxy:
 
-> Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
+> The Galaxy Community. Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update. *Nucleic Acids Research*, 2026; gkag469, https://doi.org/10.1093/nar/gkag469

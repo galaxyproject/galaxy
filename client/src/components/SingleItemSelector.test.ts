@@ -13,10 +13,17 @@ const ITEMS = [
     { id: "c", text: "Gamma" },
 ];
 
-function mountComponent(propsData: object = {}) {
-    return mount(SingleItemSelector as object, {
-        propsData,
-        localVue,
+interface MountProps {
+    loading?: boolean;
+    collectionName?: string;
+    items?: { id: string; text: string }[];
+    currentItem?: { id: string; text: string };
+}
+
+function mountComponent(props: MountProps = {}) {
+    return mount(SingleItemSelector, {
+        props,
+        global: localVue,
     });
 }
 
@@ -50,18 +57,18 @@ describe("SingleItemSelector", () => {
     describe("initial selection", () => {
         it("selects the first item by default when no currentItem is given", () => {
             const wrapper = mountComponent({ items: ITEMS });
-            expect(wrapper.findComponent(Multiselect).props("value")).toEqual(ITEMS[0]);
+            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[0]);
         });
 
         it("selects the matching currentItem when provided", () => {
             const wrapper = mountComponent({ items: ITEMS, currentItem: ITEMS[1] });
-            expect(wrapper.findComponent(Multiselect).props("value")).toEqual(ITEMS[1]);
+            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[1]);
         });
 
         it("falls back to the currentItem object itself when it is not in items", () => {
             const externalItem = { id: "z", text: "External" };
             const wrapper = mountComponent({ items: ITEMS, currentItem: externalItem });
-            expect(wrapper.findComponent(Multiselect).props("value")).toEqual(externalItem);
+            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(externalItem);
         });
     });
 
@@ -70,13 +77,60 @@ describe("SingleItemSelector", () => {
             const wrapper = mountComponent({ items: ITEMS });
 
             // Open the dropdown then click the third option
-            await wrapper.find(".multiselect").trigger("click");
+            await wrapper.find(".multiselect").trigger("focus");
             const options = wrapper.findAll(".multiselect__option");
-            await options.at(2).trigger("click");
+            await options[2]!.trigger("click");
 
             const emitted = wrapper.emitted("update:selected-item");
             expect(emitted).toBeTruthy();
             expect(emitted![0]![0]).toEqual(ITEMS[2]);
+        });
+    });
+
+    describe("searching", () => {
+        const EXTENSIONS = ["csfasta", "fasta", "fastq"].map((id) => ({ id, text: id }));
+
+        it("lists an exact match before partial matches", async () => {
+            const wrapper = mountComponent({ items: EXTENSIONS });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("focus");
+            await wrapper.find(".multiselect__input").setValue("fasta");
+
+            expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
+                "fasta",
+                "csfasta",
+            ]);
+            const firstOption = wrapper.find("[data-test-id='single-item-selector-option']");
+            expect(firstOption.attributes("data-id")).toBe("fasta");
+        });
+
+        it("lists the item whose id matches exactly first", async () => {
+            const dbKeys = [
+                { id: "hg19_rCRS", text: "Human (hg19 with rCRS)" },
+                { id: "hg19", text: "Human Feb. 2009 (GRCh37/hg19) (hg19)" },
+            ];
+            const wrapper = mountComponent({ items: dbKeys });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("focus");
+            await wrapper.find(".multiselect__input").setValue("hg19");
+
+            expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
+                "hg19",
+                "hg19_rCRS",
+            ]);
+        });
+
+        it("restores the full item list when the search is cleared", async () => {
+            const wrapper = mountComponent({ items: EXTENSIONS });
+            const multiselect = wrapper.findComponent(Multiselect);
+
+            await wrapper.find(".multiselect").trigger("focus");
+            await wrapper.find(".multiselect__input").setValue("fasta");
+            await wrapper.find(".multiselect__input").setValue("");
+
+            expect(multiselect.props("options")).toEqual(EXTENSIONS);
         });
     });
 
@@ -90,7 +144,7 @@ describe("SingleItemSelector", () => {
             ];
             await wrapper.setProps({ items: newItems, currentItem: undefined });
 
-            expect(wrapper.findComponent(Multiselect).props("value")).toEqual(newItems[0]);
+            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(newItems[0]);
         });
 
         it("updates selection when currentItem prop changes", async () => {
@@ -98,7 +152,17 @@ describe("SingleItemSelector", () => {
 
             await wrapper.setProps({ currentItem: ITEMS[2] });
 
-            expect(wrapper.findComponent(Multiselect).props("value")).toEqual(ITEMS[2]);
+            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[2]);
         });
+    });
+
+    // The upload table renders one selector per row, so a fixed id would repeat.
+    it("gives each selector its own id", () => {
+        const first = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
+        const second = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
+
+        const firstId = first.findComponent(Multiselect).props("id");
+        expect(firstId).toBeTruthy();
+        expect(second.findComponent(Multiselect).props("id")).not.toBe(firstId);
     });
 });

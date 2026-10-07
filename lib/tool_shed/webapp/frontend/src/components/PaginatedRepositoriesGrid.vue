@@ -90,7 +90,7 @@ const adaptedRows = computed(() =>
         // create this effective name so we are filtering on this when searching...
         const effectiveName = r.owner + " " + r.name
         return { doubleIndex: r.index * 2, effectiveName: effectiveName, ...r }
-    })
+    }),
 )
 
 const onRequest: QTableProps["onRequest"] = async ({ pagination: queryPagination }) => {
@@ -142,7 +142,7 @@ watch(
             pagination.value.page = pageNum
             makeRequest()
         }
-    }
+    },
 )
 
 // Sync rowsPerPage when route query changes

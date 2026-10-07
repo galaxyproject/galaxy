@@ -8,6 +8,8 @@ log = logging.getLogger(__name__)
 class DataSourceToolAction(DefaultToolAction):
     """Tool action used for Data Source Tools"""
 
+    file_source_uri_discovery_complete = True
+
     def _get_default_data_name(
         self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd
     ):

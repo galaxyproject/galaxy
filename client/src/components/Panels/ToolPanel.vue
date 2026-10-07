@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -9,12 +9,14 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { MY_PANEL_VIEW_ID } from "./panelViews";
+import { countUniqueToolsInList, countUniqueToolsInPanel } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const toolStore = useToolStore();
 
@@ -28,13 +30,30 @@ const emit = defineEmits<{
     (e: "onInsertTool", toolId: string, toolName: string): void;
 }>();
 
-const { currentPanelView, currentToolSections, isPanelPopulated, toolSections, toolsById } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, defaultPanelView, isPanelPopulated, toolSections, toolsById } =
+    storeToRefs(toolStore);
 const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 
 const errorMessage = ref("");
 const panelsFetched = ref(false);
 const showFavorites = ref(false);
-const toolsCount = computed(() => Object.keys(toolsById.value || {}).length);
+const defaultToolSections = computed(() => {
+    return (
+        toolSections.value.default ||
+        (defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+            ? toolSections.value[defaultPanelView.value]
+            : null)
+    );
+});
+const headerToolSections = computed(() => {
+    if (isMyPanel.value) {
+        return defaultToolSections.value || currentToolSections.value;
+    }
+    return currentToolSections.value;
+});
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(headerToolSections.value, countUniqueToolsInList(toolsById.value)),
+);
 
 function formatToolsCount(count: number) {
     if (count < 1000) {
@@ -100,15 +119,15 @@ initializePanel();
         </template>
         <ToolBox
             v-if="isPanelPopulated"
+            v-model:show-favorites="showFavorites"
             :workflow="props.workflow"
-            :show-favorites.sync="showFavorites"
             :favorites-default="isMyPanel"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool" />
         <div v-else-if="errorMessage" data-description="tool panel error message">
-            <BAlert class="m-2" variant="danger" show>
+            <GAlert class="m-2" variant="danger" show>
                 {{ errorMessage }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
             <BBadge class="alert-info w-100">
@@ -116,9 +135,9 @@ initializePanel();
             </BBadge>
         </div>
     </ActivityPanel>
-    <BAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
+    <GAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
         <LoadingSpan message="Loading Toolbox" />
-    </BAlert>
+    </GAlert>
 </template>
 
 <style lang="scss" scoped>

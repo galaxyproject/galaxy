@@ -53,6 +53,15 @@ class ComputeEnvironment(metaclass=ABCMeta):
     def unstructured_path_rewrite(self, path):
         """Rewrite loc file paths, etc.."""
 
+    def container_path_rewrite(self, path):
+        """Rewrite a resolved container image path for the compute environment.
+
+        No-op by default; overridden where Galaxy and the compute environment
+        may resolve container images at different filesystem paths (e.g. Pulsar
+        in ``rewrite_parameters`` mode).
+        """
+        return None
+
     @abstractmethod
     def working_directory(self):
         """Job working directory (potentially remote)"""

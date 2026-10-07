@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from collections.abc import Callable
@@ -135,3 +136,23 @@ def ensure_user_with_email(admin_api_interactor: ShedApiInteractor, email: str, 
 def email_to_username(email: str) -> str:
     """Pattern used for test user generation - does not use the API."""
     return re.sub(r"[^a-z-\d]", "--", email.lower())
+
+
+def mock_mailbox_path() -> str:
+    email_path = os.environ.get("TOOL_SHED_TEST_EMAIL_PATH")
+    assert email_path, "Tool shed test driver did not configure a mock mailbox"
+    return email_path
+
+
+def reset_password_link(expected_to: str) -> str:
+    with open(mock_mailbox_path()) as f:
+        email = json.load(f)
+    assert email["to"] == expected_to, f"Mailbox holds an email to {email['to']}, expected one to {expected_to}"
+    assert email["subject"] == "Tool Shed Password Reset"
+    match = re.search(r"https?://\S+/user/reset_password\?token=\w+", email["body"])
+    assert match, f"No password reset link found in email body:\n{email['body']}"
+    return match.group(0)
+
+
+def reset_password_token(expected_to: str) -> str:
+    return reset_password_link(expected_to).split("token=")[1]

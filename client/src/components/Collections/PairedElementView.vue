@@ -41,7 +41,10 @@ watch(elementName, () => {
 
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
+                    <ClickToEdit
+                        :value="elementName"
+                        :title="localize('Click to rename')"
+                        @input="(v: string) => (elementName = v)" />
                 </span>
             </span>
 

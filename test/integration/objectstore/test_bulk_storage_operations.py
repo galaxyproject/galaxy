@@ -1710,3 +1710,69 @@ class TestBulkStorageOperationsIntegration(BaseObjectStoreIntegrationTestCase):
             self._prune_expired_bulk_storage_operations()
             assert self._snapshot_has_been_pruned(preview["snapshot_id"])
             assert self._run_has_been_pruned(history_id, run_id)
+
+
+USER_OBJECT_STORE_CATALOG = """
+- id: general_disk
+  name: General Disk
+  description: General Disk Bound to You
+  configuration:
+    type: disk
+    files_dir: '/data/general/{{ user.username }}'
+"""
+
+
+class TestBulkStorageOperationsUserObjectStoreIntegration(TestBulkStorageOperationsIntegration):
+    """Bulk storage operations with a user-defined object store as the move target."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        cls._configure_object_store_template_catalog(USER_OBJECT_STORE_CATALOG, config)
+
+    def test_preview_eligible_with_user_object_store_target(self):
+        """A user-defined object store is a valid move target."""
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="test", wait=True)
+
+            user_store_id = self._create_user_object_store()
+            preview = self._preview_move(history_id, user_store_id, [self._item(hda["id"])])
+
+            self._assert_eligibility(preview, eligible=1, ineligible=0)
+
+    @requires_celery
+    def test_move_to_user_object_store_completes(self):
+        """A full move to a user-defined object store succeeds and the dataset ends up in that store."""
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="move-to-user-store", wait=True)
+            before = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda["id"])
+            assert before["object_store_id"] == DEFAULT_OBJECT_STORE_ID
+
+            user_store_id = self._create_user_object_store()
+            _, _, final = self._run_move(
+                history_id,
+                user_store_id,
+                [self._item(hda["id"])],
+                include_items_on_terminal=True,
+            )
+
+            self._assert_run_counts(final["run"], succeeded=1, failed=0, skipped=0)
+            assert final["items"][0]["state"] == "succeeded"
+            assert final["items"][0]["bytes_processed"] > 0
+            self._assert_dataset_store_and_content(
+                history_id,
+                hda["id"],
+                user_store_id,
+                "move-to-user-store\n",
+            )
+
+    def _create_user_object_store(self) -> str:
+        body = {
+            "name": "My User Disk",
+            "template_id": "general_disk",
+            "template_version": 0,
+            "secrets": {},
+            "variables": {},
+        }
+        object_store_json = self.dataset_populator.create_object_store(body)
+        return object_store_json["object_store_id"]

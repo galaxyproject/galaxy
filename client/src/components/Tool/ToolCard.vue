@@ -1,10 +1,10 @@
 <script setup>
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BPopover } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
+import { useToolRouting } from "@/composables/route";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -18,6 +18,8 @@ import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import FormMessage from "@/components/Form/FormMessage.vue";
@@ -88,6 +90,7 @@ const props = defineProps({
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
 const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+const { routeToTool } = useToolRouting();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -127,6 +130,12 @@ const visibleVersions = computed(() => {
     return filtered;
 });
 const showVersions = computed(() => visibleVersions.value.length > 1);
+const latestVersion = computed(() => versions.value[versions.value.length - 1]);
+const isNotLatestVersion = computed(() => Boolean(latestVersion.value && props.version !== latestVersion.value));
+
+function onNewerVersionClick() {
+    routeToTool(props.id);
+}
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -166,7 +175,9 @@ onBeforeMount(() => {
         :error-message="errorText || ''"
         :description="props.description"
         :name="props.title"
-        :version="props.version">
+        :version="props.version"
+        :is-not-latest-version="isNotLatestVersion"
+        @newer-version-click="onNewerVersionClick">
         <template v-slot:buttons>
             <GButtonGroup class="tool-card-buttons">
                 <ToolFavoriteButton v-if="hasUser" :id="props.id" />
@@ -199,7 +210,7 @@ onBeforeMount(() => {
                 :user="currentUser" />
             <GModal
                 id="modal-select-preferred-object-store"
-                :show.sync="showPreferredObjectStoreModal"
+                v-model:show="showPreferredObjectStoreModal"
                 :title="storageLocationModalTitle"
                 size="small">
                 <ToolSelectPreferredObjectStore
@@ -218,7 +229,7 @@ onBeforeMount(() => {
                     :tool-id="props.id"
                     :tool-version="props.version"
                     :job-credentials-context="props.options.job_credentials_context" />
-                <BAlert
+                <GAlert
                     v-else-if="props.allowEditingCredentials"
                     v-g-tooltip.hover
                     variant="info"
@@ -229,7 +240,7 @@ onBeforeMount(() => {
                     Requires credentials to run this tool.
 
                     <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
-                    <BPopover target="target" triggers="hover" boundary="window">
+                    <GPopover target="target" triggers="hover" boundary="window">
                         <div class="d-flex flex-column">
                             <span
                                 v-for="(service, index) in props.options.credentials"
@@ -239,8 +250,8 @@ onBeforeMount(() => {
                                 {{ service.description }}
                             </span>
                         </div>
-                    </BPopover>
-                </BAlert>
+                    </GPopover>
+                </GAlert>
             </template>
 
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
@@ -272,6 +283,7 @@ onBeforeMount(() => {
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
                 :creators="props.options.creator"
+                :funding="props.options.funding"
                 :requirements="props.options.requirements" />
         </template>
     </FormCardSticky>

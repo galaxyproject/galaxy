@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import {
     faBell,
     faBroadcastTower,
@@ -35,6 +34,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GLink from "../BaseComponents/GLink.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UserBeaconSettings from "@/components/User/UserBeaconSettings.vue";
@@ -173,9 +173,9 @@ onMounted(async () => {
             Manage your user preferences on this page, including email address, password, and other settings.
         </Heading>
 
-        <BAlert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </BAlert>
+        </GAlert>
 
         <UserDetailsElement />
 
@@ -321,8 +321,8 @@ onMounted(async () => {
                     @click="signOut" />
             </div>
 
-            <GModal :show.sync="showDataPrivateModal" title="Datasets are now private" size="small">
-                <BAlert variant="info" show>
+            <GModal v-model:show="showDataPrivateModal" title="Datasets are now private" size="small">
+                <GAlert variant="info" show>
                     All of your histories and datasets have been made private. If you'd like to make all
                     <strong>future</strong>
                     histories private please use the
@@ -331,7 +331,7 @@ onMounted(async () => {
                         Set Permissions for New Histories
                     </GLink>
                     interface.
-                </BAlert>
+                </GAlert>
             </GModal>
 
             <UserPickTheme v-if="hasThemes && showThemPickerModal" @reset="toggleThemeModal" />

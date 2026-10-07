@@ -54,6 +54,9 @@ class MockToolbox:
     def get_tool(self, tool_id, tool_uuid, tool_version, user):
         return MockTool()
 
+    def materialize_tool(self, tool, *, reason):
+        return tool
+
 
 class MockTool:
     id = TEST_TOOL_ID

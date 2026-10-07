@@ -1,6 +1,7 @@
 """Tool Shed Security"""
 
 import logging
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     false,
@@ -13,6 +14,14 @@ from tool_shed.webapp.model import (
     Group,
     Role,
 )
+
+if TYPE_CHECKING:
+    from tool_shed.webapp.model import (
+        Repository,
+        User,
+        UserRoleAssociation,
+    )
+    from tool_shed.webapp.model.mapping import ToolShedModelMapping
 
 IUC_NAME = "Intergalactic Utilities Commission"
 
@@ -34,7 +43,7 @@ class RBACAgent:
     def associate_components(self, **kwd):
         raise Exception(f"No valid method of associating provided components: {kwd}")
 
-    def associate_user_role(self, user, role):
+    def associate_user_role(self, user: "User", role: Role) -> "UserRoleAssociation":
         raise Exception("No valid method of associating a user with a role")
 
     def convert_permitted_action_strings(self, permitted_action_strings):
@@ -51,7 +60,7 @@ class RBACAgent:
     def create_user_role(self, user, app):
         raise Exception("Unimplemented Method")
 
-    def create_private_user_role(self, user):
+    def create_private_user_role(self, user: "User") -> Role:
         raise Exception("Unimplemented Method")
 
     def get_action(self, name, default=None):
@@ -73,7 +82,7 @@ class RBACAgent:
 
 
 class CommunityRBACAgent(RBACAgent):
-    def __init__(self, model, permitted_actions=None):
+    def __init__(self, model: "ToolShedModelMapping", permitted_actions: Bunch | None = None) -> None:
         self.model = model
         if permitted_actions:
             self.permitted_actions = permitted_actions
@@ -125,7 +134,7 @@ class CommunityRBACAgent(RBACAgent):
         session.commit()
         return assoc
 
-    def associate_user_role(self, user, role):
+    def associate_user_role(self, user: "User", role: Role) -> "UserRoleAssociation":
         assoc = self.model.UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
         session = self.sa_session()
@@ -139,7 +148,7 @@ class CommunityRBACAgent(RBACAgent):
         session.commit()
         return assoc
 
-    def create_private_user_role(self, user):
+    def create_private_user_role(self, user: "User") -> Role:
         # Create private role
         role = self.model.Role(
             name=user.email, description=f"Private Role for {user.email}", type=self.model.Role.types.PRIVATE
@@ -231,31 +240,35 @@ class CommunityRBACAgent(RBACAgent):
     def usernames_that_can_push(self, repository) -> list[str]:
         return listify(repository.allow_push())
 
-    def can_push(self, app, user, repository):
+    def can_push(self, user: "User | None", repository: "Repository") -> bool:
         if user:
             return user.username in self.usernames_that_can_push(repository)
         return False
 
-    def user_can_administer_repository(self, user, repository):
+    def user_can_administer_repository(self, user: "User | None", repository: "Repository") -> bool:
         """Return True if the received user can administer the received repository."""
         if user:
             if repository:
                 repository_admin_role = repository.admin_role
                 for rra in repository.roles:
                     role = rra.role
+                    if role is None:
+                        continue
                     if role.id == repository_admin_role.id:
                         # We have the repository's admin role, so see if the user is associated with it.
                         for ura in role.users:
                             role_member = ura.user
-                            if role_member.id == user.id:
+                            if role_member is not None and role_member.id == user.id:
                                 return True
                         # The user is not directly associated with the role, so see if they are a member
                         # of a group that is associated with the role.
                         for gra in role.groups:
                             group = gra.group
+                            if group is None:
+                                continue
                             for uga in group.users:
                                 member = uga.user
-                                if member.id == user.id:
+                                if member is not None and member.id == user.id:
                                     return True
         return False
 

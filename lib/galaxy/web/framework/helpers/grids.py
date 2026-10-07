@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 from markupsafe import escape
 
@@ -6,6 +7,9 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +32,7 @@ class GridColumn:
         self.format = format
         self.escape = escape
 
-    def get_value(self, trans, grid, item):
+    def get_value(self, trans: "GalaxyWebTransaction", grid, item):
         if self.method:
             value = getattr(grid, self.method)(trans, item)
         elif self.key and hasattr(item, self.key):
@@ -42,7 +46,7 @@ class GridColumn:
         else:
             return value
 
-    def sort(self, trans, query, ascending, column_name=None):
+    def sort(self, trans: "GalaxyWebTransaction", query, ascending, column_name=None):
         """Sort query using this column."""
         if column_name is None:
             column_name = self.key
@@ -64,6 +68,8 @@ class GridData:
     model_class: type | None = None
     columns: list[GridColumn] = []
     default_limit: int = 1000
+    # Subclasses provide the default sort column key.
+    default_sort_key: str
 
     def __init__(self):
         # If a column does not have a model class, set the column's model class
@@ -72,7 +78,11 @@ class GridData:
             if not column.model_class:
                 column.model_class = self.model_class
 
-    def __call__(self, trans, **kwargs):
+    def apply_query_filter(self, query, **kwargs):
+        # Subclasses override this to restrict the grid's base query.
+        raise NotImplementedError
+
+    def __call__(self, trans: "GalaxyWebTransaction", **kwargs):
         limit = kwargs.get("limit", self.default_limit)
         offset = kwargs.get("offset", 0)
 

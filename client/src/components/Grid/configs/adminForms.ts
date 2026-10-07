@@ -143,7 +143,7 @@ const gridConfig: GridConfig = {
     id: "forms-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: "Forms",
     sortBy: "name",

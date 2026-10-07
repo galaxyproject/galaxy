@@ -1,0 +1,10 @@
+class: GalaxyWorkflow
+label: Test connection-only section omission artifact
+inputs:
+  input_data:
+    type: File
+steps:
+  test_tool:
+    tool_id: gx_section_data
+    in:
+      parameter|data_parameter: input_data

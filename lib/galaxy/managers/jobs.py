@@ -45,12 +45,17 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import (
     dereference_input_to_hda,
@@ -104,6 +109,7 @@ from galaxy.tool_util.parameters import (
     dereference,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
+    restore_non_finite_floats,
     ToolParameterBundleModel,
 )
 from galaxy.tools import Tool
@@ -127,6 +133,7 @@ from galaxy.work.context import WorkRequestContext
 if TYPE_CHECKING:
     from sqlalchemy.sql.expression import (
         ColumnElement,
+        Exists,
         Label,
         Select,
     )
@@ -384,7 +391,7 @@ class JobManager:
         return job.history is not None and self.history_manager.is_accessible(job.history, user)
 
     def get_job_console_output(
-        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+        self, trans: ProvidesAppContext, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
     ):
         if job is None:
             raise ObjectNotFound()
@@ -398,9 +405,7 @@ class JobManager:
         console_output = {}
         console_output["state"] = job.state
         if job.state == job.states.RUNNING:
-            working_directory = trans.app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            working_directory = JobWorkingDirectory(job, trans.app.object_store).resolve()
             if stdout_length > -1 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION
@@ -894,6 +899,20 @@ class JobSearch:
         else:
             return func.array_agg(aggregate_order_by(column, column.asc()))
 
+    def _is_empty_collection_of_type(self, collection_id, collection_type: str) -> "Exists":
+        # Collection signatures are built from leaf datasets, so a populated collection
+        # without elements can only be compared by its type.
+        collection = aliased(model.DatasetCollection)
+        return exists().where(
+            collection.id == collection_id,
+            collection.collection_type == collection_type,
+            collection.populated_state == model.DatasetCollection.populated_states.OK,
+            collection.element_count == 0,
+        )
+
+    def _is_empty_collection(self, collection_id: int, collection_type: str) -> bool:
+        return bool(self.sa_session.scalar(select(self._is_empty_collection_of_type(collection_id, collection_type))))
+
     def _build_stmt_for_hdca(
         self,
         stmt: "Select[tuple[int]]",
@@ -924,12 +943,12 @@ class JobSearch:
         # Note: CTEs are uniquely named using 'k' and 'v' to allow this logic to be embedded
         # within larger queries or loops processing multiple target HDCAs. Aliases are used
         # extensively to manage dynamic joins based on collection depth.
-        collection_type = self.sa_session.scalar(
-            select(model.DatasetCollection.collection_type)
+        collection_id, collection_type = self.sa_session.execute(
+            select(model.DatasetCollection.id, model.DatasetCollection.collection_type)
             .select_from(model.HistoryDatasetCollectionAssociation)
             .join(model.DatasetCollection)
             .where(model.HistoryDatasetCollectionAssociation.id == v)
-        )
+        ).one()
         depth = collection_type.count(":") if collection_type else 0
 
         a = safe_aliased(model.JobToInputDatasetCollectionAssociation, name=f"jtidc_1_{k}_{value_index}")
@@ -937,6 +956,17 @@ class JobSearch:
             model.HistoryDatasetCollectionAssociation,
             name=f"hdca_1_{k}_{value_index}",
         )
+
+        if self._is_empty_collection(collection_id, collection_type):
+            labeled_col = a.dataset_collection_id.label(safe_label(f"{k}_{value_index}", value_index))
+            stmt = stmt.add_columns(labeled_col)
+            stmt = stmt.join(a, a.job_id == model.Job.id)
+            stmt = stmt.join(hdca_input, hdca_input.id == a.dataset_collection_id)
+            used_ids.append(labeled_col)
+            data_conditions.append(
+                and_(a.name == k, self._is_empty_collection_of_type(hdca_input.collection_id, collection_type))
+            )
+            return stmt
 
         _hdca_target_cte_ref = aliased(model.HistoryDatasetCollectionAssociation, name="_hdca_target_cte_ref")
         _target_collection_cte_ref = aliased(model.DatasetCollection, name="_target_collection_cte_ref")
@@ -1158,12 +1188,32 @@ class JobSearch:
         if dce_root_target.child_collection_id:
             # This DCE represents a collection, apply the signature comparison approach
             target_collection_id = dce_root_target.child_collection_id
-            collection_type = self.sa_session.scalar(
+            collection_type = self.sa_session.execute(
                 select(model.DatasetCollection.collection_type).where(
                     model.DatasetCollection.id == target_collection_id
                 )
-            )
+            ).scalar_one()
             depth = collection_type.count(":") if collection_type else 0
+
+            if self._is_empty_collection(target_collection_id, collection_type):
+                a = safe_aliased(
+                    model.JobToInputDatasetCollectionElementAssociation,
+                    name=f"job_to_input_dce_association_{k}_{value_index}",
+                )
+                input_dce = aliased(model.DatasetCollectionElement)
+                labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
+                stmt = stmt.add_columns(labeled_col)
+                stmt = stmt.join(a, a.job_id == model.Job.id)
+                stmt = stmt.join(input_dce, input_dce.id == a.dataset_collection_element_id)
+                used_ids.append(labeled_col)
+                data_conditions.append(
+                    and_(
+                        a.name == k,
+                        input_dce.element_identifier == dce_root_target.element_identifier,
+                        self._is_empty_collection_of_type(input_dce.child_collection_id, collection_type),
+                    )
+                )
+                return stmt
 
             # Aliases for the target DCE's collection structure
             _dce_target_root_ref = safe_aliased(
@@ -1517,7 +1567,7 @@ class JobSearch:
             return stmt
 
 
-def view_show_job(trans, job: Job, full: bool) -> dict:
+def view_show_job(trans: ProvidesUserContext, job: Job, full: bool) -> dict:
     is_admin = trans.user_is_admin
     job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
@@ -1900,7 +1950,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source) -> JobsSummary | None:
     return rval
 
 
-def summarize_job_metrics(trans, job):
+def summarize_job_metrics(trans: ProvidesUserContext, job):
     """Produce a dict-ified version of job metrics ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1927,7 +1977,7 @@ def summarize_metrics(trans: ProvidesUserContext, job_metrics):
     return [d.dict() for d in dictifiable_metrics]
 
 
-def summarize_destination_params(trans, job):
+def summarize_destination_params(trans: ProvidesUserContext, job):
     """Produce a dict-ified version of job destination parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1944,7 +1994,7 @@ def summarize_destination_params(trans, job):
     return destination_params
 
 
-def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, Any]:
+def summarize_job_parameters(trans: ProvidesHistoryContext, job: Job) -> dict[str, Any]:
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -2071,6 +2121,8 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
     if dynamic_tool := job.dynamic_tool:
         tool_uuid = dynamic_tool.uuid
     tool = toolbox.get_tool(job.tool_id, job.tool_version, tool_uuid=tool_uuid, user=trans.user)
+    if tool is not None:
+        tool = toolbox.materialize_tool(tool, reason="serialization")
 
     params_objects = None
     parameters = []
@@ -2101,6 +2153,8 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
 
 def get_output_name(tool, output, params):
     try:
+        if output.label:
+            return tool.render_output_label(output.label, params, None, tool_state=params)
         return tool.tool_action.get_output_name(
             output,
             tool=tool,
@@ -2139,9 +2193,9 @@ def summarize_job_outputs(job: model.Job, tool, params):
 
 def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_database: bool, config):
     if track_jobs_in_database:
-        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
+        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED, Job.states.FINISHING)
     else:
-        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING)
+        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING, Job.states.FINISHING)
 
     stmt = (
         select(Job)
@@ -2240,6 +2294,8 @@ class JobSubmitter:
         if tool.parameters is None:
             raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+        # The persisted request stores non-finite floats as JSON-safe sentinel strings.
+        tool_state = restore_non_finite_floats(tool_state, parameter_bundle)
         return (
             dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
             new_hdas,
@@ -2262,7 +2318,11 @@ class JobSubmitter:
                 # API dataset materialization is immutable and produces new datasets
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
-                self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                materialized = self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                if not materialized:
+                    raise RequestParameterInvalidException(
+                        f"Failed to fetch dataset from '{to_materialize.request.url}'"
+                    )
             if request.data_manager_mode:
                 tool_request.request["__data_manager_mode"] = request.data_manager_mode
             credentials_context = (

@@ -7,7 +7,10 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
@@ -58,7 +61,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         self.library_manager = library_manager
         self.role_manager = role_manager
 
-    def index(self, trans: ProvidesAppContext, deleted: bool | None = False) -> LibrarySummaryList:
+    def index(self, trans: ProvidesUserContext, deleted: bool | None = False) -> LibrarySummaryList:
         """Returns a list of summary data for all libraries.
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
@@ -77,12 +80,12 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             libraries.append(LibrarySummary(**library_dict))
         return LibrarySummaryList(root=libraries)
 
-    def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
+    def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""
         library = self.library_manager.get(trans, id)
         return self._to_summary(trans, library)
 
-    def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
+    def create(self, trans: ProvidesUserContext, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
 
         .. note:: Currently, only admin users can create libraries.
@@ -90,7 +93,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
         return self._to_summary(trans, library)
 
-    def create_from_store(self, trans, payload: CreateLibrariesFromStore) -> list[LibrarySummary]:
+    def create_from_store(self, trans: ProvidesUserContext, payload: CreateLibrariesFromStore) -> list[LibrarySummary]:
         object_tracker = self.create_objects_from_store(
             trans,
             payload,
@@ -101,7 +104,9 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             rval.append(self._to_summary(trans, library))
         return rval
 
-    def update(self, trans, id: DecodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
+    def update(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: UpdateLibraryPayload
+    ) -> LibrarySummary:
         """Updates the library with given ``id`` with the data in the payload."""
         library = self.library_manager.get(trans, id)
         name = payload.name
@@ -112,7 +117,9 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         updated_library = self.library_manager.update(trans, library, name, payload.description, payload.synopsis)
         return self._to_summary(trans, updated_library)
 
-    def delete(self, trans, id: DecodedDatabaseIdField, undelete: bool | None = False) -> LibrarySummary:
+    def delete(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, undelete: bool | None = False
+    ) -> LibrarySummary:
         """Marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete libraries.
@@ -128,7 +135,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
     def get_permissions(
         self,
-        trans,
+        trans: ProvidesUserContext,
         id: DecodedDatabaseIdField,
         scope: LibraryPermissionScope | None = LibraryPermissionScope.current,
         is_library_access: bool | None = False,
@@ -185,7 +192,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             )
 
     def set_permissions(
-        self, trans, id: DecodedDatabaseIdField, payload: dict[str, Any]
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: dict[str, Any]
     ) -> LibraryLegacySummary | LibraryCurrentPermissions:  # Old legacy response
         """Set permissions of the given library to the given role ids.
 
@@ -315,7 +322,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         roles = self.library_manager.get_current_roles(trans, library)
         return LibraryCurrentPermissions.model_construct(**roles)
 
-    def set_permissions_old(self, trans, library, payload: dict[str, Any]) -> LibraryLegacySummary:
+    def set_permissions_old(self, trans: ProvidesAppContext, library, payload: dict[str, Any]) -> LibraryLegacySummary:
         """
         *** old implementation for backward compatibility ***
 
@@ -333,6 +340,6 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         item = library.to_dict(view="element")
         return LibraryLegacySummary(**item)
 
-    def _to_summary(self, trans, library) -> LibrarySummary:
+    def _to_summary(self, trans: ProvidesUserContext, library) -> LibrarySummary:
         library_dict = self.library_manager.get_library_dict(trans, library)
         return LibrarySummary(**library_dict)

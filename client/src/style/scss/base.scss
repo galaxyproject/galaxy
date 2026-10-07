@@ -158,6 +158,8 @@ $galaxy-state-bg: (
     "skipped": $state-default-bg,
     "uninitialized": $gray-200,
     // Some `JobState`s:
+    // "finishing" brackets the metadata step, so it shares "setting_metadata"'s color.
+    "finishing": $state-warning-bg,
     "resubmitted": $state-default-bg,
     "failed": $state-danger-bg,
     "deleting": darken($state-default-bg, 30%),
@@ -288,7 +290,9 @@ a.btn {
 
 .btn-transparent-background {
     // A wrapper for buttons with transparent background when hovering over it.
-    .btn {
+    // Also GButton (migrated off bootstrap-vue).
+    .btn,
+    .g-button {
         background-color: transparent !important;
         border-color: transparent !important;
     }
@@ -299,6 +303,15 @@ a.btn {
 
     .btn:active {
         color: $brand-dark;
+    }
+
+    // GButton's scoped variants out-rank this; force the colours.
+    .g-button:hover {
+        color: $brand-info !important;
+    }
+
+    .g-button:active {
+        color: $brand-dark !important;
     }
 }
 

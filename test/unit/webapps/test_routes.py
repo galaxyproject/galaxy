@@ -56,5 +56,18 @@ def test_galaxy_routes():
     )
 
 
+def test_auth_client_routes():
+    test_config = Bunch(template_cache_path="/tmp")
+    app = cast(MinimalApp, Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy", model=None))
+    test_webapp = MockWebApplication(app)
+
+    galaxy_buildapp.populate_auth_client_routes(test_webapp)
+    test_webapp.clientside_routes.create_regs()
+
+    for path in ("/login/start", "/login/reset_password", "/register/start"):
+        match = test_webapp.clientside_routes.match(path)
+        assert match == {"controller": "root", "action": "client"}
+
+
 def assert_url_is(actual, expected):
     assert actual == expected, f"Expected URL [{expected}] but obtained [{actual}]"

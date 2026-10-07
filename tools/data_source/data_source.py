@@ -4,6 +4,7 @@
 import json
 import os
 import sys
+from contextlib import contextmanager
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -18,13 +19,42 @@ from galaxy.datatypes.registry import Registry
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
-    stream_to_open_named_file,
+    requests,
+    stream_to_path,
 )
 from galaxy.util.user_agent import get_default_headers
 
 GALAXY_PARAM_PREFIX = "GALAXY"
 GALAXY_ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 GALAXY_DATATYPES_CONF_FILE = os.path.join(GALAXY_ROOT_DIR, "datatypes_conf.xml")
+
+
+@contextmanager
+def _open_remote_source(url, method, incoming_request_params, headers):
+    scheme = urlparse(url).scheme
+    if method not in ("get", "post"):
+        raise ValueError(f"Unknown URL_method specified: {method}")
+
+    if scheme == "ftp":
+        data = urlencode(incoming_request_params).encode("utf-8") if method == "post" else None
+        request = Request(url, data=data, headers=headers)
+        with urlopen(request, timeout=DEFAULT_SOCKET_TIMEOUT) as response:
+            yield response, response.headers
+        return
+
+    data = incoming_request_params if method == "post" else None
+    with requests.Session() as session:
+        request_method = session.get if method == "get" else session.post
+        with request_method(
+            url,
+            data=data,
+            headers=headers,
+            stream=True,
+            timeout=DEFAULT_SOCKET_TIMEOUT,
+        ) as response:
+            response.raise_for_status()
+            response.raw.decode_content = True
+            yield response.raw, response.headers
 
 
 def __main__():
@@ -54,35 +84,34 @@ def __main__():
             open(cur_filename, "w").write("")
             sys.exit("The remote data source application has not sent back a URL parameter in the request.")
 
-        # The following calls to urlopen() will use the above default timeout
         headers = get_default_headers()
         try:
-            if URL_method == "get":
-                req = Request(cur_URL, headers=headers)
-            elif URL_method == "post":
-                data = urlencode(params["param_dict"]["incoming_request_params"]).encode("utf-8")
-                req = Request(cur_URL, data=data, headers=headers)
-            else:
-                raise Exception("Unknown URL_method specified: %s" % URL_method)
-            page = urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
+            remote_source = _open_remote_source(
+                cur_URL,
+                URL_method,
+                params["param_dict"].get("incoming_request_params", {}),
+                headers,
+            )
+            page, response_headers = remote_source.__enter__()
         except Exception as e:
             sys.exit("The remote data source application may be off line, please try again later. Error: %s" % str(e))
-        if max_file_size:
-            file_size = int(page.info().get("Content-Length", 0))
-            if file_size > max_file_size:
-                sys.exit(
-                    "The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server."
-                    % (file_size, max_file_size)
-                )
         try:
-            cur_filename = stream_to_open_named_file(
+            if max_file_size:
+                file_size = int(response_headers.get("Content-Length", 0))
+                if file_size > max_file_size:
+                    sys.exit(
+                        f"The size of the data ({file_size} bytes) you have requested exceeds the maximum allowed "
+                        f"({max_file_size} bytes) on this server."
+                    )
+            cur_filename = stream_to_path(
                 page,
-                os.open(cur_filename, os.O_WRONLY | os.O_TRUNC | os.O_CREAT),
                 cur_filename,
-                source_encoding=get_charset_from_http_headers(page.headers),
+                source_encoding=get_charset_from_http_headers(response_headers),
             )
         except Exception as e:
             sys.exit(f"Unable to fetch {cur_URL}:\n{e}")
+        finally:
+            remote_source.__exit__(None, None, None)
 
         # here import checks that upload tool performs
         try:

@@ -421,7 +421,7 @@ class ContainerResolutionView:
             if tool_ids is not None and tool_id not in tool_ids:
                 continue
 
-            if tool.tool_action.produces_real_jobs:
+            if tool.produces_real_jobs:
                 rval.append(self.resolve(tool_id=tool_id, **resolve_kwds))
         return rval
 

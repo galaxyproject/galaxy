@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from galaxy.tool_util_models import (
+from ._models import (
     DynamicToolSources,
     UserToolSource,
 )

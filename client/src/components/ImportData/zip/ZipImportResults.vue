@@ -39,8 +39,8 @@ const currentHistoryName = computed(() =>
         </p>
 
         <p v-if="regularFileCount > 0">
-            <strong>{{ regularFileCount }} new file{{ regularFileCount > 1 ? "s" : "" }}</strong> will be be available
-            in your currently active History
+            <strong>{{ regularFileCount }} new file{{ regularFileCount > 1 ? "s" : "" }}</strong> will be available in
+            your currently active History
             <span v-if="currentHistoryName">
                 <strong>{{ currentHistoryName }} </strong>
             </span>

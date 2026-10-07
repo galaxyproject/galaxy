@@ -121,6 +121,7 @@ from galaxy.util import (
 from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils.test_http_server import TestHttpServer
 from galaxy_test.base.decorators import (
     has_requirement,
     using_requirement,
@@ -137,6 +138,12 @@ from .env import REQUIRE_ALL_NEEDED_TOOLS
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
+
+def local_file_url(test_http_server: TestHttpServer) -> str:
+    """Local stand-in for ``FILE_URL``, serving the same test-data/4.bed contents."""
+    return test_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
+
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
@@ -528,10 +535,9 @@ class BaseDatasetPopulator(BasePopulator):
     def new_bam_dataset(self, history_id: str, test_data_resolver):
         return self.new_dataset_from_test_data(history_id, test_data_resolver, "1.bam", "bam")
 
-    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str):
-        return self.new_dataset(
-            history_id, content=open(test_data_resolver.get_filename(filename), "rb"), file_type=file_type, wait=True
-        )
+    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str, **kwds):
+        with open(test_data_resolver.get_filename(filename), "rb") as content:
+            return self.new_dataset(history_id, content=content, file_type=file_type, wait=True, **kwds)
 
     def new_directory_dataset(
         self, test_data_resolver: TestDataResolver, history_id: str, directory: str, format: str = "directory"
@@ -1116,7 +1122,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     @contextlib.contextmanager
     def test_history(self, require_new: bool = True, name: str | None = None) -> Generator[str, None, None]:
-        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+        with self._test_history(
+            require_new=require_new, cleanup_callback=self._cleanup_history, name=name
+        ) as history_id:
             yield history_id
 
     @contextlib.contextmanager
@@ -1295,6 +1303,18 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_dataset_content(
         self, history_id: str, wait=True, filename=None, type="text", to_ext=None, raw=False, **kwds
     ):
+        display_response = self.get_history_dataset_content_raw(
+            history_id, wait=wait, filename=filename, to_ext=to_ext, raw=raw, **kwds
+        )
+        assert display_response.status_code == 200, display_response.text
+        if type == "text":
+            return display_response.text
+        else:
+            return display_response.content
+
+    def get_history_dataset_content_raw(
+        self, history_id: str, wait=True, filename=None, to_ext=None, raw=False, preview: bool | None = None, **kwds
+    ) -> Response:
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
@@ -1303,12 +1323,9 @@ class BaseDatasetPopulator(BasePopulator):
             data["raw"] = True
         if to_ext is not None:
             data["to_ext"] = to_ext
-        display_response = self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
-        assert display_response.status_code == 200, display_response.text
-        if type == "text":
-            return display_response.text
-        else:
-            return display_response.content
+        if preview is not None:
+            data["preview"] = preview
+        return self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
 
     def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: int | None = None) -> dict[str, Any]:
         # use the dataset display API endpoint with the offset parameter to enable chunking
@@ -1365,6 +1382,13 @@ class BaseDatasetPopulator(BasePopulator):
         details_response = self._get_contents_request(history_id, f"/dataset_collections/{hdca_id}")
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
+
+    def get_hdca_implicit_collection_jobs_id(self, history_id: str, hdca_id: str, **kwds) -> str:
+        """Encoded ImplicitCollectionJobs id of a map-over output HDCA."""
+        details = self.get_history_collection_details(history_id, content_id=hdca_id, **kwds)
+        icj_id = details.get("implicit_collection_jobs_id")
+        assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
+        return icj_id
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
@@ -1669,6 +1693,19 @@ class BaseDatasetPopulator(BasePopulator):
         role_response = self._post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
         return role_response.json()
+
+    def create_group(
+        self, name: str | None = None, user_ids: list[str] | None = None, role_ids: list[str] | None = None
+    ) -> dict:
+        using_requirement("admin")
+        payload = {
+            "name": name or self.get_random_name(prefix="testpop"),
+            "user_ids": user_ids or [],
+            "role_ids": role_ids or [],
+        }
+        group_response = self._post("groups", data=payload, admin=True, json=True)
+        api_asserts.assert_status_code_is_ok(group_response)
+        return group_response.json()[0]
 
     @contextlib.contextmanager
     def user_tool_execute_permissions(self):
@@ -2140,6 +2177,31 @@ class BaseDatasetPopulator(BasePopulator):
         response = self.new_history_page_raw(history_id, title=title, content=content, content_format=content_format)
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
+
+    def new_notebook_referencing(
+        self,
+        history_id: str,
+        output_ids: list[str] | None = None,
+        collection_ids: list[str] | None = None,
+        job_ids: list[str] | None = None,
+        icj_ids: list[str] | None = None,
+        title: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a history-attached page (notebook) whose markdown references the
+        given dataset outputs (history_dataset_display), dataset collection
+        outputs (history_dataset_collection_display), and/or jobs via a job
+        directive (job_metrics) by job id or implicit collection jobs id."""
+        blocks = [
+            f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids or []
+        ]
+        blocks += [
+            f"```galaxy\nhistory_dataset_collection_display(history_dataset_collection_id={collection_id})\n```"
+            for collection_id in collection_ids or []
+        ]
+        blocks += [f"```galaxy\njob_metrics(job_id={job_id})\n```" for job_id in job_ids or []]
+        blocks += [f"```galaxy\njob_metrics(implicit_collection_jobs_id={icj_id})\n```" for icj_id in icj_ids or []]
+        content = "# Analysis\n\n" + "\n".join(blocks) + "\n"
+        return self.new_history_page(history_id, title=title, content=content)
 
     def get_history_page(self, page_id: str) -> dict[str, Any]:
         response = self._get(f"pages/{page_id}")
@@ -2758,7 +2820,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(
@@ -2934,6 +2996,7 @@ class BaseWorkflowPopulator(BasePopulator):
         copy_inputs_to_history: bool = False,
         job_dir: str | None = None,
         test_data_format: Literal["cwl_style"] | None = None,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows.
 
@@ -3050,6 +3113,7 @@ class BaseWorkflowPopulator(BasePopulator):
             assert_ok=assert_ok,
             invocations=invocations,
             expected_response=expected_response,
+            timeout=timeout,
         )
 
     def rerun(
@@ -3089,6 +3153,7 @@ class BaseWorkflowPopulator(BasePopulator):
         assert_ok: bool,
         invocations: int,
         expected_response: int,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
         workflow_populator = self
         assert invocations > 0
@@ -3107,10 +3172,10 @@ class BaseWorkflowPopulator(BasePopulator):
                 # complete.
                 if wait:
                     if assert_ok:
-                        workflow_populator.wait_for_invocation_and_completion(invocation_id)
+                        workflow_populator.wait_for_invocation_and_completion(invocation_id, timeout=timeout)
                     else:
                         workflow_populator.wait_for_workflow(
-                            workflow_id, invocation_id, history_id, assert_ok=assert_ok
+                            workflow_id, invocation_id, history_id, assert_ok=assert_ok, timeout=timeout
                         )
                 jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
 
@@ -3650,12 +3715,12 @@ class LibraryPopulator:
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
 
-    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
+    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True, url: str = FILE_URL):
         history_id, library, destination = self.setup_fetch_to_folder("single_url")
         items = [
             {
                 "src": "url",
-                "url": FILE_URL,
+                "url": url,
                 "MD5": FILE_MD5,
                 "ext": file_type,
             }
@@ -4498,6 +4563,7 @@ def wait_on_state(
             "stop",
             "stopped",
             "setting_metadata",
+            "finishing",
             "waiting",
             "cancelling",
             "deleting",
@@ -4646,10 +4712,10 @@ class DescribeJob:
         self._job_id = job_id
         self._final_details: dict[str, Any] | None = None
 
-    def _wait_for(self):
+    def _wait_for(self) -> None:
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:

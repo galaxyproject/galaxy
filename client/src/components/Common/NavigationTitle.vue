@@ -27,7 +27,7 @@ const emit = defineEmits<{
 <template>
     <div>
         <div class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
-            <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" :data-description="headingDescription">
+            <div class="py-1 align-items-center flex-gapx-1" :data-description="headingDescription">
                 <GButton
                     v-if="collapsible"
                     transparent
@@ -39,7 +39,7 @@ const emit = defineEmits<{
                     <FontAwesomeIcon :icon="collapsed ? faAngleDoubleDown : faAngleDoubleUp" fixed-width />
                 </GButton>
                 <slot name="before-icon" />
-                <FontAwesomeIcon :icon="icon" fixed-width />
+                <FontAwesomeIcon class="mr-1" :icon="icon" fixed-width />
                 <slot name="title">
                     <b>{{ title }}</b>
                 </slot>

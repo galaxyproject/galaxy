@@ -128,7 +128,7 @@ describe("useUploadState", () => {
             const erroredId = state.addUploadItem(makePastedItem("failed.txt"));
 
             state.setStatus(uploadingId, "uploading");
-            state.updateProgress(completedId, 100); // auto-marks as completed
+            state.setStatus(completedId, "completed");
             state.setError(erroredId, "network error");
 
             expect(state.uploadingCount.value).toBe(1);
@@ -140,9 +140,19 @@ describe("useUploadState", () => {
 
         it("isUploading is false when no items are in uploading or processing state", () => {
             const id = state.addUploadItem(makePastedItem());
-            state.updateProgress(id, 100); // completed
+            state.setStatus(id, "completed");
 
             expect(state.isUploading.value).toBe(false);
+        });
+
+        it("uploadingCount and isUploading include processing items", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setStatus(id, "uploading");
+            state.markProcessing(id, ["ds_1"]);
+
+            expect(state.uploadingCount.value).toBe(1);
+            expect(state.isUploading.value).toBe(true);
+            expect(state.completedCount.value).toBe(0);
         });
     });
 
@@ -156,13 +166,30 @@ describe("useUploadState", () => {
             expect(item.progress).toBe(50);
         });
 
-        it("reaching 100% auto-transitions item status to completed", () => {
+        it("reaching 100% does not auto-transition item status", () => {
             const id = state.addUploadItem(makePastedItem());
             state.setStatus(id, "uploading");
             state.updateProgress(id, 100);
 
             const item = state.activeItems.value.find((i) => i.id === id)!;
-            expect(item.status).toBe("completed");
+            expect(item.progress).toBe(100);
+            expect(item.status).toBe("uploading");
+        });
+
+        it("cancellation is terminal and cannot be overridden by lifecycle actions", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setStatus(id, "uploading");
+            state.cancelUpload(id);
+
+            state.markProcessing(id, ["ds_1"]);
+            state.markDatasetsResolved(id);
+            state.markDatasetsFailed(id, "error message");
+            state.setStatus(id, "uploading");
+            state.setError(id, "error message");
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("cancelled");
+            expect(item.datasetIds).toEqual([]);
         });
 
         it("totalProgress is the average progress across all items", () => {
@@ -221,12 +248,11 @@ describe("useUploadState", () => {
             const { id1, id2, batchId } = setupBatch();
             state.setStatus(id1, "uploading");
             state.setStatus(id2, "uploading");
-            state.updateProgress(id1, 100);
-            state.updateProgress(id2, 100);
+            state.setStatus(id1, "completed");
+            state.setStatus(id2, "completed");
 
             const bwp = state.batchesWithProgress.value.find((b) => b.id === batchId)!;
             expect(bwp.allCompleted).toBe(true);
-            expect(bwp.progress).toBe(100);
         });
 
         it("batchesWithProgress.hasError is true when any upload fails", () => {
@@ -268,7 +294,7 @@ describe("useUploadState", () => {
             const erroredId = state.addUploadItem(makePastedItem("failed.txt"));
 
             state.setStatus(uploadingId, "uploading");
-            state.updateProgress(completedId, 100);
+            state.setStatus(completedId, "completed");
             state.setError(erroredId, "oops");
 
             state.clearCompleted();
@@ -284,8 +310,8 @@ describe("useUploadState", () => {
             const id2 = state.addUploadItem(makePastedItem("b.txt"));
             const batchId = state.addBatch(BATCH_CONFIG, [id1, id2]);
             state.updateBatchStatus(batchId, "completed");
-            state.updateProgress(id1, 100);
-            state.updateProgress(id2, 100);
+            state.setStatus(id1, "completed");
+            state.setStatus(id2, "completed");
 
             state.clearCompleted();
 
@@ -296,7 +322,7 @@ describe("useUploadState", () => {
             const completedId = state.addUploadItem(makePastedItem("done.txt"));
             const uploadingId = state.addUploadItem(makePastedItem("active.txt"));
             const batchId = state.addBatch(BATCH_CONFIG, [completedId, uploadingId]);
-            state.updateProgress(completedId, 100);
+            state.setStatus(completedId, "completed");
             state.setStatus(uploadingId, "uploading");
 
             state.clearCompleted();
@@ -305,6 +331,66 @@ describe("useUploadState", () => {
             expect(state.activeBatches.value.find((b) => b.id === batchId)).toBeDefined();
             // But the completed item is gone
             expect(state.activeItems.value.find((i) => i.id === completedId)).toBeUndefined();
+        });
+    });
+
+    describe("dataset lifecycle actions", () => {
+        it("markProcessing sets status to processing, progress to 100, and stores datasetIds", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setStatus(id, "uploading");
+            state.markProcessing(id, ["ds_1", "ds_2"]);
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("processing");
+            expect(item.progress).toBe(100);
+            expect(item.datasetIds).toEqual(["ds_1", "ds_2"]);
+        });
+
+        it("markDatasetsResolved sets status to completed", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.markProcessing(id, ["ds_1"]);
+            state.markDatasetsResolved(id);
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("completed");
+        });
+
+        it("markDatasetsFailed sets status to error and stores the message", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.markProcessing(id, ["ds_1"]);
+            state.markDatasetsFailed(id, "Metadata generation failed. Please retry.");
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("error");
+            expect(item.error).toBe("Metadata generation failed. Please retry.");
+        });
+
+        it("updateDatasetState sets datasetState without changing status", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.markProcessing(id, ["ds_1"]);
+            state.updateDatasetState(id, "running");
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("processing");
+            expect(item.datasetState).toBe("running");
+        });
+
+        it("updateProgress only changes numeric progress while queued or uploading", () => {
+            const uploadingId = state.addUploadItem(makePastedItem("uploading.txt"));
+            state.setStatus(uploadingId, "uploading");
+            state.updateProgress(uploadingId, 50);
+
+            const uploadingItem = state.activeItems.value.find((i) => i.id === uploadingId)!;
+            expect(uploadingItem.progress).toBe(50);
+            expect(uploadingItem.status).toBe("uploading");
+
+            const processingId = state.addUploadItem(makePastedItem("processing.txt"));
+            state.markProcessing(processingId, ["ds_1"]);
+            state.updateProgress(processingId, 100);
+
+            const processingItem = state.activeItems.value.find((i) => i.id === processingId)!;
+            expect(processingItem.status).toBe("processing");
+            expect(processingItem.progress).toBe(100);
         });
     });
 
@@ -318,6 +404,184 @@ describe("useUploadState", () => {
             expect(state.activeItems.value).toHaveLength(0);
             expect(state.activeBatches.value).toHaveLength(0);
             expect(state.hasUploads.value).toBe(false);
+        });
+    });
+
+    describe("cancelBatch", () => {
+        it("cancels queued/uploading items while the batch is still uploading, leaving processing items alone", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+            const id3 = state.addUploadItem(makePastedItem("c.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1, id2, id3]);
+
+            state.updateBatchStatus(batchId, "uploading");
+            state.setStatus(id1, "uploading");
+            state.setStatus(id2, "queued");
+            state.markProcessing(id3, ["ds_3"]);
+
+            state.cancelBatch(batchId);
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("cancelled");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("cancelled");
+            // The server already owns processing items; cancelling the batch cannot stop them.
+            expect(state.activeItems.value.find((i) => i.id === id3)?.status).toBe("processing");
+            expect(state.getBatch(batchId)?.status).toBe("cancelled");
+        });
+
+        it("does not cancel items that are already terminal", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1, id2]);
+
+            state.updateBatchStatus(batchId, "uploading");
+            state.setStatus(id1, "completed");
+            state.setError(id2, "fail");
+
+            state.cancelBatch(batchId);
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("completed");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("error");
+            expect(state.getBatch(batchId)?.status).toBe("cancelled");
+        });
+
+        it("is a no-op when the batch is already processing", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1, id2]);
+
+            state.updateBatchStatus(batchId, "processing");
+            state.setStatus(id1, "uploading");
+            state.markProcessing(id2, ["ds_2"]);
+
+            state.cancelBatch(batchId);
+
+            expect(state.getBatch(batchId)?.status).toBe("processing");
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("uploading");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("processing");
+        });
+    });
+
+    describe("cancelAll", () => {
+        it("keeps standalone items in processing status unchanged while cancelling uploading ones", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+
+            state.setStatus(id1, "uploading");
+            state.markProcessing(id2, ["ds_2"]);
+
+            state.cancelAll();
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("cancelled");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("processing");
+        });
+
+        it("leaves fully-transferred (progress 100) uploads alone so the pending response can resolve them", () => {
+            const transferringId = state.addUploadItem(makePastedItem("active.txt"));
+            const transferredId = state.addUploadItem(makePastedItem("done-bytes.txt"));
+
+            state.setStatus(transferringId, "uploading");
+            state.updateProgress(transferringId, 40);
+            state.setStatus(transferredId, "uploading");
+            state.updateProgress(transferredId, 100);
+
+            state.cancelAll();
+
+            expect(state.activeItems.value.find((i) => i.id === transferringId)?.status).toBe("cancelled");
+            expect(state.activeItems.value.find((i) => i.id === transferredId)?.status).toBe("uploading");
+            expect(state.hasActiveUploads.value).toBe(false);
+        });
+
+        it("keeps batches already in processing status unchanged", () => {
+            const batchId = state.addBatch(BATCH_CONFIG, []);
+            state.updateBatchStatus(batchId, "processing");
+
+            state.cancelAll();
+
+            expect(state.getBatch(batchId)?.status).toBe("processing");
+        });
+
+        it("cancels an uploading batch via cancelAll", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1]);
+
+            state.updateBatchStatus(batchId, "uploading");
+            state.setStatus(id1, "uploading");
+
+            state.cancelAll();
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("cancelled");
+            expect(state.getBatch(batchId)?.status).toBe("cancelled");
+        });
+    });
+
+    describe("resolveBatch", () => {
+        function setupProcessingBatch() {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+            const id3 = state.addUploadItem(makePastedItem("c.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1, id2, id3]);
+
+            state.setStatus(id1, "processing");
+            state.setStatus(id2, "processing");
+            state.setStatus(id3, "cancelled");
+            return { id1, id2, id3, batchId };
+        }
+
+        it("markBatchResolved completes processing items and preserves cancelled ones", () => {
+            const { id1, id2, id3, batchId } = setupProcessingBatch();
+
+            state.markBatchResolved(batchId);
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("completed");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("completed");
+            expect(state.activeItems.value.find((i) => i.id === id3)?.status).toBe("cancelled");
+            expect(state.getBatch(batchId)?.status).toBe("completed");
+        });
+
+        it("markBatchFailed errors processing items and preserves cancelled ones", () => {
+            const { id1, id2, id3, batchId } = setupProcessingBatch();
+
+            state.markBatchFailed(batchId, "Collection failed to populate");
+
+            expect(state.activeItems.value.find((i) => i.id === id1)?.status).toBe("error");
+            expect(state.activeItems.value.find((i) => i.id === id1)?.error).toBe("Collection failed to populate");
+            expect(state.activeItems.value.find((i) => i.id === id2)?.status).toBe("error");
+            expect(state.activeItems.value.find((i) => i.id === id3)?.status).toBe("cancelled");
+            expect(state.getBatch(batchId)?.status).toBe("error");
+            expect(state.getBatch(batchId)?.error).toBe("Collection failed to populate");
+        });
+    });
+
+    describe("dismiss", () => {
+        it("dismissUpload removes an errored item", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setError(id, "oops");
+
+            state.dismissUpload(id);
+
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeUndefined();
+        });
+
+        it("dismissUpload leaves non-error items alone", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setStatus(id, "uploading");
+
+            state.dismissUpload(id);
+
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeDefined();
+        });
+
+        it("dismissBatch removes an errored batch and its items", () => {
+            suppressExpectedErrorMessages(["failed"]);
+
+            const id = state.addUploadItem(makePastedItem("a.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id]);
+            state.setBatchError(batchId, "failed");
+
+            state.dismissBatch(batchId);
+
+            expect(state.getBatch(batchId)).toBeUndefined();
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeUndefined();
         });
     });
 });

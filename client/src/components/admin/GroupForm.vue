@@ -3,14 +3,16 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
@@ -34,7 +36,10 @@ const isEditMode = !!props.groupId;
 
 const errorMessage = ref("");
 const loading = ref(false);
+// A form that failed to load must not be saved: it would replace the group's associations with nothing.
+const loadFailed = ref(false);
 const groupName = ref("");
+const savedGroupName = ref("");
 const selectedUsers = ref<UserOption[]>([]);
 const selectedRoles = ref<RoleOption[]>([]);
 const userOptions = ref<UserOption[]>([]);
@@ -92,16 +97,18 @@ async function loadGroupData() {
         });
         if (groupError) {
             errorMessage.value = errorMessageAsString(groupError);
+            loadFailed.value = true;
             loading.value = false;
             return;
         }
-        groupName.value = group.name;
+        groupName.value = savedGroupName.value = group.name;
 
         const { data: users, error: usersError } = await GalaxyApi().GET("/api/groups/{group_id}/users", {
             params: { path: { group_id: props.groupId } },
         });
         if (usersError) {
             errorMessage.value = errorMessageAsString(usersError);
+            loadFailed.value = true;
             loading.value = false;
             return;
         }
@@ -116,6 +123,7 @@ async function loadGroupData() {
         });
         if (rolesError) {
             errorMessage.value = errorMessageAsString(rolesError);
+            loadFailed.value = true;
             loading.value = false;
             return;
         }
@@ -126,6 +134,7 @@ async function loadGroupData() {
         roleOptions.value = [...selectedRoles.value];
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
+        loadFailed.value = true;
     }
     loading.value = false;
 }
@@ -134,10 +143,15 @@ async function onSubmit() {
     const userIds = selectedUsers.value.map((u) => u.id);
     const roleIds = selectedRoles.value.map((r) => r.id);
 
+    if (!groupName.value) {
+        errorMessage.value = "Please enter a group name.";
+        return;
+    }
     if (isEditMode) {
         const { error } = await GalaxyApi().PUT("/api/groups/{group_id}", {
             params: { path: { group_id: props.groupId! } },
             body: {
+                name: groupName.value,
                 user_ids: userIds,
                 role_ids: roleIds,
             },
@@ -147,10 +161,6 @@ async function onSubmit() {
             return;
         }
     } else {
-        if (!groupName.value) {
-            errorMessage.value = "Please enter a group name.";
-            return;
-        }
         const { error } = await GalaxyApi().POST("/api/groups", {
             body: {
                 name: groupName.value,
@@ -174,71 +184,72 @@ loadGroupData();
     <div>
         <LoadingSpan v-if="loading" />
         <div v-else>
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <FormCard :title="isEditMode ? `Group '${groupName}'` : 'Create a new Group'" icon="fa-users">
-                <template v-slot:body>
-                    <FormElementLabel title="Name" :required="!isEditMode" :condition="!!groupName">
-                        <FormInput v-if="!isEditMode" id="admin-group-name-input" v-model="groupName" />
-                        <span v-else>{{ groupName }}</span>
-                    </FormElementLabel>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+            <template v-if="!loadFailed">
+                <FormCard :title="isEditMode ? `Group '${savedGroupName}'` : 'Create a new Group'" icon="fa-users">
+                    <template v-slot:body>
+                        <FormElementLabel title="Name" :required="true" :condition="!!groupName">
+                            <FormInput id="admin-group-name-input" v-model="groupName" />
+                        </FormElementLabel>
 
-                    <FormElementLabel title="Users">
-                        <Multiselect
-                            id="admin-group-users-select"
-                            v-model="selectedUsers"
-                            :options="userOptions"
-                            :clear-on-select="true"
-                            :multiple="true"
-                            :internal-search="false"
-                            :max-height="300"
-                            label="email"
-                            track-by="id"
-                            placeholder="Search users by email..."
-                            @search-change="onUserSearch">
-                            <template slot="noResult">
-                                <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
-                                <div v-else>No users found</div>
-                            </template>
-                            <template slot="noOptions">
-                                <div>Enter at least 3 characters to search</div>
-                            </template>
-                        </Multiselect>
-                    </FormElementLabel>
+                        <FormElementLabel title="Users">
+                            <Multiselect
+                                id="admin-group-users-select"
+                                v-model="selectedUsers"
+                                :options="userOptions"
+                                :clear-on-select="true"
+                                :multiple="true"
+                                :internal-search="false"
+                                :max-height="300"
+                                label="email"
+                                track-by="id"
+                                placeholder="Search users by email..."
+                                @search-change="onUserSearch">
+                                <template v-slot:noResult>
+                                    <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
+                                    <div v-else>No users found</div>
+                                </template>
+                                <template v-slot:noOptions>
+                                    <div>Enter at least 3 characters to search</div>
+                                </template>
+                            </Multiselect>
+                        </FormElementLabel>
 
-                    <FormElementLabel title="Roles">
-                        <Multiselect
-                            id="admin-group-roles-select"
-                            v-model="selectedRoles"
-                            :options="roleOptions"
-                            :clear-on-select="true"
-                            :multiple="true"
-                            :internal-search="false"
-                            :max-height="300"
-                            label="name"
-                            track-by="id"
-                            placeholder="Search roles by name..."
-                            @search-change="onRoleSearch">
-                            <template slot="noResult">
-                                <div v-if="roleSearch.length < 3">Enter at least 3 characters to search</div>
-                                <div v-else>No roles found</div>
-                            </template>
-                            <template slot="noOptions">
-                                <div>Enter at least 3 characters to search</div>
-                            </template>
-                        </Multiselect>
-                    </FormElementLabel>
+                        <FormElementLabel title="Roles">
+                            <Multiselect
+                                id="admin-group-roles-select"
+                                v-model="selectedRoles"
+                                :options="roleOptions"
+                                :clear-on-select="true"
+                                :multiple="true"
+                                :internal-search="false"
+                                :max-height="300"
+                                label="name"
+                                track-by="id"
+                                placeholder="Search roles by name..."
+                                @search-change="onRoleSearch">
+                                <template v-slot:noResult>
+                                    <div v-if="roleSearch.length < 3">Enter at least 3 characters to search</div>
+                                    <div v-else>No roles found</div>
+                                </template>
+                                <template v-slot:noOptions>
+                                    <div>Enter at least 3 characters to search</div>
+                                </template>
+                            </Multiselect>
+                        </FormElementLabel>
 
-                    <FormElementLabel v-if="!isEditMode" title="Auto-create role">
-                        <BFormCheckbox v-model="autoCreateRole">
-                            Create a new role with the same name as this group
-                        </BFormCheckbox>
-                    </FormElementLabel>
-                </template>
-            </FormCard>
-            <BButton id="admin-group-submit" class="my-2" variant="primary" @click="onSubmit">
-                <FontAwesomeIcon :icon="faSave" class="mr-1" />
-                <span v-localize>{{ isEditMode ? "Save" : "Create" }}</span>
-            </BButton>
+                        <FormElementLabel v-if="!isEditMode" title="Auto-create role">
+                            <BFormCheckbox v-model="autoCreateRole">
+                                Create a new role with the same name as this group
+                            </BFormCheckbox>
+                        </FormElementLabel>
+                    </template>
+                </FormCard>
+                <GButton id="admin-group-submit" class="my-2" color="blue" @click="onSubmit">
+                    <FontAwesomeIcon :icon="faSave" class="mr-1" />
+                    <span v-localize>{{ isEditMode ? "Save" : "Create" }}</span>
+                </GButton>
+            </template>
         </div>
     </div>
 </template>

@@ -23,6 +23,7 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ class FastAPILibraryFoldersContents:
     def create(
         self,
         folder_id: FolderIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreateLibraryFilePayload = Body(...),
     ):
         return self.service.create(trans, folder_id, payload)

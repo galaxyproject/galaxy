@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +8,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import CreateForm from "@/components/FileSources/Instances/CreateForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -17,8 +17,6 @@ interface Props {
     templateId: string;
     uuid?: string;
 }
-
-const OAUTH2_TYPES = ["dropbox", "googledrive", "onedrive"];
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.fetchTemplates();
@@ -44,7 +42,7 @@ const redirectMessage = computed(
 );
 const requiresOAuth2AuthorizeRedirect = computed(() => {
     const templateValue = template.value;
-    return props.uuid == undefined && templateValue && OAUTH2_TYPES.indexOf(templateValue.type) >= 0;
+    return props.uuid == undefined && templateValue?.requires_oauth2_authorization;
 });
 
 function onCreated(objectStore: UserFileSourceModel) {
@@ -92,14 +90,14 @@ watch(
             <BreadcrumbHeading :items="breadcrumbItems" />
         </div>
 
-        <BAlert v-if="loading" show variant="info">
+        <GAlert v-if="loading" show variant="info">
             <LoadingSpan v-if="!template" message="Loading file source templates" />
             <LoadingSpan v-else-if="requiresOAuth2AuthorizeRedirect && !errorMessage" :message="redirectMessage" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="errorMessage" show variant="danger">
+        <GAlert v-if="errorMessage" show variant="danger">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <CreateForm v-if="!loading && template" :uuid="uuid" :template="template" @created="onCreated" />
     </div>
 </template>

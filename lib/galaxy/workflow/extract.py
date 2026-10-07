@@ -9,6 +9,7 @@ from typing import (
     Any,
     cast,
     Literal,
+    NamedTuple,
 )
 
 from sqlalchemy import select
@@ -19,6 +20,7 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.model import (
     DatasetCollectionElement,
     History,
@@ -32,6 +34,10 @@ from galaxy.model import (
     WorkflowStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.schema.workflows import (
+    OutputLabelHint,
+    StepLabelHint,
+)
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -55,6 +61,18 @@ ToolInputs = dict[str, Any]
 # history items to their corresponding tool input parameters
 DataInputAssociations = list[tuple[int, str]]
 
+
+class _WorkItem(NamedTuple):
+    """A tool step to extract: its representative job, the ICJ output HDCAs
+    (empty for plain jobs), the optional caller-supplied step label, and the
+    ImplicitCollectionJobs id for a mapped step (None for a plain job)."""
+
+    job: Job
+    output_hdcas: list[HistoryDatasetCollectionAssociation]
+    step_label: str | None
+    icj_id: int | None
+
+
 log = logging.getLogger(__name__)
 
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
@@ -65,6 +83,51 @@ def _skip_output_assoc_name(name: str) -> bool:
     outputs (named-collection-part placeholders and discovered-primary-file
     rows). Both extraction paths skip these."""
     return ToolOutputCollectionPart.is_named_collection_part_name(name) or name.startswith("__new_primary_file")
+
+
+def _set_step_tool(step: WorkflowStep, job: Job) -> None:
+    step.dynamic_tool = job.dynamic_tool
+    if job.dynamic_tool is None or job.dynamic_tool.public:
+        # User-defined tool steps are identified by ``dynamic_tool`` alone, see
+        # ``WorkflowStep.effective_tool_id``.
+        step.tool_id = job.tool_id
+
+
+def _unsummarized_job_message(trans: ProvidesHistoryContext, job_id: int, summary: "WorkflowSummary") -> str:
+    """Why a requested job has no representative in the history summary."""
+    message = (
+        f"Cannot extract a workflow step for job {trans.security.encode_id(job_id)} - it produced no output in "
+        "this history that workflow extraction can represent."
+    )
+    if WARNING_SOME_DATASETS_NOT_READY in summary.warnings:
+        message += (
+            " Some outputs in this history are still queued or running and were skipped - wait for them to "
+            "finish and extract again."
+        )
+    return message
+
+
+def _implicit_map_output_hid(summary: "WorkflowSummary", job: Job, assoc_name: str) -> int:
+    """hid of the mapped output collection carrying ``job``'s ``assoc_name`` output."""
+    hid: int | None = None
+    pairs = summary.jobs[job]
+    for query_assoc_name, dataset_collection in pairs:
+        if query_assoc_name == assoc_name:
+            hid = summary.hid(dataset_collection)
+    if hid is None:
+        log.error(
+            "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s.",
+            job.id,
+            pairs,
+            assoc_name,
+        )
+        found = ", ".join(f"'{name}'" for name, _ in pairs if name) or "none"
+        raise exceptions.InconsistentApplicationState(
+            f"Failed to extract a workflow step for job {job.id} (tool '{job.tool_id}') - it was mapped over a "
+            f"collection, but its output '{assoc_name}' is not carried by any output collection in this history "
+            f"(collections found for this job: {found})."
+        )
+    return hid
 
 
 def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, str]) -> None:
@@ -106,10 +169,13 @@ def _finalize_workflow(
     user: User,
     workflow_name: str | None,
     steps: list[WorkflowStep],
+    reports_config: dict[str, Any] | None = None,
 ) -> StoredWorkflow:
     workflow = model.Workflow()
     workflow.name = workflow_name
     workflow.steps = steps
+    if reports_config is not None:
+        workflow.reports_config = reports_config
     attach_ordered_steps(workflow)
     levorder = order_workflow_steps_with_levels(steps)
     base_pos = 10
@@ -186,16 +252,14 @@ def extract_steps(
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
             log.warning(f"job_id {job_id} not found in job_id2representative_job {summary.job_id2representative_job}")
-            raise AssertionError("Attempt to create workflow with job not connected to current history")
+            raise exceptions.RequestParameterInvalidException(_unsummarized_job_message(trans, job_id, summary))
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
-        if job.dynamic_tool_id:
-            step.dynamic_tool_id = job.dynamic_tool_id
+        _set_step_tool(step, job)
         # NOTE: We shouldn't need to do two passes here since only
         #       an earlier job can be used as an input to a later
         #       job.
@@ -215,21 +279,9 @@ def extract_steps(
             assoc_name = assoc.name
             if _skip_output_assoc_name(assoc_name):
                 continue
+            hid: int
             if job in summary.implicit_map_jobs:
-                hid: int | None = None
-                for implicit_pair in jobs[job]:
-                    query_assoc_name, dataset_collection = implicit_pair
-                    if query_assoc_name == assoc_name or assoc_name.startswith(
-                        f"__new_primary_file_{query_assoc_name}|"
-                    ):
-                        hid = summary.hid(dataset_collection)
-                if hid is None:
-                    template = (
-                        "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s."
-                    )
-                    message = template % (job.id, jobs[job], assoc_name)
-                    log.warning(message)
-                    raise Exception("Failed to extract job.")
+                hid = _implicit_map_output_hid(summary, job, assoc_name)
             else:
                 if hasattr(assoc, "dataset"):
                     has_hid = assoc.dataset
@@ -463,7 +515,11 @@ class WorkflowSummary(BaseWorkflowSummary):
 
 def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, DataInputAssociations]:
     tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
-    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
+    if tool is None:
+        raise exceptions.ToolMissingException(
+            f"Cannot extract a workflow step for tool '{job.tool_id}' (version {job.tool_version}) because it is not installed on this Galaxy instance.",
+            tool_id=job.tool_id,
+        )
     param_values = tool.get_param_values(
         job, ignore_errors=True
     )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
@@ -553,10 +609,20 @@ def extract_workflow_by_ids(
     hdca_ids: list[int] | None = None,
     dataset_names: list[str] | None = None,
     dataset_collection_names: list[str] | None = None,
-    output_labels: list[Any] | None = None,
-) -> StoredWorkflow:
-    """ID-based variant of :func:`extract_workflow`."""
-    steps = extract_steps_by_ids(
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
+    build_report: "ReportBuilder | None" = None,
+) -> tuple[StoredWorkflow, list[str]]:
+    """ID-based variant of :func:`extract_workflow`.
+
+    ``build_report`` turns the label index - which maps the ids the extraction
+    consumed to the labels it assigned - into the workflow's ``reports_config``,
+    e.g. by rewriting a notebook page's markdown. It runs *before* the workflow is
+    persisted, so the labels it assigns and the report it produces are written by
+    the same transaction that creates the workflow: a failure there leaves no
+    half-built workflow behind. Returns the workflow and any report warnings.
+    """
+    steps, index = extract_steps_by_ids(
         trans,
         job_manager=job_manager,
         job_ids=job_ids,
@@ -566,8 +632,13 @@ def extract_workflow_by_ids(
         dataset_names=dataset_names,
         dataset_collection_names=dataset_collection_names,
         output_labels=output_labels,
+        step_labels=step_labels,
     )
-    return _finalize_workflow(trans, user, workflow_name, steps)
+    reports_config: dict[str, Any] | None = None
+    report_warnings: list[str] = []
+    if build_report is not None:
+        reports_config, report_warnings = build_report(index)
+    return _finalize_workflow(trans, user, workflow_name, steps, reports_config), report_warnings
 
 
 IdKey = tuple[Literal["dataset", "collection"], int]
@@ -588,6 +659,74 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
     if kind == "hda":
         return ("dataset", content_id)
     return ("collection", content_id)
+
+
+# Turns the label index into a workflow ``reports_config`` (plus warnings) while the
+# extracted steps are still uncommitted.
+ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any], list[str]]]
+
+
+def _label_arg(argument: str, label: str | None) -> str | None:
+    """Directive argument for a workflow label, or None when it has no directive form.
+
+    A label the directive grammar cannot quote is reported as unresolved rather than
+    emitted, so the rewriter drops the directive with a warning instead of producing
+    markdown that fails validation.
+    """
+    if not label or not is_quotable_argument_value(label):
+        return None
+    return f'{argument}="{label}"'
+
+
+@dataclass(frozen=True)
+class ExtractionLabelIndex:
+    """Resolve an extracted-from id to the workflow-relative label extraction
+    assigned it, so a notebook page's internal-id markdown directives can be
+    rewritten to portable workflow report directives.
+
+    Holds the live ``WorkflowStep`` objects (not snapshotted label strings) so a
+    label assigned after construction - e.g. by the report auto-label reconcile -
+    is read back here. ``content_to_step`` is extraction's own connection-wiring
+    map (keyed by *original* HDA/HDCA id); ``job_to_step`` / ``icj_to_step`` map a
+    plain job id / ImplicitCollectionJobs id to the tool step it became.
+    """
+
+    content_to_step: dict[IdKey, tuple[WorkflowStep, str]]
+    job_to_step: dict[int, WorkflowStep]
+    icj_to_step: dict[int, WorkflowStep]
+
+    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> str | None:
+        """Directive argument (``input="x"`` / ``output="y"``) for a referenced
+        HDA/HDCA, or None when it is not in the extracted subgraph / not labeled."""
+        if content_kind == "hda":
+            id_key: IdKey = ("dataset", _original_hda(cast(HistoryDatasetAssociation, content)).id)
+        else:
+            id_key = ("collection", _original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
+        pair = self.content_to_step.get(id_key)
+        if pair is None:
+            return None
+        step, output_name = pair
+        if step.type in ("data_input", "data_collection_input"):
+            return _label_arg("input", step.label)
+        workflow_output = step.workflow_output_for(output_name)
+        if workflow_output is None:
+            return None
+        return _label_arg("output", workflow_output.label)
+
+    def job_label_arg(self, job: Job) -> str | None:
+        """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
+        element job to its ICJ step exactly as the seeding collector does."""
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is not None:
+            step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
+        else:
+            step = self.job_to_step.get(job.id)
+        if step is None:
+            return None
+        return _label_arg("step", step.label)
+
+    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
+        return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
 
 
 def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelKind, content_id: int) -> OutputLabelKey:
@@ -654,8 +793,9 @@ def extract_steps_by_ids(
     hdca_ids: list[int] | None = None,
     dataset_names: list[str] | None = None,
     dataset_collection_names: list[str] | None = None,
-    output_labels: list[Any] | None = None,
-) -> list[WorkflowStep]:
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
+) -> tuple[list[WorkflowStep], ExtractionLabelIndex]:
     """ID-based variant of :func:`extract_steps`.
 
     Inputs are decoded DB ids; each is fetched and access-checked against the
@@ -676,23 +816,37 @@ def extract_steps_by_ids(
     hdca_ids = list(hdca_ids or [])
     output_labels = list(output_labels or [])
 
+    # Step labels are keyed by the id the caller selected the step with: a plain
+    # tool job id or an ImplicitCollectionJobs id. Resolved into per-work-item
+    # labels at build time because the ICJ id is unrecoverable once work_items
+    # is sorted by representative-job id below.
+    job_step_labels: dict[int, str] = {}
+    icj_step_labels: dict[int, str] = {}
+    for label_hint in step_labels or []:
+        if label_hint.kind == "job":
+            job_step_labels[label_hint.id] = label_hint.label
+        else:
+            icj_step_labels[label_hint.id] = label_hint.label
+
     user = getattr(trans, "user", None)
     sa_session = trans.sa_session
     hda_manager = trans.app.hda_manager
     dataset_collection_manager = trans.app.dataset_collection_manager
 
     steps: list[WorkflowStep] = []
-    step_labels: set[str] = set()
+    step_labels_seen: set[str] = set()
     id_to_output_pair: dict[IdKey, tuple[WorkflowStep, str]] = {}
+    job_to_step: dict[int, WorkflowStep] = {}
+    icj_to_step: dict[int, WorkflowStep] = {}
 
     for i, hda_id in enumerate(hda_ids):
         hda = hda_manager.get_accessible(hda_id, user)
         step = model.WorkflowStep()
         step.type = "data_input"
         name = dataset_names[i] if dataset_names else "Input Dataset"
-        if name not in step_labels:
+        if name not in step_labels_seen:
             step.label = name
-            step_labels.add(name)
+            step_labels_seen.add(name)
         step.tool_inputs = dict(name=name)
         steps.append(step)
         original = _original_hda(hda)
@@ -703,9 +857,9 @@ def extract_steps_by_ids(
         step = model.WorkflowStep()
         step.type = "data_collection_input"
         name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
-        if name not in step_labels:
+        if name not in step_labels_seen:
             step.label = name
-            step_labels.add(name)
+            step_labels_seen.add(name)
         step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
         steps.append(step)
         original_hdca = _original_hdca(hdca)
@@ -717,36 +871,59 @@ def extract_steps_by_ids(
     # drive input/output wiring without inferring map/over from job state).
     # Service-layer validator ensures no job in job_ids has an ICJ
     # association, so this branch handles only true plain jobs.
-    work_items: list[tuple[Job, list[HistoryDatasetCollectionAssociation]]] = []
+    work_items: list[_WorkItem] = []
 
     for job_id in job_ids:
         assert job_manager is not None, "job_manager required when job_ids supplied"
         job = job_manager.get_accessible_job(trans, job_id)
-        work_items.append((job, []))
+        work_items.append(_WorkItem(job, [], job_step_labels.get(job_id), None))
 
     # FIXME: representative-job param read is the only remaining HID-style
     # inference here. Swap step_inputs_by_id for a Job.tool_state /
     # ToolRequest.request_state reader once that exists; see
     # docs/research/Problem - YAML Tool Post-Hoc State Divergence.md.
-    for icj_id in implicit_collection_jobs_ids:
+    for collection_jobs_id in implicit_collection_jobs_ids:
         # Service-layer validator already checked existence, populated_state,
         # output-HDCA presence, and per-HDCA accessibility.
-        icj = sa_session.get(ImplicitCollectionJobs, icj_id)
-        assert icj is not None, f"ImplicitCollectionJobs {icj_id} not found"
-        work_items.append((icj.representative_job, icj.output_dataset_collection_instances))
+        icj = sa_session.get(ImplicitCollectionJobs, collection_jobs_id)
+        assert icj is not None, f"ImplicitCollectionJobs {collection_jobs_id} not found"
+        work_items.append(
+            _WorkItem(
+                icj.representative_job,
+                icj.output_dataset_collection_instances,
+                icj_step_labels.get(collection_jobs_id),
+                collection_jobs_id,
+            )
+        )
 
     # Job.id is monotonically assigned at submission, so sorting by it
     # produces dependency order: a downstream job always has a larger id
     # than the jobs whose outputs it consumes.
-    work_items.sort(key=lambda item: item[0].id)
+    work_items.sort(key=lambda item: item.job.id)
 
-    for job, output_hdcas in work_items:
+    for job, output_hdcas, step_label, icj_id in work_items:
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
+        _set_step_tool(step, job)
+        if icj_id is not None:
+            icj_to_step[icj_id] = step
+        else:
+            job_to_step[job.id] = step
+        if step_label is not None:
+            # Input names already populated step_labels_seen; a tool-step label
+            # colliding here means the caller asked for a label that is already
+            # taken (e.g. a defaulted "Input Dataset" the service validator could
+            # not see). Unlike input names, which silently drop a colliding name,
+            # an explicitly requested step label raises rather than vanish.
+            if step_label in step_labels_seen:
+                raise exceptions.RequestParameterInvalidException(
+                    f"workflow step label collides with an existing label: {step_label!r}"
+                )
+            step.label = step_label
+            step_labels_seen.add(step_label)
 
         mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
         if output_hdcas:
@@ -795,7 +972,8 @@ def extract_steps_by_ids(
         step, output_name = output_pair
         step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
 
-    return steps
+    index = ExtractionLabelIndex(content_to_step=id_to_output_pair, job_to_step=job_to_step, icj_to_step=icj_to_step)
+    return steps, index
 
 
 def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, IdAssociations]:
@@ -808,8 +986,12 @@ def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInpu
     param-value walk, which avoids the HID path's flattening of HDCAs to
     leaf HDAs and prevents duplicate emission for DCE-as-data-param.
     """
-    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
+    tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
+    if tool is None:
+        raise exceptions.ToolMissingException(
+            f"Cannot extract a workflow step for tool '{job.tool_id}' (version {job.tool_version}) because it is not installed on this Galaxy instance.",
+            tool_id=job.tool_id,
+        )
     param_values = tool.get_param_values(job, ignore_errors=True)
     associations: IdAssociations = __cleanup_param_values_by_id(tool.inputs, param_values)
     for assoc in job.input_dataset_collections:
@@ -880,6 +1062,8 @@ __all__ = (
     "extract_workflow",
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
+    "ExtractionLabelIndex",
+    "ReportBuilder",
     "normalize_output_label_key",
     "output_label_to_id_key",
 )

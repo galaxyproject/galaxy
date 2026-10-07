@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { BAlert, BForm } from "bootstrap-vue";
+import { BForm } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import type { OIDCConfigWithRegistration } from "./ExternalIDHelper";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
@@ -19,9 +20,9 @@ const messageVariant = ref<string | null>(null);
 
 <template>
     <div class="h-100">
-        <BAlert v-if="messageText" show :variant="messageVariant">
+        <GAlert v-if="messageText" show :variant="messageVariant">
             {{ messageText }}
-        </BAlert>
+        </GAlert>
 
         <BForm id="externalRegister" :class="{ 'd-flex h-100 justify-content-center': !props.columnDisplay }">
             <div :class="!props.columnDisplay ? 'oidc-idps-column' : 'oidc-idps-grid'">

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
@@ -8,7 +7,9 @@ import { FAVORITES_KEYS, filterPanelByToolIds, searchTools } from "@/components/
 import { type Tool, type ToolPanelItem, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
+import { toRawDeep } from "@/utils/toRawDeep";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -262,7 +263,7 @@ function checkQuery(q: string) {
 
 function post(message: object) {
     if (props.useWorker) {
-        searchWorker.value?.postMessage(message);
+        searchWorker.value?.postMessage(toRawDeep(message));
     } else {
         nextTick(() => {
             handlePost({ data: message as SearchEventData });
@@ -281,7 +282,7 @@ function post(message: object) {
             :placeholder="placeholder"
             @change="checkQuery" />
     </div>
-    <BAlert v-else class="mb-3" variant="info" show>
+    <GAlert v-else class="mb-3" variant="info" show>
         <LoadingSpan message="Loading Tool Search" />
-    </BAlert>
+    </GAlert>
 </template>

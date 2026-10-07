@@ -1,7 +1,24 @@
 <template>
     <div>
-        <CellButton ref="buttonRef" title="Insert" :icon="faPlus" />
-        <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
+        <GButton
+            ref="buttonRef"
+            transparent
+            color="blue"
+            icon-only
+            tooltip
+            tooltip-placement="right"
+            :title="title"
+            :pressed="popperRef?.visible">
+            <FontAwesomeIcon :icon="faPlus" fixed-width />
+            <slot></slot>
+        </GButton>
+        <Popper
+            v-if="buttonRef"
+            ref="popperRef"
+            :reference-el="buttonRef.$el"
+            trigger="click"
+            placement="right"
+            mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
             <div class="cell-dropdown overflow-auto">
                 <div v-if="Object.keys(filteredTemplates).length > 0">
@@ -24,7 +41,7 @@
                         </div>
                     </div>
                 </div>
-                <BAlert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </BAlert>
+                <GAlert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </GAlert>
             </div>
         </Popper>
     </div>
@@ -32,23 +49,34 @@
 
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { BAlert } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, type Ref, ref } from "vue";
 
 import { getVisualizations } from "./services";
 import cellTemplates from "./templates.yml";
 import type { CellType, TemplateEntry } from "./types";
 
-import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Popper from "@/components/Popper/Popper.vue";
+
+withDefaults(
+    defineProps<{
+        title?: string;
+    }>(),
+    {
+        title: "Insert",
+    },
+);
 
 defineEmits<{
     (e: "click", cell: CellType): void;
 }>();
 
 const buttonRef = ref();
+const popperRef = ref();
 const query = ref("");
 const visualizations: Ref<Array<TemplateEntry>> = ref([]);
 

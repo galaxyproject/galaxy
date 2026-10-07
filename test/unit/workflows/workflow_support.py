@@ -4,6 +4,7 @@ import yaml
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.util.bunch import Bunch
 from galaxy.workflow.modules import module_factory
@@ -36,7 +37,7 @@ class MockApp(galaxy_mock.MockApp):
     def __init__(self):
         super().__init__()
         self._toolbox = MockToolbox()
-        self.workflow_manager = WorkflowsManager(self)
+        self.workflow_manager = WorkflowsManager(self, DynamicToolManager(self))
 
 
 class MockDatatypesRegistry:
@@ -58,6 +59,9 @@ class MockToolbox:
     def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
+
+    def materialize_tool(self, tool, *, reason):
+        return tool
 
 
 def yaml_to_model(has_dict, id_offset=100):

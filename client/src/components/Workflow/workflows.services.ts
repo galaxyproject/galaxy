@@ -32,14 +32,6 @@ export async function deleteWorkflow(id: string): Promise<WorkflowSummary> {
     return data;
 }
 
-export async function createWorkflow(workflowName: string, workflowAnnotation: string) {
-    const { data } = await axios.put(withPrefix("/workflow/create"), {
-        workflow_name: workflowName,
-        workflow_annotation: workflowAnnotation,
-    });
-    return data;
-}
-
 export async function getWorkflowFull(workflowId: string, version?: number) {
     const params: { style: string; version?: number } = { style: "editor" };
     if (Number.isInteger(version)) {

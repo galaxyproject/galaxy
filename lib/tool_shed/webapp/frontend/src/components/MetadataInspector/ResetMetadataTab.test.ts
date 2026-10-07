@@ -80,7 +80,7 @@ describe("ResetMetadataTab", () => {
                         path: { encoded_repository_id: "repo123" },
                         query: { dry_run: true, verbose: true },
                     },
-                })
+                }),
             )
         })
 
@@ -151,7 +151,7 @@ describe("ResetMetadataTab", () => {
                         path: { encoded_repository_id: "repo123" },
                         query: { dry_run: false, verbose: true },
                     },
-                })
+                }),
             )
         })
 

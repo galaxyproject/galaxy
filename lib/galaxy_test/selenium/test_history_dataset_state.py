@@ -9,6 +9,7 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 BUTTON_TOOLTIPS = {
     "display": "View data",
@@ -23,7 +24,7 @@ TEST_DBKEY_TEXT = "Honeybee (Apis mellifera): apiMel3 (apiMel3)"
 FIRST_HID = 1
 
 
-class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -99,7 +100,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _prepare_dataset(self):
         self.history_panel_create_new()
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_name(FIRST_HID, "1.fasta")
         self.assert_item_hid_text(FIRST_HID)

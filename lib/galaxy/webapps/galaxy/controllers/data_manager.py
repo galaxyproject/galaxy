@@ -14,6 +14,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.webapps.base.controller import BaseUIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 class DataManager(BaseUIController):
     @web.expose
     @web.json
-    def data_managers_list(self, trans, **kwd):
+    def data_managers_list(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(
@@ -56,7 +57,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     @web.json
-    def jobs_list(self, trans, **kwd):
+    def jobs_list(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(
@@ -101,7 +102,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     @web.json
-    def job_info(self, trans, **kwd):
+    def job_info(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(
@@ -109,10 +110,9 @@ class DataManager(BaseUIController):
             )
         message = kwd.get("message", "")
         status = kwd.get("status", "info")
-        job_id = kwd.get("id", None)
+        job_id = kwd.get("id", "")
         try:
-            job_id = trans.security.decode_id(job_id)
-            job = trans.sa_session.query(Job).get(job_id)
+            job = trans.sa_session.query(Job).get(trans.security.decode_id(job_id))
         except Exception as e:
             job = None
             log.error(f"Bad job id ({job_id}) passed to job_info: {e}")
@@ -148,7 +148,7 @@ class DataManager(BaseUIController):
                 values.append((key, value))
             data_manager_output.append(values)
         return {
-            "jobId": job_id,
+            "jobId": job.id,
             "exitCode": job.exit_code,
             "runUrl": web.url_for(controller="tool_runner", action="rerun", job_id=trans.security.encode_id(job.id)),
             "commandLine": job.command_line,

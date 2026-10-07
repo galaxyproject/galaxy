@@ -6,10 +6,25 @@ type DirectiveMetadataValueByMode = {
     [key: string]: string;
 };
 
+interface DirectiveParameter {
+    type: string;
+    context?: string;
+    description?: string;
+    default?: string | boolean;
+    values?: string[];
+}
+
 interface DirectiveMetadata {
     side_panel_name: string | DirectiveMetadataValueByMode;
     side_panel_description?: string | DirectiveMetadataValueByMode;
     help?: string | DirectiveMetadataValueByMode;
+    category?: string;
+    renders?: string;
+    embeddable?: boolean;
+    requires?: string;
+    parameter_set?: string;
+    parameters?: { [key: string]: DirectiveParameter };
+    dynamic_parameters?: boolean;
 }
 
 type DirectivesMetadata = {
@@ -21,6 +36,8 @@ type SidePanelEntry = {
 };
 
 const DIRECTIVE_METADATA = RAW_DIRECTIVE_DATA as DirectivesMetadata;
+
+export const MARKDOWN_CELL_TYPES: string[] = (RAW_DIRECTIVE_DATA as { _cell_types: string[] })._cell_types;
 
 export function directiveEntry(
     directiveId: string,

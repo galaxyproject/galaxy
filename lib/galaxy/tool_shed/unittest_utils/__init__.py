@@ -74,6 +74,7 @@ class Config:
     shed_tools_dir: str
     edam_panel_views: list = []
     tool_configs: list = []
+    use_cached_toolbox: bool = False
     shed_tool_data_table_config: str
     shed_data_manager_config_file: str
 
@@ -144,7 +145,7 @@ class DummyDataManager(DataManagerInterface):
     def process_result(self, out_data):
         return None
 
-    def write_bundle(self, out) -> dict[str, OutputDataset]:
+    def write_bundle(self, out, source_extra_files_paths=None) -> dict[str, OutputDataset]:
         return {}
 
 
@@ -250,3 +251,6 @@ class StandaloneInstallationTarget(InstallationTarget):
 
     def wait_for_toolbox_reload(self, toolbox):
         return
+
+    def reindex_tool_search(self) -> None:
+        return None

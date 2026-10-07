@@ -2,14 +2,12 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
 
 
 class TestPublishedHistories(SharedStateSeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories(self):
         self._login()
@@ -17,7 +15,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         expected_history_names = self.get_published_history_names_from_server()
         self.assert_histories_present(expected_history_names)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_sort_by_name(self):
         self._login()
@@ -30,7 +27,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         sorted_histories = self.get_published_history_names_from_server(sort_by="name")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_sort_by_last_update(self):
         self._login()
@@ -42,7 +38,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_tag_click(self):
         self._login()
@@ -63,7 +58,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_present([self.history3_name, self.history1_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_username_filter(self):
         self._login()
@@ -72,7 +66,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.components.published_histories.search_input.wait_for_and_send_keys(f"user:{username}")
         self.assert_histories_present([self.history2_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_search_standard(self):
         self._login()
@@ -80,7 +73,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.components.published_histories.search_input.wait_for_and_send_keys(self.history1_name)
         self.assert_histories_present([self.history1_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_search_advanced(self):
         self._login()
@@ -107,14 +99,24 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
             else:
                 assert history_name == expected_histories[index]
 
-    def get_published_history_names_from_server(self, sort_by=None):
-        published_histories = self.dataset_populator._get("histories/published").json()
-        if sort_by:
-            published_histories = sorted(published_histories, key=lambda x: x[sort_by])
-        all_published_history_names = []
-        for his in published_histories:
-            all_published_history_names.append(his["name"])
-        return all_published_history_names
+    def get_published_history_names_from_server(self, sort_by="update_time"):
+        # Send the grid's own query (getPublishedHistories in client/src/api/histories.ts), which
+        # leaves out deleted histories that /api/histories/published still returns.
+        # The database collation decides name ordering, so re-sorting the response here
+        # could only ever agree with one backend. Let the server order it, like the grid.
+        params = {
+            "keys": "name",
+            # Without a search the endpoint falls back to the legacy index, which ignores the rest.
+            "search": "",
+            "sort_by": sort_by,
+            "sort_desc": False,
+            "show_own": False,
+            "show_published": True,
+            "show_shared": False,
+            "show_archived": False,
+        }
+        published_histories = self.dataset_populator._get("histories", params).json()
+        return [history["name"] for history in published_histories]
 
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)

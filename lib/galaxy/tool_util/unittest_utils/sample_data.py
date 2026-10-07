@@ -38,7 +38,7 @@ VALID_XML_VALIDATORS = [
     """<validator type="dataset_metadata_equal" metadata_name="foobar" value="moocow" />""",
     """<validator type="dataset_metadata_equal" metadata_name="foobar" value_json="null" />""",
     """<validator type="dataset_metadata_in_range" metadata_name="foobar" min="4.5" max="7.8" />""",
-    """<validator type="dataset_metadata_in_range" metadata_name="foobar" min="4.5" max="7.8" include_min="true" />""",
+    """<validator type="dataset_metadata_in_range" metadata_name="foobar" min="4.5" max="7.8" exclude_min="true" />""",
     """<validator type="dataset_metadata_in_data_table" metadata_name="foobar" metadata_column="3" table_name="mycooltable" />""",
     """<validator type="dataset_metadata_not_in_data_table" metadata_name="foobar" metadata_column="3" table_name="mycooltable" />""",
     """<validator type="value_in_data_table" metadata_column="3" table_name="mycooltable" />""",
@@ -61,8 +61,8 @@ INVALID_XML_VALIDATORS = [
     """<validator type="dataset_metadata_equal" />""",
     """<validator type="dataset_metadata_equal" metadaata_name="foobar" />""",
     """<validator type="dataset_metadata_equal" metadaata_name="foobar" value_json="undefined" />""",
-    """<validator type="dataset_metadata_in_range" metadata_name="foobar" min="4.5" max="7.8" include_min="notabool" />"""
-    """<validator type="dataset_metadata_in_range"  min="4.5" max="7.8" />"""
+    """<validator type="dataset_metadata_in_range" metadata_name="foobar" min="4.5" max="7.8" exclude_min="notabool" />""",
+    """<validator type="dataset_metadata_in_range" min="4.5" max="7.8" />""",
     """<validator type="dataset_metadata_in_data_table" metadata_name="foobar" metadata_column="3" />""",
     """<validator type="dataset_metadata_in_data_table" metadata_column="3" table_name="mycooltable" />""",
     """<validator type="dataset_metadata_not_in_data_table" metadata_name="foobar" metadata_column="3" />""",

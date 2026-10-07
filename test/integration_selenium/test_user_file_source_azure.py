@@ -5,6 +5,7 @@ from galaxy.selenium.navigates_galaxy import (
     FileSourceInstance,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from ._base_user_file_sources import BaseUserObjectStoreSeleniumIntegration
 from .framework import (
     managed_history,
@@ -12,7 +13,7 @@ from .framework import (
 )
 
 
-class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration):
+class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration, UsesUploadActivity):
     @skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
     @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
     @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
@@ -39,4 +40,5 @@ class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumInt
             "my_cool_file",
             uri_root,
         )
-        self.upload_uri(published_uri, wait=True)
+        self.upload_context("paste-links").stage_paste_link(published_uri).start()
+        self.wait_for_history()

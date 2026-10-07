@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { useUid } from "@/composables/utils/uid";
+import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
@@ -28,6 +34,9 @@ type ItemContent = {
     name: string;
     steps: Array<any>; // This isn't actually a proper workflow step type, right?  TODO, unify w/ workflowStepStore?
 };
+
+// Per instance, as a Page or report can show the same workflow twice.
+const stepIdPrefix = useUid("workflow-display-");
 
 const errorContent = ref();
 const itemContent = ref<ItemContent | null>(null);
@@ -69,58 +78,69 @@ watch(
     },
     { immediate: true },
 );
+
+function toolButtonId(orderIndex: number) {
+    return `${stepIdPrefix.value}-step-${orderIndex}`;
+}
 </script>
 
 <template>
-    <b-alert v-if="!isEmpty(errorContent)" variant="warning" show>
+    <GAlert v-if="!isEmpty(errorContent)" variant="warning" show>
         <ul v-if="typeof errorContent === 'object'" class="my-2">
             <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">{{ errorKey }}: {{ errorValue }}</li>
         </ul>
         <div v-else>{{ errorContent }}</div>
-    </b-alert>
-    <b-card v-else body-class="p-0" class="workflow-display">
-        <b-card-header v-if="!embedded">
+    </GAlert>
+    <BCard v-else body-class="p-0" class="workflow-display">
+        <BCardHeader v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-g-tooltip.hover
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Download Workflow"
-                    type="button"
                     class="py-0 px-1"
                     data-description="workflow download">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-g-tooltip.hover
                     :href="importUrl"
-                    role="button"
-                    variant="link"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Import Workflow"
-                    type="button"
                     class="py-0 px-1"
                     data-description="workflow import">
                     <span class="fa fa-upload" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Workflow:</span>
                 <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+        <BCardBody>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <span :id="`step-icon-${step.order_index}`">
-                            <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
-                        </span>
+                        <GLink
+                            v-if="step.type == 'tool' && step.tool_id"
+                            :id="toolButtonId(step.order_index)"
+                            dark
+                            thin
+                            type="button"
+                            :aria-label="localize('Tool details')">
+                            <WorkflowStepIcon step-type="tool" />
+                        </GLink>
+                        <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <ToolLinkPopover
-                            v-if="step.type == 'tool'"
-                            :target="`step-icon-${step.order_index}`"
+                            v-if="step.type == 'tool' && step.tool_id"
+                            interactive
+                            :target="toolButtonId(step.order_index)"
                             :tool-id="step.tool_id"
                             :tool-version="step.tool_version" />
                         <WorkflowStepTitle :workflow-step="step" />
@@ -128,8 +148,8 @@ watch(
                     </div>
                 </div>
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 <style scoped>
 .content-height {

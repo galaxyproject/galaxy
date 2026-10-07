@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BFormSelect, BInputGroup, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
+
 import type { SelectOption } from "./handlesMappingJobs";
 
 interface JobSelectionProps {
@@ -22,22 +24,22 @@ defineProps<JobSelectionProps>();
     <div>
         <slot v-if="jobId"> </slot>
         <div v-else>
-            <b-navbar>
-                <b-collapse id="nav-text-collapse" is-nav>
-                    <b-navbar-nav>
-                        <b-nav-text>Select Job</b-nav-text>
-                    </b-navbar-nav>
-                    <b-nav-form>
-                        <b-input-group size="sm">
-                            <b-form-select
+            <BNavbar>
+                <div class="navbar-collapse">
+                    <BNavbarNav>
+                        <BNavText>Select Job</BNavText>
+                    </BNavbarNav>
+                    <BNavForm>
+                        <BInputGroup size="sm">
+                            <BFormSelect
                                 :value="value"
                                 class="text-right"
                                 :options="selectJobOptions"
-                                @input="handleInput"></b-form-select>
-                        </b-input-group>
-                    </b-nav-form>
-                </b-collapse>
-            </b-navbar>
+                                @input="handleInput"></BFormSelect>
+                        </BInputGroup>
+                    </BNavForm>
+                </div>
+            </BNavbar>
             <slot />
         </div>
     </div>

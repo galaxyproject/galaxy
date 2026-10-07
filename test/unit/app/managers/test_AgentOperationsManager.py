@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 
+from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.schema.fields import Security
 from .base import BaseTestCase
@@ -157,6 +158,61 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["collection"]["elements_truncated"] is True
         assert result["collection"]["total_elements"] == 10
 
+    def test_get_job_errors_keeps_both_ends_of_a_long_log(self):
+        """The failure is at the tail, so a head slice would drop the useful part."""
+        job = mock.MagicMock()
+        job.stderr = "HEAD_MARKER\n" + ("noise\n" * 5000) + "TAIL_MARKER: out of memory"
+        job.stdout = "short stdout"
+        job.info = "short info"
+        job.tool_id = "ngm"
+        job.tool_version = "1.0"
+        job.state = "error"
+        job.exit_code = 137
+        job.id = 42
+
+        hda = mock.MagicMock()
+        hda.creating_job = job
+
+        with (
+            mock.patch.object(self.agent_ops.hda_manager, "get_accessible", return_value=hda),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+            mock.patch.object(self.trans.security, "encode_id", return_value="enc42"),
+        ):
+            result = self.agent_ops.get_job_errors("encoded_dataset_id")
+
+        assert len(result["stderr"]) <= JOB_LOG_EXCERPT_CHARS
+        assert "HEAD_MARKER" in result["stderr"]
+        assert "TAIL_MARKER" in result["stderr"]
+        assert result["truncated"] is True
+        # Streams that fit are passed through untouched.
+        assert result["stdout"] == "short stdout"
+        assert result["info"] == "short info"
+
+    def test_get_job_errors_counts_info_toward_the_truncated_flag(self):
+        """Job.info is a TrimmedString(255), but that only trims on the way to the DB."""
+        job = mock.MagicMock()
+        job.stderr = "short stderr"
+        job.stdout = "short stdout"
+        job.info = "I" * 50000
+        job.tool_id = "ngm"
+        job.tool_version = "1.0"
+        job.state = "error"
+        job.exit_code = 1
+        job.id = 42
+
+        hda = mock.MagicMock()
+        hda.creating_job = job
+
+        with (
+            mock.patch.object(self.agent_ops.hda_manager, "get_accessible", return_value=hda),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+            mock.patch.object(self.trans.security, "encode_id", return_value="enc42"),
+        ):
+            result = self.agent_ops.get_job_errors("encoded_dataset_id")
+
+        assert len(result["info"]) <= JOB_LOG_EXCERPT_CHARS
+        assert result["truncated"] is True
+
     def test_get_workflow_details_with_version(self):
         mock_workflow = mock.MagicMock()
 
@@ -269,6 +325,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool_v2.tests = []
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.side_effect = lambda tid, tool_version=None: (
             mock_tool_v2 if tool_version == "2.0" else mock_tool_v1
         )
@@ -286,6 +343,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         self.app.toolbox_search = mock.MagicMock()
         self.app.toolbox_search.search.return_value = ["upload1"]
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.search_tools("upload")
@@ -304,6 +362,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool.help = "Help text"
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.get_tool_details("cat1")
@@ -314,6 +373,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
     def test_get_tool_details_not_found(self):
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = None
 
         with pytest.raises(ValueError, match="not found"):

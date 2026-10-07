@@ -8,6 +8,8 @@ import { useFetchJobMonitor } from "@/composables/fetch";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import FetchGrids from "./FetchGrids.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -57,7 +59,7 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
         :icon="faUpload"
         :version="undefined">
         <template v-slot:buttons>
-            <b-button-group class="tool-card-buttons">
+            <GButtonGroup class="tool-card-buttons">
                 <ButtonSpinner
                     id="execute"
                     class="text-nowrap"
@@ -67,15 +69,15 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
                     :wait="waitingOnFetch"
                     :tooltip="runTooltip"
                     @onClick="onExecute" />
-            </b-button-group>
+            </GButtonGroup>
         </template>
         <template v-slot>
             <LoadingSpan v-if="!currentHistoryId" />
-            <BAlert v-else-if="fetchComplete" variant="success" show> Data imported successfully. </BAlert>
-            <BAlert v-else-if="fetchError" variant="danger" show> Error importing data: {{ fetchError }} </BAlert>
-            <BAlert v-else-if="waitingOnFetch" variant="info" show>
+            <GAlert v-else-if="fetchComplete" variant="success" show> Data imported successfully. </GAlert>
+            <GAlert v-else-if="fetchError" variant="danger" show> Error importing data: {{ fetchError }} </GAlert>
+            <GAlert v-else-if="waitingOnFetch" variant="info" show>
                 <LoadingSpan message="Importing data" />
-            </BAlert>
+            </GAlert>
             <FetchGrids v-else ref="fetchGrids" :targets="props.targets" />
         </template>
     </FormCardSticky>

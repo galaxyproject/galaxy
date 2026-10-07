@@ -49,7 +49,10 @@ def parse_dict_validators(validator_dicts: list[dict[str, Any]], trusted: bool) 
         if not trusted:
             # Don't risk instantiating unsafe validators for user-defined code
             if not validator._safe:
-                raise UnsafeValidatorConfiguredInUntrustedContext()
+                raise UnsafeValidatorConfiguredInUntrustedContext(
+                    f"Validators of type '{validator.type}' are not allowed in user-defined tools "
+                    "or workflow parameters."
+                )
         validator_models.append(validator)
     return validator_models
 
@@ -237,7 +240,11 @@ def _parse_int(xml_el: Element, attribute: str) -> int | None:
 
 def _parse_number(xml_el: Element, attribute: str) -> float | int | None:
     raw_value = xml_el.get(attribute)
-    if raw_value and ("." in raw_value or "e" in raw_value or "inf" in raw_value):
+    # Match the float forms case-insensitively: "Infinity"/"Inf"/"INF" and scientific
+    # notation such as "1E5" would otherwise fall through to int() and raise, even
+    # though float() parses them (e.g. an in_range validator with max="Infinity").
+    lowered = raw_value.lower() if raw_value else ""
+    if raw_value and ("." in lowered or "e" in lowered or "inf" in lowered):
         return float(raw_value)
     elif raw_value:
         return int(raw_value)

@@ -35,6 +35,8 @@ except ImportError:
     tifffile = None  # type: ignore[assignment, unused-ignore]
 
 
+from packaging.version import Version
+
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
@@ -62,6 +64,25 @@ GetFilenameT = Callable[[str], str] | None
 GetLocationT = Callable[[str], str] | None
 
 
+DEFAULT_ASSERTION_SEPARATOR = "\t"
+
+
+def _assertion_separator(profile: str | None, get_delimiter: Callable[[], Any] | None) -> str | None:
+    """Column separator for assertions that accept one but do not declare it.
+
+    Tools with profile >= 26.2 split on the delimiter the datatype recorded for the
+    dataset, so csv outputs are read as comma separated. Older profiles - and callers
+    with no dataset metadata to consult - keep the historical tab.
+    """
+    if not profile or Version(profile) < Version("26.2"):
+        return None
+    delimiter = get_delimiter() if get_delimiter is not None else None
+    # delimiter is declared optional with no_value=[], so an unset element is not a string
+    if not isinstance(delimiter, str) or not delimiter:
+        return DEFAULT_ASSERTION_SEPARATOR
+    return delimiter
+
+
 def verify(
     item_label: str,
     output_content: bytes,
@@ -72,6 +93,8 @@ def verify(
     keep_outputs_dir: str | None = None,
     verify_extra_files: Callable | None = None,
     mode="file",
+    profile: str | None = None,
+    get_delimiter: Callable[[], Any] | None = None,
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
@@ -96,7 +119,8 @@ def verify(
     assertions = attributes.get("assert_list", None)
     if assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
+            sep = _assertion_separator(profile, get_delimiter)
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False), sep=sep)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
@@ -682,9 +706,9 @@ def verify_job_metadata(
         if str(expect_exit_code) != str(actual):
             raise AssertionError(f"Expected exit code {expect_exit_code}, got {actual}")
     if command_assertions:
-        verify_assertions(job_stdio.get("command_line", "").encode("utf-8"), command_assertions)
+        verify_assertions((job_stdio.get("command_line") or "").encode("utf-8"), command_assertions)
     if command_version_assertions:
-        verify_assertions(job_stdio.get("command_version", "").encode("utf-8"), command_version_assertions)
+        verify_assertions((job_stdio.get("command_version") or "").encode("utf-8"), command_version_assertions)
     if stdout_assertions or stderr_assertions:
         stdout_prefix = ""
         stderr_prefix = ""

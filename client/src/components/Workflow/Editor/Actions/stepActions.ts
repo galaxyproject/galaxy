@@ -1,3 +1,5 @@
+import { toRaw } from "vue";
+
 import { replaceLabel } from "@/components/Markdown/parse";
 import { autoLayout } from "@/components/Workflow/Editor/modules/layout";
 import { useToast } from "@/composables/toast";
@@ -9,6 +11,7 @@ import type { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Connection } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
@@ -140,9 +143,9 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     ) {
         const step = stepStore.getStep(stepId);
         assertDefined(step);
-        const fromOutputs = structuredClone(step.workflow_outputs);
+        const fromOutputs = cloneRaw(step.workflow_outputs);
 
-        super(stepStore, stepId, "workflow_outputs", fromOutputs, structuredClone(toOutputs));
+        super(stepStore, stepId, "workflow_outputs", fromOutputs, cloneRaw(toOutputs));
 
         this.fromLabel = fromValue;
         this.toLabel = toValue;
@@ -236,8 +239,8 @@ export class SetDataAction extends UpdateStepAction {
             const otherValue = to[key as keyof Step] as any;
 
             if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
-                fromPartial[key as keyof Step] = structuredClone(value);
-                toPartial[key as keyof Step] = structuredClone(otherValue);
+                fromPartial[key as keyof Step] = cloneRaw(value);
+                toPartial[key as keyof Step] = cloneRaw(otherValue);
             }
         });
 
@@ -325,8 +328,10 @@ export class RemoveStepAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.connectionStore = connectionStore;
-        this.step = structuredClone(step);
-        this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
+        this.step = cloneRaw(step);
+        const connections = this.connectionStore.getConnectionsForStep(this.step.id);
+        // Deep clone to avoid proxy issues
+        this.connections = JSON.parse(JSON.stringify(toRaw(connections)));
     }
 
     get name() {
@@ -340,8 +345,12 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(this.step), false, false);
-        this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
+        this.stepStore.addStep(cloneRaw(this.step), false, false);
+        this.connections.forEach((connection) => {
+            // Ensure connection is a plain object
+            const plainConnection = JSON.parse(JSON.stringify(connection));
+            this.connectionStore.addConnection(plainConnection);
+        });
         this.stateStore.hasChanges = true;
     }
 }
@@ -363,6 +372,13 @@ export class CopyStepAction extends UndoRedoAction {
         this.stepLabel = `${step.id + 1}: ${step.label ?? step.name}`;
         this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
+        // A cloned step must get its own uuid; keeping the source step's uuid
+        // produces a "Duplicate step UUID" error when saving the workflow.
+        delete this.step.uuid;
+        // `cloneStepWithUniqueLabel` deep-clones `workflow_outputs` too, so each output's
+        // uuid must be stripped the same way, or saving fails with "Duplicate workflow
+        // output UUID" instead.
+        this.step.workflow_outputs?.forEach((workflowOutput) => delete workflowOutput.uuid);
     }
 
     get name() {
@@ -370,7 +386,7 @@ export class CopyStepAction extends UndoRedoAction {
     }
 
     run() {
-        const newStep = this.stepStore.addStep(structuredClone(this.step));
+        const newStep = this.stepStore.addStep(cloneRaw(this.step));
         this.stepId = newStep.id;
         this.stateStore.hasChanges = true;
     }
@@ -669,7 +685,7 @@ export function useStepActions(
         const fromPartial: Partial<Step> = {};
 
         Object.keys(toPartial).forEach((key) => {
-            fromPartial[key as keyof Step] = structuredClone(fromStep[key as keyof Step]) as any;
+            fromPartial[key as keyof Step] = cloneRaw(fromStep[key as keyof Step]) as any;
         });
 
         const action = new UpdateStepAction(stepStore, stateStore, id, fromPartial, toPartial);

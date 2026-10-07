@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from typing import (
     Any,
     Literal,
@@ -176,6 +177,54 @@ class DatasetCollectionManager:
             dataset_collection.element_count = len(elements)
 
         return dataset_collection
+
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.History,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.HistoryDatasetCollectionAssociation: ...
+
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.LibraryFolder,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.LibraryDatasetCollectionAssociation: ...
 
     def create(
         self,
@@ -560,11 +609,6 @@ class DatasetCollectionManager:
                 validated_payload[key] = validation.validate_and_sanitize_basestring_list(key, val)
         return validated_payload
 
-    def history_dataset_collections(self, history, query):
-        collections = history.active_dataset_collections
-        collections = list(filter(query.direct_match, collections))
-        return collections
-
     def __persist(
         self,
         dataset_collection_instance: "DatasetCollectionInstance",
@@ -603,7 +647,12 @@ class DatasetCollectionManager:
             )
 
     def __recursively_create_collections_for_identifiers(
-        self, trans, element_identifiers, hide_source_items: bool, copy_elements: bool, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifiers,
+        hide_source_items: bool,
+        copy_elements: bool,
+        history=None,
     ):
         for element_identifier in element_identifiers:
             try:
@@ -629,7 +678,7 @@ class DatasetCollectionManager:
         return element_identifiers
 
     def __recursively_create_collections_for_elements(
-        self, trans, elements, hide_source_items: bool, copy_elements: bool, history=None
+        self, trans: ProvidesHistoryContext, elements, hide_source_items: bool, copy_elements: bool, history=None
     ) -> None:
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
@@ -655,7 +704,12 @@ class DatasetCollectionManager:
         elements.update(new_elements)
 
     def __load_elements(
-        self, trans, element_identifiers, hide_source_items: bool = False, copy_elements: bool = False, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifiers,
+        hide_source_items: bool = False,
+        copy_elements: bool = False,
+        history=None,
     ) -> dict[str, HDCAElementObjectType]:
         elements: dict[str, HDCAElementObjectType] = {}
         for element_identifier in element_identifiers:
@@ -669,7 +723,12 @@ class DatasetCollectionManager:
         return elements
 
     def __load_element(
-        self, trans, element_identifier, hide_source_items: bool, copy_elements: bool, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifier,
+        hide_source_items: bool,
+        copy_elements: bool,
+        history=None,
     ) -> HDCAElementObjectType:
         # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
@@ -752,12 +811,12 @@ class DatasetCollectionManager:
             return self.__get_library_collection_instance(trans, id, **kwds)
         raise NotImplementedError()
 
-    def get_dataset_collection(self, trans, encoded_id):
+    def get_dataset_collection(self, trans: ProvidesAppContext, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
         collection = trans.sa_session.get(DatasetCollection, collection_id)
         return collection
 
-    def apply_rules(self, hdca, rule_set, handle_dataset):
+    def apply_rules(self, hdca, rule_set, handle_dataset, check_row_count: Callable[[int], None] | None = None):
         hdca_collection = hdca.collection
         collection_type = hdca_collection.collection_type
         elements = hdca_collection.elements
@@ -767,6 +826,8 @@ class DatasetCollectionManager:
             data, sources = rule_set.apply(initial_data, initial_sources)
         except RulesDSLError as e:
             raise MessageException(str(e)) from e
+        if check_row_count:
+            check_row_count(len(data))
 
         collection_type = rule_set.collection_type
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
@@ -953,10 +1014,10 @@ class DatasetCollectionManager:
             qry = qry.offset(int(offset))
         return qry
 
-    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload):
+    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload, user: model.User | None = None):
         short_term_storage_monitor = self.short_term_storage_monitor
         instance_id = request.history_dataset_collection_association_id
         with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
             collection_instance = self.model.context.get(model.HistoryDatasetCollectionAssociation, instance_id)
             with ZipFile(target.path, "w") as zip_f:
-                write_dataset_collection(collection_instance, zip_f)
+                write_dataset_collection(collection_instance, zip_f, user)

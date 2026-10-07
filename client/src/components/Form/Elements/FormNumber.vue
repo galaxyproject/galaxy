@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert
+        <GAlert
             v-if="errorMessage"
             class="mt-2"
             :show="dismissCountDown"
@@ -9,14 +9,14 @@
             @dismissed="resetAlert"
             @dismiss-count-down="($event) => (dismissCountDown = $event)">
             {{ errorMessage }}
-            <b-progress :max="dismissSecs" :value="dismissCountDown" height="4px" class="mt-1">
-                <b-progress-bar :value="dismissCountDown" variant="info" />
-            </b-progress>
-        </b-alert>
-        <b-row align-v="center">
-            <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
+            <BProgress :max="dismissSecs" :value="dismissCountDown" height="4px" class="mt-1">
+                <BProgressBar :value="dismissCountDown" variant="info" />
+            </BProgress>
+        </GAlert>
+        <BRow align-v="center">
+            <BCol :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
-                <b-form-input
+                <BFormInput
                     v-model="currentValue"
                     class="ui-input"
                     :no-wheel="true"
@@ -26,18 +26,30 @@
                     :state="showState ? (!currentValue && currentValue !== 0 ? (optional ? null : false) : true) : null"
                     @change="onInputChange"
                     @keypress="isNumberOrDecimal" />
-            </b-col>
-            <b-col v-if="isRangeValid" class="pl-0">
-                <b-form-input v-model="currentValue" class="ui-input" :min="min" :max="max" :step="step" type="range" />
-            </b-col>
-        </b-row>
+            </BCol>
+            <BCol v-if="isRangeValid" class="pl-0">
+                <BFormInput v-model="currentValue" class="ui-input" :min="min" :max="max" :step="step" type="range" />
+            </BCol>
+        </BRow>
     </div>
 </template>
 
 <script>
+import { BCol, BFormInput, BProgress, BProgressBar, BRow } from "bootstrap-vue";
+
 import { isDefined } from "@/utils/validation";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
+    components: {
+        BCol,
+        BFormInput,
+        BProgress,
+        BProgressBar,
+        BRow,
+        GAlert,
+    },
     props: {
         value: {
             required: true,

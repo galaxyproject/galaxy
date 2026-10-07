@@ -9,8 +9,7 @@
                     <th v-for="column in columns" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
                 <slot name="rows">
-                    <template v-for="row in rows">
-                        <!-- eslint-disable-next-line vue/require-v-for-key -->
+                    <template v-for="(row, index) in rows" :key="index">
                         <tr>
                             <td v-for="column in columns" :key="column.dataIndex">{{ row[column.dataIndex] }}</td>
                         </tr>
@@ -47,23 +46,23 @@ export default {
 </script>
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
-@import "@/style/scss/base.scss";
 
 .card-body {
     overflow: auto;
 }
 
+// :deep() because rows and columns may come from the parent's slots, which Vue 3 does not give this scope id
 table {
-    td,
-    th {
+    :deep(td),
+    :deep(th) {
         text-align: left;
         padding: 5px;
         line-height: $line-height-base;
     }
-    th {
+    :deep(th) {
         background-color: $table-heading-bg;
     }
-    tr:nth-child(even) {
+    :deep(tr:nth-child(even)) {
         background-color: $table-bg-accent;
     }
 }

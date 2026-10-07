@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BAlert, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
 
-import { findDescendants, flattenValues, getAllValues, type Option, type Value } from "./utilities";
+import { getAllValues, type Option, type Value } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -58,8 +59,8 @@ const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
 // Handle click on individual check/radio element
 function handleClick(clickedElement: string, value: string): void {
     if (props.multiple) {
-        const clickedElements: string[] = addDescendants(props.options, clickedElement);
-        const selectedElements: string[] = setElementValues(currentValue.value, clickedElements, value);
+        // Only the chosen option is submitted; the server expands a recurse hierarchy.
+        const selectedElements: string[] = setElementValues(currentValue.value, [clickedElement], value);
         if (selectedElements.length === 0) {
             emit("input", null);
         } else {
@@ -73,14 +74,6 @@ function handleClick(clickedElement: string, value: string): void {
 // Handle click on select all checkbox to either select or unselect all values
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
-}
-
-// Returns the descendant values and the selected/parent value (regardless of unselected or selected)
-function addDescendants(selectOptions: any[], selectedValue: string): string[] {
-    const descendants: any[] | null = findDescendants(selectOptions, selectedValue);
-    const allValues = flattenValues(descendants);
-    allValues.unshift(selectedValue);
-    return allValues;
 }
 
 function setElementValues(oldArray: string[], newArray: string[], value: string): string[] {
@@ -114,7 +107,7 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
                 :handle-click="handleClick" />
         </div>
         <div v-else>
-            <BAlert show variant="info" class="mt-2"> No options available. </BAlert>
+            <GAlert show variant="info" class="mt-2"> No options available. </GAlert>
         </div>
     </div>
 </template>

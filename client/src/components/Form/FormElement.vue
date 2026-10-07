@@ -22,6 +22,7 @@ import FormError from "./Elements/FormError.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
@@ -97,6 +98,8 @@ const attrs: ComputedRef<FormParameterAttributes> = computed(() => props.attribu
 const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["collapsible_value"]);
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
+
+const isMultipleInteger = computed(() => props.type === "integer" && Boolean(attrs.value.multiple));
 
 const computedPlaceholder = computed(() => {
     if (!props.workflowRun) {
@@ -184,7 +187,7 @@ const helpText = computed(() => {
 });
 const nonMdHelp = computed(() =>
     Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
-        ? purify.sanitize(helpText.value!)
+        ? helpText.value!
         : "",
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
@@ -367,22 +370,33 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     v-if="props.type === 'boolean' && props.workflowRun"
                     :class="{ 'd-flex align-items-start flex-gapx-1': Boolean(nonMdHelp) }">
                     <FormBoolean :id="props.id" v-model="currentValue" class="mr-2" :no-label="Boolean(nonMdHelp)" />
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-if="Boolean(nonMdHelp)" class="text-muted" v-html="nonMdHelp" />
+                    <span v-if="Boolean(nonMdHelp)" v-sanitize-html="nonMdHelp" class="text-muted" />
                 </div>
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
-                <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
+                <FormHidden v-else-if="isHiddenType" :id="props.id" :value="currentValue" :info="attrs['info']" />
+                <FormNumberList
+                    v-else-if="isMultipleInteger"
+                    :id="props.id"
+                    :value="currentValue"
+                    :max="attrs.max"
+                    :min="attrs.min"
+                    :placeholder="computedPlaceholder"
+                    :optional="isOptional"
+                    :show-state="props.workflowRun"
+                    type="integer"
+                    @input="(v: FormParameterValue) => (currentValue = v)" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
                     :id="props.id"
-                    v-model="currentValue"
+                    :value="currentValue"
                     :max="attrs.max"
                     :min="attrs.min"
                     :placeholder="computedPlaceholder"
                     :optional="isOptional"
                     :show-state="props.workflowRun"
                     :type="props.type ?? 'float'"
-                    :workflow-building-mode="workflowBuildingMode" />
+                    :workflow-building-mode="workflowBuildingMode"
+                    @input="(v: FormParameterValue) => (currentValue = v)" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
                     :id="props.id"
@@ -475,8 +489,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
             </div>
 
             <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-if="showNonMdHelp" class="ui-form-info form-text text-muted" v-html="nonMdHelp" />
+            <span v-if="showNonMdHelp" v-sanitize-html="nonMdHelp" class="ui-form-info form-text text-muted" />
             <span v-else-if="Boolean(helpText) && helpFormat === 'markdown'" class="ui-form-info form-text text-muted">
                 <FormElementHelpMarkdown :content="helpText ?? ''" />
             </span>
@@ -485,8 +498,14 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
 </template>
 
 <style lang="scss" scoped>
+// _functions first: _form-elements pulls in blue.scss, whose $state-* vars need it
+@import "bootstrap/scss/_functions.scss";
 @import "./_form-elements.scss";
-@import "@/style/scss/base.scss";
+
+// keep Bootstrap's .alert bottom margin over .ui-form-element's
+.ui-form-element.alert {
+    margin-bottom: 1rem;
+}
 
 // Workflow Run Form
 .workflow-run-element {

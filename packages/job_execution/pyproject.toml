@@ -16,6 +16,7 @@ authors = [
     {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
 ]
 dependencies = [
+    "galaxy-config",
     "galaxy-data",
     "galaxy-files",
     "galaxy-objectstore",

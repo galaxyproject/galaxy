@@ -4,7 +4,6 @@ from unittest.mock import Mock
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.interface import ToolSource
-from galaxy.util import galaxy_directory
 
 
 def mock_trans(has_user=True, is_admin=False):
@@ -29,7 +28,8 @@ def t_data_downloader_for(content: dict[str | None, bytes] | bytes) -> Callable[
 
 
 def functional_test_tool_directory() -> str:
-    return os.path.join(galaxy_directory(), "test/functional/tools")
+    """Galaxy's sample tools, shipped with this package so the tests that parse them run anywhere."""
+    return os.path.join(os.path.dirname(__file__), "functional_tools")
 
 
 def functional_test_tool_path(test_path: str) -> str:

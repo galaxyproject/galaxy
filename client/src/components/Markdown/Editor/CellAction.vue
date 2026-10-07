@@ -1,6 +1,16 @@
 <template>
     <div>
-        <CellButton ref="buttonRef" title="Actions" :show="show" :icon="faEllipsisV" />
+        <GButton
+            v-show="show"
+            ref="buttonRef"
+            transparent
+            color="blue"
+            icon-only
+            tooltip
+            tooltip-placement="right"
+            title="Actions">
+            <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
+        </GButton>
         <Popper
             v-if="buttonRef"
             ref="popperRef"
@@ -51,6 +61,7 @@
 
 <script setup lang="ts">
 import { faClone, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faArrowUp, faTrash } from "font-awesome-6";
 import { computed, ref } from "vue";
 
@@ -58,8 +69,8 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import type { CellType } from "./types";
 
-import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
 const props = withDefaults(

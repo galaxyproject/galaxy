@@ -1,8 +1,106 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, ref } from "vue";
+
+import type { TableField } from "@/components/Common/GTable.types";
+import { Services } from "@/components/Toolshed/services";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GCard from "@/components/Common/GCard.vue";
+import GTable from "@/components/Common/GTable.vue";
+import InstallationActions from "@/components/Toolshed/RepositoryDetails/InstallationActions.vue";
+
+const POLL_DELAY = 5000;
+
+// Full API row: uninstallRepository sends every field as a query param.
+interface InstallingRepository {
+    name: string;
+    owner: string;
+    status: string;
+    [key: string]: unknown;
+}
+
+const emit = defineEmits<{
+    (e: "onQuery", query: string): void;
+}>();
+
+const services = new Services();
+
+const loading = ref(true);
+const error = ref<unknown>(null);
+const items = ref<InstallingRepository[]>([]);
+
+const fields: TableField[] = [
+    {
+        key: "name",
+        label: "Name",
+    },
+    {
+        key: "status",
+        label: "Status",
+    },
+    {
+        key: "actions",
+        label: "Actions",
+    },
+];
+
+let timeout: ReturnType<typeof setTimeout> | undefined;
+
+const showItems = computed(() => items.value.length > 0);
+
+const showEmpty = computed(() => !loading.value && items.value.length === 0);
+
+function schedulePoll() {
+    clearPollTimeout();
+    timeout = setTimeout(() => {
+        load();
+    }, POLL_DELAY);
+}
+
+function clearPollTimeout() {
+    if (timeout) {
+        clearTimeout(timeout);
+    }
+}
+
+function load() {
+    services
+        .getInstalledRepositories({
+            filter: (x: InstallingRepository) => x.status !== "Installed",
+        })
+        .then((repositories: InstallingRepository[]) => {
+            items.value = repositories;
+            loading.value = false;
+            schedulePoll();
+        })
+        .catch((e: unknown) => {
+            error.value = e;
+        });
+}
+
+function onQuery(q: string) {
+    emit("onQuery", q);
+}
+
+function uninstallRepository(repository: InstallingRepository) {
+    services.uninstallRepository(repository).catch((e: unknown) => {
+        error.value = e;
+    });
+}
+
+load();
+
+onBeforeUnmount(() => {
+    clearPollTimeout();
+});
+</script>
+
 <template>
     <div>
-        <BAlert v-if="error" variant="danger" show>
+        <GAlert v-if="error" variant="danger" show>
             {{ error }}
-        </BAlert>
+        </GAlert>
 
         <GCard v-if="showItems" class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
@@ -27,99 +125,6 @@
             </GTable>
         </GCard>
 
-        <BAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </BAlert>
+        <GAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </GAlert>
     </div>
 </template>
-
-<script>
-import { BAlert } from "bootstrap-vue";
-
-import { Services } from "../services";
-
-import InstallationActions from "../RepositoryDetails/InstallationActions.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
-import GCard from "@/components/Common/GCard.vue";
-import GTable from "@/components/Common/GTable.vue";
-
-export default {
-    components: {
-        BAlert,
-        GCard,
-        GLink,
-        GTable,
-        InstallationActions,
-    },
-    data() {
-        return {
-            delay: 5000,
-            loading: true,
-            error: null,
-            items: [],
-            fields: [
-                {
-                    key: "name",
-                    label: "Name",
-                },
-                {
-                    key: "status",
-                    label: "Status",
-                },
-                {
-                    key: "actions",
-                    label: "Actions",
-                },
-            ],
-        };
-    },
-    computed: {
-        showItems() {
-            return this.items.length > 0;
-        },
-        showEmpty() {
-            return !this.loading && this.items.length === 0;
-        },
-    },
-    created() {
-        this.services = new Services();
-        this.load();
-    },
-    destroyed() {
-        this.clearTimeout();
-    },
-    methods: {
-        setTimeout() {
-            this.clearTimeout();
-            this.timeout = setTimeout(() => {
-                this.load();
-            }, this.delay);
-        },
-        clearTimeout() {
-            if (this.timeout) {
-                clearTimeout(this.timeout);
-            }
-        },
-        load() {
-            this.services
-                .getInstalledRepositories({
-                    filter: (x) => x.status !== "Installed",
-                })
-                .then((items) => {
-                    this.items = items;
-                    this.loading = false;
-                    this.setTimeout();
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
-        },
-        onQuery(q) {
-            this.$emit("onQuery", q);
-        },
-        uninstallRepository: function (repository) {
-            this.services.uninstallRepository(repository).catch((error) => {
-                this.error = error;
-            });
-        },
-    },
-};
-</script>

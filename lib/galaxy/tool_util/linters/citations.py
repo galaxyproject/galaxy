@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 class CitationsMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -37,7 +37,7 @@ class CitationsMissing(Linter):
 
 class CitationsNoText(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -52,7 +52,7 @@ class CitationsNoText(Linter):
 
 class CitationsFound(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -76,7 +76,7 @@ class CitationsInvalid(Linter):
     """
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -114,7 +114,7 @@ class CitationsInvalid(Linter):
 
 class CitationsNoValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return

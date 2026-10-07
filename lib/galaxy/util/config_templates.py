@@ -20,7 +20,6 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-import requests
 import yaml
 from boltons.iterutils import remap
 from pydantic import (
@@ -54,11 +53,14 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    requests,
+)
 
 log = logging.getLogger(__name__)
 
-TemplateVariableType = Literal["string", "path_component", "boolean", "integer"]
+TemplateVariableType = Literal["string", "path_component", "boolean", "integer", "select"]
 TemplateVariableValueType = str | bool | int
 TemplateExpansion = str
 MarkdownContent = str
@@ -71,6 +73,36 @@ EnvironmentDict = dict[str, str]
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
+
+
+def split_ftp_host_path(data: Any) -> Any:
+    """Split a path embedded in an FTP ``host`` field into ``host`` + ``root``.
+
+    If ``root`` is already set, no splitting occurs.  A protocol prefix
+    (e.g. ``ftp://``) is stripped before splitting so that values like
+    ``ftp://ftp.gnu.org/gnu/`` are handled correctly.
+    """
+    if not isinstance(data, dict):
+        return data
+    root = data.get("root")
+    if not isinstance(root, str) or root == "":
+        root = None
+    host = data.get("host")
+    if root is None and isinstance(host, str) and "/" in host:
+        data = dict(data)
+        host = host.removeprefix("ftp://").removeprefix("ftps://")
+        if "/" in host:
+            host_part, _, path_part = host.partition("/")
+            data["host"] = host_part
+            data["root"] = "/" + path_part
+        else:
+            data["host"] = host
+    if data.get("root") is not None and (not isinstance(data["root"], str) or data["root"] == ""):
+        data = dict(data)
+        data["root"] = None
+    if isinstance(data.get("root"), str) and ".." in data["root"].split("/"):
+        raise ValueError(f"FTP root must not contain '..' path segments: {data['root']!r}")
+    return data
 
 
 class BaseTemplateVariable(StrictModel):
@@ -103,8 +135,35 @@ class TemplateVariableBoolean(BaseTemplateVariable):
     default: bool | None = None
 
 
+class TemplateVariableSelectOption(StrictModel):
+    label: str
+    value: str
+
+
+class TemplateVariableOptionsProvider(StrictModel):
+    """A server-side source for select options and its form dependencies."""
+
+    kind: str
+    depends_on: list[str] = []
+
+
+class TemplateVariableSelect(BaseTemplateVariable):
+    type: Literal["select"]
+    default: str | None = None
+    # Statically declared options. When omitted, options can be supplied by an
+    # options provider while the form is rendered.
+    options: list[TemplateVariableSelectOption] | None = None
+    # A server-side capability populates these options. Dependencies let the client
+    # refresh only when values that affect this field change.
+    options_provider: TemplateVariableOptionsProvider | None = None
+
+
 TemplateVariable = (
-    TemplateVariableString | TemplateVariableInteger | TemplateVariablePathComponent | TemplateVariableBoolean
+    TemplateVariableString
+    | TemplateVariableInteger
+    | TemplateVariablePathComponent
+    | TemplateVariableBoolean
+    | TemplateVariableSelect
 )
 
 
@@ -199,7 +258,9 @@ def expand_raw_config(
 
 
 def _expand_raw_config(
-    template_configuration: TemplateConfiguration, template_variables: dict[str, Any]
+    template_configuration: TemplateConfiguration,
+    template_variables: dict[str, Any],
+    only_keys: set[str] | None = None,
 ) -> RawTemplateConfig:
     template_start = template_configuration.template_start or "{{"
     template_end = template_configuration.template_end or "}}"
@@ -211,6 +272,11 @@ def _expand_raw_config(
         return key, value
 
     template_model_as_json = template_configuration.model_dump()
+    if only_keys is not None:
+        # Restrict expansion to the given top-level keys. Used when only a subset of the
+        # configuration can be expanded because the full template variables/secrets are not
+        # available yet (e.g. reading oauth2 client fields before the user provides variables).
+        template_model_as_json = {k: v for k, v in template_model_as_json.items() if k in only_keys}
     raw_config = remap(template_model_as_json, visit=expand_template)
     _clean_template_meta_parameters(raw_config)
     return raw_config
@@ -420,6 +486,17 @@ def validate_specified_datatypes_variables(variables: dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+        if isinstance(template_variable, TemplateVariableSelect):
+            if not isinstance(variable_value, str):
+                raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type str")
+            # Only statically declared options can be validated generically;
+            # dynamic options are resolved and validated elsewhere (e.g. the
+            # github membership check in the file source instances manager).
+            options = template_variable.options
+            if options is not None and variable_value not in [option.value for option in options]:
+                raise RequestParameterInvalidException(
+                    f"Variable value for variable '{name}' must be one of the allowed options"
+                )
 
         # Run custom validators if present.
         if template_variable.validators:
@@ -556,6 +633,11 @@ class OAuth2Configuration(StrictModel):
 
 ConfiguredOAuth2Sources = dict[str, OAuth2Configuration]
 
+# OAuth2 token endpoints are required to return application/json (RFC 6749 section 5.1), but some
+# providers (notably GitHub) only do so when the client explicitly requests it. Sending this on
+# every token request is correct for all providers and avoids per-provider special-casing.
+OAUTH2_TOKEN_REQUEST_HEADERS = {"Accept": "application/json"}
+
 
 class OAuth2ClientPair(StrictModel):
     client_id: str
@@ -599,7 +681,7 @@ def get_token_from_code_raw(
     if redirect_uri is not None:
         data["redirect_uri"] = redirect_uri
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_token_from_refresh_raw(
@@ -612,7 +694,7 @@ def get_token_from_refresh_raw(
         "client_secret": client_pair.client_secret,
     }
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_oauth2_config_from(template, sources: ConfiguredOAuth2Sources) -> OAuth2Configuration:
@@ -632,7 +714,15 @@ def read_oauth2_info_from_configuration(
         "environment": environment,
     }
 
-    expanded_config = _expand_raw_config(template_configuration, template_variables)
+    # Only the admin-provided oauth2 client fields are needed here, and they must not depend
+    # on the user's variables/secrets (which are not collected until after authorization).
+    # Restrict expansion to these fields so a configuration that references user variables
+    # elsewhere (e.g. a per-repository GitHub source) can still be read at this stage.
+    expanded_config = _expand_raw_config(
+        template_configuration,
+        template_variables,
+        only_keys={"oauth2_client_id", "oauth2_client_secret", "oauth2_scope"},
+    )
     oauth2_client_id = expanded_config["oauth2_client_id"]
     oauth2_client_secret = expanded_config["oauth2_client_secret"]
     oauth2_scope = cast(str | None, expanded_config.get("oauth2_scope"))

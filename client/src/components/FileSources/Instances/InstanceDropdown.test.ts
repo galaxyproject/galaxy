@@ -5,19 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { UserFileSourceModel } from "@/api/fileSources";
+import { Toast } from "@/composables/toast";
 
 import FileSourceInstanceDropdown from "./InstanceDropdown.vue";
 import ConfigurationInstanceDropdown from "@/components/ConfigTemplates/InstanceDropdown.vue";
 
-const { toastErrorMock } = vi.hoisted(() => ({
-    toastErrorMock: vi.fn(),
-}));
+vi.mock("@/composables/toast");
 
-vi.mock("@/composables/toast", () => ({
-    Toast: {
-        error: toastErrorMock,
-    },
-}));
+const toastError = vi.mocked(Toast.error);
 
 vi.mock("@/stores/fileSourceTemplatesStore", () => ({
     useFileSourceTemplatesStore: () => ({
@@ -47,7 +42,7 @@ describe("File Source Instance Dropdown", () => {
 
     beforeEach(() => {
         server.resetHandlers();
-        toastErrorMock.mockClear();
+        toastError.mockClear();
     });
 
     it("emits entryRemoved when remove succeeds", async () => {
@@ -71,7 +66,7 @@ describe("File Source Instance Dropdown", () => {
 
         expect(requestBody).toEqual({ hidden: true });
         expect(wrapper.emitted("entryRemoved")).toBeTruthy();
-        expect(toastErrorMock).not.toHaveBeenCalled();
+        expect(toastError).not.toHaveBeenCalled();
     });
 
     it("shows toast and does not emit entryRemoved when remove fails", async () => {
@@ -91,7 +86,7 @@ describe("File Source Instance Dropdown", () => {
         wrapper.findComponent(ConfigurationInstanceDropdown).vm.$emit("remove");
         await flushPromises();
 
-        expect(toastErrorMock).toHaveBeenCalledWith("Unable to remove", "Failed to remove instance");
+        expect(toastError).toHaveBeenCalledWith("Unable to remove", "Failed to remove instance");
         expect(wrapper.emitted("entryRemoved")).toBeFalsy();
     });
 });

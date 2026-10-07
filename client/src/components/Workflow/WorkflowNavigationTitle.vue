@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { faEdit, faPlay, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router/composables";
+import { RouterLink, useRouter } from "vue-router";
 
+import { userOwnsHistory } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -24,6 +23,7 @@ import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import NavigationTitle from "../Common/NavigationTitle.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const router = useRouter();
 
@@ -51,7 +51,13 @@ const emit = defineEmits<{
 
 const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 
-const { isAnonymous } = storeToRefs(useUserStore());
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
+
+const historyStore = useHistoryStore();
+const history = computed(() =>
+    props.invocation?.history_id ? historyStore.getHistoryById(props.invocation.history_id) : null,
+);
+const historyIsOwned = computed(() => (history.value ? userOwnsHistory(currentUser.value, history.value) : false));
 
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<WorkflowSummary | null>(null);
@@ -109,6 +115,12 @@ async function rerunWorkflow() {
         router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
         return;
     }
+
+    if (!historyIsOwned.value) {
+        console.error("The running user is not the owner of the history with the original inputs for this workflow.");
+        return;
+    }
+
     const confirmed = await confirm(
         localize(
             "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?",
@@ -127,18 +139,18 @@ async function rerunWorkflow() {
 
 <template>
     <div>
-        <BAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
+        <GAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
             {{ importErrorMessage }}
-        </BAlert>
-        <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
+        </GAlert>
+        <GAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
             <span>
                 Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
             </span>
             <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
             list.
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
+        <GAlert v-if="error" variant="danger" show>{{ error }}</GAlert>
 
         <div class="position-relative">
             <NavigationTitle
@@ -209,6 +221,7 @@ async function rerunWorkflow() {
                             <span v-localize>Run</span>
                         </GButton>
                         <GButton
+                            v-if="historyIsOwned"
                             :title="localize('Rerun Workflow with same inputs')"
                             disabled-title="This workflow has been deleted."
                             data-button-rerun
@@ -230,9 +243,9 @@ async function rerunWorkflow() {
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>
             </div>
-            <BAlert v-else-if="loading" variant="info" show>
+            <GAlert v-else-if="loading" variant="info" show>
                 <LoadingSpan message="Loading workflow details" />
-            </BAlert>
+            </GAlert>
         </div>
     </div>
 </template>

@@ -1,13 +1,18 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
+import { useRefreshFromStore } from "@/stores/refreshFromStore";
+
+import FormCollectionType from "./FormCollectionType.vue";
 import FormDefault from "./FormDefault.vue";
+import FormInputCollection from "./FormInputCollection.vue";
+
+vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 describe("FormDefault", () => {
     let wrapper;
@@ -18,7 +23,7 @@ describe("FormDefault", () => {
 
     beforeEach(() => {
         wrapper = mount(FormDefault, {
-            propsData: {
+            props: {
                 datatypes: [],
                 step: {
                     id: 0,
@@ -34,12 +39,46 @@ describe("FormDefault", () => {
                     outputs,
                 },
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            provide: {
-                workflowId: "mock-workflow",
-            },
         });
+    });
+
+    it("re-seeds the collection input form from the step on refresh", async () => {
+        const collectionStep = {
+            id: 0,
+            content_id: null,
+            annotation: "annotation",
+            label: "label",
+            name: "name",
+            type: "data_collection_input",
+            config_form: { inputs: [] },
+            inputs: [],
+            outputs: [],
+            tool_state: { collection_type: '"list"' },
+        };
+        const collectionWrapper = mount(FormDefault, {
+            propsData: { datatypes: [], step: collectionStep },
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        });
+        const collectionTypeField = () =>
+            collectionWrapper.findComponent(FormInputCollection).findComponent(FormCollectionType);
+
+        collectionTypeField().vm.$emit("onChange", "paired");
+        await collectionWrapper.vm.$nextTick();
+        expect(collectionTypeField().props("value")).toBe("paired");
+        expect(collectionWrapper.emitted("onSetData")).toHaveLength(1);
+
+        useRefreshFromStore().refresh();
+        await collectionWrapper.vm.$nextTick();
+        expect(collectionTypeField().props("value")).toBe("list");
+        expect(collectionWrapper.emitted("onSetData")).toHaveLength(1);
+
+        collectionTypeField().vm.$emit("onChange", "list:paired");
+        expect(collectionWrapper.emitted("onSetData")).toHaveLength(2);
+        expect(collectionWrapper.emitted("onSetData")[1][1].inputs.collection_type).toBe("list:paired");
+        collectionWrapper.unmount();
     });
 
     it("check initial value and value change", async () => {

@@ -10,6 +10,7 @@
     port: "{{ variables.port }}"
     passwd: "{{ secrets.password }}"
     writable: "{{ variables.writable }}"
+    root: "{{ variables.root }}"
   variables:
     host:
       label: FTP Host
@@ -34,6 +35,14 @@
       help: Port used to connect to the FTP server.
       optional: true
       default: 21
+    root:
+      label: Root Path
+      type: string
+      optional: true
+      help: |
+        Subdirectory on the FTP server to use as the root path. All file
+        operations will be relative to this path. Leave blank to use the
+        server's root directory.
   secrets:
     password:
       label: FTP Password
@@ -56,6 +65,7 @@
     passwd: "{{ secrets.password }}"
     writable: "{{ variables.writable }}"
     tls: "{{ variables.tls }}"
+    root: "{{ variables.root }}"
   variables:
     host:
       label: FTP Host
@@ -80,6 +90,14 @@
       help: Port used to connect to the FTP server.
       optional: true
       default: 21
+    root:
+      label: Root Path
+      type: string
+      optional: true
+      help: |
+        Subdirectory on the FTP server to use as the root path. All file
+        operations will be relative to this path. Leave blank to use the
+        server's root directory.
     tls:
       label: Use TLS (FTPS)?
       type: boolean

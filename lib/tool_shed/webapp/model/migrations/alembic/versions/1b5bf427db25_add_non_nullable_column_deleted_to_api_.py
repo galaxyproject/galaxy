@@ -38,7 +38,7 @@ column_name = "deleted"
 index_name = build_index_name(table_name, column_name)
 
 
-def upgrade():
+def upgrade() -> None:
     with transaction():
         # Add a deleted column
         add_column(table_name, Column(column_name, Boolean(), nullable=False, index=True, server_default=false()))
@@ -56,7 +56,7 @@ def upgrade():
         op.execute(table.update().where(table.c.id.in_(s)).values(deleted=False))
 
 
-def downgrade():
+def downgrade() -> None:
     with transaction():
         drop_index(index_name, table_name)
         drop_column(table_name, column_name)

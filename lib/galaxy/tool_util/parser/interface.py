@@ -61,6 +61,10 @@ if TYPE_CHECKING:
         ToolOutputBase,
         ToolOutputCollection,
     )
+    from .stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -159,6 +163,10 @@ class ToolSource(metaclass=ABCMeta):
         """Parse the class of the tool."""
         return None
 
+    def allows_tool_provided_metadata(self) -> bool:
+        """Return whether this source may enable tool-provided metadata."""
+        return False
+
     def parse_tool_module(self) -> tuple[str, str] | None:
         """Load Tool class from a custom module. (Optional).
 
@@ -224,7 +232,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_command(self):
+    def parse_command(self) -> str | None:
         """Return string contianing command to run."""
 
     def parse_shell_command(self) -> str | None:
@@ -244,7 +252,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_environment_variables(self):
+    def parse_environment_variables(self) -> list[dict[str, Any]]:
         """Return environment variable templates to expose."""
 
     def parse_home_target(self):
@@ -264,13 +272,15 @@ class ToolSource(metaclass=ABCMeta):
             "GALAXY_SLOTS",
             "GALAXY_MEMORY_MB",
             "GALAXY_MEMORY_MB_PER_SLOT",
+            "GALAXY_MEMORY_GB",
+            "GALAXY_MEMORY_GB_PER_SLOT",
             "HOME",
             "_GALAXY_JOB_HOME_DIR",
             "_GALAXY_JOB_TMP_DIR",
         ] + self.parse_tmp_directory_vars()
 
     @abstractmethod
-    def parse_interpreter(self):
+    def parse_interpreter(self) -> str | None:
         """Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
         adjacent to the tool).
@@ -355,6 +365,10 @@ class ToolSource(metaclass=ABCMeta):
         """Return location of provided metadata file (e.g. galaxy.json)."""
         return "galaxy.json"
 
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        """Return whether tool-provided metadata was explicitly configured."""
+        return False
+
     @abstractmethod
     def parse_outputs(
         self, app: Optional["ToolOutputActionApp"]
@@ -370,7 +384,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_stdio(self):
+    def parse_stdio(self) -> tuple[list["ToolStdioExitCode"], list["ToolStdioRegex"]]:
         """Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.
         """
@@ -402,10 +416,17 @@ class ToolSource(metaclass=ABCMeta):
         Return minimum python version that the tool template has been developed against.
         """
 
-    def parse_creator(self):
+    def parse_creator(self) -> list[dict[str, Any]]:
         """Return list of metadata relating to creator/author of tool.
 
         Result should be list of schema.org data model Person or Organization objects.
+        """
+        return []
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        """Return list of metadata relating to funding of tool development.
+
+        Result should be list of schema.org data model Grant objects.
         """
         return []
 
@@ -857,6 +878,18 @@ class RequiredFiles:
         return files
 
 
+def resolve_element_tests(as_dict):
+    """Return the nested element tests, preferring the "element_tests" key over its "elements" alias.
+
+    "element_tests" is the preferred key; "elements" is the accepted alias (see
+    https://github.com/galaxyproject/planemo/pull/1417). Both the top-level test definition and each
+    nested collection element may use either, so resolution goes through this single function.
+    """
+    if as_dict.get("element_tests") is not None:
+        return as_dict["element_tests"]
+    return as_dict.get("elements", {})
+
+
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
@@ -889,10 +922,9 @@ class TestCollectionOutputDef:
         if "attributes" not in as_dict:
             as_dict["attributes"] = {}
         attributes = as_dict["attributes"]
-        # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
-        # TODO: test this works recursively...
-        if "elements" in as_dict and "element_tests" not in as_dict:
-            as_dict["element_tests"] = as_dict["elements"]
+        # setup preferred name "element_tests" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
+        if "elements" in as_dict or "element_tests" in as_dict:
+            as_dict["element_tests"] = resolve_element_tests(as_dict)
         if "collection_type" in as_dict:
             attributes["type"] = as_dict["collection_type"]
         return TestCollectionOutputDef.from_dict(as_dict)

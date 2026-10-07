@@ -1,13 +1,13 @@
 import json
 
 from galaxy.app_unittest_utils.tools_support import mock_app_for_tool_support
+from galaxy.tool_util.abstract_tool import RawToolSource
 from galaxy.tool_util.unittest_utils import (
     functional_test_tool_path,
     functional_test_tool_source,
 )
 from galaxy.tools import (
     create_tool_from_representation,
-    RawToolSource,
     Tool,
 )
 

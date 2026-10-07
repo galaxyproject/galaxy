@@ -2,9 +2,10 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -31,7 +32,6 @@ vi.mock("@/stores/datatypeVisualizationsStore", () => ({
 
 const DATASET_ID = "dataset_id";
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 // Mock dataset
 const mockDataset = {
@@ -89,16 +89,16 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         attachTo: document.createElement("div"),
@@ -153,15 +153,19 @@ async function mountLoadingDatasetView() {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 
+    // Never resolve the dataset fetch, so the view stays in its loading state
+    // for the duration of the test instead of racing flushPromises() to completion.
+    server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
+
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         stubs: {
@@ -193,16 +197,57 @@ describe("DatasetView", () => {
         }
         global.IntersectionObserver = IO;
         global.MutationObserver = IO;
+        global.URL.createObjectURL = vi.fn(() => "blob:http://localhost/test-preview");
+        global.URL.revokeObjectURL = vi.fn();
         server.use(
             http.get("/api/datasets/:dataset_id", ({ response }) => {
                 return response(200).json(mockDataset);
             }),
             http.get("/api/configuration", ({ response }) => response(200).json({})),
             http.get("/api/plugins", ({ response }) => response(200).json([])),
+            mswHttp.get("http://localhost/datasets/:dataset_id/display/", ({ request }) => {
+                expect(request.url).toContain("preview=True");
+                return HttpResponse.text("preview data", {
+                    status: 200,
+                    headers: {
+                        "content-type": "text/plain",
+                    },
+                });
+            }),
+            http.untyped.get("/api/datatypes/types_and_mapping", () => {
+                // Return an empty mapping; tests don't depend on real datatype info,
+                // they just need the endpoint to not 404 so console.error stays quiet.
+                return new Response(
+                    JSON.stringify({
+                        datatypes: [],
+                        datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
+                    }),
+                    { headers: { "Content-Type": "application/json" } },
+                );
+            }),
+            http.get("/api/datatypes/{datatype}", ({ response }) => response(200).json({})),
         );
     });
 
     describe("Component mounting and basic functionality", () => {
+        it.each(["preview", "raw"])("uses the download endpoint from the %s tab", async (tab) => {
+            server.use(
+                http.get("/api/datatypes/:datatype_id", ({ response }) =>
+                    response(200).json({
+                        id: "mp4",
+                        display_behavior: "download",
+                    }),
+                ),
+            );
+            const wrapper = await mountDatasetView(tab, {
+                dataset: { ...mockDataset, name: "Annotated video", file_ext: "mp4" },
+            });
+
+            const downloadLink = wrapper.get(".auto-download-message a");
+            expect(downloadLink.text()).toContain("Download File");
+            expect(downloadLink.attributes("href")).toBe(`/api/datasets/${DATASET_ID}/download`);
+        });
+
         it("mounts with correct props", async () => {
             const wrapper = await mountDatasetView();
             expect(wrapper.exists()).toBe(true);
@@ -213,8 +258,10 @@ describe("DatasetView", () => {
         it("shows loading message when dataset is loading", async () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
-            expect(wrapper.find(".loading-message").text()).toBe("Loading...");
-            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
+            // `.dataset-view` only renders once loading finishes (it's the `v-else` branch
+            // of the same conditional the LoadingSpan is in), so it can't coexist with it.
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
         });
 
         it("renders dataset information", async () => {
@@ -323,17 +370,18 @@ describe("DatasetView", () => {
             expect(wrapper.find("iframe").exists()).toBe(false);
         });
 
-        it.skip("falls back to default preview for unsupported datatypes", async () => {
+        it("falls back to default preview for unsupported datatypes", async () => {
             const wrapper = await mountDatasetView("preview");
             await flushPromises(); // Wait for preferred visualization check
 
-            // No preferred visualization should be set
+            // No preferred visualization should be set. `getPreferredVisualization` falls
+            // back to `null` (not `undefined`) when nothing is configured.
             expect(wrapper.vm.preferredVisualization).toBeNull();
 
             // Check that we're using the default iframe
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);
             expect(wrapper.find("iframe").exists()).toBe(true);
-            expect(wrapper.find("iframe").attributes("src")).toBe(`/datasets/${DATASET_ID}/display/?preview=true`);
+            expect(wrapper.find("iframe").attributes("src")).toBe("blob:http://localhost/test-preview");
         });
     });
 
@@ -359,6 +407,15 @@ describe("DatasetView", () => {
             expect(visualizeUrl).toBe(`/datasets/${DATASET_ID}/visualize`);
             expect(editUrl).toBe(`/datasets/${DATASET_ID}/edit`);
             expect(errorUrl).toBe(`/datasets/${DATASET_ID}/error`);
+        });
+    });
+
+    describe("File size", () => {
+        it("shows the formatted size as text", async () => {
+            const wrapper = await mountDatasetView("preview", { dataset: { ...mockDataset, file_size: 2048 } });
+            const size = wrapper.find(".filesize .value");
+            expect(size.text()).toBe("2 KB");
+            expect(size.find("strong").exists()).toBe(false);
         });
     });
 });

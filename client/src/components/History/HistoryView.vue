@@ -26,25 +26,26 @@
             </div>
         </BreadcrumbHeading>
 
-        <b-alert :show="copySuccess">
-            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
-        </b-alert>
+        <GAlert :show="copySuccess">
+            History imported and is now your active history. <BLink :to="importedHistoryLink">View here</BLink>.
+        </GAlert>
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
+            v-model:selected-collections="selectedCollections"
             :history="history"
-            :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
         <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" @ok="copyOkay" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 
 <script>
 import { faFileImport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
 import { mapActions, mapState } from "pinia";
 
 import { isAnonymousUser } from "@/api";
@@ -54,12 +55,15 @@ import { useUserStore } from "@/stores/userStore";
 import CollectionPanel from "./CurrentCollection/CollectionPanel.vue";
 import HistoryPanel from "./CurrentHistory/HistoryPanel.vue";
 import CopyModal from "./Modals/CopyModal.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";
 
 export default {
     components: {
+        BLink,
+        GAlert,
         HistoryPanel,
         CollectionPanel,
         CopyModal,

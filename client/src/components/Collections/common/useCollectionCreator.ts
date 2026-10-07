@@ -8,6 +8,7 @@ import localize from "@/utils/localization";
 import type ListCollectionCreator from "./ListCollectionCreator.vue";
 import type PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import { useCollectionCreation } from "./useCollectionCreation";
+import { useElementReconciliation } from "./useElementReconciliation";
 import { useExtensionFiltering } from "./useExtensionFilter";
 
 export type Mode = "modal" | "wizard";
@@ -37,10 +38,11 @@ export type SupportedPairedOrPairedBuilderCollectionTypes =
     | "list:list"
     | "list:list:paired";
 
+// Vue 3 components are not constructors, so we use the component type directly
 export type CollectionCreatorComponent =
-    | InstanceType<typeof ListCollectionCreator>
-    | InstanceType<typeof PairedOrUnpairedListCollectionCreator>
-    | InstanceType<typeof RuleCollectionBuilder>;
+    | typeof ListCollectionCreator
+    | typeof PairedOrUnpairedListCollectionCreator
+    | typeof RuleCollectionBuilder;
 
 export async function attemptCreate(creator: CollectionCreatorComponent | Ref<CollectionCreatorComponent | undefined>) {
     const creatorValue: CollectionCreatorComponent | undefined = unref(creator);
@@ -115,6 +117,8 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
         return null;
     }
 
+    const { reconcileRetainedElements, reconcileRetainedSlot } = useElementReconciliation(isElementInvalid);
+
     return {
         collectionName,
         removeExtensions,
@@ -122,6 +126,8 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
         hasInvalidExtension,
         onUpdateHideSourceItems,
         isElementInvalid,
+        reconcileRetainedElements,
+        reconcileRetainedSlot,
         showElementExtension,
         onUpdateCollectionName,
         validInput,

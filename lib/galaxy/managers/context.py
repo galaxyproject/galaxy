@@ -46,6 +46,8 @@ from typing import (
     Any,
     cast,
     Literal,
+    Optional,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -68,6 +70,9 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.dataset_matcher import DatasetMatcherFactory
 
 
 class ProvidesAppContext:
@@ -121,12 +126,15 @@ class ProvidesAppContext:
             self.sa_session.add(action)
             self.sa_session.commit()
 
-    def log_event(self, message, tool_id=None, **kwargs):
+    def log_event(self, message: str, tool_id: str | None = None, **kwargs: Any) -> None:
         """
         Application level logging. Still needs fleshing out (log levels and such)
         Logging events is a config setting - if False, do not log.
         """
         if self.app.config.log_events:
+            # History, user and session are only available on some subclasses,
+            # so look them up best-effort.
+            context: Any = self
             event = Event()
             event.tool_id = tool_id
             try:
@@ -134,19 +142,19 @@ class ProvidesAppContext:
             except Exception:
                 event.message = message
             try:
-                event.history = self.get_history()
+                event.history = context.get_history()
             except Exception:
                 event.history = None
             try:
-                event.history_id = self.history.id
+                event.history_id = context.history.id
             except Exception:
                 event.history_id = None
             try:
-                event.user = self.user
+                event.user = context.user
             except Exception:
                 event.user = None
             try:
-                event.session_id = self.galaxy_session.id
+                event.session_id = context.galaxy_session.id
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
@@ -313,6 +321,18 @@ class ProvidesHistoryContext(ProvidesUserContext):
     Mixed in class must provide `user`, `history`, and `app`
     properties.
     """
+
+    # set per-request by galaxy.tools.parameters.dataset_matcher while a tool
+    # form is being evaluated
+    dataset_matcher_factory: Optional["DatasetMatcherFactory"] = None
+
+    @abc.abstractmethod
+    def get_history(self, create: bool = False) -> History | None:
+        """Return the current history, optionally creating one when there is none.
+
+        Transactions do not always have an active history, so None is a valid
+        response even when create is set.
+        """
 
     @property
     @abc.abstractmethod

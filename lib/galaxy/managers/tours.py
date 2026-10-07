@@ -9,7 +9,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.schema import GenerateTourResponse
 from galaxy.schema.tours import (
     TourDetails,
@@ -27,7 +27,7 @@ class ToursManager:
         self._app = app
 
     def generate_tour(
-        self, tool_id: str, tool_version: str, trans: ProvidesAppContext, performs_upload=True
+        self, tool_id: str, tool_version: str, trans: ProvidesHistoryContext, performs_upload=True
     ) -> GenerateTourResponse:
         """
         Generate a tour designed for the given tool.
@@ -51,7 +51,7 @@ class ToursManager:
 
 
 class TourGenerator:
-    def __init__(self, trans: ProvidesAppContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
+    def __init__(self, trans: ProvidesHistoryContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
         self._trans = trans
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
         self._use_datasets = True
@@ -67,7 +67,7 @@ class TourGenerator:
         tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
             raise ObjectNotFound(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
-        return tool
+        return self._trans.app.toolbox.materialize_tool(tool, reason="detail")
 
     def _upload_test_data(self, performs_upload=True):
         """
@@ -118,8 +118,12 @@ class TourGenerator:
                             "files_0|file_data", filename
                         ),
                     }
-                    input_file = cgi_FieldStorage(headers=headers)
-                    input_file.file = input_file.make_file()
+                    # types-webob's shim for cgi_FieldStorage on Python >= 3.13 (the real cgi module
+                    # was removed in that version) doesn't declare a constructor accepting headers,
+                    # and types make_file()'s return as TextIOWrapper | FileIO though file is
+                    # IO[bytes]. Neither error occurs on Python < 3.13, hence unused-ignore too.
+                    input_file = cgi_FieldStorage(headers=headers)  # type: ignore[call-arg, unused-ignore]
+                    input_file.file = input_file.make_file()  # type: ignore[assignment, unused-ignore]
                     input_file.file.write(content)
 
                     # Use "auto" for generic 'data' extensions, otherwise use the specific extension

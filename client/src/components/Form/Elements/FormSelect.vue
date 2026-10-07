@@ -11,9 +11,15 @@ import { uid } from "@/utils/utils";
 
 import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+// vue-multiselect's types only allow a string here, but at runtime an explicit null
+// (not just omitting the prop) suppresses the label instead of falling back to its
+// default text -- its .d.ts doesn't account for that.
+const noLabel = null as unknown as string;
 
 type SelectValue = Record<string, unknown> | string | number | null;
 type ValueWithTags = SelectValue & { tags: string[] };
@@ -25,7 +31,8 @@ interface SelectOption {
 }
 
 const props = defineProps({
-    id: { type: String, default: `form-select-${uid()}` },
+    // Factory so each instance gets its own id; a literal default is evaluated once per module.
+    id: { type: String, default: () => `form-select-${uid()}` },
     disabled: {
         type: Boolean,
         default: false,
@@ -58,7 +65,10 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
-const filteredOptions = useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
+const { filtered: filteredOptions, pending: filterPending } = useFilterObjectArray(() => props.options, filter, [
+    "label",
+    ["value", "tags"],
+]);
 
 // Debounced upward emit so consumers (e.g. ``FormData`` paginating against the
 // backend) can refetch on typing without firing on every keystroke. The local
@@ -180,6 +190,32 @@ const currentValue = computed({
 });
 
 /**
+ * Stable identifier for an option, so an option can be addressed by what it selects
+ * rather than by its position in the list or its rendered label.
+ */
+function optionIdentifier(option: SelectOption): string {
+    if (option.key !== undefined) {
+        return option.key;
+    }
+    if (typeof option.value === "string" || typeof option.value === "number") {
+        return String(option.value);
+    }
+    return option.label;
+}
+
+/**
+ * Identifier of the selected option, exposed on the root element. Only meaningful
+ * for single selects, where exactly one option can be selected.
+ */
+const selectedValueIdentifier = computed(() => {
+    if (props.multiple) {
+        return undefined;
+    }
+    const selected = currentValue.value[0];
+    return selected ? optionIdentifier(selected) : undefined;
+});
+
+/**
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
@@ -236,29 +272,35 @@ function isSelected(item: SelectValue): boolean {
 </script>
 
 <template>
-    <div>
+    <div :data-selected-value="selectedValueIdentifier">
         <Multiselect
             v-if="hasOptions"
             :id="id"
             v-model="currentValue"
+            :name="id"
+            :data-filter-pending="filterPending ? 'true' : undefined"
             :allow-empty="optional || multiple"
             :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"
             :disabled="disabled"
-            :deselect-label="null"
+            :deselect-label="noLabel"
             label="label"
             :multiple="multiple"
             :options="reorderedOptions"
             :placeholder="placeholder"
             :selected-label="selectedLabel"
-            :select-label="null"
+            :select-label="noLabel"
             :track-by="trackBy"
             :internal-search="false"
             @search-change="onSearchChange"
             @open="onOpen"
             @close="onClose">
             <template v-slot:option="{ option }">
-                <div class="d-flex align-items-center justify-content-between">
+                <!-- Replace recycled option content when its identity changes. -->
+                <div
+                    :key="`${option.label}:${String(option.value)}`"
+                    class="d-flex align-items-center justify-content-between"
+                    :data-option-value="optionIdentifier(option)">
                     <div>
                         <span>{{ option.label }}</span>
                         <StatelessTags
@@ -276,7 +318,7 @@ function isSelected(item: SelectValue): boolean {
             </template>
         </Multiselect>
         <slot v-else name="no-options">
-            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+            <GAlert v-localize class="w-100" variant="warning" show> No options available. </GAlert>
         </slot>
     </div>
 </template>

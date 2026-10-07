@@ -20,66 +20,70 @@
             :class="headerClass"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
-            @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            @keyup.enter="onHeaderEnter">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <BButton
+                <GButton
                     v-if="credentials.length > 0"
                     v-g-tooltip.hover
                     class="node-credentials py-0 inline-icon-button"
-                    variant="primary"
-                    size="sm"
+                    transparent
+                    icon-only
+                    color="blue"
+                    size="small"
                     aria-label="tool has credentials"
                     title="Tool requires credentials">
                     <FontAwesomeIcon :icon="faKey" />
-                </BButton>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
                     v-g-tooltip.hover
                     class="node-clone py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="clone node"
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
                     v-g-tooltip.hover
                     class="node-destroy py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="destroy node"
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
-                <b-popover
-                    v-if="isEnabled && !readonly"
-                    :target="popoverId"
-                    triggers="hover"
-                    placement="bottom"
-                    :show.sync="popoverShow">
-                    <div>
-                        <Recommendations
-                            v-if="popoverShow"
-                            :step-id="id"
-                            :datatypes-mapper="datatypesMapper"
-                            @onCreate="onCreate" />
-                    </div>
-                </b-popover>
-            </b-button-group>
+                </GButton>
+            </GButtonGroup>
+            <GPopover
+                v-if="isEnabled && !readonly"
+                v-model:show="popoverShow"
+                interactive
+                :target="popoverId"
+                triggers="hover"
+                placement="bottom">
+                <div>
+                    <Recommendations
+                        v-if="popoverShow"
+                        :step-id="id"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </div>
+            </GPopover>
             <i :class="iconClass" />
             <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon :icon="faCodeBranch" />
@@ -97,23 +101,26 @@
                     :spin="invocationStep.headerIconSpin" />
             </span>
         </div>
-        <b-alert
+        <GAlert
             v-if="!!errors"
             variant="danger"
             show
-            class="node-error m-0 rounded-0 rounded-bottom"
+            class="node-error m-0 rounded-0"
+            :class="{ 'rounded-bottom': !hasTerminals }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
-        </b-alert>
+        </GAlert>
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
-            v-else
+            v-if="!errors || hasTerminals"
             class="node-body position-relative card-body p-0 mx-2"
             :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
@@ -161,9 +168,8 @@
 import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
-import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
-import Vue, { computed, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -185,14 +191,16 @@ import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-
-Vue.use(BootstrapVue);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -346,16 +354,16 @@ const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
 });
 
+const hasTerminals = computed(() => inputs.value.length > 0 || outputs.value.length > 0);
+
 function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTerminals) {
     emit("onDragConnector", dragPosition, terminal);
 }
 
 const mouseMovementThreshold = 9;
 const singleClickTimeout = 800;
-const doubleClickTimeout = 500;
 
 let mouseDownTime = 0;
-let doubleClickTime = 0;
 
 let movementDistance = 0;
 let lastPosition: XYPosition | null = null;
@@ -381,15 +389,19 @@ function onPointerUp(e: PointerEvent) {
         makeActive();
     }
 
-    const timeBetweenClicks = mouseUpTime - doubleClickTime;
-
-    if (timeBetweenClicks < doubleClickTimeout) {
-        inspectorStore.setMaximized(props.step, true);
-    }
-
-    doubleClickTime = Date.now();
     lastPosition = null;
     movementDistance = 0;
+}
+
+function onDoubleClick(e: MouseEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    inspectorStore.setMaximized(props.step, true);
 }
 
 function onMoveTo(position: XYPosition) {
@@ -429,6 +441,13 @@ function onClone() {
 
 function makeActive() {
     emit("onActivate", props.id);
+}
+
+// Enter on the recommendations button toggles its popover and must not also activate the node.
+function onHeaderEnter(event: KeyboardEvent) {
+    if (!(event.target instanceof Element && event.target.closest(".node-recommendations"))) {
+        makeActive();
+    }
 }
 
 function toggleSelected() {

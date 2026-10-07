@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import MountTarget from "./LoginForm.vue";
 
@@ -25,18 +26,17 @@ interface PostRequest {
 }
 
 let postRequests: PostRequest[] = [];
+let loginResponse: Record<string, unknown> = {};
 
 async function mountLoginForm() {
-    const wrapper = mount(MountTarget as object, {
-        propsData: {
+    const wrapper = mount(MountTarget, {
+        props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        localVue,
-        router,
-        stubs: {
-            ExternalLogin: true,
+        global: {
+            ...withPlugins(localVue, testingPinia, router),
+            stubs: { ...localVue.stubs, ExternalLogin: true },
         },
-        pinia: testingPinia,
     });
 
     return wrapper;
@@ -45,6 +45,7 @@ async function mountLoginForm() {
 describe("LoginForm", () => {
     beforeEach(() => {
         postRequests = [];
+        loginResponse = {};
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
@@ -53,7 +54,7 @@ describe("LoginForm", () => {
                 const url = request.url;
                 const data = (await request.json()) as Record<string, unknown>;
                 postRequests.push({ url, data });
-                return HttpResponse.json({});
+                return HttpResponse.json(loginResponse);
             }),
         );
     });
@@ -67,12 +68,12 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = nth(inputs, 0);
         expect(usernameField.attributes("type")).toBe("text");
 
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs.at(1);
+        const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
 
         await pwdField.setValue("test_pwd");
@@ -84,6 +85,46 @@ describe("LoginForm", () => {
         expect(postRequests.length).toBe(1);
         expect(postRequests[0]?.data.login).toBe("test_user");
         expect(postRequests[0]?.data.password).toBe("test_pwd");
+    });
+
+    it("prefills the password reset route with the entered email", async () => {
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
+        const wrapper = mount(MountTarget, {
+            props: {
+                sessionCsrfToken: "sessionCsrfToken",
+                showResetLink: true,
+            },
+            global: {
+                ...withPlugins(localVue, testingPinia, router),
+                stubs: { ...localVue.stubs, ExternalLogin: true },
+            },
+        });
+
+        await wrapper.find("#login-form-name").setValue("test@example.com");
+        await wrapper.find("#reset-password-link").trigger("click");
+
+        expect(push).toHaveBeenCalledWith({
+            path: "/login/reset_password",
+            query: { email: "test@example.com" },
+        });
+        push.mockRestore();
+    });
+
+    it("routes expired-password responses to the current-password form", async () => {
+        loginResponse = { expired_user: "expired-user-id" };
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
+        const wrapper = await mountLoginForm();
+
+        await wrapper.find("#login-form-name").setValue("test_user");
+        await wrapper.find("#login-form-password").setValue("test_pwd");
+        await wrapper.find("button[type='submit']").trigger("submit");
+        await flushPromises();
+
+        expect(push).toHaveBeenCalledWith({
+            path: "/login/start",
+            query: { expired_user: "expired-user-id" },
+        });
+        push.mockRestore();
     });
 
     it("props", async () => {
@@ -149,13 +190,13 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = nth(inputs, 0);
         expect(usernameField.attributes("type")).toBe("text");
         expect((usernameField.element as HTMLInputElement).disabled).toBe(true);
         expect((usernameField.element as HTMLInputElement).value).not.toBe("");
         expect((usernameField.element as HTMLInputElement).value).toContain(external_email);
 
-        const pwdField = inputs.at(1);
+        const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
         expect((pwdField.element as HTMLInputElement).value).toBe("");
 
@@ -190,6 +231,20 @@ describe("LoginForm", () => {
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("auth-error");
         expect(alert.classes()).toContain("alert-info");
+
+        window.location.href = originalHref;
+    });
+
+    it("renders the message through v-sanitize-html", async () => {
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=${encodeURIComponent("<b>note</b>")}`;
+        vi.mocked(sanitizeHtml).mockClear();
+
+        const wrapper = await mountLoginForm();
+        await flushPromises();
+
+        expect(sanitizeHtml).toHaveBeenCalledWith("<b>note</b>", "default");
+        expect(wrapper.find(".alert b").text()).toBe("note");
 
         window.location.href = originalHref;
     });

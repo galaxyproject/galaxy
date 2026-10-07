@@ -3,9 +3,9 @@
         <span v-if="!skipHead" class="label"
             ><b>{{ name }}</b></span
         >
-        <b-alert v-if="!!error" variant="danger" show>Error: {{ error }}</b-alert>
-        <pre v-if="miscInfo"><code v-html="miscInfo"/></pre>
-        <pre v-if="peek"><code v-html="peek"/></pre>
+        <GAlert v-if="!!error" variant="danger" show>Error: {{ error }}</GAlert>
+        <pre v-if="miscInfo"><code>{{ miscInfo }}</code></pre>
+        <pre v-if="peek"><code v-sanitize-html="peek" /></pre>
         <div v-if="node && node.elements && node.elements.length" :class="{ 'ml-3': !skipHead }">
             <CollectionNode v-for="child in node.elements" :key="child.id" :node="child" />
         </div>
@@ -13,8 +13,11 @@
 </template>
 
 <script>
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
     name: "CollectionNode",
+    components: { GAlert },
     props: {
         node: {
             type: Object,

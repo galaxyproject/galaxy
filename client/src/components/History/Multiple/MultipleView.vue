@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +12,9 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
@@ -131,60 +133,62 @@ function showRecent() {
 
             <div class="d-flex justify-content-between">
                 <div>
-                    <BButtonGroup v-g-tooltip.hover :title="showRecentTitle">
-                        <BButton
-                            size="sm"
+                    <GButtonGroup v-g-tooltip.hover :title="showRecentTitle">
+                        <GButton
+                            size="small"
                             data-description="show recent histories"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             :disabled="!hasPinnedHistories"
                             @click="showRecent">
                             <FontAwesomeIcon v-if="hasPinnedHistories" :icon="faUndo" />
                             <FontAwesomeIcon v-else :icon="faClock" />
                             <span v-localize>Recent</span>
-                        </BButton>
-                    </BButtonGroup>
-                    <BButton
+                        </GButton>
+                    </GButtonGroup>
+                    <GButton
                         v-g-tooltip.hover
                         :title="localize('Open modal to select/deselect histories')"
-                        size="sm"
+                        size="small"
                         data-description="open select histories modal"
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         @click="showSelectModal = true">
                         <FontAwesomeIcon :icon="faCheckSquare" />
                         <span v-localize>Select</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>
-        <BAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
+        <GAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </BAlert>
+        </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <FilterMenu
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="History Multiview"
                 :placeholder="localize('Search datasets and collections in selected histories')"
                 :filter-class="HistoryFilters"
-                :filter-text.sync="filter"
-                :loading="historiesLoading"
-                :show-advanced.sync="showAdvanced" />
+                :loading="historiesLoading" />
             <MultipleViewList
                 v-show="!showAdvanced"
+                v-model:show-modal="showSelectModal"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
                 :can-load-more="canLoadMore"
-                :show-modal.sync="showSelectModal"
                 @load-more="loadMore" />
         </div>
-        <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
+        <GAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </BAlert>
+        </GAlert>
         <SelectorModal
             v-show="showSelectModal"
+            v-model:show-modal="showSelectModal"
             :multiple="true"
             :histories="histories"
             :additional-options="['center', 'set-current']"
-            :show-modal.sync="showSelectModal"
             title="Select/Deselect histories"
             @selectHistories="addHistoriesToList" />
     </div>

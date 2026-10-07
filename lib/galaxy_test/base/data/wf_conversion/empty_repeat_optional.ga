@@ -1,0 +1,25 @@
+{
+    "steps": {
+        "0": {
+            "tool_id": "gx_repeat_optional",
+            "label": "empty_repeat",
+            "id": 0,
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "type": "tool",
+            "name": "gx_repeat_optional",
+            "post_job_actions": {},
+            "tool_version": null,
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"__page__\": 0}"
+        }
+    },
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Test empty repeat with gx_repeat_optional",
+    "uuid": "30821bc0-bc67-41c7-9bc7-025d94f0c940",
+    "annotation": ""
+}

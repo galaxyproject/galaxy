@@ -120,10 +120,9 @@ class ConfigWatchers:
     @property
     def data_manager_configs(self):
         data_manager_configs = []
-        if hasattr(self.app.config, "data_manager_config_file"):
-            data_manager_configs.append(self.app.config.data_manager_config_file)
-        if hasattr(self.app.config, "shed_data_manager_config_file"):
-            data_manager_configs.append(self.app.config.shed_data_manager_config_file)
+        for config_name in ("data_manager_config_file", "shed_data_manager_config_file"):
+            if config_path := getattr(self.app.config, config_name, None):
+                data_manager_configs.append(config_path)
         return data_manager_configs
 
     @property

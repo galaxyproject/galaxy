@@ -71,6 +71,8 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     ClaimLandingPayload,
     CreateWorkflowLandingRequestPayload,
+    CuratedWorkflowsIndexResponse,
+    CuratedWorkflowsQueryPayload,
     InvocationIndexPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
@@ -97,6 +99,7 @@ from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.web import (
     expose_api,
+    expose_api_anonymous,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -128,6 +131,7 @@ from galaxy.webapps.galaxy.services.invocations import (
     WriteInvocationStoreToPayload,
 )
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.work.context import SessionRequestContext
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 
@@ -573,24 +577,21 @@ class WorkflowsAPIController(
             step_dict["tool_version"] = module.get_version()
         return step_dict
 
-    @expose_api
-    def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
+    @expose_api_anonymous
+    def get_tool_predictions(self, trans: ProvidesHistoryContext, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         :type   payload: dict
         :param  payload:
-            a dictionary containing two parameters
             'tool_sequence' - comma separated sequence of tool ids
-            'remote_model_url' - (optional) path to the deep learning model
         """
-        remote_model_url = payload.get("remote_model_url", trans.app.config.tool_recommendation_model_path)
+        # Model downloads must use administrator configuration, never request-supplied URLs.
+        model_url = trans.app.config.tool_recommendation_model_path
         tool_sequence = payload.get("tool_sequence", "")
-        if "tool_sequence" not in payload or remote_model_url is None:
+        if "tool_sequence" not in payload or model_url is None:
             return
-        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
-            trans, tool_sequence, remote_model_url
-        )
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(trans, tool_sequence, model_url)
         return {"current_tool": tool_sequence, "predicted_data": recommended_tools}
 
     #
@@ -690,7 +691,7 @@ class WorkflowsAPIController(
         item["url"] = url_for("workflow", id=encoded_id)
         return item
 
-    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
+    def _workflow_from_dict(self, trans: ProvidesHistoryContext, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -715,7 +716,7 @@ class WorkflowsAPIController(
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
-    def _import_tools_if_needed(self, trans, workflow_create_options, raw_workflow_description):
+    def _import_tools_if_needed(self, trans: ProvidesUserContext, workflow_create_options, raw_workflow_description):
         if not workflow_create_options.import_tools:
             return
 
@@ -754,11 +755,11 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
+    def __get_stored_accessible_workflow(self, trans: ProvidesUserContext, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+    def __get_stored_workflow(self, trans: ProvidesUserContext, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
@@ -904,6 +905,43 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+# The curated endpoint understands only name, tag and collection; the stored-workflow tags
+# above would advertise filters it silently drops into free text.
+curated_query_tags = [
+    IndexQueryTag("name", "The curated workflow's name.", "n"),
+    IndexQueryTag("tag", "A tag on the curated workflow.", "t"),
+    IndexQueryTag("collection", "An IWC collection the curated workflow belongs to.", "c"),
+]
+
+CuratedSearchQueryParam: str | None = search_query_param(
+    model_name="Curated Workflow",
+    tags=curated_query_tags,
+    free_text_fields=["name", "description", "tag", "collection"],
+)
+
+CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
+    default=None,
+    title="Sort By",
+    description=(
+        "Sort curated workflows by this attribute. Without it, most recently updated first -- and "
+        "in IWC catalog mode, workflows whose tools are all available here come before the rest."
+    ),
+)
+
+CuratedLimitQueryParam: int = Query(
+    default=24,
+    ge=1,
+    le=100,
+    title="Limit",
+    description="Maximum number of curated workflows to return.",
+)
+
+CuratedOffsetQueryParam: int = Query(
+    default=0,
+    ge=0,
+    title="Number of curated workflows to skip in sorted query (to enable pagination).",
+)
+
 InvokeWorkflowBody = Annotated[
     InvokeWorkflowPayload,
     Body(
@@ -967,6 +1005,29 @@ class FastAPIWorkflows:
         response.headers["total_matches"] = str(total_matches)
         return workflows
 
+    # Declared before any /api/workflows/{workflow_id} route so FastAPI does not
+    # try to decode the literal "curated" as an encoded StoredWorkflow id.
+    @router.get(
+        "/api/workflows/curated",
+        public=True,
+        summary="Lists curated workflows for discovery.",
+        response_description="Curated workflows plus the source they were drawn from.",
+    )
+    def curated(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        search: str | None = CuratedSearchQueryParam,
+        sort_by: WorkflowSortByEnum | None = CuratedSortByQueryParam,
+        sort_desc: bool | None = SortDescQueryParam,
+        limit: int = CuratedLimitQueryParam,
+        offset: int = CuratedOffsetQueryParam,
+    ) -> CuratedWorkflowsIndexResponse:
+        """Lists workflows curated for this Galaxy, or the public IWC catalog."""
+        payload = CuratedWorkflowsQueryPayload(
+            search=search, sort_by=sort_by, sort_desc=sort_desc, limit=limit, offset=offset
+        )
+        return self.service.index_curated(trans, payload)
+
     @router.get(
         "/api/workflows/{workflow_id}/sharing",
         summary="Get the current sharing status of the given item.",
@@ -1012,7 +1073,7 @@ class FastAPIWorkflows:
         workflow_id: StoredWorkflowIDPathParam,
         payload: RefactorWorkflowBody,
         instance: InstanceQueryParam = False,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> RefactorResponse:
         return self.service.refactor(trans, workflow_id, payload, instance or False)
 
@@ -1204,7 +1265,7 @@ class FastAPIWorkflows:
     @router.post("/api/workflow_landings/{uuid}/claim")
     def claim_landing(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
         payload: ClaimLandingPayload | None = Body(...),
         user: model.User = DependsOnUser,
@@ -1214,7 +1275,7 @@ class FastAPIWorkflows:
     @router.get("/api/workflow_landings/{uuid}")
     def get_landing(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
         user: model.User = DependsOnUser,
     ) -> WorkflowLandingRequest:
@@ -1371,7 +1432,7 @@ class FastAPIInvocations:
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
         include_nested_invocations: bool = True,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
             # Anon users don't have accessible invocations (currently, though published invocations should be a thing)
@@ -1424,7 +1485,7 @@ class FastAPIInvocations:
         instance: InvocationsInstanceQueryParam = False,
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
             response=response,
@@ -1451,7 +1512,7 @@ class FastAPIInvocations:
     def prepare_store_download(
         self,
         invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: PrepareStoreDownloadPayload = Body(...),
     ) -> AsyncFile:
         return self.invocations_service.prepare_store_download(
@@ -1467,7 +1528,7 @@ class FastAPIInvocations:
     def write_store(
         self,
         invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
@@ -1696,7 +1757,7 @@ class FastAPIInvocations:
         self,
         invocation_id: InvocationIDPathParam,
         step_id: WorkflowInvocationStepIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
         return self.invocations_service.update_invocation_step(trans=trans, step_id=step_id, action=payload.action)
@@ -1715,7 +1776,7 @@ class FastAPIInvocations:
         workflow_id: StoredWorkflowIDPathParam,
         invocation_id: InvocationIDPathParam,
         step_id: WorkflowInvocationStepIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
         """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""

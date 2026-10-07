@@ -1,8 +1,10 @@
 import inspect
 import os
 import tempfile
+from collections import Counter
 
 import pytest
+from Cheetah.Template import Template
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.lint import (
@@ -29,12 +31,14 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.parser.util import ParameterParseException
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import (
     ElementTree,
     submodules,
 )
+from galaxy.util.template import fill_template
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy.util.xml_macros import load_with_references
 
@@ -111,6 +115,45 @@ COMMAND_TODO = """
 COMMAND_DETECT_ERRORS_INTERPRETER = """
 <tool id="id" name="name">
     <command detect_errors="nonsense" interpreter="python"/>
+</tool>
+"""
+
+VERSION_COMMAND_MISSING_MODERN_PROFILE = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_LEGACY_PROFILE = """
+<tool id="id" name="name" profile="21.09">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_CONTAINER = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+    </requirements>
+    <command>bwa</command>
+</tool>
+"""
+VERSION_COMMAND_MISSING_NO_REQUIREMENTS = """
+<tool id="id" name="name" profile="26.2">
+    <command>echo hello</command>
+</tool>
+"""
+VERSION_COMMAND_PRESENT = """
+<tool id="id" name="name" profile="26.2">
+    <requirements>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+    </requirements>
+    <command>bwa</command>
+    <version_command>bwa 2&gt;&amp;1 | grep Version</version_command>
 </tool>
 """
 
@@ -201,6 +244,44 @@ HELP_INVALID_RST = """
         **xxl__
     </help>
 </tool>
+"""
+
+HELP_RST_INCLUDE = """
+<tool id="id" name="name">
+    <help>
+.. include:: /nonexistent/help.rst
+    </help>
+</tool>
+"""
+
+HELP_MARKDOWN_INVALID_RST = """
+<tool id="id" name="name">
+    <help format="markdown">
+        **xxl__
+    </help>
+</tool>
+"""
+
+HELP_YAML_MARKDOWN_INVALID_RST = """
+class: GalaxyTool
+id: id
+name: name
+version: '1.0'
+command: echo test
+help: |
+  **xxl__
+"""
+
+HELP_YAML_RST_INVALID = """
+class: GalaxyTool
+id: id
+name: name
+version: '1.0'
+command: echo test
+help:
+  format: restructuredtext
+  content: |
+    **xxl__
 """
 
 # test tool xml for inputs linter
@@ -664,6 +745,9 @@ OUTPUTS_FORMAT_INPUT = """
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 <tool id="id" name="name">
+    <inputs>
+        <param name="input_readpair" type="data_collection" collection_type="paired" format="data" />
+    </inputs>
     <outputs>
         <collection name="output_collection" type="paired">
             <data name="forward" format_source="input_readpair" />
@@ -818,6 +902,267 @@ OUTPUTS_FORMAT_SOURCE_QUALIFIED = """
 </tool>
 """
 
+OUTPUTS_FORMAT_SOURCE_COLLECTION_ELEMENT = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="paired_input" type="data_collection" collection_type="paired" format="data" />
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="single">Single</option>
+                <option value="paired">Paired</option>
+            </param>
+            <when value="single">
+                <param name="input1" type="data" format="data" />
+            </when>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="paired_input['forward']" />
+        <data name="output2" format_source='paired_input["reverse"]' />
+        <data name="output3" format_source="paired_input[0]" />
+        <data name="output4" format_source="paired_input" />
+        <data name="output5" format_source="cond|input1['forward']" />
+        <collection name="output6" type="paired" format_source="paired_input['forward']">
+            <data name="forward" format_source="cond|input1['forward']" />
+            <data name="reverse" format_source="paired_input[1]" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_NESTED_LEGACY = """
+<tool id="id" name="name">
+    <inputs>
+        <section name="outer" title="Outer">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="yes">Yes</option>
+                </param>
+                <when value="yes">
+                    <param name="input1" type="data" format="data" />
+                </when>
+            </conditional>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="outer|input1" />
+        <data name="output2" format_source="input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT_IN_CONDITIONAL = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <repeat name="files" title="Files">
+                    <param name="input1" type="data" format="data" />
+                </repeat>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="files_0|input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_PROFILE_26 = """
+<tool id="id" name="name" profile="26.0">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_DEEP = """
+<tool id="id" name="name">
+    <inputs>
+        <section name="outer" title="Outer">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="paired">Paired</option>
+                </param>
+                <when value="paired">
+                    <param name="input1" type="data_collection" collection_type="paired" format="data" />
+                </when>
+            </conditional>
+        </section>
+    </inputs>
+    <outputs>
+        <collection name="deep_output" structured_like="input1" type="paired" inherit_format="true" />
+        <collection name="alias_output" structured_like="outer|input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_REPEAT = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <param name="input1" type="data_collection" collection_type="paired" format="data" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="queries_0|input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_NOT_DATA = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="text" />
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_UNQUALIFIED_ELEMENT = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output1" type="paired">
+            <data name="forward" format_source="input1['forward']" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_ELEMENT_OF_DATASET = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1['forward']" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <conditional name="cond">
+                <param name="cond_param" type="select">
+                    <option value="yes">Yes</option>
+                </param>
+                <when value="yes">
+                    <param name="input1" type="data" format="data" />
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="queries_0|cond|input1" />
+        <data name="output2" format_source="queries_2|cond|input1" />
+        <data name="output3" format_source="queries_0|input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_REPEAT_UNPREFIXED = """
+<tool id="id" name="name">
+    <inputs>
+        <repeat name="queries" title="Queries">
+            <param name="input1" type="data" format="data" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_QUALIFIED_MISSING = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <repeat name="files" title="Files">
+                    <param name="input1" type="data" format="data" />
+                </repeat>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output1" type="list" format_source="cond|input1">
+            <discover_datasets pattern="__name_and_ext__" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_NESTED_DATA_MISSING = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input1" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <collection name="output1" type="paired">
+            <data name="forward" format_source="input1" />
+            <data name="reverse" format_source="input2" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_DISCOVERED_LEGACY = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <param name="input1" type="data" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="discovered" type="list" format_source="input1">
+            <discover_datasets pattern="__name__" />
+        </collection>
+        <collection name="static" type="paired" format_source="input1">
+            <data name="forward" />
+            <data name="reverse" />
+        </collection>
+    </outputs>
+</tool>
+"""
+
 # tool xml for repeats linter
 REPEATS = """
 <tool id="id" name="name">
@@ -928,6 +1273,27 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
             <output name="test"/>
         </test>
         <test expect_num_outputs="1" expect_failure="true"/>
+    </tests>
+</tool>
+"""
+
+TESTS_EXPECT_FAILURE_INVALID_INPUTS = """
+<tool id="id" name="name" profile="24.2">
+    <inputs>
+        <param name="taxid" type="text" value="1">
+            <validator type="regex" message="Enter numeric tax IDs">^\\d+$</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="test"/>
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+            <param name="taxid" value="f5"/>
+        </test>
+        <test expect_failure="true">
+            <param name="taxidd" value="f5"/>
+        </test>
     </tests>
 </tool>
 """
@@ -1240,8 +1606,7 @@ def test_citations_legacy_doi_prefix(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.warn_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.error_messages
 
@@ -1258,8 +1623,7 @@ def test_citations_legacy_doi_prefix_error_on_modern_profile(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX_MODERN)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.error_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.warn_messages
 
@@ -1268,7 +1632,10 @@ def test_command_multiple(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MULTIPLE)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["Invalid XML: Element 'command': This element is not expected."]
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1277,7 +1644,9 @@ def test_command_missing(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MISSING)
     run_lint_module(lint_ctx, command, tool_source)
     assert lint_ctx.error_messages == ["No command tag found, must specify a command template to execute."]
-    assert not lint_ctx.info_messages
+    assert lint_ctx.info_messages == [
+        "No version_command found, that should be OK for a tool without package requirements."
+    ]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
@@ -1286,7 +1655,10 @@ def test_command_todo(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_TODO)
     run_lint_module(lint_ctx, command, tool_source)
     assert not lint_ctx.error_messages
-    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command.",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert lint_ctx.warn_messages == ["Command template contains TODO text."]
     assert not lint_ctx.valid_messages
 
@@ -1300,9 +1672,66 @@ def test_command_detect_errors_interpreter(lint_ctx):
         in lint_ctx.error_messages
     )
     assert lint_ctx.warn_messages == ["Command uses deprecated 'interpreter' attribute."]
-    assert lint_ctx.info_messages == ["Tool contains a command with interpreter of type [python]."]
+    assert lint_ctx.info_messages == [
+        "Tool contains a command with interpreter of type [python].",
+        "No version_command found, that should be OK for a tool without package requirements.",
+    ]
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_version_command_missing_modern_profile(lint_ctx):
+    """A tool wrapping packaged software should report its version - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_MODERN_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_legacy_profile(lint_ctx):
+    """Older profiles get the same info message - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_LEGACY_PROFILE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_missing_container(lint_ctx):
+    """A container is external software worth a version too - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_CONTAINER)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, tools wrapping packaged software should report its version."
+        in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+
+
+def test_version_command_missing_no_requirements(lint_ctx):
+    """Pure Galaxy tools legitimately have no version to report - planemo#286."""
+    tool_source = get_xml_tool_source(VERSION_COMMAND_MISSING_NO_REQUIREMENTS)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert (
+        "No version_command found, that should be OK for a tool without package requirements." in lint_ctx.info_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_version_command_present(lint_ctx):
+    tool_source = get_xml_tool_source(VERSION_COMMAND_PRESENT)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
 
 
 def test_general_missing_tool_id_name_version(lint_ctx):
@@ -1453,6 +1882,39 @@ def test_help_invalid_rst(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_help_rst_include_disabled(lint_ctx):
+    tool_source = get_xml_tool_source(HELP_RST_INCLUDE)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert (
+        'Invalid reStructuredText found in help - [<string>:2: (WARNING/2) "include" directive disabled.\n].'
+        in lint_ctx.warn_messages
+    )
+    assert len(lint_ctx.warn_messages) == 1
+
+
+def test_help_markdown_skips_rst_validation(lint_ctx):
+    tool_source = get_xml_tool_source(HELP_MARKDOWN_INVALID_RST)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Tool contains help section." in lint_ctx.valid_messages
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
+    assert "Invalid reStructuredText found in help" not in lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_help_yaml_markdown_skips_rst_validation(lint_ctx):
+    tool_source = get_tool_source(HELP_YAML_MARKDOWN_INVALID_RST)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
+    assert "Invalid reStructuredText found in help" not in lint_ctx.warn_messages
+
+
+def test_help_yaml_rst_invalid(lint_ctx):
+    tool_source = get_tool_source(HELP_YAML_RST_INVALID)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Invalid reStructuredText found in help" in lint_ctx.warn_messages
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
+
+
 def test_inputs_no_inputs(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_NO_INPUTS)
     run_lint_module(lint_ctx, inputs, tool_source)
@@ -1500,6 +1962,153 @@ def test_inputs_param_name(lint_ctx):
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 2
     assert len(lint_ctx.error_messages) == 2
+
+
+@pytest.mark.parametrize(
+    "input_xml, name, tag",
+    [
+        ('<param name="sleep" type="text"/>', "sleep", "param"),
+        ('<param argument="--getVar" type="text"/>', "getVar", "param"),
+        (
+            '<section name="searchList" title="Options"><param name="value" type="text"/></section>',
+            "searchList",
+            "section",
+        ),
+        ('<repeat name="respond" title="Options"><param name="value" type="text"/></repeat>', "respond", "repeat"),
+        (
+            (
+                '<conditional name="compile"><param name="choice" type="select"><option value="yes">Yes</option></param>'
+                '<when value="yes"><param name="value" type="text"/></when></conditional>'
+            ),
+            "compile",
+            "conditional",
+        ),
+    ],
+)
+def test_inputs_reserved_names(lint_ctx_xpath, input_xml, name, tag):
+    tool_source = get_xml_tool_source(f'<tool id="id" name="name"><inputs>{input_xml}</inputs></tool>')
+    run_lint_module(lint_ctx_xpath, inputs, tool_source)
+    assert lint_ctx_xpath.warn_messages == [
+        f"Input [{name}] uses a reserved Cheetah template name and may not be accessible in the command template."
+    ]
+    message = next(m for m in lint_ctx_xpath.message_list if m.linter == "InputsNameReserved")
+    assert message.xpath == f"/tool/inputs/{tag}"
+    assert not lint_ctx_xpath.error_messages
+
+
+def test_inputs_reserved_names_match_cheetah():
+    # Python's class attributes vary across supported interpreter versions.
+    class TemplateAttributeBaseline:
+        pass
+
+    cheetah_reserved_names = {
+        "NonNumericInputError",
+        "_CHEETAH_cacheCompilationResults",
+        "_CHEETAH_cacheDirForModuleFiles",
+        "_CHEETAH_cacheModuleFilesForTracebacks",
+        "_CHEETAH_cacheRegionClass",
+        "_CHEETAH_cacheStore",
+        "_CHEETAH_cacheStoreClass",
+        "_CHEETAH_cacheStoreIdPrefix",
+        "_CHEETAH_compileCache",
+        "_CHEETAH_compileLock",
+        "_CHEETAH_compilerClass",
+        "_CHEETAH_compilerInstance",
+        "_CHEETAH_compilerSettings",
+        "_CHEETAH_defaultBaseclassForTemplates",
+        "_CHEETAH_defaultClassNameForTemplates",
+        "_CHEETAH_defaultMainMethodName",
+        "_CHEETAH_defaultMainMethodNameForTemplates",
+        "_CHEETAH_defaultModuleGlobalsForTemplates",
+        "_CHEETAH_defaultModuleNameForTemplates",
+        "_CHEETAH_defaultPreprocessorClass",
+        "_CHEETAH_generatedModuleCode",
+        "_CHEETAH_keepRefToGeneratedCode",
+        "_CHEETAH_preprocessors",
+        "_CHEETAH_requiredCheetahClassAttributes",
+        "_CHEETAH_requiredCheetahClassMethods",
+        "_CHEETAH_requiredCheetahMethods",
+        "_CHEETAH_useCompilationCache",
+        "_addCheetahPlumbingCodeToClass",
+        "_compile",
+        "_createCacheRegion",
+        "_getCacheStore",
+        "_getCacheStoreIdPrefix",
+        "_getCompilerClass",
+        "_getCompilerSettings",
+        "_getTemplateAPIClassForIncludeDirectiveCompilation",
+        "_handleCheetahInclude",
+        "_initCheetahInstance",
+        "_normalizePreprocessorArg",
+        "_normalizePreprocessorSettings",
+        "_preprocessSource",
+        "_updateSettingsWithPreprocessTokens",
+        "application",
+        "compile",
+        "errorCatcher",
+        "generatedClassCode",
+        "generatedModuleCode",
+        "getCacheRegion",
+        "getCacheRegions",
+        "getFileContents",
+        "getVar",
+        "hasVar",
+        "i18n",
+        "refreshCache",
+        "request",
+        "respond",
+        "runAsMainProgram",
+        "searchList",
+        "serverSidePath",
+        "session",
+        "shutdown",
+        "sleep",
+        "subclass",
+        "transaction",
+        "varExists",
+        "webInput",
+    }
+    assert Template.Reserved_SearchList == cheetah_reserved_names | set(dir(TemplateAttributeBaseline))
+
+
+def test_inputs_reserved_name_command_collision(lint_ctx):
+    tool_source = get_xml_tool_source(
+        '<tool id="id" name="name"><command>echo $sleep</command>'
+        '<inputs><param name="sleep" type="text"/></inputs></tool>'
+    )
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert len(lint_ctx.warn_messages) == 1
+    with pytest.raises(TypeError, match="transaction"):
+        fill_template("echo $sleep", {"sleep": "value"}, retry=0)
+
+
+def test_inputs_reserved_names_nested_and_safe(lint_ctx):
+    tool_source = get_xml_tool_source("""<tool id="id" name="name"><inputs>
+        <param name="Sleep" type="text"/>
+        <param name="input" argument="--sleep" type="text"/>
+        <section name="options" title="Options"><param name="sleep" type="text"/></section>
+        <repeat name="repeats" title="Values"><param argument="--getVar" type="text"/></repeat>
+        <conditional name="choice">
+            <param name="searchList" type="select"><option value="yes">Yes</option></param>
+            <when value="yes"><param name="respond" type="text"/></when>
+        </conditional>
+    </inputs></tool>""")
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+    assert (
+        fill_template(
+            "$Sleep $input $options.sleep $repeats[0].getVar $choice.searchList $choice.respond",
+            {
+                "Sleep": "1",
+                "input": "2",
+                "options": {"sleep": "3"},
+                "repeats": [{"getVar": "4"}],
+                "choice": {"searchList": "5", "respond": "6"},
+            },
+        )
+        == "1 2 3 4 5 6"
+    )
 
 
 def test_inputs_param_type(lint_ctx):
@@ -2052,6 +2661,149 @@ def test_outputs_format_source_qualified(lint_ctx):
     assert "format_source" not in lint_ctx.error_messages
 
 
+def test_outputs_format_source_collection_element(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_COLLECTION_ELEMENT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "format_source" not in lint_ctx.warn_messages
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_nested_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_NESTED_LEGACY)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' uses unqualified format_source='outer|input1'. Use the qualified name 'outer|cond|input1'."
+        in lint_ctx.warn_messages
+    )
+    assert (
+        "Output 'output2' references format_source='input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_repeat_in_conditional(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT_IN_CONDITIONAL)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='files_0|input1' which does not match any input parameter. Did you mean 'cond|files_0|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert "format_source" not in lint_ctx.warn_messages
+
+
+def test_outputs_structured_like_unqualified_profile_26(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_PROFILE_26)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='input1' which does not match any input parameter. Did you mean 'cond|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_structured_like_unqualified_deep(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED_DEEP)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'deep_output' references structured_like='input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Output 'alias_output' references structured_like='outer|input1' which does not match any input parameter. Did you mean 'outer|cond|input1'?"
+        in lint_ctx.error_messages
+    )
+    assert "structured_like" not in lint_ctx.warn_messages
+
+
+def test_outputs_structured_like_repeat(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_REPEAT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='queries_0|input1' inside a repeat, which cannot be resolved when mapping over collections."
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_structured_like_not_data(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_NOT_DATA)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'list_output' references structured_like='input1' which is not a dataset or collection input."
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_unqualified_element(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_UNQUALIFIED_ELEMENT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'forward' uses unqualified format_source='input1['forward']'. Use the qualified name 'cond|input1['forward']'."
+        in lint_ctx.warn_messages
+    )
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_element_of_dataset(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_ELEMENT_OF_DATASET)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' selects an element with format_source='input1['forward']' but 'input1' is not a collection input."
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_repeat(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output3' uses unqualified format_source='queries_0|input1'. Use the qualified name 'queries_0|cond|input1'."
+        in lint_ctx.warn_messages
+    )
+    assert len([m for m in lint_ctx.warn_messages if "format_source" in m.message]) == 1
+    assert "format_source" not in lint_ctx.error_messages
+
+
+def test_outputs_format_source_repeat_unprefixed(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_REPEAT_UNPREFIXED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='input1' which does not match any input parameter. Did you mean 'queries_0|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_qualified_missing(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_QUALIFIED_MISSING)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'output1' references format_source='cond|input1' which does not match any input parameter. Did you mean 'cond|files_0|input1'?"
+        in lint_ctx.error_messages
+    )
+
+
+def test_outputs_format_source_nested_data_missing(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_NESTED_DATA_MISSING)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'reverse' references format_source='input2' which does not match any input parameter."
+        in lint_ctx.error_messages
+    )
+    assert len([m for m in lint_ctx.error_messages if "format_source" in m.message]) == 1
+
+
+def test_outputs_format_source_discovered_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_DISCOVERED_LEGACY)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert (
+        "Output 'discovered' uses unqualified format_source='input1', which discovered elements cannot resolve. Use the qualified name 'cond|input1'."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Output 'static' uses unqualified format_source='input1'. Use the qualified name 'cond|input1'."
+        in lint_ctx.warn_messages
+    )
+    assert len([m for m in lint_ctx.error_messages if "format_source" in m.message]) == 1
+
+
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
     run_lint_module(lint_ctx, stdio, tool_source)
@@ -2182,6 +2934,15 @@ def test_tests_expect_failure_output(lint_ctx):
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 3
     assert len(lint_ctx.error_messages) == 2
+
+
+def test_tests_expect_failure_invalid_inputs(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_INVALID_INPUTS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    case_errors = [str(m) for m in lint_ctx.error_messages if m.linter == "TestsCaseValidation"]
+    assert len(case_errors) == 1
+    assert "Test 2: failed to validate test parameters" in case_errors[0]
+    assert "Invalid parameter name found taxidd" in case_errors[0]
 
 
 def test_tests_without_expectations(lint_ctx):
@@ -2546,6 +3307,34 @@ def test_linting_yml_tool(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_parser_failure_does_not_abort_or_repeat():
+    lint_ctx = LintContext("silent")
+
+    def fail_to_parse(tool_source, lint_ctx):
+        raise ParameterParseException("invalid parameter")
+
+    def complete_lint(tool_source, lint_ctx):
+        lint_ctx.valid("Linting continued.")
+
+    lint_ctx.lint("FirstParser", fail_to_parse, None)
+    lint_ctx.lint("SecondParser", fail_to_parse, None)
+    lint_ctx.lint("Complete", complete_lint, None)
+
+    assert lint_ctx.error_messages == ["Tool could not be parsed: invalid parameter"]
+    assert lint_ctx.error_messages[0].linter == "ToolParse"
+    assert lint_ctx.valid_messages == ["Linting continued."]
+
+
+def test_unexpected_linter_failure_is_not_swallowed():
+    lint_ctx = LintContext("silent")
+
+    def fail_unexpectedly(tool_source, lint_ctx):
+        raise RuntimeError("unexpected failure")
+
+    with pytest.raises(RuntimeError, match="unexpected failure"):
+        lint_ctx.lint("Broken", fail_unexpectedly, None)
+
+
 def test_linting_cwl_tool(lint_ctx):
     with tempfile.TemporaryDirectory() as tmp:
         tool_path = os.path.join(tmp, "tool.cwl")
@@ -2594,25 +3383,172 @@ def test_skip_by_module(lint_ctx):
 
 
 def test_list_linters():
-    linter_names = Linter.list_listers()
-    # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 148
-    assert "Linter" not in linter_names
-    # make sure that linters from all modules are available
-    for prefix in [
-        "Citations",
-        "Command",
-        "CWL",
-        "ToolProfile",
-        "Help",
-        "Inputs",
-        "Outputs",
-        "StdIO",
-        "Tests",
+    linter_names = Linter.list_linters()
+    # Linter names are public (tool authors skip linters by name) and must be unique.
+    duplicates = [name for name, count in Counter(linter_names).items() if count > 1]
+    assert not duplicates
+    # Add new linters here, sorted, one per line, so concurrent linter PRs rarely conflict.
+    assert set(linter_names) == {
+        "BioToolsValid",
+        "CWLDescriptionMissing",
+        "CWLDockerGood",
+        "CWLDockerMissing",
+        "CWLHelpTODO",
+        "CWLInValid",
+        "CWLValid",
+        "CWLVersionGood",
+        "CWLVersionMissing",
+        "CWLVersionUnknown",
+        "CitationsFound",
+        "CitationsInvalid",
+        "CitationsMissing",
+        "CitationsNoText",
+        "CitationsNoValid",
+        "CommandEmpty",
+        "CommandInfo",
+        "CommandInterpreterDeprecated",
+        "CommandMissing",
+        "CommandTODO",
+        "ConditionalOptionMissing",
+        "ConditionalOptionMissingBoolean",
+        "ConditionalParamIncompatibleAttributes",
+        "ConditionalParamType",
+        "ConditionalParamTypeBool",
+        "ConditionalWhenMissing",
+        "ConflictingTableSchema",
+        "ConsumerTableDefined",
+        "ContainerImageShape",
+        "DatatypesCustomConf",
+        "DuplicateColumnNames",
+        "EDAMTermsValid",
+        "EmptyLocFile",
+        "HelpEmpty",
+        "HelpInvalidRST",
+        "HelpMissing",
+        "HelpPresent",
+        "HelpTODO",
+        "HelpValidRST",
+        "InputsBoolDistinctValues",
+        "InputsBoolProblematic",
+        "InputsDataFormat",
+        "InputsDataOptionsAttrib",
+        "InputsDataOptionsFilterAttribFiltersType",
+        "InputsDataOptionsFiltersRef",
+        "InputsDataOptionsFiltersType",
+        "InputsDataOptionsMultiple",
+        "InputsDatasourceTags",
+        "InputsMissing",
+        "InputsMissingDataSource",
+        "InputsName",
+        "InputsNameDuplicate",
+        "InputsNameDuplicateOutput",
+        "InputsNameEmpty",
+        "InputsNameRedundantArgument",
+        "InputsNameReserved",
+        "InputsNameValid",
+        "InputsNum",
+        "InputsOptionsFiltersAllowedAttributes",
+        "InputsOptionsFiltersCheckReferences",
+        "InputsOptionsFiltersRequiredAttributes",
+        "InputsOptionsRegexFilterExpression",
+        "InputsOptionsRemoveValueFilterRequiredAttributes",
+        "InputsSelectDynamicOptions",
+        "InputsSelectMandatoryCheckboxes",
+        "InputsSelectMultipleRadio",
+        "InputsSelectOptionDuplicateText",
+        "InputsSelectOptionDuplicateValue",
+        "InputsSelectOptionValueMissing",
+        "InputsSelectOptionalRadio",
+        "InputsSelectOptionsDef",
+        "InputsSelectOptionsDefConditional",
+        "InputsSelectOptionsDefinesOptions",
+        "InputsSelectOptionsDeprecatedAttr",
+        "InputsSelectOptionsFromDatasetAndDatatable",
+        "InputsSelectOptionsMetaFileKey",
+        "InputsSelectOptionsMultiple",
+        "InputsSelectSingleCheckboxes",
+        "InputsTypeChildCombination",
+        "LocRowShape",
+        "ManagerTableConfigured",
+        "MissingLocFixture",
+        "OutputRefValid",
+        "OutputsCollectionType",
+        "OutputsFilterExpression",
+        "OutputsFormat",
+        "OutputsFormatInput",
+        "OutputsFormatSourceIncomp",
+        "OutputsFormatSourceReference",
+        "OutputsLabelDuplicatedFilter",
+        "OutputsLabelDuplicatedNoFilter",
+        "OutputsMissing",
+        "OutputsNameDuplicated",
+        "OutputsNameInvalidCheetah",
+        "OutputsNumber",
+        "OutputsOutput",
+        "OutputsStructuredLikeReference",
+        "RequiredFilesExist",
+        "RequirementNameMissing",
+        "RequirementVersionMissing",
+        "RequirementVersionWhitespace",
+        "ResourceRequirementExpression",
+        "StdIOAbsence",
+        "StdIOAbsenceLegacy",
+        "StdIORegex",
+        "TestsAssertionValidation",
+        "TestsAssertsHasNQuant",
+        "TestsAssertsHasSizeOrValueQuant",
+        "TestsAssertsHasSizeQuant",
+        "TestsAssertsMultiple",
+        "TestsCaseValidation",
+        "TestsExpectNumOutputs",
+        "TestsExpectNumOutputsFailing",
+        "TestsHasExpectations",
+        "TestsMissing",
+        "TestsMissingDatasource",
+        "TestsMultipleSelectEmptyValue",
+        "TestsNoValid",
+        "TestsOutputCheckDiscovered",
+        "TestsOutputCollectionCheckDiscovered",
+        "TestsOutputCollectionCheckDiscoveredNested",
+        "TestsOutputCollectionCorresponding",
+        "TestsOutputCompareAttrib",
+        "TestsOutputCorresponding",
+        "TestsOutputDefined",
+        "TestsOutputFailing",
+        "TestsOutputName",
+        "TestsParamInInputs",
+        "TestsValid",
+        "ToolIDMissing",
+        "ToolIDValid",
+        "ToolIDWhitespace",
+        "ToolNameMissing",
+        "ToolNameValid",
+        "ToolNameWhitespace",
+        "ToolProfileInvalid",
+        "ToolProfileLegacy",
+        "ToolProfileValid",
+        "ToolVersionMissing",
+        "ToolVersionPEP404",
+        "ToolVersionValid",
+        "ToolVersionWhitespace",
+        "ValidDatatypes",
+        "ValidatorAttribIncompatible",
+        "ValidatorDatasetMetadataEqualValue",
+        "ValidatorDatasetMetadataEqualValueOrJson",
+        "ValidatorExpression",
+        "ValidatorExpressionFuture",
+        "ValidatorHasNoText",
+        "ValidatorHasText",
+        "ValidatorMetadataCheckSkip",
+        "ValidatorMetadataName",
+        "ValidatorMinMax",
+        "ValidatorParamIncompatible",
+        "ValidatorTableName",
+        "VersionCommandMissing",
+        "VersionCommandMissingNoRequirements",
         "XMLOrder",
         "XSD",
-    ]:
-        assert len([x for x in linter_names if x.startswith(prefix)])
+    }
 
 
 def test_linting_functional_tool_multi_select(lint_ctx):
@@ -2753,3 +3689,26 @@ def test_required_files_glob_no_match(lint_ctx):
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert "Required files pattern [*.py] (type glob) does not match any files" in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 1
+
+
+# tests tool xml for xsd linter
+REQUIREMENTS_UNORDERED_CHILDREN = """
+<tool id="id" name="name" version="1.0" profile="24.0">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+        <resource type="cores_min">4</resource>
+        <requirement type="package" version="1.19">samtools</requirement>
+    </requirements>
+    <command>echo</command>
+    <inputs/>
+    <outputs/>
+</tool>
+"""
+
+
+def test_xsd_requirements_children_in_any_order(lint_ctx):
+    """requirements children parse per-tag, so the schema must not impose an order."""
+    tool_source = get_xml_tool_source(REQUIREMENTS_UNORDERED_CHILDREN)
+    run_lint_module(lint_ctx, xsd, tool_source)
+    assert not lint_ctx.error_messages

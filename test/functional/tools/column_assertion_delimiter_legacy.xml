@@ -1,0 +1,21 @@
+<tool id="column_assertion_delimiter_legacy" name="column_assertion_delimiter_legacy" version="0.1.0" profile="26.1">
+    <description>column assertions keep the tab default before profile 26.2</description>
+    <command><![CDATA[
+printf 'col1,col2,col3\n1,2,3\n' > '$csv_output'
+    ]]></command>
+    <inputs />
+    <outputs>
+        <data name="csv_output" format="csv" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- pre-26.2 profiles ignore the comma delimiter and split the line on tabs -->
+            <output name="csv_output">
+                <assert_contents>
+                    <has_n_columns n="1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help />
+</tool>

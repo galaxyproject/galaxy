@@ -45,6 +45,7 @@ from galaxy.managers import (
     taggable,
     tools,
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.model import batch_fetch_job_state_summaries
 from galaxy.schema import ValueFilterQueryParams
@@ -242,7 +243,9 @@ class HistoryContentsManager(base.SortableManager):
             .filter_by(history_id=history_id)
         )
 
-    def copy_contents(self, trans, history_id, payload: CopyDatasetsPayload) -> CopyDatasetsResponse:
+    def copy_contents(
+        self, trans: ProvidesHistoryContext, history_id, payload: CopyDatasetsPayload
+    ) -> CopyDatasetsResponse:
         user = trans.get_user()
         if not user:
             raise glx_exceptions.MessageException("Please login to copy datasets between histories.")

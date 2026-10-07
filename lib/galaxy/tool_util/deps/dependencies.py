@@ -1,5 +1,6 @@
 from typing import (
     Any,
+    Literal,
     Union,
 )
 
@@ -64,7 +65,13 @@ class ToolInfo:
         profile: float = -1,
     ):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
+            env_pass_through = [
+                "GALAXY_SLOTS",
+                "GALAXY_MEMORY_MB",
+                "GALAXY_MEMORY_MB_PER_SLOT",
+                "GALAXY_MEMORY_GB",
+                "GALAXY_MEMORY_GB_PER_SLOT",
+            ]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -78,6 +85,10 @@ class ToolInfo:
         self.tool_version = tool_version
         self.profile = profile
 
+    @property
+    def disable_galaxy_root_mount(self):
+        return self.tool_id == "__SET_METADATA__"
+
 
 class JobInfo:
     def __init__(
@@ -87,7 +98,9 @@ class JobInfo:
         job_directory,
         tmp_directory,
         home_directory,
-        job_directory_type,
+        job_directory_type: Literal["galaxy", "pulsar"],
+        output_paths: set[str],
+        job_type: Literal["tool", "prolog", "epilog"] = "tool",
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -96,7 +109,9 @@ class JobInfo:
         self.job_directory = job_directory
         self.tmp_directory = tmp_directory
         self.home_directory = home_directory
-        self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
+        self.job_directory_type = job_directory_type
+        self.job_type = job_type
+        self.output_paths = output_paths
 
 
 class DependenciesDescription:

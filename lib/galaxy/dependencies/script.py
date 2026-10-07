@@ -19,7 +19,8 @@ HELP_PINNED = (
 )
 HELP_INSTALL = "Perform install, if unset then only output what would have been performed"
 HELP_FREEZE = "Instead of installing, output requirent format to stdout"
-HELP_CONFIG_FILE = "Path to Galaxy config file (galaxy.yml)"
+HELP_CONFIG_FILE = "Path to the app's config file (galaxy.yml, tool_shed.yml)"
+HELP_APP = "App whose configuration determines the dependencies to install"
 
 # Warnings raised by dependency imports
 warnings.filterwarnings("ignore")
@@ -32,12 +33,18 @@ def main(argv=None):
     arg_parser.add_argument("--install", action="store_true", help=HELP_INSTALL)
     arg_parser.add_argument("--freeze", action="store_true", help=HELP_FREEZE)
     arg_parser.add_argument("--config_file", "-c", help=HELP_CONFIG_FILE)
+    arg_parser.add_argument(
+        "--app",
+        choices=sorted(galaxy.dependencies.APPS),
+        default=galaxy.dependencies.GALAXY_APP,
+        help=HELP_APP,
+    )
     args = arg_parser.parse_args(argv)
     config_file = args.config_file
     if config_file and not os.path.exists(config_file):
         print(f"{arg_parser.prog}: {config_file}: {os.strerror(errno.ENOENT)}", file=sys.stderr)
         sys.exit(1)
-    dependencies = galaxy.dependencies.optional(config_file)
+    dependencies = galaxy.dependencies.optional(config_file, app=args.app)
     if args.freeze:
         _handle_freeze(args, dependencies)
     elif dependencies or args.pinned:

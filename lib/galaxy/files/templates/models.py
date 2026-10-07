@@ -21,6 +21,7 @@ from galaxy.util.config_templates import (
     OAuth2Configuration,
     populate_default_variables,
     SecretsDict,
+    split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
     TemplateExpansion,
@@ -49,10 +50,28 @@ FileSourceTemplateType = Literal[
     "dataverse",
     "cbioportal",
     "huggingface",
+    "github",
     "iiif",
+    "ipfs",
     "mavedb",
     "omero",
     "ssh",
+    "openbis",
+    "ckan",
+    "commoncrawl",
+    "gitlab",
+    "arc",
+]
+
+FileSourceTemplateAlertVariant = Literal[
+    "primary",
+    "secondary",
+    "success",
+    "danger",
+    "warning",
+    "info",
+    "light",
+    "dark",
 ]
 
 
@@ -147,7 +166,6 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
-    request_checksum_calculation: str | TemplateExpansion | None = None
 
 
 class S3FSFileSourceConfiguration(StrictModel):
@@ -158,10 +176,16 @@ class S3FSFileSourceConfiguration(StrictModel):
     key: str | None = None
     bucket: str | None = None
     writable: bool = False
-    request_checksum_calculation: str | None = None
 
 
-class FtpFileSourceTemplateConfiguration(StrictModel):
+class FtpConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def split_host_path(cls, data: Any) -> Any:
+        return split_ftp_host_path(data)
+
+
+class FtpFileSourceTemplateConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: str | TemplateExpansion
     port: int | TemplateExpansion = 21
@@ -169,11 +193,12 @@ class FtpFileSourceTemplateConfiguration(StrictModel):
     passwd: str | TemplateExpansion | None = None
     writable: bool | TemplateExpansion = False
     tls: bool | TemplateExpansion = False
+    root: str | TemplateExpansion | None = None
     template_start: str | None = None
     template_end: str | None = None
 
 
-class FtpFileSourceConfiguration(StrictModel):
+class FtpFileSourceConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: str
     port: int = 21
@@ -181,6 +206,7 @@ class FtpFileSourceConfiguration(StrictModel):
     passwd: str | None = None
     writable: bool = False
     tls: bool = False
+    root: str | None = None
 
 
 class SshFileSourceTemplateConfiguration(StrictModel):
@@ -444,6 +470,29 @@ class HuggingFaceFileSourceConfiguration(StrictModel):
     endpoint: str | None = None
 
 
+class GithubFileSourceTemplateConfiguration(OAuth2TemplateConfiguration, StrictModel):
+    type: Literal["github"]
+    org: str | TemplateExpansion
+    repo: str | TemplateExpansion
+    branch: str | TemplateExpansion | None = None
+    commit_message: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    oauth2_client_id: str | TemplateExpansion
+    oauth2_client_secret: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GithubFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel):
+    type: Literal["github"]
+    org: str
+    repo: str
+    branch: str | None = None
+    commit_message: str | None = None
+    writable: bool = False
+    oauth2_access_token: str
+
+
 class IIIFFileSourceTemplateConfiguration(StrictModel):
     type: Literal["iiif"]
     manifest_url: str | TemplateExpansion
@@ -454,6 +503,20 @@ class IIIFFileSourceTemplateConfiguration(StrictModel):
 class IIIFFileSourceConfiguration(StrictModel):
     type: Literal["iiif"]
     manifest_url: str
+
+
+class IPFSFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str | TemplateExpansion
+    gateway_url: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class IPFSFileSourceConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str
+    gateway_url: str
 
 
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
@@ -492,6 +555,84 @@ class OmeroFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class OpenBisFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion
+    verify_certificates: bool | TemplateExpansion = True
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class CKANFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ckan"]
+    url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = True
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class OpenBisFileSourceConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str
+    token: str
+    verify_certificates: bool = True
+    writable: bool = False
+
+
+class CKANFileSourceConfiguration(StrictModel):
+    type: Literal["ckan"]
+    url: str
+    token: str | None = None
+    writable: bool = True
+
+
+class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GitLabFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GitLabFileSourceConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str
+    token: str | None = None
+    writable: bool = False
+
+
+class ARCFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class CommonCrawlFileSourceConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool = False
+
+
+class ARCFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: str | None = None
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -511,10 +652,17 @@ FileSourceTemplateConfiguration = Annotated[
     | DataverseFileSourceTemplateConfiguration
     | CBioPortalFileSourceTemplateConfiguration
     | HuggingFaceFileSourceTemplateConfiguration
+    | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
+    | IPFSFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
-    | SshFileSourceTemplateConfiguration,
+    | SshFileSourceTemplateConfiguration
+    | OpenBisFileSourceTemplateConfiguration
+    | CKANFileSourceTemplateConfiguration
+    | CommonCrawlFileSourceTemplateConfiguration
+    | GitLabFileSourceTemplateConfiguration
+    | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -537,10 +685,17 @@ FileSourceConfiguration = Annotated[
     | DataverseFileSourceConfiguration
     | CBioPortalFileSourceConfiguration
     | HuggingFaceFileSourceConfiguration
+    | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
+    | IPFSFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
-    | SshFileSourceConfiguration,
+    | SshFileSourceConfiguration
+    | OpenBisFileSourceConfiguration
+    | CKANFileSourceConfiguration
+    | CommonCrawlFileSourceConfiguration
+    | GitLabFileSourceConfiguration
+    | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -564,6 +719,7 @@ class FileSourceTemplateBase(StrictModel):
     # template by hiding but keep it in the catalog for backward
     # compatibility for users with existing stores of that template.
     hidden: bool = False
+    requires_oauth2_authorization: bool = False
     variables: list[TemplateVariable] | None = None
     secrets: list[TemplateSecret] | None = None
 
@@ -622,10 +778,17 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "dataverse": DataverseFileSourceConfiguration,
     "cbioportal": CBioPortalFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
+    "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
+    "ipfs": IPFSFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
+    "openbis": OpenBisFileSourceConfiguration,
+    "ckan": CKANFileSourceConfiguration,
+    "commoncrawl": CommonCrawlFileSourceConfiguration,
+    "gitlab": GitLabFileSourceConfiguration,
+    "arc": ARCFileSourceConfiguration,
 }
 
 
@@ -646,6 +809,12 @@ OAUTH2_CONFIGURED_SOURCES: ConfiguredOAuth2Sources = {
         token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
         authorize_params={},
         scope="offline_access Files.ReadWrite.AppFolder",
+    ),
+    "github": OAuth2Configuration(
+        authorize_url="https://github.com/login/oauth/authorize",
+        token_url="https://github.com/login/oauth/access_token",
+        authorize_params={},
+        # No scope: a GitHub App's permissions (Contents: read/write) are set on the App itself.
     ),
 }
 

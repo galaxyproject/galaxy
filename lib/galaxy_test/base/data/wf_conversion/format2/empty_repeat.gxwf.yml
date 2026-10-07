@@ -1,0 +1,16 @@
+class: GalaxyWorkflow
+label: Test empty repeat roundtrip artifact
+steps:
+  empty_repeat:
+    tool_id: simple_constructs
+    state:
+      p1:
+        p1use: false
+        p1val: p1notused
+      booltest: false
+      inttest: 42
+      floattest: 3.14
+      radio_select: a_radio
+      check_select:
+        - a_check
+      drop_select: a_drop

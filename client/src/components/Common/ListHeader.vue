@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownGroup, BDropdownHeader, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 type SortBy = string;
 
@@ -21,6 +24,12 @@ interface SortOption {
     label: string;
 }
 
+/** The order the list's server applies when asked for none. It has no direction to toggle. */
+interface DefaultSortOption {
+    label: string;
+    title: string;
+}
+
 interface Props {
     listId: string;
     allSelected?: boolean;
@@ -32,6 +41,8 @@ interface Props {
     columnOptions?: ColumnOption[];
     visibleColumns?: string[];
     sortOptions?: SortOption[];
+    /** Offer the server's own ordering as a sort button, selected initially. */
+    defaultSortOption?: DefaultSortOption;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +61,7 @@ const emit = defineEmits<{
     (e: "select-all"): void;
     (e: "toggle-column", key: string): void;
     (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
+    (e: "sort-default"): void;
     (e: "reset-columns"): void;
 }>();
 
@@ -66,8 +78,13 @@ const defaultSortOptions: SortOption[] = [
 // Use provided sortOptions or fall back to defaults
 const effectiveSortOptions = computed(() => (props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions));
 
-const sortBy = ref<SortBy>(
-    props.sortOptions.length > 0 ? (effectiveSortOptions.value[0]?.value ?? "update_time") : "update_time",
+// Null only while defaultSortOption is selected.
+const sortBy = ref<SortBy | null>(
+    props.defaultSortOption
+        ? null
+        : props.sortOptions.length > 0
+          ? (effectiveSortOptions.value[0]?.value ?? "update_time")
+          : "update_time",
 );
 const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
@@ -83,6 +100,15 @@ function onSort(newSortBy: SortBy) {
         sortDesc.value = true; // Reset to descending when changing sort field
     }
     emit("sort-changed", sortBy.value, sortDesc.value);
+}
+
+function onSortDefault() {
+    if (sortBy.value === null) {
+        return;
+    }
+    sortBy.value = null;
+    sortDesc.value = true;
+    emit("sort-default");
 }
 
 function onResetColumns() {
@@ -129,6 +155,18 @@ defineExpose({
                 Sort by:
                 <GButtonGroup>
                     <GButton
+                        v-if="defaultSortOption"
+                        id="sortby-default"
+                        tooltip
+                        size="small"
+                        :title="defaultSortOption.title"
+                        :pressed="sortBy === null"
+                        color="blue"
+                        outline
+                        @click="onSortDefault">
+                        {{ defaultSortOption.label }}
+                    </GButton>
+                    <GButton
                         v-for="option in effectiveSortOptions"
                         :id="`sortby-${option.value}`"
                         :key="option.value"
@@ -145,9 +183,9 @@ defineExpose({
                 </GButtonGroup>
             </div>
 
-            <BDropdown
+            <GDropdown
                 v-if="columnOptions.length > 0"
-                text="Columns"
+                aria-label="Columns"
                 size="sm"
                 variant="outline-primary"
                 right
@@ -156,8 +194,8 @@ defineExpose({
                     <FontAwesomeIcon :icon="faCog" fixed-width />
                 </template>
 
-                <BDropdownGroup>
-                    <BDropdownHeader>
+                <GDropdownGroup aria-label="Show/Hide Columns">
+                    <template v-slot:header>
                         Show/Hide Columns
                         <GButton
                             v-if="isAColumnNotVisible"
@@ -167,9 +205,9 @@ defineExpose({
                             @click="onResetColumns">
                             <FontAwesomeIcon :icon="faUndo" fixed-width />
                         </GButton>
-                    </BDropdownHeader>
+                    </template>
 
-                    <BDropdownItem
+                    <GDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
                         :disabled="column.key === 'name'"
@@ -180,9 +218,9 @@ defineExpose({
                             @click.prevent>
                             {{ column.label }}
                         </BFormCheckbox>
-                    </BDropdownItem>
-                </BDropdownGroup>
-            </BDropdown>
+                    </GDropdownItem>
+                </GDropdownGroup>
+            </GDropdown>
 
             <slot name="extra-filter" />
         </div>

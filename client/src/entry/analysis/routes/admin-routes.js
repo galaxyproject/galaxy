@@ -21,9 +21,12 @@ import JobsList from "@/components/admin/JobsList.vue";
 import BroadcastForm from "@/components/admin/Notifications/BroadcastForm.vue";
 import NotificationForm from "@/components/admin/Notifications/NotificationForm.vue";
 import NotificationsManagement from "@/components/admin/Notifications/NotificationsManagement.vue";
+import QuotaForm from "@/components/admin/QuotaForm.vue";
 import ResetMetadata from "@/components/admin/ResetMetadata.vue";
+import ResetUserPasswordForm from "@/components/admin/ResetUserPasswordForm.vue";
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
+import UserRolesGroupsForm from "@/components/admin/UserRolesGroupsForm.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridList from "@/components/Grid/GridList.vue";
@@ -179,45 +182,37 @@ export default [
             // forms
             {
                 path: "form/reset_user_password",
-                component: FormGeneric,
+                component: ResetUserPasswordForm,
                 props: (route) => ({
-                    title: "Reset passwords",
-                    url: `/admin/reset_user_password?id=${route.query.id}`,
-                    icon: "fa-user",
-                    submitTitle: "Save new password",
-                    redirect: "/admin/users",
+                    userId: route.query.id,
                 }),
             },
             {
                 path: "form/manage_roles_and_groups_for_user",
-                component: FormGeneric,
+                component: UserRolesGroupsForm,
                 props: (route) => ({
-                    url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
-                    icon: "fa-users",
-                    redirect: "/admin/users",
+                    userId: route.query.id,
                 }),
             },
             {
-                path: "form/manage_users_and_groups_for_role",
-                component: FormGeneric,
+                path: "form/edit_role",
+                component: RoleForm,
                 props: (route) => ({
-                    url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/roles",
+                    roleId: route.query.id,
                 }),
             },
             {
-                path: "form/manage_users_and_roles_for_group",
+                path: "form/edit_group",
                 component: GroupForm,
                 props: (route) => ({
                     groupId: route.query.id,
                 }),
             },
             {
-                path: "form/manage_users_and_groups_for_quota",
-                component: FormGeneric,
+                path: "form/edit_quota",
+                component: QuotaForm,
                 props: (route) => ({
-                    url: `/admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
+                    quotaId: route.query.id,
                 }),
             },
             {
@@ -230,51 +225,7 @@ export default [
             },
             {
                 path: "form/create_quota",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_quota",
-                    redirect: "/admin/quotas",
-                },
-            },
-            {
-                path: "form/rename_role",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_role?id=${route.query.id}`,
-                    redirect: "/admin/roles",
-                }),
-            },
-            {
-                path: "form/rename_group",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_group?id=${route.query.id}`,
-                    redirect: "/admin/groups",
-                }),
-            },
-            {
-                path: "form/rename_quota",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_quota?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
-            },
-            {
-                path: "form/edit_quota",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/edit_quota?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
-            },
-            {
-                path: "form/set_quota_default",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/set_quota_default?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
+                component: QuotaForm,
             },
             {
                 path: "form/create_form",

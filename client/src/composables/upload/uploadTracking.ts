@@ -1,7 +1,9 @@
+import type { FetchDataResponse } from "@/api/tools";
 import type { UploadStateTrackingApi } from "@/components/Panels/Upload/uploadState";
 
 import type { UploadCollectionConfig } from "./collectionTypes";
-import type { LibraryDatasetUploadItem, NewUploadItem } from "./uploadItemTypes";
+import type { LibraryDatasetUploadItem, NewUploadItem, UploadedDataset } from "./uploadItemTypes";
+import { datasetCollectionsFromFetchResponse } from "./uploadResponse";
 
 /**
  * Represents an upload item being tracked through its lifecycle.
@@ -90,13 +92,84 @@ export function updateTrackedProgress(uploadState: UploadStateTrackingApi, ids: 
 }
 
 /**
- * Marks multiple tracked uploads as completed.
- * Sets progress to 100% and status to "completed".
+ * Maps upload item IDs to produced dataset IDs in response order. Equal
+ * counts map 1:1; a single upload owns all datasets (composite); any other
+ * shape maps every upload to the full group so the group resolves together.
  */
-export function markTrackedCompleted(uploadState: UploadStateTrackingApi, ids: string[]): void {
+export function buildDatasetIdMapping(uploadIds: string[], hdaDatasets: UploadedDataset[]): Map<string, string[]> {
+    const mapping = new Map<string, string[]>();
+
+    if (hdaDatasets.length === 0 || uploadIds.length === 0) {
+        return mapping;
+    }
+
+    if (uploadIds.length === hdaDatasets.length) {
+        uploadIds.forEach((uploadId, i) => {
+            const datasetId = hdaDatasets[i]?.id;
+            if (datasetId) {
+                mapping.set(uploadId, [datasetId]);
+            }
+        });
+        return mapping;
+    }
+
+    const allDatasetIds = hdaDatasets.map((ds) => ds.id);
+    uploadIds.forEach((uploadId) => {
+        mapping.set(uploadId, [...allDatasetIds]);
+    });
+    return mapping;
+}
+
+/** Marks items as processing under batch HDCA monitoring (no per-item datasets). */
+export function markProcessingDelegated(uploadState: UploadStateTrackingApi, ids: string[]): void {
+    ids.forEach((id) => uploadState.markProcessing(id, []));
+}
+
+/**
+ * Resolves direct HDCA creation atomically: items and batch transition
+ * together, so neither is left processing while the other is terminal.
+ */
+export function resolveDirectCollectionResult(
+    uploadState: UploadStateTrackingApi,
+    batchId: string,
+    ids: string[],
+    response: FetchDataResponse,
+): void {
+    const createdCollection = datasetCollectionsFromFetchResponse(response)[0];
+
+    if (!createdCollection) {
+        const message = "Collection creation succeeded, but no collection was returned.";
+        ids.forEach((id) => uploadState.setError(id, message));
+        uploadState.setBatchError(batchId, message);
+        return;
+    }
+
+    markProcessingDelegated(uploadState, ids);
+    uploadState.setBatchCollectionId(batchId, createdCollection.id);
+    uploadState.updateBatchStatus(batchId, "processing");
+}
+
+/**
+ * Marks tracked uploads as processing with their dataset IDs for monitoring.
+ * Uploads without produced datasets complete immediately.
+ *
+ * @param ids - Upload item IDs to mark as processing
+ * @param datasetIdsByUploadId - Map of upload ID to produced dataset ID(s)
+ */
+export function markTrackedProcessing(
+    uploadState: UploadStateTrackingApi,
+    ids: string[],
+    datasetIdsByUploadId: Map<string, string[]>,
+): void {
     ids.forEach((id) => {
-        uploadState.updateProgress(id, 100);
-        uploadState.setStatus(id, "completed");
+        const datasetIds = datasetIdsByUploadId.get(id);
+        if (datasetIds && datasetIds.length > 0) {
+            uploadState.markProcessing(id, datasetIds);
+        } else {
+            // No dataset produced; complete it instead of leaving it pending.
+            uploadState.updateProgress(id, 100);
+            uploadState.setStatus(id, "completed");
+        }
     });
 }
 

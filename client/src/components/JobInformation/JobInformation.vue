@@ -4,10 +4,9 @@ import { computed, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
-import { getJobDuration } from "./utilities";
 
 import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
@@ -33,6 +32,7 @@ const props = withDefaults(
 
 const job = ref<ShowFullJobResponse | null>(null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
+const invocationLookupError = ref<string | null>(null);
 
 const stdout_length = ref(50000);
 const stdout_text = ref("");
@@ -50,7 +50,6 @@ function jobStateIsRunning(jobState: string) {
     return jobState == "running";
 }
 
-const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
 const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
@@ -134,7 +133,14 @@ watch(
             newId &&
             (fetchedInvocationId.value === undefined || (fetchedInvocationId.value === null && newId !== oldId))
         ) {
-            const invocation = await fetchInvocationForJob(newId);
+            let invocation;
+            try {
+                invocation = await fetchInvocationForJob(newId);
+                invocationLookupError.value = null;
+            } catch (e) {
+                invocationLookupError.value = errorMessageAsString(e);
+                return;
+            }
             if (invocation) {
                 fetchedInvocationId.value = invocation.id;
             } else {
@@ -199,12 +205,6 @@ watch(
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
-                    </td>
-                </tr>
-                <tr v-if="job && props.includeTimes && jobIsTerminal">
-                    <td>Time To Finish</td>
-                    <td id="runtime">
-                        {{ getJobDuration(job) }}
                     </td>
                 </tr>
                 <CodeRow
@@ -277,6 +277,12 @@ watch(
                     <td>Workflow Invocation</td>
                     <td>
                         <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
+                    </td>
+                </tr>
+                <tr v-else-if="invocationLookupError">
+                    <td>Workflow Invocation</td>
+                    <td id="invocation-lookup-error" class="text-danger">
+                        Could not determine the workflow invocation: {{ invocationLookupError }}
                     </td>
                 </tr>
             </tbody>

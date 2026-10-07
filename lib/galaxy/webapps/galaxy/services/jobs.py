@@ -19,6 +19,7 @@ from galaxy.celery.tasks import queue_jobs
 from galaxy.managers import hdas
 from galaxy.managers.base import security_check
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
@@ -214,13 +215,13 @@ class JobsService(ServiceBase):
             # Raise an exception if neither job_id nor dataset_id is provided
             raise ValueError("Either job_id or dataset_id must be provided.")
 
-    def dictify_associations(self, trans, *association_lists) -> list[JobAssociation]:
+    def dictify_associations(self, trans: ProvidesAppContext, *association_lists) -> list[JobAssociation]:
         rval: list[JobAssociation] = []
         for association_list in association_lists:
             rval.extend(self.__dictify_association(trans, a) for a in association_list)
         return rval
 
-    def __dictify_association(self, trans, job_dataset_association) -> JobAssociation:
+    def __dictify_association(self, trans: ProvidesAppContext, job_dataset_association) -> JobAssociation:
         dataset_dict = None
         if dataset := job_dataset_association.dataset:
             if isinstance(dataset, model.HistoryDatasetAssociation):
@@ -229,7 +230,9 @@ class JobsService(ServiceBase):
                 dataset_dict = {"src": "ldda", "id": dataset.id}
         return JobAssociation(name=job_dataset_association.name, dataset=dataset_dict)
 
-    def dictify_output_collection_associations(self, trans, job: model.Job) -> list[JobOutputCollectionAssociation]:
+    def dictify_output_collection_associations(
+        self, trans: ProvidesAppContext, job: model.Job
+    ) -> list[JobOutputCollectionAssociation]:
         output_associations: list[JobOutputCollectionAssociation] = []
         for job_output_collection_association in job.output_dataset_collection_instances:
             ref_dict = {"src": "hdca", "id": job_output_collection_association.dataset_collection_id}

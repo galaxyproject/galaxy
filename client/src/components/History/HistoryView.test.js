@@ -3,9 +3,9 @@ import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helper
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
+import { HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
@@ -14,10 +14,9 @@ import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/se
 import { useUserStore } from "@/stores/userStore";
 
 import ContentItem from "./Content/ContentItem.vue";
+import OperationErrorDialog from "./CurrentHistory/HistoryOperations/OperationErrorDialog.vue";
 import HistoryView from "./HistoryView.vue";
-
-const localVue = getLocalVue();
-localVue.use(VueRouter);
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 
 vi.mock("@/stores/services/history.services", () => ({
     getHistoryByIdFromServer: vi.fn(),
@@ -25,6 +24,8 @@ vi.mock("@/stores/services/history.services", () => ({
 }));
 
 setupSelectableMock();
+
+let localVue;
 
 const { server, http } = useServerMock();
 
@@ -71,7 +72,6 @@ function create_datasets(historyId, count) {
 }
 
 async function createWrapper(localVue, currentUserId, history) {
-    const pinia = createPinia();
     getHistoryByIdFromServer.mockResolvedValue({ data: history, error: undefined });
     setCurrentHistoryOnServer.mockResolvedValue(history);
     const history_contents_result = create_datasets(history.id, history.count);
@@ -83,19 +83,28 @@ async function createWrapper(localVue, currentUserId, history) {
         }),
     );
 
-    const router = new VueRouter();
-    router.push(`/history/${history.id}`);
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [{ path: "/history/:id", component: { template: "<div />" } }],
+    });
+    await router.push(`/history/${history.id}`);
+    await router.isReady();
 
     const wrapper = mount(HistoryView, {
-        propsData: { id: history.id },
-        localVue,
-        provide: {
-            store: {
-                dispatch: vi.fn,
-                getters: {},
+        props: { id: history.id },
+        global: {
+            ...localVue,
+            provide: {
+                store: {
+                    dispatch: vi.fn,
+                    getters: {},
+                },
             },
         },
-        pinia,
+        // Passed at the top level (rather than spliced into `global.plugins`
+        // by hand) so the VTU adapter replaces getLocalVue()'s default router
+        // with this one instead of installing both and crashing with
+        // "Cannot redefine property: $route".
         router,
     });
     const userStore = useUserStore();
@@ -106,7 +115,59 @@ async function createWrapper(localVue, currentUserId, history) {
 
 describe("History center panel View", () => {
     beforeEach(() => {
+        localVue = getLocalVue();
         suppressLucideVue2Deprecation();
+    });
+
+    it.each([false, true])("restores an item after a rate-limited deletion (recursive: %s)", async (recursive) => {
+        const history = create_history("history_1", "user_1");
+        const wrapper = await createWrapper(localVue, "user_1", history);
+        const historyStore = useHistoryStore();
+        const updateStats = vi.spyOn(historyStore, "updateContentStats").mockResolvedValue();
+        const item = wrapper.findComponent(ContentItem).props("item");
+        const errorBody = "<html><head><title>429 Too Many Requests</title></head></html>";
+        let finishDelete;
+        const deleteResponse = new Promise((resolve) => (finishDelete = resolve));
+        const deleteRequest = vi.fn(async ({ request, params }) => {
+            expect(params.id).toBe(item.id);
+            expect(new URL(request.url).searchParams.get("recursive")).toBe(String(recursive));
+            await deleteResponse;
+            return new HttpResponse(errorBody, { status: 429, headers: { "Content-Type": "text/html" } });
+        });
+        server.use(http.delete("/api/histories/{history_id}/contents/{type}s/{id}", deleteRequest));
+
+        wrapper.findComponent(ContentItem).vm.$emit("delete", item, recursive);
+        await flushPromises();
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(true);
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
+
+        finishDelete();
+        await flushPromises();
+
+        expect(deleteRequest).toHaveBeenCalledTimes(1);
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+        expect(updateStats).not.toHaveBeenCalled();
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(10);
+        expect(item.deleted).toBe(false);
+        const dialog = wrapper.findComponent(OperationErrorDialog);
+        expect(dialog.props("operationError").errorMessage.message).toBe(errorBody);
+        dialog.vm.$emit("hide");
+        await flushPromises();
+        expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
+
+        server.use(
+            http.delete(
+                "/api/histories/{history_id}/contents/{type}s/{id}",
+                () => new HttpResponse(null, { status: 204 }),
+            ),
+        );
+        wrapper.findComponent(ContentItem).vm.$emit("delete", item, recursive);
+        await flushPromises();
+        expect(updateStats).toHaveBeenCalledTimes(1);
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+        expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
+        expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
+        wrapper.unmount();
     });
 
     function expectCorrectLayout(wrapper) {

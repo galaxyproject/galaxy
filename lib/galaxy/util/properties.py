@@ -24,6 +24,7 @@ from typing import (
 import yaml
 
 from galaxy.exceptions import InvalidFileFormatError
+from galaxy.util import is_galaxy_root
 from galaxy.util.path import (
     extensions,
     has_ext,
@@ -195,8 +196,7 @@ class NicerConfigParser(ConfigParser):
 
 
 def _running_from_source():
-    paths = ["run.sh", "lib/galaxy", "scripts/common_startup.sh"]
-    return all(map(os.path.exists, paths))
+    return is_galaxy_root(os.getcwd())
 
 
 running_from_source = _running_from_source()

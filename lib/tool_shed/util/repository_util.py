@@ -20,6 +20,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.exceptions import ObjectNotFound
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
@@ -123,10 +124,14 @@ def create_repo_info_dict(
     repository_dependencies will be None.
     """
     repo_info_dict = {}
-    repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
+    if repository is None:
+        repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
+        if repository_metadata is None:
+            repository_metadata = repository_metadata_by_changeset_revision(
+                app.model, repository.id, changeset_revision
+            )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -175,6 +180,7 @@ def create_repository_admin_role(app: "ToolShedApp", repository: model.Repositor
     name.  This will ensure that the role name is unique.
     """
     sa_session = app.model.session
+    assert repository.user is not None
     name = get_repository_admin_role_name(str(repository.name), str(repository.user.username))
     description = "A user or group member with this role can administer this repository."
     role = model.Role(name=name, description=description, type=model.Role.types.SYSTEM)
@@ -221,6 +227,7 @@ def create_repository(
     # Create an admin role for the repository.
     create_repository_admin_role(app, repository)
     # Create a temporary repo_path on disk.
+    assert repository.user is not None
     repository_path = tempfile.mkdtemp(
         dir=app.config.file_path,
         prefix=f"{repository.user.username}-{repository.name}",
@@ -252,23 +259,40 @@ def generate_sharable_link_for_repository_in_tool_shed(
         base_url = web.url_for("/", qualified=True).rstrip("/")
     else:
         base_url = base_url.rstrip("/")
+    assert repository.user is not None
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
     return sharable_url
 
 
-def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
+def get_repository_in_tool_shed(app: "ToolShedApp", id: str, eagerload_columns: list | None = None) -> model.Repository:
     """Get a repository on the tool shed side from the database via id."""
     options = [joinedload(col) for col in eagerload_columns] if eagerload_columns else []
-    return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
+    repository = app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
+    if repository is None:
+        raise ObjectNotFound(f"Repository not found for id {id}")
+    return repository
 
 
-def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+def get_repo_info_dict(
+    trans: "ProvidesRepositoriesContext",
+    repository_id,
+    changeset_revision,
+    repository=None,
+    repository_metadata=None,
+):
+    """Build the repo info dict for a repository revision.
+
+    Callers that have already loaded the repository and the metadata record for
+    changeset_revision can pass them in to avoid re-querying for them.
+    """
     app = trans.app
-    repository = get_repository_in_tool_shed(app, repository_id)
+    if repository is None:
+        repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = generate_clone_url_for(trans, repository)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
+    if repository_metadata is None:
+        repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
@@ -307,8 +331,17 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    # repository_metadata may describe the next installable revision rather than the requested
+    # one, in which case it says nothing about changeset_revision itself.
+    if repository_metadata is not None and repository_metadata.changeset_revision == changeset_revision:
+        metadata_for_changeset = repository_metadata
+    else:
+        metadata_for_changeset = None
+    # Deliberately not read from repository_metadata.numeric_revision: when a push updates
+    # the metadata record in place its changeset_revision advances to the new tip while
+    # numeric_revision keeps pointing at the previous changeset, and Galaxy clones at
+    # whatever ctx_rev we hand it.
+    ctx_rev = str(changeset2rev(repository.hg_repo, changeset_revision))
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,
@@ -317,7 +350,7 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         repository_owner=repository.user.username,
         repository_name=repository.name,
         repository=repository,
-        repository_metadata=repository_metadata,
+        repository_metadata=metadata_for_changeset,
         tool_dependencies=None,
         repository_dependencies=None,
         trans=trans,
@@ -487,6 +520,7 @@ def update_validated_repository(
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
+        assert repository.user is not None
         old_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
         new_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)

@@ -4,7 +4,7 @@ import type { IconDefinition } from "font-awesome-6";
 
 export interface WorkflowInput {
     id?: string; // unique ID. defaults to module ID
-    moduleId: string;
+    moduleId: "data_input" | "data_collection_input" | "parameter_input" | "pick_value";
     title: string;
     description: string;
     stateOverwrites?: {

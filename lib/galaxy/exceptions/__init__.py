@@ -260,6 +260,13 @@ class DeprecatedMethod(MessageException):
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
 
 
+class TooManyRequestsException(MessageException):
+    status_code = 429
+    err_code = error_codes_by_name["TOO_MANY_REQUESTS"]
+    #: Seconds until the limit window resets; emitted as the ``Retry-After`` header.
+    retry_after: int | None = None
+
+
 class ConfigurationError(Exception):
     status_code = 500
     err_code = error_codes_by_name["CONFIG_ERROR"]

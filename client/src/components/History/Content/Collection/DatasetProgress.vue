@@ -1,5 +1,7 @@
 <!-- Dataset state progress bar for a collection. -->
 <script setup lang="ts">
+import { BProgress, BProgressBar } from "bootstrap-vue";
+
 import type { DatasetStateSummary } from "./DatasetStateSummary";
 
 interface Props {

@@ -1,19 +1,23 @@
 <script setup>
-import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faConnectdevelop } from "@fortawesome/free-brands-svg-icons";
+import { faQuestion, faSearch, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { faGear } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
-    getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
 } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
+import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useRegistrationTarget } from "@/composables/useRegistrationTarget";
+import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
 import { userLogout } from "@/utils/logout";
 import { withPrefix } from "@/utils/redirect";
 
@@ -28,25 +32,32 @@ const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
-const hasOIDCRegistration = computed(() => {
-    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration) {
-        return Object.keys(oIDCIdpsWithRegistration).length > 0;
-    } else {
-        return false;
-    }
+const subdomainSwitcherMenu = computed(() => {
+    const currentOrigin = window.location.origin;
+    return (config.value.subdomain_switcher ?? [])
+        .filter((site) => {
+            if (typeof site?.label !== "string" || !site.label.trim()) {
+                return false;
+            }
+            try {
+                const { protocol, origin } = new URL(site.url);
+                return (protocol === "http:" || protocol === "https:") && origin !== currentOrigin;
+            } catch {
+                return false;
+            }
+        })
+        .map((site) => ({
+            title: site.label,
+            href: site.url,
+        }));
 });
 
-const hasExactlyOneOIDCRegistration = computed(() => {
-    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-    if (oIDCIdpsWithRegistration) {
-        return Object.keys(oIDCIdpsWithRegistration).length === 1;
-    } else {
-        return false;
-    }
-});
+const { openPalette, paletteEnabled } = useCommandPalette();
+const eventStore = useEventStore();
+const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
+const searchPlaceholder = localize("Search Galaxy");
+
+const { registrationTarget } = useRegistrationTarget();
 
 async function performLogin() {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -59,13 +70,11 @@ async function performLogin() {
 }
 
 function performRegistration() {
-    if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
-        const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
-        const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
-        window.location =
-            oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    const { external, url } = registrationTarget.value;
+    if (external) {
+        window.location = url;
     } else {
-        openUrl("/register/start");
+        openUrl(url);
     }
 }
 
@@ -162,6 +171,24 @@ onMounted(() => {
                 :tooltip="tab.tooltip"
                 :target="tab.target"
                 @click="extensionTabClick(tab)" />
+            <MastheadDropdown
+                v-if="subdomainSwitcherMenu.length"
+                id="subdomain_switcher"
+                :icon="faConnectdevelop"
+                tooltip="Switch sites"
+                :menu="subdomainSwitcherMenu" />
+            <li v-if="paletteEnabled" class="nav-item masthead-search">
+                <button
+                    class="masthead-search-button"
+                    type="button"
+                    data-description="masthead search button"
+                    :title="`${searchPlaceholder} (${shortcutLabel})`"
+                    @click="openPalette()">
+                    <FontAwesomeIcon :icon="faSearch" />
+                    <span class="search-placeholder">{{ searchPlaceholder }}</span>
+                    <kbd>{{ shortcutLabel }}</kbd>
+                </button>
+            </li>
             <MastheadItem
                 id="help"
                 :icon="faQuestion"
@@ -177,7 +204,7 @@ onMounted(() => {
                 title="Login"
                 @click="performLogin()" />
             <MastheadItem
-                v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
+                v-if="isAnonymous && registrationTarget"
                 id="user-register"
                 class="loggedout-only"
                 data-description="register masthead button"
@@ -294,6 +321,55 @@ onMounted(() => {
         font-size: 1rem;
         line-height: var(--masthead-height);
         color: var(--masthead-text-color);
+    }
+
+    .masthead-search {
+        .masthead-search-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            margin: 0 var(--spacing-1);
+            padding: var(--spacing-1) var(--spacing-2);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--spacing-1);
+            color: var(--masthead-text-color);
+            cursor: pointer;
+
+            .search-placeholder {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 12rem;
+                opacity: 0.85;
+            }
+
+            kbd {
+                background: rgba(0, 0, 0, 0.25);
+                border-radius: 3px;
+                padding: 0 var(--spacing-1);
+                font-size: var(--font-size-small);
+                color: inherit;
+            }
+
+            &:hover {
+                color: var(--masthead-text-hover);
+                border-color: currentColor;
+            }
+
+            // the narrower the masthead, the more the button degrades to its icon
+            @media (max-width: 60rem) {
+                .search-placeholder {
+                    display: none;
+                }
+            }
+
+            @media (max-width: 48rem) {
+                kbd {
+                    display: none;
+                }
+            }
+        }
     }
 }
 </style>

@@ -1,0 +1,16 @@
+- doc: Nested dot and bracket access work when an optional input is omitted.
+  job: {}
+  outputs:
+    out:
+      asserts:
+        has_line:
+          line: okay
+- doc: Nested dot and bracket access work when an optional input is supplied.
+  job:
+    optional_text: supplied
+    expected: supplied
+  outputs:
+    out:
+      asserts:
+        has_line:
+          line: okay

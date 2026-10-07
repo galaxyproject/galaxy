@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faBolt, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
 import type { HistoryGraphNode } from "./historyGraphMapper";
 
 import ToolExecutionJobs from "./ToolExecutionJobs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     /** Tool-execution graph nodes to list, in display order. */
@@ -37,9 +37,9 @@ function isExpanded(id: string): boolean {
 
 <template>
     <div class="history-graph-tool-executions p-2">
-        <BAlert v-if="nodes.length === 0" show variant="info" class="mb-0">
+        <GAlert v-if="nodes.length === 0" show variant="info" class="mb-0">
             No tool executions to show. Galaxy started capturing tool execution data with release 26.1.
-        </BAlert>
+        </GAlert>
         <template v-else>
             <div v-for="node in nodes" :key="node.id" class="ui-portlet-section mb-2">
                 <div

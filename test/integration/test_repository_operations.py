@@ -176,3 +176,10 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         if assert_ok:
             self._assert_status_code_is_ok(response)
         return response.json()
+
+
+class TestCachedRepositoryInstallIntegrationTestCase(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestRepositoryInstallIntegrationTestCase,
+):
+    pass

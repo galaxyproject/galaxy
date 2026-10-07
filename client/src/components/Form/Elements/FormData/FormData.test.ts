@@ -2,12 +2,12 @@ import "@tests/vitest/mockHelpPopovers";
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
+import { dispatchEvent, emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useServerMock } from "@/api/client/__mocks__";
+import { testDatatypesMapper, typesAndMappingResponse } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
@@ -15,8 +15,18 @@ import MountTarget from "./FormData.vue";
 
 vi.mock("@/composables/filter");
 
+const { server, http } = useServerMock();
+
+// FormData resolves its datatypes mapper on mount; stub the request so the tests
+// never hit a real fetch that gets aborted at teardown and surfaces as an
+// unhandled error that fails the run.
+server.use(
+    http.get("/api/datatypes/types_and_mapping", ({ response }) => {
+        return response(200).json(typesAndMappingResponse);
+    }),
+);
+
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 let eventStore: ReturnType<typeof useEventStore>;
 
@@ -26,8 +36,8 @@ function createTarget(propsData: Record<string, any>) {
     const datatypesStore = useDatatypesMapperStore();
     datatypesStore.datatypesMapper = testDatatypesMapper;
     return mount(MountTarget as any, {
-        localVue,
-        propsData,
+        global: localVue,
+        props: propsData,
         pinia,
         stubs: {
             FontAwesomeIcon: true,
@@ -57,6 +67,16 @@ const defaultOptions = {
 const SELECT_OPTIONS = ".multiselect__element";
 const SELECTED_VALUE = ".multiselect__option--selected";
 
+// vue-multiselect only renders its option list (and thus SELECT_OPTIONS /
+// SELECTED_VALUE) while its dropdown is open, so tests need to open it
+// before reading those. Selecting a new value in single-select mode closes
+// the dropdown again, so callers re-open as needed between assertions.
+async function openMultiselect(wrapper: ReturnType<typeof createTarget>) {
+    if (!wrapper.find(".multiselect__content-wrapper").exists()) {
+        await wrapper.find(".multiselect__select").trigger("mousedown");
+    }
+}
+
 describe("FormData", () => {
     it("regular data", async () => {
         const wrapper = createTarget({
@@ -78,23 +98,27 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(4);
-        expect(options.at(0).classes()).toContain("active");
-        expect(options.at(0).attributes("title")).toBe("Single dataset");
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(nth(options, 0).classes()).toContain("g-pressed");
+        expect(nth(options, 0).attributes("title")).toBe("Single dataset");
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("dceName4 (as dataset)");
         await wrapper.setProps({ value: value_0 });
-        expect(wrapper.emitted()!.input!.length).toEqual(1);
+        expect(wrapper.emitted("input")).toHaveLength(1);
         await wrapper.setProps({ value: { values: [{ id: "hda2", src: "hda" }] } });
+        await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("2: hdaName2");
-        expect(wrapper.emitted()!.input!.length).toEqual(1);
+        expect(wrapper.emitted("input")).toHaveLength(1);
+        await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
-        await elements_0.at(2).find("span").trigger("click");
-        expect(wrapper.emitted()!.input!.length).toEqual(2);
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(value_1);
+        await nth(elements_0, 2).find("span").trigger("click");
+        expect(wrapper.emitted("input")).toHaveLength(2);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(value_1);
         await wrapper.setProps({ value: value_2 });
+        await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("4: hdaName4");
     });
 
@@ -104,10 +128,27 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(null);
-        expect(wrapper.emitted()!.input!.length).toEqual(1);
+        expect(emittedArg(wrapper, "input")).toEqual(null);
+        expect(wrapper.emitted("input")).toHaveLength(1);
+        await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toEqual("Nothing selected");
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
+    });
+
+    it("styles the no-options alert to match the control height in both run and tool forms", async () => {
+        const wrapper = createTarget({
+            type: "data",
+            value: null,
+            options: {},
+            workflowRun: true,
+        });
+        const alert = wrapper.find(".form-data-no-options-alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toBe("No datasets available");
+
+        // The alert keeps the aligned styling outside of workflow runs too.
+        await wrapper.setProps({ workflowRun: false });
+        expect(wrapper.find(".form-data-no-options-alert").exists()).toBe(true);
     });
 
     it("multiple datasets", async () => {
@@ -122,11 +163,11 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(0).classes()).toContain("active");
-        expect(options.at(0).attributes("title")).toBe("Multiple datasets");
-        expect(wrapper.emitted()!.input![0]![0]).toEqual({
+        expect(nth(options, 0).classes()).toContain("g-pressed");
+        expect(nth(options, 0).attributes("title")).toBe("Multiple datasets");
+        expect(emittedArg(wrapper, "input")).toEqual({
             batch: false,
             product: false,
             values: [
@@ -134,11 +175,12 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         });
-        expect(wrapper.emitted()!.input!.length).toEqual(1);
+        expect(wrapper.emitted("input")).toHaveLength(1);
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(1).text()).toContain("3: hdaName3");
+        expect(nth(selectedValues, 0).text()).toContain("2: hdaName2");
+        expect(nth(selectedValues, 1).text()).toContain("3: hdaName3");
         const value_0 = {
             batch: false,
             product: false,
@@ -147,25 +189,25 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
-        await selectedValues.at(0).trigger("click");
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        await nth(selectedValues, 0).trigger("click");
         const value_1 = {
             batch: false,
             product: false,
             values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(value_1);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
-        await selectedValues.at(1).trigger("click");
+        await nth(selectedValues, 1).trigger("click");
         const value_2 = {
             batch: false,
             product: false,
             values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(value_2);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(value_2);
         await wrapper.setProps({ value: value_2 });
-        expect(wrapper.emitted()!.input!.length).toBe(3);
-        expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
+        expect(wrapper.emitted("input")).toHaveLength(3);
+        expect(emittedArg(wrapper, "input", 2)).toEqual(null);
     });
 
     it("properly sorts multiple datasets", async () => {
@@ -182,13 +224,14 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(3);
         // the values in the multiselect are sorted by hid ASC
-        expect(selectedValues.at(0).text()).toContain("1: hdaName1");
-        expect(selectedValues.at(1).text()).toContain("2: hdaName2");
-        expect(selectedValues.at(2).text()).toContain("3: hdaName3");
-        await selectedValues.at(0).trigger("click");
+        expect(nth(selectedValues, 0).text()).toContain("1: hdaName1");
+        expect(nth(selectedValues, 1).text()).toContain("2: hdaName2");
+        expect(nth(selectedValues, 2).text()).toContain("3: hdaName3");
+        await nth(selectedValues, 0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
@@ -198,7 +241,7 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(value_sorted);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(value_sorted);
     });
 
     it("sorts mixed dces and hdas", async () => {
@@ -231,14 +274,15 @@ describe("FormData", () => {
             optional: true,
             options: sortOptions,
         });
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(5);
-        expect(selectedValues.at(0).text()).toContain("dceName4 (as dataset)");
-        expect(selectedValues.at(1).text()).toContain("dceName3 (as dataset)");
-        expect(selectedValues.at(2).text()).toContain("dceName2 (as dataset)");
-        expect(selectedValues.at(3).text()).toContain("1: hdaName1");
-        expect(selectedValues.at(4).text()).toContain("2: hdaName2");
-        await selectedValues.at(0).trigger("click");
+        expect(nth(selectedValues, 0).text()).toContain("dceName4 (as dataset)");
+        expect(nth(selectedValues, 1).text()).toContain("dceName3 (as dataset)");
+        expect(nth(selectedValues, 2).text()).toContain("dceName2 (as dataset)");
+        expect(nth(selectedValues, 3).text()).toContain("1: hdaName1");
+        expect(nth(selectedValues, 4).text()).toContain("2: hdaName2");
+        await nth(selectedValues, 0).trigger("click");
         const value_sorted = {
             batch: false,
             product: false,
@@ -249,7 +293,7 @@ describe("FormData", () => {
                 { id: "dce3", map_over_type: null, src: "dce" },
             ],
         };
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(value_sorted);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(value_sorted);
     });
 
     it("dataset collection as hda", async () => {
@@ -262,11 +306,12 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce1", map_over_type: null, src: "dce" }],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
-        expect(wrapper.emitted()!.input!.length).toEqual(1);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(wrapper.emitted("input")).toHaveLength(1);
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName1 (as dataset)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName1 (as dataset)");
     });
 
     it("dataset collection element as hdca without map_over_type", async () => {
@@ -275,11 +320,12 @@ describe("FormData", () => {
             options: defaultOptions,
         });
         const value_0 = { batch: true, product: false, values: [{ id: "dce2", map_over_type: null, src: "dce" }] };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
         await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName2 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName2 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to batch field", async () => {
@@ -292,11 +338,12 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
         await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName3 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName3 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to non-batch field", async () => {
@@ -310,11 +357,12 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
         await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("dceName3 (as dataset collection)");
+        expect(nth(selectedValues, 0).text()).toContain("dceName3 (as dataset collection)");
     });
 
     it("dataset collection mapped to non-batch field", async () => {
@@ -328,11 +376,12 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
         await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("5: hdcaName5");
+        expect(nth(selectedValues, 0).text()).toContain("5: hdcaName5");
     });
 
     it("multiple dataset collection elements (as hdas)", async () => {
@@ -353,7 +402,7 @@ describe("FormData", () => {
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
-        expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input")).toEqual(value_0);
     });
 
     it("dropping values", async () => {
@@ -364,7 +413,7 @@ describe("FormData", () => {
         eventStore.setDragData({ id: "hdca4", history_content_type: "dataset_collection" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted()!.input![1]![0]).toEqual({
+        expect(emittedArg(wrapper, "input", 1)).toEqual({
             batch: true,
             product: false,
             values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
@@ -372,7 +421,7 @@ describe("FormData", () => {
         eventStore.setDragData({ id: "hda2", history_content_type: "dataset" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted()!.input![2]![0]).toEqual({
+        expect(emittedArg(wrapper, "input", 2)).toEqual({
             batch: false,
             product: false,
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
@@ -388,9 +437,7 @@ describe("FormData", () => {
         eventStore.setDragData({ id: "whatever", history_content_type: "dataset" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted()!.alert![0]![0]).toEqual(
-            "dataset is not a valid input for dataset collection parameter.",
-        );
+        expect(emittedArg(wrapper, "alert")).toEqual("dataset is not a valid input for dataset collection parameter.");
     });
 
     it("rejects paired collection on list collection input", async () => {
@@ -407,7 +454,7 @@ describe("FormData", () => {
         });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted()!.alert![0]![0]).toEqual(
+        expect(emittedArg(wrapper, "alert")).toEqual(
             "dataset pair dataset collection is not a valid input for list type dataset collection parameter.",
         );
     });
@@ -426,7 +473,7 @@ describe("FormData", () => {
         });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(wrapper.emitted()!.alert).toBeUndefined();
+        expect(wrapper.emitted("alert")).toBeUndefined();
     });
 
     it("linked and unlinked batch mode handling", async () => {
@@ -435,7 +482,7 @@ describe("FormData", () => {
             flavor: "module",
             options: defaultOptions,
         });
-        expect(wrapper.emitted()!.input![0]![0]).toEqual({
+        expect(emittedArg(wrapper, "input")).toEqual({
             batch: false,
             product: false,
             values: [{ id: "dce4", map_over_type: null, src: "dce" }],
@@ -443,18 +490,19 @@ describe("FormData", () => {
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(wrapper.emitted()!.input![1]![0]).toEqual(null);
+        expect(emittedArg(wrapper, "input", 1)).toEqual(null);
+        await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
-        await elements_0.at(3).find("span").trigger("click");
+        await nth(elements_0, 3).find("span").trigger("click");
         const value_0 = {
             batch: true,
             product: false,
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         };
-        expect(wrapper.emitted()!.input![2]![0]).toEqual(value_0);
+        expect(emittedArg(wrapper, "input", 2)).toEqual(value_0);
         await wrapper.setProps({ value: value_0 });
-        await elements_0.at(0).find("span").trigger("click");
+        await nth(elements_0, 0).find("span").trigger("click");
         const value_1 = {
             batch: true,
             product: false,
@@ -463,18 +511,18 @@ describe("FormData", () => {
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
-        expect(wrapper.emitted()!.input![3]![0]).toEqual(value_1);
+        expect(emittedArg(wrapper, "input", 3)).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".custom-switch span").text()).toBe(
             "Linked:Datasets will be run in matched order with other datasets.",
         );
         expect((checkLinked.element as HTMLInputElement).checked).toBeTruthy();
-        await checkLinked.setChecked(false);
+        await checkLinked.setValue(false);
         expect(wrapper.find(".custom-switch span").text()).toBe(
             "Unlinked:Dataset will be run against *all* other datasets.",
         );
-        expect(wrapper.emitted()!.input![4]![0]).toEqual({
+        expect(emittedArg(wrapper, "input", 4)).toEqual({
             batch: true,
             product: true,
             values: [
@@ -493,24 +541,25 @@ describe("FormData", () => {
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(1).classes()).toContain("active");
-        expect(options.at(1).attributes("title")).toBe("Dataset collection");
+        expect(nth(options, 1).classes()).toContain("g-pressed");
+        expect(nth(options, 1).attributes("title")).toBe("Dataset collection");
         for (const i of [0, 1]) {
-            expect(wrapper.emitted()!.input![i]![0]).toEqual({
+            expect(emittedArg(wrapper, "input", i)).toEqual({
                 batch: false,
                 product: false,
                 values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
             });
         }
-        expect(wrapper.emitted()!.input!.length).toEqual(2);
+        expect(wrapper.emitted("input")).toHaveLength(2);
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
+        expect(nth(selectedValues, 0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(options.at(0).classes()).toContain("active");
-        expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
+        expect(nth(options, 0).classes()).toContain("g-pressed");
+        expect(emittedArg(wrapper, "input", 2)).toEqual(null);
     });
 
     it("renders pinned entries alongside paged options", async () => {
@@ -525,9 +574,10 @@ describe("FormData", () => {
             },
         });
         await wrapper.vm.$nextTick();
+        await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toContain("999: OldDataset");
+        expect(nth(selectedValues, 0).text()).toContain("999: OldDataset");
     });
 
     it("tagging filter", async () => {
@@ -535,24 +585,27 @@ describe("FormData", () => {
             tag: "tag1",
             options: defaultOptions,
         });
+        await openMultiselect(wrapper_0);
         const select_0 = wrapper_0.findAll(SELECT_OPTIONS);
         expect(select_0.length).toBe(4);
-        expect(select_0.at(2).text()).toContain("1: hdaName1");
-        expect(select_0.at(3).text()).toContain("2: hdaName2");
+        expect(nth(select_0, 2).text()).toContain("1: hdaName1");
+        expect(nth(select_0, 3).text()).toContain("2: hdaName2");
         const wrapper_1 = createTarget({
             tag: "tag2",
             options: defaultOptions,
         });
+        await openMultiselect(wrapper_1);
         const select_1 = wrapper_1.findAll(SELECT_OPTIONS);
         expect(select_1.length).toBe(4);
-        expect(select_1.at(2).text()).toContain("2: hdaName2");
-        expect(select_1.at(3).text()).toContain("3: hdaName3");
+        expect(nth(select_1, 2).text()).toContain("2: hdaName2");
+        expect(nth(select_1, 3).text()).toContain("3: hdaName3");
         const wrapper_2 = createTarget({
             tag: "tag3",
             options: defaultOptions,
         });
+        await openMultiselect(wrapper_2);
         const select_2 = wrapper_2.findAll(SELECT_OPTIONS);
         expect(select_2.length).toBe(3);
-        expect(select_2.at(2).text()).toContain("3: hdaName3");
+        expect(nth(select_2, 2).text()).toContain("3: hdaName3");
     });
 });

@@ -5,6 +5,7 @@ import gzip
 import io
 import json
 import logging
+import math
 import os
 import re
 import shutil
@@ -13,7 +14,10 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
-from collections.abc import Iterable
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
 from json import dumps
 from typing import (
     Any,
@@ -31,9 +35,15 @@ from bx.seq.twobit import (
 from h5grove.content import (
     DatasetContent,
     get_content_from_file,
+    GroupContent,
     ResolvedEntityContent,
 )
 from h5grove.encoders import encode
+from h5grove.utils import (
+    convert,
+    parse_slice,
+    QueryArgumentError,
+)
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -76,6 +86,8 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import (
     compression_utils,
     nice_size,
@@ -100,7 +112,9 @@ except ModuleNotFoundError:
     pass
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.util.compression_utils import FileObjType
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
@@ -403,6 +417,40 @@ class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
     compressed_format = "bz2"
 
 
+WARC_VERSION_PREFIXES = (b"WARC/1.0", b"WARC/1.1")
+WARC_REQUIRED_FIELDS = (b"WARC-Type:", b"WARC-Record-ID:", b"Content-Length:")
+WARC_HEADER_LIMIT = 8192
+
+
+@build_sniff_from_prefix
+class Warc(CompressedArchive):
+    """Web ARChive, gzip-compressed and kept compressed."""
+
+    file_ext = "warc.gz"
+    compressed_format = "gzip"
+    is_binary = "maybe"
+    display_behavior = "download"
+    allow_datatype_change = False
+    allow_compressed_html_content = True
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        The version line must be at byte 0 and every required field must start
+        a line of the first header block (up to the first blank line, max 8K,
+        so payload bytes past the blank line never match). Truncated headers
+        and indented fields do not match.
+        """
+        header = file_prefix.contents_header_bytes[:WARC_HEADER_LIMIT]
+        if not header.startswith(WARC_VERSION_PREFIXES):
+            return False
+        header_block = header.split(b"\r\n\r\n", 1)[0].split(b"\n\n", 1)[0]
+        lines = header_block.splitlines()[1:]
+        return all(any(line.startswith(field) for line in lines) for field in WARC_REQUIRED_FIELDS)
+
+    def get_mime(self) -> str:
+        return "application/gzip"
+
+
 class CompressedZipArchive(CompressedArchive):
     """
     Class describing an compressed binary file
@@ -700,7 +748,8 @@ class BamNative(CompressedArchive, _BamOrSam):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
-            header = gzip.open(filename).read(4)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(4)
             if header == b"BAM\1":
                 return True
             return False
@@ -721,15 +770,16 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
+        file_name = dataset.get_file_name(auth=auth)
         rel_paths = []
         file_paths = []
-        rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}")
-        file_paths.append(dataset.get_file_name())
+        rel_paths.append(f"{name or file_name}.{dataset.extension}")
+        file_paths.append(file_name)
         # We may or may not have a bam index file (BamNative doesn't have it, but also index generation may have failed)
         if dataset.metadata.bam_index:
-            rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}.bai")
-            file_paths.append(dataset.metadata.bam_index.get_file_name())
+            rel_paths.append(f"{name or file_name}.{dataset.extension}.bai")
+            file_paths.append(dataset.metadata.bam_index.get_file_name(auth=auth))
         return zip(file_paths, rel_paths)
 
     def groom_dataset_content(self, file_name: str) -> None:
@@ -764,10 +814,16 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesUserContext | None", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         if not offset == -1:
             try:
-                with pysam.AlignmentFile(dataset.get_file_name(), "rb", check_sq=False) as bamfile:
+                with pysam.AlignmentFile(
+                    dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user) if trans else None),
+                    "rb",
+                    check_sq=False,
+                ) as bamfile:
                     if ck_size is None:
                         ck_size = 300  # 300 lines
                     if offset < bamfile.tell():
@@ -813,7 +869,7 @@ class BamNative(CompressedArchive, _BamOrSam):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -1184,7 +1240,8 @@ class Bcf(BaseBcf):
     def sniff(self, filename: str) -> bool:
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         try:
-            header = gzip.open(filename).read(3)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(3)
             # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b"BCF":
                 return True
@@ -1247,6 +1304,290 @@ class BcfUncompressed(BaseBcf):
             return False
 
 
+MAX_STRUCTURED_CONTENT_BYTES = 1000000  # 1 MB, matches DEFAULT_MAX_PEEK_SIZE in galaxy.datatypes.data
+MAX_STRUCTURED_CONTENT_CHILDREN = MAX_STRUCTURED_CONTENT_BYTES // 128  # ~128 bytes/child metadata entry
+VLEN_ELEMENT_ASSUMED_BYTES = 1024
+
+
+def _h5_normalize_selection(shape: tuple[int, ...], selection: str | None) -> tuple[list[slice], tuple[int, ...]]:
+    """Normalize an h5grove ``selection`` string against a dataset ``shape``.
+
+    Returns a per-axis list of read slices and the result shape. Integer indices
+    become width-1 slices whose axis is dropped from the result shape, matching
+    NumPy indexing. Unmentioned trailing axes are read in full.
+
+    >>> _h5_normalize_selection((), None)
+    ([], ())
+    >>> _h5_normalize_selection((10,), None)
+    ([slice(0, 10, 1)], (10,))
+    >>> _h5_normalize_selection((10,), "5")
+    ([slice(5, 6, 1)], ())
+    >>> _h5_normalize_selection((10,), "-3")
+    ([slice(7, 8, 1)], ())
+    >>> _h5_normalize_selection((10,), "0:10:2")
+    ([slice(0, 10, 2)], (5,))
+    >>> _h5_normalize_selection((10,), "3:")
+    ([slice(3, 10, 1)], (7,))
+    >>> _h5_normalize_selection((4, 5), "1")
+    ([slice(1, 2, 1), slice(0, 5, 1)], (5,))
+    """
+    if selection is None:
+        return [slice(*slice(None).indices(dim)) for dim in shape], tuple(shape)
+
+    try:
+        members = parse_slice(selection)
+    except (ValueError, TypeError) as e:
+        raise RequestParameterInvalidException(f"Invalid selection {selection!r}: {e}")
+
+    if len(members) > len(shape):
+        raise RequestParameterInvalidException(
+            f"Selection {selection!r} has too many members for a {len(shape)}D dataset"
+        )
+
+    read_slices = []
+    result_shape = []
+    for axis, dim in enumerate(shape):
+        if axis >= len(members):
+            read_slices.append(slice(*slice(None).indices(dim)))
+            result_shape.append(dim)
+            continue
+        member = members[axis]
+        if isinstance(member, slice):
+            if member.step is not None and member.step <= 0:
+                raise RequestParameterInvalidException(
+                    f"Selection {selection!r} has a non-positive step; only positive steps are supported"
+                )
+            start, stop, step = member.indices(dim)
+            read_slices.append(slice(start, stop, step))
+            result_shape.append(len(range(start, stop, step)))
+        else:
+            index = member + dim if member < 0 else member
+            if not 0 <= index < dim:
+                raise RequestParameterInvalidException(
+                    f"Index {member} in selection {selection!r} is out of bounds for axis {axis} with size {dim}"
+                )
+            read_slices.append(slice(index, index + 1, 1))
+    return read_slices, tuple(result_shape)
+
+
+def _h5_check_dataset_size(ds: h5py.Dataset, selection: str | None) -> None:
+    if ds.shape is None:  # null dataspace (h5py.Empty): holds no data
+        return
+    _, result_shape = _h5_normalize_selection(ds.shape, selection)
+    count = math.prod(result_shape)
+    if h5py.check_vlen_dtype(ds.dtype) is not None:
+        cap = MAX_STRUCTURED_CONTENT_BYTES // VLEN_ELEMENT_ASSUMED_BYTES
+        if count > cap:
+            raise RequestParameterInvalidException(
+                f"The selected data holds {count} variable-length elements, exceeding the limit of {cap}; "
+                "narrow the request with 'selection'."
+            )
+        return
+    if (nbytes := count * ds.dtype.itemsize) > MAX_STRUCTURED_CONTENT_BYTES:
+        raise RequestParameterInvalidException(
+            f"The selected data holds {nbytes} bytes, exceeding the limit of {MAX_STRUCTURED_CONTENT_BYTES} bytes; "
+            "narrow the request with 'selection'."
+        )
+
+
+def _h5_check_attributes_size(entity: h5py.HLObject) -> None:
+    total = 0
+    for name in entity.attrs.keys():
+        attr_id = entity.attrs.get_id(name)
+        total += math.prod(attr_id.shape or ()) * attr_id.get_type().get_size()
+        if total > MAX_STRUCTURED_CONTENT_BYTES:
+            raise RequestParameterInvalidException(
+                f"The attributes hold at least {total} bytes, exceeding the limit of "
+                f"{MAX_STRUCTURED_CONTENT_BYTES} bytes."
+            )
+
+
+def _h5_check_group_size(group: h5py.Group) -> None:
+    if (children := len(group)) > MAX_STRUCTURED_CONTENT_CHILDREN:
+        raise RequestParameterInvalidException(
+            f"The group has {children} children, exceeding the limit of {MAX_STRUCTURED_CONTENT_CHILDREN}; "
+            "browse subgroups individually."
+        )
+
+
+def _h5_iter_slabs(ds: h5py.Dataset, read_slices: list[slice]) -> Iterator[np.ndarray]:
+    itemsize = ds.dtype.itemsize
+
+    def slabs(prefix: tuple[slice, ...], remaining: list[slice]) -> Iterator[np.ndarray]:
+        if not remaining:
+            yield ds[prefix]
+            return
+        first = remaining[0]
+        rest = remaining[1:]
+        # Iterate the first axis arithmetically, never materializing its indices
+        # (which could be billions). Positive step is guaranteed by
+        # _h5_normalize_selection, so batch_stop below never over-selects.
+        n = len(range(first.start, first.stop, first.step))
+        row_nbytes = math.prod(len(range(s.start, s.stop, s.step)) for s in rest) * itemsize
+        if row_nbytes <= MAX_STRUCTURED_CONTENT_BYTES:
+            rows_per_batch = max(1, MAX_STRUCTURED_CONTENT_BYTES // max(row_nbytes, 1))
+            for i in range(0, n, rows_per_batch):
+                batch_start = first.start + i * first.step
+                batch_n = min(rows_per_batch, n - i)
+                batch_stop = batch_start + batch_n * first.step
+                yield ds[prefix + (slice(batch_start, batch_stop, first.step),) + tuple(rest)]
+        else:
+            # A single row along this axis already exceeds the budget; fix it and
+            # recurse into the trailing axes so every read stays within the limit.
+            for i in range(n):
+                index = first.start + i * first.step
+                yield from slabs(prefix + (slice(index, index + 1, 1),), rest)
+
+    if not read_slices:
+        yield ds[()]
+    else:
+        yield from slabs((), read_slices)
+
+
+def _h5_npy_header_bytes(out_dtype: np.dtype, shape: tuple[int, ...]) -> bytes:
+    buffer = io.BytesIO()
+    np.lib.format.write_array_header_1_0(
+        buffer,
+        {"descr": np.lib.format.dtype_to_descr(out_dtype), "fortran_order": False, "shape": shape},
+    )
+    return buffer.getvalue()
+
+
+def _h5_stream_data(
+    file_name: str,
+    path: str,
+    read_slices: list[slice],
+    dtype: str,
+    format: str,
+    out_dtype: np.dtype,
+    npy_shape: tuple[int, ...],
+    flatten: bool,
+) -> Iterator[bytes]:
+    # This generator owns its own file handle: the caller's get_content_from_file
+    # context closes before the streaming response body is iterated.
+    with h5py.File(file_name, "r", locking=False) as f:
+        ds = f[path]
+        if format == "npy":
+            yield _h5_npy_header_bytes(out_dtype, npy_shape)
+        for slab in _h5_iter_slabs(ds, read_slices):
+            converted = convert(slab, dtype)
+            if format == "csv":
+                data = np.ravel(converted) if flatten else converted
+                with io.BytesIO() as buffer:
+                    np.savetxt(buffer, data, delimiter=",")
+                    yield buffer.getvalue()
+            else:
+                yield np.ascontiguousarray(converted).tobytes()
+
+
+def _h5_prepare_streaming_data(
+    file_name: str,
+    path: str,
+    ds: h5py.Dataset,
+    dtype: str,
+    format: str,
+    flatten: bool,
+    selection: str | None,
+) -> tuple[Iterator[bytes], dict[str, str]]:
+    read_slices, result_shape = _h5_normalize_selection(ds.shape, selection)
+    try:
+        out_dtype = convert(np.empty((0,), ds.dtype), dtype).dtype
+    except QueryArgumentError as e:
+        raise RequestParameterInvalidException(str(e))
+
+    is_numeric = np.issubdtype(out_dtype, np.number) or np.issubdtype(out_dtype, np.bool_)
+    if format in ("npy", "csv") and not is_numeric:
+        raise RequestParameterInvalidException(f"Unsupported format {format!r} for non-numeric data")
+    if format == "csv" and len(result_shape) == 0:
+        raise RequestParameterInvalidException("CSV format is not supported for scalar datasets")
+    if format == "csv" and not flatten and len(result_shape) > 2:
+        raise RequestParameterInvalidException(
+            "CSV format supports at most 2 dimensions; use 'selection' or 'flatten'."
+        )
+
+    count = math.prod(result_shape)
+    npy_shape = (count,) if flatten and result_shape != () else result_shape
+    generator = _h5_stream_data(file_name, path, read_slices, dtype, format, out_dtype, npy_shape, flatten)
+    if format == "bin":
+        headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Length": str(count * out_dtype.itemsize),
+        }
+    elif format == "npy":
+        header_nbytes = len(_h5_npy_header_bytes(out_dtype, npy_shape))
+        headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Disposition": 'attachment; filename="data.npy"',
+            "Content-Length": str(header_nbytes + count * out_dtype.itemsize),
+        }
+    else:  # csv
+        headers = {
+            "Content-Type": "text/csv",
+            "Content-Disposition": 'attachment; filename="data.csv"',
+        }
+    return generator, headers
+
+
+def _h5_incremental_stats(ds: h5py.Dataset, read_slices: list[slice]) -> dict[str, float | None]:
+    is_float = np.issubdtype(ds.dtype, np.floating)
+    cast = float if is_float else int
+    count = 0
+    empty_stats: dict[str, float | None] = {
+        "strict_positive_min": None,
+        "positive_min": None,
+        "min": None,
+        "max": None,
+        "mean": None,
+        "std": None,
+    }
+    if ds.shape is None:  # null dataspace (h5py.Empty): no elements
+        return empty_stats
+    total = 0.0
+    total_sq = 0.0
+    minimum = None
+    maximum = None
+    positive_min = None
+    strict_positive_min = None
+    for slab in _h5_iter_slabs(ds, read_slices):
+        values = np.asarray(slab)
+        if is_float:
+            values = values[np.isfinite(values)]
+        if values.size == 0:
+            continue
+        as_float = values.astype(np.float64)
+        count += values.size
+        total += float(as_float.sum())
+        total_sq += float(np.square(as_float).sum())
+        slab_min = values.min()
+        slab_max = values.max()
+        minimum = slab_min if minimum is None else min(minimum, slab_min)
+        maximum = slab_max if maximum is None else max(maximum, slab_max)
+        positive = values[values >= 0]
+        if positive.size:
+            slab_positive_min = positive.min()
+            positive_min = slab_positive_min if positive_min is None else min(positive_min, slab_positive_min)
+        strict_positive = values[values > 0]
+        if strict_positive.size:
+            slab_strict_min = strict_positive.min()
+            strict_positive_min = (
+                slab_strict_min if strict_positive_min is None else min(strict_positive_min, slab_strict_min)
+            )
+    if count == 0:
+        return empty_stats
+    assert minimum is not None and maximum is not None
+    mean = total / count
+    variance = total_sq / count - mean * mean
+    std = math.sqrt(variance) if variance > 0 else 0.0
+    return {
+        "strict_positive_min": cast(strict_positive_min) if strict_positive_min is not None else None,
+        "positive_min": cast(positive_min) if positive_min is not None else None,
+        "min": cast(minimum),
+        "max": cast(maximum),
+        "mean": cast(mean),
+        "std": cast(std),
+    }
+
+
 class H5(Binary):
     """
     Class describing an HDF5 file
@@ -1293,37 +1634,99 @@ class H5(Binary):
 
     def get_structured_content(
         self,
-        dataset,
-        content_type=None,
-        path="/",
-        dtype="origin",
-        format="json",
-        flatten=False,
-        selection=None,
+        dataset: DatasetProtocol,
+        content_type: str | None = None,
+        path: str = "/",
+        dtype: str = "origin",
+        format: str = "json",
+        flatten: bool | str = False,
+        selection: str | None = None,
         **kwargs,
-    ):
+    ) -> tuple[bytes | str | Iterator[bytes], dict[str, str]]:
         """
         Implements h5grove protocol (https://silx-kit.github.io/h5grove/).
         This allows the h5web visualization tool (https://github.com/silx-kit/h5web)
         to be used directly with Galaxy datasets.
         """
-        with get_content_from_file(dataset.get_file_name(), path, self._create_error) as content:
+        flatten = str(flatten).lower() != "false"
+        file_name = dataset.get_file_name()
+        with get_content_from_file(file_name, path, self._create_error, h5py_options={"locking": False}) as content:
             if content_type == "attr":
                 assert isinstance(content, ResolvedEntityContent)
+                _h5_check_attributes_size(content._h5py_entity)
                 resp = encode(content.attributes(), "json")
             elif content_type == "meta":
+                if isinstance(content, GroupContent):
+                    _h5_check_group_size(content._h5py_entity)
                 resp = encode(content.metadata(), "json")
             elif content_type == "stats":
                 assert isinstance(content, DatasetContent)
-                resp = encode(content.data_stats(selection), "json")
-            else:  # default 'data'
+                ds = content._h5py_entity
+                if h5py.check_vlen_dtype(ds.dtype) is not None:
+                    # Variable-length dtypes cannot be slab-read; use h5grove's guarded in-memory path.
+                    _h5_check_dataset_size(ds, selection)
+                    resp = encode(content.data_stats(selection), "json")
+                elif ds.shape is None:  # null dataspace: no elements, so empty stats
+                    resp = encode(_h5_incremental_stats(ds, []), "json")
+                else:
+                    read_slices, _ = _h5_normalize_selection(ds.shape, selection)
+                    resp = encode(_h5_incremental_stats(ds, read_slices), "json")
+            elif content_type in ("data", None) and format in ("bin", "npy", "csv"):
                 assert isinstance(content, DatasetContent)
+                ds = content._h5py_entity
+                if h5py.check_vlen_dtype(ds.dtype) is None and ds.shape is not None:
+                    return _h5_prepare_streaming_data(file_name, path, ds, dtype, format, flatten, selection)
+                _h5_check_dataset_size(ds, selection)
+                resp = encode(content.data(selection, flatten, dtype), format)
+            else:  # default 'data' with json/tiff, or variable-length dtype
+                assert isinstance(content, DatasetContent)
+                _h5_check_dataset_size(content._h5py_entity, selection)
                 resp = encode(content.data(selection, flatten, dtype), format)
 
             return resp.content, resp.headers
 
-    def _create_error(self, status_code, message):
+    def _create_error(self, status_code: int, message: str) -> Exception:
         return Exception(status_code, message)
+
+
+class NetCDF4(H5):
+    """
+    Class describing a netCDF4 file (HDF5-based).
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_tas.netcdf4')
+    >>> NetCDF4().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> NetCDF4().sniff(fname)
+    False
+    """
+
+    file_ext = "netcdf4"
+    edam_format = "format_3650"
+
+    def sniff(self, filename):
+        if not super().sniff(filename):
+            return False
+        try:
+            with h5py.File(filename, "r", locking=False) as f:
+                return "_NCProperties" in f.attrs
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF4 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary netCDF4 file ({nice_size(dataset.get_size())})"
 
 
 class Loom(H5):
@@ -1581,10 +1984,24 @@ class Anndata(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
+            root_encoding_type = anndata_file.attrs.get("encoding-type")
+            if isinstance(root_encoding_type, np.ndarray):
+                root_encoding_type = root_encoding_type[0] if root_encoding_type.size else None
+            if isinstance(root_encoding_type, bytes):
+                root_encoding_type = root_encoding_type.decode()
+            root_encoding_version = anndata_file.attrs.get("encoding-version")
+            if isinstance(root_encoding_version, np.ndarray):
+                root_encoding_version = root_encoding_version[0] if root_encoding_version.size else None
+            if isinstance(root_encoding_version, bytes):
+                root_encoding_version = root_encoding_version.decode()
+
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
             dataset.metadata.doi = anndata_file.attrs.get("doi")
+            dataset.metadata.anndata_spec_version = (
+                root_encoding_version if root_encoding_type == "anndata" and root_encoding_version else ""
+            )
             dataset.metadata.creation_date = anndata_file.attrs.get("creation_date")
             dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for
@@ -1685,7 +2102,7 @@ class Anndata(H5):
                     # if X matrix has actual data
                     shape = anndata_file["X"].attrs.get("shape")
                     if shape is not None:
-                        dataset.metadata.shape = tuple(shape)
+                        dataset.metadata.shape = tuple(int(dim) for dim in shape)
                     elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
                         dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
@@ -2212,7 +2629,7 @@ class H5MLM(H5):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -2224,11 +2641,12 @@ class H5MLM(H5):
 
         if to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(dataset, to_ext, headers, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, auth=ObjectStoreAuth(user=trans.user), **kwd)
 
         out_dict: dict = {}
+        fname = dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         try:
-            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
+            with h5py.File(fname, "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
@@ -2236,13 +2654,13 @@ class H5MLM(H5):
         except Exception as e:
             log.warning(e)
 
-        config = self.get_config_string(dataset.get_file_name())
+        config = self.get_config_string(fname)
         out_dict["Config"] = json.loads(config) if config else ""
         out = json.dumps(out_dict, sort_keys=True, indent=2)
         out = out[: self.max_preview_size]
 
-        repr = self.get_repr(dataset.get_file_name())
-        html_repr = self.get_html_repr(dataset.get_file_name())
+        repr = self.get_repr(fname)
+        html_repr = self.get_html_repr(fname)
 
         return f"<div>{html_repr}</div><div><pre>{repr}</pre></div><div><pre>{out}</pre></div>", headers
 
@@ -2781,6 +3199,25 @@ class MzSQlite(SQlite):
                 "SpectraData",
                 "Spectrum",
                 "SpectrumIdentification",
+            ]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class Mzlite(SQlite):
+    """Class describing a Proteomics mzlite database"""
+
+    file_ext = "mzlite"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename: str) -> bool:
+        if super().sniff(filename):
+            table_names = [
+                "Chromatogram",
+                "Model",
+                "Spectrum",
             ]
             return self.sniff_table_names(filename, table_names)
         return False
@@ -4950,18 +5387,18 @@ class SpatialData(CompressedZarrZipArchive):
             with zipfile.ZipFile(filename) as zf:
                 # Find root zarr directory and detect version (at any nesting level)
                 root_zarr = is_v3 = None
+                candidates = []
                 for file in zf.namelist():
-                    # Look for zarr.json or .zattrs in any directory
                     if file.endswith("/zarr.json"):
-                        # Format: <path>/zarr.json (v3)
-                        root_zarr, is_v3 = file.rsplit("/", 1)[0], True
-                        break
+                        candidates.append((file.rsplit("/", 1)[0], True))
                     elif file.endswith("/.zattrs"):
-                        # Format: <path>/.zattrs (v2)
-                        root_zarr, is_v3 = file.rsplit("/", 1)[0], False
-                        break
-                if not root_zarr:
+                        candidates.append((file.rsplit("/", 1)[0], False))
+
+                if not candidates:
                     return info
+
+                # the true root is the entry with the fewest path components
+                root_zarr, is_v3 = min(candidates, key=lambda c: c[0].count("/"))
 
                 # Extract elements: <root>.zarr/<type>/<name>/...
                 prefix = root_zarr + "/"
@@ -5181,3 +5618,36 @@ class Safetensors(Binary):
         except Exception:
             # Any exception during parsing means it's not a valid safetensors file
             return False
+
+
+@build_sniff_from_prefix
+class TensorBoardEvents(Binary):
+    """TensorBoard event log file."""
+
+    file_ext = "tfevents"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Detect a TensorBoard event log.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname("tensorboard.tfevents")
+        >>> TensorBoardEvents().sniff(fname)
+        True
+        >>> fname = get_test_fname("cellpose_model_safetensors.safetensors")
+        >>> TensorBoardEvents().sniff(fname)
+        False
+        """
+        data = file_prefix.contents_header_bytes
+
+        if len(data) < 16:
+            return False
+
+        record_length = struct.unpack("<Q", data[:8])[0]
+
+        if record_length == 0 or 12 + record_length + 4 > len(data):
+            return False
+
+        payload = data[12 : 12 + record_length]
+
+        return b"brain.Event:" in payload

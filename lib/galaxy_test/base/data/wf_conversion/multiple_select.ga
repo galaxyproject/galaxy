@@ -1,0 +1,41 @@
+{
+    "steps": {
+        "0": {
+            "tool_id": "gx_select_multiple",
+            "label": "select_single",
+            "id": 0,
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "type": "tool",
+            "name": "gx_select_multiple",
+            "post_job_actions": {},
+            "tool_version": null,
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"__page__\": 0, \"parameter\": \"[\\\"--ex1\\\"]\"}"
+        },
+        "1": {
+            "tool_id": "gx_select_multiple",
+            "label": "select_multi",
+            "id": 1,
+            "position": {
+                "left": 10,
+                "top": 10
+            },
+            "type": "tool",
+            "name": "gx_select_multiple",
+            "post_job_actions": {},
+            "tool_version": null,
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"__page__\": 0, \"parameter\": \"[\\\"--ex1\\\", \\\"ex2\\\"]\"}"
+        }
+    },
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Test multiple select roundtrip artifact",
+    "uuid": "adeb649c-ddac-4991-9bc3-cdbdf8b3d4be",
+    "annotation": ""
+}

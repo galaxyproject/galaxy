@@ -1,4 +1,5 @@
 <script setup>
+import { BCard, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
@@ -26,7 +27,7 @@ watch(
     () => isConfigLoaded.value,
     async () => {
         const themes = Object.keys(config.value.themes);
-        show.value = themes?.length > 1 ?? false;
+        show.value = (themes?.length ?? 0) > 1;
         if (!themes.includes(currentTheme.value)) {
             await setCurrentTheme(themes[0]);
         }
@@ -35,9 +36,9 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3 overflow-auto reset-theme-variables">
-        <b-form-radio-group v-model="currentValue">
-            <b-form-radio
+    <BCard :show="show" class="mr-3 overflow-auto reset-theme-variables">
+        <BFormRadioGroup v-model="currentValue">
+            <BFormRadio
                 v-for="(themeDetails, theme, index) in config.themes"
                 :key="theme"
                 :value="theme"
@@ -51,17 +52,16 @@ watch(
                     <span v-localize class="theme-hover">Hover</span>
                     <span v-localize class="theme-active">Active</span>
                 </div>
-            </b-form-radio>
-        </b-form-radio-group>
-    </b-card>
+            </BFormRadio>
+        </BFormRadioGroup>
+    </BCard>
 </template>
 
 <style lang="scss" scoped>
-@import "bootstrap/scss/bootstrap.scss";
-@import "@/style/scss/custom_theme_variables.scss";
+@import "@/style/scss/theme/blue.scss";
 .theme-element {
-    @extend .rounded;
-    @extend .p-1;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
 }
 .theme-masthead {
     @extend .theme-element;

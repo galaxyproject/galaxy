@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("FormText", () => {
     const mountFormText = async (props) =>
         await mount(FormText, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     it("should render the appropriate input type", async () => {
@@ -44,6 +44,14 @@ describe("FormText", () => {
         expect(el.exists()).toBe(true);
     });
 
+    it("should not point at a datalist without options", async () => {
+        for (const datalist of [undefined, []]) {
+            const wrapper = await mountFormText({ id: "section|text-input", datalist });
+            expect(wrapper.find("datalist").exists()).toBe(false);
+            expect(wrapper.find("[list]").exists()).toBe(false);
+        }
+    });
+
     it("should be able to render border and text color from props", async () => {
         const wrapper = await mountFormText({});
         const el = wrapper.find("input");
@@ -59,23 +67,23 @@ describe("FormText", () => {
         const v = "something";
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual(v);
+        expect(el.element.value).toEqual(v);
     });
 
     it("should be able to accept an array as value", async () => {
         const v = ["field_1", "field_2", "field_3"];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("field_1");
+        expect(el.element.value).toEqual("field_1");
         await wrapper.setProps({ multiple: true });
         const elMultiple = wrapper.find("textarea");
-        expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3");
+        expect(elMultiple.element.value).toEqual("field_1\nfield_2\nfield_3");
     });
 
     it("should be able to accept an empty array as value", async () => {
         const v = [];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("");
+        expect(el.element.value).toEqual("");
     });
 });

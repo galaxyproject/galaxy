@@ -7,7 +7,10 @@ from galaxy import (
     util,
 )
 from galaxy.managers import base as managers_base
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
@@ -47,7 +50,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         self.hda_manager = hda_manager
         self.folder_manager = folder_manager
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -82,12 +87,13 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
+        readme = self.folder_manager.get_readme(trans, folder)
+        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme)
         return LibraryFolderContentsIndexResult(metadata=metadata, folder_contents=folder_contents)
 
     def create(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         folder_id: LibraryFolderDatabaseIdField,
         payload: CreateLibraryFilePayload,
     ):
@@ -209,6 +215,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         folder: model.LibraryFolder,
         user_permissions: UserFolderPermissions,
         total_rows: int,
+        readme: str | None,
     ) -> LibraryFolderMetadata:
         full_path = self.folder_manager.build_folder_path(trans.sa_session, folder)
         parent_library_id = folder.parent_library.id if folder.parent_library else None
@@ -220,5 +227,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_name=folder.name,
             folder_description=folder.description,
             parent_library_id=parent_library_id,
+            readme=readme,
         )
         return metadata

@@ -69,7 +69,7 @@ class WesApi:
     @router.post("/ga4gh/wes/v1/runs")
     def submit_run(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         workflow_params: str | None = Form(None),
         workflow_type: str = Form(...),
         workflow_type_version: str = Form(...),

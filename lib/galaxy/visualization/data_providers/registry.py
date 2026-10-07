@@ -21,6 +21,7 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
 from galaxy.visualization.data_providers.basic import (
@@ -61,7 +62,7 @@ class DataProviderRegistry:
             "column_with_stats": ColumnDataProvider,
         }
 
-    def get_data_provider(self, trans, name=None, source="data", raw=False, original_dataset=None):
+    def get_data_provider(self, trans: ProvidesAppContext, name=None, source="data", raw=False, original_dataset=None):
         """
         Returns data provider matching parameter values. For standalone data
         sources, source parameter is ignored.

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 const props = defineProps<{
     extensions: string[];
@@ -25,7 +25,6 @@ const emit = defineEmits<{
 const localFormatsVisible = computed({
     get: () => props.formatsVisible,
     set: (value: boolean) => {
-        // emit("update:show-modal", value);
         emit("update:formats-visible", value);
     },
 });
@@ -38,26 +37,25 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
+            v-model:pressed="localFormatsVisible"
             v-g-tooltip.hover.bottom="!formatsVisible ? orList([...props.extensions]) : ''"
             size="small"
             color="blue"
             transparent
-            inline
-            :pressed.sync="localFormatsVisible">
+            inline>
             <span v-localize>accepted formats</span>
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
         </GButton>
-        <BPopover
+        <GPopover
             v-if="props.popover"
-            v-model="localFormatsVisible"
+            v-model:show="localFormatsVisible"
             :target="props.formatsButtonId"
-            :show.sync="localFormatsVisible"
             placement="bottom">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
             </ul>
-        </BPopover>
+        </GPopover>
         <GCollapse v-else :visible="localFormatsVisible">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>

@@ -7,7 +7,6 @@ interface Root_messages extends Component {
     done: SelectorTemplate;
     info: SelectorTemplate;
     donelarge: SelectorTemplate;
-    infolarge: SelectorTemplate;
     require_login: SelectorTemplate;
 }
 interface Root_ extends Component {
@@ -298,6 +297,7 @@ interface Rootfiles_dialog extends Component {
     row: SelectorTemplate;
     back_btn: SelectorTemplate;
     options_ready: SelectorTemplate;
+    ok: SelectorTemplate;
 }
 interface Roothistory_export extends Component {
     export_link: SelectorTemplate;
@@ -422,6 +422,7 @@ interface Rootworkflow_run extends Component {
     history_target_link: SelectorTemplate;
     runtime_setting_button: SelectorTemplate;
     runtime_setting_target: SelectorTemplate;
+    new_history_name_input: SelectorTemplate;
     input_select_field: SelectorTemplate;
     primary_storage_indciator: SelectorTemplate;
     intermediate_storage_indciator: SelectorTemplate;
@@ -461,6 +462,8 @@ interface Rootworkflow_editor extends Component {
     change_datatype: SelectorTemplate;
     select_datatype_text_search: SelectorTemplate;
     select_datatype: SelectorTemplate;
+    select_datatype_option_not_matching: SelectorTemplate;
+    selected_datatype: SelectorTemplate;
     add_tags: SelectorTemplate;
     remove_tags: SelectorTemplate;
     tool_version_button: SelectorTemplate;
@@ -549,6 +552,49 @@ interface Rootadmintoolshed extends Component {
     search_results: SelectorTemplate;
     upgrade_notification: SelectorTemplate;
 }
+interface Rootadminquota extends Component {
+    add_new: SelectorTemplate;
+    items: SelectorTemplate;
+    form: SelectorTemplate;
+    source_label: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    users: SelectorTemplate;
+    users_input: SelectorTemplate;
+    user_option: SelectorTemplate;
+    selected_user: SelectorTemplate;
+    remove_selected_user: SelectorTemplate;
+    submit: SelectorTemplate;
+}
+interface Rootadminrole extends Component {
+    form: SelectorTemplate;
+    users: SelectorTemplate;
+    users_input: SelectorTemplate;
+    user_option: SelectorTemplate;
+    selected_user: SelectorTemplate;
+    remove_selected_user: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    selected_group: SelectorTemplate;
+    remove_selected_group: SelectorTemplate;
+    submit: SelectorTemplate;
+}
+interface Rootadminuser_roles_groups extends Component {
+    form: SelectorTemplate;
+    roles: SelectorTemplate;
+    roles_input: SelectorTemplate;
+    role_option: SelectorTemplate;
+    selected_role: SelectorTemplate;
+    remove_selected_role: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    selected_group: SelectorTemplate;
+    remove_selected_group: SelectorTemplate;
+    submit: SelectorTemplate;
+}
 interface Rootadminindex extends Component {
     datatypes: SelectorTemplate;
     dependencies: SelectorTemplate;
@@ -573,6 +619,9 @@ interface Rootadmin extends Component {
     manage_dependencies: Rootadminmanage_dependencies;
     manage_jobs: Rootadminmanage_jobs;
     toolshed: Rootadmintoolshed;
+    quota: Rootadminquota;
+    role: Rootadminrole;
+    user_roles_groups: Rootadminuser_roles_groups;
     index: Rootadminindex;
     warning: SelectorTemplate;
     jobs_title: SelectorTemplate;
@@ -633,6 +682,7 @@ interface Rootlibrariesfolder extends Component {
     download_button: SelectorTemplate;
     delete_btn: SelectorTemplate;
     toast_msg: SelectorTemplate;
+    toast_msg_with_text: SelectorTemplate;
     toast_warning: SelectorTemplate;
     select_import_dir_item: SelectorTemplate;
     import_dir_btn: SelectorTemplate;
@@ -703,7 +753,6 @@ interface Rootupload extends Component {
     rule_dataset_selector_row: SelectorTemplate;
     build_btn: SelectorTemplate;
     file_source_selector: SelectorTemplate;
-    file_dialog_ok: SelectorTemplate;
     paste_new: SelectorTemplate;
 }
 interface Rootrule_builder extends Component {

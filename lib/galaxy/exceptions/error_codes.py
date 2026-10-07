@@ -51,3 +51,16 @@ for entry in loads(error_codes_json):
     globals()[name] = error_code_obj
     error_codes_by_name[name] = error_code_obj
     error_codes_by_int_code[error_code_obj.code] = error_code_obj
+
+
+def __getattr__(name: str) -> ErrorCode:
+    """Expose the JSON-driven, dynamically-created error codes to static analysis.
+
+    The codes above are assigned via ``globals()[name] = ...``, which mypy cannot
+    see, so attribute access like ``error_codes.ADMIN_REQUIRED`` is otherwise
+    reported as an unknown attribute.
+    """
+    try:
+        return error_codes_by_name[name]
+    except KeyError:
+        raise AttributeError(name)

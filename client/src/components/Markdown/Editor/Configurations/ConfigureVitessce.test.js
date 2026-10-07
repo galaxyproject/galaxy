@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,8 +28,8 @@ beforeEach(() => {
 
 function mountComponent(content = {}) {
     return mount(ConfigureVitessce, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             name: "vitessce-view",
             content: JSON.stringify(content),
         },
@@ -43,8 +43,8 @@ function mountComponent(content = {}) {
 describe("ConfigureVitessce.vue", () => {
     it("renders error alert on invalid content", () => {
         const wrapper = mount(ConfigureVitessce, {
-            localVue,
-            propsData: {
+            global: localVue,
+            props: {
                 name: "vitessce-view",
                 content: "{invalid-json",
             },
@@ -54,13 +54,13 @@ describe("ConfigureVitessce.vue", () => {
             },
         });
         expect(wrapper.text()).toContain("Failed to parse:");
-        expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
+        expect(wrapper.find(".alert").exists()).toBe(true);
     });
 
     it("shows warning alert if no URL-like fields are found", () => {
         const wrapper = mountComponent({});
         expect(wrapper.text()).toContain("No URL-like fields found.");
-        expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
+        expect(wrapper.find(".alert").exists()).toBe(true);
     });
 
     it("renders ConfigureHeader and ConfigureSelector for each URL field", () => {
@@ -116,7 +116,7 @@ describe("ConfigureVitessce.vue", () => {
         });
         wrapper.findComponent(ConfigureHeader).vm.$emit("ok");
         expect(wrapper.emitted("change")).toBeTruthy();
-        const emittedJson = wrapper.emitted("change")[0][0];
+        const emittedJson = emittedArg(wrapper, "change");
         expect(typeof emittedJson).toBe("string");
         expect(JSON.parse(emittedJson)).toMatchObject({
             datasets: [{ name: "Dataset 1", uid: "ds1" }],

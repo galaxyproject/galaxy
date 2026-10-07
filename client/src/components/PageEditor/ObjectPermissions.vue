@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
-import Vue, { computed, type Ref, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { GalaxyApi, type MessageException } from "@/api";
 import { fetchCollectionSummary } from "@/api/datasetCollections";
@@ -22,6 +21,7 @@ import {
 
 import PermissionObjectType from "./PermissionObjectType.vue";
 import SharingIndicator from "./SharingIndicator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -86,9 +86,8 @@ watch(referencedJobIds, async () => {
             return;
         }
 
-        if ("history_id" in data) {
-            const historyId = data.history_id;
-            Vue.set(jobsToHistories.value, jobId, historyId);
+        if ("history_id" in data && data.history_id) {
+            jobsToHistories.value[jobId] = data.history_id;
         }
     });
 });
@@ -115,7 +114,7 @@ watch(referencedInvocationIds, async () => {
 
         if ("history_id" in data) {
             const historyId = data.history_id;
-            Vue.set(invocationsToHistories.value, invocationId, historyId);
+            invocationsToHistories.value[invocationId] = historyId;
         }
     });
 });
@@ -132,7 +131,7 @@ watch(referencedHistoryDatasetCollectionIds, async () => {
         fetchCollectionSummary({ hdca_id: historyDatasetCollectionId })
             .then((data) => {
                 const historyId = data.history_id;
-                Vue.set(historyDatasetCollectionsToHistories.value, historyDatasetCollectionId, historyId);
+                historyDatasetCollectionsToHistories.value[historyDatasetCollectionId] = historyId;
             })
             .catch(handleError);
     });
@@ -214,7 +213,7 @@ watch(historyIds, async () => {
     for (const historyId of historyIds.value) {
         loadHistoryById(historyId);
         if (historyId && !(historyId in historyAccessible.value)) {
-            Vue.set(historyAccessible.value, historyId, null);
+            historyAccessible.value[historyId] = null;
 
             const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/sharing", {
                 params: { path: { history_id: historyId } },
@@ -224,12 +223,12 @@ watch(historyIds, async () => {
                 const errorMessage = errorMessageAsString(error);
                 const title = "Failed to fetch history metadata.";
                 toast.error(errorMessage, title);
-                Vue.set(historyAccessible.value, historyId, `${title} Reason: ${errorMessage}.`);
+                historyAccessible.value[historyId] = `${title} Reason: ${errorMessage}.`;
                 return;
             }
 
             const accessible = data.importable;
-            Vue.set(historyAccessible.value, historyId, accessible);
+            historyAccessible.value[historyId] = accessible;
         }
     }
 });
@@ -238,7 +237,7 @@ async function initWorkflowData() {
     for (const workflowId of referencedWorkflowIds.value) {
         fetchWorkflowForInstanceId(workflowId);
         if (workflowId && !(workflowId in workflowAccessible.value)) {
-            Vue.set(workflowAccessible.value, workflowId, null);
+            workflowAccessible.value[workflowId] = null;
 
             const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/sharing", {
                 params: { path: { workflow_id: workflowId } },
@@ -248,12 +247,12 @@ async function initWorkflowData() {
                 const errorMessage = errorMessageAsString(error);
                 const title = "Failed to fetch workflow metadata.";
                 toast.error(errorMessage, title);
-                Vue.set(workflowAccessible.value, workflowId, `${title} Reason: ${errorMessage}.`);
+                workflowAccessible.value[workflowId] = `${title} Reason: ${errorMessage}.`;
                 return;
             }
 
             const accessible = data.importable;
-            Vue.set(workflowAccessible.value, workflowId, accessible);
+            workflowAccessible.value[workflowId] = accessible;
         }
     }
 }
@@ -269,7 +268,7 @@ function initHistoryDatasetData() {
                     const permissionInputs = response.data.permission_inputs;
                     if (permissionDisable) {
                         const errorStr = `Cannot modify permissions of this dataset. Reason: ${permissionInputs[0].label}`;
-                        Vue.set(historyDatasetAccessible.value, historyDatasetId, errorStr);
+                        historyDatasetAccessible.value[historyDatasetId] = errorStr;
                         return;
                     }
                     const accessPermissionInput = permissionInputs[1];
@@ -277,13 +276,13 @@ function initHistoryDatasetData() {
                         throw Error("Galaxy Bug");
                     }
                     const accessible = (accessPermissionInput.value || []).length == 0;
-                    Vue.set(historyDatasetAccessible.value, historyDatasetId, accessible);
+                    historyDatasetAccessible.value[historyDatasetId] = accessible;
                 })
                 .catch((e) => {
                     const errorMessage = errorMessageAsString(e);
                     const title = "Failed to fetch dataset metadata.";
                     toast.error(errorMessage, title);
-                    Vue.set(historyDatasetAccessible.value, historyDatasetId, `${title} Reason: ${errorMessage}.`);
+                    historyDatasetAccessible.value[historyDatasetId] = `${title} Reason: ${errorMessage}.`;
                 });
         }
     }
@@ -294,7 +293,7 @@ const tableItems = computed<ItemInterface[]>(() => {
 });
 
 async function makeAccessible(item: ItemInterface) {
-    let accessibleResult: Boolean | undefined = undefined;
+    let accessibleResult: boolean | undefined = undefined;
     let errorResult: MessageException | undefined = undefined;
     let accessibleMap: AccessibleMapRef;
     if (item.type == "history") {
@@ -332,10 +331,10 @@ async function makeAccessible(item: ItemInterface) {
         const errorMessage = errorMessageAsString(errorResult);
         const title = "Failed update object accessibility.";
         toast.error(errorMessage, title);
-        Vue.set(accessibleMap.value, item.id, `${title} Reason: ${errorMessage}.`);
+        accessibleMap.value[item.id] = `${title} Reason: ${errorMessage}.`;
         return;
     }
-    Vue.set(accessibleMap.value, item.id, accessibleResult);
+    accessibleMap.value[item.id] = accessibleResult ?? null;
 }
 </script>
 
@@ -344,7 +343,7 @@ async function makeAccessible(item: ItemInterface) {
         <GTable show-empty :items="tableItems" :fields="tableFields">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading objects" />
-                <BAlert v-else show variant="info"> No objects found in referenced Galaxy markdown content. </BAlert>
+                <GAlert v-else show variant="info"> No objects found in referenced Galaxy markdown content. </GAlert>
             </template>
 
             <template v-slot:cell(name)="{ item }">

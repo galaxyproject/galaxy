@@ -87,7 +87,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
             def _attach_file(upload_payload: dict[str, Any], uri: str, index: int = 0) -> dict[str, str | bool]:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
-                if not is_path or use_path_paste:
+                client_local = getattr(upload_target, "client_local", False)
+                if not is_path or (use_path_paste and not client_local):
                     return {"src": "url", "url": uri}
                 else:
                     path = uri[len("file://") :]
@@ -179,8 +180,9 @@ class StagingInterface(metaclass=abc.ABCMeta):
         def upload_func(upload_target: UploadTarget) -> dict[str, Any]:
             def _attach_file(upload_payload: dict[str, Any], uri: str, index: int = 0) -> None:
                 uri = path_or_uri_to_uri(uri)
+                client_local = getattr(upload_target, "client_local", False)
                 is_path = uri.startswith("file://")
-                if not is_path or use_path_paste:
+                if not is_path or (use_path_paste and not client_local):
                     upload_payload["inputs"][f"files_{index}|url_paste"] = uri
                 else:
                     path = uri[len("file://") :]

@@ -4,7 +4,7 @@
 
 import axios from "axios";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 import { parse } from "yaml";
 
 import { type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";

@@ -1,11 +1,22 @@
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
+import FormData from "./Elements/FormData/FormData.vue";
 import FormDisplay from "./FormDisplay.vue";
 
 const localVue = getLocalVue();
+
+vi.mock("./Elements/FormData/FormData.vue", () => ({
+    default: {
+        name: "FormData",
+        props: ["name"],
+        render: () => h("div"),
+    },
+}));
 
 describe("FormDisplay", () => {
     let wrapper;
@@ -94,7 +105,7 @@ describe("FormDisplay", () => {
         };
         wrapper = mount(FormDisplay, {
             propsData,
-            localVue,
+            global: localVue,
             stubs: {},
         });
     });
@@ -128,10 +139,10 @@ describe("FormDisplay", () => {
 
     it("conditional switch", async () => {
         const conditionalBool = wrapper.find("[type='checkbox']");
-        await conditionalBool.setChecked(false);
+        await conditionalBool.setValue(false);
         const conditionalInputUnchecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputUnchecked.length).toEqual(0);
-        await conditionalBool.setChecked(true);
+        await conditionalBool.setValue(true);
         const conditionalInputChecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
         expect(conditionalInputChecked.length).toEqual(1);
         await wrapper.setProps({
@@ -157,4 +168,60 @@ describe("FormDisplay", () => {
         const sectionHelpText = wrapper.find("[data-description='section help']").text();
         expect(sectionHelpText).toBe("section help");
     });
+
+    it.each(["data", "data_collection"])(
+        "relays pagination and search events from repeated %s inputs",
+        async (type) => {
+            const input = { type, name: "input2", options: {} };
+            wrapper.unmount();
+            wrapper = mount(FormDisplay, {
+                localVue,
+                propsData: {
+                    prefix: "section",
+                    inputs: [
+                        {
+                            type: "repeat",
+                            name: "queries",
+                            title: "Dataset",
+                            inputs: [input],
+                            cache: [
+                                [input],
+                                [
+                                    {
+                                        type: "repeat",
+                                        name: "nested",
+                                        title: "Nested dataset",
+                                        inputs: [input],
+                                        cache: [[input]],
+                                    },
+                                ],
+                            ],
+                        },
+                    ],
+                },
+            });
+            await flushPromises();
+
+            const selectors = wrapper.findAllComponents(FormData);
+            expect(selectors.length).toBe(2);
+            const names = ["section|queries_0|input2", "section|queries_1|nested_0|input2"];
+            const src = type === "data" ? "hda" : "hdca";
+
+            for (const [index, name] of names.entries()) {
+                const selector = selectors.at(index);
+                expect(selector.props("name")).toBe(name);
+
+                const pagination = { name, src, offset: 50, limit: 50, search: "matching" };
+                selector.vm.$emit("load-more", pagination);
+                expect(wrapper.emitted("load-more")?.[index]).toEqual([pagination]);
+
+                const search = { name, src, query: "matching", limit: 50 };
+                selector.vm.$emit("search-change", search);
+                expect(wrapper.emitted("search-change")?.[index]).toEqual([search]);
+            }
+
+            expect(wrapper.emitted("load-more")).toHaveLength(2);
+            expect(wrapper.emitted("search-change")).toHaveLength(2);
+        },
+    );
 });

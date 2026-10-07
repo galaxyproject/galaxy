@@ -2,7 +2,6 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMemoize, watchImmediate } from "@vueuse/core";
-import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
@@ -11,6 +10,7 @@ import { useToast } from "@/composables/toast";
 
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import WorkflowCardList from "@/components/Workflow/List/WorkflowCardList.vue";
@@ -152,16 +152,17 @@ function createNew(event: Event) {
 <template>
     <ActivityPanel title="Workflows">
         <template v-slot:header-buttons>
-            <BButton
+            <GButton
                 v-g-tooltip.hover.top
-                size="sm"
-                variant="link"
+                size="small"
+                transparent
+                icon-only
                 class="create-button"
                 title="Create new workflow"
                 href="/workflows/edit"
                 @click="createNew">
                 <FontAwesomeIcon :icon="faPlus" />
-            </BButton>
+            </GButton>
             <FavoritesButton v-model="showFavorites" tooltip="Show bookmarked" />
         </template>
 
@@ -178,8 +179,8 @@ function createNew(event: Event) {
                 :filterable="false"
                 :current-workflow-id="props.currentWorkflowId"
                 editor-view
-                @insertWorkflow="(...args) => emit('insertWorkflow', ...args)"
-                @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)"
+                @insertWorkflow="(id: string, name: string) => emit('insertWorkflow', id, name)"
+                @insertWorkflowSteps="(id: string, stepCount: number) => emit('insertWorkflowSteps', id, stepCount)"
                 @refreshList="refresh" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">

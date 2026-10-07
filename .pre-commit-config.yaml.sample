@@ -21,6 +21,9 @@ repos:
       exclude_types:  # .prettierignore ignored apparently ...
         - yaml
         - json
+      # Generated from collection_semantics.yml by semantics.py; prettier both
+      # fights the generator and strips \_ escapes that LaTeX math spans need.
+      exclude: ^doc/source/dev/collection_semantics\.md$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0  # Use the ref you want to point at
     hooks:

@@ -81,7 +81,6 @@ class ImportDatasetModal {
                 this.processImportToHistory(new_history.id, new_history.name);
             } catch {
                 Toast.error("An error occurred.");
-            } finally {
                 modal.enableButton("Import");
             }
         } else {
@@ -90,7 +89,6 @@ class ImportDatasetModal {
             var history_id = selectedOption.value;
             var history_name = selectedOption.textContent;
             this.processImportToHistory(history_id, history_name);
-            modal.enableButton("Import");
         }
     }
 
@@ -147,19 +145,19 @@ class ImportDatasetModal {
         }
 
         if (this.options.chain_call_control.failed_number === 0) {
-            Toast.success(
-                "Click here to start analyzing it.",
-                "Selected datasets imported into history",
-                `${getAppRoot()}histories/view?id=${history_id}`,
-            );
+            Toast.addToast("Click here to start analyzing it.", {
+                title: "Selected datasets imported into history",
+                variant: "success",
+                to: `/histories/view?id=${history_id}`,
+            });
         } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
             Toast.error("There was an error and no datasets were imported into history.");
         } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
-            Toast.warning(
-                "Some of the datasets could not be imported into history. Click this to see what was imported.",
-                "",
-                `${getAppRoot()}histories/view?id=${history_id}`,
-            );
+            Toast.addToast("Click here to see what was imported.", {
+                title: "Some of the datasets could not be imported into history",
+                variant: "warning",
+                to: `/histories/view?id=${history_id}`,
+            });
         }
         modal.hide();
     }

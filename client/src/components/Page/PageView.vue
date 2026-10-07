@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
 import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";
@@ -12,6 +11,8 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -106,10 +107,10 @@ function stsUrl(config: any) {
             <div
                 v-if="props.displayOnly && page && !loading"
                 class="page-display-toolbar d-flex align-items-center p-2 border-bottom">
-                <BButton variant="link" size="sm" data-description="page view edit button" @click="onEdit">
+                <GButton transparent color="blue" size="small" data-description="page view edit button" @click="onEdit">
                     <FontAwesomeIcon :icon="faArrowLeft" />
                     {{ PUBLISHED_LABELS.editButton }}
-                </BButton>
+                </GButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ page.title || page.name }}
                 </span>
@@ -119,9 +120,9 @@ function stsUrl(config: any) {
             </div>
             <div v-else-if="hasError">
                 <Heading h1 separator size="lg">{{ PUBLISHED_LABELS.errorHeading }}</Heading>
-                <BAlert show variant="danger">
+                <GAlert show variant="danger">
                     {{ errorMessage }}
-                </BAlert>
+                </GAlert>
             </div>
             <div v-else-if="page && isConfigLoaded" class="page-container">
                 <Heading v-if="props.showHeading && !props.displayOnly" h1 separator size="lg" class="page-title">
@@ -141,7 +142,7 @@ function stsUrl(config: any) {
             <LoadingSpan v-else-if="page && !isConfigLoaded" message="Loading Galaxy configuration" />
         </div>
     </div>
-    <PublishedItem v-else :item="page">
+    <PublishedItem v-else :item="page" override-path="pages">
         <template v-slot>
             <div v-if="isConfigLoaded && page">
                 <Markdown

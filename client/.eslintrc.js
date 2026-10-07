@@ -10,6 +10,29 @@ const baseRules = {
     "vue/valid-v-slot": "error",
     "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
+    // Vue 3 specific rules
+    "vue/no-deprecated-dollar-listeners-api": "error",
+    "vue/no-deprecated-dollar-scopedslots-api": "error",
+    "vue/no-deprecated-events-api": "error",
+    "vue/no-deprecated-filter": "error",
+    "vue/no-deprecated-functional-template": "error",
+    "vue/no-deprecated-inline-template": "error",
+    "vue/no-deprecated-props-default-this": "error",
+    "vue/no-deprecated-router-link-tag-prop": "error",
+    "vue/no-deprecated-scope-attribute": "error",
+    "vue/no-deprecated-slot-attribute": "error",
+    "vue/no-deprecated-slot-scope-attribute": "error",
+    "vue/no-deprecated-v-bind-sync": "error",
+    "vue/no-deprecated-v-on-number-modifiers": "error",
+    "vue/no-deprecated-vue-config-keycodes": "error",
+    "vue/no-lifecycle-after-await": "error",
+    "vue/no-ref-as-operand": "error",
+    "vue/no-v-for-template-key-on-child": "error",
+    "vue/require-explicit-emits": "warn",
+    // Bootstrap-vue isn't registered globally, so its components have to be
+    // imported where they're used. Only checks bootstrap-vue names.
+    "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
+
     // Downgrade the severity of some rules to warnings as a transition measure.
     // For example, vue/multi-word-component names is considered an error,
     // but that kind of refactoring is best done slowly, one bit at a time
@@ -19,11 +42,23 @@ const baseRules = {
     "vue/prop-name-casing": "warn",
     "vue/require-prop-types": "warn",
     "vue/require-default-prop": "warn",
-    "vue/no-v-html": "warn",
 
     // Increase the severity of some rules to errors
     "vue/attributes-order": "error",
     "vue/order-in-components": "error",
+    // Markup goes through v-sanitize-html (DOMPurify); v-no-sanitize-html is the
+    // reviewed exception for server/shipped markup, with a comment saying why.
+    "vue/no-v-html": "error",
+    // v-no-sanitize-html skips DOMPurify, so each use has to disable this rule
+    // inline with a reason after "--".
+    "vue/no-restricted-syntax": [
+        "error",
+        {
+            selector: "VAttribute[directive=true][key.name.name='no-sanitize-html']",
+            message:
+                "v-no-sanitize-html skips DOMPurify. Prefer v-sanitize-html; if the markup really is trusted, disable this line with a reason.",
+        },
+    ],
 
     // Prettier compromises/workarounds -- mostly #wontfix?
     "vue/html-indent": "off",
@@ -94,7 +129,7 @@ const baseRules = {
 const baseExtends = [
     "eslint:recommended",
     "plugin:compat/recommended",
-    "plugin:vue/recommended",
+    "plugin:vue/vue3-recommended",
     "plugin:vuejs-accessibility/recommended",
 ];
 
@@ -109,7 +144,7 @@ module.exports = {
         es6: true,
     },
     rules: baseRules,
-    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy", "packages"],
+    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy", "packages/api-client"],
     plugins: basePlugins,
     overrides: [
         {
@@ -159,6 +194,14 @@ module.exports = {
                 project: true,
             },
             plugins: [...basePlugins, "@typescript-eslint"],
+        },
+        {
+            // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
+            // components keep `.native` for vue-router 3's RouterLink roots.
+            files: ["**/packages/ui/src/**/*.vue"],
+            rules: {
+                "vue/no-deprecated-v-on-native-modifier": "off",
+            },
         },
     ],
 };

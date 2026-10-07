@@ -34,6 +34,7 @@ from .datasets import (
     tool_recommendation_dataset,
 )
 from .evaluators import (
+    ContainerVerified,
     FirstAttemptOk,
     HandoffMatch,
     MustMention,
@@ -269,6 +270,9 @@ def build_custom_tool(
     dataset.add_evaluator(ToolProduced())
     dataset.add_evaluator(FirstAttemptOk())
     dataset.add_evaluator(ToolYamlContains())
+    # Verify the produced container isn't a hallucinated biocontainer tag (checks
+    # against quay.io; passes for verified-real, non-biocontainer, or unverifiable).
+    dataset.add_evaluator(ContainerVerified())
     return BuiltDataset(
         dataset=dataset,
         task=make_custom_tool_task(deps, usage_buffer=usage_buffer),

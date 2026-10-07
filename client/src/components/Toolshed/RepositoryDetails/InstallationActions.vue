@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { BSpinner } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     status?: string;
@@ -24,23 +27,21 @@ function onReset() {
 
 <template>
     <div>
-        <b-button v-if="isBusy" variant="secondary" class="btn-sm" disabled>
-            <b-spinner small></b-spinner>
-        </b-button>
-        <b-button v-else-if="installState" variant="primary" class="btn-sm" @click="() => emit('onInstall')">
-            Install
-        </b-button>
-        <b-button v-else-if="uninstallState" variant="danger" class="btn-sm" @click="() => emit('onUninstall')">
+        <GButton v-if="isBusy" size="small" disabled>
+            <BSpinner small></BSpinner>
+        </GButton>
+        <GButton v-else-if="installState" color="blue" size="small" @click="() => emit('onInstall')"> Install </GButton>
+        <GButton v-else-if="uninstallState" color="red" size="small" @click="() => emit('onUninstall')">
             Uninstall
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-else
-            variant="warning"
-            class="btn-sm"
+            color="yellow"
+            size="small"
             :title="localize('Reset Broken or Stuck Installation')"
             @click="onReset">
             Reset
-        </b-button>
+        </GButton>
     </div>
 </template>
 

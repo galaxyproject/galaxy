@@ -1,8 +1,12 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import FormHidden from "./Elements/FormHidden.vue";
+import FormNumber from "./Elements/FormNumber.vue";
+import FormNumberList from "./Elements/FormNumberList.vue";
 import FormText from "./Elements/FormText.vue";
 import FormElement from "./FormElement.vue";
 
@@ -13,14 +17,14 @@ describe("FormElement", () => {
 
     beforeEach(() => {
         wrapper = mount(FormElement, {
-            propsData: {
+            props: {
                 id: "input",
                 value: "initial_value",
                 help: "help_text",
                 error: "error_text",
                 title: "title_text",
             },
-            localVue,
+            global: localVue,
         });
     });
 
@@ -53,8 +57,8 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable']").length).toEqual(1);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");
-        expect(wrapper.emitted().input[0][1]).toEqual("input");
+        expect(emittedArg(wrapper, "input")).toEqual("collapsible_value");
+        expect(wrapper.emitted("input")[0][1]).toEqual("input");
 
         await wrapper.setProps({
             collapsedEnableText: "Enable Collapsible",
@@ -64,7 +68,7 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(0);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(wrapper.emitted().input[1][0]).toEqual("default_value");
+        expect(emittedArg(wrapper, "input", 1)).toEqual("default_value");
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(0);
     });
@@ -84,6 +88,16 @@ describe("FormElement", () => {
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
     });
 
+    it("displays a multiple integer as a list of number fields", async () => {
+        await wrapper.setProps({ type: "integer", value: [1, 2], workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(true);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(2);
+
+        await wrapper.setProps({ value: 1, attributes: { multiple: false } });
+        expect(wrapper.findComponent(FormNumberList).exists()).toBe(false);
+        expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
+    });
+
     it("marks required values", async () => {
         await wrapper.setProps({ type: "text", attributes: { optional: false } });
         expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
@@ -100,5 +114,12 @@ describe("FormElement", () => {
         await wrapper.setProps({ type: "text", value: "", attributes: { optional: false } });
         expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
         expect(wrapper.find(".ui-form-title-message").text()).toContain("required");
+    });
+
+    it("renders html help through v-sanitize-html", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        await wrapper.setProps({ help: "Use <b>bold</b> values" });
+        expect(sanitizeHtml).toHaveBeenLastCalledWith("Use <b>bold</b> values", "default");
+        expect(wrapper.find(".ui-form-info b").text()).toBe("bold");
     });
 });

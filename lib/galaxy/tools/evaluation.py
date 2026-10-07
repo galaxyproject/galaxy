@@ -79,6 +79,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.util import (
     find_instance_nested,
+    in_directory,
     listify,
     RW_R__R__,
     safe_makedirs,
@@ -309,6 +310,7 @@ class ToolEvaluator:
             transient_directory=transient_directory,
             file_sources=self.app.file_sources,
             user_context=user_context,
+            datatypes_registry=self.app.datatypes_registry,
         )
         for key, value in deferred_objects.items():
             if isinstance(value, model.DatasetInstance):
@@ -803,14 +805,24 @@ class ToolEvaluator:
             with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                 config_filename = temp.name
             if config_file.filename is not None:
-                # Explicit filename was requested, this is implemented as symbolic link
-                # to the actual config file that is placed in tool working directory
-                directory = os.path.join(self.local_working_directory, "working")
-                os.link(config_filename, os.path.join(directory, config_file.filename))
+                self._link_config_file(config_filename, config_file.filename)
             self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
             self._register_extra_file(config_file.name, config_filename)
             config_filenames.append(config_filename)
         return config_filenames
+
+    def _link_config_file(self, config_filename: str, filename: str) -> None:
+        """Hard-link a config file under its explicit ``filename`` below the tool working directory."""
+        directory = os.path.join(self.local_working_directory, "working")
+        link_path = os.path.normpath(os.path.join(directory, filename))
+        # in_directory resolves symlinks in the existing parents of link_path, so a
+        # subdirectory that points elsewhere is refused as well as absolute and '..' names.
+        if link_path == os.path.normpath(directory) or not in_directory(link_path, directory):
+            raise RequestParameterInvalidException(
+                f"Config file filename {filename!r} must be a relative path inside the job working directory"
+            )
+        safe_makedirs(os.path.dirname(link_path))
+        os.link(config_filename, link_path)
 
     def _build_environment_variables(self):
         param_dict = self.param_dict
@@ -1047,10 +1059,7 @@ class UserToolEvaluator(ToolEvaluator):
                 with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                     config_filename = temp.name
                 if config_file.filename is not None:
-                    # Explicit filename was requested, this is implemented as symbolic link
-                    # to the actual config file that is placed in tool working directory
-                    directory = os.path.join(self.local_working_directory, "working")
-                    os.link(config_filename, os.path.join(directory, config_file.filename))
+                    self._link_config_file(config_filename, config_file.filename)
                 self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
                 self._register_extra_file(config_file.name, config_filename)
                 config_filenames.append(config_filename)

@@ -1,20 +1,26 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
 
 import SelectPreferredStore from "./SelectPreferredStore.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
 
 setupSelectableMock();
 
 const localVue = getLocalVue(true);
+
+const CONFIRM_BUTTON_SELECTOR = ".g-modal-confirm-buttons .g-button.g-blue" as const;
 
 const TEST_HISTORY_ID = "myTestHistoryId";
 
@@ -48,24 +54,12 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
     );
 
     const wrapper = mount(SelectPreferredStore as object, {
-        propsData: {
+        props: {
             preferredObjectStoreId: preferredObjectStoreId,
             history: TEST_HISTORY,
-            showModal: true,
+            show: true,
         },
-        localVue,
-        stubs: {
-            BModal: {
-                template: `
-                    <div>
-                        <slot></slot>
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" @click="$emit('ok')">OK</button>
-                        </div>
-                    </div>
-                `,
-            },
-        },
+        global: localVue,
     });
 
     await flushPromises();
@@ -78,6 +72,7 @@ const PREFERENCES = ROOT_COMPONENT.preferences;
 describe("SelectPreferredStore.vue", () => {
     beforeEach(async () => {
         putRequests = [];
+        vi.clearAllMocks();
     });
 
     it("updates object store to default on selection null", async () => {
@@ -93,7 +88,7 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const okButton = wrapper.find(".btn-primary");
+        const okButton = wrapper.find(CONFIRM_BUTTON_SELECTOR);
         await okButton.trigger("click");
 
         await flushPromises();
@@ -101,8 +96,7 @@ describe("SelectPreferredStore.vue", () => {
         expect(putRequests.length).toBe(1);
         expect(putRequests[0]?.data.preferred_object_store_id).toEqual(null);
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
+        expect(emittedArg(wrapper, "updated")).toEqual(null);
     });
 
     it("updates object store to on non-null selection", async () => {
@@ -118,7 +112,7 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const okButton = wrapper.find(".btn-primary");
+        const okButton = wrapper.find(CONFIRM_BUTTON_SELECTOR);
         await okButton.trigger("click");
 
         await flushPromises();
@@ -126,7 +120,56 @@ describe("SelectPreferredStore.vue", () => {
         expect(putRequests.length).toBe(1);
         expect(putRequests[0]?.data.preferred_object_store_id).toEqual("object_store_2");
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");
+        expect(emittedArg(wrapper, "updated")).toEqual("object_store_2");
+    });
+
+    it("keeps the modal open and shows a toast when the storage update request fails", async () => {
+        server.use(
+            http.untyped.put(`/api/histories/${TEST_HISTORY_ID}`, () => {
+                return HttpResponse.json({ err_msg: "failed to update" }, { status: 500 });
+            }),
+        );
+
+        const wrapper = mount(SelectPreferredStore as object, {
+            propsData: {
+                preferredObjectStoreId: null,
+                history: TEST_HISTORY,
+                show: true,
+            },
+            global: localVue,
+        });
+
+        await flushPromises();
+
+        const galaxyDefaultOption = wrapper.find(
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector,
+        );
+        await galaxyDefaultOption.trigger("click");
+        await flushPromises();
+
+        const okButton = wrapper.find(CONFIRM_BUTTON_SELECTOR);
+        await okButton.trigger("click");
+
+        await flushPromises();
+
+        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+        expect(emittedArg(wrapper, "update:show", -1)).not.toBe(false);
+        expect(Toast.error).toHaveBeenCalledWith("failed to update", "Failed to update history storage location");
+    });
+
+    it("closes modal on a successful update", async () => {
+        const wrapper = await mountComponent();
+        const galaxyDefaultOption = wrapper.find(
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector,
+        );
+        await galaxyDefaultOption.trigger("click");
+        await flushPromises();
+
+        const okButton = wrapper.find(CONFIRM_BUTTON_SELECTOR);
+        await okButton.trigger("click");
+
+        await flushPromises();
+
+        expect(emittedArg(wrapper, "update:show", -1)).toBe(false);
     });
 });

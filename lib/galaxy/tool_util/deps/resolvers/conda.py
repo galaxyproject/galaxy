@@ -145,13 +145,32 @@ class CondaDependencyResolver(
         auto_install = _string_as_bool(get_option("auto_install"))
         self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
-        self.disabled = not galaxy.tool_util.deps.installable.ensure_installed(
-            conda_context, install_conda, self.auto_init
-        )
-        if self.auto_init and not self.disabled:
-            self.conda_context.ensure_conda_build_installed_if_needed()
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
+        # Determining ``disabled`` probes conda availability, which shells out
+        # to ``conda info`` (spawning the conda binary, ~1-2s). When
+        # ``auto_init`` is set the resolver is expected to initialize conda at
+        # startup, so probe (and install if needed) eagerly here. Otherwise
+        # nothing on the boot or job dependency-resolution path reads
+        # ``disabled`` — only the dependency-resolvers admin view — so it is
+        # probed lazily on first access.
+        self._disabled: bool | None = None
+        if self.auto_init:
+            self.disabled  # noqa: B018 — eager conda init + probe at startup
+
+    @property
+    def disabled(self) -> bool:
+        if self._disabled is None:
+            self._disabled = not galaxy.tool_util.deps.installable.ensure_installed(
+                self.conda_context, install_conda, self.auto_init
+            )
+            if self.auto_init and not self._disabled:
+                self.conda_context.ensure_conda_build_installed_if_needed()
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self._disabled = value
 
     def clean(self, **kwds):
         return self.conda_context.exec_clean()

@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
@@ -14,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { server, http } = useServerMock();
 
@@ -24,8 +24,7 @@ vi.mock("@/api/workflows", () => ({
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const router = createTestRouter();
 
 const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
@@ -37,11 +36,11 @@ const FAKE_USER = getFakeRegisteredUser({
 });
 
 async function mountWorkflowList() {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
-        localVue,
+        global: localVue,
         pinia,
         router,
     });
@@ -61,6 +60,10 @@ describe("WorkflowList", () => {
         // Mock the workflow counts endpoint used by workflow card badges
         server.use(
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
+                return response(200).json({});
+            }),
+            // The tab bar reads useConfig(), and the configuration store fetches in its setup body
+            http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
             }),
         );
@@ -84,6 +87,27 @@ describe("WorkflowList", () => {
 
         const nonDeletedWorkflows = FAKE_WORKFLOWS.filter((w) => !w.deleted);
         expect(wrapper.findAll(".workflow-card")).toHaveLength(nonDeletedWorkflows.length);
+    });
+
+    it("render own workflows when the user loads after the workflow list", async () => {
+        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 3 });
+
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+        setActivePinia(pinia);
+        const userStore = useUserStore();
+
+        const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
+        await flushPromises();
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
+        expect(wrapper.find("#workflow-list-empty").exists()).toBe(false);
+
+        userStore.currentUser = FAKE_USER;
+        await flushPromises();
+
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
     });
 
     it("toggle show deleted workflows", async () => {

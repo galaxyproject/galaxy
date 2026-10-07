@@ -33,6 +33,8 @@ export default {
     "Saved Histories": "保存されたヒストリー",
     "Saved Datasets": "保存されたデータセット",
     "Saved Pages": "保存されたページ",
+    Saved: "保存済み",
+    Unsaved: "未保存",
     //Tooltip
     "Account and saved data": "アカウントと保存されたデータ",
     "Account registration or login": "アカウントの登録またはログイン",

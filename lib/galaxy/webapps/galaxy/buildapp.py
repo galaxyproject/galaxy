@@ -15,22 +15,24 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.webapps.base.webapp
 from galaxy import util
-from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.util.user_input import VALID_PUBLICNAME_RE
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import build_url_map
+from galaxy.webapps.base.webapp import (
+    build_url_map,
+    WebApplication,
+)
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
+class GalaxyWebApplication(WebApplication):
     injection_aware = True
 
     def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
@@ -221,8 +223,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/carbon_emissions_calculations")
     webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
-    webapp.add_client_route("/login/start")
-    webapp.add_client_route("/register/start")
+    populate_auth_client_routes(webapp)
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/list/ontologies")
     webapp.add_client_route("/tools/json")
@@ -306,11 +307,11 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/jobs/{job_id}/view")
     webapp.add_client_route("/rules")
     webapp.add_client_route("/workflows/list")
+    webapp.add_client_route("/workflows/list_curated")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/list_shared_with_me")
     webapp.add_client_route("/workflows/edit")
     webapp.add_client_route("/workflows/export")
-    webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/rerun")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
@@ -358,7 +359,13 @@ def postfork_setup():
     app.application_stack.log_startup()
 
 
-def populate_api_routes(webapp, app):
+def populate_auth_client_routes(webapp: WebApplication) -> None:
+    webapp.add_client_route("/login/start")
+    webapp.add_client_route("/login/reset_password")
+    webapp.add_client_route("/register/start")
+
+
+def populate_api_routes(webapp: WebApplication, app: MinimalApp):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
     _add_item_annotation_controller(

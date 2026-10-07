@@ -8,6 +8,8 @@ import { getGalaxyInstance } from "@/app";
 import svc from "./model/service";
 
 import APIKeyItem from "./APIKeyItem.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -47,24 +49,24 @@ const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "M
             access your account and should be treated with the same care as your login password.
         </span>
 
-        <b-alert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
 
-        <b-alert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading API keys" />
-        </b-alert>
+        </GAlert>
 
-        <b-button
+        <GButton
             v-else-if="!loading && !apiKey"
             :disabled="createLoading"
             class="create-button"
-            variant="primary"
+            color="blue"
             @click.prevent="createNewAPIKey">
             <FontAwesomeIcon v-if="!createLoading" :icon="faPlus" />
             <FontAwesomeIcon v-else :icon="faSpinner" spin />
             <span v-localize>Create a new key</span>
-        </b-button>
+        </GButton>
 
         <div v-else-if="apiKey" class="mx-2">
             <APIKeyItem :item="apiKey" @getAPIKey="getAPIKey" />

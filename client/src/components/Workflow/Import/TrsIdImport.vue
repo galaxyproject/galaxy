@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import { Services } from "@/components/Workflow/services";
@@ -7,6 +7,7 @@ import { Toast } from "@/composables/toast";
 
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
@@ -144,9 +145,9 @@ defineExpose({ triggerImport });
                 @onTrsSelection="onTrsSelection" />
         </div>
 
-        <BAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
+        <GAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
             <LoadingSpan message="Loading your Workflow" />
-        </BAlert>
+        </GAlert>
         <div v-else>
             <div class="my-3">
                 <BFormGroup
@@ -157,13 +158,13 @@ defineExpose({ triggerImport });
                 </BFormGroup>
             </div>
             <div>
-                <BAlert v-if="loading" show variant="info">
+                <GAlert v-if="loading" show variant="info">
                     <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
-                </BAlert>
+                </GAlert>
 
-                <BAlert :show="hasErrorMessage" variant="danger">
+                <GAlert :show="hasErrorMessage" variant="danger">
                     {{ errorMessage }}
-                </BAlert>
+                </GAlert>
             </div>
 
             <TrsTool v-if="trsTool" :trs-tool="trsTool" @onImport="onVersionSelected" @onSelect="onVersionSelected" />

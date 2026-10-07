@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
 import {
-    BAlert,
     BCard,
     BCardBody,
     BCardFooter,
@@ -13,7 +12,7 @@ import {
     BFormText,
 } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
 import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
@@ -24,6 +23,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import VerticalSeparator from "../Common/VerticalSeparator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import NewUserConfirmation from "@/components/Login/NewUserConfirmation.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -110,7 +110,10 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            window.location.href = withPrefix(`/root/login?expired_user=${response.data.expired_user}`);
+            await router.push({
+                path: "/login/start",
+                query: { expired_user: response.data.expired_user },
+            });
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
@@ -138,22 +141,12 @@ function setRedirect(url: string) {
     localStorage.setItem("redirect_url", url);
 }
 
-async function resetLogin() {
-    loading.value = true;
-    try {
-        const response = await axios.post(withPrefix("/user/reset_password"), { email: login.value });
-        messageVariant.value = "info";
-        messageText.value = response.data.message;
-    } catch (e) {
-        messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Password reset failed for an unknown reason.");
-    } finally {
-        loading.value = false;
-    }
-}
-
 function returnToLogin() {
     router.push("/login/start");
+}
+
+function goToResetPassword() {
+    router.push({ path: "/login/reset_password", query: { email: login.value } });
 }
 </script>
 
@@ -162,16 +155,15 @@ function returnToLogin() {
         <div class="d-flex justify-content-md-center">
             <template v-if="!confirmURL">
                 <div>
-                    <BAlert :show="!!messageText" :variant="messageVariant">
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="messageText" />
-                    </BAlert>
+                    <GAlert :show="!!messageText" :variant="messageVariant">
+                        <span v-sanitize-html="messageText" />
+                    </GAlert>
 
-                    <BAlert :show="!!connectExternalProvider" variant="info">
+                    <GAlert :show="!!connectExternalProvider" variant="info">
                         There already exists a user with the email <i>{{ connectExternalEmail }}</i
                         >. In order to associate this account with <i>{{ connectExternalLabel }}</i
                         >, you must first login to your existing account.
-                    </BAlert>
+                    </GAlert>
 
                     <div>
                         <BCard no-body style="width: fit-content">
@@ -214,13 +206,9 @@ function returnToLogin() {
                                         <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
-                                            <a
-                                                v-localize
-                                                href="javascript:void(0)"
-                                                role="button"
-                                                @click.prevent="resetLogin">
-                                                Click here to reset your password.
-                                            </a>
+                                            <GLink id="reset-password-link" @click="goToResetPassword">
+                                                <span v-localize>Click here to reset your password.</span>
+                                            </GLink>
                                         </BFormText>
                                     </BFormGroup>
 

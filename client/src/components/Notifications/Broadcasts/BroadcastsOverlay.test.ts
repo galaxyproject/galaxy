@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
@@ -60,11 +61,8 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     });
 
     const wrapper = mount(BroadcastsOverlay as object, {
-        localVue,
+        global: localVue,
         pinia,
-        stubs: {
-            BroadcastContainer: true,
-        },
     });
 
     await flushPromises();
@@ -78,7 +76,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith();
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.find(".broadcast-container").exists()).toBe(false);
     });
 
     it("should render only one broadcast at a time", async () => {
@@ -151,7 +149,7 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([expiredBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.find(".broadcast-container").exists()).toBe(false);
     });
 
     it("should not render the broadcast when it has not been published yet", async () => {
@@ -162,6 +160,19 @@ describe("BroadcastsOverlay.vue", () => {
         const wrapper = await mountBroadcastsOverlayWith([unpublishedBroadcast]);
 
         expect(wrapper.exists()).toBe(true);
-        expect(wrapper.html()).toBe("");
+        expect(wrapper.find(".broadcast-container").exists()).toBe(false);
+    });
+
+    it("renders the broadcast message through v-sanitize-html with the links profile", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        await mountBroadcastsOverlayWith([
+            generateBroadcastNotification({
+                id: "links",
+                content: { category: "broadcast", subject: "s", message: "See [docs](https://example.org)" },
+            }),
+        ]);
+        const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes(">docs</a>"));
+        expect(call?.[1]).toBe("links");
+        expect(call?.[0]).toContain('target="_blank"');
     });
 });

@@ -3,7 +3,7 @@ import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
@@ -31,12 +31,15 @@ import Heading from "@/components/Common/Heading.vue";
 const props = withDefaults(
     defineProps<{
         exchangeId?: string;
+        /** Question handed over through `/galaxyai/new?q=…`, prefilled once */
+        initialQuestion?: string;
         compact?: boolean;
         docked?: boolean;
         panel?: boolean;
     }>(),
     {
         exchangeId: undefined,
+        initialQuestion: undefined,
         compact: false,
         docked: false,
         panel: false,
@@ -139,6 +142,7 @@ onMounted(async () => {
         await fetchConversation(props.exchangeId);
     } else if (props.exchangeId === "new") {
         startNewChat();
+        consumeSeededQuestion();
     } else if (props.docked || props.panel) {
         const ctx = activeContext.value;
         // For notebook pages, always prefer the per-page cached exchange over the global
@@ -206,6 +210,33 @@ watch(
     () => chatStore.newChatRequestCount,
     () => startNewChat(),
 );
+
+// A seeded question can also arrive while this view is already showing a new
+// chat, where neither the route param nor the mount hook would notice it.
+watch(
+    () => props.initialQuestion,
+    (question) => {
+        if (question) {
+            startNewChat();
+            consumeSeededQuestion();
+        }
+    },
+);
+
+/**
+ * Takes over the question seeded through `/galaxyai/new?q=…` — the command
+ * palette starts conversations that way. It is only prefilled, never sent on the
+ * user's behalf, and the query parameter is dropped so a reload starts empty.
+ */
+function consumeSeededQuestion() {
+    if (!props.initialQuestion) {
+        return;
+    }
+    query.value = props.initialQuestion;
+    // `Analysis.vue` keys `/galaxyai` routes alike, so dropping `?q=` keeps the question mounted
+    const { q: _seeded, ...otherQuery } = route.query;
+    router.replace({ path: route.path, query: otherQuery });
+}
 
 function showWelcome() {
     messages.value.push({
@@ -383,11 +414,17 @@ async function fetchConversation(exchangeId: string) {
 
     const generation = ++conversationGeneration;
 
-    const { data: fullConversation, error } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-        params: {
-            path: { exchange_id: exchangeId },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+            params: {
+                path: { exchange_id: exchangeId },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data: fullConversation, error } = result;
 
     if (generation !== conversationGeneration) {
         // A newer conversation was loaded (or a new chat started) while this one
@@ -438,11 +475,17 @@ async function fetchConversation(exchangeId: string) {
 }
 
 async function loadLatestChat() {
-    const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-        params: {
-            query: { limit: 1 },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET("/api/chat/history", {
+            params: {
+                query: { limit: 1 },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data, error } = result;
 
     if (error) {
         Toast.error(errorMessageAsString(error), "Failed to load latest chat");
@@ -527,6 +570,13 @@ watch(currentChatId, async (newId) => {
         }
     }
 
+    // The history load above is awaited, so this handler can resume after a new chat
+    // was started. Pushing the route back to a conversation that is no longer current
+    // would re-fetch it through the exchangeId watch and discard the fresh one.
+    if (currentChatId.value !== newId) {
+        return;
+    }
+
     // Ensure the route is updated to reflect the current chat in center (non-window manager) mode
     if (isRouteMode.value) {
         const targetPath = newId ? `/galaxyai/${newId}` : "/galaxyai/new";
@@ -609,7 +659,7 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
-            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
+            <ChatInput :value="query" :busy="busy" @input="(v: string) => (query = v)" @submit="submitQuery" />
         </div>
     </div>
 </template>

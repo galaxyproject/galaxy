@@ -8,11 +8,13 @@
  *   Content:   .html (innerHTML instead of textContent)
  *   Styling:   .v-danger
  *   Behavior:  .onoverflow (only show tooltip when text overflows with ellipsis)
+ *   Menus:     hidden while a menu toggle (aria-haspopup) owned by the element is expanded
  *
  * Value forms:
  *   v-g-tooltip                           → reads element's title attribute
  *   v-g-tooltip="'text'"                  → string content
  *   v-g-tooltip="{ title, placement }"    → object config (title optional, falls back to :title)
+ *   v-g-tooltip="{ title, show }"         → also shows/hides whenever `show` changes (like b-tooltip :show)
  */
 
 import {
@@ -25,7 +27,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { ObjectDirective, VNode } from "vue";
+import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "@/utils/tooltipTiming";
 
@@ -63,6 +65,7 @@ const TOOLTIP_STYLES = `
     top: 0;
     left: 0;
     opacity: 1;
+    overflow-wrap: anywhere;
 }
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
@@ -124,7 +127,7 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown): Placement {
+function getPlacement(modifiers: DirectiveBinding["modifiers"], bindingValue: unknown): Placement {
     for (const [mod, placement] of Object.entries(PLACEMENT_MAP)) {
         if (modifiers[mod]) {
             return placement;
@@ -136,6 +139,13 @@ function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown)
     return "top";
 }
 
+function getShow(bindingValue: unknown): boolean | undefined {
+    if (typeof bindingValue === "object" && bindingValue !== null && "show" in bindingValue) {
+        return Boolean((bindingValue as { show: unknown }).show);
+    }
+    return undefined;
+}
+
 function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): string {
     if (typeof bindingValue === "string" && bindingValue) {
         return bindingValue;
@@ -144,13 +154,9 @@ function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): stri
         return String((bindingValue as { title: string }).title || "");
     }
     // Fall back to element's title attribute.
-    // Also check vnode attrs/props for components with inheritAttrs: false (e.g. BFormCheckbox)
+    // Also check the vnode's props for components with inheritAttrs: false (e.g. BFormCheckbox)
     // where :title doesn't land on the root DOM element.
-    const title =
-        el.getAttribute("title") ||
-        (vnode?.data?.attrs as Record<string, unknown> | undefined)?.title ||
-        (vnode?.componentOptions?.propsData as Record<string, unknown> | undefined)?.title ||
-        null;
+    const title = el.getAttribute("title") || vnode?.props?.title || null;
     if (title) {
         el.dataset.gTooltipTitle = String(title);
     }
@@ -203,6 +209,17 @@ async function updatePosition(el: HTMLElement, state: TooltipState) {
     state.arrowEl.dataset.placement = placement;
 }
 
+// Menu buttons (GDropdown, BNavItemDropdown) render their toggle as a direct child of the tooltip host.
+const POPUP_TOGGLE_SELECTOR = '[aria-haspopup]:not([aria-haspopup="false"])';
+
+function findPopupToggle(el: HTMLElement): HTMLElement | null {
+    return el.matches(POPUP_TOGGLE_SELECTOR) ? el : el.querySelector(`:scope > ${POPUP_TOGGLE_SELECTOR}`);
+}
+
+function isPopupOpen(el: HTMLElement) {
+    return findPopupToggle(el)?.getAttribute("aria-expanded") === "true";
+}
+
 function showTooltip(el: HTMLElement) {
     const state = stateMap.get(el);
     if (!state) {
@@ -212,7 +229,8 @@ function showTooltip(el: HTMLElement) {
     if (
         (el as HTMLButtonElement).disabled ||
         el.hasAttribute("disabled") ||
-        el.getAttribute("aria-disabled") === "true"
+        el.getAttribute("aria-disabled") === "true" ||
+        isPopupOpen(el)
     ) {
         return;
     }
@@ -293,12 +311,12 @@ function hideTooltip(el: HTMLElement) {
     }
 }
 
-function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
-    const listeners: Array<[string, EventListener]> = [];
+function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"], arg?: string): () => void {
+    const listeners: Array<[string, EventListener, boolean]> = [];
 
-    function addListener(event: string, handler: EventListener) {
-        el.addEventListener(event, handler);
-        listeners.push([event, handler]);
+    function addListener(event: string, handler: EventListener, capture = false) {
+        el.addEventListener(event, handler, capture);
+        listeners.push([event, handler, capture]);
     }
 
     const focusOnly = (modifiers.focus || arg === "focus") && !modifiers.hover && arg !== "hover";
@@ -313,6 +331,12 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
             hideTooltip(el);
         }
     };
+    // Otherwise the tooltip shown on focus stays on top of the menu that the click opens
+    const clickHandler = () => {
+        if (findPopupToggle(el)) {
+            hideTooltip(el);
+        }
+    };
 
     if (!focusOnly) {
         addListener("mouseenter", hoverShowHandler);
@@ -321,10 +345,12 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     addListener("focusin", focusShowHandler);
     addListener("focusout", hideHandler);
     addListener("keydown", keyHandler);
+    // Capture phase, because menu toggles stop the click from bubbling
+    addListener("click", clickHandler, true);
 
     return () => {
-        for (const [event, handler] of listeners) {
-            el.removeEventListener(event, handler);
+        for (const [event, handler, capture] of listeners) {
+            el.removeEventListener(event, handler, capture);
         }
     };
 }
@@ -337,17 +363,27 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
         state.contentEl.textContent = content;
     }
     // Set aria-label so icon-only buttons have an accessible name
-    if (content) {
-        el.setAttribute("aria-label", content);
-        el.dataset.gTooltipAriaLabel = "1";
-    } else if (el.dataset.gTooltipAriaLabel) {
-        el.removeAttribute("aria-label");
-        el.dataset.gTooltipAriaLabel = "";
+    const target = getLabelTarget(el);
+    const labelledHere = !!target.dataset.gTooltipAriaLabel;
+    // A menu toggle with visible text or a label of its own is already named
+    const namedToggle =
+        target !== el && !labelledHere && (target.hasAttribute("aria-label") || !!target.textContent?.trim());
+    if (content && !namedToggle) {
+        target.setAttribute("aria-label", content);
+        target.dataset.gTooltipAriaLabel = "1";
+    } else if (labelledHere) {
+        target.removeAttribute("aria-label");
+        target.dataset.gTooltipAriaLabel = "";
     }
 }
 
+/** The element to name: the toggle of a menu button, since its wrapper has no role. */
+function getLabelTarget(el: HTMLElement) {
+    return findPopupToggle(el) ?? el;
+}
+
 export const vGTooltip: ObjectDirective<HTMLElement> = {
-    inserted(el, binding, vnode) {
+    mounted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -391,15 +427,28 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
 
         stateMap.set(el, state);
         updateContent(el, binding.value, state, vnode);
+        if (getShow(binding.value)) {
+            showTooltip(el);
+        }
     },
 
-    componentUpdated(el, binding, vnode) {
+    updated(el, binding, vnode) {
         const state = stateMap.get(el);
         if (!state) {
             return;
         }
         updateContent(el, binding.value, state, vnode);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
+
+        // Only act on a change, so re-renders don't close a tooltip the user opened by hovering
+        const show = getShow(binding.value);
+        if (show !== undefined && show !== getShow(binding.oldValue)) {
+            if (show) {
+                showTooltip(el);
+            } else {
+                hideTooltip(el);
+            }
+        }
 
         // Hide if content became empty
         const content = state.isHtml ? state.contentEl.innerHTML : state.contentEl.textContent;
@@ -408,7 +457,7 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         }
     },
 
-    unbind(el) {
+    unmounted(el) {
         const state = stateMap.get(el);
         if (!state) {
             return;
@@ -420,10 +469,11 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         state.tooltipEl.remove();
         restoreNativeTooltip(el);
         el.removeAttribute("aria-describedby");
-        if (el.dataset.gTooltipAriaLabel) {
-            el.removeAttribute("aria-label");
+        const labelTarget = getLabelTarget(el);
+        if (labelTarget.dataset.gTooltipAriaLabel) {
+            labelTarget.removeAttribute("aria-label");
         }
-        delete el.dataset.gTooltipAriaLabel;
+        delete labelTarget.dataset.gTooltipAriaLabel;
         stateMap.delete(el);
     },
 };

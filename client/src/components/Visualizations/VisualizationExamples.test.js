@@ -1,14 +1,15 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { useToast } from "@/composables/toast";
+import { Toast } from "@/composables/toast";
 import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
 
 import UploadExamples from "./VisualizationExamples.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 vi.mock("@/utils/upload", () => ({
     createUrlUploadItem: vi.fn((url, historyId, options) => ({
@@ -22,12 +23,9 @@ vi.mock("@/utils/upload", () => ({
 }));
 
 vi.mock("@/composables/toast");
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
-useToast.mockReturnValue({
-    success: toastSuccess,
-    error: toastError,
-});
+
+const toastSuccess = vi.mocked(Toast.success);
+const toastError = vi.mocked(Toast.error);
 
 let mockedStore;
 vi.mock("@/stores/historyStore", () => ({
@@ -56,18 +54,18 @@ describe("UploadExamples.vue", () => {
     it("renders loading spinner when no historyId", () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         expect(wrapper.find("svg").exists()).toBe(true);
     });
 
     it("renders dropdown with upload options", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
-        const items = wrapper.findAllComponents(BDropdownItem);
+        const items = wrapper.findAllComponents(GDropdownItem);
         expect(items.length).toBe(urlData.length);
         expect(wrapper.text()).toContain("Example 1");
         expect(wrapper.text()).toContain("Example 2");
@@ -75,10 +73,10 @@ describe("UploadExamples.vue", () => {
 
     it("calls upload and shows success toast on item click", async () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
-        const items = wrapper.findAllComponents(BDropdownItem);
+        const items = wrapper.findAllComponents(GDropdownItem);
         await items.at(0).find("a").trigger("click");
         expect(createUrlUploadItem).toHaveBeenCalledWith(urlData[0].url, "fake-history-id", {
             name: "Example 1",
@@ -105,10 +103,10 @@ describe("UploadExamples.vue", () => {
 
     it("shows error toast when upload fails", async () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
-        const items = wrapper.findAllComponents(BDropdownItem);
+        const items = wrapper.findAllComponents(GDropdownItem);
         await items.at(1).find("a").trigger("click");
         vi.mocked(uploadDatasets).mock.calls[0][1].error();
         expect(toastError).toHaveBeenCalledWith("Uploading the sample dataset 'Example 2' has failed.");
@@ -116,22 +114,22 @@ describe("UploadExamples.vue", () => {
 
     it("does not render dropdown if urlData is missing", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: {},
+            global: localVue,
+            props: {},
         });
-        expect(wrapper.findComponent(BDropdown).exists()).toBe(false);
+        expect(wrapper.findComponent(GDropdown).exists()).toBe(false);
     });
 
     it("reacts to history ID becoming available", async () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         expect(wrapper.find("svg").exists()).toBe(true);
         mockedStore.currentHistoryId = ref("new-history-id");
         await wrapper.vm.$nextTick();
-        const items = wrapper.findAllComponents(BDropdownItem);
+        const items = wrapper.findAllComponents(GDropdownItem);
         expect(items.length).toBe(urlData.length);
     });
 });

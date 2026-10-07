@@ -2,6 +2,8 @@
 Classes encapsulating Galaxy tool parameters.
 """
 
+import re
+from collections.abc import Iterator
 from json import dumps
 from typing import (
     Any,
@@ -22,7 +24,7 @@ from .basic import (
     ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
-    ParameterValueError,
+    DirectoryUriToolParameter,
     SelectToolParameter,
     TextToolParameter,
     ToolParameter,
@@ -286,6 +288,69 @@ def visit_input_values(
             )
 
 
+def collect_directory_uris(
+    inputs: ToolInputsT,
+    input_values: ToolStateJobInstancePopulatedT,
+) -> set[str]:
+    """Collect the values of every ``directory_uri`` parameter (file source write destinations)."""
+    uris: set[str] = set()
+
+    def _collect(input, value, **kwargs):
+        if isinstance(input, DirectoryUriToolParameter) and isinstance(value, str) and value:
+            uris.add(value)
+
+    visit_input_values(inputs, input_values, _collect)
+    return uris
+
+
+# A path segment is (name, is_repeat); repeat segments take an index (``name_0``).
+_InputPathT = tuple[tuple[str, bool], ...]
+
+
+def _data_input_paths(
+    inputs, qualified: _InputPathT = (), legacy: _InputPathT = ()
+) -> Iterator[tuple[_InputPathT, _InputPathT]]:
+    """Yield the qualified and legacy paths of every data and collection input.
+
+    Legacy paths drop conditional and section names, as the ``prefix`` passed by
+    ``visit_input_values`` does.
+    """
+    for input in inputs.values():
+        if isinstance(input, Repeat):
+            segment = ((input.name, True),)
+            yield from _data_input_paths(input.inputs, qualified + segment, legacy + segment)
+        elif isinstance(input, Conditional):
+            for case in input.cases:
+                yield from _data_input_paths(case.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, Section):
+            yield from _data_input_paths(input.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+            segment = ((input.name, False),)
+            yield qualified + segment, legacy + segment
+
+
+def _input_path_pattern(path: _InputPathT) -> str:
+    return r"\|".join(re.escape(name) + (r"_(\d+)" if is_repeat else "") for name, is_repeat in path)
+
+
+def qualify_legacy_data_input_reference(inputs, reference: str) -> str | None:
+    """Return the qualified name for a bare legacy reference to a nested data or collection input.
+
+    Return ``None`` if ``reference`` is already qualified or names no nested input.
+    """
+    paths = list(_data_input_paths(inputs))
+    if any(re.fullmatch(_input_path_pattern(qualified), reference) for qualified, _ in paths):
+        return None
+    for qualified, legacy in paths:
+        if qualified == legacy:
+            continue
+        match = re.fullmatch(_input_path_pattern(legacy), reference)
+        if match:
+            indices = iter(match.groups())
+            return "|".join(f"{name}_{next(indices)}" if is_repeat else name for name, is_repeat in qualified)
+    return None
+
+
 def check_param(
     trans, param: ToolParameter, incoming_value, param_values, simple_errors: bool = True
 ) -> tuple[Any, str | ValueError | None]:
@@ -372,10 +437,8 @@ def params_from_strings(params: dict[str, Group | ToolParameter], param_values, 
             # This would resolve a lot of back and forth in the various to/from methods.
             value = safe_loads(value)
         if param:
-            try:
-                value = param.value_from_basic(value, app, ignore_errors)
-            except ParameterValueError:
-                continue
+            # if ignore_error is true we return the value unmodified
+            value = param.value_from_basic(value, app, ignore_errors)
         rval[key] = value
     return rval
 
@@ -421,6 +484,23 @@ def update_dataset_ids(input_values, translate_values, src):
         return key, value
 
     return remap(input_values, visit=replace_dataset_ids)
+
+
+def _runtime_values_to_json(state):
+    """Replace ``RuntimeValue`` objects in ``state`` with their JSON representation.
+
+    ``check_param`` does this for every value it validates, which is what keeps
+    populated state JSON serializable. The state a conditional falls back to when
+    its case cannot be resolved comes straight from ``get_initial_value``, so it
+    never reaches ``check_param`` and has to be converted here instead.
+    """
+
+    def replace_runtime_values(path, key, value):
+        if is_runtime_value(value):
+            value = runtime_to_json(value)
+        return key, value
+
+    return remap(state, visit=replace_runtime_values)
 
 
 def populate_state(
@@ -493,6 +573,7 @@ def populate_state(
                     if check
                     else [test_param_value, None]
                 )
+                case_populated = False
                 if error:
                     errors[test_param.name] = error
                 else:
@@ -515,8 +596,11 @@ def populate_state(
                         if cast_errors:
                             errors[input_name] = cast_errors
                         group_state["__current_case__"] = current_case
+                        case_populated = True
                     except Exception:
                         errors[test_param.name] = "The selected case is unavailable/invalid."
+                if not case_populated and check:
+                    group_state = state[input.name] = _runtime_values_to_json(group_state)
                 group_state[test_param.name] = value
 
             elif isinstance(input, Section):
@@ -620,6 +704,7 @@ def _populate_state_legacy(
                 if check
                 else [test_param_value, None]
             )
+            case_populated = False
             if error:
                 errors[test_param_key] = error
             else:
@@ -638,8 +723,11 @@ def _populate_state_legacy(
                         simple_errors=simple_errors,
                     )
                     group_state["__current_case__"] = current_case
+                    case_populated = True
                 except Exception:
                     errors[test_param_key] = "The selected case is unavailable/invalid."
+            if not case_populated and check:
+                group_state = state[input.name] = _runtime_values_to_json(group_state)
             group_state[test_param.name] = value
         elif isinstance(input, Section):
             _populate_state_legacy(

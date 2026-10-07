@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-button variant="link" @click="onGoBack">Go back to Libraries</b-button>
+        <GButton transparent color="blue" @click="onGoBack">Go back to Libraries</GButton>
         <PermissionsHeader v-if="library" :name="library.name" />
         <h1 class="text-center h-lg">Library permissions</h1>
         <PermissionsInputField
@@ -50,24 +50,22 @@
 <script>
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { extractRoles } from "@/components/Libraries/library-utils";
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
         PermissionsHeader,
         PermissionsInputField,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         library_id: {

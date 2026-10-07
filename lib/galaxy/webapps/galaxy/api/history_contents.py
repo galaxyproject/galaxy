@@ -1222,6 +1222,6 @@ class FastAPIHistoryContents:
         rval = self.service.materialize(trans, materialize_request)
         return rval
 
-    def _download_collection(self, trans, id):
+    def _download_collection(self, trans: ProvidesHistoryContext, id):
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
         return GalaxyStreamingResponse(archive.response(), headers=archive.get_headers())

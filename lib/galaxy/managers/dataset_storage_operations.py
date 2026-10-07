@@ -981,7 +981,6 @@ class StorageOperationRunExecutor:
         self.run = run
         self.user = user
         self.current_task_id = current_task_id
-        self.trans = SimpleNamespace(user=user)
         self.storage_operation_manager = storage_operation_manager
         self.quota_source_map = app.object_store.get_quota_source_map()
         self.target_quota_usage_at_start = 0
@@ -1315,7 +1314,9 @@ class StorageOperationRunExecutor:
                     # Queue cleanup for after DB commit to ensure crash safety.
                     self._pending_cleanups.append((source_proxy, extra_files_path_name))
                 else:
-                    self.dataset_manager.update_object_store_id(self.trans, dataset, self.run.target_object_store_id)
+                    self.dataset_manager.update_object_store_id_for_user(
+                        self.user, dataset, self.run.target_object_store_id
+                    )
 
                 self.additional_target_usage += quota_delta
                 self.succeeded_count += 1

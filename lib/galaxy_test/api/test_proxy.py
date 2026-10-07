@@ -1,3 +1,5 @@
+import gzip
+
 import pytest
 import requests
 
@@ -24,8 +26,8 @@ class TestProxyApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def _get_zip_url(self, mock_http_server):
-        return mock_http_server.get_url(
+    def _get_zip_url(self, test_http_server):
+        return test_http_server.get_url(
             remote_url=REMOTE_URL_TO_TEST,
             file_path="test-data/4.bed.zip",
             content_type="application/zip",
@@ -33,16 +35,16 @@ class TestProxyApi(ApiTestCase):
             support_ranges=True,
         )
 
-    def test_proxy_head_request(self, mock_http_server):
-        url = self._get_zip_url(mock_http_server)
+    def test_proxy_head_request(self, test_http_server):
+        url = self._get_zip_url(test_http_server)
         response = self._head(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         assert response.headers["content-length"] == EXPECTED_HEADERS["content-length"]
         assert response.headers["content-type"] == EXPECTED_HEADERS["content-type"]
         assert response.headers["accept-ranges"] == EXPECTED_HEADERS["accept-ranges"]
 
-    def test_proxy_get_request(self, mock_http_server):
-        url = self._get_zip_url(mock_http_server)
+    def test_proxy_get_request(self, test_http_server):
+        url = self._get_zip_url(test_http_server)
         response = self._get(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         # content-length and accept-ranges are stripped from GET responses
@@ -52,8 +54,8 @@ class TestProxyApi(ApiTestCase):
         assert response.headers["content-type"] == EXPECTED_HEADERS["content-type"]
         assert len(response.content) == int(EXPECTED_HEADERS["content-length"])
 
-    def test_proxy_get_request_with_range(self, mock_http_server):
-        url = self._get_zip_url(mock_http_server)
+    def test_proxy_get_request_with_range(self, test_http_server):
+        url = self._get_zip_url(test_http_server)
         request_range = "bytes=0-3"
         response = self._get(f"proxy?url={url}", headers={"range": request_range})
         self._assert_status_code_is(response, 206)
@@ -119,14 +121,20 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Invalid URL format."
 
-    def test_proxy_handles_encoding(self):
+    def test_proxy_handles_encoding(self, test_http_server):
         """Test handling of responses with content-encoding and proper header filtering.
 
         The TRAINING_URL URL triggered the 'Too much data for declared Content-Length' error because
         the response included a content-encoding header (gzip) even though the content was
         already decompressed by the requests library.
         """
-        response = self._get(f"proxy?url={TRAINING_URL}")
+        url = test_http_server.get_url(
+            remote_url=TRAINING_URL,
+            body=gzip.compress(b"<!DOCTYPE html>\n<html><body>Galaxy Training Network</body></html>"),
+            content_type="text/html",
+            response_headers={"Content-Encoding": "gzip"},
+        )
+        response = self._get(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         # Verify we got HTML content
         assert b"<!DOCTYPE" in response.content or b"<html" in response.content.lower()
@@ -135,9 +143,9 @@ class TestProxyApi(ApiTestCase):
         # Verify content-encoding header was properly filtered out (no double decompression)
         assert "content-encoding" not in response.headers
 
-    def test_proxy_validates_redirects(self, mock_http_server):
+    def test_proxy_validates_redirects(self, test_http_server):
         """Test that redirects to invalid schemes are blocked."""
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://evil.com/redirect",
             status=302,
             response_headers={"Location": "file://internal-server/secret-files"},
@@ -146,15 +154,15 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
         assert "Invalid URL format" in response.json()["err_msg"]
 
-    def test_proxy_follows_valid_redirects(self, mock_http_server):
+    def test_proxy_follows_valid_redirects(self, test_http_server):
         """Test that valid redirects are followed after validation."""
-        final_url = mock_http_server.get_url(
+        final_url = test_http_server.get_url(
             remote_url="https://example.com/final",
             status=200,
             body="test content",
             content_type="text/plain",
         )
-        redirect_url = mock_http_server.get_url(
+        redirect_url = test_http_server.get_url(
             remote_url="https://example.com/redirect",
             status=301,
             response_headers={"Location": final_url},
@@ -163,9 +171,9 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is_ok(response)
         assert b"test content" in response.content
 
-    def test_proxy_blocks_too_many_redirects(self, mock_http_server):
+    def test_proxy_blocks_too_many_redirects(self, test_http_server):
         """Test that excessive redirects are blocked to prevent redirect loops."""
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://example.com/loop",
             status=302,
             redirect_to_self=True,
@@ -174,7 +182,7 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
         assert "Too many redirects" in response.json()["err_msg"]
 
-    def test_proxy_truncates_large_response(self, mock_http_server):
+    def test_proxy_truncates_large_response(self, test_http_server):
         """Test that responses exceeding MAX_STREAM_BYTES are truncated without protocol errors.
 
         The proxy must not forward the upstream content-length header, because the
@@ -182,7 +190,7 @@ class TestProxyApi(ApiTestCase):
         (no content-length) avoids 'Too little data for declared Content-Length'.
         """
         oversized_body = b"x" * (MAX_STREAM_BYTES + 1024)
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://example.com/large-file",
             body=oversized_body,
             content_type="application/octet-stream",

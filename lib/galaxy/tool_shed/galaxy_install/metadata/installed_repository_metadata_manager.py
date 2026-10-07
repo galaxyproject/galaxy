@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from typing import (
@@ -21,7 +22,6 @@ from galaxy.util.tool_shed import (
     common_util,
     xml_util,
 )
-from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 
@@ -61,17 +61,6 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         else:
             self.tpm = tpm
 
-    def build_repository_ids_select_field(self, name="repository_ids", multiple=True, display="checkboxes"):
-        """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        query = self.get_query_for_setting_metadata_on_repositories(order=True)
-        for repository in query:
-            owner = str(repository.owner)
-            option_label = f"{str(repository.name)} ({owner})"
-            option_value = f"{self.app.security.encode_id(repository.id)}"
-            repositories_select_field.add_option(option_label, option_value)
-        return repositories_select_field
-
     def get_query_for_setting_metadata_on_repositories(self, order=True):
         """
         Return a query containing repositories for resetting metadata.  The order parameter
@@ -110,6 +99,11 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                         tool = self.app.toolbox.load_tool(
                             os.path.abspath(load_relative_path), guid=guid, use_cached=False
                         )
+                        # Install-time bookkeeping downstream inspects parsed
+                        # parameter state (``params_with_missing_data_table_entry``,
+                        # ``params_with_missing_index_file``), so hand consumers a
+                        # fully parsed tool like the eager toolbox always did.
+                        tool = self.app.toolbox.materialize_tool(tool, reason="installation")
                     except Exception:
                         log.exception("Error while loading tool at path '%s'", load_relative_path)
                         tool = None
@@ -225,25 +219,21 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             guid_to_tool_elem_dict[guid] = self.tpm.generate_tool_elem(
                 tool_shed,
                 self.repository.name,
-                self.repository.changeset_revision,
+                self.repository.installed_changeset_revision,
                 self.repository.owner or "",
                 tool_config_filename,
                 tool,
                 None,
             )
-        config_elems = []
         tree, error_message = xml_util.parse_xml(shed_tool_conf)
         if tree:
             root = tree.getroot()
-            for elem in root:
-                if elem.tag == "section":
-                    for i, tool_elem in enumerate(elem):
-                        guid = tool_elem.attrib.get("guid")
-                        if guid in guid_to_tool_elem_dict:
-                            elem[i] = guid_to_tool_elem_dict[guid]
-                elif elem.tag == "tool":
-                    guid = elem.attrib.get("guid")
-                    if guid in guid_to_tool_elem_dict:
-                        elem = guid_to_tool_elem_dict[guid]
-                config_elems.append(elem)
-            self.tpm.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
+            for tool_elem in root.findall("tool") + root.findall("section/tool"):
+                guid = tool_elem.get("guid")
+                if guid in guid_to_tool_elem_dict:
+                    updated_tool_elem = guid_to_tool_elem_dict[guid]
+                    # Keep placement attributes such as hidden while refreshing tool metadata.
+                    tool_elem.attrib.update(updated_tool_elem.attrib)
+                    # A tool can appear more than once; lxml moves children unless copied.
+                    tool_elem[:] = copy.deepcopy(list(updated_tool_elem))
+            self.tpm.config_elems_to_xml_file(list(root), shed_tool_conf, tool_path)

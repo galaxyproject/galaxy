@@ -60,7 +60,7 @@ async function toggleSearch() {
                 ref="searchInput"
                 placeholder="search workflow"
                 :delay="200"
-                @change="(v) => (currentQuery = v)" />
+                @change="(v: string) => (currentQuery = v)" />
             <GButton
                 tooltip
                 :title="toggled ? 'Close Search' : 'Search Invocation Graph'"

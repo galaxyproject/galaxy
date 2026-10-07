@@ -1,4 +1,5 @@
 import tempfile
+from typing import cast
 
 import pytest
 from a2wsgi import WSGIMiddleware
@@ -11,6 +12,7 @@ from galaxy.web.framework.base import (
     Response,
     send_file,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 CONTENT = "content"
 
@@ -27,7 +29,7 @@ def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None, s
         if set_content_length:
             trans.response.headers["content-length"] = len(CONTENT)
         trans.response.set_content_type("application/octet-stream")
-        return send_file(start_response, trans, fh)
+        return send_file(start_response, cast(GalaxyWebTransaction, trans), fh)
 
     app = FastAPI()
     # https://github.com/abersheeran/a2wsgi/issues/44

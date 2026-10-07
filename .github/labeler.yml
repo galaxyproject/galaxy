@@ -51,12 +51,6 @@ area/packaging:
   - changed-files:
     - any-glob-to-any-file:
       - packages/**/*
-area/reports:
-  - changed-files:
-    - any-glob-to-any-file:
-      - client/src/reports/**/*
-      - lib/galaxy/webapps/reports/**/*
-      - templates/webapps/reports/**/*
 area/scripts:
   - changed-files:
     - any-glob-to-any-file:

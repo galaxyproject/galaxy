@@ -2,7 +2,6 @@
 import { storeToRefs } from "pinia";
 import { computed, toRefs } from "vue";
 
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
@@ -30,7 +29,6 @@ import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 const props = defineProps<{
     lintData: LintData;
     steps: Steps; // Adjust the type as needed
-    datatypesMapper: DatatypesMapperModel;
     hasChanges: boolean;
     onSave?: () => Promise<boolean>;
 }>();
@@ -83,7 +81,7 @@ const emit = defineEmits<{
               ]
             | ReturnType<typeof fixAllIssues>,
     ): void;
-    (e: "onScrollTo", stepId: Number): void;
+    (e: "onScrollTo", stepId: number): void;
 }>();
 
 function onAttributes(highlight: string) {

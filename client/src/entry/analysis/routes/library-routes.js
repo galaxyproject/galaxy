@@ -18,7 +18,8 @@ export default [
                 component: LibraryPermissions,
                 props: true,
             },
-            { path: "folders/:folder_id", redirect: "folders/:folder_id/page/1" },
+            // Router 4 string redirects do not interpolate params, so build the target path here.
+            { path: "folders/:folder_id", redirect: (to) => `/libraries/folders/${to.params.folder_id}/page/1` },
             {
                 path: "folders/:folder_id/page/:page",
                 name: "LibraryFolder",

@@ -2,8 +2,7 @@
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faCompressAlt, faObjectGroup, faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { type Position, type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
@@ -18,6 +17,8 @@ import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 const props = defineProps<{
@@ -271,44 +272,41 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="onDragEnd"
-                @pan-by="(p) => emit('pan-by', p)" />
+                @pan-by="(p: Position) => emit('pan-by', p)" />
 
             <div class="frame-comment-header">
                 <FontAwesomeIcon :icon="faObjectGroup" />
                 <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
                 <span
                     ref="editableElement"
+                    v-sanitize-html="escapeAndSanitize(props.comment.data.title)"
                     :contenteditable="!props.readonly"
                     class="prevent-zoom"
                     spellcheck="false"
                     @blur="saveText"
                     @keydown.enter.prevent="saveText"
                     @dblclick.prevent="onDoubleClick"
-                    @mouseup.stop
-                    v-html="escapeAndSanitize(props.comment.data.title)" />
+                    @mouseup.stop />
             </div>
         </div>
 
-        <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
-                class="button prevent-zoom"
-                variant="outline-primary"
-                title="Fit to content"
-                @click="onFitToContent">
+        <GButtonGroup v-if="!props.readonly" class="style-buttons">
+            <GButton class="button prevent-zoom" color="blue" outline title="Fit to content" @click="onFitToContent">
                 <FontAwesomeIcon :icon="faCompressAlt" class="prevent-zoom" />
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
                 <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
-            </BButton>
-        </BButtonGroup>
+            </GButton>
+        </GButtonGroup>
 
         <ColorSelector
             v-if="showColorSelector"

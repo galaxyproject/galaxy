@@ -1,5 +1,7 @@
 import logging
 
+from galaxy.managers.context import ProvidesAppContext
+
 log = logging.getLogger(__name__)
 
 
@@ -29,7 +31,7 @@ def _deferred_source_uri(target_object) -> str | None:
     return None
 
 
-def is_object_applicable(trans, target_object, data_source_tests):
+def is_object_applicable(trans: ProvidesAppContext, target_object, data_source_tests):
     """
     Run a visualization's data_source tests to find out if
     it can be applied to the target_object.

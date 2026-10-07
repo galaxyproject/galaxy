@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -141,10 +142,11 @@ defineExpose({
                     class="mt-3">
                     <FilesInput
                         id="source-selector"
-                        v-model="sourceUri"
+                        :value="sourceUri"
                         mode="source"
                         :require-writable="true"
-                        :filter-options="includeOnlyRDMCompatible" />
+                        :filter-options="includeOnlyRDMCompatible"
+                        @input="(v: string) => (sourceUri = v)" />
                 </BFormGroup>
 
                 <BFormGroup
@@ -163,7 +165,7 @@ defineExpose({
                     You need to create the new record in a repository before exporting the {{ props.what }} to it.
                 </p>
 
-                <BAlert
+                <GAlert
                     v-if="errorCreatingRecord"
                     variant="danger"
                     show
@@ -171,7 +173,7 @@ defineExpose({
                     @dismissed="errorCreatingRecord = undefined">
                     An error occurred while creating the record:
                     {{ errorCreatingRecord }}
-                </BAlert>
+                </GAlert>
 
                 <GButton
                     id="create-record-button"
@@ -191,11 +193,12 @@ defineExpose({
                 class="mt-3">
                 <FilesInput
                     id="existing-record-selector"
-                    v-model="recordUri"
+                    :value="recordUri"
                     mode="directory"
                     :require-writable="true"
                     :filter-options="fileSource ? undefined : includeOnlyRDMCompatible"
-                    :selected-item="fileSourceAsItem" />
+                    :selected-item="fileSourceAsItem"
+                    @input="(v: string) => (recordUri = v)" />
             </BFormGroup>
         </div>
     </div>

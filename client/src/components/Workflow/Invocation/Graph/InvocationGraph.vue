@@ -2,7 +2,7 @@
 import { faArrowCircleLeft, faArrowCircleRight, faArrowDown, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import { BAlert, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
@@ -12,6 +12,7 @@ import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -180,14 +181,14 @@ function toggleDetailedView() {
 
 <template>
     <div>
-        <BAlert v-if="initialLoading" show variant="info">
+        <GAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
-        </BAlert>
+        </GAlert>
         <div v-else-if="errored">
-            <BAlert v-if="errorMessage" show variant="danger">
+            <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
-            </BAlert>
-            <BAlert v-else show variant="danger"> Unknown Error </BAlert>
+            </GAlert>
+            <GAlert v-else show variant="danger"> Unknown Error </GAlert>
         </div>
         <div v-else-if="steps && datatypesMapper">
             <div class="d-flex">
@@ -288,7 +289,7 @@ function toggleDetailedView() {
                         expanded />
                 </BCardBody>
             </BCard>
-            <BAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</BAlert>
+            <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
         </div>
     </div>
 </template>

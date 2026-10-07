@@ -1,4 +1,5 @@
 import threading
+from collections.abc import Mapping
 from typing import (
     Any,
     runtime_checkable,
@@ -20,6 +21,8 @@ from galaxy.tool_util.toolbox.base import AbstractToolBox
 if TYPE_CHECKING:
     from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 
+INSTALLATION_RELOAD_TIMEOUT = 60
+
 
 class DataManagerInterface(Protocol):
     GUID_TYPE: str = "data_manager"
@@ -27,7 +30,9 @@ class DataManagerInterface(Protocol):
 
     def process_result(self, out_data): ...
 
-    def write_bundle(self, out: dict[str, OutputDataset]) -> dict[str, OutputDataset]: ...
+    def write_bundle(
+        self, out: dict[str, OutputDataset], source_extra_files_paths: Mapping[str, str] | None = None
+    ) -> dict[str, OutputDataset]: ...
 
 
 class DataManagersInterface(Protocol):
@@ -59,3 +64,5 @@ class InstallationTarget(HasToolBox, Protocol[ToolBoxType]):
     def tool_data_tables(self) -> ToolDataTableManager: ...
 
     def wait_for_toolbox_reload(self, old_toolbox: ToolBoxType) -> None: ...
+
+    def reindex_tool_search(self) -> None: ...

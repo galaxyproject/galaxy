@@ -1,34 +1,37 @@
 <!-- https://schema.org/Organization -->
 <template>
-    <b-form @submit="onSave" @reset="onReset">
+    <BForm @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-g-tooltip.hover title="Hide Attribute"
                 ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
             /></span>
             <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
-            <b-form-input
+            <BFormInput
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
                 :type="attribute.type"
                 :state="currentErrors[attribute.key] ? false : null"
                 @focus="removeErrorMessage(attribute.key)">
-            </b-form-input>
+            </BFormInput>
         </div>
         <div role="group" class="form-group">
-            <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
+            <BFormSelect v-model="addAttribute" :options="addAttributes" size="sm"></BFormSelect>
         </div>
-        <b-button type="submit" variant="primary">Save</b-button>
-        <b-button type="reset" variant="danger">Cancel</b-button>
-    </b-form>
+        <GButton type="submit" color="blue">Save</GButton>
+        <GButton type="reset" color="red">Cancel</GButton>
+    </BForm>
 </template>
 
 <script>
 import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BForm, BFormInput, BFormSelect } from "bootstrap-vue";
 
 import ThingFormMixin from "./ThingFormMixin";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const ATTRIBUTES_INFO = [
     { key: "name", label: "Name", placeholder: "name" },
@@ -45,7 +48,11 @@ const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
 
 export default {
     components: {
+        BForm,
+        BFormInput,
+        BFormSelect,
         FontAwesomeIcon,
+        GButton,
     },
     mixins: [ThingFormMixin],
     props: {

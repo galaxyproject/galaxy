@@ -1,6 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 import galaxy.managers.base as managers_base
 from galaxy import (
@@ -13,6 +11,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.managers.users import (
     UserDeserializer,
     UserManager,
@@ -27,10 +26,15 @@ from galaxy.schema.schema import (
     AnonUserModel,
     DetailedUserModel,
     FlexibleUserIdType,
+    GroupModel,
+    GroupModelListResponse,
     LimitedUserModel,
     MaybeLimitedUserModel,
     RoleListResponse,
+    UserGroupsUpdatePayload,
     UserModel,
+    UserPasswordResetPayload,
+    UserRolesUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -55,6 +59,7 @@ class UsersService(ServiceBase):
         user_serializer: UserSerializer,
         user_deserializer: UserDeserializer,
         quota_agent: QuotaAgent,
+        extra_preferences_manager: ExtraPreferencesManager,
     ):
         super().__init__(security)
         self.user_manager = user_manager
@@ -62,6 +67,7 @@ class UsersService(ServiceBase):
         self.user_serializer = user_serializer
         self.user_deserializer = user_deserializer
         self.quota_agent = quota_agent
+        self.extra_preferences_manager = extra_preferences_manager
 
     def recalculate_disk_usage(
         self,
@@ -108,11 +114,19 @@ class UsersService(ServiceBase):
         user = self.get_user(trans, user_id)
         self.api_key_manager.delete_api_key(user)
 
+    def purge_user(self, user: User) -> None:
+        """Purge a deleted user, including the extra preference values kept in the vault."""
+        self.user_manager.purge(user)
+        # After the user is purged, so a failed purge leaves the vault as it was.
+        self.extra_preferences_manager.purge(user)
+
     def get_user(self, trans: ProvidesUserContext, user_id):
         user = trans.user
         if trans.anonymous or (user and user.id != user_id and not trans.user_is_admin):
             raise glx_exceptions.InsufficientPermissionsException("Access denied.")
         user = self.user_manager.by_id(user_id)
+        if user is None:
+            raise glx_exceptions.ObjectNotFound("User not found.")
         return user
 
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
@@ -255,7 +269,26 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id: int) -> RoleListResponse:
         user = self.get_user(trans, user_id)
-        roles = [ura.role for ura in user.roles]
+        roles = [ura.role for ura in user.roles if not ura.role.deleted]
         return RoleListResponse(root=[role_to_model(r) for r in roles])
+
+    def set_user_roles(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserRolesUpdatePayload
+    ) -> RoleListResponse:
+        self.user_manager.set_roles(self.get_user(trans, user_id), payload.role_ids)
+        return self.get_user_roles(trans, user_id)
+
+    def get_user_groups(self, trans: ProvidesUserContext, user_id: int) -> GroupModelListResponse:
+        groups = self.user_manager.get_groups(self.get_user(trans, user_id))
+        return GroupModelListResponse(root=[GroupModel(id=group_id, name=name) for group_id, name in groups])
+
+    def set_user_groups(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserGroupsUpdatePayload
+    ) -> GroupModelListResponse:
+        self.user_manager.set_groups(self.get_user(trans, user_id), payload.group_ids)
+        return self.get_user_groups(trans, user_id)
+
+    def reset_password(self, trans: ProvidesUserContext, user_id: int, payload: UserPasswordResetPayload) -> None:
+        self.user_manager.set_password(trans, self.get_user(trans, user_id), payload.password)

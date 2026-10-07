@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import SharingIndicators from "./SharingIndicators.vue";
@@ -17,9 +17,9 @@ describe("SharingIndicators.vue", () => {
                     shared: false,
                 },
             };
-            wrapper = shallowMount(SharingIndicators, {
+            wrapper = mount(SharingIndicators, {
                 propsData,
-                localVue,
+                global: localVue,
             });
         });
 
@@ -40,9 +40,9 @@ describe("SharingIndicators.vue", () => {
                     shared: true,
                 },
             };
-            wrapper = shallowMount(SharingIndicators, {
+            wrapper = mount(SharingIndicators, {
                 propsData,
-                localVue,
+                global: localVue,
             });
         });
 

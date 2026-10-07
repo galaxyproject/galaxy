@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { type ComponentPublicInstance, nextTick } from "vue";
 
 import ScrollList from "./ScrollList.vue";
 
@@ -14,7 +14,7 @@ const TOTAL_ITEMS = 50;
 const BUFFER_SIZE = 5;
 const TEST_ITEM_DIV = "div[data-description='test item']";
 const LOAD_MORE_BUTTON = "[data-description='load more items button']";
-const TEST_ITEM_SLOT = '<div data-description="test item" slot-scope="{ item, index }">Test {{ item.name }}</div>';
+const TEST_ITEM_SLOT = `<template #default="{ item }"><div data-description="test item">Test {{ item.name }}</div></template>`;
 const ITEM_NAME = "test item";
 const ITEM_NAME_PLURAL = "test items";
 
@@ -25,6 +25,16 @@ function createTestItems(count: number): TestItem[] {
     }));
     return items;
 }
+
+/** ScrollList is generic, so vue-test-utils can't infer its props; declare the ones these tests read or set. */
+type ScrollListWrapper = VueWrapper<
+    ComponentPublicInstance<{
+        propItems?: TestItem[];
+        propTotalCount?: number;
+        adjustForTotalCountChanges?: boolean;
+        showCountInFooter?: boolean;
+    }>
+>;
 
 /** The infinite scroll callback mock, given the same name as the callback in `ScrollList`. */
 let loadItems: (() => void) | null = null;
@@ -64,7 +74,7 @@ let expectedTotalItemCount = 0;
  * @param wrapper Optional component wrapper to update the `propItems` with new items.
  */
 const testLoader = vi.fn(
-    (offset: number, limit: number, wrapper?: Wrapper<Vue>): Promise<{ items: TestItem[]; total: number }> => {
+    (offset: number, limit: number, wrapper?: ScrollListWrapper): Promise<{ items: TestItem[]; total: number }> => {
         const newItems = TEST_ITEMS.slice(offset, offset + limit);
 
         if (wrapper) {
@@ -89,24 +99,27 @@ const testLoader = vi.fn(
 );
 
 describe("ScrollList with local loader and data", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(async () => {
         testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 loader: (offset: number, limit: number) => testLoader(offset, limit),
                 itemKey: (item: TestItem) => item.id,
                 limit: BUFFER_SIZE,
                 name: "test item",
                 namePlural: "test items",
             },
-            localVue: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
@@ -141,6 +154,27 @@ describe("ScrollList with local loader and data", () => {
         expect(testLoader).toHaveBeenCalledTimes(Math.ceil(TOTAL_ITEMS / BUFFER_SIZE));
     });
 
+    it("stops auto-retrying on error until the user clicks Load More", async () => {
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(1);
+
+        // Next load fails
+        testLoader.mockRejectedValueOnce(new Error("Boom"));
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(2);
+
+        // Further scrolling must NOT retry automatically
+        await scrollOnce();
+        await scrollOnce();
+        expect(testLoader).toHaveBeenCalledTimes(2);
+
+        // Clicking "Load More" clears the error and retries
+        await wrapper.find(LOAD_MORE_BUTTON).trigger("click");
+        await nextTick();
+        expect(testLoader).toHaveBeenCalledTimes(3);
+        expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE * 2);
+    });
+
     it("shows item count and total items", async () => {
         await scrollOnce();
         expect(wrapper.text()).toContain(`Loaded ${BUFFER_SIZE} out of ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL}`);
@@ -164,31 +198,34 @@ describe("ScrollList with local loader and data", () => {
 });
 
 describe("ScrollList with prop items and no local state", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 propItems: TEST_ITEMS,
                 propTotalCount: TOTAL_ITEMS,
                 itemKey: (item: TestItem) => item.id,
                 name: ITEM_NAME,
                 namePlural: ITEM_NAME_PLURAL,
             },
-            localVue: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
 
     it("renders all items without scrolling/loading", async () => {
         // Assert that `propItems` is already populated
-        expect(wrapper.props().propItems.length).toBe(TOTAL_ITEMS);
+        expect(wrapper.props().propItems?.length).toBe(TOTAL_ITEMS);
 
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(TOTAL_ITEMS);
         expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
@@ -201,14 +238,14 @@ describe("ScrollList with prop items and no local state", () => {
 });
 
 describe("ScrollList with prop items and a local state loader", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: ScrollListWrapper;
 
     beforeEach(() => {
         testLoader.mockClear();
         expectedTotalItemCount = 0;
 
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 // We make sure the `loader` updates the `propItems` (mock the loader loading via a pinia store for e.g.)
                 loader: (offset: number, limit: number) => testLoader(offset, limit, wrapper),
                 limit: BUFFER_SIZE,
@@ -219,19 +256,22 @@ describe("ScrollList with prop items and a local state loader", () => {
                 namePlural: ITEM_NAME_PLURAL,
                 adjustForTotalCountChanges: false, // Default; we will adjust this to test this later
             },
-            localVue: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
 
     it("updates the propItems on scroll", async () => {
         // Assert that `propItems` is initially empty
-        expect(wrapper.props().propItems.length).toBe(0);
+        expect(wrapper.props().propItems?.length).toBe(0);
 
         await scrollOnce();
 
@@ -239,7 +279,7 @@ describe("ScrollList with prop items and a local state loader", () => {
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE);
 
         // And the `propItems` have been updated as well
-        expect(wrapper.props().propItems.length).toBe(BUFFER_SIZE);
+        expect(wrapper.props().propItems?.length).toBe(BUFFER_SIZE);
 
         // And this happened through the loader
         expect(testLoader).toHaveBeenCalledTimes(1);
@@ -248,7 +288,7 @@ describe("ScrollList with prop items and a local state loader", () => {
         await scrollOnce();
         await scrollOnce();
         expect(wrapper.findAll(TEST_ITEM_DIV).length).toBe(BUFFER_SIZE * 3);
-        expect(wrapper.props().propItems.length).toBe(BUFFER_SIZE * 3);
+        expect(wrapper.props().propItems?.length).toBe(BUFFER_SIZE * 3);
         expect(testLoader).toHaveBeenCalledTimes(3);
     });
 

@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import (
     Any,
+    cast,
     Literal,
     Union,
 )
@@ -23,6 +24,7 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     ToolSource,
     ToolSourceTest,
+    ToolSourceTestInput,
     ToolSourceTestInputs,
     ToolSourceTests,
 )
@@ -79,11 +81,21 @@ def parse_tool_test_descriptions(
             if parameters is None:
                 tool_parameter_bundle = input_models_for_tool_source(tool_source)
                 parameters = tool_parameter_bundle.parameters
-            validated_test_case = case_state(raw_test_dict, parameters, profile, validate=validate_on_load)
-            request_and_schema = TestRequestAndSchema(
-                validated_test_case.tool_state,
-                tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
+            qualified_test_dict = cast(
+                ToolSourceTest, {**raw_test_dict, "inputs": _qualify_test_inputs(tool_source, raw_test_dict)}
             )
+            validated_test_case = case_state(qualified_test_dict, parameters, profile, validate=validate_on_load)
+            if validated_test_case.unhandled_inputs:
+                # Inputs that map to no parameter (e.g. legacy unqualified repeats) can't be
+                # represented in a modern request; fall back to the legacy API.
+                validation_skipped_reason = (
+                    f"could not build request: unhandled inputs {validated_test_case.unhandled_inputs}"
+                )
+            else:
+                request_and_schema = TestRequestAndSchema(
+                    validated_test_case.tool_state,
+                    tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
+                )
         except Exception as e:
             if validate_on_load:
                 validation_exception = e
@@ -120,6 +132,38 @@ class TestRequestAndSchema:
     request_schema: ToolParameterBundleModel
 
 
+def _qualify_test_inputs(tool_source: ToolSource, raw_test_dict: ToolSourceTest) -> ToolSourceTestInputs:
+    """Rewrite a legacy test's unqualified parameter names to the tool's own paths.
+
+    Reuses the loader's tree walk, so `input2` given twice becomes `queries_0|input2`
+    and `queries_1|input2` exactly as the legacy submission resolves it. Tools whose
+    profile disallows unqualified access resolve to the names they already carry.
+    """
+    inputs: ToolSourceTestInputs = raw_test_dict.get("inputs") or []
+    scratch: ToolSourceTestInputs = [cast(ToolSourceTestInput, dict(raw_input)) for raw_input in inputs]
+    qualified_names: dict[int, str] = {}
+    try:
+        _process_raw_inputs(
+            tool_source,
+            input_sources(tool_source),
+            list(scratch),
+            raw_test_dict.get("value_state_representation", "test_case_xml"),
+            [],
+            [],
+            [],
+            qualified_names=qualified_names,
+        )
+    except Exception:
+        # Only names are wanted here. Any loader complaint about a value is raised again
+        # by the caller's own walk, against the original inputs.
+        return inputs
+    qualified: ToolSourceTestInputs = []
+    for raw_input, probe in zip(inputs, scratch):
+        name = qualified_names.get(id(probe))
+        qualified.append(cast(ToolSourceTestInput, {**raw_input, "name": name}) if name else raw_input)
+    return qualified
+
+
 def _description_from_tool_source(
     tool_source: ToolSource,
     raw_test_dict: ToolSourceTest,
@@ -148,6 +192,7 @@ def _description_from_tool_source(
     value_state_representation = raw_test_dict.get("value_state_representation", "test_case_xml")
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: ValidToolTestDict | InvalidToolTestDict
+    profile = tool_source.parse_profile()
     try:
         processed_inputs = _process_raw_inputs(
             tool_source,
@@ -179,6 +224,7 @@ def _description_from_tool_source(
                 "required_loc_files": required_loc_files,
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "maxseconds": maxseconds,
                 "error": False,
@@ -191,6 +237,7 @@ def _description_from_tool_source(
             {
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "inputs": {},
                 "error": True,
@@ -220,6 +267,7 @@ def _process_raw_inputs(
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
     parent_context: AnyParamContext | None = None,
+    qualified_names: dict[int, str] | None = None,
 ) -> ExpandedToolInputs:
     """
     Recursively expand flat list of inputs into "tree" form of flat list
@@ -239,6 +287,8 @@ def _process_raw_inputs(
             case_name = test_param_input_source.parse_name()
             case_context = ParamContext(name=case_name, parent_context=cond_context)
             raw_input_dict = case_context.extract_value(raw_inputs)
+            if raw_input_dict is not None and qualified_names is not None:
+                qualified_names[id(raw_input_dict)] = case_context.for_state()
             case_value = raw_input_dict["value"] if raw_input_dict else None
             case_when, case_input_sources = _matching_case_for_value(
                 tool_source, input_source, test_param_input_source, case_value, allow_legacy_test_case_parameters
@@ -254,6 +304,7 @@ def _process_raw_inputs(
                         required_data_tables,
                         required_loc_files,
                         parent_context=cond_context,
+                        qualified_names=qualified_names,
                     )
                     expanded_inputs.update(case_inputs)
                 expanded_case_value = split_if_str(case_when)
@@ -286,6 +337,7 @@ def _process_raw_inputs(
                     required_data_tables,
                     required_loc_files,
                     parent_context=context,
+                    qualified_names=qualified_names,
                 )
                 if expanded_input:
                     expanded_inputs.update(expanded_input)
@@ -305,6 +357,7 @@ def _process_raw_inputs(
                         required_data_tables,
                         required_loc_files,
                         parent_context=context,
+                        qualified_names=qualified_names,
                     )
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
@@ -315,6 +368,8 @@ def _process_raw_inputs(
         else:
             context = ParamContext(name=name, parent_context=parent_context)
             raw_input_dict = context.extract_value(raw_inputs)
+            if raw_input_dict is not None and qualified_names is not None:
+                qualified_names[id(raw_input_dict)] = context.for_state()
             param_type = input_source.get("type")
             if raw_input_dict:
                 name = raw_input_dict["name"]

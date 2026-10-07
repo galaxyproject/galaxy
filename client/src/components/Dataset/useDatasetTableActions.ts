@@ -1,7 +1,7 @@
 import { faCopy, faEye, faFire, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 
-import type { HDASummary } from "@/api";
+import type { HDASummary, HistoryItemSummary } from "@/api";
 import { copyDataset, deleteDataset } from "@/api/datasets";
 import type { TableAction } from "@/components/Common/GTable.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -14,7 +14,7 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
 
     const { confirm } = useConfirmDialog();
 
-    async function onShowDataset(item: HDASummary) {
+    async function onShowDataset(item: HistoryItemSummary) {
         const { history_id } = item;
         const filters = {
             deleted: item.deleted,
@@ -24,26 +24,25 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
 
         try {
             await historyStore.applyFilters(history_id, filters);
-        } catch (error) {
+        } catch {
             Toast.error("Failed to show dataset in history");
         }
     }
 
-    async function onCopyDataset(item: HDASummary) {
-        const dataset_id = item.id;
-
+    async function onCopyDataset(item: HistoryItemSummary) {
         try {
             if (!currentHistoryId.value) {
                 throw new Error("No current history found.");
             }
 
-            await copyDataset(dataset_id, currentHistoryId.value);
+            await copyDataset(item.id, currentHistoryId.value, item.history_content_type);
 
             historyStore.loadCurrentHistory();
             await refreshList();
-            Toast.success(`Dataset "${item.name}" copied to current history.`);
-        } catch (error) {
-            Toast.error("Failed to copy dataset");
+            const contentType = item.history_content_type === "dataset" ? "Dataset" : "Collection";
+            Toast.success(`${contentType} "${item.name}" copied to current history.`);
+        } catch {
+            Toast.error("Failed to copy history content");
         }
     }
 
@@ -65,7 +64,7 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
                 Toast.success(`Dataset "${item.name}" ${purge ? "purged" : "deleted"}.`);
                 historyStore.loadCurrentHistory();
                 await refreshList();
-            } catch (error) {
+            } catch {
                 Toast.error(`Failed to ${purge ? "purge" : "delete"} dataset.`);
             }
         }

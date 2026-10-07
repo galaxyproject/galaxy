@@ -158,7 +158,7 @@ doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
-doc/source/dev/plantuml.jar
+doc/source/dev/user_defined_tools_authoring.md
 client/docs/dist
 
 # Webpack stats
@@ -185,7 +185,7 @@ config/plugins/visualizations/tiffviewer/static/
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
-test/functional/tools/cwl_tools/v1.?/
+test/functional/tools/cwl_tools/
 
 # Involucro tool
 involucro

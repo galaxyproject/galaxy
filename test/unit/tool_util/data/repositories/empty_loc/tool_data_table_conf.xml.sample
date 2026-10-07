@@ -1,0 +1,10 @@
+<tables>
+    <table name="undocumented" comment_char="#">
+        <columns>value, path</columns>
+        <file path="${__HERE__}/tool-data/undocumented.loc" />
+    </table>
+    <table name="documented" comment_char="#">
+        <columns>value, path</columns>
+        <file path="${__HERE__}/tool-data/documented.loc" />
+    </table>
+</tables>

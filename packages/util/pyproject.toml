@@ -63,6 +63,7 @@ test = [
     "pytest",
     "pytest-httpserver",
     "responses",
+    "watchdog",
     "Werkzeug",
 ]
 

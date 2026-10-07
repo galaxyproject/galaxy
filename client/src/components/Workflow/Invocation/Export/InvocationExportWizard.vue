@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -21,6 +21,7 @@ import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonito
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
 import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
 import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
@@ -402,7 +403,7 @@ onUnmounted(() => {
                         :header="target.label"
                         class="wizard-selection-card"
                         @click="exportData.destination = target.destination">
-                        <div v-html="renderMarkdown(target.markdownDescription)" />
+                        <div v-sanitize-html:links="renderMarkdown(target.markdownDescription)" />
                     </BCard>
                 </BCardGroup>
             </div>
@@ -511,8 +512,8 @@ onUnmounted(() => {
                 </div>
             </div>
         </GenericWizard>
-        <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
+        <GAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
     </div>
 </template>

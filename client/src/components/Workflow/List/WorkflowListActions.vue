@@ -2,7 +2,7 @@
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -19,7 +19,7 @@ function navigateToImport() {
     router.push("/workflows/import");
 }
 
-function navigateToOldCreate() {
+function navigateToCreate() {
     router.push("/workflows/edit");
 }
 </script>
@@ -36,7 +36,7 @@ function navigateToOldCreate() {
             :title="localize('Create new workflow')"
             disabled-title="Log in to create workflow"
             :disabled="isAnonymous"
-            @click="navigateToOldCreate">
+            @click="navigateToCreate">
             <FontAwesomeIcon :icon="faPlus" />
             <span v-localize>Create</span>
         </GButton>

@@ -97,6 +97,7 @@ from galaxy.webapps.galaxy.api.common import (
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.work.context import SessionRequestContext
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -215,7 +216,7 @@ class FastAPIHistories:
     def index(
         self,
         response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         limit: int | None = LimitQueryParam,
         offset: int | None = OffsetQueryParam,
         show_own: bool = ShowOwnQueryParam,
@@ -263,7 +264,7 @@ class FastAPIHistories:
     )
     def count(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> int:
         return self.service.count(trans)
 
@@ -274,7 +275,7 @@ class FastAPIHistories:
     )
     def index_deleted(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: bool | None = AllHistoriesQueryParam,
@@ -476,7 +477,7 @@ class FastAPIHistories:
     )
     def create(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),  # type: ignore[attr-defined]
         payload_as_json: Any | None = Depends(try_get_request_body_as_json),
         serialization_params: SerializationParams = Depends(query_serialization_params),
@@ -632,11 +633,9 @@ class FastAPIHistories:
 
         Change the `accept` content type header to return the new task-based history exports.
         """
-        use_tasks = accept == ExportTaskListResponse.__accept_type__
-        exports = self.service.index_exports(trans, history_id, use_tasks, limit, offset)
-        if use_tasks:
-            return ExportTaskListResponse(root=exports)
-        return JobExportHistoryArchiveListResponse(root=exports)
+        if accept == ExportTaskListResponse.__accept_type__:
+            return ExportTaskListResponse(root=self.service.index_task_exports(trans, history_id, limit, offset))
+        return JobExportHistoryArchiveListResponse(root=self.service.index_job_exports(trans, history_id))
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{history_id}/exports",

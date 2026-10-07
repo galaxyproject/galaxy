@@ -565,6 +565,68 @@ describe("canAccept", () => {
             "Cannot attach an optional output to a required parameter",
         );
     });
+    it("accepts integer parameter to multiple data_column parameter connection", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const integerOutputParam = terminals["integer parameter input"]!["output"] as OutputParameterTerminal;
+        expect(columnsInputParam.canAccept(integerOutputParam).canAccept).toBe(true);
+    });
+    it("accepts multiple integer parameter to multiple data_column parameter connection", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(true);
+    });
+    it("rejects multiple integer parameter to single data_column parameter connection", () => {
+        const columnInputParam = terminals["column and select parameters"]!["single_col"] as InputParameterTerminal;
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(columnInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(false);
+        expect(columnInputParam.canAccept(multipleIntegerOutputParam).reason).toBe(
+            "This output parameter represents multiple values but input only accepts a single value",
+        );
+    });
+    it("rejects multiple text parameter to multiple data_column parameter connection", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const multipleTextOutputParam = terminals["multiple text parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(columnsInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(false);
+        expect(columnsInputParam.canAccept(multipleTextOutputParam).reason).toBe(
+            "Cannot attach a text parameter to a integer input",
+        );
+    });
+    it("accepts multiple text parameter to multiple select parameter connection", () => {
+        const selectInputParam = terminals["column and select parameters"]!["select_ex"] as InputParameterTerminal;
+        const multipleTextOutputParam = terminals["multiple text parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(selectInputParam.canAccept(multipleTextOutputParam).canAccept).toBe(true);
+    });
+    it("rejects second connection to multiple data_column parameter", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const multipleIntegerOutputParam = terminals["multiple integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        columnsInputParam.connect(multipleIntegerOutputParam);
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).canAccept).toBe(false);
+        expect(columnsInputParam.canAccept(multipleIntegerOutputParam).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output.",
+        );
+    });
+    it("maps over list connected to multiple data_column parameter", () => {
+        const columnsInputParam = terminals["column and select parameters"]!["col"] as InputParameterTerminal;
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        columnsInputParam.connect(collectionOut);
+        expect(columnsInputParam.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+    });
+    it("maps over list connected to multiple select parameter", () => {
+        const selectInputParam = terminals["column and select parameters"]!["select_ex"] as InputParameterTerminal;
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        selectInputParam.connect(collectionOut);
+        expect(selectInputParam.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+    });
     it("rejects data to parameter connection", () => {
         const dataOut = terminals["data input"]!["output"] as OutputTerminal;
         const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;

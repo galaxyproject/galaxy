@@ -3,11 +3,12 @@ import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { usePanels } from "@/composables/usePanels";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
+import { eventBus } from "@/utils/eventBus";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -23,7 +24,6 @@ const { isRightPanelOpen, isBottomPanelOpen, activeChatId } = storeToRefs(chatSt
 const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
 
 const route = useRoute();
-const router = useRouter();
 
 watch(
     () => route.path,
@@ -46,6 +46,14 @@ const isNoPaddingPath = computed(() => {
         route.path.startsWith("/pages/editor")
     );
 });
+
+/**
+ * Every `/galaxyai` route renders one and the same GalaxyAI instance: it rewrites its own route as a
+ * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
+ * those changes through its `exchangeId` prop, so the live conversation stays in place. All other
+ * routes get a fresh component per path.
+ */
+const routerViewKey = computed(() => (route.path.startsWith("/galaxyai") ? "/galaxyai" : route.fullPath));
 
 const showCenter = ref(false);
 const { showPanels } = usePanels();
@@ -71,11 +79,11 @@ function onLoad() {
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
     // always fires when a route is pushed instead of validating it first.
-    router.app.$on("router-push", hideCenter);
+    eventBus.on("router-push", hideCenter);
 });
 
 onUnmounted(() => {
-    router.app.$off("router-push", hideCenter);
+    eventBus.off("router-push", hideCenter);
 });
 </script>
 
@@ -86,12 +94,12 @@ onUnmounted(() => {
             <div class="flex-grow-1 overflow-auto" :class="{ 'p-3': !isNoPaddingPath }" style="min-height: 0">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="h-100">
-                    <router-view :key="$route.fullPath" class="h-100" />
+                    <router-view :key="routerViewKey" class="h-100" />
                 </div>
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" v-model:reactive-width="historyPanelWidth" side="right">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
@@ -104,9 +112,9 @@ onUnmounted(() => {
         </FlexPanel>
         <FlexPanel
             v-if="showPanels && isRightPanelOpen"
+            v-model:reactive-width="chatPanelWidth"
             panel-id="chat-panel"
             side="right"
-            :reactive-width.sync="chatPanelWidth"
             @close="chatStore.hideChat()">
             <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>

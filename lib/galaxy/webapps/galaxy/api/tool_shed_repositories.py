@@ -3,6 +3,7 @@ import logging
 from time import strftime
 from typing import (
     Annotated,
+    Any,
 )
 
 from fastapi import (
@@ -18,7 +19,10 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CheckForUpdatesResponse,
@@ -66,12 +70,30 @@ def get_message_for_no_shed_tool_config():
     return message
 
 
+def parse_repository_from_payload(payload):
+    tool_shed_url = payload.get("tool_shed_url", "")
+    if not tool_shed_url:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'tool_shed_url'.")
+    name = payload.get("name", "")
+    if not name:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
+    owner = payload.get("owner", "")
+    if not owner:
+        raise exceptions.RequestParameterMissingException("Missing required parameter 'owner'.")
+    changeset_revision = payload.get("changeset_revision", "")
+    if not changeset_revision:
+        raise HTTPBadRequest(detail="Missing required parameter 'changeset_revision'.")
+    # Form-encoded payload values are JSON-decoded, so a name, owner or changeset hash made up only of digits
+    # arrives here as an int.
+    return tool_shed_url, str(name), str(owner), str(changeset_revision)
+
+
 class ToolShedRepositoriesController(BaseGalaxyAPIController):
     """RESTful controller for interactions with tool shed repositories."""
 
     service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
 
-    def __ensure_can_install_repos(self, trans):
+    def __ensure_can_install_repos(self, trans: ProvidesUserContext):
         # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
         if not have_shed_tool_conf_for_install(self.app):
             message = get_message_for_no_shed_tool_config()
@@ -132,10 +154,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             configuration file will be selected automatically.
 
         """
-        # Get the information about the repository to be installed from the payload.
-        tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(
-            payload, include_changeset=True
-        )
+        tool_shed_url, name, owner, changeset_revision = parse_repository_from_payload(payload)
         self.__ensure_can_install_repos(trans)
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url, name, owner, changeset_revision, payload)
@@ -146,7 +165,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def install_repository_revisions(self, trans, payload, **kwd):
+    def install_repository_revisions(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
         Install one or more specified repository revisions from one or more specified tool sheds into Galaxy.  The received parameters
@@ -245,7 +264,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def uninstall_repository(self, trans, id=None, **kwd):
+    def uninstall_repository(self, trans: ProvidesAppContext, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
         DELETE /api/tool_shed_repositories/
@@ -267,9 +286,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             except ValueError:
                 raise HTTPBadRequest(detail=f"No repository with id '{id}' found")
         else:
-            tsr_arguments = ["name", "owner", "changeset_revision", "tool_shed_url"]
+            tsr_argument_names = ["name", "owner", "changeset_revision", "tool_shed_url"]
             try:
-                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
+                tsr_arguments = {key: kwd[key] for key in tsr_argument_names}
             except KeyError as e:
                 raise HTTPBadRequest(detail=f"Missing required parameter '{e.args[0]}'")
             repository = get_installed_repository(
@@ -291,29 +310,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                 f"Attempting to uninstall tool dependencies for repository named {repository.name} resulted in errors: {errors}"
             )
 
-    def __parse_repository_from_payload(self, payload, include_changeset=False):
-        # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get("tool_shed_url", "")
-        if not tool_shed_url:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'tool_shed_url'.")
-        name = payload.get("name", "")
-        if not name:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        owner = payload.get("owner", "")
-        if not owner:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'owner'.")
-        if not include_changeset:
-            return tool_shed_url, name, owner
-
-        changeset_revision = payload.get("changeset_revision", "")
-        if not changeset_revision:
-            raise HTTPBadRequest(detail="Missing required parameter 'changeset_revision'.")
-
-        return tool_shed_url, name, owner, changeset_revision
-
     @require_admin
     @expose_api
-    def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
+    def reset_metadata_on_selected_installed_repositories(self, trans: ProvidesAppContext, **kwd):
         if repository_ids := util.listify(kwd.get("repository_ids")):
             irmm = InstalledRepositoryMetadataManager(self.app)
             failed = []
@@ -340,7 +339,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             raise exceptions.MessageException("Please specify repository ids [repository_ids].")
 
     @expose_api
-    def reset_metadata_on_installed_repositories(self, trans, payload, **kwd):
+    def reset_metadata_on_installed_repositories(self, trans: ProvidesUserContext, payload, **kwd):
         """
         PUT /api/tool_shed_repositories/reset_metadata_on_installed_repositories
 
@@ -349,7 +348,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         :param key: the API key of the Galaxy admin user.
         """
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        results = dict(start_time=start_time, successful_count=0, unsuccessful_count=0, repository_status=[])
+        results: dict[str, Any] = dict(
+            start_time=start_time, successful_count=0, unsuccessful_count=0, repository_status=[]
+        )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin:
             raise HTTPForbidden(

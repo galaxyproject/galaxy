@@ -87,6 +87,12 @@ Galaxy pages embed live content using special directives. Two syntax forms:
 
 Use block syntax for visual embeds (images, tables, dataset cards). Use inline syntax for text-level references (names, types, timestamps) woven into sentences.
 
+**Code blocks** — a ` ``` ` fence may only open a `galaxy`, `vega`, `visualization` or `vitessce` block; pages with any other ` ``` ` fence (e.g. ` ```python `) are rejected on save. Fence plain code with `~~~` instead:
+
+    ~~~python
+    print("hello")
+    ~~~
+
 ## Directive Descriptions
 
 ### Dataset Directives (reference history items by history_dataset_id=ID)

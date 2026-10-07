@@ -1,67 +1,78 @@
-<template>
-    <div ref="editorContainer" class="editor-container"></div>
-</template>
+<script setup lang="ts">
+import loader, { type Monaco } from "@monaco-editor/loader";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-<script>
-import loader from "@monaco-editor/loader";
+interface Props {
+    /** Source code to display */
+    code: string;
+    /** Monaco language id used for highlighting */
+    language: string;
+}
 
-export default {
-    props: {
-        language: {
-            type: String,
-            required: true,
-        },
-        code: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            editor: null,
-        };
-    },
-    watch: {
-        code(newValue) {
-            if (this.editor) {
-                this.editor.setValue(newValue);
-            }
-        },
-        language(newValue) {
-            if (this.editor) {
-                this.editor.setModelLanguage(this.editor.getModel(), newValue);
-            }
-        },
-    },
-    mounted() {
-        this.initMonaco();
-    },
-    beforeDestroy() {
-        if (this.editor) {
-            this.editor.dispose();
+const props = defineProps<Props>();
+
+const editorContainer = ref<HTMLDivElement | null>(null);
+
+// Plain variables: Monaco objects must not be wrapped in reactive proxies.
+let monacoApi: Monaco | null = null;
+let codeEditor: ReturnType<Monaco["editor"]["create"]> | null = null;
+
+function initMonaco() {
+    loader.init().then((monaco) => {
+        if (!editorContainer.value) {
+            return;
+        }
+        monacoApi = monaco;
+        codeEditor = monaco.editor.create(editorContainer.value, {
+            value: props.code,
+            language: props.language,
+            readOnly: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            theme: "vs",
+        });
+    });
+}
+
+watch(
+    () => props.code,
+    (newValue) => {
+        if (codeEditor) {
+            codeEditor.setValue(newValue);
         }
     },
-    methods: {
-        initMonaco() {
-            loader.init().then((monaco) => {
-                this.editor = monaco.editor.create(this.$refs.editorContainer, {
-                    value: this.code,
-                    language: this.language,
-                    readOnly: true,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    theme: "vs",
-                });
-            });
-        },
+);
+
+watch(
+    () => props.language,
+    (newValue) => {
+        const model = codeEditor?.getModel();
+        if (monacoApi && model) {
+            monacoApi.editor.setModelLanguage(model, newValue);
+        }
     },
-};
+);
+
+onMounted(() => {
+    initMonaco();
+});
+
+onBeforeUnmount(() => {
+    if (codeEditor) {
+        codeEditor.dispose();
+    }
+});
 </script>
+
+<template>
+    <div ref="editorContainer" class="editor-container" />
+</template>
 
 <style scoped>
 .editor-container {
     width: 100%;
-    height: 600px;
+    flex: 1 1 0;
+    min-height: 0;
 }
 </style>

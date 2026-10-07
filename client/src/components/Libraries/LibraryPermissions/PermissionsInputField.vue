@@ -3,11 +3,14 @@
         <h2 class="h-sm">
             {{ title }}
         </h2>
-        <b-row>
-            <b-col>
+        <BRow>
+            <BCol>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
+                        :id="id"
                         v-model="value"
+                        :aria-label="title"
+                        :name="id"
                         :options="fetched_options"
                         :clear-on-select="true"
                         :preserve-search="true"
@@ -15,37 +18,54 @@
                         label="name"
                         track-by="id"
                         :internal-search="false"
-                        @input="valueChanged"
+                        @update:model-value="valueChanged"
                         @search-change="searchChanged">
-                        <template slot="afterList">
+                        <template v-slot:afterList>
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
                         </template>
                     </Multiselect>
                 </div>
-            </b-col>
-            <b-col>
-                <b-alert show variant="info">
-                    <div v-html="alert" />
-                </b-alert>
-            </b-col>
-        </b-row>
+            </BCol>
+            <BCol>
+                <GAlert show variant="info">
+                    <div v-sanitize-html="alert" />
+                </GAlert>
+            </BCol>
+        </BRow>
     </div>
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
-import Vue from "vue";
+import { BCol, BRow } from "bootstrap-vue";
 import Multiselect from "vue-multiselect";
-import VueObserveVisibility from "vue-observe-visibility";
 
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 
-Vue.use(VueObserveVisibility);
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
+// vue-observe-visibility 1.x reaches for `vnode.context`, which Vue 3 doesn't have.
+const observeVisibility = {
+    mounted(el, binding) {
+        el._visibilityObserver = new IntersectionObserver(([entry]) => binding.value(entry.isIntersecting));
+        el._visibilityObserver.observe(el);
+    },
+    unmounted(el) {
+        el._visibilityObserver?.disconnect();
+    },
+};
+
 export default {
+    directives: {
+        observeVisibility,
+    },
     components: {
+        BCol,
+        BRow,
+        GAlert,
         Multiselect,
     },
     props: {
@@ -74,6 +94,7 @@ export default {
             required: true,
         },
     },
+    emits: ["input"],
     data() {
         return {
             permissions: undefined,

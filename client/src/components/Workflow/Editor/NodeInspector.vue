@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
+import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue-next";
 import { computed } from "vue";
 
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { Step } from "@/stores/workflowStepStore";
+import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownForm from "@/components/BaseComponents/GDropdownForm.vue";
+import GDropdownItemButton from "@/components/BaseComponents/GDropdownItemButton.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
@@ -21,11 +26,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "postJobActionsChanged", id: string, postJobActions: unknown): void;
+    (e: "postJobActionsChanged", id: number, postJobActions: PostJobActions): void;
     (e: "annotationChanged", id: string, annotation: string): void;
     (e: "labelChanged", id: string, label: string): void;
-    (e: "dataChanged", id: string, data: unknown): void;
-    (e: "stepUpdated", id: string, step: Step): void;
+    (e: "dataChanged", id: number, data: object): void;
+    (e: "stepUpdated", id: number, step: Step): void;
     (e: "editSubworkflow", id: string): void;
     (e: "attemptRefactor", ...args: any[]): void;
     (e: "close"): void;
@@ -63,51 +68,55 @@ function updateStored(v: boolean) {
             side="right"
             :min="100"
             :max="1200"
-            @positionChanged="(v) => inspectorStore.setWidth(props.step, v)"></DraggableSeparator>
+            @positionChanged="(v: number) => inspectorStore.setWidth(props.step, v)"></DraggableSeparator>
 
         <div class="inspector-heading">
             <Heading h2 inline size="sm"> {{ title }} </Heading>
 
-            <BButtonGroup>
-                <BButton
+            <GButtonGroup>
+                <GButton
                     v-if="!maximized"
                     class="heading-button"
-                    variant="link"
-                    size="md"
+                    transparent
                     title="maximize"
                     @click="inspectorStore.setMaximized(props.step, true)">
                     <ArrowLeftFromLine absolute-stroke-width :size="17" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else
                     class="heading-button"
-                    variant="link"
-                    size="md"
+                    transparent
                     title="minimize"
                     @click="inspectorStore.setMaximized(props.step, false)">
                     <ArrowRightToLine absolute-stroke-width :size="17" />
-                </BButton>
+                </GButton>
 
-                <BDropdown class="dropdown" toggle-class="heading-button" variant="link" size="md" no-caret>
+                <GDropdown
+                    class="dropdown"
+                    toggle-class="heading-button"
+                    variant="link"
+                    size="md"
+                    no-caret
+                    aria-label="Inspector options">
                     <template v-slot:button-content>
                         <FontAwesomeIcon :icon="faCog" fixed-width />
                     </template>
 
-                    <BDropdownForm form-class="px-2" title="remember size for all steps using this tool">
+                    <GDropdownForm form-class="px-2" title="remember size for all steps using this tool">
                         <BFormCheckbox :checked="inspectorStore.isStored(props.step)" @input="updateStored">
                             remember size
                         </BFormCheckbox>
-                    </BDropdownForm>
+                    </GDropdownForm>
 
-                    <BDropdownItemButton @click="inspectorStore.clearAllStored">
+                    <GDropdownItemButton @click="inspectorStore.clearAllStored">
                         reset all stored sizes
-                    </BDropdownItemButton>
-                </BDropdown>
+                    </GDropdownItemButton>
+                </GDropdown>
 
-                <BButton class="heading-button" variant="link" size="md" title="close" @click="close">
+                <GButton class="heading-button" transparent title="close" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </div>
 
         <div class="inspector-content">
@@ -117,23 +126,23 @@ function updateStored(v: boolean) {
                     class="w-100"
                     :step="props.step"
                     :datatypes="props.datatypes"
-                    @onSetData="(id, d) => emit('dataChanged', id, d)"
-                    @onUpdateStep="(id, s) => emit('stepUpdated', id, s)"
-                    @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
-                    @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
-                    @onLabel="(id, l) => emit('labelChanged', id, l)"></FormTool>
+                    @onSetData="(id: number, d: object) => emit('dataChanged', id, d)"
+                    @onUpdateStep="(id: number, s: Step) => emit('stepUpdated', id, s)"
+                    @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
+                    @onAnnotation="(id: string, a: string) => emit('annotationChanged', id, a)"
+                    @onLabel="(id: string, l: string) => emit('labelChanged', id, l)"></FormTool>
                 <FormDefault
                     v-else
                     class="w-100"
                     :step="props.step"
                     :datatypes="datatypes"
-                    @onSetData="(id, d) => emit('dataChanged', id, d)"
-                    @onUpdateStep="(id, s) => emit('stepUpdated', id, s)"
-                    @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
-                    @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
-                    @onLabel="(id, l) => emit('labelChanged', id, l)"
-                    @onEditSubworkflow="(id) => emit('editSubworkflow', id)"
-                    @onAttemptRefactor="(...args) => emit('attemptRefactor', ...args)" />
+                    @onSetData="(id: number, d: object) => emit('dataChanged', id, d)"
+                    @onUpdateStep="(id: number, s: Step) => emit('stepUpdated', id, s)"
+                    @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
+                    @onAnnotation="(id: string, a: string) => emit('annotationChanged', id, a)"
+                    @onLabel="(id: string, l: string) => emit('labelChanged', id, l)"
+                    @onEditSubworkflow="(id: string) => emit('editSubworkflow', id)"
+                    @onAttemptRefactor="(...args: any[]) => emit('attemptRefactor', ...args)" />
             </IdleLoad>
         </div>
     </section>

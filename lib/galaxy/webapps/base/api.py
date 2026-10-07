@@ -251,6 +251,10 @@ class GalaxyStreamingResponse(StreamingResponse):
       lazily loads an ORM relationship, issues a query, or commits, it trips the
       FOOTGUN below.
 
+    RESOURCE OWNERSHIP: If synchronous response content exposes ``close()``,
+      this response calls it after streaming or when response setup/sending
+      fails, including failures before the content's first iteration.
+
     FOOTGUN: the request-id ``ContextVar`` that keys the ``scoped_session`` is
       still set while the body streams (same asyncio task). If body code touches
       ``app.model.session`` after we close it, ``scoped_session`` will SILENTLY
@@ -265,7 +269,15 @@ class GalaxyStreamingResponse(StreamingResponse):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        content = kwargs.get("content", args[0] if args else None)
+        close_content = getattr(content, "close", None)
+        self._close_content = close_content if callable(close_content) else None
+        try:
+            super().__init__(*args, **kwargs)
+        except BaseException:
+            if self._close_content is not None:
+                self._close_content()
+            raise
         # Capture concrete, already-open request-scoped sessions NOW, while we
         # are guaranteed to be in the request's asyncio task (so the request-id
         # ContextVar resolves). We never call the scoped proxy, which would
@@ -274,7 +286,11 @@ class GalaxyStreamingResponse(StreamingResponse):
 
     async def stream_response(self, send: "Send") -> None:
         _release_request_sessions(self._sessions_to_release)
-        await super().stream_response(send)
+        try:
+            await super().stream_response(send)
+        finally:
+            if self._close_content is not None:
+                self._close_content()
 
 
 def add_sentry_middleware(app: FastAPI) -> None:

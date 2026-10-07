@@ -33,18 +33,21 @@ from galaxy.tool_util_models.parameters import (
     DataRequestUri,
     FileRequestUri,
 )
-from galaxy.tools.parameters.basic import ParameterValueError
+from galaxy.tools.parameters.basic import (
+    IntegerToolParameter,
+    ParameterValueError,
+)
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
         Workflow,
         WorkflowStep,
     )
-    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]
 
@@ -191,6 +194,11 @@ def _normalize_step_parameters(
                 step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized
             )
         if param_dict:
+            if step.type == "parameter_input" and "input" not in param_dict:
+                raise exceptions.RequestParameterInvalidException(
+                    f"{step.label or step.order_index + 1}: legacy workflow parameter inputs must specify an 'input' value. "
+                    "Prefer passing the parameter value directly in 'inputs'."
+                )
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
 
@@ -220,7 +228,7 @@ def _step_parameters(step: "WorkflowStep", param_map: dict, legacy: bool = False
 
     Note that this format allows only one parameter to be set per step.
     """
-    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict = param_map.get(step.effective_tool_id, {}).copy()
     if legacy:
         param_dict.update(param_map.get(str(step.id), {}))
     else:
@@ -261,7 +269,7 @@ def _flatten_step_params(param_dict: dict, prefix: str = "") -> dict:
 
 
 def _get_target_history(
-    trans: "GalaxyWebTransaction",
+    trans: "ProvidesHistoryContext",
     workflow: "Workflow",
     payload: dict[str, Any],
     param_keys: list[list] | None = None,
@@ -306,7 +314,7 @@ def _get_target_history(
 
 
 def build_workflow_run_configs(
-    trans: "GalaxyWebTransaction", workflow: "Workflow", payload: dict[str, Any]
+    trans: "ProvidesHistoryContext", workflow: "Workflow", payload: dict[str, Any]
 ) -> list[WorkflowRunConfig]:
     app = trans.app
     allow_tool_state_corrections = payload.get("allow_tool_state_corrections", False)
@@ -383,11 +391,19 @@ def build_workflow_run_configs(
                 continue
             step = steps_by_id[key]
             if step.type == "parameter_input":
+                if isinstance(input_dict, dict):
+                    raise exceptions.RequestParameterInvalidException(
+                        f"{step.label or step.order_index + 1}: workflow parameter inputs cannot be dictionaries. "
+                        "Pass the parameter value directly in 'inputs', without a 'parameter_value' wrapper."
+                    )
                 module_injector.inject(step)
                 assert step.module
                 input_param = step.module.get_runtime_inputs(step.module)["input"]
                 try:
                     input_param.validate(input_dict, trans=trans)
+                    if isinstance(input_param, IntegerToolParameter) and input_param.multiple:
+                        # The run form submits one integer per line.
+                        normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
                     raise exceptions.RequestParameterInvalidException(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"
@@ -532,7 +548,7 @@ def build_workflow_run_configs(
 
 
 def workflow_run_config_to_request(
-    trans: "GalaxyWebTransaction", run_config: WorkflowRunConfig, workflow: "Workflow"
+    trans: "ProvidesHistoryContext", run_config: WorkflowRunConfig, workflow: "Workflow"
 ) -> WorkflowInvocation:
     param_types = WorkflowRequestInputParameter.types
 

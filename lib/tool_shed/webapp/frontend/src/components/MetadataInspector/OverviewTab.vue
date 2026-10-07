@@ -28,7 +28,7 @@ watch(
             selectedRevision.value = keys[0] // Default to newest
         }
     },
-    { immediate: true }
+    { immediate: true },
 )
 
 const currentRevisionData = computed(() => {

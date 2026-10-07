@@ -1,3 +1,110 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+import localize from "@/utils/localization";
+
+import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
+
+interface Props {
+    /** Column headers to choose from */
+    colHeaders: string[];
+    /** Selected column index, or indices when multiple or valueAsList is set */
+    target: number | number[];
+    /**
+     * Help text shown as the label's title
+     * @default undefined
+     */
+    help?: string;
+    /**
+     * Label shown next to the selector
+     * @default "From Column"
+     */
+    label?: string;
+    /**
+     * Allow selecting more than one column
+     * @default false
+     */
+    multiple?: boolean;
+    /**
+     * Show multiple selections as an ordered, editable list
+     * @default false
+     */
+    ordered?: boolean;
+    /**
+     * Whether the ordered list shows the add-column selector
+     * @default false
+     */
+    orderedEdit?: boolean;
+    /**
+     * Emit a single selection as a one-element list
+     * @default false
+     */
+    valueAsList?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    help: undefined,
+    label: localize("From Column"),
+    multiple: false,
+    ordered: false,
+    orderedEdit: false,
+    valueAsList: false,
+});
+
+const emit = defineEmits<{
+    (e: "update:target", value: number | number[]): void;
+    (e: "update:orderedEdit", value: boolean): void;
+}>();
+
+const title = localize("Select a column");
+
+const targetList = computed(() => (Array.isArray(props.target) ? props.target : [props.target]));
+
+const columnOptions = computed(() => props.colHeaders.map((col, index) => ({ id: index, text: col })));
+
+const remainingOptions = computed(() => {
+    if (!props.multiple) {
+        return columnOptions.value;
+    }
+    const exclude = new Set(targetList.value.map(Number));
+    return columnOptions.value.filter((opt) => !exclude.has(opt.id));
+});
+
+// SelectBasic emits the selected option id(s), or null when cleared.
+function handleInput(value: number | number[] | null) {
+    if (props.multiple) {
+        // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
+        const val = (value as number[]).map((idx) => parseInt(String(idx)));
+        emit("update:target", val);
+    } else {
+        const val = parseInt(String(value));
+        emit("update:target", props.valueAsList ? [val] : val);
+    }
+}
+
+function handleAdd(value: number | null) {
+    emit("update:target", [...targetList.value, parseInt(String(value))]);
+    emit("update:orderedEdit", false);
+}
+
+function handleRemove(index: number) {
+    emit(
+        "update:target",
+        targetList.value.filter((_, i) => i !== index),
+    );
+}
+
+// Swaps the column at index with the one above it.
+function moveUp(index: number) {
+    const reordered = [...targetList.value];
+    const [moved] = reordered.splice(index, 1);
+    if (moved !== undefined) {
+        reordered.splice(index - 1, 0, moved);
+    }
+    emit("update:target", reordered);
+}
+</script>
+
 <template>
     <div v-if="!multiple || !ordered" class="rule-column-selector">
         <div class="d-flex justify-content-end align-items-center">
@@ -5,25 +112,29 @@
             <div v-g-tooltip.hover class="mr-1" :title="title">
                 <SelectBasic :value="target" :multiple="multiple" :options="columnOptions" @input="handleInput" />
             </div>
-            <slot></slot>
+            <slot />
         </div>
     </div>
     <div v-else class="rule-column-selector">
         <span class="help-text" :title="help">{{ label }}</span>
-        <slot></slot>
+        <slot />
         <ol>
-            <li v-for="(targetEl, index) in target" :key="targetEl" :index="index" class="rule-column-selector-target">
+            <li
+                v-for="(targetEl, index) in targetList"
+                :key="targetEl"
+                :index="index"
+                class="rule-column-selector-target">
                 {{ colHeaders[targetEl] }}
                 <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
                 <span v-if="index !== 0" class="fa fa-arrow-up rule-column-selector-up" @click="moveUp(index)"></span>
                 <span
-                    v-if="index < target.length - 1"
+                    v-if="index < targetList.length - 1"
                     class="fa fa-arrow-down rule-column-selector-down"
                     @click="moveUp(index + 1)"></span>
             </li>
-            <li v-if="target.length < colHeaders.length">
+            <li v-if="targetList.length < colHeaders.length">
                 <span v-if="!orderedEdit" class="rule-column-selector-target-add">
-                    <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
+                    <i @click="emit('update:orderedEdit', true)">... {{ localize("Assign Another Column") }}</i>
                 </span>
                 <span v-else class="rule-column-selector-target-select">
                     <SelectBasic placeholder="Select a column" :options="remainingOptions" @input="handleAdd" />
@@ -32,102 +143,5 @@
         </ol>
     </div>
 </template>
-
-<script>
-import Vue from "vue";
-
-import _l from "@/utils/localization";
-
-import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
-
-export default {
-    components: {
-        SelectBasic,
-    },
-    props: {
-        target: {
-            required: true,
-        },
-        label: {
-            required: false,
-            type: String,
-            default: _l("From Column"),
-        },
-        help: {
-            required: false,
-        },
-        colHeaders: {
-            type: Array,
-            required: true,
-        },
-        multiple: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        ordered: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        valueAsList: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-        orderedEdit: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-    },
-    computed: {
-        columnOptions() {
-            return this.colHeaders.map((col, index) => ({ id: index, text: col }));
-        },
-        remainingOptions() {
-            if (!this.multiple) {
-                return this.columnOptions;
-            }
-            const exclude = new Set(this.target.map(Number));
-            return this.columnOptions.filter((opt) => !exclude.has(opt.id));
-        },
-        title() {
-            return _l("Select a column");
-        },
-    },
-    methods: {
-        handleInput(value) {
-            if (this.multiple) {
-                // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
-                const val = value.map((idx) => parseInt(idx));
-                this.$emit("update:target", val);
-            } else {
-                let val = parseInt(value);
-                if (this.valueAsList) {
-                    val = [val];
-                }
-                this.$emit("update:target", val);
-            }
-        },
-        handleAdd(value) {
-            // TODO: Rework add/remove here to not mutate props.
-            // eslint-disable-next-line vue/no-mutating-props
-            this.target.push(parseInt(value));
-            this.$emit("update:orderedEdit", false);
-        },
-        handleRemove(index) {
-            // TODO: See above.
-            // eslint-disable-next-line vue/no-mutating-props
-            this.target.splice(index, 1);
-        },
-        moveUp(value) {
-            const swapVal = this.target[value - 1];
-            Vue.set(this.target, value - 1, this.target[value]);
-            Vue.set(this.target, value, swapVal);
-        },
-    },
-};
-</script>
 
 <style scoped src="@/components/Help/help-text.scss" />

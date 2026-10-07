@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { BAlert, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 
 import { DatasetProvider } from "@/components/providers";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface LinkType {
     app_name: string;
@@ -20,7 +22,7 @@ function getUrl(link: LinkType) {
 <template>
     <div>
         <DatasetProvider :id="props.datasetId" v-slot="{ result: dataset }">
-            <BAlert
+            <GAlert
                 v-if="
                     (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
                     (dataset && dataset.display_types && dataset.display_types.length > 0)
@@ -53,7 +55,7 @@ function getUrl(link: LinkType) {
                     </ol>
                 </div>
                 <div>or select a visualization from below.</div>
-            </BAlert>
+            </GAlert>
         </DatasetProvider>
     </div>
 </template>

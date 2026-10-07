@@ -389,6 +389,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/configuration/extra_preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return the administrator-defined extra user preferences
+         * @description Return the sections and inputs configured in `user_preferences_extra_conf.yml`.
+         *
+         *     A user's values for them are at `/api/users/{user_id}/extra_preferences`.
+         */
+        get: operations["extra_preferences_api_configuration_extra_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/configuration/tool_lineages": {
         parameters: {
             query?: never;
@@ -983,6 +1005,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["download_api_datasets__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["download_api_datasets__history_content_id__download_head"];
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{history_content_id}/metadata_file": {
         parameters: {
             query?: never;
@@ -1524,6 +1570,23 @@ export interface paths {
         get: operations["file_sources__templates_index"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/form-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get dynamic data for a file source template form. */
+        post: operations["file_sources__template_form_data"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2526,6 +2589,30 @@ export interface paths {
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/histories/{history_id}/contents/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_head"];
         patch?: never;
         trace?: never;
     };
@@ -4047,6 +4134,12 @@ export interface paths {
         /**
          * Sends a notification to a list of recipients (users, groups or roles).
          * @description Sends a notification to a list of recipients (users, groups or roles).
+         *
+         *     Administrators can address arbitrary recipients. Other authenticated users can only
+         *     submit the request categories Galaxy accepts from users (currently
+         *     ``tool_installation_request``); for those, the recipients are resolved server-side and
+         *     the ``recipients`` field is ignored. Submissions are rate-limited per user
+         *     (``send_notification_rate_limit``).
          */
         post: operations["send_notification_api_notifications_post"];
         /** Deletes a list of notifications received by the user in a single request. */
@@ -4630,6 +4723,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/workflow_extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plugins": {
         parameters: {
             query?: never;
@@ -4916,10 +5030,28 @@ export interface paths {
         };
         /** Show */
         get: operations["show_api_roles__id__get"];
-        put?: never;
+        /** Update a role's name, description, users and groups */
+        put: operations["update_api_roles__id__put"];
         post?: never;
         /** Delete */
         delete: operations["delete_api_roles__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the groups associated with a role */
+        get: operations["groups_api_roles__id__groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4953,6 +5085,23 @@ export interface paths {
         put?: never;
         /** Undelete */
         post: operations["undelete_api_roles__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the users associated with a role */
+        get: operations["users_api_roles__id__users_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5579,6 +5728,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/{tool_id}/interop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return Galaxy's meta model description of the tool's metadata, inputs, and outputs. */
+        get: operations["tools__interop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/{tool_id}/parameter_landing_request_schema": {
         parameters: {
             query?: never;
@@ -5625,6 +5791,74 @@ export interface paths {
         };
         /** Return a JSON schema description of the tool's inputs for test case construction. */
         get: operations["tools__parameter_test_case_xml_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/versions/{tool_version}/interop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return Galaxy's meta model description of the tool's metadata, inputs, and outputs. */
+        get: operations["tools__versioned_interop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a JSON schema description of the tool's inputs for the tool landing request API. */
+        get: operations["tools__versioned_parameter_landing_request_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a JSON schema description of the tool's inputs for the tool request API. */
+        get: operations["tools__versioned_parameter_request_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a JSON schema description of the tool's inputs for test case construction. */
+        get: operations["tools__versioned_parameter_test_case_xml_schema"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5704,10 +5938,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Index */
+        /** List the user-defined tools owned by the current user. */
         get: operations["index_api_unprivileged_tools_get"];
         put?: never;
-        /** Create */
+        /**
+         * Create a user-defined tool.
+         * @description Creates a tool owned by the calling user from a `GalaxyUserTool` representation. The representation is validated and linted before it is stored, and a failure is returned as a 400 listing each problem. See the authoring reference at https://docs.galaxyproject.org/en/master/dev/user_defined_tools_authoring.html for the tool format, and run the resulting tool with `POST /api/tools` passing `tool_uuid`.
+         */
         post: operations["create_api_unprivileged_tools_post"];
         delete?: never;
         options?: never;
@@ -5724,7 +5961,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Build */
+        /**
+         * Render the tool form for a representation without storing the tool.
+         * @description Builds the tool against a history and returns the same payload the tool form consumes, without creating anything. Useful for checking that a draft's input interface is what you intended.
+         */
         post: operations["build_api_unprivileged_tools_build_post"];
         delete?: never;
         options?: never;
@@ -5741,7 +5981,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Runtime Model */
+        /**
+         * Return an OpenAPI model of a representation's inputs.
+         * @description Returns an OpenAPI document describing the inputs the tool would accept at runtime, so a client can validate or generate a request body for it without storing the tool.
+         */
         post: operations["runtime_model_api_unprivileged_tools_runtime_model_post"];
         delete?: never;
         options?: never;
@@ -5756,12 +5999,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Show */
+        /** Show one user-defined tool owned by the current user. */
         get: operations["show_api_unprivileged_tools__uuid__get"];
         put?: never;
         post?: never;
         /**
-         * Delete
+         * Deactivate a user-defined tool owned by the current user.
          * @description DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
          *
          *     Deactivate the specified dynamic tool. Deactivated tools will not
@@ -6061,6 +6304,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/extra_preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return the user's values for the administrator-defined extra preferences
+         * @description The sections and inputs are described by `GET /api/configuration/extra_preferences`.
+         */
+        get: operations["get_extra_preferences_api_users__user_id__extra_preferences_get"];
+        /**
+         * Change values of the administrator-defined extra preferences
+         * @description Inputs left out of the payload keep their stored value; null clears one.
+         *
+         *     Unlike account data, these stay writable when `enable_account_interface` is
+         *     off: they configure integrations such as file sources, not the account.
+         */
+        put: operations["update_extra_preferences_api_users__user_id__extra_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/favorites/order": {
         parameters: {
             query?: never;
@@ -6112,6 +6382,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return the groups this user is a member of. */
+        get: operations["get_user_groups_api_users__user_id__groups_get"];
+        /** Replace the groups this user is a member of. */
+        put: operations["set_user_groups_api_users__user_id__groups_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/objectstore_usage": {
         parameters: {
             query?: never;
@@ -6122,6 +6410,23 @@ export interface paths {
         /** Return the user's object store usage summary broken down by object store ID */
         get: operations["get_user_objectstore_usage_api_users__user_id__objectstore_usage_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a new password for a user. */
+        put: operations["reset_user_password_api_users__user_id__password_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6158,7 +6463,8 @@ export interface paths {
          * @description Return a list of roles associated with this user. Only admins can see user roles.
          */
         get: operations["get_user_roles_api_users__user_id__roles_get"];
-        put?: never;
+        /** Replace the roles associated with this user. The user's private role is kept. */
+        put: operations["set_user_roles_api_users__user_id__roles_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6520,6 +6826,26 @@ export interface paths {
          * @description Lists stored workflows viewable by the user.
          */
         get: operations["index_api_workflows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/curated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists curated workflows for discovery.
+         * @description Lists workflows curated for this Galaxy, or the public IWC catalog.
+         */
+        get: operations["curated_api_workflows_curated_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9126,6 +9452,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Name */
             name?: string | null;
             /** Object Expires After Days */
@@ -10088,6 +10416,8 @@ export interface components {
              * @default Organization
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Fax Number */
@@ -10142,6 +10472,132 @@ export interface components {
             dialect: components["schemas"]["CsvDialect"];
             /** Message */
             message: string;
+        };
+        /** CuratedWorkflow */
+        CuratedWorkflow: {
+            /**
+             * Collections
+             * @description Names of the curated collections this workflow belongs to.
+             */
+            collections?: string[];
+            /**
+             * Description
+             * @description Short annotation describing the workflow.
+             * @default
+             */
+            description: string;
+            /**
+             * DOI
+             * @description The DOI of the workflow, if it has one.
+             */
+            doi?: string | null;
+            /**
+             * External URL
+             * @description Link to the workflow on the external catalog that published it.
+             */
+            external_url?: string | null;
+            /**
+             * ID
+             * @description Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is served from this Galaxy, otherwise the identifier of the workflow in the public catalog.
+             */
+            id: string;
+            /**
+             * Missing Tools
+             * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
+             */
+            missing_tools?: string[] | null;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Number of Steps
+             * @description The number of steps in the workflow.
+             */
+            number_of_steps?: number | null;
+            /**
+             * Owner
+             * @description Username of the account owning the workflow on this Galaxy, if it is hosted here.
+             */
+            owner?: string | null;
+            /**
+             * Release
+             * @description The release version of the workflow, if published with one.
+             */
+            release?: string | null;
+            /**
+             * Stored Workflow ID
+             * @description Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which case it can be run directly.
+             */
+            stored_workflow_id?: string | null;
+            /**
+             * Tags
+             * @description Tags associated with the workflow.
+             */
+            tags?: string[];
+            /**
+             * TRS Fallback URL
+             * @description TRS URL of the workflow's development branch, to import when the TRS server has not yet published the release that trs_url pins.
+             */
+            trs_fallback_url?: string | null;
+            /**
+             * TRS URL
+             * @description Full TRS URL of the workflow version to import, pinned to its release when it has one.
+             */
+            trs_url?: string | null;
+            /**
+             * Update Time
+             * @description The last time the workflow was updated.
+             */
+            update_time?: string | null;
+        };
+        /** CuratedWorkflowCollection */
+        CuratedWorkflowCollection: {
+            /**
+             * Count
+             * @description How many curated workflows belong to the collection.
+             */
+            count: number;
+            /**
+             * Name
+             * @description The collection's name.
+             */
+            name: string;
+        };
+        /**
+         * CuratedWorkflowSourceEnum
+         * @description Where the curated workflow listing was drawn from.
+         * @enum {string}
+         */
+        CuratedWorkflowSourceEnum: "iwc" | "local" | "preparing" | "unavailable";
+        /** CuratedWorkflowsIndexResponse */
+        CuratedWorkflowsIndexResponse: {
+            /**
+             * Collections
+             * @description Every collection in the catalog with its size, largest first, regardless of the search. Empty when the listing has no collections, as for workflows curated on this Galaxy.
+             */
+            collections?: components["schemas"]["CuratedWorkflowCollection"][];
+            /**
+             * Message
+             * @description Human readable explanation shown when no workflows could be listed.
+             */
+            message?: string | null;
+            /**
+             * Source
+             * @description Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state indicating the catalog is being prepared or could not be reached.
+             */
+            source: components["schemas"]["CuratedWorkflowSourceEnum"];
+            /**
+             * Total Matches
+             * @description Total number of curated workflows matching the query, ignoring limit and offset.
+             */
+            total_matches: number;
+            /**
+             * Workflows
+             * @description The requested page of curated workflows.
+             */
+            workflows?: components["schemas"]["CuratedWorkflow"][];
         };
         /**
          * CustomArchivedHistoryView
@@ -11795,6 +12251,11 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
+            /**
              * Email
              * @description Email of the user
              */
@@ -12199,22 +12660,34 @@ export interface components {
             /** Upload */
             upload?: number;
         };
-        /** EmptyFieldParameterValidatorModel */
+        /**
+         * EmptyFieldParameterValidatorModel
+         * @description Require a value that is neither an empty string nor null.
+         * @example {
+         *       "type": "empty_field"
+         *     }
+         */
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
             /**
              * Negate
+             * @description Require the value to be empty or null instead.
              * @default false
              */
             negate: boolean;
             /**
              * Type
+             * @description Fails validation when the submitted value is an empty string or null.
              * @default empty_field
              * @constant
              */
@@ -12346,6 +12819,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Implicit Collection Jobs ID
+             * @description Encoded ID of the ImplicitCollectionJobs group this job belongs to, or null if the job was not mapped over a collection.
+             */
+            implicit_collection_jobs_id?: string | null;
             /**
              * Inputs
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
@@ -12598,10 +13076,14 @@ export interface components {
             expression: string;
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
             /**
              * Negate
@@ -12644,6 +13126,75 @@ export interface components {
          * @enum {string}
          */
         ExtraFilesEntryClass: "Directory" | "File";
+        /**
+         * ExtraPreferenceInputDefinition
+         * @description One input of an administrator-defined extra preferences section.
+         *
+         *     Keys beyond the declared fields are form options the administrator set in
+         *     ``user_preferences_extra_conf.yml`` and are passed through unchanged.
+         */
+        ExtraPreferenceInputDefinition: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Multiple
+             * @description Whether a `select` input takes a list of its options.
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Name of the input within its section.
+             */
+            name: string;
+            /**
+             * Options
+             * @description `[label, value]` or `[label, value, selected]` entries of a `select` input.
+             */
+            options?: ([string, string | number | boolean] | [string, string | number | boolean, boolean])[] | null;
+            /**
+             * Required
+             * @description Whether a stored value is protected from being cleared or set to an empty string.
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Store
+             * @description `vault` when the value is kept in Galaxy's vault rather than in the user's preferences.
+             */
+            store?: string | null;
+            /**
+             * Type
+             * @description Form input type, such as `text`, `select`, `boolean`, `password` or `secret`. Without a type, an input with `options` is a `select` and any other input is `text`. The extra preferences endpoints never return values of `password` and `secret` inputs.
+             */
+            type?: string | null;
+            /** Default value */
+            value?: string | number | boolean | (string | number | boolean)[] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ExtraPreferenceSecretState */
+        ExtraPreferenceSecretState: {
+            /**
+             * Is set
+             * @description Whether a value is stored. The value itself is never returned.
+             */
+            is_set: boolean;
+        };
+        /** ExtraPreferenceSectionDefinition */
+        ExtraPreferenceSectionDefinition: {
+            /** Description */
+            description: string;
+            /** Inputs */
+            inputs?: components["schemas"]["ExtraPreferenceInputDefinition"][];
+            /**
+             * Name
+             * @description Name of the section, the first part of each stored key.
+             */
+            name: string;
+        };
         /** ExtractInputAction */
         ExtractInputAction: {
             /**
@@ -12977,50 +13528,67 @@ export interface components {
         FilePatternDatasetCollectionDescription: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean;
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null;
             /**
              * Discover Via
+             * @description Discover datasets by matching files produced by the command.
              * @default pattern
              * @constant
              */
             discover_via: "pattern";
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null;
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean;
-            /** Pattern */
+            /**
+             * Pattern
+             * @description Regular expression matched against produced filenames. Named groups such as `name`, `designation`, `ext`, and `dbkey` set discovered dataset metadata.
+             */
             pattern: string;
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean;
             /**
              * Sort Comp
+             * @description Whether the sort key is compared as text or as a number.
              * @default lexical
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric";
             /**
              * Sort Key
+             * @description Discovered metadata used to order matching files.
              * @default filename
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
             /**
              * Sort Reverse
+             * @description Whether to reverse the discovered dataset order.
              * @default false
              */
             sort_reverse: boolean;
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean;
@@ -13084,6 +13652,11 @@ export interface components {
             id: string;
             /** Name */
             name: string | null;
+            /**
+             * Requires Oauth2 Authorization
+             * @default false
+             */
+            requires_oauth2_authorization: boolean;
             /** Secrets */
             secrets?: components["schemas"]["TemplateSecret"][] | null;
             /**
@@ -13109,10 +13682,17 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
+                | "ipfs"
                 | "mavedb"
                 | "omero"
-                | "ssh";
+                | "ssh"
+                | "openbis"
+                | "ckan"
+                | "commoncrawl"
+                | "gitlab"
+                | "arc";
             /** Variables */
             variables?:
                 | (
@@ -13120,6 +13700,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -13665,6 +14246,8 @@ export interface components {
              */
             name: string;
         };
+        /** GroupModelListResponse */
+        GroupModelListResponse: components["schemas"]["GroupModel"][];
         /** GroupQuota */
         GroupQuota: {
             /**
@@ -16062,41 +16645,69 @@ export interface components {
              */
             uri: string;
         };
-        /** InRangeParameterValidatorModel */
+        /**
+         * InRangeParameterValidatorModel
+         * @description Require a numeric value to fall within optional lower and upper bounds.
+         * @example {
+         *       "max": 1,
+         *       "min": 0,
+         *       "type": "in_range"
+         *     }
+         */
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
+             * @description Whether a value equal to `max` is rejected.
              * @default false
              */
             exclude_max: boolean;
             /**
              * Exclude Min
+             * @description Whether a value equal to `min` is rejected.
              * @default false
              */
             exclude_min: boolean;
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Max */
+            /**
+             * Max
+             * @description Rejects larger values; omit to leave the range without an upper bound.
+             */
             max?: number | null;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
-            /** Min */
+            /**
+             * Min
+             * @description Rejects smaller values; omit to leave the range without a lower bound.
+             */
             min?: number | null;
             /**
              * Negate
+             * @description Reject values inside the configured range instead of values outside it.
              * @default false
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Enforces the numeric boundaries configured by `min` and `max`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "in_range";
         };
-        /** IncomingToolOutputBoolean */
+        /**
+         * IncomingToolOutputBoolean
+         * @description A boolean value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "matched",
+         *       "type": "boolean"
+         *     }
+         */
         IncomingToolOutputBoolean: {
             /**
              * Hidden
@@ -16105,12 +16716,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16119,47 +16730,37 @@ export interface components {
              */
             type: "boolean";
         };
-        /** IncomingToolOutputCollection */
+        /**
+         * IncomingToolOutputCollection
+         * @description A dataset collection populated by discovering files produced by the command.
+         * @example {
+         *       "collection_type": "list",
+         *       "discover_datasets": [
+         *         {
+         *           "format": "txt",
+         *           "pattern": "(?P<name>.+)\\.txt"
+         *         }
+         *       ],
+         *       "label": "Results",
+         *       "name": "results",
+         *       "type": "collection"
+         *     }
+         */
         IncomingToolOutputCollection: {
-            /** Collection Type */
+            /**
+             * Collection Type
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
             collection_type?: string | null;
-            /** Collection Type From Rules */
-            collection_type_from_rules?: string | null;
-            /** Collection Type Source */
+            /**
+             * Collection Type Source
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
+             */
             collection_type_source?: string | null;
-            /** Discover Datasets */
-            discover_datasets?:
-                | (
-                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
-                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
-                  )[]
-                | null;
             /**
-             * Hidden
-             * @description If true, the output will not be shown in the history.
+             * Discover Datasets
+             * @description Rules used to discover and populate collection elements from produced files.
              */
-            hidden?: boolean | null;
-            /**
-             * Label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name?: string | null;
-            /** Structured Like */
-            structured_like?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "collection";
-        };
-        /** IncomingToolOutputDataset */
-        IncomingToolOutputDataset: {
-            /** Discover Datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -16168,51 +16769,122 @@ export interface components {
                 | null;
             /**
              * Format
-             * @description The short name for the output datatype.
+             * @description Default datatype extension assigned to collection elements.
              */
             format?: string | null;
             /**
              * Format Source
-             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             * @description Input whose datatype supplies the default format for collection elements.
              */
             format_source?: string | null;
             /**
-             * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
-             */
-            from_work_dir?: string | null;
-            /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Metadata Source
-             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             * @description Dataset input whose metadata supplies defaults for collection elements.
              */
             metadata_source?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name?: string | null;
+            /**
+             * Structured Like
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
+             */
+            structured_like?: string | null;
+            /**
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /**
+         * IncomingToolOutputDataset
+         * @description A dataset collected from a file produced in the job working directory.
+         * @example {
+         *       "format": "txt",
+         *       "from_work_dir": "result.txt",
+         *       "label": "Result",
+         *       "name": "result",
+         *       "type": "data"
+         *     }
+         */
+        IncomingToolOutputDataset: {
+            /**
+             * Discover Datasets
+             * @description Rules for discovering additional datasets produced by the command.
+             */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             */
+            format_source?: string | null;
+            /**
+             * from_work_dir
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
+             */
+            from_work_dir?: string | null;
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name?: string | null;
             /**
              * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data";
         };
-        /** IncomingToolOutputFloat */
+        /**
+         * IncomingToolOutputFloat
+         * @description A floating-point value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "score",
+         *       "type": "float"
+         *     }
+         */
         IncomingToolOutputFloat: {
             /**
              * Hidden
@@ -16221,12 +16893,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16235,7 +16907,14 @@ export interface components {
              */
             type: "float";
         };
-        /** IncomingToolOutputInteger */
+        /**
+         * IncomingToolOutputInteger
+         * @description An integer value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "match_count",
+         *       "type": "integer"
+         *     }
+         */
         IncomingToolOutputInteger: {
             /**
              * Hidden
@@ -16244,12 +16923,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16258,7 +16937,14 @@ export interface components {
              */
             type: "integer";
         };
-        /** IncomingToolOutputText */
+        /**
+         * IncomingToolOutputText
+         * @description A text value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "message",
+         *       "type": "text"
+         *     }
+         */
         IncomingToolOutputText: {
             /**
              * Hidden
@@ -16267,12 +16953,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16281,6 +16967,143 @@ export interface components {
              */
             type: "text";
         };
+        /**
+         * IncomingUserToolOutputCollection
+         * @description A user-defined tool collection populated only by matching produced filenames.
+         * @example {
+         *       "collection_type": "list",
+         *       "discover_datasets": [
+         *         {
+         *           "format": "txt",
+         *           "pattern": "(?P<name>.+)\\.txt"
+         *         }
+         *       ],
+         *       "label": "Results",
+         *       "name": "results",
+         *       "type": "collection"
+         *     }
+         */
+        IncomingUserToolOutputCollection: {
+            /**
+             * Collection Type
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
+            collection_type?: string | null;
+            /**
+             * Collection Type Source
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
+             */
+            collection_type_source?: string | null;
+            /**
+             * Discover Datasets
+             * @description Filename pattern used to discover and populate collection elements.
+             */
+            discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
+            /**
+             * Format
+             * @description Default datatype extension assigned to collection elements.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description Input whose datatype supplies the default format for collection elements.
+             */
+            format_source?: string | null;
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Dataset input whose metadata supplies defaults for collection elements.
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name?: string | null;
+            /**
+             * Structured Like
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
+             */
+            structured_like?: string | null;
+            /**
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /**
+         * IncomingUserToolOutputDataset
+         * @description A user-defined tool dataset discovered only from files inside the job working directory.
+         * @example {
+         *       "format": "txt",
+         *       "from_work_dir": "result.txt",
+         *       "label": "Result",
+         *       "name": "result",
+         *       "type": "data"
+         *     }
+         */
+        IncomingUserToolOutputDataset: {
+            /**
+             * Discover Datasets
+             * @description Filename pattern used to discover additional datasets produced by the command.
+             */
+            discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             */
+            format_source?: string | null;
+            /**
+             * from_work_dir
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
+             */
+            from_work_dir?: string | null;
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name?: string | null;
+            /**
+             * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
+             * @default false
+             */
+            precreate_directory: boolean | null;
+            /**
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "data";
+        };
         /** InferredCollectionTypeLogEntry */
         InferredCollectionTypeLogEntry: {
             /** From Columns */
@@ -16288,7 +17111,10 @@ export interface components {
             /** Message */
             message: string;
         };
-        /** InferredColumnMapping */
+        /**
+         * InferredColumnMapping
+         * @description Parse-log entry recording how one workbook column was interpreted.
+         */
         InferredColumnMapping: {
             /** Column Index */
             column_index: number;
@@ -17393,7 +18219,7 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description Specify values for formal inputs to the workflow
+             * @description Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. Input keys are interpreted according to 'inputs_by'.
              */
             inputs?: {
                 [key: string]: unknown;
@@ -17442,7 +18268,7 @@ export interface components {
                 | null;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}.
              * @default {}
              */
             parameters: {
@@ -18048,6 +18874,7 @@ export interface components {
             | "waiting"
             | "queued"
             | "running"
+            | "finishing"
             | "ok"
             | "error"
             | "failed"
@@ -18225,26 +19052,45 @@ export interface components {
              */
             LIBRARY_MODIFY_in: string[] | string | null;
         };
-        /** LengthParameterValidatorModel */
+        /**
+         * LengthParameterValidatorModel
+         * @description Require the number of characters in a text value to fall within optional bounds.
+         * @example {
+         *       "max": 20,
+         *       "min": 1,
+         *       "type": "length"
+         *     }
+         */
         LengthParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Max */
+            /**
+             * Max
+             * @description Rejects text with more characters; omit to leave the length without an upper bound.
+             */
             max?: number | null;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
-            /** Min */
+            /**
+             * Min
+             * @description Rejects text with fewer characters; omit to leave the length without a lower bound.
+             */
             min?: number | null;
             /**
              * Negate
+             * @description Reject values whose length is inside the configured range instead of outside it.
              * @default false
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Enforces character-count boundaries on a submitted text value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "length";
@@ -18900,6 +19746,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             parent_library_id: string;
+            /** Readme */
+            readme?: string | null;
             /** Total Rows */
             total_rows: number;
         };
@@ -19268,6 +20116,16 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
+        /** MarkdownHelpContent */
+        MarkdownHelpContent: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @constant
+             */
+            format: "markdown";
+        };
         /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
@@ -19493,22 +20351,34 @@ export interface components {
              */
             slug: string;
         };
-        /** NoOptionsParameterValidatorModel */
+        /**
+         * NoOptionsParameterValidatorModel
+         * @description Require a select parameter to have at least one available option.
+         * @example {
+         *       "type": "no_options"
+         *     }
+         */
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
             /**
              * Negate
+             * @description Require the select parameter to have no available options instead.
              * @default false
              */
             negate: boolean;
             /**
              * Type
+             * @description Fails validation when a select input has no choices available.
              * @default no_options
              * @constant
              */
@@ -19618,6 +20488,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -19707,6 +20578,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -19859,7 +20731,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
+            type: "aws_s3" | "azure_blob" | "boto3" | "cloud" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
             /** Variables */
             variables?:
                 | (
@@ -19867,6 +20739,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -19908,11 +20781,39 @@ export interface components {
              */
             url: string;
         };
+        /** OutputCollectionSecurityJobMessage */
+        OutputCollectionSecurityJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "output_collection_security";
+        };
         /**
          * OutputCompareType
          * @enum {string}
          */
         OutputCompareType: "diff" | "re_match" | "sim_size" | "re_match_multiline" | "contains" | "image_diff";
+        /** OutputDiscoveryJobMessage */
+        OutputDiscoveryJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "output_discovery";
+        };
         /** OutputLabelHint */
         OutputLabelHint: {
             /**
@@ -19960,6 +20861,18 @@ export interface components {
              * @default output
              */
             output_name: string | null;
+        };
+        /** PackageRequirement */
+        PackageRequirement: {
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "package";
+            /** Version */
+            version?: string | null;
         };
         /**
          * PageContentFormat
@@ -20319,7 +21232,10 @@ export interface components {
              */
             content: string;
         };
-        /** ParsedColumn */
+        /**
+         * ParsedColumn
+         * @description Serializable form of a recognized workbook column.
+         */
         ParsedColumn: {
             /** Title */
             title: string;
@@ -20403,6 +21319,79 @@ export interface components {
              * @enum {string}
              */
             workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedTool */
+        ParsedTool: {
+            /** Citations */
+            citations: components["schemas"]["Citation"][];
+            /** Containers */
+            containers?: components["schemas"]["Container"][];
+            /** Description */
+            description: string | null;
+            /** Edam Operations */
+            edam_operations: string[];
+            /** Edam Topics */
+            edam_topics: string[];
+            help: components["schemas"]["HelpContent"] | null;
+            /** Id */
+            id: string;
+            /** Inputs */
+            inputs: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[];
+            /** License */
+            license: string | null;
+            /** Name */
+            name: string;
+            /** Outputs */
+            outputs: (
+                | components["schemas"]["ToolOutputDataset"]
+                | components["schemas"]["ToolOutputCollection"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[];
+            /** Profile */
+            profile: string | null;
+            /** Requirements */
+            requirements?: (
+                | components["schemas"]["PackageRequirement"]
+                | components["schemas"]["SetEnvironmentRequirement"]
+                | components["schemas"]["ResourceRequirement"]
+                | components["schemas"]["JavascriptRequirement"]
+            )[];
+            stdio?: components["schemas"]["Stdio"];
+            /** Version */
+            version: string | null;
+            /** Xrefs */
+            xrefs: components["schemas"]["XrefDict"][];
         };
         /** ParsedWorkbook */
         ParsedWorkbook: {
@@ -20777,6 +21766,8 @@ export interface components {
              * @default Person
              */
             class: string;
+            /** Description */
+            description?: string | null;
             /** Email */
             email?: string | null;
             /** Family Name */
@@ -20820,7 +21811,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -21175,6 +22166,11 @@ export interface components {
         RefactorResponse: {
             /** Action Executions */
             action_executions: components["schemas"]["RefactorActionExecution"][];
+            /**
+             * Changed
+             * @description Whether the actions changed the refactored version. A refactor of the latest version that changes nothing saves no new version; refactoring an older version always saves one.
+             */
+            changed: boolean;
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
@@ -21200,29 +22196,40 @@ export interface components {
         };
         /**
          * RegexParameterValidatorModel
-         * @description Check if a regular expression **matches** the value, i.e. appears
-         *     at the beginning of the value. To enforce a match of the complete value use
-         *     ``$`` at the end of the expression. The expression is given is the content
-         *     of the validator tag. Note that for ``selects`` each option is checked
-         *     separately.
+         * @description Require a regular expression to match from the start of the value.
+         *
+         *     End the expression with ``$`` to require a full-value match. Each option of
+         *     a select parameter is checked separately.
+         * @example {
+         *       "expression": "^[ACGT]+$",
+         *       "type": "regex"
+         *     }
          */
         RegexParameterValidatorModel: {
-            /** Expression */
+            /**
+             * Expression
+             * @description Regular expression matched from the start of the value. Add `$` at the end to require a complete-value match.
+             */
             expression: string;
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null;
             /**
              * Negate
+             * @description Reject matching values instead of values that do not match.
              * @default false
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Applies the regular expression in `expression` to each submitted text value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "regex";
@@ -21268,9 +22275,9 @@ export interface components {
             class: "File";
             /**
              * Creation time
-             * @description The creation time of the file.
+             * @description When the file was created or last modified, in UTC, or null if the file source does not report it.
              */
-            ctime: string;
+            ctime: string | null;
             /**
              * Hashes
              * @description List of precomputed hashes for the file, if available.
@@ -21475,12 +22482,63 @@ export interface components {
             | "genome_data"
             | "in_use_state";
         /**
+         * RequestedTool
+         * @description A single requested tool in a tool installation request.
+         *
+         *     This is the per-item model: each entry describes one tool. An installation
+         *     request submits an array of these, wrapped by
+         *     :class:`ToolInstallationRequestNotificationContent` which carries the
+         *     request-level metadata. All fields are sanitized on validation: control
+         *     characters are collapsed and whitespace-only values become ``None``.
+         */
+        RequestedTool: {
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description?: string | null;
+            /**
+             * Tool name
+             * @description The human-readable name of the tool, if known.
+             */
+            name?: string | null;
+            /**
+             * Requested version
+             * @description The version of the tool being requested, if any.
+             */
+            requested_version?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool shed ID
+             * @description The fully qualified tool shed repository ID (e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.
+             */
+            tool_shed_id?: string | null;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool. Must be an http(s) URL.
+             */
+            tool_url?: string | null;
+        };
+        /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
-        /** ResourceRequirement */
+        /**
+         * ResourceRequirement
+         * @description A tool's compute resource request.
+         *
+         *     Set the minimum resources needed to run the job and, when useful, an upper
+         *     limit. Galaxy exposes the allocated CPU count to the command as
+         *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+         *     reserved for expressions, which are not supported yet: a non-numeric value
+         *     fails the create-time lint check.
+         */
         ResourceRequirement: {
             /**
              * Cores Max
@@ -21497,15 +22555,30 @@ export interface components {
              * @default 1
              */
             cores_min: number | string | null;
-            /** Cuda Compute Capability */
+            /**
+             * Cuda Compute Capability
+             * @description Minimum CUDA compute capability required, e.g. 7.5.
+             */
             cuda_compute_capability?: number | string | null;
-            /** Cuda Device Count Max */
+            /**
+             * Cuda Device Count Max
+             * @description Maximum number of GPUs to reserve.
+             */
             cuda_device_count_max?: number | string | null;
-            /** Cuda Device Count Min */
+            /**
+             * Cuda Device Count Min
+             * @description Minimum number of GPUs to reserve.
+             */
             cuda_device_count_min?: number | string | null;
-            /** Cuda Version Min */
+            /**
+             * Cuda Version Min
+             * @description Minimum CUDA runtime version required, e.g. 11.2.
+             */
             cuda_version_min?: number | string | null;
-            /** Gpu Memory Min */
+            /**
+             * Gpu Memory Min
+             * @description Minimum GPU memory required, in mebibytes (2**20).
+             */
             gpu_memory_min?: number | string | null;
             /**
              * Ram Max
@@ -21520,16 +22593,25 @@ export interface components {
              * @default 256
              */
             ram_min: number | string | null;
-            /** Shm Size */
+            /**
+             * Shm Size
+             * @description Size of /dev/shm to request, in bytes.
+             */
             shm_size?: number | string | null;
             /**
              * Timelimit
              * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
              */
             timelimit?: number | string | null;
-            /** Tmpdir Max */
+            /**
+             * Tmpdir Max
+             * @description Maximum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_max?: number | string | null;
-            /** Tmpdir Min */
+            /**
+             * Tmpdir Min
+             * @description Minimum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_min?: number | string | null;
             /**
              * Type
@@ -21600,6 +22682,38 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /** RoleUpdatePayload */
+        RoleUpdatePayload: {
+            /** Description */
+            description?: string | null;
+            /**
+             * Group IDs
+             * @description Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            group_ids?: string[] | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * User IDs
+             * @description Users to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            user_ids?: string[] | null;
+        };
+        /** RoleUserListResponse */
+        RoleUserListResponse: components["schemas"]["RoleUserResponse"][];
+        /** RoleUserResponse */
+        RoleUserResponse: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
         };
         /** RootModel[dict[str, int]] */
         RootModel_dict_str__int__: {
@@ -22401,6 +23515,16 @@ export interface components {
              */
             version: string;
         };
+        /** SetEnvironmentRequirement */
+        SetEnvironmentRequirement: {
+            /** Environment */
+            environment: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "set_environment";
+        };
         /** SetSlugPayload */
         SetSlugPayload: {
             /**
@@ -22718,6 +23842,11 @@ export interface components {
              */
             id: string;
             /**
+             * Implicit Collection Jobs ID
+             * @description Encoded ID of the ImplicitCollectionJobs group this job belongs to, or null if the job was not mapped over a collection.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
              * Inputs
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
              * @default {}
@@ -22734,6 +23863,9 @@ export interface components {
                       | components["schemas"]["ExitCodeJobMessage"]
                       | components["schemas"]["RegexJobMessage"]
                       | components["schemas"]["MaxDiscoveredFilesJobMessage"]
+                      | components["schemas"]["OutputCollectionSecurityJobMessage"]
+                      | components["schemas"]["OutputDiscoveryJobMessage"]
+                      | components["schemas"]["StdioReadErrorJobMessage"]
                   )[]
                 | null;
             /**
@@ -22859,6 +23991,75 @@ export interface components {
             | "CANCELED"
             | "CANCELING"
             | "PREEMPTED";
+        /** Stdio */
+        Stdio: {
+            /** Exit Codes */
+            exit_codes?: components["schemas"]["StdioExitCode"][];
+            /** Regexes */
+            regexes?: components["schemas"]["StdioRegex"][];
+        };
+        /** StdioExitCode */
+        StdioExitCode: {
+            /** Desc */
+            desc?: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Range End */
+            range_end: number | ("-inf" | "inf");
+            /** Range Start */
+            range_start: number | ("-inf" | "inf");
+        };
+        /** StdioReadErrorJobMessage */
+        StdioReadErrorJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Errno */
+            errno: number | null;
+            /** Error Level */
+            error_level: number;
+            /** Stream */
+            stream: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "stdio_read_error";
+        };
+        /** StdioRegex */
+        StdioRegex: {
+            /** Desc */
+            desc?: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Match */
+            match: string;
+            /** Stderr Match */
+            stderr_match: boolean;
+            /** Stdout Match */
+            stdout_match: boolean;
+        };
+        /** StepLabelHint */
+        StepLabelHint: {
+            /**
+             * ID
+             * @description Decoded ID of the selected tool job or ImplicitCollectionJobs to label.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            kind: "job" | "implicit_collection_jobs";
+            /**
+             * Label
+             * @description Workflow step label to assign to the extracted tool step.
+             */
+            label: string;
+        };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {
             /**
@@ -23579,6 +24780,38 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /**
+         * TemplateFormDataRequest
+         * @description Values available while rendering a post-authorization template form.
+         */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            };
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Dynamic Options */
+            dynamic_options?: {
+                [key: string]: [string, string][];
+            };
+            /** Messages */
+            messages?: components["schemas"]["TemplateFormMessage"][];
+        };
+        /** TemplateFormMessage */
+        TemplateFormMessage: {
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        };
         /** TemplateSecret */
         TemplateSecret: {
             /** Help */
@@ -23648,6 +24881,19 @@ export interface components {
                   )[]
                 | null;
         };
+        /**
+         * TemplateVariableOptionsProvider
+         * @description A server-side source for select options and its form dependencies.
+         */
+        TemplateVariableOptionsProvider: {
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on: string[];
+            /** Kind */
+            kind: string;
+        };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
             /** Default */
@@ -23675,6 +24921,44 @@ export interface components {
                       | components["schemas"]["LengthParameterValidatorModel"]
                   )[]
                 | null;
+        };
+        /** TemplateVariableSelect */
+        TemplateVariableSelect: {
+            /** Default */
+            default?: string | null;
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional?: boolean | null;
+            /** Options */
+            options?: components["schemas"]["TemplateVariableSelectOption"][] | null;
+            options_provider?: components["schemas"]["TemplateVariableOptionsProvider"] | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "select";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
+        };
+        /** TemplateVariableSelectOption */
+        TemplateVariableSelectOption: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -23711,6 +24995,8 @@ export interface components {
              * @default Collection
              */
             class: "Collection" | null;
+            /** Count */
+            count?: number | null;
             /** Element Tests */
             element_tests?: {
                 [key: string]:
@@ -23723,6 +25009,10 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Maximum Count */
+            max?: number | null;
+            /** Minimum Count */
+            min?: number | null;
         };
         /** TestCollectionCollectionElementAssertions */
         "TestCollectionCollectionElementAssertions-Output": {
@@ -23731,6 +25021,8 @@ export interface components {
              * @default Collection
              */
             class: "Collection" | null;
+            /** Count */
+            count?: number | null;
             /** Element Tests */
             element_tests?: {
                 [key: string]:
@@ -23743,6 +25035,10 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Maximum Count */
+            max?: number | null;
+            /** Minimum Count */
+            min?: number | null;
         };
         /** TestCollectionDatasetElementAssertions */
         "TestCollectionDatasetElementAssertions-Input": {
@@ -23821,6 +25117,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestCollectionDatasetElementAssertions */
         "TestCollectionDatasetElementAssertions-Output": {
@@ -23899,6 +25200,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Input": {
@@ -24029,6 +25335,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Output": {
@@ -24107,6 +25418,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
@@ -24294,6 +25610,69 @@ export interface components {
              */
             values: string;
         };
+        /**
+         * ToolInstallationRequestCreateContent
+         * @description A tool installation request as a user submits it.
+         *
+         *     The requested ``tools`` plus request-level context: the workflow that needs
+         *     them and any remarks for the admins.
+         */
+        ToolInstallationRequestCreateContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description A tool installation request as delivered to its recipients.
+         *
+         *     Adds ``requester_email``, taken from the authenticated submitter, so the
+         *     admin's notification card can name and contact the requester.
+         */
+        ToolInstallationRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requester email
+             * @description Email address of the user who made the request.
+             */
+            requester_email?: string | null;
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /** ToolLandingRequest */
         ToolLandingRequest: {
             /** Origin */
@@ -24314,34 +25693,261 @@ export interface components {
              */
             uuid: string;
         };
+        /** ToolOutputBoolean */
+        ToolOutputBoolean: {
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+        };
+        /** ToolOutputCollection */
+        ToolOutputCollection: {
+            /**
+             * Collection Type
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
+            collection_type?: string | null;
+            /** Collection Type From Rules */
+            collection_type_from_rules?: string | null;
+            /**
+             * Collection Type Source
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
+             */
+            collection_type_source?: string | null;
+            /**
+             * Discover Datasets
+             * @description Rules used to discover and populate collection elements from produced files.
+             */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
+            /**
+             * Format
+             * @description Default datatype extension assigned to collection elements.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description Input whose datatype supplies the default format for collection elements.
+             */
+            format_source?: string | null;
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Dataset input whose metadata supplies defaults for collection elements.
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * Structured Like
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
+             */
+            structured_like?: string | null;
+            /**
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /** ToolOutputDataset */
+        ToolOutputDataset: {
+            /**
+             * Discover Datasets
+             * @description Rules for discovering additional datasets produced by the command.
+             */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
+             */
+            format: string;
+            /**
+             * Format Source
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             */
+            format_source?: string | null;
+            /**
+             * from_work_dir
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
+             */
+            from_work_dir?: string | null;
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
+             * @default false
+             */
+            precreate_directory: boolean | null;
+            /**
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "data";
+        };
+        /** ToolOutputFloat */
+        ToolOutputFloat: {
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+        };
+        /** ToolOutputInteger */
+        ToolOutputInteger: {
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+        };
+        /** ToolOutputText */
+        ToolOutputText: {
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
+             */
+            hidden: boolean;
+            /**
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+        };
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean;
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null;
             /**
              * Discover Via
+             * @description Read discovered dataset details from the tool-provided metadata file.
              * @constant
              */
             discover_via: "tool_provided_metadata";
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null;
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean;
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean;
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean;
@@ -24823,6 +26429,13 @@ export interface components {
              */
             deleted?: boolean | null;
             /**
+             * Metadata
+             * @description A dictionary of metadata key/value pairs to update for this dataset. Readonly and unknown metadata keys are silently ignored.
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Name
              * @description The new name of the item.
              */
@@ -25091,6 +26704,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -25301,6 +26921,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Hidden */
             hidden: boolean;
             /** Name */
@@ -25324,7 +26946,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
+            type: "aws_s3" | "azure_blob" | "boto3" | "cloud" | "disk" | "generic_s3" | "onedata" | "rucio" | "irods";
             /**
              * Uuid
              * Format: uuid4
@@ -25377,6 +26999,35 @@ export interface components {
              */
             id: string;
         };
+        /**
+         * UserExtraPreferences
+         * @description A user's values for the extra preferences, by section and input name.
+         *
+         *     Inputs without a stored value are null. `password` and `secret` inputs report
+         *     whether a value is stored instead of the value.
+         */
+        UserExtraPreferences: {
+            [key: string]: {
+                [key: string]:
+                    | string
+                    | number
+                    | boolean
+                    | (string | number | boolean)[]
+                    | components["schemas"]["ExtraPreferenceSecretState"]
+                    | null;
+            };
+        };
+        /**
+         * UserExtraPreferencesUpdatePayload
+         * @description Values to change, by section and input name.
+         *
+         *     Inputs that are left out keep their stored value; null clears one.
+         */
+        UserExtraPreferencesUpdatePayload: {
+            [key: string]: {
+                [key: string]: string | number | boolean | (string | number | boolean)[] | null;
+            };
+        };
         /** UserFileSourceModel */
         UserFileSourceModel: {
             /** Active */
@@ -25418,10 +27069,17 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
+                | "ipfs"
                 | "mavedb"
                 | "omero"
-                | "ssh";
+                | "ssh"
+                | "openbis"
+                | "ckan"
+                | "commoncrawl"
+                | "gitlab"
+                | "arc";
             /** Uri Root */
             uri_root: string;
             /**
@@ -25433,6 +27091,14 @@ export interface components {
             variables: {
                 [key: string]: string | boolean | number;
             } | null;
+        };
+        /** UserGroupsUpdatePayload */
+        UserGroupsUpdatePayload: {
+            /**
+             * Group IDs
+             * @description Groups the user is a member of, replacing the current ones.
+             */
+            group_ids: string[];
         };
         /**
          * UserModel
@@ -25504,6 +27170,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -25534,7 +27207,8 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["StorageOperationNotificationContent"];
+                | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -25624,6 +27298,14 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
+        /** UserPasswordResetPayload */
+        UserPasswordResetPayload: {
+            /**
+             * Password
+             * @description The new password of the user.
+             */
+            password: string;
+        };
         /** UserQuota */
         UserQuota: {
             /**
@@ -25650,6 +27332,14 @@ export interface components {
             quota_source_label?: string | null;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserRolesUpdatePayload */
+        UserRolesUpdatePayload: {
+            /**
+             * Role IDs
+             * @description Roles to associate with the user, replacing the current ones. The user's private role is always kept.
+             */
+            role_ids: string[];
         };
         /** UserServiceCredentialsListResponse */
         UserServiceCredentialsListResponse: components["schemas"]["UserServiceCredentialsResponse"][];
@@ -25758,9 +27448,38 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Input": {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -25769,12 +27488,12 @@ export interface components {
             class: "GalaxyUserTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Container image to use for this tool.
+             * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
             container: string;
@@ -25783,15 +27502,21 @@ export interface components {
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -25800,6 +27525,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -25816,37 +27542,33 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Datasets and dataset collections Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`.
              * @default []
              */
             outputs: (
-                | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["IncomingToolOutputText"]
-                | components["schemas"]["IncomingToolOutputInteger"]
-                | components["schemas"]["IncomingToolOutputFloat"]
-                | components["schemas"]["IncomingToolOutputBoolean"]
+                | components["schemas"]["IncomingUserToolOutputDataset"]
+                | components["schemas"]["IncomingUserToolOutputCollection"]
             )[];
             /** profile */
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
-            /** tests */
+            /**
+             * tests
+             * @description Tool test declarations with input values and expected outputs. Database-stored user-defined tools retain these declarations but do not currently run them in the application.
+             */
             tests?: components["schemas"]["YamlToolTest-Input"][] | null;
             /**
              * version
@@ -25854,7 +27576,10 @@ export interface components {
              * @example 0.1.0
              */
             version: string;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**
@@ -25865,9 +27590,38 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Output": {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * class_
@@ -25876,12 +27630,12 @@ export interface components {
             class: "GalaxyUserTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Container image to use for this tool.
+             * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
             container: string;
@@ -25890,15 +27644,21 @@ export interface components {
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -25907,6 +27667,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Output"][];
@@ -25923,37 +27684,33 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Datasets and dataset collections Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`.
              * @default []
              */
             outputs: (
-                | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["IncomingToolOutputText"]
-                | components["schemas"]["IncomingToolOutputInteger"]
-                | components["schemas"]["IncomingToolOutputFloat"]
-                | components["schemas"]["IncomingToolOutputBoolean"]
+                | components["schemas"]["IncomingUserToolOutputDataset"]
+                | components["schemas"]["IncomingUserToolOutputCollection"]
             )[];
             /** profile */
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
-            /** tests */
+            /**
+             * tests
+             * @description Tool test declarations with input values and expected outputs. Database-stored user-defined tools retain these declarations but do not currently run them in the application.
+             */
             tests?: components["schemas"]["YamlToolTest-Output"][] | null;
             /**
              * version
@@ -25961,16 +27718,29 @@ export interface components {
              * @example 0.1.0
              */
             version: string;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserUpdatePayload */
         UserUpdatePayload: {
             /**
              * Active
-             * @description User is active
+             * @description Whether the account is active. Only an administrator can change this.
              */
-            active?: boolean | null;
+            active?: boolean;
+            /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
+            /**
+             * Email
+             * @description New email address. When `user_activation_on` is set, changing the email deactivates the account and sends an activation link to the new address.
+             */
+            email?: string;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -25978,9 +27748,9 @@ export interface components {
             preferred_object_store_id?: string | null;
             /**
              * Username
-             * @description The name of the user.
+             * @description The name of the user. A new name may contain only lower-case letters, numbers, '.', '_' and '-'; the current name is accepted as stored.
              */
-            username?: string | null;
+            username?: string;
         };
         /** VariableResponse */
         VariableResponse: {
@@ -26404,6 +28174,11 @@ export interface components {
              */
             dataset_names?: string[];
             /**
+             * From Page ID
+             * @description Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's markdown is rewritten so each dataset/collection/job directive references the workflow's inputs/outputs/steps by label.
+             */
+            from_page_id?: string | null;
+            /**
              * HDA IDs
              * @description Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.
              */
@@ -26428,6 +28203,16 @@ export interface components {
              * @description Concrete tool outputs to expose as workflow outputs, with labels.
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
+             * Report Title
+             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
+             */
+            report_title?: string | null;
+            /**
+             * Step Labels
+             * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
+             */
+            step_labels?: components["schemas"]["StepLabelHint"][];
             /**
              * Workflow Name
              * @description The name for the extracted workflow.
@@ -26466,6 +28251,17 @@ export interface components {
              * @description The history items produced by this job.
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
+            /**
+             * Seed Warning
+             * @description Warning when this row was seeded directly by a notebook job directive but its tool is not a workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead.
+             */
+            seed_warning?: string | null;
+            /**
+             * Seeded
+             * @description Whether this job is part of the producing subgraph of the outputs a page/notebook references. Always False for the plain history summary; set when the summary is computed for a page.
+             * @default false
+             */
+            seeded: boolean;
             /**
              * Step Type
              * @description The role this job plays in the extracted workflow.
@@ -26589,6 +28385,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Report Warnings
+             * @description Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive that had to be dropped because it has no workflow-relative form).
+             */
+            report_warnings?: string[];
         };
         /** WorkflowExtractionSummary */
         WorkflowExtractionSummary: {
@@ -26853,7 +28654,7 @@ export interface components {
             instance: true;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
              */
             parameters?: {
                 [key: string]: unknown;
@@ -27170,99 +28971,253 @@ export interface components {
              */
             namespace: string;
         };
-        /** YamlBooleanParameter */
+        /**
+         * YamlBooleanParameter
+         * @description A true-or-false input.
+         * @example {
+         *       "label": "Include a header line",
+         *       "name": "include_header",
+         *       "type": "boolean",
+         *       "value": true
+         *     }
+         */
         YamlBooleanParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Presents a true-or-false choice and supplies the selected Boolean value to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "boolean";
             /**
              * Value
+             * @description Initial choice shown when the user first opens the tool form.
              * @default false
              */
             value: boolean | null;
         };
-        /** YamlColorParameter */
+        /**
+         * YamlColorParameter
+         * @description A color-picker input.
+         * @example {
+         *       "label": "Plot color",
+         *       "name": "plot_color",
+         *       "type": "color",
+         *       "value": "#3366cc"
+         *     }
+         */
         YamlColorParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Presents a color picker and supplies the selected hexadecimal color string. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "color";
-            /** Value */
+            /**
+             * Value
+             * @description Color initially selected in the picker, written in hexadecimal notation.
+             */
             value?: string | null;
         };
-        /** YamlConditionalParameter */
+        /**
+         * YamlConditionalParameter
+         * @description A control input that selects which nested inputs are displayed and supplied to the command.
+         * @example {
+         *       "name": "search_options",
+         *       "test_parameter": {
+         *         "label": "Search mode",
+         *         "name": "mode",
+         *         "options": [
+         *           {
+         *             "label": "Fast",
+         *             "selected": true,
+         *             "value": "fast"
+         *           },
+         *           {
+         *             "label": "Sensitive",
+         *             "selected": false,
+         *             "value": "sensitive"
+         *           }
+         *         ],
+         *         "type": "select"
+         *       },
+         *       "type": "conditional",
+         *       "whens": [
+         *         {
+         *           "discriminator": "fast",
+         *           "parameters": []
+         *         },
+         *         {
+         *           "discriminator": "sensitive",
+         *           "parameters": [
+         *             {
+         *               "name": "iterations",
+         *               "type": "integer",
+         *               "value": 3
+         *             }
+         *           ]
+         *         }
+         *       ]
+         *     }
+         */
         "YamlConditionalParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
-            /** Test Parameter */
+            /**
+             * Test Parameter
+             * @description Boolean or select input whose submitted value chooses the active `whens` branch.
+             */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Shows one set of nested inputs at a time according to a Boolean or select control. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /**
+             * Whens
+             * @description Maps each control value to the nested parameters shown and supplied for that branch.
+             */
             whens: components["schemas"]["YamlConditionalWhen-Input"][];
         };
-        /** YamlConditionalParameter */
+        /**
+         * YamlConditionalParameter
+         * @description A control input that selects which nested inputs are displayed and supplied to the command.
+         * @example {
+         *       "name": "search_options",
+         *       "test_parameter": {
+         *         "label": "Search mode",
+         *         "name": "mode",
+         *         "options": [
+         *           {
+         *             "label": "Fast",
+         *             "selected": true,
+         *             "value": "fast"
+         *           },
+         *           {
+         *             "label": "Sensitive",
+         *             "selected": false,
+         *             "value": "sensitive"
+         *           }
+         *         ],
+         *         "type": "select"
+         *       },
+         *       "type": "conditional",
+         *       "whens": [
+         *         {
+         *           "discriminator": "fast",
+         *           "parameters": []
+         *         },
+         *         {
+         *           "discriminator": "sensitive",
+         *           "parameters": [
+         *             {
+         *               "name": "iterations",
+         *               "type": "integer",
+         *               "value": 3
+         *             }
+         *           ]
+         *         }
+         *       ]
+         *     }
+         */
         "YamlConditionalParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
-            /** Test Parameter */
+            /**
+             * Test Parameter
+             * @description Boolean or select input whose submitted value chooses the active `whens` branch.
+             */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Shows one set of nested inputs at a time according to a Boolean or select control. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /**
+             * Whens
+             * @description Maps each control value to the nested parameters shown and supplied for that branch.
+             */
             whens: components["schemas"]["YamlConditionalWhen-Output"][];
         };
         /** YamlConditionalWhen */
@@ -27285,46 +29240,91 @@ export interface components {
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
         };
-        /** YamlDataCollectionParameter */
+        /**
+         * YamlDataCollectionParameter
+         * @description A dataset collection input.
+         * @example {
+         *       "collection_type": "paired",
+         *       "format": [
+         *         "fastqsanger"
+         *       ],
+         *       "label": "Paired reads",
+         *       "name": "reads",
+         *       "type": "data_collection"
+         *     }
+         */
         YamlDataCollectionParameter: {
-            /** Collection Type */
+            /**
+             * Collection Type
+             * @description Limits selectable collections to this structure, such as `list` or `paired`.
+             */
             collection_type?: string | null;
             /**
              * Format
+             * @description Requires every selectable collection element to use one of these datatype extensions.
              * @default [
              *       "data"
              *     ]
              */
             format: string[];
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user select a history collection and exposes its elements to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data_collection";
         };
-        /** YamlDataParameter */
+        /**
+         * YamlDataParameter
+         * @description One dataset, or a list of datasets when ``multiple`` is true.
+         * @example {
+         *       "format": [
+         *         "txt",
+         *         "tabular"
+         *       ],
+         *       "label": "Input file",
+         *       "name": "input_file",
+         *       "type": "data"
+         *     }
+         */
         YamlDataParameter: {
             /**
              * Format
+             * @description Limits selectable datasets to these Galaxy datatype extensions.
              * @default [
              *       "data"
              *     ]
              */
             format: string[];
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
             /**
              * Multiple
@@ -27332,47 +29332,82 @@ export interface components {
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user select history datasets and exposes their paths and metadata to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data";
         };
-        /** YamlFloatParameter */
+        /**
+         * YamlFloatParameter
+         * @description A numeric input with optional bounds and validators.
+         * @example {
+         *       "label": "Score threshold",
+         *       "max": 1,
+         *       "min": 0,
+         *       "name": "threshold",
+         *       "type": "float",
+         *       "value": 0.5
+         *     }
+         */
         YamlFloatParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Rejects submitted values larger than this inclusive upper bound.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Rejects submitted values smaller than this inclusive lower bound.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts a number, including decimal values, and supplies it to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "float";
             /**
              * Validators
+             * @description Additional validation rules; supports `in_range`.
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /**
+             * Value
+             * @description Number prefilled when the user first opens the tool form.
+             */
             value?: number | null;
         };
         /** YamlGalaxyToolParameter */
@@ -27401,34 +29436,65 @@ export interface components {
             | components["schemas"]["YamlConditionalParameter-Output"]
             | components["schemas"]["YamlRepeatParameter-Output"]
             | components["schemas"]["YamlSectionParameter-Output"];
-        /** YamlIntegerParameter */
+        /**
+         * YamlIntegerParameter
+         * @description A whole-number input with optional bounds and validators.
+         * @example {
+         *       "label": "Number of lines",
+         *       "max": 1000,
+         *       "min": 1,
+         *       "name": "num_lines",
+         *       "type": "integer",
+         *       "value": 10
+         *     }
+         */
         YamlIntegerParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Rejects submitted values larger than this inclusive upper bound.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Rejects submitted values smaller than this inclusive lower bound.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts a whole number and supplies it as a numeric value to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "integer";
             /**
              * Validators
+             * @description Additional validation rules; supports `in_range`.
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /**
+             * Value
+             * @description Number prefilled when the user first opens the tool form.
+             */
             value?: number | null;
         };
         /**
@@ -27446,137 +29512,300 @@ export interface components {
             /** Value */
             value: string;
         };
-        /** YamlRepeatParameter */
+        /**
+         * YamlRepeatParameter
+         * @description A group the user may add multiple times, with ``parameters`` defining one repeated entry.
+         * @example {
+         *       "label": "Additional files",
+         *       "max": 3,
+         *       "min": 0,
+         *       "name": "extra_files",
+         *       "parameters": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "type": "repeat"
+         *     }
+         */
         "YamlRepeatParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Prevents the user from adding more than this many entries.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Keeps at least this many entries in the group and creates them when the form opens.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Nested inputs that make up one entry in the repeated group.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user add multiple entries that all contain the same nested inputs. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "repeat";
         };
-        /** YamlRepeatParameter */
+        /**
+         * YamlRepeatParameter
+         * @description A group the user may add multiple times, with ``parameters`` defining one repeated entry.
+         * @example {
+         *       "label": "Additional files",
+         *       "max": 3,
+         *       "min": 0,
+         *       "name": "extra_files",
+         *       "parameters": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "type": "repeat"
+         *     }
+         */
         "YamlRepeatParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Prevents the user from adding more than this many entries.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Keeps at least this many entries in the group and creates them when the form opens.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Nested inputs that make up one entry in the repeated group.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user add multiple entries that all contain the same nested inputs. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "repeat";
         };
-        /** YamlSectionParameter */
+        /**
+         * YamlSectionParameter
+         * @description Related inputs that users can expand or collapse to reduce form complexity.
+         * @example {
+         *       "label": "Advanced options",
+         *       "name": "advanced",
+         *       "parameters": [
+         *         {
+         *           "max": 1,
+         *           "min": 0,
+         *           "name": "threshold",
+         *           "type": "float",
+         *           "value": 0.5
+         *         }
+         *       ],
+         *       "type": "section"
+         *     }
+         */
         "YamlSectionParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Nested inputs displayed together inside the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Places related inputs in a collapsible group to simplify the tool form. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "section";
         };
-        /** YamlSectionParameter */
+        /**
+         * YamlSectionParameter
+         * @description Related inputs that users can expand or collapse to reduce form complexity.
+         * @example {
+         *       "label": "Advanced options",
+         *       "name": "advanced",
+         *       "parameters": [
+         *         {
+         *           "max": 1,
+         *           "min": 0,
+         *           "name": "threshold",
+         *           "type": "float",
+         *           "value": 0.5
+         *         }
+         *       ],
+         *       "type": "section"
+         *     }
+         */
         "YamlSectionParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Nested inputs displayed together inside the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Places related inputs in a collapsible group to simplify the tool form. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "section";
         };
-        /** YamlSelectParameter */
+        /**
+         * YamlSelectParameter
+         * @description A choice from a fixed list of options.
+         * @example {
+         *       "label": "Search mode",
+         *       "name": "mode",
+         *       "options": [
+         *         {
+         *           "label": "Fast",
+         *           "selected": true,
+         *           "value": "fast"
+         *         },
+         *         {
+         *           "label": "Sensitive",
+         *           "selected": false,
+         *           "value": "sensitive"
+         *         }
+         *       ],
+         *       "type": "select"
+         *     }
+         */
         YamlSelectParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
             /**
              * Multiple
+             * @description Set true to let the user select and supply several option values instead of one.
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
-            /** Options */
+            /**
+             * Options
+             * @description Choices presented on the tool form, each with a display label and value.
+             */
             options: components["schemas"]["YamlLabelValue"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user choose from the declared `options` and supplies the selected value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "select";
             /**
              * Validators
+             * @description Additional validation rules; supports `no_options`.
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
@@ -27634,31 +29863,53 @@ export interface components {
              */
             value: string;
         };
-        /** YamlTextParameter */
+        /**
+         * YamlTextParameter
+         * @description A single-line or multiline text input.
+         * @example {
+         *       "area": false,
+         *       "label": "Sequence motif",
+         *       "name": "motif",
+         *       "type": "text",
+         *       "value": "ACGT"
+         *     }
+         */
         YamlTextParameter: {
             /**
              * Area
+             * @description Set true to use a multiline editor instead of a single-line text box.
              * @default false
              */
             area: boolean;
-            /** Help */
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts user-entered text and supplies the resulting string to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "text";
             /**
              * Validators
+             * @description Additional validation rules; supports `length`, `regex`, and `empty_field`.
              * @default []
              */
             validators: (
@@ -27666,12 +29917,18 @@ export interface components {
                 | components["schemas"]["RegexParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** Value */
+            /**
+             * Value
+             * @description Text prefilled when the user first opens the tool form.
+             */
             value?: string | null;
         };
         /** YamlToolSource */
         YamlToolSource: {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -27680,7 +29937,7 @@ export interface components {
             class: "GalaxyTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
@@ -27694,13 +29951,19 @@ export interface components {
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
              */
             help?: components["schemas"]["HelpContent"] | null;
             /**
@@ -27711,6 +29974,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -27727,6 +29991,7 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Results Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`. Scalar output types are `text`, `integer`, `float`, and `boolean`.
              * @default []
              */
             outputs: (
@@ -27741,7 +30006,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
@@ -27753,7 +30018,7 @@ export interface components {
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
@@ -27765,7 +30030,10 @@ export interface components {
              * @example 0.1.0
              */
             version?: string | null;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**
@@ -32031,6 +34299,47 @@ export interface operations {
             };
         };
     };
+    extra_preferences_api_configuration_extra_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sections and inputs users can set values for */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtraPreferenceSectionDefinition"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     tool_lineages_api_configuration_tool_lineages_get: {
         parameters: {
             query?: never;
@@ -33827,6 +36136,105 @@ export interface operations {
             };
         };
     };
+    download_api_datasets__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    download_api_datasets__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     datasets__get_metadata_file: {
         parameters: {
             query: {
@@ -35297,6 +37705,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_form_data: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */
@@ -38930,6 +41388,107 @@ export interface operations {
                 offset?: number | null;
                 /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -45811,6 +48370,50 @@ export interface operations {
             };
         };
     };
+    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_plugins_get: {
         parameters: {
             query?: {
@@ -46612,6 +49215,8 @@ export interface operations {
                 limit?: number | null;
                 /** @description Number of roles to skip. */
                 offset?: number | null;
+                /** @description Leave out the private role of each user. */
+                exclude_private?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -46740,6 +49345,54 @@ export interface operations {
             };
         };
     };
+    update_api_roles__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     delete_api_roles__id__delete: {
         parameters: {
             query?: never;
@@ -46762,6 +49415,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    groups_api_roles__id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
                 };
             };
             /** @description Request Error */
@@ -46850,6 +49547,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    users_api_roles__id__users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleUserListResponse"];
                 };
             };
             /** @description Request Error */
@@ -48509,6 +51250,52 @@ export interface operations {
             };
         };
     };
+    tools__interop: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedTool"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     tools__parameter_landing_request_schema: {
         parameters: {
             query?: {
@@ -48613,6 +51400,190 @@ export interface operations {
             path: {
                 /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
                 tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__versioned_interop: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedTool"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__versioned_parameter_landing_request_schema: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__versioned_parameter_request_schema: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__versioned_parameter_test_case_xml_schema: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string;
             };
             cookie?: never;
         };
@@ -50264,6 +53235,98 @@ export interface operations {
             };
         };
     };
+    get_extra_preferences_api_users__user_id__extra_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtraPreferences"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_extra_preferences_api_users__user_id__extra_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserExtraPreferencesUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtraPreferences"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     set_favorite_order_api_users__user_id__favorites_order_put: {
         parameters: {
             query?: never;
@@ -50410,6 +53473,98 @@ export interface operations {
             };
         };
     };
+    get_user_groups_api_users__user_id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_groups_api_users__user_id__groups_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserGroupsUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
         parameters: {
             query?: never;
@@ -50433,6 +53588,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    reset_user_password_api_users__user_id__password_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPasswordResetPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -50519,6 +53720,54 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_roles_api_users__user_id__roles_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRolesUpdatePayload"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -51581,6 +54830,89 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    curated_api_workflows_curated_get: {
+        parameters: {
+            query?: {
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 *     ## Query Structure
+                 *
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
+                 *
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
+                 *
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
+                 *
+                 *     ## GitHub-style Tags Available
+                 *
+                 *     `name`
+                 *     : The curated workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     `tag`
+                 *     : A tag on the curated workflow. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     `collection`
+                 *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     ## Free Text
+                 *
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Curated Workflows: `name`, `description`, `tag`, `collection`.
+                 */
+                search?: string | null;
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
+                sort_by?: ("create_time" | "update_time" | "name") | null;
+                /** @description Sort in descending order? */
+                sort_desc?: boolean | null;
+                /** @description Maximum number of curated workflows to return. */
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Curated workflows plus the source they were drawn from. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedWorkflowsIndexResponse"];
                 };
             };
             /** @description Request Error */

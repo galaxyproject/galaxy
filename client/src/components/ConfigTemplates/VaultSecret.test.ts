@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import VaultSecret from "./VaultSecret.vue";
 
@@ -9,13 +11,13 @@ const localVue = getLocalVue(true);
 describe("VaultSecret", () => {
     it("should render a form element", async () => {
         const wrapper = shallowMount(VaultSecret as object, {
-            propsData: {
+            props: {
                 name: "secret name",
                 label: "Label Secret",
                 help: "here is some good *help*",
                 isSet: true,
             },
-            localVue,
+            global: localVue,
         });
         const titleWrapper = wrapper.find(".ui-form-title-text");
         expect(titleWrapper.text()).toEqual("Label Secret");
@@ -35,6 +37,15 @@ describe("VaultSecret", () => {
             },
             localVue,
         });
-        expect(wrapper.html()).toContain("bformtextarea-stub");
+        expect(wrapper.html()).toContain("b-form-textarea-stub");
+    });
+
+    it("renders help through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        shallowMount(VaultSecret as object, {
+            propsData: { name: "secret", label: "Secret", help: "the *help*", isSet: false },
+            localVue,
+        });
+        expect(sanitizeHtml).toHaveBeenCalledWith("<p>the <em>help</em></p>\n", "links");
     });
 });

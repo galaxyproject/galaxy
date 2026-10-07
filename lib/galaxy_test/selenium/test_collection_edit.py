@@ -1,17 +1,14 @@
 from .framework import (
     managed_history,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestCollectionEdit(SeleniumTestCase):
+class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only(
-        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
-    )
     @selenium_test
     @managed_history
     def test_change_dbkey_simple_list(self):
@@ -29,9 +26,6 @@ class TestCollectionEdit(SeleniumTestCase):
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
-    @selenium_only(
-        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
-    )
     @selenium_test
     @managed_history
     def test_change_datatype_simple_list(self):
@@ -56,7 +50,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
 
     def _create_simple_list_collection(self, filename, ext):
-        self.perform_upload(self.get_filename(filename), ext=ext)
+        self.upload_context("local-file").stage_local_file(self.get_filename(filename), {"extension": ext}).start()
         self._wait_for_and_select([1])
 
         self.history_panel_build_list_auto()

@@ -335,12 +335,13 @@ class Sequence(data.Text):
                     chunk = fh.read(max_peek_size + 1)
                 except UnicodeDecodeError:
                     raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                # Always serve as text/plain so the browser preserves whitespace/newlines
+                # and does not interpret the content as HTML.
+                self._clean_and_set_mime_type(trans, "text/plain", headers)
                 if len(chunk) <= max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return chunk[:-1], headers
-                headers["x-content-truncated"] = max_peek_size
-                return util.unicodify(chunk[:-1]), headers
+                    return chunk, headers
+                headers["x-content-truncated"] = str(max_peek_size)
+                return util.unicodify(chunk[:max_peek_size]), headers
         else:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
@@ -20,16 +20,18 @@ import { useWorkflowCardActions } from "./useWorkflowCardActions";
 import type WorkflowCard from "./WorkflowCard.vue";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
-import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
+import WorkflowListTabs from "@/components/Workflow/List/WorkflowListTabs.vue";
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
@@ -41,13 +43,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const breadcrumbItems = [{ title: "Workflows" }];
 
-const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
 const offset = ref(0);
-const loading = ref(true);
+const fetching = ref(true);
+// My workflows are filtered by owner, so keep loading until the user is known
+const loading = computed(() => fetching.value || (props.activeList === "my" && !userStore.currentUser));
 const overlay = ref(false);
 const filterText = ref("");
 const totalWorkflows = ref(0);
@@ -56,7 +60,12 @@ const listHeader = ref<any>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
-const workflowsLoaded = ref<WorkflowSummary[]>([]);
+const workflowsFetched = ref<WorkflowSummary[]>([]);
+const workflowsLoaded = computed(() =>
+    props.activeList === "my"
+        ? workflowsFetched.value.filter((w) => userStore.matchesCurrentUsername(w.owner))
+        : workflowsFetched.value,
+);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -163,7 +172,7 @@ async function load(overlayLoading = false, silent = false) {
         if (overlayLoading) {
             overlay.value = true;
         } else {
-            loading.value = true;
+            fetching.value = true;
         }
     }
 
@@ -182,7 +191,7 @@ async function load(overlayLoading = false, silent = false) {
     } else {
         // there are invalid filters, so we don't want to search
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
         return;
     }
 
@@ -197,20 +206,14 @@ async function load(overlayLoading = false, silent = false) {
             skipStepCounts: true,
         });
 
-        let filteredWorkflows = data;
-
-        if (props.activeList === "my") {
-            filteredWorkflows = filteredWorkflows.filter((w: any) => userStore.matchesCurrentUsername(w.owner));
-        }
-
-        workflowsLoaded.value = filteredWorkflows;
+        workflowsFetched.value = data;
 
         totalWorkflows.value = totalMatches;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
         overlay.value = false;
-        loading.value = false;
+        fetching.value = false;
     }
 }
 
@@ -277,7 +280,7 @@ async function onBulkDelete() {
             Toast.success(`Deleted ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to delete some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -316,7 +319,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -381,8 +384,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(() => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    if (route.query?.owner) {
+        updateFilterValue("user", `'${route.query.owner}'`);
     }
     load();
 });
@@ -395,39 +398,20 @@ onMounted(() => {
                 <WorkflowListActions />
             </BreadcrumbHeading>
 
-            <BNav pills justified class="mb-2">
-                <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
-                    <span v-localize>My workflows</span>
-                    <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
-                </BNavItem>
-
-                <BNavItem
-                    id="shared-with-me"
-                    :active="sharedWithMe"
-                    :disabled="userStore.isAnonymous"
-                    to="/workflows/list_shared_with_me">
-                    <span v-localize>Workflows shared with me</span>
-                    <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="Manage your workflows" />
-                </BNavItem>
-
-                <BNavItem id="published" :active="published" to="/workflows/list_published">
-                    <span v-localize>Public workflows</span>
-                </BNavItem>
-            </BNav>
+            <WorkflowListTabs :active="activeList" />
 
             <FilterMenu
                 id="workflow-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="workflows"
                 :filter-class="workflowFilters"
-                :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 has-help
                 view="compact"
-                :placeholder="localize(searchPlaceHolder)"
-                :show-advanced.sync="showAdvanced">
+                :placeholder="localize(searchPlaceHolder)">
                 <template v-slot:menu-help-text>
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="helpHtml(activeList, userStore.isAnonymous)"></div>
+                    <div v-sanitize-html="helpHtml(activeList, userStore.isAnonymous)"></div>
                 </template>
             </FilterMenu>
 
@@ -444,52 +428,54 @@ onMounted(() => {
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         <span v-localize>Filter:</span>
-                        <BButton
+                        <GButton
                             id="show-deleted"
                             v-g-tooltip.hover
-                            size="sm"
+                            size="small"
                             :title="deleteButtonTitle"
                             :pressed="showDeleted"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
                             <span v-localize>Show deleted</span>
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             id="show-bookmarked"
                             v-g-tooltip.hover
-                            size="sm"
+                            size="small"
                             :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
                             <span v-localize>Show bookmarked</span>
-                        </BButton>
+                        </GButton>
                     </div>
                 </template>
             </ListHeader>
         </div>
 
         <div v-if="loading" class="workflow-list-alert">
-            <BAlert variant="info" show>
+            <GAlert variant="info" show>
                 <LoadingSpan message="Loading workflows" />
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
-            <BAlert id="workflow-list-empty" variant="info" show>
+            <GAlert id="workflow-list-empty" variant="info" show>
                 <span v-localize
                     >No workflows found. You may create or import new workflows using the buttons above.</span
                 >
-            </BAlert>
+            </GAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
-            <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
+            <GAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
                 No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
-            </BAlert>
+            </GAlert>
 
-            <BAlert v-else id="no-workflow-found-invalid" variant="danger" show>
+            <GAlert v-else id="no-workflow-found-invalid" variant="danger" show>
                 <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -505,7 +491,7 @@ onMounted(() => {
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </GLink>
-            </BAlert>
+            </GAlert>
         </span>
         <GOverlay v-else id="workflow-cards" :show="overlay" class="cards-list">
             <WorkflowCardList
@@ -520,7 +506,7 @@ onMounted(() => {
                 @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"
                 @refreshList="load"
-                @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
+                @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)"
                 @updateFilter="updateFilterValue" />
         </GOverlay>
 
@@ -528,52 +514,52 @@ onMounted(() => {
             <div
                 v-if="!published && !sharedWithMe && selectedWorkflowIds.length"
                 class="workflow-list-footer-bulk-actions">
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-delete-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkDelete">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                         Delete ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Deleting" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else
                     id="workflow-list-footer-bulk-restore-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkRestore">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
                         Restore ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Restoring" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-add-tags-button"
                     v-g-tooltip.hover
                     :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
                     :disabled="bulkTagsLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onToggleBulkTags">
                     <span v-if="!bulkTagsLoading">
                         <FontAwesomeIcon :icon="faTags" fixed-width />
                         Add tags ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
-                </BButton>
+                </GButton>
             </div>
 
             <BPagination

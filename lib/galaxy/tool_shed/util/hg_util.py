@@ -1,16 +1,25 @@
 import logging
 import os
 import subprocess
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy.tool_shed.util import basic_util
 from galaxy.util import unicodify
+
+if TYPE_CHECKING:
+    from mercurial.interfaces.repository import IRepo
 
 log = logging.getLogger(__name__)
 
 INITIAL_CHANGELOG_HASH = "000000000000"
 
 
-def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_rev=None) -> tuple[bool, str | None]:
+def clone_repository(
+    repository_clone_url: str, repository_file_dir: str, ctx_rev: str | None = None
+) -> tuple[bool, str | None]:
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
@@ -50,7 +59,7 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     return None
 
 
-def get_changectx_for_changeset(repo, changeset_revision, **kwd):
+def get_changectx_for_changeset(repo: "IRepo", changeset_revision: str) -> Any:
     """Retrieve a specified changectx from a repository."""
     for changeset in repo.changelog:
         ctx = repo[changeset]
@@ -107,7 +116,7 @@ def get_file_context_from_ctx(ctx, filename):
     return None
 
 
-def pull_repository(repo_path, repository_clone_url, ctx_rev):
+def pull_repository(repo_path: str, repository_clone_url: str, ctx_rev: str) -> None:
     """Pull changes from a remote repository to a local one."""
     try:
         subprocess.check_output(
@@ -121,8 +130,10 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
 
 
 def reversed_lower_upper_bounded_changelog(
-    repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision
-):
+    repo: "IRepo",
+    excluded_lower_bounds_changeset_revision: str | None,
+    included_upper_bounds_changeset_revision: str | None,
+) -> list[Any]:
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision,
     but up to and including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision
@@ -131,12 +142,12 @@ def reversed_lower_upper_bounded_changelog(
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value
     # of changeset_revision is a downloadable changeset_revision.
     # excluded_lower_bounds_changeset_revision = \
-    #     metadata_util.get_previous_metadata_changeset_revision(app, repository, changeset_revision, downloadable=?)
+    #     metadata_util.get_previous_metadata_changeset_revision(app, repository, changeset_revision)
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:
         appending_started = False
-    reversed_changelog = []
+    reversed_changelog: list[Any] = []
     for changeset in repo.changelog:
         changeset_hash = str(repo[changeset])
         if appending_started:
@@ -158,7 +169,7 @@ def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revis
     )
 
 
-def update_repository(repo_path, ctx_rev=None):
+def update_repository(repo_path: str, ctx_rev: str | None = None) -> None:
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired
     changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.

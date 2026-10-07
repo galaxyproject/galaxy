@@ -36,6 +36,32 @@ class TestToolsService:
         self.trans.sa_session.commit()
         self.trans.set_history(history)
 
+    def _service(self):
+        return _ToolsServiceUnderTest(
+            config=self.app.config,
+            toolbox_search=cast(Any, object()),
+            security=self.app.security,
+            history_manager=cast(Any, object()),
+        )
+
+    def test_tool_lookup_only_materializes_at_explicit_boundary(self):
+        toolbox = Mock()
+        cast(Any, self.app).toolbox = toolbox
+        tool = Mock()
+        tool.allow_user_access.return_value = True
+        toolbox.get_tool = Mock(return_value=tool)
+        toolbox.materialize_tool = Mock(return_value="parsed")
+        service = self._service()
+
+        assert service._get_tool(self.trans, "cat1", user=self.trans.user) is tool
+        toolbox.materialize_tool.assert_not_called()
+
+        assert (
+            service._get_materialized_tool(self.trans, "cat1", user=self.trans.user, materialization_reason="detail")
+            == "parsed"
+        )
+        toolbox.materialize_tool.assert_called_once_with(tool, reason="detail")
+
     def test_create_fetch_does_not_refresh_when_fetch_has_no_authorization_header(self):
         self.app.file_sources = ConfiguredFileSources(
             FileSourcePluginsConfig(),
@@ -50,12 +76,7 @@ class TestToolsService:
             ),
         )
 
-        service = _ToolsServiceUnderTest(
-            config=self.app.config,
-            toolbox_search=cast(Any, object()),
-            security=self.app.security,
-            history_manager=cast(Any, object()),
-        )
+        service = self._service()
         payload = FetchDataPayload.model_validate(
             {
                 "history_id": self.app.security.encode_id(self.trans.history.id),

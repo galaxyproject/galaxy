@@ -68,7 +68,7 @@ export class Model {
             results.push(v);
         });
         if (results.length > 0 && !this.multiple) {
-            return results.at(0) as SelectionItem;
+            return results[0] as SelectionItem;
         }
         return results;
     }

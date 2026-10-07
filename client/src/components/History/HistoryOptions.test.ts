@@ -1,14 +1,17 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { HistorySummary, RegisteredUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryOptions from "./HistoryOptions.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
@@ -42,20 +45,45 @@ const anonymousOptions = [
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
-const activeHistory = { id: "history_a", name: "Active History", deleted: false, purged: false, archived: false };
-const deletedHistory = { id: "history_b", name: "Deleted History", deleted: true, purged: false, archived: false };
+const activeHistory = getFakeHistorySummary({ id: "history_a", name: "Active History" });
+const deletedHistory = getFakeHistorySummary({ id: "history_b", name: "Deleted History", deleted: true });
 
-async function createWrapper(propsData: object, userData?: any) {
+// options still shown for a history owned by someone else
+const unownedHistoryOptions = [
+    "Show Histories Side-by-Side",
+    "Copy History",
+    "Export Tool References",
+    "Export History to File",
+    "Extract Workflow",
+    "Show Invocations",
+    "Show History Graph",
+    "Show History Notebooks",
+];
+
+async function createWrapper(
+    propsData: { history: Partial<HistorySummary> & { user_id?: string | null } },
+    userData?: RegisteredUser,
+) {
     const pinia = createPinia();
 
-    const wrapper = shallowMount(HistoryOptions as object, {
-        propsData,
-        localVue,
-        pinia,
+    const historyUserId = "user_id" in propsData.history ? (propsData.history.user_id ?? null) : (userData?.id ?? null);
+
+    const history: HistorySummary & { user_id: string | null } = {
+        ...getFakeHistorySummary(propsData.history),
+        user_id: historyUserId,
+    };
+
+    const wrapper = shallowMount(HistoryOptions, {
+        props: { history },
+        global: withPlugins(localVue, pinia),
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    if (userData) {
+        userStore.currentUser = userData;
+    } else {
+        userStore.currentUser = { isAnonymous: true, nice_total_disk_usage: "0 bytes", total_disk_usage: 0 };
+    }
 
     const historyStore = useHistoryStore();
     vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
@@ -74,17 +102,12 @@ describe("History Navigation", () => {
         const { wrapper } = await createWrapper(
             {
                 history: { id: "current_history_id" },
-                histories: [],
             },
-            {
-                id: "user.id",
-                email: "user.email",
-            },
+            getFakeRegisteredUser(),
         );
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const optionElements = dropDown.findAll("bdropdownitem-stub");
-        const optionTexts = optionElements.wrappers.map((el) => el.text());
+        const optionElements = wrapper.findAllComponents(GDropdownItem);
+        const optionTexts = optionElements.map((el) => el.text());
 
         expect(optionTexts).toStrictEqual(expectedOptions);
     });
@@ -92,31 +115,41 @@ describe("History Navigation", () => {
     it("disables options for anonymous users", async () => {
         const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
-            histories: [],
         });
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const enabledOptionElements = dropDown.findAll("bdropdownitem-stub:not([disabled])");
-        const enabledOptionTexts = enabledOptionElements.wrappers.map((el) => el.text());
+        const allItems = wrapper.findAllComponents(GDropdownItem);
+        const enabledOptionTexts = allItems.filter((el) => !el.props("disabled")).map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);
 
-        const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
-        const disabledOptionTexts = disabledOptionElements.wrappers.map((el) => el.text());
+        const disabledOptionTexts = allItems.filter((el) => el.props("disabled")).map((el) => el.text());
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 
     it("prompts anonymous users to log in", async () => {
         const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
-            histories: [],
         });
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
+        const allItems = wrapper.findAllComponents(GDropdownItem);
+        const disabledItems = allItems.filter((el) => el.props("disabled"));
 
-        disabledOptionElements.wrappers.forEach((option) => {
-            expect((option.attributes("title") as string).toLowerCase()).toContain("log in");
+        disabledItems.forEach((option) => {
+            expect((option.props("title") as string).toLowerCase()).toContain("log in");
         });
+    });
+
+    it("hides owner-only options for a history not owned by the current user", async () => {
+        const { wrapper } = await createWrapper(
+            {
+                history: { ...activeHistory, user_id: "someone_else" },
+            },
+            getFakeRegisteredUser({ id: "fake_user_id" }),
+        );
+
+        const optionElements = wrapper.findAllComponents(GDropdownItem);
+        const optionTexts = optionElements.map((el) => el.text());
+
+        expect(optionTexts).toStrictEqual(unownedHistoryOptions);
     });
 
     it("shows 'Delete History' for an active history", async () => {
@@ -163,7 +196,9 @@ describe("History Navigation", () => {
 
     it("calls deleteHistory with purge=true when purge checkbox is manually checked", async () => {
         const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        wrapper.find('[data-description="delete history checkbox"]').vm.$emit("input", true);
+        // BFormCheckbox is stubbed under shallowMount, so there's no real
+        // checkbox input to interact with -- drive it through its stub instead.
+        wrapper.findComponent(BFormCheckbox).vm.$emit("input", true);
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();

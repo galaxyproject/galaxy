@@ -15,7 +15,7 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     server.use(
@@ -38,10 +38,10 @@ async function mountDatasetAttributes(conversion_disable = false) {
     );
 
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 
@@ -57,12 +57,12 @@ async function buildWrapperWithError(error: string) {
         }),
     );
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             messageText: error,
             messageVariant: "danger",
         },
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: false,
             FormElement: false,
@@ -91,7 +91,7 @@ describe("DatasetAttributes", () => {
 
         await flushPromises();
 
-        expect(wrapper.find("[role=alert]").text()).toBe("success");
+        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("success");
     });
 
     it("check rendering without conversion option", async () => {

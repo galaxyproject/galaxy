@@ -1,5 +1,6 @@
 import functools
 import os
+import threading
 
 try:
     import docutils.core
@@ -44,6 +45,10 @@ def get_publisher(error=False):
         # in normal operation we don't want noisy warnings, that's tool author business
         settings_overrides["report_level"] = no_report_level
 
+    # Rendered text must not read files or URLs on the server (include, raw and
+    # csv-table :file:/:url:).
+    settings_overrides["file_insertion_enabled"] = False
+
     Publisher = docutils.core.Publisher
     pub = Publisher(
         parser=None,
@@ -57,12 +62,17 @@ def get_publisher(error=False):
     return pub
 
 
-@functools.cache
-def rst_to_html(s, error=False):
+# Cached docutils publishers are stateful and not thread-safe.
+_publish_lock = threading.Lock()
+
+
+@functools.lru_cache(maxsize=1024)
+def rst_to_html(s, error=False) -> str:
     if docutils is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
-    publisher = get_publisher(error=error)
-    publisher.set_source(s, None)
-    publisher.set_destination(None, None)
-    return publisher.publish(enable_exit_status=False)
+    with _publish_lock:
+        publisher = get_publisher(error=error)
+        publisher.set_source(s, None)
+        publisher.set_destination(None, None)
+        return publisher.publish(enable_exit_status=False)

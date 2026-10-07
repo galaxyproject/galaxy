@@ -1,6 +1,8 @@
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DOMWrapper, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { Toast } from "@/composables/toast";
 
 import StatelessTags from "./StatelessTags.vue";
 
@@ -9,17 +11,20 @@ const toggleButton = ".toggle-button";
 
 const localVue = getLocalVue();
 
+// The underlying HeadlessMultiselect teleports its options popup to `#app`. Recreate
+// that root so the teleported content lands in the DOM, mirroring how the real app
+// mounts; it's not a descendant of the wrapper, so it's queried via document.body.
+let appRoot;
+
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
-        propsData: props,
-        localVue,
+        props: props,
+        global: localVue,
+        attachTo: appRoot,
     });
 };
 
 const onNewTagSeenMock = vi.fn((tag) => tag);
-const warningMock = vi.fn((message, title) => {
-    return { message, title };
-});
 
 function normalize(tag) {
     return tag.replace(/^#/, "name:");
@@ -35,11 +40,9 @@ vi.mock("@/stores/userTagsStore", () => ({
     normalizeTag: vi.fn((tag) => normalize(tag)),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    useToast: vi.fn(() => ({
-        warning: warningMock,
-    })),
-}));
+vi.mock("@/composables/toast");
+
+const toastWarning = vi.mocked(Toast.warning);
 
 const selectors = {
     multiselect: ".headless-multiselect",
@@ -51,7 +54,14 @@ describe("StatelessTags", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
         onNewTagSeenMock.mockClear();
-        warningMock.mockClear();
+        toastWarning.mockClear();
+        appRoot = document.createElement("div");
+        appRoot.id = "app";
+        document.body.appendChild(appRoot);
+    });
+
+    afterEach(() => {
+        appRoot.remove();
     });
 
     it("shows tags", () => {
@@ -89,16 +99,16 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
 
-        const multiselect = wrapper.find(selectors.multiselect);
-
         await wrapper.vm.$nextTick();
-        const options = multiselect.findAll(selectors.options);
+        // The options popup is teleported to #app, so it's not a descendant of the
+        // wrapper -- query the DOM directly for it.
+        const options = new DOMWrapper(document.body).findAll(selectors.options);
 
         const visibleOptions = options.filter((option) => option.isVisible());
 
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
-        visibleOptions.wrappers.forEach((option, i) => {
+        visibleOptions.forEach((option, i) => {
             expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });
@@ -113,7 +123,7 @@ describe("StatelessTags", () => {
         const multiselect = wrapper.find(selectors.multiselect);
         await multiselect.find(selectors.input).setValue("new_tag");
         await wrapper.vm.$nextTick();
-        multiselect.find(selectors.options).trigger("click");
+        new DOMWrapper(document.body).find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
 
         expect(onNewTagSeenMock.mock.calls.length).toBe(1);
@@ -131,14 +141,14 @@ describe("StatelessTags", () => {
         await multiselect.find(selectors.input).setValue(":illegal_tag");
         await wrapper.vm.$nextTick();
 
-        const option = multiselect.find(selectors.options);
+        const option = new DOMWrapper(document.body).find(selectors.options);
         expect(option.classes()).toContain("invalid");
 
         option.trigger("click");
         await wrapper.vm.$nextTick();
 
-        expect(warningMock.mock.calls.length).toBe(1);
-        expect(warningMock.mock.results[0].value.title).toBe("Invalid Tag");
+        expect(toastWarning).toHaveBeenCalledTimes(1);
+        expect(toastWarning).toHaveBeenCalledWith(expect.any(String), "Invalid Tag");
     });
 
     it("hides too many tags", async () => {
@@ -149,7 +159,7 @@ describe("StatelessTags", () => {
             maxVisibleTags: 4,
         });
 
-        const tags = wrapper.findAll(".tag").wrappers.filter((w) => !w.element.closest(".g-tooltip"));
+        const tags = wrapper.findAll(".tag").filter((w) => !w.element.closest(".g-tooltip"));
         expect(tags.length).toBe(4);
 
         const showMoreLink = wrapper.find(".toggle-link");

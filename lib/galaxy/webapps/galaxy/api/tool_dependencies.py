@@ -39,7 +39,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def update(self, trans):
+    def update(self, trans: ProvidesAppContext):
         """
         PUT /api/dependency_resolvers
 

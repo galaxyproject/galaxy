@@ -194,7 +194,7 @@ const draggedOver = ref(false);
 const draggedOverDebounced = useDebounce(draggedOver, 50);
 
 function nodeDragOver() {
-    draggedOver.value = true && Boolean(draggingTerminal.value);
+    draggedOver.value = Boolean(draggingTerminal.value);
 }
 
 function nodeDragOut() {
@@ -218,6 +218,7 @@ watch(
         <div
             :id="id"
             ref="dropTarget"
+            v-g-tooltip="{ title: reason, show: showTooltip }"
             class="input-terminal prevent-zoom"
             :class="{
                 'input-active': isDragging,
@@ -230,9 +231,6 @@ watch(
             :input-name="input.name"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <b-tooltip v-if="reason" :target="id" :show="showTooltip">
-                {{ reason }}
-            </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
         </div>
         <button
@@ -300,8 +298,7 @@ watch(
 .delete-terminal-button {
     position: absolute;
     left: calc(-0.65rem - 5px);
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0.25rem;
     display: grid;
     place-items: center;
     width: 0;

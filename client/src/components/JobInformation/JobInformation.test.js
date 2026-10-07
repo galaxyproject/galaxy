@@ -4,9 +4,10 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { http as mswHttp } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import jobResponse from "./testData/jobInformationResponse.json";
 
@@ -60,9 +61,11 @@ describe("JobInformation/JobInformation.vue", () => {
             jobId: JOB_ID,
         };
         wrapper = mount(JobInformation, {
-            propsData,
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            props: propsData,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
+            },
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");
@@ -93,6 +96,32 @@ describe("JobInformation/JobInformation.vue", () => {
         }
     });
 
+    it("explains stream read failures and displays structured diagnostics", async () => {
+        const desc = "Job failed because the tool stdout file could not be read: No such file or directory";
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json({
+                    ...jobResponse,
+                    state: "error",
+                    job_messages: [{ type: "stdio_read_error", stream: "stdout", errno: 2, error_level: 3, desc }],
+                });
+            }),
+        );
+        wrapper.unmount();
+        wrapper = mount(JobInformation, {
+            propsData: { jobId: JOB_ID },
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+        });
+        await flushPromises();
+
+        const message = wrapper.find("#job-messages .job-message").text();
+        expect(message).toContain(desc);
+        expect(message).toContain("type: stdio_read_error");
+        expect(message).toContain("stream: stdout");
+        expect(message).toContain("errno: 2");
+    });
+
     it("job_information API content", async () => {
         const rendered_entries = [
             { id: "galaxy-tool-id", backend_key: "tool_id" },
@@ -102,5 +131,33 @@ describe("JobInformation/JobInformation.vue", () => {
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
         expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
+    });
+});
+
+describe("JobInformation/JobInformation.vue invocation lookup", () => {
+    it("renders the job and reports an invocation lookup that fails to reach the server", async () => {
+        server.use(
+            http.get("/api/configuration/decode/{encoded_id}", ({ response }) => {
+                return response(200).json({ decoded_id: 123 });
+            }),
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json(jobResponse);
+            }),
+            mswHttp.get("/api/invocations", () => HttpResponse.error()),
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                return response(200).json({ stdout: "stdout", stderr: "stderr" });
+            }),
+        );
+        const wrapper = mount(JobInformation, {
+            propsData: { jobId: JOB_ID },
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+        });
+        await flushPromises();
+
+        expect(wrapper.find("#job-information").exists()).toBe(true);
+        expect(wrapper.find("#invocation-lookup-error").text()).toContain(
+            "Could not determine the workflow invocation",
+        );
     });
 });

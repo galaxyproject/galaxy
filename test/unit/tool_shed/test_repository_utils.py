@@ -31,6 +31,8 @@ def test_create_repository(shed_app: TestToolShedApp, new_user: User):
 def test_upload_tar(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
     old_tip = new_repository.tip()
+    assert new_repository.user is not None
+    assert new_repository.user.username is not None
     upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
         provides_repositories,
         new_repository.user.username,
@@ -55,6 +57,8 @@ def test_upload_fails_if_contains_symlink(
     provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
 ):
     tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
+    assert new_repository.user is not None
+    assert new_repository.user.username is not None
     upload_ok, message, _, _, _, _ = upload_tar(
         provides_repositories,
         new_repository.user.username,
@@ -69,6 +73,8 @@ def test_upload_fails_if_contains_symlink(
 def test_upload_dry_run_ok(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
     old_tip = new_repository.tip()
+    assert new_repository.user is not None
+    assert new_repository.user.username is not None
     upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
         provides_repositories,
         new_repository.user.username,
@@ -89,10 +95,13 @@ def test_category_count(provides_repositories: ProvidesRepositoriesContext, new_
     category = create_category(provides_repositories, {"name": "test_category_count_1"})
     attach_category(provides_repositories, new_repository, category)
 
-    category = new_repository.categories[0].category
-    assert category.active_repository_count() == 1
+    repository_category = new_repository.categories[0].category
+    assert repository_category is not None
+    assert repository_category.active_repository_count() == 1
 
     tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
+    assert new_repository.user is not None
+    assert new_repository.user.username is not None
     upload_ok, *_ = upload_tar(
         provides_repositories,
         new_repository.user.username,
@@ -102,12 +111,15 @@ def test_category_count(provides_repositories: ProvidesRepositoriesContext, new_
     )
     assert upload_ok
 
-    category = new_repository.categories[0].category
-    assert category.active_repository_count() == 1
+    repository_category = new_repository.categories[0].category
+    assert repository_category is not None
+    assert repository_category.active_repository_count() == 1
 
 
 def test_upload_dry_run_failed(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
+    assert new_repository.user is not None
+    assert new_repository.user.username is not None
     upload_ok, message, _, _, _, _ = upload_tar(
         provides_repositories,
         new_repository.user.username,

@@ -26,7 +26,7 @@ export class Services {
             incoming.forEach((x) => {
                 x.owner = x.repo_owner_username;
                 x.times_downloaded = this._formatCount(x.times_downloaded);
-                x.repository_url = `${data.hostname}repository?repository_id=${x.id}`;
+                x.repository_url = `${data.hostname}repositories/${x.id}`;
             });
             return incoming;
         } catch (e) {
@@ -65,7 +65,7 @@ export class Services {
             const length = response.data.length;
             if (length > 0) {
                 const result = response.data[0];
-                result.repository_url = `${toolshedUrl}repository?repository_id=${result.id}`;
+                result.repository_url = `${toolshedUrl}repositories/${result.id}`;
                 return result;
             } else {
                 throw Error("Repository details not found.");

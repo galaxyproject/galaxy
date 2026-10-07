@@ -18,6 +18,9 @@ from galaxy.util import (
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 VALUE_TRANSLATION_FUNCTIONS: dict[str, Callable] = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
+# Column header assumed to hold a filesystem path when a data table declares no
+# structure to derive it from (e.g. undeclared tables). See ``get_path_headers``.
+DEFAULT_PATH_HEADER = "path"
 
 
 class DataTableBundleProcessorDataTableOutputColumnTranslation(BaseModel):
@@ -134,6 +137,43 @@ class DataTableBundleProcessorDescription(BaseModel):
                     value_translation = value_translation_str
                 by_column[data_table_name][data_table_column_name].append(value_translation)
         return by_column
+
+    @property
+    def path_headers_by_data_table(self) -> dict[str, set[str]]:
+        """Columns that hold a filesystem path, keyed by data table.
+
+        A column holds a path when the data manager relocates it with a ``<move>``
+        or resolves it with the ``abspath`` value translation. Prefer this over
+        assuming the column is literally named ``path``; see ``get_path_headers``.
+        """
+        headers: dict[str, set[str]] = {}
+        moves = self.move_by_data_table_column
+        translations = self.value_translation_by_data_table_column
+        for data_table_name, column in self._walk_columns():
+            column_name = column.data_table_name
+            is_path = column_name in moves.get(data_table_name, {}) or (
+                os.path.abspath in translations.get(data_table_name, {}).get(column_name, [])
+            )
+            if is_path:
+                headers.setdefault(data_table_name, set()).add(column_name)
+        return headers
+
+
+def get_path_headers(
+    bundle_description: DataTableBundleProcessorDescription | None,
+    data_table_name: str,
+) -> set[str]:
+    """Return the columns to treat as filesystem paths for ``data_table_name``.
+
+    Prefers columns the processor description marks as paths; falls back to the
+    ``path`` naming convention when the table declares none (undeclared tables,
+    or a consumer without the description at hand).
+    """
+    if bundle_description is not None:
+        headers = bundle_description.path_headers_by_data_table.get(data_table_name)
+        if headers:
+            return headers
+    return {DEFAULT_PATH_HEADER}
 
 
 class RepoInfo(BaseModel):

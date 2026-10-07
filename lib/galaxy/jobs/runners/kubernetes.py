@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import (
     Any,
     TYPE_CHECKING,
+    TypedDict,
 )
 
 import yaml
@@ -62,6 +63,62 @@ log = logging.getLogger(__name__)
 
 __all__ = ("KubernetesJobRunner",)
 
+# Valid values for the pod-level securityContext.fsGroupChangePolicy field.
+K8S_FS_GROUP_CHANGE_POLICIES = ("OnRootMismatch", "Always")
+
+
+def valid_fs_group_change_policy(value):
+    """An unset or empty policy leaves the Kubernetes default (Always) in place."""
+    return not value or value in K8S_FS_GROUP_CHANGE_POLICIES
+
+
+RUNNER_PARAM_SPECS: dict[str, dict[str, Any]] = dict(
+    k8s_config_path=dict(map=str, default=None),
+    k8s_use_service_account=dict(map=bool, default=False),
+    k8s_persistent_volume_claims=dict(map=str),
+    k8s_working_volume_claim=dict(map=str),
+    k8s_data_volume_claim=dict(map=str),
+    k8s_namespace=dict(map=str, default="default"),
+    k8s_pod_priority_class=dict(map=str, default=None),
+    k8s_affinity=dict(map=str, default=None),
+    k8s_node_selector=dict(map=str, default=None),
+    k8s_extra_job_envs=dict(map=str, default=None),
+    k8s_tolerations=dict(map=str, default=None),
+    k8s_galaxy_instance_id=dict(map=str),
+    k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int(x) > 0, default=30),
+    k8s_job_api_version=dict(map=str, default=DEFAULT_JOB_API_VERSION),
+    k8s_job_ttl_secs_after_finished=dict(map=int, valid=lambda x: x is None or int(x) >= 0, default=None),
+    k8s_job_metadata=dict(map=str, default=None),
+    k8s_supplemental_group_id=dict(
+        map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
+    ),
+    k8s_pull_policy=dict(map=str, default="Default"),
+    k8s_run_as_user_id=dict(
+        map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or s.isdigit(), default=None
+    ),
+    k8s_run_as_group_id=dict(
+        map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
+    ),
+    k8s_fs_group_id=dict(
+        map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
+    ),
+    k8s_fs_group_change_policy=dict(map=str, valid=valid_fs_group_change_policy, default=None),
+    k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
+    k8s_pod_retries=dict(
+        map=int, valid=lambda x: int(x) >= 0, default=1
+    ),  # note that if the backOffLimit is lower, this paramer will have no effect.
+    k8s_job_spec_back_off_limit=dict(
+        map=int, valid=lambda x: int(x) >= 0, default=0
+    ),  # this means that it will stop retrying after 1 failure.
+    k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
+    k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
+    k8s_interactivetools_use_ssl=dict(map=bool, default=False),
+    k8s_interactivetools_ingress_annotations=dict(map=str),
+    k8s_interactivetools_ingress_class=dict(map=str, default=None),
+    k8s_interactivetools_tls_secret=dict(map=str, default=None),
+    k8s_ingress_api_version=dict(map=str, default=DEFAULT_INGRESS_API_VERSION),
+)
+
 
 @dataclass
 class RetryableDeleteJobState(JobState):
@@ -75,12 +132,19 @@ class RetryableDeleteJobState(JobState):
         self.attempts: int = attempts
 
 
+class EntryPoint(TypedDict):
+    tool_port: int | None
+    domain: str
+    entry_path: str
+
+
 class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
 
     runner_name = "KubernetesRunner"
+    always_handle_metadata_externally = True
 
     LABEL_START = re.compile("^[A-Za-z0-9]")
     LABEL_END = re.compile("[A-Za-z0-9]$")
@@ -89,55 +153,9 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def __init__(self, app, nworkers, **kwargs):
         # Check if pykube was importable, fail if not
         ensure_pykube()
-        runner_param_specs = dict(
-            k8s_config_path=dict(map=str, default=None),
-            k8s_use_service_account=dict(map=bool, default=False),
-            k8s_persistent_volume_claims=dict(map=str),
-            k8s_working_volume_claim=dict(map=str),
-            k8s_data_volume_claim=dict(map=str),
-            k8s_namespace=dict(map=str, default="default"),
-            k8s_pod_priority_class=dict(map=str, default=None),
-            k8s_affinity=dict(map=str, default=None),
-            k8s_node_selector=dict(map=str, default=None),
-            k8s_extra_job_envs=dict(map=str, default=None),
-            k8s_tolerations=dict(map=str, default=None),
-            k8s_galaxy_instance_id=dict(map=str),
-            k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
-            k8s_job_api_version=dict(map=str, default=DEFAULT_JOB_API_VERSION),
-            k8s_job_ttl_secs_after_finished=dict(map=int, valid=lambda x: x is None or int(x) >= 0, default=None),
-            k8s_job_metadata=dict(map=str, default=None),
-            k8s_supplemental_group_id=dict(
-                map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
-            ),
-            k8s_pull_policy=dict(map=str, default="Default"),
-            k8s_run_as_user_id=dict(
-                map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or s.isdigit(), default=None
-            ),
-            k8s_run_as_group_id=dict(
-                map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
-            ),
-            k8s_fs_group_id=dict(
-                map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
-            ),
-            k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(
-                map=int, valid=lambda x: int(x) >= 0, default=1
-            ),  # note that if the backOffLimit is lower, this paramer will have no effect.
-            k8s_job_spec_back_off_limit=dict(
-                map=int, valid=lambda x: int(x) >= 0, default=0
-            ),  # this means that it will stop retrying after 1 failure.
-            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
-            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
-            k8s_interactivetools_use_ssl=dict(map=bool, default=False),
-            k8s_interactivetools_ingress_annotations=dict(map=str),
-            k8s_interactivetools_ingress_class=dict(map=str, default=None),
-            k8s_interactivetools_tls_secret=dict(map=str, default=None),
-            k8s_ingress_api_version=dict(map=str, default=DEFAULT_INGRESS_API_VERSION),
-        )
-
         if "runner_param_specs" not in kwargs:
             kwargs["runner_param_specs"] = {}
-        kwargs["runner_param_specs"].update(runner_param_specs)
+        kwargs["runner_param_specs"].update(RUNNER_PARAM_SPECS)
 
         # Start the job runner parent object
         super().__init__(app, nworkers, **kwargs)
@@ -457,16 +475,15 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             ]
         return rules_spec
 
-    def __get_k8s_ingress_spec(self, ajs):
+    def __get_k8s_ingress_spec(self, ajs: AsynchronousJobState) -> dict[str, Any]:
         """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
         nor kind."""
         guest_ports = ajs.job_wrapper.guest_ports
+        entry_points: list[EntryPoint] = []
         if len(guest_ports) > 0:
-            entry_points = []
             configured_eps = [ep for ep in ajs.job_wrapper.get_job().interactivetool_entry_points if ep.configured]
             for entry_point in configured_eps:
-                # sending in self.app as `trans` since it's only used for `.security` so seems to work
-                entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
+                entry_point_path = self.app.interactivetool_manager.get_entry_point_path(entry_point)
                 if "?" in entry_point_path:
                     # Removing all the parameters from the ingress path, but they will still be in the database
                     # so the link that the user clicks on will still have them
@@ -476,14 +493,13 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     entry_point_path = entry_point_path.split("?")[0]
                 entry_point_domain = f"{self.app.config.interactivetools_proxy_host}"
                 if entry_point.requires_domain:
-                    entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(
-                        self.app, entry_point
-                    )
+                    entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(entry_point)
                     entry_point_domain = f"{entry_point_subdomain}.{entry_point_domain}"
                     entry_point_path = "/"
                 entry_points.append(
                     {"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_path": entry_point_path}
                 )
+        assert ajs.job_wrapper.tool is not None
         k8s_spec_template = {
             "metadata": {
                 "labels": {
@@ -510,8 +526,10 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 k8s_spec_template["spec"]["tls"] = [
                     {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
                 ]
-        if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
-            new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
+        if k8s_interactivetools_ingress_annotations := self.runner_params.get(
+            "k8s_interactivetools_ingress_annotations"
+        ):
+            new_ann = yaml.safe_load(k8s_interactivetools_ingress_annotations)
             k8s_spec_template["metadata"]["annotations"].update(new_ann)
         return k8s_spec_template
 
@@ -529,6 +547,9 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             security_context["supplementalGroups"] = [supplemental_group]
         if fs_group and fs_group > 0:
             security_context["fsGroup"] = fs_group
+        fs_group_change_policy = self.__get_overridable_params(job_wrapper, "k8s_fs_group_change_policy")
+        if fs_group_change_policy:
+            security_context["fsGroupChangePolicy"] = fs_group_change_policy
         return security_context
 
     def __get_k8s_restart_policy(self, job_wrapper):
@@ -595,8 +616,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             if self.__has_guest_ports(ajs.job_wrapper):
                 configured_eps = [ep for ep in ajs.job_wrapper.get_job().interactivetool_entry_points if ep.configured]
                 for entry_point in configured_eps:
-                    # sending in self.app as `trans` since it's only used for `.security` so seems to work
-                    entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
+                    entry_point_path = self.app.interactivetool_manager.get_entry_point_path(entry_point)
                     if "?" in entry_point_path:
                         # Removing all the parameters from the ingress path, but they will still be in the database
                         # so the link that the user clicks on will still have them
@@ -606,9 +626,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                         entry_point_path = entry_point_path.split("?")[0]
                     entry_point_domain = f"{self.app.config.interactivetools_proxy_host}"
                     if entry_point.requires_domain:
-                        entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(
-                            self.app, entry_point
-                        )
+                        entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(entry_point)
                         entry_point_domain = f"{entry_point_subdomain}.{entry_point_domain}"
                     envs.append({"name": "INTERACTIVETOOL_PORT", "value": str(entry_point.tool_port)})
                     envs.append({"name": "INTERACTIVETOOL_DOMAIN", "value": str(entry_point_domain)})
@@ -1141,9 +1159,8 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # run super method
         super().fail_job(job_state, exception, message, full_status)
 
-    def finish_job(self, job_state: AsynchronousJobState) -> None:
-        self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
-        super().finish_job(job_state)
+    def _finish_job(self, job_state: AsynchronousJobState) -> None:
+        super()._finish_job(job_state)
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
         if len(jobs.response["items"]) > 1:
             log.warning(

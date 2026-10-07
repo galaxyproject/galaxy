@@ -55,7 +55,29 @@ const { internalHelpReferences, MarkdownHelpPopovers } = useGxUris(renderedMarkd
 
 <template>
     <span>
-        <div ref="renderedMarkdownDiv" class="text-justify" v-html="renderedContent" />
+        <div
+            ref="renderedMarkdownDiv"
+            v-sanitize-html:markdown="renderedContent"
+            class="text-justify markdown-rendered-content" />
         <MarkdownHelpPopovers :elements="internalHelpReferences" />
     </span>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+// markdown-it emits plain <table> elements with no class, so they get no
+// Bootstrap .table styling and no border at all by default. $table-border-color
+// is intentionally transparent in this theme (see blue.scss), so it is not
+// reused here; $border-color is the same value WorkflowEmbed.vue uses for a
+// visible border.
+.markdown-rendered-content :deep(table) {
+    border-collapse: collapse;
+}
+
+.markdown-rendered-content :deep(table th),
+.markdown-rendered-content :deep(table td) {
+    border: 1px solid $border-color;
+    padding: 0.375rem 0.75rem;
+}
+</style>

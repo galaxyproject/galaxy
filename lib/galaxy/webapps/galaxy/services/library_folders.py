@@ -6,6 +6,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
 from galaxy.model.db.role import get_private_role_user_emails_dict
@@ -36,7 +37,7 @@ class LibraryFoldersService(ServiceBase):
         self.folder_manager = folder_manager
         self.role_manager = role_manager
 
-    def show(self, trans, folder_id: LibraryFolderDatabaseIdField) -> LibraryFolderDetails:
+    def show(self, trans: ProvidesUserContext, folder_id: LibraryFolderDatabaseIdField) -> LibraryFolderDetails:
         """
         Displays information about a folder.
 
@@ -51,7 +52,10 @@ class LibraryFoldersService(ServiceBase):
         return LibraryFolderDetails(**return_dict)
 
     def create(
-        self, trans, parent_folder_id: LibraryFolderDatabaseIdField, payload: CreateLibraryFolderPayload
+        self,
+        trans: ProvidesUserContext,
+        parent_folder_id: LibraryFolderDatabaseIdField,
+        payload: CreateLibraryFolderPayload,
     ) -> LibraryFolderDetails:
         """
         Create a new folder object underneath the one specified in the parameters.
@@ -76,7 +80,7 @@ class LibraryFoldersService(ServiceBase):
 
     def get_permissions(
         self,
-        trans,
+        trans: ProvidesUserContext,
         folder_id: LibraryFolderDatabaseIdField,
         scope: LibraryPermissionScope | None = LibraryPermissionScope.current,
         page: int = 1,
@@ -125,7 +129,7 @@ class LibraryFoldersService(ServiceBase):
             )
 
     def set_permissions(
-        self, trans, folder_id: LibraryFolderDatabaseIdField, payload: dict
+        self, trans: ProvidesUserContext, folder_id: LibraryFolderDatabaseIdField, payload: dict
     ) -> LibraryFolderCurrentPermissions:
         """
         Set permissions of the given folder to the given role ids.
@@ -225,7 +229,7 @@ class LibraryFoldersService(ServiceBase):
         return LibraryFolderCurrentPermissions(**current_permissions)
 
     def delete(
-        self, trans, folder_id: LibraryFolderDatabaseIdField, undelete: bool | None = False
+        self, trans: ProvidesUserContext, folder_id: LibraryFolderDatabaseIdField, undelete: bool | None = False
     ) -> LibraryFolderDetails:
         """
         Mark the folder with the given ``encoded_folder_id`` as `deleted`
@@ -248,7 +252,7 @@ class LibraryFoldersService(ServiceBase):
         return LibraryFolderDetails(**folder_dict)
 
     def update(
-        self, trans, folder_id: LibraryFolderDatabaseIdField, payload: UpdateLibraryFolderPayload
+        self, trans: ProvidesUserContext, folder_id: LibraryFolderDatabaseIdField, payload: UpdateLibraryFolderPayload
     ) -> LibraryFolderDetails:
         """
          Update the folder with id ``folder_id`` with the data in the payload.

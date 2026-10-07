@@ -8,79 +8,32 @@ projects (e.g. gxformat2).
 
 import re
 
+from ._markdown_directives import (
+    CELL_TYPES,
+    DYNAMIC_ARGUMENTS,
+    DynamicArguments,
+    EMBED_CAPABLE_DIRECTIVES,
+    SHARED_ARGUMENTS,
+    VALID_ARGUMENTS,
+)
+
 BLOCK_FENCE_START = re.compile(r"```.*")
 BLOCK_FENCE_END = re.compile(r"```[\s]*")
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 
+GALAXY_MARKDOWN_CELL_TYPES = tuple(CELL_TYPES)
+# What JS trim() strips; str.strip() differs (e.g. keeps U+FEFF).
+JS_TRIM_CHARACTERS = (
+    "\t\n\v\f\r \u00a0\u1680"
+    "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
 
-class DynamicArguments:
-    pass
-
-
-DYNAMIC_ARGUMENTS = DynamicArguments()
-SHARED_ARGUMENTS: list[str] = ["collapse"]
-VALID_ARGUMENTS: dict[str, list[str] | DynamicArguments] = {
-    "generate_galaxy_version": [],
-    "generate_time": [],
-    "history_dataset_as_image": ["hid", "history_dataset_id", "input", "invocation_id", "output", "path"],
-    "history_dataset_as_table": [
-        "compact",
-        "footer",
-        "hid",
-        "history_dataset_id",
-        "input",
-        "invocation_id",
-        "output",
-        "path",
-        "show_column_headers",
-        "title",
-    ],
-    "history_dataset_collection_display": ["hid", "history_dataset_collection_id", "input", "invocation_id", "output"],
-    "history_dataset_display": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_dataset_embedded": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_dataset_index": ["hid", "history_dataset_id", "input", "invocation_id", "output", "path"],
-    "history_dataset_info": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_dataset_link": ["hid", "history_dataset_id", "input", "invocation_id", "label", "output", "path"],
-    "history_dataset_name": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_dataset_peek": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_dataset_type": ["hid", "history_dataset_id", "input", "invocation_id", "output"],
-    "history_link": ["history_id", "invocation_id"],
-    "instance_access_link": [],
-    "instance_citation_link": [],
-    "instance_help_link": [],
-    "instance_organization_link": [],
-    "instance_resources_link": [],
-    "instance_support_link": [],
-    "instance_terms_link": [],
-    "invocation_inputs": ["invocation_id"],
-    "invocation_outputs": ["invocation_id"],
-    "invocation_time": ["invocation_id"],
-    "job_metrics": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
-    "job_parameters": ["footer", "implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
-    "tool_stderr": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
-    "tool_stdout": ["implicit_collection_jobs_id", "invocation_id", "job_id", "step"],
-    "visualization": DYNAMIC_ARGUMENTS,
-    "workflow_display": ["invocation_id", "workflow_checkpoint", "workflow_id"],
-    "workflow_image": ["invocation_id", "workflow_checkpoint", "workflow_id", "size"],
-    "workflow_license": ["invocation_id", "workflow_id"],
-}
-EMBED_CAPABLE_DIRECTIVES = [
-    "history_dataset_as_image",
-    "history_dataset_name",
-    "history_dataset_type",
-    "workflow_license",
-    "invocation_time",
-    "generate_time",
-    "generate_galaxy_version",
-    "instance_access_link",
-    "instance_resources_link",
-    "instance_help_link",
-    "instance_support_link",
-    "instance_citation_link",
-    "instance_terms_link",
-    "instance_organization_link",
-]
+# The directive registry imported above (CELL_TYPES, DynamicArguments, VALID_ARGUMENTS,
+# EMBED_CAPABLE_DIRECTIVES, SHARED_ARGUMENTS) is generated from
+# client/src/components/Markdown/directives.yml by scripts/markdown_directives_doc.py.
+# Edit directives.yml and regenerate; do not edit _markdown_directives.py by hand.
 
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>{})".format("|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS))
@@ -101,8 +54,21 @@ EMBED_DIRECTIVE_REGEX = re.compile(r"\$\{galaxy\s+%s\}" % GALAXY_MARKDOWN_EMBED_
 EMBED_DIRECTIVE_REGEX_ANY = re.compile(r"\$\{galaxy\s+.*\}")
 
 
+# Directive argument values are matched by ARG_VAL_REGEX, which accepts "..." with
+# no escape syntax, and a directive must occupy a single line. So a value carrying a
+# double quote or a line break has no representation as a quoted directive argument.
+UNQUOTABLE_ARGUMENT_CHARS = '"\r\n'
+
+
+def is_quotable_argument_value(value: str) -> bool:
+    """Whether ``value`` can be embedded in a directive as a double-quoted argument."""
+    return not any(char in value for char in UNQUOTABLE_ARGUMENT_CHARS)
+
+
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
+
+    validate_galaxy_markdown_fence_types(galaxy_markdown)
 
     expecting_container_close_for = None
     last_line_no = 0
@@ -176,6 +142,24 @@ def _invalid_line(template: str, line_no: int, **kwd):
     raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
 
 
+def validate_galaxy_markdown_fence_types(galaxy_markdown: str) -> None:
+    """Throw a ValueError if a ``` fence opens a cell type the client can't render."""
+    # Mirrors the client's parseMarkdown, which starts a cell at any ``` line.
+    for line_no, line in enumerate(galaxy_markdown.split("\n")):
+        stripped = line.strip(JS_TRIM_CHARACTERS)
+        if not stripped.startswith("```"):
+            continue
+        fence_type = stripped[3:]
+        if fence_type and fence_type not in GALAXY_MARKDOWN_CELL_TYPES:
+            _invalid_line(
+                "Unsupported fenced block type [{fence_type}]. Fenced blocks must be one of {cell_types}; "
+                "for a plain code block, use ~~~ fences instead of ```",
+                line_no,
+                fence_type=fence_type,
+                cell_types=", ".join(GALAXY_MARKDOWN_CELL_TYPES),
+            )
+
+
 def _validate_arg(arg_str: str, valid_args, line_no: int):
     if arg_str is not None:
         arg_name = arg_str.split("=", 1)[0].strip()
@@ -226,4 +210,10 @@ def _split_markdown_lines(markdown):
 __all__ = (
     "validate_galaxy_markdown",
     "GALAXY_MARKDOWN_FUNCTION_CALL_LINE",
+    # Re-exported registry generated from directives.yml (see _markdown_directives).
+    "DYNAMIC_ARGUMENTS",
+    "DynamicArguments",
+    "EMBED_CAPABLE_DIRECTIVES",
+    "SHARED_ARGUMENTS",
+    "VALID_ARGUMENTS",
 )

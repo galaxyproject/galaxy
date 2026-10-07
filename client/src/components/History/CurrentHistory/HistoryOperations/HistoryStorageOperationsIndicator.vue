@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink, BPopover } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
 
@@ -11,6 +11,7 @@ import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface Props {
     historyId: string;
@@ -63,9 +64,11 @@ function onDoNotShowAgain() {
 <template>
     <div v-if="!showSelection && hasActiveStorageRuns">
         <GButtonGroup>
+            <!-- The tooltip leaves the icon-only link unnamed. -->
             <GButton
                 :id="storageOperationsButtonId"
                 tooltip
+                :aria-label="localize('Background operations are running')"
                 :title="localize('Background operations are running')"
                 class="rounded-0"
                 size="small"
@@ -76,8 +79,10 @@ function onDoNotShowAgain() {
             </GButton>
         </GButtonGroup>
 
-        <BPopover
-            :show.sync="isStorageHelperVisible"
+        <GPopover
+            v-model:show="isStorageHelperVisible"
+            interactive
+            :aria-label="localize('Background storage operations')"
             :target="storageOperationsButtonId"
             triggers="manual hover"
             placement="bottomleft"
@@ -86,6 +91,6 @@ function onDoNotShowAgain() {
                 <span>{{ localize("Background operations are running. Click this spinner to open status.") }}</span>
                 <BLink @click="onDoNotShowAgain">{{ localize("Do not show this again") }}</BLink>
             </div>
-        </BPopover>
+        </GPopover>
     </div>
 </template>

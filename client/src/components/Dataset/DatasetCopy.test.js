@@ -19,7 +19,7 @@ beforeEach(() => {
 
 function mountComponent() {
     const wrapper = mount(DatasetCopy, {
-        localVue,
+        global: localVue,
         directives: { localize: () => {} },
         stubs: { RouterLink: { template: "<a><slot /></a>" } },
         pinia,
@@ -40,7 +40,7 @@ async function setupBase(histories, contents) {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     return wrapper;
 }
 
@@ -90,8 +90,8 @@ it("copies selected items and shows success", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
-    await wrapper.find("button.btn-primary").trigger("click");
+    await checkbox.setValue(true);
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied/);
 });
@@ -106,7 +106,7 @@ it("shows error when nothing selected", async () => {
     );
     const wrapper = mountComponent();
     await flushPromises();
-    await wrapper.find("button.btn-primary").trigger("click");
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toContain("Please select datasets and collections.");
 });
@@ -127,8 +127,8 @@ it("handles API error from copy call", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
-    await wrapper.find("button.btn-primary").trigger("click");
+    await checkbox.setValue(true);
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toContain("Copy failed");
 });
@@ -148,7 +148,7 @@ it("toggleAll selects and unselects all", async () => {
     );
     const wrapper = mountComponent();
     await flushPromises();
-    const buttons = wrapper.findAll("button.btn-outline-primary");
+    const buttons = wrapper.findAll("button.g-blue.g-outline");
     await buttons.at(0).trigger("click");
     await flushPromises();
     const sel1 = wrapper.vm.sourceContentSelection?.value || wrapper.vm.sourceContentSelection;
@@ -177,8 +177,8 @@ it("shows success for single existing target", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
-    await wrapper.find("button.btn-primary").trigger("click");
+    await checkbox.setValue(true);
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
     expect(wrapper.text()).toContain("H1");
@@ -205,10 +205,10 @@ it("shows success for multiple target histories", async () => {
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
-    await checkbox.setChecked(true);
+    await checkbox.setValue(true);
     wrapper.vm.targetMultiSelections = { h1: true, h2: true };
     await wrapper.vm.$nextTick();
-    await wrapper.find("button.btn-primary").trigger("click");
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
     expect(wrapper.text()).toContain("H1");
@@ -233,8 +233,17 @@ it("shows success for new history creation", async () => {
         [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
     );
     await wrapper.find("input[data-description='copy history name']").setValue("New History");
-    await wrapper.find("button.btn-primary").trigger("click");
+    await wrapper.find("button.g-blue:not(.g-outline)").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toContain("1 item copied to");
     expect(wrapper.text()).toContain("New History");
+});
+
+it("labels the history search inputs with their visible captions", async () => {
+    const wrapper = await setupBase([{ id: "h1", name: "H1" }], []);
+    const labels = wrapper.findAll("input.multiselect__input").map((input) => {
+        expect(input.attributes("aria-label")).toBeUndefined();
+        return wrapper.find(`label[for="${input.attributes("id")}"]`).text();
+    });
+    expect(labels).toEqual(["Select a Source History:", "Select a Target History:"]);
 });

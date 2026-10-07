@@ -9,6 +9,11 @@ Additionally, this package implements functionalist's to request temporary acces
 credentials for cloud-based resource providers (e.g., Amazon AWS, Microsoft Azure).
 """
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+
 
 class IdentityProvider:
     """
@@ -40,10 +45,10 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def refresh(self, trans, token):
+    def refresh(self, trans: "GalaxyWebTransaction", token):
         raise NotImplementedError()
 
-    def authenticate(self, trans, idphint=None):
+    def authenticate(self, trans: "GalaxyWebTransaction", idphint=None):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user
         is authenticated, if not, it generates a provider-specific
@@ -56,7 +61,7 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def callback(self, state_token: str, authz_code: str, trans, login_redirect_url):
+    def callback(self, state_token: str, authz_code: str, trans: "GalaxyWebTransaction", login_redirect_url):
         """Handles authentication call-backs from identity providers.
 
         This process maps `state-token` to a user.
@@ -72,10 +77,12 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
+    def disconnect(
+        self, provider, trans: "GalaxyWebTransaction", disconnect_redirect_url=None, email=None, association_id=None
+    ):
         raise NotImplementedError()
 
-    def logout(self, trans, post_user_logout_href=None):
+    def logout(self, trans: "GalaxyWebTransaction", post_user_logout_href=None):
         """
         Return a URL that will log the user out of the IDP. In OIDC this is
         called the 'end_session_endpoint'.

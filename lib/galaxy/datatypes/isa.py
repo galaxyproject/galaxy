@@ -33,6 +33,7 @@ from galaxy.datatypes.protocols import (
     HasExtraFilesAndMetadata,
     HasExtraFilesPath,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -217,6 +218,9 @@ class _Isa(Data):
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
+        # this forces sync with objectstore
+        dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
 
         # prepare the preview of the ISA dataset
         try:

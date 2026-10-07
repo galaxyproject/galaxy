@@ -4,6 +4,7 @@ import { BPagination } from "bootstrap-vue";
 import { usePagination } from "@/composables/pagination";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
 
 import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 import { useUploadState } from "./uploadState";
@@ -15,7 +16,8 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadBatchOperations = useUploadBatchOperations();
 const uploadState = useUploadState();
-const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted } = uploadState;
+useUploadDatasetMonitorStore();
+const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted, hasActiveUploads } = uploadState;
 
 const { paginatedItems, currentPage, itemsPerPage, showPagination, onPageChange } = usePagination(orderedUploadItems, {
     itemsPerPage: 24,
@@ -59,12 +61,37 @@ function onClearAll() {
 async function retryBatch(batchId: string) {
     await uploadBatchOperations.retryCollectionCreation(batchId);
 }
+
+function onCancelUpload(uploadId: string) {
+    uploadBatchOperations.cancelUpload(uploadId);
+}
+
+function onCancelBatch(batchId: string) {
+    uploadBatchOperations.cancelBatch(batchId);
+}
+
+function onDismissUpload(uploadId: string) {
+    uploadBatchOperations.dismissUpload(uploadId);
+    cleanupExpandedBatches();
+}
+
+function onDismissBatch(batchId: string) {
+    uploadBatchOperations.dismissBatch(batchId);
+    cleanupExpandedBatches();
+}
+
+function onStopAll() {
+    uploadBatchOperations.cancelAll();
+}
 </script>
 
 <template>
     <div class="upload-progress-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
             <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
+                <GButton v-if="hasActiveUploads" size="small" outline color="red" @click="onStopAll()">
+                    Stop All
+                </GButton>
                 <GButton v-if="hasCompleted" size="small" outline color="grey" @click="onClearCompleted()">
                     Clear Completed
                 </GButton>
@@ -81,9 +108,11 @@ async function retryBatch(batchId: string) {
                             :batch="item.batch"
                             :expanded="isExpanded(item.batch.id)"
                             @toggle="toggleBatch(item.batch.id)"
-                            @retry="retryBatch(item.batch.id)" />
+                            @retry="retryBatch(item.batch.id)"
+                            @cancel="onCancelBatch"
+                            @dismiss="onDismissBatch" />
 
-                        <UploadFileRow v-else :file="item.upload" />
+                        <UploadFileRow v-else :file="item.upload" @cancel="onCancelUpload" @dismiss="onDismissUpload" />
                     </div>
                 </div>
 

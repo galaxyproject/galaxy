@@ -1,0 +1,10 @@
+<tables>
+    <!-- Same table name and columns, but a different separator. The loader accepts
+         this (it only checks columns on merge), yet the schema is ambiguous. -->
+    <table name="sep_tbl" comment_char="#">
+        <columns>value, path</columns>
+    </table>
+    <table name="sep_tbl" comment_char="#" separator=",">
+        <columns>value, path</columns>
+    </table>
+</tables>

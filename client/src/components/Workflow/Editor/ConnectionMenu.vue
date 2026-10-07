@@ -1,12 +1,12 @@
 <template>
-    <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
+    <BListGroup id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <template v-if="allElements.length === 0">
-            <b-list-group-item ref="menuItem" tabindex="0" role="menuitem">
+            <BListGroupItem ref="menuItem" tabindex="0" role="menuitem">
                 No compatible input found in workflow
-            </b-list-group-item>
+            </BListGroupItem>
         </template>
         <template v-else>
-            <b-list-group-item
+            <BListGroupItem
                 v-for="(input, index) in allElements"
                 :key="input.inputLabel + input.stepId"
                 ref="menuItem"
@@ -17,11 +17,12 @@
                 @keyup.enter="toggleConnection(input)"
                 @focus="activeElement = index">
                 {{ input.connected ? "Disconnect from" : "Connect to" }} {{ input.inputLabel }}
-            </b-list-group-item>
+            </BListGroupItem>
         </template>
-    </b-list-group>
+    </BListGroup>
 </template>
 <script setup lang="ts">
+import { BListGroup, BListGroupItem } from "bootstrap-vue";
 import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 
 import { useFocusWithin } from "@/composables/useActiveElement";

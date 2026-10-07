@@ -34,6 +34,7 @@ from galaxy.datatypes.protocols import (
     HasExt,
     HasExtraFilesAndMetadata,
     HasFileName,
+    HasHid,
     HasInfo,
     HasMetadata,
     HasName,
@@ -43,6 +44,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.exceptions import ObjectNotFound
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import (
     compression_utils,
     file_reader,
@@ -68,6 +70,11 @@ from . import (
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
     from galaxy.datatypes.registry import Registry
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -235,11 +242,15 @@ class Data(metaclass=DataMeta):
     # datatype change is allowed if the datatype is not composite.
     allow_datatype_change: bool | None = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
-    _max_optional_metadata_filesize = None
+    _max_optional_metadata_filesize: int | None = None
 
     # Display behavior when preview=True: "inline" (can be displayed in browser),
     # "download" (always triggers download), or None (default behavior)
     display_behavior: Literal["inline", "download"] | None = None
+
+    # Keep-compressed datatypes whose payload legitimately embeds HTML (e.g. web archives)
+    # bypass the compressed-upload HTML check, but only when their sniffer claims the file.
+    allow_compressed_html_content = False
 
     # Trackster track type.
     track_type: str | None = None
@@ -396,7 +407,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
+        self, trans: "GalaxyWebTransaction", data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
     ) -> tuple[ZipstreamWrapper | str, Headers]:
         # save a composite object into a compressed archive for downloading
         assert data.name
@@ -443,12 +454,66 @@ class Data(metaclass=DataMeta):
                 yield fpath, rpath
 
     def _serve_raw(
-        self, dataset: DatasetHasHidProtocol, to_ext: str | None, headers: Headers, **kwd
+        self,
+        dataset: DatasetHasHidProtocol,
+        to_ext: str | None,
+        headers: Headers,
+        auth: ObjectStoreAuth | None = None,
+        **kwd,
     ) -> tuple[IO, Headers]:
-        headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
+        file_name = dataset.get_file_name(auth=auth)
+        headers["Content-Length"] = str(os.stat(file_name).st_size)
         headers["content-type"] = (
             "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
         )
+        headers["Content-Disposition"] = self.content_disposition(dataset, to_ext, **kwd)
+        return open(file_name, mode="rb"), headers
+
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
+        """
+        Collect archive paths and file handles that need to be exported when archiving `dataset`.
+
+        :param dataset: HistoryDatasetAssociation
+        :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
+                     joined by '/', e.g 'fastq_collection/sample1/forward'
+        :param auth: object store auth context
+        """
+        rel_paths = []
+        file_paths = []
+        if dataset.datatype.composite_type or dataset.extension.endswith("html"):
+            main_file = f"{name}.html"
+            rel_paths.append(main_file)
+            file_paths.append(dataset.get_file_name(auth=auth))
+            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
+                rel_paths.append(os.path.join(name, rpath))
+                file_paths.append(fpath)
+        else:
+            file_name = dataset.get_file_name(auth=auth)
+            rel_paths.append(f"{name or file_name}.{dataset.extension}")
+            file_paths.append(file_name)
+        return zip(file_paths, rel_paths)
+
+    def is_archive_download(self, datatypes_registry, extension) -> bool:
+        """Whether downloading a dataset of this `extension` is served as a multi-file archive (zip).
+
+        Composite/bundled datatypes are zipped on the fly rather than served as the single stored
+        object, so such downloads cannot be satisfied by a direct link to the backing store.
+        """
+        composite_extensions = datatypes_registry.get_composite_extensions()
+        composite_extensions.append("html")  # for archiving composite datatypes
+        composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
+        composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
+        composite_extensions.append("directory")  # for downloading directories.
+        composite_extensions.append("zarr")  # for downloading zarr directories.
+        return extension in composite_extensions
+
+    def content_disposition(
+        self, dataset, to_ext=None, disposition: Literal["attachment", "inline"] = "attachment", /, **kwd
+    ) -> str:
+        """Build a consistent filename for display, streamed downloads, and direct object-store downloads.
+
+        Use inline disposition for previews so browsers can display the content without forcing a download.
+        """
         filename = self._download_filename(
             dataset,
             to_ext,
@@ -456,73 +521,43 @@ class Data(metaclass=DataMeta):
             element_identifier=kwd.get("element_identifier"),
             filename_pattern=kwd.get("filename_pattern"),
         )
-        headers["Content-Disposition"] = to_content_disposition(filename)
-        return open(dataset.get_file_name(), mode="rb"), headers
+        return to_content_disposition(filename, disposition=disposition)
 
-    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
-        """
-        Collect archive paths and file handles that need to be exported when archiving `dataset`.
-
-        :param dataset: HistoryDatasetAssociation
-        :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
-                     joined by '/', e.g 'fastq_collection/sample1/forward'
-        """
-        rel_paths = []
-        file_paths = []
-        if dataset.datatype.composite_type or dataset.extension.endswith("html"):
-            main_file = f"{name}.html"
-            rel_paths.append(main_file)
-            file_paths.append(dataset.get_file_name())
-            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
-                rel_paths.append(os.path.join(name, rpath))
-                file_paths.append(fpath)
-        else:
-            rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}")
-            file_paths.append(dataset.get_file_name())
-        return zip(file_paths, rel_paths)
-
-    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
-        composite_extensions.append("html")  # for archiving composite datatypes
-        composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
-        composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
-        composite_extensions.append("directory")  # for downloading directories.
-        composite_extensions.append("zarr")  # for downloading zarr directories.
-
-        if data.extension in composite_extensions:
+    def _serve_file_download(self, headers, data, trans: "GalaxyWebTransaction", to_ext, file_size, **kwd):
+        if self.is_archive_download(trans.app.datatypes_registry, data.extension):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
-            filename = self._download_filename(
-                data,
-                to_ext,
-                hdca=kwd.get("hdca"),
-                element_identifier=kwd.get("element_identifier"),
-                filename_pattern=kwd.get("filename_pattern"),
-            )
             headers["content-type"] = (
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
-            headers["Content-Disposition"] = to_content_disposition(filename)
-            return open(data.get_file_name(), "rb"), headers
+            headers["Content-Disposition"] = self.content_disposition(data, to_ext, **kwd)
+            return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
 
-    def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
+    def _serve_binary_file_contents_as_text(
+        self, trans: "ProvidesUserContext", data, headers, file_size, max_peek_size
+    ):
         # Use text/plain so the browser preserves whitespace and line endings
         # and does not attempt to interpret stray markup as HTML.
         headers["content-type"] = "text/plain; charset=utf-8"
         if file_size > max_peek_size:
             headers["x-content-truncated"] = str(max_peek_size)
-        with open(data.get_file_name(), "rb") as fh:
+        with open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             return unicodify(fh.read(max_peek_size)), headers
 
-    def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
+    def _serve_file_contents(self, trans: "ProvidesUserContext", data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
 
         preview = util.string_as_bool(preview)
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
-            return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
+            return (
+                self._yield_user_file_content(
+                    trans, data, data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), headers
+                ),
+                headers,
+            )
 
-        with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
+        with compression_utils.get_fileobj(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             # preview large text file - serve as text/plain so the browser
             # preserves whitespace/newlines and does not interpret content as HTML.
             headers["content-type"] = "text/plain; charset=utf-8"
@@ -531,7 +566,7 @@ class Data(metaclass=DataMeta):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -555,7 +590,9 @@ class Data(metaclass=DataMeta):
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = dataset.dataset.extra_files_path_name
-            file_path = trans.app.object_store.get_filename(dataset.dataset, extra_dir=extra_dir, alt_name=filename)
+            file_path = trans.app.object_store.get_filename(
+                dataset.dataset, extra_dir=extra_dir, alt_name=filename, auth=ObjectStoreAuth(user=trans.user)
+            )
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     with tempfile.NamedTemporaryFile(
@@ -598,13 +635,14 @@ class Data(metaclass=DataMeta):
         downloading = to_ext is not None
         file_size = _get_file_size(dataset)
 
-        if not os.path.exists(dataset.get_file_name()):
+        if not os.path.exists(dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))):
             raise ObjectNotFound(f"File Not Found ({dataset.get_file_name()}).")
 
         if downloading:
             trans.log_event(f"Download dataset id: {str(dataset.id)}")
             return self._serve_file_download(headers, dataset, trans, to_ext, file_size, **kwd)
         else:  # displaying
+            headers["Content-Disposition"] = self.content_disposition(dataset, None, "inline", **kwd)
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
             max_peek_size = _get_max_peek_size(dataset)
             if _is_binary_file(dataset) and preview:
@@ -641,7 +679,9 @@ class Data(metaclass=DataMeta):
                 result += indicate_data_truncated()
         return result
 
-    def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
+    def _yield_user_file_content(
+        self, trans: "ProvidesAppContext", from_dataset: HasCreatingJob, filename: str, headers: Headers
+    ) -> IO:
         """This method sets the content type header to text/plain if we don't trust html content."""
         if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
             # Check to see if this dataset's parent job is allowlisted
@@ -760,7 +800,9 @@ class Data(metaclass=DataMeta):
     ) -> Union["DisplayApplication", None]:
         return self.display_applications.get(key, default)
 
-    def get_display_applications_by_dataset(self, dataset: DatasetProtocol, trans) -> dict[str, "DisplayApplication"]:
+    def get_display_applications_by_dataset(
+        self, dataset: DatasetProtocol, trans: "GalaxyWebTransaction"
+    ) -> dict[str, "DisplayApplication"]:
         rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
@@ -821,7 +863,7 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(
-        self, dataset: DatasetProtocol, accepted_formats: list[str], datatypes_registry, **kwd
+        self, dataset: DatasetProtocol, accepted_formats: Iterable[Union[str, "Data"]], datatypes_registry, **kwd
     ) -> tuple[bool, str | None, Any]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
@@ -830,8 +872,8 @@ class Data(metaclass=DataMeta):
 
     def convert_dataset(
         self,
-        trans,
-        original_dataset: DatasetHasHidProtocol,
+        trans: "ProvidesUserContext",
+        original_dataset: DatasetProtocol,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,
@@ -879,6 +921,9 @@ class Data(metaclass=DataMeta):
                 value.visible = False
         if return_output:
             return converted_datasets
+        # Only this message names the dataset by hid; library datasets do not have one
+        # and reach conversion through the return_output callers instead.
+        assert isinstance(original_dataset, HasHid)
         return f"The file conversion of {converter.name} on data {original_dataset.hid} has been added to the Queue."
 
     # We need to clear associated files before we set metadata
@@ -1018,7 +1063,7 @@ class Data(metaclass=DataMeta):
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
-    def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers) -> None:
+    def _clean_and_set_mime_type(self, trans: "ProvidesAppContext", mime: str, headers: Headers) -> None:
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
             if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
                 mime = DEFAULT_MIME_TYPE
@@ -1235,6 +1280,10 @@ class Directory(Data):
 
     file_ext = "directory"
 
+    def sniff_directory(self, path: str) -> bool:
+        """Return whether the extra-files directory at ``path`` matches this datatype."""
+        return False
+
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
     ) -> tuple[bool, str, str]:
@@ -1300,7 +1349,7 @@ class ZarrDirectory(Directory):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -1317,22 +1366,34 @@ class ZarrDirectory(Directory):
 
         return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
+    def sniff_directory(self, path: str) -> bool:
+        store_root = self._store_root_folder_name(path)
+        if store_root is None:
+            return False
+        try:
+            metadata = self._load_zarr_metadata_file(os.path.join(path, store_root))
+        except (OSError, ValueError):
+            return False
+        return isinstance(metadata, dict) and metadata.get("zarr_format") is not None
+
     def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> str | None:
         """Returns the name of the root folder where the Zarr store is located.
 
         The Zarr store can be directly in the extra files folder or in a subfolder.
         """
-        extra_files_path = dataset.extra_files_path
+        return self._store_root_folder_name(dataset.extra_files_path)
+
+    def _store_root_folder_name(self, extra_files_path: str) -> str | None:
+        if not os.path.isdir(extra_files_path):
+            return None
         if self._find_zarr_metadata_file(extra_files_path):
             return ""  # The store is in the root of the extra files folder
         items_in_path = os.listdir(extra_files_path)
+        if len(items_in_path) != 1:
+            return None
         sub_folder_name = items_in_path[0]
         zarr_store_path = os.path.join(extra_files_path, sub_folder_name)
-        if (
-            len(items_in_path) == 1
-            and os.path.isdir(zarr_store_path)
-            and self._find_zarr_metadata_file(zarr_store_path)
-        ):
+        if os.path.isdir(zarr_store_path) and self._find_zarr_metadata_file(zarr_store_path):
             return sub_folder_name  # The store is in a subfolder of the extra files folder
         return None  # The directory structure does not look like Zarr format
 
@@ -1423,7 +1484,13 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
+def get_file_peek(
+    file_name: str,
+    width: int | Literal["unlimited"] = 256,
+    line_count: int = 5,
+    skipchars: list[str] | None = None,
+    line_wrap: bool = True,
+) -> str:
     """
     Returns the first line_count lines wrapped to width.
 
@@ -1439,8 +1506,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
     # long lines.
-    if width == "unlimited":
-        width = -1
+    read_width = -1 if width == "unlimited" else width
     if skipchars is None:
         skipchars = []
     lines = []
@@ -1450,7 +1516,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     with compression_utils.get_fileobj(file_name) as temp:
         while count < line_count:
             try:
-                line = temp.readline(width)
+                line = temp.readline(read_width)
             except UnicodeDecodeError:
                 return "binary file"
             if line == "":

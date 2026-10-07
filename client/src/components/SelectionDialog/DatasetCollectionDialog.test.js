@@ -1,5 +1,5 @@
-import { createLocalVue, mount } from "@vue/test-utils";
-import { BAlert, BTable } from "bootstrap-vue";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,6 +7,8 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 vi.mock("app");
 
@@ -22,7 +24,7 @@ describe("DatasetCollectionDialog.vue", () => {
     let localVue;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
@@ -39,17 +41,17 @@ describe("DatasetCollectionDialog.vue", () => {
         );
 
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
 
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
-        expect(wrapper.findComponent(BTable).exists()).toBe(false);
+        expect(wrapper.findComponent(GTable).exists()).toBe(false);
 
         await flushPromises();
 
-        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
-        expect(wrapper.findComponent(BTable).exists()).toBe(true);
+        expect(wrapper.findComponent(GAlert).exists()).toBe(false);
+        expect(wrapper.findComponent(GTable).exists()).toBe(true);
     });
 
     it("error message set on dataset collection fetch problems", async () => {
@@ -59,10 +61,10 @@ describe("DatasetCollectionDialog.vue", () => {
             }),
         );
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
         await flushPromises();
-        expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");
+        expect(wrapper.findComponent(GAlert).text()).toBe("Bad error");
     });
 });

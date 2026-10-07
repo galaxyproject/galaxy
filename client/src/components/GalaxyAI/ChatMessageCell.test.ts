@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { ActionSuggestion } from "@/composables/agentActions";
 import { ActionType } from "@/composables/agentActions";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import type { ChatMessage } from "./chatTypes";
 
@@ -78,7 +79,7 @@ describe("ChatMessageCell", () => {
         it("shows agent label in metadata", () => {
             const wrapper = mountCell(makeAssistantMessage({ agentType: "error_analysis" }));
             const tags = wrapper.findAll(".meta-tag");
-            const labels = tags.wrappers.map((w) => w.text());
+            const labels = tags.map((w) => w.text());
             expect(labels.some((l) => l.includes("Error Analysis"))).toBe(true);
         });
     });
@@ -199,7 +200,7 @@ describe("ChatMessageCell", () => {
             });
             const wrapper = mountCell(message);
             const tags = wrapper.findAll(".meta-tag");
-            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            const text = tags.map((w) => w.text()).join(" ");
             expect(text).toContain("gpt-4");
         });
 
@@ -215,7 +216,7 @@ describe("ChatMessageCell", () => {
             });
             const wrapper = mountCell(message);
             const tags = wrapper.findAll(".meta-tag");
-            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            const text = tags.map((w) => w.text()).join(" ");
             expect(text).toContain("150 tok");
         });
     });
@@ -232,7 +233,8 @@ describe("ChatMessageCell", () => {
                 },
             ];
             const wrapper = mountCell(makeAssistantMessage({ suggestions }));
-            expect(wrapper.find(".action-card").exists()).toBe(true);
+            // ActionCard is stubbed by mountCell, so its own `.action-card` class never renders.
+            expect(wrapper.find("action-card-stub").exists()).toBe(true);
         });
 
         it("does not render ActionCard when no suggestions", () => {
@@ -274,7 +276,9 @@ describe("ChatMessageCell", () => {
             const emitted = wrapper.emitted("handle-action");
             expect(emitted).toHaveLength(1);
             expect(emitted![0]![0]).toEqual(action);
-            expect(emitted![0]![1]).toBe(agentResponse);
+            // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
+            // same object reference as `agentResponse` even though its contents are identical.
+            expect(emitted![0]![1]).toEqual(agentResponse);
         });
     });
 
@@ -297,5 +301,11 @@ describe("ChatMessageCell", () => {
             expect(wrapper.find(".custom-slot").exists()).toBe(true);
             expect(wrapper.find(".custom-slot").text()).toBe("Extra content");
         });
+    });
+
+    it("renders assistant markdown through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        mountCell(makeAssistantMessage({ content: "See <b>this</b>" }));
+        expect(sanitizeHtml).toHaveBeenCalledWith("<p>See <b>this</b></p>", "links");
     });
 });

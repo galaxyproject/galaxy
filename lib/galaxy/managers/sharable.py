@@ -37,6 +37,7 @@ from galaxy.managers import (
     users,
 )
 from galaxy.managers.base import combine_lists
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     User,
     UserShareAssociation,
@@ -244,7 +245,7 @@ class SharableModelManager(
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users: set[User], errors: set[str], option: SharingOptions | None = None
+        self, trans: ProvidesUserContext, item, users: set[User], errors: set[str], option: SharingOptions | None = None
     ) -> ShareWithExtra | None:
         """Returns optional extra information about the shareability of the given item.
 
@@ -252,7 +253,7 @@ class SharableModelManager(
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
-    def make_members_public(self, trans, item):
+    def make_members_public(self, trans: ProvidesUserContext, item):
         """Make potential elements of this item public.
 
         This method must be overridden in managers that need to change permissions of internal elements

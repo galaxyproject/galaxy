@@ -1,10 +1,13 @@
 <template>
-    <b-alert class="mt-2" :variant="variant" :show="showAlert">
-        {{ message | l }}
-    </b-alert>
+    <GAlert class="mt-2" :variant="variant" :show="showAlert">
+        {{ l(message) }}
+    </GAlert>
 </template>
 <script>
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
+    components: { GAlert },
     props: {
         message: {
             type: String,

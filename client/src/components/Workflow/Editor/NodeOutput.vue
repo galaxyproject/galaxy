@@ -27,6 +27,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminalSource, PostJobAction, PostJobActions, Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
@@ -108,9 +109,17 @@ const isVisible = computed(() => {
 
 const visibleHint = computed(() => {
     if (isVisible.value) {
-        return `Output will be visible in history. Click to hide output.`;
+        return `Output will be visible in history.${!props.readonly ? " Click to hide output." : ""}`;
     } else {
-        return `Output will be hidden in history. Click to make output visible.`;
+        return `Output will be hidden in history.${!props.readonly ? " Click to make output visible." : ""}`;
+    }
+});
+
+const activeOutputHint = computed(() => {
+    if (!props.readonly) {
+        return "Checked outputs will become primary workflow outputs and are available as subworkflow outputs.";
+    } else {
+        return "Checked outputs are primary workflow outputs and are available as subworkflow outputs.";
     }
 });
 
@@ -184,11 +193,11 @@ function onToggleVisible() {
     const step = stepStore.getStep(stepId.value);
     assertDefined(step);
 
-    const oldPostJobActions = structuredClone(step.post_job_actions) ?? {};
+    const oldPostJobActions = cloneRaw(step.post_job_actions) ?? {};
     let newPostJobActions;
 
     if (isVisible.value) {
-        newPostJobActions = structuredClone(step.post_job_actions) ?? {};
+        newPostJobActions = cloneRaw(step.post_job_actions) ?? {};
         newPostJobActions[actionKey] = {
             action_type: "HideDatasetAction",
             output_name: props.output.name,
@@ -197,7 +206,7 @@ function onToggleVisible() {
     } else {
         if (step.post_job_actions) {
             const { [actionKey]: _unused, ...remainingPostJobActions } = step.post_job_actions;
-            newPostJobActions = structuredClone(remainingPostJobActions);
+            newPostJobActions = cloneRaw(remainingPostJobActions);
         } else {
             newPostJobActions = {};
         }
@@ -350,13 +359,13 @@ const removeTagsAction = computed(() => {
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
         <div v-if="!props.blank" class="d-flex flex-column w-100">
-            <div class="node-output-buttons">
+            <div class="node-output-buttons align-items-start">
                 <button
                     v-if="showCalloutActiveOutput"
                     v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-active': workflowOutput }"
-                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    :class="{ 'mark-terminal-active': workflowOutput, 'readonly-button': readonly }"
+                    :title="activeOutputHint"
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else fixed-width :icon="faSquare" />
@@ -365,7 +374,11 @@ const removeTagsAction = computed(() => {
                     v-if="showCalloutVisible"
                     v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
+                    :class="{
+                        'mark-terminal-visible': isVisible,
+                        'mark-terminal-hidden': !isVisible,
+                        'readonly-button': readonly,
+                    }"
                     :title="visibleHint"
                     @click="onToggleVisible">
                     <FontAwesomeIcon v-if="isVisible" fixed-width :icon="faEye" />
@@ -453,6 +466,18 @@ const removeTagsAction = computed(() => {
     display: flex;
     flex-direction: row;
     margin-left: -0.2rem;
+
+    .readonly-button {
+        cursor: default !important;
+
+        &:hover,
+        &:focus,
+        &:active,
+        &:focus-visible {
+            background-color: unset !important;
+            color: $brand-primary !important;
+        }
+    }
 }
 
 .output-terminal {

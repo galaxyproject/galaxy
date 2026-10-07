@@ -1,0 +1,22 @@
+- id: ipfs
+  version: 0
+  name: IPFS Directory
+  description: |
+      Browse and import files from an IPFS directory identified by its content
+      identifier (CID). This connection is read-only. Large sharded (HAMT)
+      directories are not supported by the ipfsspec backend.
+  variables:
+      root:
+          label: Directory CID
+          type: string
+          help: The CID of an IPFS directory, without a gateway URL or ipfs:// prefix.
+      gateway_url:
+          label: IPFS Gateway URL
+          type: string
+          help: |
+              HTTP(S) gateway base URL reachable from the Galaxy server, without
+              /ipfs or a CID.
+  configuration:
+      type: ipfs
+      root: "{{ variables.root }}"
+      gateway_url: "{{ variables.gateway_url }}"

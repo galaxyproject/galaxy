@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
+// @ts-ignore missing types
 import type { CardBadge } from "@/components/Common/GCard.types";
 import { useUploadStagingCounts } from "@/composables/upload/useUploadStaging";
 
@@ -72,13 +73,19 @@ function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
 
 <template>
     <div class="upload-method-list-wrapper h-100 d-flex flex-column">
-        <Teleport :to="searchTeleportTarget" :disabled="!searchTeleportTarget">
+        <Teleport v-if="searchTeleportTarget" defer :to="searchTeleportTarget">
             <DelayedInput
                 :delay="100"
                 :class="searchInputClass"
                 placeholder="Search import methods..."
                 @change="updateQuery" />
         </Teleport>
+        <DelayedInput
+            v-else
+            :delay="100"
+            :class="searchInputClass"
+            placeholder="Search import methods..."
+            @change="updateQuery" />
 
         <div class="flex-grow-1">
             <ScrollList

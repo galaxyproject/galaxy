@@ -15,7 +15,11 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.base import ModelManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
     LibraryDataset,
@@ -37,7 +41,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         super().__init__(app)
         self.ldda_manager = LDDAManager(app)
 
-    def get(self, trans, decoded_library_dataset_id, check_accessible=True) -> LibraryDataset:
+    def get(self, trans: ProvidesUserContext, decoded_library_dataset_id, check_accessible=True) -> LibraryDataset:
         """
         Get the library dataset from the DB.
 
@@ -90,7 +94,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
 
     def _set_from_dict(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         ldda: LibraryDatasetDatasetAssociation,
         new_data: dict[str, Any],
         flush: bool = True,
@@ -166,7 +170,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
                 validated_payload[key] = val
         return validated_payload
 
-    def secure(self, trans, ld, check_accessible=True, check_ownership=False):
+    def secure(self, trans: ProvidesUserContext, ld, check_accessible=True, check_ownership=False):
         """
         Check if library dataset is accessible to current user or the user is an admin.
 
@@ -185,7 +189,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
             ld = self.check_accessible(trans, ld)
         return ld
 
-    def check_accessible(self, trans, ld):
+    def check_accessible(self, trans: ProvidesUserContext, ld):
         """
         Check whether the current user has permissions to access library dataset.
 
@@ -204,7 +208,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         else:
             return ld
 
-    def check_modifiable(self, trans, ld):
+    def check_modifiable(self, trans: ProvidesUserContext, ld):
         """
         Check whether the current user has permissions to modify library dataset.
 
@@ -225,7 +229,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         else:
             return ld
 
-    def serialize(self, trans, ld: LibraryDataset) -> dict[str, Any]:
+    def serialize(self, trans: ProvidesUserContext, ld: LibraryDataset) -> dict[str, Any]:
         """Serialize the library dataset into a dictionary."""
         current_user_roles = trans.get_current_user_roles()
 
@@ -271,7 +275,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         )
         return rval
 
-    def _build_path(self, trans, folder):
+    def _build_path(self, trans: ProvidesAppContext, folder):
         """
         Search the path upwards recursively and load the whole route of
         names and ids for breadcrumb building purposes.

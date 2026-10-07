@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { BFormRadio } from "bootstrap-vue";
+
 import type { WorkflowLabel } from "./Editor/types";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface LabelSelectorProps {
     hasLabels: boolean;
@@ -26,7 +30,7 @@ function update(index: number) {
     <div>
         <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
         <div v-if="hasLabels">
-            <b-form-radio
+            <BFormRadio
                 v-for="(label, index) in labels"
                 :key="index"
                 class="my-2"
@@ -34,9 +38,9 @@ function update(index: number) {
                 :value="index"
                 @change="update">
                 {{ label.label }}
-            </b-form-radio>
+            </BFormRadio>
         </div>
-        <b-alert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </b-alert>
+        <GAlert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </GAlert>
         <p class="mt-3 text-muted">
             You may add new labels by selecting a step in the workflow editor and then editing the corresponding label
             field in the step form.

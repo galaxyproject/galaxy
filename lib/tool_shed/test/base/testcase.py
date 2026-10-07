@@ -619,7 +619,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
 @pytest.mark.usefixtures("shed_browser")
 class ShedTestCase(ShedApiTestCase):
-    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
+    """Shed test case with a browser fixture, for tests that drive the web UI."""
 
     requires_galaxy: bool = False
     _installation_client: ToolShedInstallationClient | None = None
@@ -1193,7 +1193,11 @@ class ShedTestCase(ShedApiTestCase):
         categories_by_name = {c.name: c for c in all_categories}
         db_repository = self._db_repository(repository)
         # Use encoded API IDs for current categories (raw DB IDs can't be decoded by the API)
-        current_category_ids = {categories_by_name[rca.category.name].id for rca in db_repository.categories}
+        current_category_ids = set()
+        for rca in db_repository.categories:
+            assert rca.category is not None
+            assert rca.category.name is not None
+            current_category_ids.add(categories_by_name[rca.category.name].id)
         add_ids = {categories_by_name[name].id for name in categories_to_add}
         remove_ids = {categories_by_name[name].id for name in categories_to_remove}
         new_category_ids = list((current_category_ids - remove_ids) | add_ids)

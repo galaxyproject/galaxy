@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -21,6 +21,8 @@ const targetId = computed(() => `storage-run-item-dataset-${props.datasetId}`);
 const details = computed(() => datasetStore.storedDatasets[props.datasetId]);
 const loading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 const loadError = computed(() => datasetStore.getDatasetError(props.datasetId)?.message);
+// The trigger reads as the encoded id, so name the dialog by the dataset.
+const popoverName = computed(() => details.value?.name || localize("Dataset details"));
 
 async function ensureDatasetDetails() {
     if (details.value || loading.value) {
@@ -43,12 +45,18 @@ async function ensureDatasetDetails() {
             :id="targetId"
             class="text-monospace"
             :to="`/datasets/${datasetId}/details`"
-            @mouseenter.native="ensureDatasetDetails"
-            @focus.native="ensureDatasetDetails">
+            @mouseenter="ensureDatasetDetails"
+            @focus="ensureDatasetDetails">
             {{ datasetId }}
         </router-link>
 
-        <BPopover :target="targetId" triggers="hover focus" boundary="window" placement="right">
+        <GPopover
+            interactive
+            :aria-label="popoverName"
+            :target="targetId"
+            triggers="hover focus"
+            boundary="window"
+            placement="right">
             <div class="dataset-details-popover">
                 <div v-if="loading">
                     <LoadingSpan :message="localize('Loading dataset details')" />
@@ -60,12 +68,13 @@ async function ensureDatasetDetails() {
                     <DatasetInformation :dataset="details" />
                 </div>
             </div>
-        </BPopover>
+        </GPopover>
     </div>
 </template>
 
 <style scoped>
-:deep(.dataset-details-popover) {
+/* Slot content keeps this scope id but moves under body, so a :deep() descendant selector never matches it. */
+.dataset-details-popover {
     max-width: 420px;
 }
 </style>

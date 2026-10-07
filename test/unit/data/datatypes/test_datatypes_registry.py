@@ -1,5 +1,6 @@
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.datatypes.text import Json
 
 
 def test_matches_any():
@@ -83,6 +84,15 @@ def test_matches_any():
     assert not fasta_datatype.matches_any([fastq_datatype.__class__, h5_datatype.__class__])
 
 
+def test_xps_sniffers_precede_generic_datatypes():
+    datatypes_registry = example_datatype_registry_for_sample()
+    sniff_order = datatypes_registry.sniff_order
+
+    assert sniff.guess_ext(sniff.get_test_fname("test.vamas"), sniff_order) == "vamas"
+    assert sniff.guess_ext(sniff.get_test_fname("test.nxxps"), sniff_order) == "nxxps"
+    assert sniff.guess_ext(sniff.get_test_fname("test.mz5"), sniff_order) == "h5"
+
+
 def test_sniff_compressed_dynamic_datatypes_default_on():
     # With auto sniffing on, verify the sniffers work and the files match what is expected
     # when coming from guess_ext.
@@ -114,3 +124,14 @@ def test_sniff_compressed_dynamic_datatypes_default_off():
     assert "fastq" not in sniff.guess_ext(fname, sniff_order)
     fname = sniff.get_test_fname("1.fastqsanger.bz2")
     assert "fastq" not in sniff.guess_ext(fname, sniff_order)
+
+
+def test_rmsx_manifest_visualization_registration():
+    registry = example_datatype_registry_for_sample()
+    datatype = registry.get_datatype_by_extension("rmsx.json")
+    assert registry.datatypes_by_extension["rmsx.json"] is datatype
+    assert isinstance(datatype, Json)
+    assert datatype.is_subclass
+    assert registry.mimetypes_by_extension["rmsx.json"] == "application/json"
+    assert "rmsx.json" in registry.upload_file_formats
+    assert registry.get_all_visualization_mappings()["rmsx.json"]["visualization"] == "rmsxflipbook"

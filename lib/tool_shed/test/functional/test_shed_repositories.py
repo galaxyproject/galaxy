@@ -64,6 +64,49 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert update.homepage_url == "https://www.google.com"
         assert populator.get_repository(repository_id).homepage_url == "https://www.google.com"
 
+    def test_push_collaborator_can_update_repository_info(self) -> None:
+        populator = self.populator
+        email = "publishcollaborator@galaxyproject.org"
+        username = "publishcollaborator"
+        password = "testPassword1"
+        create_user(self.admin_api_interactor, {"email": email, "username": username, "password": password})
+        interactor = self._api_interactor_by_credentials(email, password)
+        collaborator = self._get_populator(interactor)
+        category = populator.new_category(prefix="delegatepublishing")
+        repository = populator.new_repository(category.id, prefix="delegatepublishing")
+        request = UpdateRepositoryRequest(
+            description="Published by a push collaborator",
+            homepage_url="https://example.org/tool",
+            remote_repository_url="https://github.com/example/tool",
+            category_ids=[category.id],
+        )
+
+        api_asserts.assert_status_code_is(collaborator.update_raw(repository, request), 403)
+        populator.allow_user_to_push(repository, username)
+        permissions = interactor.get(f"repositories/{repository.id}/permissions")
+        api_asserts.assert_status_code_is_ok(permissions)
+        assert permissions.json()["can_push"] is True
+        assert permissions.json()["can_manage"] is False
+
+        # Exercise the content upload followed by metadata PUT used by shed_update.
+        assert collaborator.upload_revision(repository, COLUMN_MAKER_PATH).is_ok
+        collaborator.update(repository, request)
+        updated = populator.get_repository(repository.id)
+        assert updated.owner == repository.owner
+        assert updated.description == request.description
+        assert updated.homepage_url == request.homepage_url
+        assert updated.remote_repository_url == request.remote_repository_url
+
+        # Publishing permission does not grant control over collaborators or admins.
+        response = interactor.post(f"repositories/{repository.id}/allow_push/{username}")
+        api_asserts.assert_status_code_is(response, 403)
+        api_asserts.assert_status_code_is(collaborator.add_admin_user_raw(repository, username), 403)
+
+        populator.disallow_user_to_push(repository, username)
+        request.description = "Should not be applied after revocation"
+        api_asserts.assert_status_code_is(collaborator.update_raw(repository, request), 403)
+        assert populator.get_repository(repository.id).description == updated.description
+
     def test_update_category(self):
         populator = self.populator
         prefix = "testupdatecategory"
@@ -244,6 +287,43 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator = self.populator
         repo = populator.setup_column_maker_and_get_metadata(prefix="repoforinstallinfo")
         populator.get_install_info(repo)
+
+    def test_install_info_is_cacheable(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_and_get_metadata(prefix="repoforinstallinfocache")
+
+        for path in (
+            "repositories/get_repository_revision_install_info",
+            "repositories/install_info",
+        ):
+            response = populator.get_install_info_raw(repo, path=path)
+            api_asserts.assert_status_code_is_ok(response)
+            etag = response.headers["ETag"]
+            assert response.headers["Cache-Control"] == "public, max-age=86400"
+
+            for tag in (etag, f"W/{etag}", f'"unrelated", {etag}'):
+                not_modified = populator.get_install_info_raw(repo, path=path, headers={"If-None-Match": tag})
+                assert not_modified.status_code == 304
+                assert not_modified.content == b""
+                assert not_modified.headers["ETag"] == etag
+
+            stale = populator.get_install_info_raw(repo, path=path, headers={"If-None-Match": '"nolongercurrent"'})
+            api_asserts.assert_status_code_is_ok(stale)
+            assert stale.content == response.content
+
+    def test_install_info_etag_tracks_the_revision(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="repoforinstallinfoetag")
+        first_metadata = populator.get_metadata(repository, True)
+        first_etag = populator.get_install_info_raw(first_metadata).headers["ETag"]
+
+        populator.update_column_maker_repo(repository)
+        second_metadata = populator.get_metadata(repository, True)
+        second_etag = populator.get_install_info_raw(second_metadata).headers["ETag"]
+
+        assert second_metadata.latest_revision.changeset_revision != first_metadata.latest_revision.changeset_revision
+        assert second_etag != first_etag
+        assert populator.get_install_info_raw(first_metadata).headers["ETag"] == first_etag
 
     def test_get_ordered_installable_revisions(self):
         # Used in ephemeris...

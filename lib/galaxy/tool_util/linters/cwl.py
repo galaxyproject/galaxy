@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class CWLValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         try:
             schema_loader.process_definition(raw_reference)
@@ -25,7 +25,7 @@ class CWLValid(Linter):
 
 class CWLInValid(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         try:
             schema_loader.process_definition(raw_reference)
@@ -35,7 +35,7 @@ class CWLInValid(Linter):
 
 class CWLVersionMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version is None:
@@ -44,7 +44,7 @@ class CWLVersionMissing(Linter):
 
 class CWLVersionUnknown(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version not in ["v1.0"]:
@@ -55,7 +55,7 @@ class CWLVersionUnknown(Linter):
 
 class CWLVersionGood(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version in ["v1.0"]:
@@ -64,7 +64,7 @@ class CWLVersionGood(Linter):
 
 class CWLDockerMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, containers, *_ = tool_source.parse_requirements()
         if len(containers) == 0:
             lint_ctx.warn("Tool does not specify a DockerPull source.", linter=cls.name())
@@ -72,7 +72,7 @@ class CWLDockerMissing(Linter):
 
 class CWLDockerGood(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         _, containers, *_ = tool_source.parse_requirements()
         if len(containers) > 0:
             identifier = containers[0].identifier
@@ -81,7 +81,7 @@ class CWLDockerGood(Linter):
 
 class CWLDescriptionMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         help = tool_source.parse_help()
         if not help:
             lint_ctx.warn("Description of tool is empty or absent.", linter=cls.name())
@@ -89,7 +89,7 @@ class CWLDescriptionMissing(Linter):
 
 class CWLHelpTODO(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         help = tool_source.parse_help()
         if help and "TODO" in help.content:
             lint_ctx.warn("Help contains TODO text.", linter=cls.name())

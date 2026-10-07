@@ -1,16 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
+import SaveChangesModal from "../Common/SaveChangesModal.vue";
+import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageEditorView from "./PageEditorView.vue";
@@ -27,15 +28,21 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const mockPush = vi.fn();
-vi.mock("vue-router/composables", () => ({
-    useRouter: vi.fn(() => ({
-        push: mockPush,
-    })),
-    useRoute: vi.fn(() => ({
-        params: {},
-    })),
-}));
+const mockPush = vi.fn().mockResolvedValue(undefined);
+/** Stands in for the modal's exposed guard; runs the navigation straight through by default. */
+const mockGuardNavigation = vi.fn((navigate: () => void) => navigate());
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({
+            push: mockPush,
+        })),
+        useRoute: vi.fn(() => ({
+            params: {},
+        })),
+    };
+});
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => ({
@@ -70,14 +77,28 @@ const localVue = getLocalVue();
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
+const SELECTORS = {
+    PERMISSIONS_BUTTON: "[data-description='page permissions button']",
+    EXTRACT_WORKFLOW_BUTTON: "[data-description='page extract workflow button']",
+};
+
 let pinia: Pinia;
 
 function mountComponent(propsData: { pageId: string; historyId?: string; displayOnly?: boolean }) {
-    return shallowMount(PageEditorView as object, {
+    const wrapper = shallowMount(PageEditorView as object, {
         localVue,
         propsData,
         pinia,
+        stubs: { PageDisplayToolbar: false, GButton: false },
     });
+    // shallowMount replaces the modal with a stub, which has none of its exposed methods.
+    // A `stubs` entry can't supply one either -- those are keyed by registered name, and a
+    // <script setup> child is resolved from a setup binding instead. So hang it on the stub.
+    const modal = wrapper.findComponent(SaveChangesModal);
+    if (modal.exists()) {
+        (modal.vm as unknown as Record<string, unknown>)["guardNavigation"] = mockGuardNavigation;
+    }
+    return wrapper;
 }
 
 function setupLoadedPage(historyId?: string) {
@@ -96,6 +117,7 @@ function setupLoadedPage(historyId?: string) {
     store.currentContent = "# Hello";
     store.currentTitle = "My Page";
     vi.spyOn(store, "hasCurrentPage", "get").mockReturnValue(true);
+    vi.spyOn(store, "isDirty", "get").mockReturnValue(false);
     return store;
 }
 
@@ -111,11 +133,10 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (history mode)", () => {
-        let wrapper: Wrapper<Vue>;
-        let store: ReturnType<typeof usePageEditorStore>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
-            store = setupLoadedPage(HISTORY_ID);
+            setupLoadedPage(HISTORY_ID);
             wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
         });
@@ -141,21 +162,70 @@ describe("PageEditorView", () => {
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/${PAGE_ID}?displayOnly=true`);
         });
 
+        it("Preview goes through the unsaved-changes guard", async () => {
+            // With the window manager on, previewing opens a frame instead of navigating, so
+            // the router guard never sees it -- the modal has to be asked directly.
+            wrapper.findComponent(PageDisplayToolbar).vm.$emit("preview");
+
+            expect(mockGuardNavigation).toHaveBeenCalledWith(expect.any(Function));
+        });
+
         it("back button navigates to history pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
 
-            expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
 
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("hides save & view button in history mode", () => {
-        //     expect(wrapper.find(SELECTORS.SAVE_VIEW_BUTTON).exists()).toBe(false);
-        // });
+        it("shows Extract Workflow button in history mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(true);
+        });
+
+        it("navigates to page-seeded extraction without saving an unchanged notebook", async () => {
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(usePageEditorStore().savePage).not.toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("waits for pending notebook edits to save before extracting", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            let completeSave!: () => void;
+            vi.mocked(store.savePage).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        completeSave = resolve;
+                    }),
+            );
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            expect(store.savePage).toHaveBeenCalledOnce();
+            expect(mockPush).not.toHaveBeenCalled();
+
+            completeSave();
+            await flushPromises();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("keeps the editor open and displays an error when saving for extraction fails", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            vi.mocked(store.savePage).mockImplementation(async () => {
+                store.error = "Could not save notebook";
+                throw new Error(store.error);
+            });
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(mockPush).not.toHaveBeenCalled();
+            expect(wrapper.text()).toContain("Could not save notebook");
+        });
     });
 
     describe("Editor view (standalone mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage();
@@ -173,71 +243,45 @@ describe("PageEditorView", () => {
             expect(editor.props("mode")).toBe("page");
         });
 
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("shows save & view button in standalone mode", () => {
-        //     expect(wrapper.find(SELECTORS.SAVE_VIEW_BUTTON).exists()).toBe(true);
-        // });
+        it("hides Extract Workflow button in standalone mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(false);
+        });
+
+        it("opens and closes standalone permissions through the toolbar slot", async () => {
+            const permissions = wrapper.getComponent(ObjectPermissionsModal);
+            expect(permissions.props("show")).toBe(false);
+
+            await wrapper.get(SELECTORS.PERMISSIONS_BUTTON).trigger("click");
+            expect(permissions.props("show")).toBe(true);
+
+            permissions.vm.$emit("update:show", false);
+            await nextTick();
+            expect(permissions.props("show")).toBe(false);
+        });
 
         it("back button navigates to pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
             expect(mockPush).toHaveBeenCalledWith("/pages/list");
         });
+    });
 
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("Save & View navigates to published page when WM inactive", async () => {
-        //     const store = usePageEditorStore();
-        //     store.currentPage = {
-        //         id: PAGE_ID,
-        //         history_id: null,
-        //         title: "My Page",
-        //         content: "# Hello",
-        //         update_time: "2024-01-01T00:00:00",
-        //         username: "testuser",
-        //         slug: "my-page",
-        //     } as Partial<HistoryPageDetails> as HistoryPageDetails;
-        //     store.currentContent = "modified";
-        //     store.currentTitle = "My Page";
+    describe("SaveChangesModal wiring", () => {
+        it("passes hasChanges, onSave and onDiscard through to SaveChangesModal", async () => {
+            const store = setupLoadedPage(HISTORY_ID);
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
+            await flushPromises();
 
-        //     const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
-        //     // Mock location.href assignment
-        //     const hrefSpy = vi.spyOn(window, "location", "get").mockReturnValue({
-        //         ...window.location,
-        //         href: "",
-        //     } as unknown as Location);
-        //     await saveViewBtn.trigger("click");
-        //     await flushPromises();
+            const modal = wrapper.findComponent(SaveChangesModal);
+            expect(modal.props("hasChanges")).toBe(true);
+            expect(typeof modal.props("onSave")).toBe("function");
 
-        //     expect(store.savePage).toHaveBeenCalled();
-        //     hrefSpy.mockRestore();
-        // });
+            await modal.props("onSave")();
+            expect(store.savePage).toHaveBeenCalled();
 
-        // it("Save & View uses router.push when WM is active", async () => {
-        //     mockGalaxyInstance.frame.active = true;
-        //     const store = usePageEditorStore();
-        //     store.currentPage = {
-        //         id: PAGE_ID,
-        //         history_id: null,
-        //         title: "My Page",
-        //         content: "# Hello",
-        //         update_time: "2024-01-01T00:00:00",
-        //     } as Partial<HistoryPageDetails> as HistoryPageDetails;
-        //     store.currentContent = "modified";
-        //     store.currentTitle = "My Page";
-
-        //     const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
-        //     await saveViewBtn.trigger("click");
-        //     await flushPromises();
-
-        //     expect(store.savePage).toHaveBeenCalled();
-        //     expect(mockPush).toHaveBeenCalledWith(
-        //         `/published/page?id=${PAGE_ID}&embed=true`,
-        //         expect.objectContaining({
-        //             title: "Report: My Page",
-        //             preventWindowManager: false,
-        //         }),
-        //     );
-        //     mockGalaxyInstance.frame.active = false;
-        // });
+            modal.props("onDiscard")?.();
+            expect(store.discardChanges).toHaveBeenCalled();
+        });
     });
 
     describe("DisplayOnly mode", () => {
@@ -250,15 +294,18 @@ describe("PageEditorView", () => {
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(false);
         });
 
-        it("does not clear editor state on unmount in displayOnly mode", async () => {
+        it("still clears editor state (not $reset) on unmount in displayOnly mode", async () => {
+            // HistoryPageView.vue's v-else-if chain only ever renders one of
+            // PageEditorView (edit) or PageDisplayOnly (view) at a time, so its unmount
+            // (e.g. navigating away from a preview) must clear state same as edit mode does.
             setupLoadedPage(HISTORY_ID);
             const store = usePageEditorStore();
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID, displayOnly: true });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
-            expect(store.clearCurrentPage).not.toHaveBeenCalled();
+            expect(store.clearCurrentPage).toHaveBeenCalled();
         });
     });
 
@@ -317,7 +364,7 @@ describe("PageEditorView", () => {
 
             const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("back");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.clearSelectedRevision).toHaveBeenCalled();
         });
@@ -339,7 +386,7 @@ describe("PageEditorView", () => {
 
             const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("restore", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.restoreRevision).toHaveBeenCalledWith("rev-1");
         });
@@ -355,7 +402,7 @@ describe("PageEditorView", () => {
 
             const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("select", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.loadRevision).toHaveBeenCalledWith("rev-1");
         });
@@ -373,7 +420,7 @@ describe("PageEditorView", () => {
 
             const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("restore", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.restoreRevision).toHaveBeenCalledWith("rev-1");
         });
@@ -409,7 +456,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(store.$reset).not.toHaveBeenCalled();
         });
@@ -421,7 +468,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.error).toBe("Save failed");
         });
     });
@@ -433,7 +480,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const errorAlert = wrapper.find("balert-stub[variant='danger']");
+            const errorAlert = wrapper.find("g-alert-stub[variant='danger']");
             expect(errorAlert.exists()).toBe(true);
             expect(errorAlert.text()).toContain("Save failed");
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(true);

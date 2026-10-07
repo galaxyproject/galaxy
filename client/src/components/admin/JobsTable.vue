@@ -20,9 +20,9 @@
 
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <BAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
+                <GAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
-                </BAlert>
+                </GAlert>
             </template>
 
             <template v-slot:cell(update_time)="data">
@@ -71,20 +71,17 @@
                 </GLink>
             </template>
 
-            <template v-for="(index, name) in $slots" v-slot:[name]>
-                <slot :name="name" />
-            </template>
-
-            <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
-                <slot :name="name" v-bind="data"></slot>
+            <template v-for="(index, name) in $slots" :key="name" v-slot:[name]="data">
+                <slot v-bind="data" :name="name"></slot>
             </template>
         </GTable>
     </div>
 </template>
 
 <script>
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import JobDetails from "@/components/JobInformation/JobDetails.vue";
@@ -93,7 +90,7 @@ import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {
-        BAlert,
+        GAlert,
         BCard,
         GLink,
         GTable,
@@ -126,6 +123,7 @@ export default {
         },
         value: {},
     },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     data() {
         return {
             innerValue: this.value,
@@ -135,32 +133,10 @@ export default {
         innerValue(newVal) {
             this.$emit("input", newVal);
         },
-        items(newVal) {
-            this.setCellVariants(newVal);
-        },
-    },
-    created() {
-        this.setCellVariants(this.items);
     },
     methods: {
-        setCellVariants(items) {
-            items.forEach((item) => {
-                item._cellVariants = { state: this.translateState(item.state) };
-            });
-        },
         onRowClick({ toggleDetails }) {
             toggleDetails();
-        },
-        translateState(state) {
-            const translateDict = {
-                ok: "success",
-                error: "danger",
-                new: "primary",
-                queued: "secondary",
-                running: "info",
-                upload: "dark",
-            };
-            return translateDict[state] || "primary";
         },
     },
 };

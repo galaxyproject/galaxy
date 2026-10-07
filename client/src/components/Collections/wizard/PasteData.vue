@@ -49,7 +49,7 @@ const handleDrop = (event: DragEvent) => {
     </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
 
 .paste-data {

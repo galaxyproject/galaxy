@@ -1,14 +1,18 @@
 import { defineStore } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type {
-    InvocationJobsSummary,
-    InvocationStep,
-    StepJobSummary,
-    WorkflowInvocation,
-    WorkflowInvocationRequest,
+import {
+    type InvocationJobsSummary,
+    type InvocationStep,
+    isWorkflowInvocationElementView,
+    type StepJobSummary,
+    type WorkflowInvocation,
+    type WorkflowInvocationRequest,
+    type WorkflowJobMetric,
 } from "@/api/invocations";
+import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
+import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
@@ -37,6 +41,16 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     async function fetchInvocationStepJobsSummary(params: FetchParams): Promise<StepJobSummary[]> {
         const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/step_jobs_summary", {
+            params: { path: { invocation_id: params.id } },
+        });
+        if (error) {
+            rethrowSimpleWithStatus(error, response);
+        }
+        return data;
+    }
+
+    async function fetchInvocationMetrics(params: FetchParams): Promise<WorkflowJobMetric[]> {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/metrics", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
@@ -101,14 +115,23 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     function updateInvocation(id: string, updatedData: Partial<WorkflowInvocation>) {
         if (storedInvocations.value[id]) {
-            set(storedInvocations.value, id, {
+            storedInvocations.value[id] = {
                 ...storedInvocations.value[id],
                 ...updatedData,
-            });
+            };
         } else {
-            set(storedInvocations.value, id, updatedData);
+            storedInvocations.value[id] = updatedData as WorkflowInvocation;
         }
     }
+
+    /**
+     * `fetchLatestInvocations` seeds this cache with list summaries: the invocations index serializes the
+     * collection view, which has no `steps`, `inputs` or `outputs`. So `getInvocationById` must upgrade a
+     * cached summary to the element view rather than treat it as already loaded.
+     */
+    const shouldFetchInvocationDetails = computed(() => {
+        return (invocation?: WorkflowInvocation) => !invocation || !isWorkflowInvocationElementView(invocation);
+    });
 
     const {
         fetchItemById: fetchInvocationById,
@@ -116,7 +139,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getItemLoadError: getInvocationLoadError,
         isLoadingItem: isLoadingInvocation,
         storedItems: storedInvocations,
-    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails, shouldFetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
@@ -124,13 +147,116 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationStepJobsSummaryById, fetchItemById: fetchInvocationStepJobsSummaryForId } =
         useKeyedCache<StepJobSummary[]>(fetchInvocationStepJobsSummary);
 
+    const { storedItems: storedInvocationMetrics, fetchItemById: fetchInvocationMetricsRawForId } =
+        useKeyedCache<WorkflowJobMetric[]>(fetchInvocationMetrics);
+
+    /**
+     * For each invocation id, a `step/job id -> number of terminal jobs` mapping as of the last
+     * metrics fetch.
+     *
+     * A *count* (rather than a plain terminal/non-terminal flag) is needed because a single step
+     * can have multiple jobs and their metrics (e.g. `runtime_seconds`) wouldn't show up until
+     * the entire collection completed.
+     *
+     * `undefined` means metrics haven't been fetched for this invocation yet; `null` means the last
+     * fetch started before the step jobs summary was available, so there is no baseline.
+     *
+     * Reactive, so recording a fetch's snapshot re-runs the staleness check in consumers.
+     */
+    const terminalCountsByStepIdAtLastMetricsFetch = ref<Record<string, Record<string, number> | null>>({});
+
+    /** Metrics fetches in flight by invocation id, so repeated reads share one request. */
+    const metricsFetchesInFlight = new Map<string, Promise<WorkflowJobMetric[] | undefined>>();
+
+    /**
+     * Returns `null` if the step jobs summary hasn't loaded yet (it's fetched/kept fresh
+     * independently, e.g. by `WorkflowInvocationState.vue`'s polling) -- callers must treat that as
+     * "unknown" rather than "zero terminal jobs".
+     */
+    function currentTerminalCountsByStepId(invocationId: string): Record<string, number> | null {
+        const stepsJobsSummary = getInvocationStepJobsSummaryById.value(invocationId);
+        if (!stepsJobsSummary) {
+            return null;
+        }
+        const counts: Record<string, number> = {};
+        for (const step of stepsJobsSummary) {
+            counts[step.id] = numTerminal(step);
+        }
+        return counts;
+    }
+
+    /** Fetches invocation metrics and records the terminal-count mapping for the fetch. */
+    function fetchInvocationMetricsForId(params: FetchParams): Promise<WorkflowJobMetric[] | undefined> {
+        const inFlight = metricsFetchesInFlight.get(params.id);
+        if (inFlight) {
+            // Callers awaiting this (e.g. `WorkflowInvocationMetrics.vue`) should resolve once the data lands.
+            return inFlight;
+        }
+        const fetchPromise = (async () => {
+            try {
+                // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
+                // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
+                const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
+                const result = await fetchInvocationMetricsRawForId(params);
+                // The step jobs summary may not have loaded yet when this fetch started (snapshot `null`) --
+                // fall back to whatever it looks like now (still `null` if it hasn't loaded).
+                terminalCountsByStepIdAtLastMetricsFetch.value[params.id] =
+                    snapshotAtFetchStart ?? currentTerminalCountsByStepId(params.id);
+                return result;
+            } finally {
+                metricsFetchesInFlight.delete(params.id);
+            }
+        })();
+        metricsFetchesInFlight.set(params.id, fetchPromise);
+        return fetchPromise;
+    }
+
+    /**
+     * Returns the cached metrics for an invocation, fetching once if absent (like `useKeyedCache`'s
+     * own accessors) -- but additionally triggers a background refetch (returning the current,
+     * possibly-stale cached value immediately, same stale-while-revalidate behavior) whenever any
+     * step's terminal-job count has increased since the last fetch (see above for why a count, not a
+     * boolean, is needed). This keeps consumers (e.g. the Metrics tab, per-job runtime lookups) fresh
+     * as an invocation's jobs finish over time, without every consumer needing its own
+     * polling/diffing logic.
+     */
+    const getInvocationMetricsById = computed(() => {
+        return (invocationId: string) => {
+            const metrics = storedInvocationMetrics.value[invocationId];
+            const oldTerminalCountsByStepId = terminalCountsByStepIdAtLastMetricsFetch.value[invocationId];
+            // Read on every call so consumers always track the step jobs summary.
+            const newTerminalCountsByStepId = currentTerminalCountsByStepId(invocationId);
+
+            let shouldFetch: boolean;
+            if (oldTerminalCountsByStepId === undefined) {
+                // Never fetched for this invocation.
+                shouldFetch = true;
+            } else if (newTerminalCountsByStepId === null) {
+                // Step jobs summary not loaded (yet, or anymore) so don't fetch on incomplete information.
+                shouldFetch = false;
+            } else if (oldTerminalCountsByStepId === null) {
+                // Last fetch had no baseline; refetch once now that the summary is available.
+                shouldFetch = true;
+            } else {
+                shouldFetch = Object.entries(newTerminalCountsByStepId).some(
+                    ([stepId, count]) => count > (oldTerminalCountsByStepId[stepId] ?? 0),
+                );
+            }
+            if (shouldFetch) {
+                fetchInvocationMetricsForId({ id: invocationId });
+            }
+            return metrics ?? null;
+        };
+    });
+
     const {
         getItemById: getInvocationStepById,
         fetchItemById: fetchInvocationStepById,
         isLoadingItem: isLoadingInvocationStep,
     } = useKeyedCache<InvocationStep>(fetchInvocationStep);
 
-    const { getItemById: getInvocationRequestById } = useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
+    const { getItemById: getInvocationRequestById, getItemLoadError: getInvocationRequestByIdError } =
+        useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
 
     const { getItemById: getInvocationCountByWorkflowId } = useKeyedCache<number>(fetchInvocationCount);
 
@@ -140,23 +266,104 @@ export const useInvocationStore = defineStore("invocationStore", () => {
             .filter((invocation) => invocation !== undefined);
     });
 
+    /**
+     * A computed function that returns a `job_id -> runtime (wall clock)` lookup for a given
+     * invocation, using the `core` plugin's pre-formatted `runtime_seconds` metric value
+     * (see `getInvocationMetricsById`).
+     */
+    const getInvocationJobRuntimeById = computed(() => {
+        return (invocationId: string): Record<string, string> => {
+            const metrics = getInvocationMetricsById.value(invocationId);
+            const runtimeByJobId: Record<string, string> = {};
+            for (const metric of metrics ?? []) {
+                if (metric.name === "runtime_seconds") {
+                    runtimeByJobId[metric.job_id] = metric.value;
+                }
+            }
+            return runtimeByJobId;
+        };
+    });
+
     const totalInvocationCount = ref<number | undefined>(undefined);
+
+    /** Ids of the most recently created invocations, in the order the server returned them. */
+    const latestInvocationIds = ref<string[]>([]);
+    const isLoadingLatestInvocations = ref(false);
+    /**
+     * Whether the latest invocations have been fetched at least once. An empty
+     * result counts as loaded, so consumers can tell "nothing invoked yet" from
+     * "not fetched yet" instead of requesting the list over and over.
+     */
+    const hasLoadedLatestInvocations = ref(false);
+    let latestInvocationsPromise: Promise<WorkflowInvocation[]> | null = null;
+
+    /**
+     * The latest invocation summaries (see `fetchLatestInvocations`), resolved against the shared
+     * invocation cache -- so consumers always see the freshest version of an invocation, no matter
+     * which part of the app loaded it.
+     */
+    const latestInvocations = computed<WorkflowInvocation[]>(() =>
+        latestInvocationIds.value
+            .map((id) => storedInvocations.value[id])
+            .filter((invocation): invocation is WorkflowInvocation => invocation !== undefined),
+    );
+
+    /**
+     * Fetches the `limit` most recently created invocations and merges them into the shared
+     * invocation cache (no separate copy of the data is kept -- only the ordered list of ids).
+     *
+     * Reuses the invocations grid's `getData`, which also populates the history and workflow name
+     * caches needed to display an invocation. Concurrent calls share a single request.
+     */
+    async function fetchLatestInvocations(limit = 15): Promise<WorkflowInvocation[]> {
+        if (latestInvocationsPromise) {
+            return latestInvocationsPromise;
+        }
+        isLoadingLatestInvocations.value = true;
+        latestInvocationsPromise = (async () => {
+            try {
+                const [invocations] = await getInvocationsData(0, limit, "", "create_time", true);
+                const ids: string[] = [];
+                for (const invocation of invocations) {
+                    updateInvocation(invocation.id, invocation);
+                    if (!ids.includes(invocation.id)) {
+                        ids.push(invocation.id);
+                    }
+                }
+                latestInvocationIds.value = ids;
+                hasLoadedLatestInvocations.value = true;
+                return latestInvocations.value;
+            } finally {
+                isLoadingLatestInvocations.value = false;
+                latestInvocationsPromise = null;
+            }
+        })();
+        return latestInvocationsPromise;
+    }
 
     return {
         cancelWorkflowScheduling,
+        fetchLatestInvocations,
         fetchInvocationById,
         fetchInvocationJobsSummaryForId,
         fetchInvocationStepJobsSummaryForId,
+        fetchInvocationMetricsForId,
         fetchInvocationStepById,
         getInvocationById,
         getInvocationJobsSummaryById,
         getInvocationStepJobsSummaryById,
+        getInvocationMetricsById,
+        getInvocationJobRuntimeById,
         getInvocationLoadError,
         getInvocationStepById,
         getInvocationRequestById,
+        getInvocationRequestByIdError,
         getInvocationCountByWorkflowId,
+        hasLoadedLatestInvocations,
         isLoadingInvocation,
         isLoadingInvocationStep,
+        isLoadingLatestInvocations,
+        latestInvocations,
         sortedStoredInvocations,
         totalInvocationCount,
         updateInvocation,

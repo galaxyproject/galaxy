@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { defineAsyncComponent, ref, watch } from "vue";
 
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
+const VegaWrapper = defineAsyncComponent(() => import("@/components/Common/VegaWrapper.vue"));
 
 const props = defineProps<{
     content: string;
@@ -34,9 +36,9 @@ watch(
 
 <template>
     <div>
-        <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+        <GAlert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <VegaWrapper :spec="spec" />
     </div>
 </template>

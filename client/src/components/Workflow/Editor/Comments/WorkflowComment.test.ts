@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { suppressErrorForCustomIcons } from "@tests/vitest/helpers";
+import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick, reactive, ref } from "vue";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
 import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
@@ -74,7 +75,7 @@ describe("WorkflowComment", () => {
 
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment },
                 scale: 1,
                 rootOffset: {},
@@ -118,7 +119,7 @@ describe("WorkflowComment", () => {
 
     it("displays the correct comment type", async () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, type: "text", data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
@@ -144,7 +145,7 @@ describe("WorkflowComment", () => {
         const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
 
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: testComment,
                 scale: 1,
                 rootOffset: {},
@@ -174,7 +175,7 @@ describe("WorkflowComment", () => {
 
     it("forwards pan events", () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
@@ -187,6 +188,40 @@ describe("WorkflowComment", () => {
         const textComment = wrapper.findComponent(TextComment);
 
         textComment.vm.$emit("pan-by", { x: 50, y: 50 });
-        expect(wrapper.emitted()["pan-by"]?.[0]?.[0]).toEqual({ x: 50, y: 50 });
+        expect(emittedArg(wrapper, "pan-by")).toEqual({ x: 50, y: 50 });
+    });
+
+    describe("rendering comment text", () => {
+        function mountComment(type: string, data: object) {
+            vi.mocked(sanitizeHtml).mockClear();
+            vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
+            return mount(WorkflowComment as any, {
+                propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {} },
+                provide: { transform: mockTransform },
+            });
+        }
+
+        it("renders text comments through v-sanitize-html", () => {
+            const wrapper = mountComment("text", { size: 1, text: "line one<br>line <em>two</em>" });
+            // escapeAndSanitize runs DOMPurify first, whose happy-dom output isn't meaningful
+            expect(sanitizeHtml).toHaveBeenCalledWith(expect.any(String), "default");
+            expect(wrapper.find(".sanitized").exists()).toBe(true);
+        });
+
+        it("renders frame titles through v-sanitize-html", () => {
+            const wrapper = mountComment("frame", { title: "Frame <em>title</em>" });
+            expect(sanitizeHtml).toHaveBeenCalledWith(expect.any(String), "default");
+            expect(wrapper.find(".sanitized").exists()).toBe(true);
+        });
+
+        it("renders markdown comments with the links profile", () => {
+            const wrapper = mountComment("markdown", { text: "[docs](https://galaxyproject.org) <b>raw</b>" });
+            const [html, profile] = vi.mocked(sanitizeHtml).mock.calls[0]!;
+            expect(profile).toBe("links");
+            expect(html).toContain('target="_blank"');
+            // markdown-it escapes raw HTML in the source before it reaches the sanitizer
+            expect(html).toContain("&lt;b&gt;raw&lt;/b&gt;");
+            expect(wrapper.find(".rendered-markdown .sanitized").exists()).toBe(true);
+        });
     });
 });

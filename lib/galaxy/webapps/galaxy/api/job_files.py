@@ -11,6 +11,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
@@ -110,16 +111,16 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         # Is this writing an unneeded file? Should this just copy in Python?
         if "__file_path" in payload:
-            file_path = payload.get("__file_path")
+            file_path = os.path.abspath(payload["__file_path"])
             upload_store = trans.app.config.nginx_upload_job_files_store
-            assert upload_store, (
-                "Request appears to have been processed by"
-                " nginx_upload_module but Galaxy is not"
-                " configured to recognize it"
-            )
-            assert file_path.startswith(
-                upload_store
-            ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
+            if not upload_store:
+                raise exceptions.ConfigDoesNotAllowException(
+                    "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+                )
+            if not util.in_directory(file_path, upload_store):
+                raise exceptions.RequestParameterInvalidException(
+                    "Filename provided by nginx is not in the configured upload directory."
+                )
             input_file = open(file_path)
         elif "session_id" in payload:
             # code stolen from basic.py
@@ -153,7 +154,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return {"message": "ok"}
 
     @expose_api_anonymous_and_sessionless
-    def tus_patch(self, trans, **kwds):
+    def tus_patch(self, trans: ProvidesAppContext, **kwds):
         """
         Exposed as PATCH /api/job_files/resumable_upload.
 
@@ -244,7 +245,5 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return False
 
     def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
-        working_directory = app.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
-        )
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         return util.in_directory(path, working_directory)

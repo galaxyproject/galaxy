@@ -125,6 +125,8 @@ def get_item_annotation_obj(db_session, user, item):
         annotation_assoc = annotation_assoc.filter_by(hda=item)
     elif item.__class__ == galaxy.model.HistoryDatasetCollectionAssociation:
         annotation_assoc = annotation_assoc.filter_by(history_dataset_collection=item)
+    elif item.__class__ == galaxy.model.LibraryDatasetCollectionAssociation:
+        annotation_assoc = annotation_assoc.filter_by(dataset_collection=item)
     elif item.__class__ == galaxy.model.StoredWorkflow:
         annotation_assoc = annotation_assoc.filter_by(stored_workflow=item)
     elif item.__class__ == galaxy.model.WorkflowStep:
@@ -170,6 +172,8 @@ def add_item_annotation(db_session, user, item, annotation):
 
 def _get_annotation_assoc_class(item):
     """Returns an item's item-annotation association class."""
+    if item.__class__ == galaxy.model.LibraryDatasetCollectionAssociation:
+        return galaxy.model.LibraryDatasetCollectionAnnotationAssociation
     class_name = f"{item.__class__.__name__}AnnotationAssociation"
     return getattr(galaxy.model, class_name, None)
 

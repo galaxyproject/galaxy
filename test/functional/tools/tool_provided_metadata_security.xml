@@ -1,0 +1,21 @@
+<tool id="tool_provided_metadata_security" name="tool_provided_metadata_security" version="1.0.0" profile="26.1">
+    <command><![CDATA[
+echo 'outside working directory sentinel' > ../outside_working_directory.txt &&
+echo 'declared output' > '$sample' &&
+cp '$provided_metadata' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="provided_metadata">{"sample": {
+"datasets": [
+{"filename": "../outside_working_directory.txt", "name": "outside working directory sentinel", "ext": "txt"}
+]
+}}
+</configfile>
+    </configfiles>
+    <inputs />
+    <outputs>
+        <data name="sample">
+            <discover_datasets from_provided_metadata="true" visible="true" />
+        </data>
+    </outputs>
+</tool>

@@ -68,6 +68,7 @@ class FastAPITools:
     @router.get(
         "/api/tools",
         operation_id="tools__index",
+        allow_cors=True,
     )
     def index(
         self,
@@ -146,8 +147,22 @@ class FastAPITools:
         "/api/tools/{tool_id}/versions/{tool_version}",
         operation_id="tools__parameter_model",
         summary="Return Galaxy's meta model description of the tool's inputs",
+        allow_cors=True,
     )
     def show_tool(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> ShedParsedTool:
+        return parsed_tool_model_cached_for(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/interop",
+        operation_id="tools__interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def interop(
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,

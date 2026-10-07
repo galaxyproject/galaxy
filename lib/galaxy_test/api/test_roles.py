@@ -160,6 +160,17 @@ class TestRolesApi(ApiTestCase):
         assert len(data) == 0
 
     @requires_admin
+    def test_list_exclude_private(self):
+        user_role_id = self.dataset_populator.user_private_role_id()
+        role = self._create_role()
+        response = self._get("roles", data={"exclude_private": True}, admin=True)
+        assert_status_code_is(response, 200)
+        role_ids = [r["id"] for r in response.json()]
+        assert role["id"] in role_ids
+        assert user_role_id not in role_ids
+        assert all(r["type"] != "private" for r in response.json())
+
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
@@ -220,8 +231,123 @@ class TestRolesApi(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
 
-    def _create_role(self, name: str | None = None, description: str | None = None) -> dict[str, Any]:
+    @requires_admin
+    def test_update(self):
+        role = self._create_role()
+        role_id = role["id"]
+        other_user_id = self._setup_user("role-update-user@bx.psu.edu")["id"]
+        group_id = self.dataset_populator.create_group()["id"]
+        new_name = self.dataset_populator.get_random_name()
+
+        payload = {
+            "name": new_name,
+            "description": "updated description",
+            "user_ids": [other_user_id],
+            "group_ids": [group_id],
+        }
+        response = self._put(f"roles/{role_id}", payload, admin=True, json=True)
+        assert_status_code_is(response, 200)
+        self.check_role_dict(response.json(), assert_id=role_id)
+
+        role = self._get(f"roles/{role_id}", admin=True).json()
+        assert role["name"] == new_name
+        assert role["description"] == "updated description"
+        assert self._role_user_ids(role_id) == [other_user_id]
+        assert self._role_group_ids(role_id) == [group_id]
+
+    @requires_admin
+    def test_update_omitted_associations_unchanged(self):
+        group_id = self.dataset_populator.create_group()["id"]
+        role = self._create_role(group_ids=[group_id])
+        role_id = role["id"]
+        new_name = self.dataset_populator.get_random_name()
+
+        response = self._put(f"roles/{role_id}", {"name": new_name}, admin=True, json=True)
+        assert_status_code_is(response, 200)
+        assert response.json()["name"] == new_name
+        assert response.json()["description"] == role["description"]
+        assert self._role_user_ids(role_id) == [self.dataset_populator.user_id()]
+        assert self._role_group_ids(role_id) == [group_id]
+
+    @requires_admin
+    def test_update_clears_associations(self):
+        role_id = self._create_role()["id"]
+        group_id = self.dataset_populator.create_group()["id"]
+        assert_status_code_is(self._put(f"roles/{role_id}", {"group_ids": [group_id]}, admin=True, json=True), 200)
+        assert self._role_user_ids(role_id) == [self.dataset_populator.user_id()]
+        assert self._role_group_ids(role_id) == [group_id]
+
+        payload: dict[str, list[str]] = {"user_ids": [], "group_ids": []}
+        response = self._put(f"roles/{role_id}", payload, admin=True, json=True)
+        assert_status_code_is(response, 200)
+        assert self._role_user_ids(role_id) == []
+        assert self._role_group_ids(role_id) == []
+
+    @requires_admin
+    def test_update_keeping_own_name(self):
+        role = self._create_role()
+        response = self._put(f"roles/{role['id']}", {"name": role["name"]}, admin=True, json=True)
+        assert_status_code_is(response, 200)
+
+    @requires_admin
+    def test_update_duplicating_name_raises_409(self):
+        role_a = self._create_role()
+        role_b = self._create_role()
+        response = self._put(f"roles/{role_b['id']}", {"name": role_a["name"]}, admin=True, json=True)
+        assert_status_code_is(response, 409)
+
+    @requires_admin
+    def test_update_invalid_user_id(self):
+        role = self._create_role()
+        role_id = role["id"]
+        invalid_user_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        payload = {"name": f"{role['name']}-renamed", "description": "renamed", "user_ids": [invalid_user_id]}
+        response = self._put(f"roles/{role_id}", payload, admin=True, json=True)
+        assert_status_code_is(response, 400)
+        assert self._role_user_ids(role_id) == [self.dataset_populator.user_id()]
+        unchanged_role = self._get(f"roles/{role_id}", admin=True).json()
+        assert unchanged_role["name"] == role["name"]
+        assert unchanged_role["description"] == role["description"]
+
+    @requires_admin
+    def test_users_and_groups_leave_out_deleted(self):
+        deleted_user_id = self._setup_user(f"{self.dataset_populator.get_random_name()}@bx.psu.edu")["id"]
+        kept_group_id = self.dataset_populator.create_group()["id"]
+        deleted_group_id = self.dataset_populator.create_group()["id"]
+        role = self._create_role(extra_user_ids=[deleted_user_id], group_ids=[kept_group_id, deleted_group_id])
+        assert_status_code_is(self._delete(f"users/{deleted_user_id}", admin=True), 200)
+        assert_status_code_is(self._delete(f"groups/{deleted_group_id}", admin=True), 200)
+
+        assert self._role_user_ids(role["id"]) == [self.dataset_populator.user_id()]
+        assert self._role_group_ids(role["id"]) == [kept_group_id]
+
+    @requires_admin
+    def test_update_and_associations_only_admin(self):
+        role_id = self._create_role()["id"]
+        assert_status_code_is(self._put(f"roles/{role_id}", {"name": "new-name"}, json=True), 403)
+        assert_status_code_is(self._get(f"roles/{role_id}/users"), 403)
+        assert_status_code_is(self._get(f"roles/{role_id}/groups"), 403)
+
+    def _role_user_ids(self, role_id: str) -> list[str]:
+        response = self._get(f"roles/{role_id}/users", admin=True)
+        assert_status_code_is(response, 200)
+        return [user["id"] for user in response.json()]
+
+    def _role_group_ids(self, role_id: str) -> list[str]:
+        response = self._get(f"roles/{role_id}/groups", admin=True)
+        assert_status_code_is(response, 200)
+        return [group["id"] for group in response.json()]
+
+    def _create_role(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        extra_user_ids: list[str] | None = None,
+        group_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
         payload = self._build_valid_role_payload(name=name, description=description)
+        payload["user_ids"] += extra_user_ids or []
+        payload["group_ids"] = group_ids or []
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
         role = response.json()

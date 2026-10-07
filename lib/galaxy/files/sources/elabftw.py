@@ -48,19 +48,16 @@ import re
 from abc import ABC
 from collections.abc import (
     AsyncIterator,
+    Callable,
     Iterable,
-)
-from datetime import (
-    datetime,
-    timezone,
 )
 from pathlib import Path
 from textwrap import dedent
 from time import time
 from typing import (
+    Any,
     cast,
     Generic,
-    get_type_hints,
     Literal,
     TypeVar,
 )
@@ -178,16 +175,9 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
     def get_prefix(self) -> str | None:
         endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)
-        # it would make better sense to return
-        # `self.id if self.scheme == USER_FILE_SOURCES_SCHEME else (endpoint.netloc or None)`, where
-        # `USER_FILE_SOURCES_SCHEME` comes from `galaxy.managers.file_source_instances`; however, that would lead to a
-        # circular import (maybe `USER_FILE_SOURCES_SCHEME` should be moved to a module in a layer deeper than
-        # `galaxy.managers`)
 
     def get_scheme(self) -> str:
         return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "elabftw"
-        # it would make better sense to return `self.scheme if self.scheme == USER_FILE_SOURCES_SCHEME else "elabftw"`,
-        # but the same circular import issue as above arises
 
     def score_url_match(self, url: str) -> int:
         parsed_url = urlparse(url)
@@ -218,7 +208,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         """
         Create an ``aiohttp`` session.
         """
-        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
+        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS, ssl=requests.create_ssl_context())
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,
@@ -254,10 +244,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         offset: int | None = None,
         query: str | None = None,
         sort_by: str | None = None,
-        # in particular, expecting
-        # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
-        # from Python 3.9 on, the following would be possible, although barely readable
-        # `sort_by: Optional[Literal[*(get_type_hints(RemoteDirectory) | get_type_hints(RemoteFile)).keys()]] = None,`
     ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List the contents of an eLabFTW endpoint.
@@ -296,8 +282,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         offset: int | None = None,
         query: str | None = None,
         sort_by: str | None = None,
-        # in particular, expecting
-        # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
     ) -> tuple[list[AnyRemoteEntry], int]:
         """
         List remote entries in a remote directory.
@@ -328,6 +312,11 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         :raises InvalidPath: Path constraints described in the docstring of :class:`InvalidPath` are not satisfied.
         :raises ResourceNotFound: If the path refers to a non-existing experiment, resource, or attachment.
         """
+        if sort_by is not None and sort_by not in SORT_KEYS:
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                f"Cannot sort eLabFTW entries by '{sort_by}', use one of {', '.join(SORT_KEYS)}."
+            )
+
         session = self._create_session_async(context.config)
         endpoint = self._get_endpoint()
 
@@ -387,16 +376,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                                 ),
                                 offset=retrieve_entities_server_side_offset,
                                 query=query if not recursive else None,
-                                order=(
-                                    # map Galaxy `sort_by` parameter to an eLabFTW API query param
-                                    {
-                                        "name": "title",
-                                        "uri": "id",
-                                        "path": "id",
-                                    }.get(sort_by)
-                                    if isinstance(sort_by, str)
-                                    else None
-                                ),
                                 writable=self.writable,
                             )
                         )
@@ -478,20 +457,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         # results arrive from the server in nondeterministic order; even if `sort_by` is `None`, calling `_list` twice
         # with the same arguments should return the same results in the same order (otherwise the option `offset` makes
         # no sense).
-        constructors = {**get_type_hints(RemoteDirectory), **get_type_hints(RemoteFile)}
-        wrapped_entries = sorted(
-            wrapped_entries,
-            key=lambda x: (
-                (
-                    getattr(
-                        x.entry, sort_by, constructors[sort_by]()
-                    )  # fall back to the default object for this key type
-                    if sort_by is not None
-                    else None
-                ),
-                x.entry.uri,  # ensure deterministic ordering (URIs are unique)
-            ),
-        )
+        wrapped_entries = sorted(wrapped_entries, key=lambda x: remote_entry_sort_key(x.entry, sort_by))
 
         # filter out remaining items locally; by `query`, `offset` and `limit`
         if query is not None:
@@ -562,7 +528,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         limit: int | None = None,
         offset: int | None = None,
         query: str | None = None,
-        order: str | None = None,
         writable: bool = False,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """List an entity type, i.e. either "/experiments" or "/resources"."""
@@ -580,7 +545,8 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
             q: NotRequired[str]
 
         params: Params = {
-            "order": order or "id",
+            # listings are sorted locally, a unique key keeps pagination from skipping or repeating entities
+            "order": "id",
             "sort": "asc",
             "limit": min(MAX_ITEMS_PER_PAGE, limit) if limit is not None else MAX_ITEMS_PER_PAGE,
             "offset": offset or 0,
@@ -632,7 +598,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                             "name": entity["title"],
                             "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity['id']}",
                             "path": f"/{entity_type}/{entity['id']}",
-                            "class": "Directory",
                         }
                     ),
                     entity,
@@ -685,9 +650,8 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                         "name": upload["real_name"],
                         "uri": f"{self.get_scheme()}://{self.get_prefix()}/{entity_type}/{entity_id}/{upload['id']}",
                         "path": f"/{entity_type}/{entity_id}/{upload['id']}",
-                        "class": "File",
                         "size": upload["filesize"],
-                        "ctime": datetime.fromisoformat(upload["created_at"]).astimezone(timezone.utc).isoformat(),
+                        "ctime": upload["created_at"],
                     }
                 ),
                 upload,
@@ -811,6 +775,26 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         except Exception as exception:
             Path(native_path).unlink(missing_ok=True)
             raise exception
+
+
+SORT_KEYS: dict[str, Callable[[AnyRemoteEntry], Any]] = {
+    "name": lambda entry: entry.name,
+    "uri": lambda entry: entry.uri,
+    "path": lambda entry: entry.path,
+    "class": lambda entry: entry.class_,
+    "size": lambda entry: entry.size if isinstance(entry, RemoteFile) else None,
+    "ctime": lambda entry: entry.ctime if isinstance(entry, RemoteFile) else None,
+}
+
+
+def remote_entry_sort_key(entry: AnyRemoteEntry, sort_by: str | None) -> tuple[bool, Any, str]:
+    """
+    Sort key ordering entries by the `sort_by` field, entries without a value for it first, then by URI.
+
+    URIs are unique, so the order is deterministic even when `sort_by` is `None` or values tie.
+    """
+    value = SORT_KEYS[sort_by](entry) if sort_by is not None else None
+    return value is not None, value, entry.uri
 
 
 def split_path(path: str) -> tuple[str | None, str | None, str | None]:

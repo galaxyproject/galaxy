@@ -1,6 +1,6 @@
 import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
-export function getHistoryListFilters(activeList = "my") {
+export function getHistoryListFilters(activeList: "my" | "shared" | "published" | "archived" = "my") {
     const validFilters = {
         name: {
             placeholder: "name",
@@ -14,19 +14,23 @@ export function getHistoryListFilters(activeList = "my") {
             handler: contains("tag", "tag", expandNameTag),
             menuItem: true,
         },
+    } as const;
+
+    const publishedFilter = {
         published: {
             placeholder: "Published",
             type: Boolean,
-            boolType: "is",
+            boolType: "is" as const,
             handler: equals("published", "published", toBool),
             menuItem: true,
         },
-    } as const;
+    };
 
     if (activeList === "my") {
         return new Filtering(
             {
                 ...validFilters,
+                ...publishedFilter,
                 importable: {
                     placeholder: "Importable",
                     type: Boolean,
@@ -51,12 +55,13 @@ export function getHistoryListFilters(activeList = "my") {
             },
             undefined,
             false,
-            false,
+            "name",
         );
     } else {
         return new Filtering(
             {
                 ...validFilters,
+                ...(activeList !== "published" ? publishedFilter : {}),
                 user: {
                     placeholder: "user",
                     type: String,
@@ -66,7 +71,7 @@ export function getHistoryListFilters(activeList = "my") {
             },
             undefined,
             false,
-            false,
+            "name",
         );
     }
 }

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
@@ -12,6 +11,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
 import Heading from "../Common/Heading.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import InheritanceChain from "@/components/InheritanceChain//InheritanceChain.vue";
@@ -38,6 +38,7 @@ const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
 const dataset = ref<HDADetailed | null>(null);
 const jobLoadingError = ref<string | null>(null);
+let isUnmounted = false;
 const datasetLoadingError = ref<string | null>(null);
 
 async function getDatasetDetails() {
@@ -53,12 +54,26 @@ async function getDatasetDetails() {
 }
 
 async function loadJobDetails() {
-    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-        params: {
-            path: { job_id: dataset.value?.creating_job! },
-            query: { full: true },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET("/api/jobs/{job_id}", {
+            params: {
+                path: { job_id: dataset.value?.creating_job! },
+                query: { full: true },
+            },
+        });
+    } catch {
+        result = undefined;
+    }
+    if (isUnmounted) {
+        return;
+    }
+    if (!result) {
+        // Failures without an error response are retried on the next poll.
+        jobTimeOut.value = setTimeout(loadJobDetails, 3000);
+        return;
+    }
+    const { data, error } = result;
 
     if (error) {
         jobLoadingError.value = errorMessageAsString(error);
@@ -84,6 +99,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    isUnmounted = true;
     clearTimeout(jobTimeOut.value);
 });
 </script>
@@ -92,12 +108,12 @@ onUnmounted(() => {
     <div aria-labelledby="dataset-details-heading">
         <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
 
-        <BAlert v-if="loading" variant="info" show>
+        <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset details..." />
-        </BAlert>
-        <BAlert v-else-if="datasetLoadingError" variant="error">
+        </GAlert>
+        <GAlert v-else-if="datasetLoadingError" variant="danger">
             {{ datasetLoadingError }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="dataset">
             <div v-if="dataset.creating_job" class="details">
                 <DatasetInformation :dataset="dataset" />
@@ -128,7 +144,7 @@ onUnmounted(() => {
                 <div v-if="dataset.peek">
                     <Heading id="dataset-peek-heading" h2 separator inline size="md"> Dataset Peek </Heading>
 
-                    <div class="dataset-peek" v-html="dataset.peek" />
+                    <div v-sanitize-html="dataset.peek" class="dataset-peek" />
                 </div>
             </div>
 

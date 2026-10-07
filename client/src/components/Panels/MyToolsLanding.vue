@@ -6,12 +6,11 @@
  * no active search query, keeping all the My Tools-specific reactivity off
  * the default tool panel hot path.
  */
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import draggable from "vuedraggable";
 
 import { isTool, isToolSection } from "@/api/tools";
+import draggable from "@/components/Common/SortableList";
 import { useToast } from "@/composables/toast";
 import { useToolPanelFavorites } from "@/composables/toolPanelFavorites";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType } from "@/stores/toolStore";
@@ -27,8 +26,9 @@ import {
     FAVORITE_TAG_SECTION_PREFIX,
     PANEL_LABEL_IDS,
 } from "./panelViews";
-import { buildToolLabel, buildToolSection } from "./utilities";
+import { buildToolLabel, buildToolSection, getUniqueToolIdsInPanel } from "./utilities";
 
+import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import ToolItem from "./Common/Tool.vue";
 import ToolPanelLabel from "./Common/ToolPanelLabel.vue";
@@ -72,7 +72,10 @@ const {
     favoriteOrder,
     favoriteToolIdsInPanel,
     recentToolIdsToShow,
-} = useToolPanelFavorites(computed(() => props.localToolsById));
+} = useToolPanelFavorites(
+    computed(() => props.localToolsById),
+    computed(() => getUniqueToolIdsInPanel(props.defaultSectionsById || props.localSectionsById)),
+);
 
 const recentToolsLabel = computed(() => buildToolLabel(PANEL_LABEL_IDS.RECENT_TOOLS_LABEL, localize("Recent tools")));
 const favoritesLabel = computed(() => buildToolLabel(PANEL_LABEL_IDS.FAVORITES_LABEL, localize("Favorites")));
@@ -84,15 +87,14 @@ const collapsedLabels = computed(() => ({
 }));
 
 const recentToolsInPanel = computed(() =>
-    recentToolIdsToShow.value
-        .map((toolId) => props.localToolsById[toolId])
-        .filter((tool): tool is Tool => Boolean(tool)),
+    recentToolIdsToShow.value.map((toolId) => props.localToolsById[toolId]).filter((tool) => !!tool),
 );
 
 /**
  * Flatten the parent's panel sections into a single ordered list of tool ids.
  * Used to keep tools inside favorite-tag / favorite-EDAM sections in the same
- * order they appear in the default panel view.
+ * order they appear in the default panel view, while excluding older installed
+ * versions that are present in the all-tools cache but not the panel.
  */
 const orderedToolIds = computed(() => {
     const ordered: string[] = [];
@@ -123,7 +125,6 @@ const orderedToolIds = computed(() => {
         }
     }
 
-    Object.keys(props.localToolsById).forEach(appendToolId);
     return ordered;
 });
 
@@ -432,11 +433,12 @@ function onLabelToggle(labelId: string) {
 <template>
     <div class="toolMenu" data-description="my-tools-landing">
         <ToolPanelLabel
-            v-if="recentToolIdsToShow.length > 0"
+            v-if="recentToolsInPanel.length > 0"
             :definition="recentToolsLabel"
             :collapsed="collapsedLabels[PANEL_LABEL_IDS.RECENT_TOOLS_LABEL]"
             @toggle="onLabelToggle" />
-        <template v-if="recentToolIdsToShow.length > 0 && !recentToolsCollapsed">
+
+        <template v-if="recentToolsInPanel.length > 0 && !recentToolsCollapsed">
             <ToolItem
                 v-for="tool in recentToolsInPanel"
                 :key="`recent-tool-${tool.id}`"
@@ -451,7 +453,7 @@ function onLabelToggle(labelId: string) {
             @toggle="onLabelToggle" />
         <div v-if="!favoritesCollapsed">
             <div v-if="showEmptyFavorites" class="tool-panel-empty">
-                <BAlert variant="info" show>
+                <GAlert variant="info" show>
                     <template v-if="!isAnonymous">
                         You haven't favorited any tools yet. Search the toolbox or use
                         <GButton
@@ -476,11 +478,12 @@ function onLabelToggle(labelId: string) {
                         </GButton>
                         to favorite tools and have them appear in this section.
                     </template>
-                </BAlert>
+                </GAlert>
             </div>
             <draggable
                 v-else
                 v-model="draggableFavoriteItems"
+                item-key="favoriteKey"
                 data-description="favorites-top-level-list"
                 :disabled="isAnonymous"
                 :force-fallback="true"
@@ -490,27 +493,27 @@ function onLabelToggle(labelId: string) {
                 chosen-class="favorite-top-level-chosen"
                 @start="onFavoriteDragStart"
                 @end="onFavoriteDragEnd">
-                <div
-                    v-for="favoriteItem in draggableFavoriteItems"
-                    :key="favoriteItem.favoriteKey"
-                    class="favorite-top-level-item"
-                    :data-description="`favorite-top-level-item-${favoriteItem.orderEntry.object_type}`"
-                    :data-favorite-type="favoriteItem.orderEntry.object_type"
-                    :data-favorite-id="favoriteItem.orderEntry.object_id">
-                    <ToolSection
-                        v-if="isToolSection(favoriteItem.panelItem)"
-                        :category="favoriteItem.panelItem"
-                        :collapsed-labels="collapsedLabels"
-                        show-drag-handle
-                        @onClick="onToolClick"
-                        @onFilter="onSectionFilter"
-                        @onLabelToggle="onLabelToggle" />
-                    <ToolItem
-                        v-else-if="isTool(favoriteItem.panelItem)"
-                        :tool="favoriteItem.panelItem"
-                        show-drag-handle
-                        @onClick="onToolClick" />
-                </div>
+                <template v-slot:item="{ element: favoriteItem }">
+                    <div
+                        class="favorite-top-level-item"
+                        :data-description="`favorite-top-level-item-${favoriteItem.orderEntry.object_type}`"
+                        :data-favorite-type="favoriteItem.orderEntry.object_type"
+                        :data-favorite-id="favoriteItem.orderEntry.object_id">
+                        <ToolSection
+                            v-if="isToolSection(favoriteItem.panelItem)"
+                            :category="favoriteItem.panelItem"
+                            :collapsed-labels="collapsedLabels"
+                            show-drag-handle
+                            @onClick="onToolClick"
+                            @onFilter="onSectionFilter"
+                            @onLabelToggle="onLabelToggle" />
+                        <ToolItem
+                            v-else-if="isTool(favoriteItem.panelItem)"
+                            :tool="favoriteItem.panelItem"
+                            show-drag-handle
+                            @onClick="onToolClick" />
+                    </div>
+                </template>
             </draggable>
         </div>
     </div>

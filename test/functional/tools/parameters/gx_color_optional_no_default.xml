@@ -1,0 +1,13 @@
+<tool id="gx_color_optional_no_default" name="gx_color_optional_no_default" version="1.0.0">
+    <!-- The legacy convention for "no default color" is value="" on an optional color
+         param (see e.g. tools-iuc arriba color1). ``_fill_default_for`` must not assign
+         the empty string as the default, or the job-internal color validator rejects
+         with "Invalid color value ''". Fill None (unset) instead. -->
+    <command>echo "${parameter}" > $out_file1</command>
+    <inputs>
+        <param name="parameter" type="color" value="" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

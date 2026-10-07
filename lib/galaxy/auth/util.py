@@ -1,6 +1,10 @@
 import errno
 import logging
 from collections import namedtuple
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 import galaxy.auth.providers
 from galaxy.exceptions import Conflict
@@ -11,6 +15,10 @@ from galaxy.util import (
     plugin_config,
     string_as_bool,
 )
+
+if TYPE_CHECKING:
+    # runtime cycle: galaxy.managers.context -> galaxy.structured_app -> galaxy.auth -> here
+    from galaxy.managers.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
 
@@ -73,8 +81,8 @@ def get_authenticators(auth_config_file, auth_config_file_set):
     return authenticators
 
 
-def parse_auth_results(trans, auth_results, options):
-    auth_return = {}
+def parse_auth_results(trans: "ProvidesAppContext", auth_results, options):
+    auth_return: dict[str, Any] = {}
     auth_result, auto_email, auto_username = auth_results[:3]
     auto_username = str(auto_username).lower()
     # make username unique

@@ -4,7 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import { faUnlockAlt } from "font-awesome-6";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
@@ -37,7 +37,6 @@ vi.mock("@/composables/confirmDialog", () => ({
 }));
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 describe("UserPreferences.vue", () => {
     const mockPreferences = (passwordDisabled: boolean) => {
@@ -75,15 +74,14 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: new VueRouter(),
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
                 UserDetailsElement: true,
                 UserPreferencesElement: true,
                 Heading: true,
-                BAlert: true,
-                BModal: true,
+                GAlert: true,
                 UserPickTheme: true,
                 UserBeaconSettings: true,
                 UserPreferredObjectStore: true,
@@ -109,15 +107,14 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: new VueRouter(),
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
                 UserDetailsElement: true,
                 UserPreferencesElement: true,
                 Heading: true,
-                BAlert: true,
-                BModal: true,
+                GAlert: true,
                 UserPickTheme: true,
                 UserBeaconSettings: true,
                 UserPreferredObjectStore: true,
@@ -148,15 +145,14 @@ describe("UserPreferences.vue", () => {
 
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: new VueRouter(),
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
                 UserDetailsElement: true,
                 UserPreferencesElement: true,
                 Heading: true,
-                BAlert: true,
-                BModal: true,
+                GAlert: true,
                 UserPickTheme: true,
                 UserBeaconSettings: true,
                 UserPreferredObjectStore: true,
@@ -180,15 +176,14 @@ describe("UserPreferences.vue", () => {
         mockPreferences(false);
         const wrapper = shallowMount(UserPreferences, {
             localVue,
-            router: new VueRouter(),
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 BreadcrumbHeading: true,
                 UserDetailsElement: true,
                 UserPreferencesElement: true,
                 Heading: true,
-                BAlert: true,
-                BModal: true,
+                GAlert: true,
                 UserPickTheme: true,
                 UserBeaconSettings: true,
                 UserPreferredObjectStore: true,

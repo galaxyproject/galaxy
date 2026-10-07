@@ -204,7 +204,9 @@ class DisplayApplicationsManager:
             )
         raise MessageException("You do not have permission to view this dataset at an external display application.")
 
-    def _can_access_dataset(self, trans, dataset_association, allow_admin=True, additional_roles=None):
+    def _can_access_dataset(
+        self, trans: ProvidesUserContext, dataset_association, allow_admin=True, additional_roles=None
+    ):
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles

@@ -45,10 +45,12 @@ from galaxy.tools.parameters.wrapped_json import (
 )
 from galaxy.util import (
     filesystem_safe_string,
+    safe_filename_component,
     string_as_bool,
 )
 
 if TYPE_CHECKING:
+    from galaxy.datatypes.data import Data
     from galaxy.datatypes.registry import Registry
     from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
@@ -359,7 +361,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
         identifier: str | None = None,
         io_type: str = "input",
-        formats: list[str] | None = None,
+        formats: Sequence[Union[str, "Data"]] | None = None,
         tool_evaluator: Optional["ToolEvaluator"] = None,
     ) -> None:
         dataset_instance: DatasetInstance | None = None
@@ -417,6 +419,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                     self.false_path = path_rewrite
         self.datatypes_registry = datatypes_registry
         self._element_identifier = identifier
+
+    @property
+    def safe_element_identifier(self) -> str:
+        max_len = 254 - len(self.file_ext)
+        return safe_filename_component(self.element_identifier, max_len=max_len)
 
     @property
     def element_identifier(self) -> str:
@@ -719,6 +726,11 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def is_collection(self) -> bool:
         return True
+
+    @property
+    def safe_element_identifier(self) -> str | None:
+        identifier = self.element_identifier
+        return safe_filename_component(identifier) if identifier is not None else None
 
     @property
     def element_identifier(self) -> str | None:

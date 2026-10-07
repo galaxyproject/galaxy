@@ -1,5 +1,7 @@
 """Unit tests for galaxy.selenium.has_driver module."""
 
+import sys
+import time
 from typing import cast
 
 import pytest
@@ -8,6 +10,7 @@ from selenium.common.exceptions import (
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import Target
@@ -32,6 +35,7 @@ from galaxy.selenium.has_playwright_driver import (
     PlaywrightResources,
     PlaywrightTimeoutException,
 )
+from galaxy.selenium.keys import Key
 from .util import (
     check_playwright_cached,
     check_selenium_cached,
@@ -163,6 +167,19 @@ def has_driver_instance(request, driver, playwright_resources) -> HasDriverProto
     else:  # proxy-selenium
         selenium_impl = cast(HasDriverProtocol, TestHasDriverImpl(driver))
         return HasDriverProxyImpl(selenium_impl)
+
+
+@pytest.fixture
+def playwright_driver_instance(playwright_resources) -> HasDriverProtocol:
+    """
+    Create a Playwright-only instance, for behavior the two backends do not share.
+
+    Args:
+        playwright_resources: PlaywrightResources fixture
+    """
+    if not check_playwright_cached():
+        pytest.skip(PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE)
+    return cast(HasDriverProtocol, TestHasPlaywrightDriverImpl(playwright_resources))
 
 
 class TestElementFinding:
@@ -617,6 +634,41 @@ class TestSelectByValue:
         assert select_element.get_attribute("value") == "durian"
 
 
+class TestSelectByVisibleText:
+    """Tests for select_by_visible_text method."""
+
+    def test_select_by_visible_text_basic(self, has_driver_instance, base_url):
+        """Option text is what the user sees, which differs from the value attribute."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+        has_driver_instance.select_by_visible_text(fruit_select, "Banana")
+
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "banana"
+
+    def test_select_by_visible_text_multiple_options(self, has_driver_instance, base_url):
+        """Test selecting different options sequentially."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+
+        has_driver_instance.select_by_visible_text(fruit_select, "Apple")
+        assert select_element.get_attribute("value") == "apple"
+
+        has_driver_instance.select_by_visible_text(fruit_select, "Cherry")
+        assert select_element.get_attribute("value") == "cherry"
+
+    def test_select_by_visible_text_with_tuple(self, has_driver_instance, base_url):
+        """Test select by visible text using a (locator_type, value) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        has_driver_instance.select_by_visible_text((By.CSS_SELECTOR, "#fruit-select"), "Durian")
+
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "durian"
+
+
 class TestFindElementWithTuple:
     """Tests for find_element with tuple-based locators."""
 
@@ -649,29 +701,41 @@ class TestActionChainsAndKeys:
     """Tests for action chains and key sending methods."""
 
     def test_action_chains(self, has_driver_instance, base_url):
-        """Test creating action chains."""
+        """Selenium hands out its native builder; Playwright refuses rather than stubbing one."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
-        chains = has_driver_instance.action_chains()
-        assert chains is not None
+        if has_driver_instance.backend_type == "playwright":
+            with pytest.raises(NotImplementedError):
+                has_driver_instance.action_chains()
+        else:
+            assert has_driver_instance.action_chains() is not None
 
     def test_drag_and_drop(self, has_driver_instance, base_url):
-        """Test drag and drop functionality."""
+        """The drop handler runs and reads what dragstart put on the dataTransfer."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
-        # TODO: Add actual draggable elements to basic.html for proper testing
-        # For example, add:
-        #   <div id="draggable" draggable="true" style="width:100px;height:100px;background:blue;">Drag me</div>
-        #   <div id="droptarget" style="width:200px;height:200px;background:gray;">Drop here</div>
-        # Then verify with JavaScript that droptarget contains draggable after drag_and_drop
-        # e.g., assert has_driver_instance.execute_script("return document.getElementById('droptarget').contains(document.getElementById('draggable'))")
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("drop-target")
 
-        # For now, just verify the method can be called without error
-        source = has_driver_instance.find_element_by_id("test-div")
-        target = has_driver_instance.find_element_by_id("visible-element")
-
-        # Call drag_and_drop - it should not raise an exception
-        # (even though these aren't actually draggable elements, the JS will execute)
         has_driver_instance.drag_and_drop(source, target)
+
+        assert target.text == "Dropped: dragged-payload"
+
+    def test_drag_and_drop_target_rerenders_on_dragenter(self, has_driver_instance, base_url):
+        """A zone that swaps its contents on dragenter still receives the drop.
+
+        The caller holds the inner box, which dragenter removes. Unless the whole
+        sequence is dispatched without yielding, the later events land on a
+        detached element and never reach the zone.
+        """
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("rerender-inner")
+
+        has_driver_instance.drag_and_drop(source, target)
+
+        zone = has_driver_instance.find_element_by_id("rerender-drop-zone")
+        assert zone.text == "Dropped: dragged-payload"
 
     def test_move_to_and_click(self, has_driver_instance, base_url):
         """Test moving to element and clicking via ActionChains."""
@@ -698,6 +762,19 @@ class TestActionChainsAndKeys:
 
         # Verify the hover made the indicator visible (using CSS :hover + sibling selector)
         assert hover_indicator.is_displayed()
+
+    def test_hover_away(self, has_driver_instance, base_url):
+        """Test moving the pointer back off a hovered element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        hover_target = has_driver_instance.find_element_by_id("hover-target")
+        hover_indicator = has_driver_instance.find_element_by_id("hover-indicator")
+
+        has_driver_instance.hover(hover_target)
+        assert hover_indicator.is_displayed(), "precondition failed - hover did not register"
+
+        has_driver_instance.hover_away()
+
+        assert not hover_indicator.is_displayed()
 
     def test_send_enter(self, has_driver_instance, base_url):
         """Test sending ENTER key."""
@@ -1061,6 +1138,43 @@ class TestScreenshots:
         # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
         assert screenshot_bytes[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_highlight_element(self, has_driver_instance, base_url):
+        """Test the border is applied inside the block and restored after it."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with has_driver_instance.highlight_element(element):
+            border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+            assert "red" in border.lower()
+            assert "3px" in border
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_on_exception(self, has_driver_instance, base_url):
+        """Test the border is restored when the block raises."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with pytest.raises(ValueError):
+            with has_driver_instance.highlight_element(element):
+                raise ValueError("Test exception")
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_existing_border(self, has_driver_instance, base_url):
+        """Test an element's own border survives being highlighted."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+        has_driver_instance.execute_script("arguments[0].style.border = '2px solid blue';", element)
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        with has_driver_instance.highlight_element(element):
+            assert "red" in has_driver_instance.execute_script("return arguments[0].style.border;", element).lower()
+
+        restored = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored == original_border
+        assert "blue" in restored.lower()
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
@@ -1173,6 +1287,71 @@ class TestPageSource:
         assert "good-section" in source2 or "bad-section" in source2
 
 
+class TestCurrentUrl:
+    """Test current_url property."""
+
+    def test_current_url_sees_client_side_route_change(self, has_driver_instance, base_url):
+        """A poll that only reads current_url must still observe a pushState."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#push-state-later")
+
+        # Deliberately no other driver call in the loop - that is what a test
+        # waiting on a client-side route change does, and what used to hang.
+        deadline = time.time() + 5
+        while time.time() < deadline and "pushed=1" not in has_driver_instance.current_url:
+            time.sleep(0.05)
+
+        assert "pushed=1" in has_driver_instance.current_url
+
+
+class TestVisitNewWindow:
+    """Test visit_new_window."""
+
+    def test_visit_new_window_focuses_then_closes_it(self, has_driver_instance, base_url):
+        """A link that opens a tab is visited, then closed, leaving the original focused."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#open-new-window")
+        with has_driver_instance.visit_new_window():
+            assert "opened=1" in has_driver_instance.current_url
+
+        assert "opened=1" not in has_driver_instance.current_url
+        # The original window is usable again, not merely current.
+        assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+    def test_visit_new_window_closes_it_when_the_block_raises(self, has_driver_instance, base_url):
+        """The new window is not left open by a failing assertion inside the block."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        has_driver_instance.click_selector("#open-new-window")
+
+        with pytest.raises(AssertionError):
+            with has_driver_instance.visit_new_window():
+                raise AssertionError("as a test would")
+
+        assert "opened=1" not in has_driver_instance.current_url
+        assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+
+class TestNavigateTo:
+    """Test navigate_to."""
+
+    def test_navigate_to_outlasts_a_competing_navigation(self, playwright_driver_instance, base_url):
+        """
+        A page that redirects itself mid-flight must not strand navigate_to.
+
+        Playwright only: Selenium's get() reports no error when the browser
+        cancels the navigation it asked for, and offers nothing to tell that
+        apart from an ordinary redirect, so it is left where the page went.
+        """
+        playwright_driver_instance.navigate_to(f"{base_url}/basic.html")
+        playwright_driver_instance.click_selector("#navigate-away-later")
+
+        # The fixture redirects itself while this slow response is still on the
+        # wire, so the requested navigation is the one the browser cancels.
+        playwright_driver_instance.navigate_to(f"{base_url}/slow/basic.html?requested=1")
+
+        assert "requested=1" in playwright_driver_instance.current_url
+
+
 class TestPageTitle:
     """Test page_title property."""
 
@@ -1254,3 +1433,136 @@ class TestCSSProperties:
         assert font_size != ""
         # Font size should contain numeric value
         assert any(char.isdigit() for char in font_size)
+
+
+class TestKeyPresses:
+    """Tests for the backend-neutral press() gesture."""
+
+    def test_press_to_page(self, has_driver_instance, base_url):
+        """A key pressed with no element goes to whatever has focus."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB)
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Tab"
+
+    def test_press_with_modifier(self, has_driver_instance, base_url):
+        """Modifiers are held down while each key is pressed."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB, modifiers=[Key.SHIFT])
+
+        # The modifier's own keydown is delivered first, by both backends.
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "shift+Shift shift+Tab"
+
+    def test_press_multiple_keys_in_order(self, has_driver_instance, base_url):
+        """Each key is pressed, in the order given."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.ARROW_RIGHT, Key.ARROW_LEFT, Key.ARROW_RIGHT)
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "ArrowRight ArrowLeft ArrowRight"
+
+    def test_press_to_element(self, has_driver_instance, base_url):
+        """A key pressed with an element is delivered to that element."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.press(Key.ARROW_DOWN, element=target)
+
+        target_log = has_driver_instance.find_element_by_id("target-log")
+        assert target_log.text == "ArrowDown"
+
+    def test_press_to_element_with_modifier(self, has_driver_instance, base_url):
+        """An element press with modifiers focuses the element without clicking it."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.press(Key.END, modifiers=[Key.SHIFT], element=target)
+
+        # The modifier's own keydown is delivered first, by both backends.
+        target_log = has_driver_instance.find_element_by_id("target-log")
+        assert target_log.text == "shift+Shift shift+End"
+
+    def test_send_enter_to_page(self, has_driver_instance, base_url):
+        """send_enter() with no element reaches the page."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.send_enter()
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Enter"
+
+    def test_send_escape_to_page(self, has_driver_instance, base_url):
+        """send_escape() with no element reaches the page."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.send_escape()
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Escape"
+
+    def test_press_character_with_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press("a", modifiers=[Key.CONTROL], element=target)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a"
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_select_all_shortcut(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys("replace this")
+        modifier = Key.META if sys.platform == "darwin" else Key.CONTROL
+        has_driver_instance.press("a", modifiers=[modifier], element=target)
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_multiple_tabs_to_element(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.TAB, Key.TAB, element=target)
+        assert has_driver_instance.active_element().get_attribute("id") == "third-target"
+
+    def test_press_sequence_holds_and_releases_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.ARROW_LEFT, Key.ARROW_RIGHT, modifiers=[Key.SHIFT], element=target)
+        has_driver_instance.press(Key.ENTER)
+        assert has_driver_instance.find_element_by_id("key-events").text == (
+            "keydown:shift+Shift keydown:shift+ArrowLeft keyup:shift+ArrowLeft "
+            "keydown:shift+ArrowRight keyup:shift+ArrowRight keyup:Shift keydown:Enter keyup:Enter"
+        )
+        assert has_driver_instance.execute_script("return window.clickCount") == 0
+
+    def test_legacy_send_keys_shortcut_and_return(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys(Keys.CONTROL, "a")
+        target.send_keys(Keys.RETURN)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a Enter"
+
+
+class TestActiveElement:
+    """Tests for the active_element() focus accessor."""
+
+    def test_active_element_after_click(self, has_driver_instance, base_url):
+        """A clicked input becomes the active element."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.move_to_and_click(target)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"
+
+    def test_active_element_follows_tab(self, has_driver_instance, base_url):
+        """Focus moves with TAB, so active_element() tracks keyboard navigation."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"

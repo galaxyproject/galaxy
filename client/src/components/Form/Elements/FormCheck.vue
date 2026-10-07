@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { BFormCheckbox, BFormCheckboxGroup } from "bootstrap-vue";
 import { computed } from "vue";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface CheckOption {
     label: string;
@@ -47,19 +50,19 @@ function onSelectAll(selected: boolean): void {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox
+        <BFormCheckbox
             v-localize
             class="mb-1"
             :checked="selectAll"
             :indeterminate="indeterminate"
             @change="onSelectAll">
             Select / Deselect all
-        </b-form-checkbox>
-        <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
-            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option.value">
+        </BFormCheckbox>
+        <BFormCheckboxGroup v-model="currentValue" stacked class="pl-3">
+            <BFormCheckbox v-for="(option, index) in options" :key="index" :value="option.value">
                 {{ option.label }}
-            </b-form-checkbox>
-        </b-form-checkbox-group>
+            </BFormCheckbox>
+        </BFormCheckboxGroup>
     </div>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

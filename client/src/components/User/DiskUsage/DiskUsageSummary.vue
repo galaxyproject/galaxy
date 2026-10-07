@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BContainer, BRow, BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -12,6 +13,8 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
 const { config, isConfigLoaded } = useConfig(true);
@@ -86,32 +89,27 @@ onMounted(async () => {
 </script>
 <template>
     <div>
-        <b-alert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             <h2 v-localize class="alert-heading h-sm">Failed to access disk usage details.</h2>
             {{ errorMessage }}
-        </b-alert>
-        <b-container v-if="currentUser">
-            <b-row v-if="isConfigLoaded && config.enable_quotas" class="justify-content-md-center">
+        </GAlert>
+        <BContainer v-if="currentUser">
+            <BRow v-if="isConfigLoaded && config.enable_quotas" class="justify-content-md-center">
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
-            </b-row>
+            </BRow>
             <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
                 You're using <b>{{ niceTotalDiskUsage }}</b> of disk space.
             </h2>
-        </b-container>
-        <b-container class="text-center mb-5 w-75">
-            <b-alert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
-                <b-spinner small class="mr-2" />
+        </BContainer>
+        <BContainer class="text-center mb-5 w-75">
+            <GAlert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
+                <BSpinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
-            </b-alert>
-            <b-button
-                v-else
-                id="refresh-disk-usage"
-                title="Recalculate disk usage"
-                variant="primary"
-                @click="onRefresh">
+            </GAlert>
+            <GButton v-else id="refresh-disk-usage" title="Recalculate disk usage" color="blue" @click="onRefresh">
                 <FontAwesomeIcon :icon="faSyncAlt" class="mr-1" />
                 <span v-localize>Refresh</span>
-            </b-button>
-        </b-container>
+            </GButton>
+        </BContainer>
     </div>
 </template>

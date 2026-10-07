@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormInput, BFormTextarea, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormInput, BFormTextarea, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
+
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     name: string;
@@ -45,25 +49,23 @@ async function onOk() {
                     <BInputGroup>
                         <BFormInput type="password" value="*****************************" disabled @click="onClick" />
                         <BInputGroupAppend>
-                            <BButton @click="onClick">
+                            <GButton @click="onClick">
                                 <FontAwesomeIcon :icon="faPen" />
                                 Update
-                            </BButton>
+                            </GButton>
                         </BInputGroupAppend>
                     </BInputGroup>
                 </div>
             </div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
+            <span v-sanitize-html:links="helpHtml" class="ui-form-info form-text text-muted" />
         </div>
-        <b-modal ref="edit-modal" v-model="showEdit" :title="editTitle" ok-title="Update" @ok="onOk">
+        <GModal v-model:show="showEdit" confirm size="small" :title="editTitle" ok-text="Update" @ok="onOk">
             <div>
                 <BFormTextarea v-if="multiline" v-model="secretValue" rows="8" no-resize />
-                <BFormInput v-else v-model="secretValue" type="password" />
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
+                <GFormInput v-else v-model="secretValue" class="w-100" type="password" />
+                <span v-sanitize-html:links="helpHtml" class="ui-form-info form-text text-muted" />
             </div>
-        </b-modal>
+        </GModal>
     </div>
 </template>
 

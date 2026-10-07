@@ -26,10 +26,10 @@ describe("ToRemoteFile.vue", () => {
     beforeEach(async () => {
         lastPutRequest = null;
         wrapper = shallowMount(ToRemoteFile, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: localVue,
         });
     });
 
@@ -49,6 +49,6 @@ describe("ToRemoteFile.vue", () => {
         await flushPromises();
         expect(lastPutRequest.directory_uri).toEqual("gxfiles://");
         expect(lastPutRequest.file_name).toEqual("export.tar.gz");
-        expect(wrapper.find("b-alert-stub").attributes("variant")).toEqual("success");
+        expect(wrapper.find("g-alert-stub").attributes("variant")).toEqual("success");
     });
 });

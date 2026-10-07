@@ -1,10 +1,12 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <FontAwesomeIcon ref="button" :icon="faBuilding" />
+        <GLink :id="popoverTarget" dark thin type="button" title="Show organization details">
+            <FontAwesomeIcon :icon="faBuilding" />
+        </GLink>
 
-        <BPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Organization">
+        <GPopover triggers="click blur" :target="popoverTarget" title="Organization">
             <GTable :items="items" :fields="fields" />
-        </BPopover>
+        </GPopover>
 
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
@@ -36,18 +38,20 @@
 <script>
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover } from "bootstrap-vue";
+
+import { useUid } from "@/composables/utils/uid";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        BPopover,
         FontAwesomeIcon,
         GLink,
+        GPopover,
         GTable,
     },
     mixins: [ThingViewerMixin],
@@ -60,6 +64,8 @@ export default {
         return {
             faBuilding,
             faExternalLinkAlt,
+            // An id, not a template ref: $refs is empty on first render and not reactive.
+            popoverTarget: useUid("organization-viewer-").value,
             implicitMicrodataProperties: ["name", "email", "url", "identifier"],
             thing: this.organization,
             fields: [

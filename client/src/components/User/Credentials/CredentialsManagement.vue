@@ -20,7 +20,6 @@
  * <CredentialsManagement />
  */
 
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -32,6 +31,7 @@ import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCr
 import Filtering, { contains } from "@/utils/filtering";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -43,11 +43,16 @@ import ServiceCredentialsGroupsList from "@/components/User/Credentials/ServiceC
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Tools Credentials Management" }];
 
 /** Filter configuration for credential groups */
-const credentialsFilterClass = new Filtering({
-    name: { placeholder: "credential group name", type: String, handler: contains("name"), menuItem: true },
-    tool: { placeholder: "tool name", type: String, handler: contains("tool"), menuItem: true },
-    service: { placeholder: "service name", type: String, handler: contains("service"), menuItem: true },
-});
+const credentialsFilterClass = new Filtering(
+    {
+        name: { placeholder: "credential group name", type: String, handler: contains("name"), menuItem: true },
+        tool: { placeholder: "tool name", type: String, handler: contains("tool"), menuItem: true },
+        service: { placeholder: "service name", type: String, handler: contains("service"), menuItem: true },
+    },
+    undefined,
+    true,
+    "name",
+);
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
@@ -186,7 +191,7 @@ function validatedFilterText(): string {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return credentialsFilterClass.getFilterText(validFilters.value, true);
+    return credentialsFilterClass.getFilterText(validFilters.value, true, filterText.value);
 }
 
 /**
@@ -224,21 +229,21 @@ watch(
 
         <FilterMenu
             id="credentials-filter-menu"
+            v-model:filter-text="filterText"
+            v-model:show-advanced="showAdvanced"
             class="mb-2"
             name="Credentials Groups"
             :filter-class="credentialsFilterClass"
-            :filter-text.sync="filterText"
             :loading="isBusy"
-            :show-advanced.sync="showAdvanced"
             placeholder="Search credentials groups by name, tool, or service" />
 
-        <BAlert v-if="isBusy" show>
+        <GAlert v-if="isBusy" show>
             <LoadingSpan :message="busyMessage" />
-        </BAlert>
-        <BAlert v-else-if="noItems" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="noItems" variant="info" show>
             No credentials have been defined for any tools or services yet.
-        </BAlert>
-        <BAlert v-else-if="hasInvalidFilters" variant="danger" show>
+        </GAlert>
+        <GAlert v-else-if="hasInvalidFilters" variant="danger" show>
             <Heading h4 inline size="sm">Invalid filters in query:</Heading>
             <ul class="mb-0">
                 <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -254,10 +259,10 @@ watch(
                 @click="filterText = `'${filterText}'`">
                 Match the exact query provided
             </GLink>
-        </BAlert>
-        <BAlert v-else-if="noResults" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="noResults" variant="info" show>
             No credentials group found matching: <span class="font-weight-bold">{{ filterText }}</span>
-        </BAlert>
+        </GAlert>
         <div v-else-if="!isBusy">
             <ServiceCredentialsGroupsList :service-groups="filteredUserToolsGroups" />
         </div>

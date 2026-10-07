@@ -50,6 +50,45 @@ export function buildToolEntries(toolIds: string[], toolsById: Record<string, To
     return toolIds.map((id) => [id, toolsById[id]] as [string, Tool]).filter(([, tool]) => tool !== undefined);
 }
 
+/** Extract unique tool IDs from a panel tree, ignoring section labels and unknown object types. */
+export function getUniqueToolIdsInPanel(panel: Record<string, ToolPanelItem> | null | undefined): Set<string> {
+    const toolIds = new Set<string>();
+    for (const item of Object.values(panel || {})) {
+        if (isToolSection(item) && item.tools) {
+            item.tools.forEach((toolOrLabel) => {
+                if (typeof toolOrLabel === "string") {
+                    toolIds.add(toolOrLabel);
+                }
+            });
+        } else if (isTool(item)) {
+            toolIds.add(item.id);
+        }
+    }
+    return toolIds;
+}
+
+type CountableTool = Pick<Tool, "id"> & Partial<Pick<Tool, "version">>;
+
+export function getVersionlessToolId(toolId: string, tool: CountableTool | undefined) {
+    if (tool?.version && toolId.endsWith(`/${tool.version}`)) {
+        return toolId.slice(0, -tool.version.length - 1);
+    }
+    return toolId;
+}
+
+export function countUniqueToolsInList<T extends CountableTool>(tools: Record<string, T> | T[]) {
+    const toolEntries = Array.isArray(tools) ? tools.map((tool) => [tool.id, tool] as const) : Object.entries(tools);
+    const toolIds = new Set<string>();
+    for (const [toolId, tool] of toolEntries) {
+        toolIds.add(getVersionlessToolId(toolId, tool));
+    }
+    return toolIds.size;
+}
+
+export function countUniqueToolsInPanel(panel: Record<string, ToolPanelItem> | null | undefined, fallbackCount = 0) {
+    return getUniqueToolIdsInPanel(panel).size || fallbackCount;
+}
+
 /** Filter panel to only include tools matching the provided tool IDs */
 export function filterPanelByToolIds(
     panel: Record<string, ToolPanelItem>,

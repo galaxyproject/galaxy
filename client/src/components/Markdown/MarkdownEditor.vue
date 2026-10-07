@@ -1,5 +1,6 @@
 <template>
     <div id="columns">
+        <LoadingOverlay v-if="props.loading" />
         <div id="center" class="d-flex flex-column h-100 w-100">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -7,7 +8,7 @@
                         {{ title }}
                     </div>
                     <div>
-                        <b-form-radio-group
+                        <BFormRadioGroup
                             v-if="!hasLabels"
                             v-model="editor"
                             v-g-tooltip.hover.bottom
@@ -17,9 +18,9 @@
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
-                        <b-button v-g-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
-                        </b-button>
+                        </GButton>
                     </div>
                 </div>
             </div>
@@ -36,7 +37,7 @@
             </div>
         </div>
         <GModal
-            :show.sync="showHelpModal"
+            v-model:show="showHelpModal"
             size="medium"
             fixed-height
             :title="mode === 'page' ? 'Markdown Help for Pages' : 'Markdown Help for Invocation Reports'">
@@ -48,20 +49,24 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
     mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
+    loading?: boolean;
     steps?: Record<string, any>;
     title: string;
     hideToolbox?: boolean;

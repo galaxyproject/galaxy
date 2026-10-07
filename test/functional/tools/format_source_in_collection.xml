@@ -1,0 +1,59 @@
+<tool id="format_source_in_collection" name="format source in collection" version="0.1.0">
+    <command><![CDATA[
+        echo 'test' > '$by_identifier_forward' &&
+        echo 'test' > '$by_identifier_reverse' &&
+        echo 'test' > '$by_index' &&
+        echo 'test' > '$no_selector'
+    ]]></command>
+    <inputs>
+        <conditional name="cond">
+            <param name="select" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input_collection" type="data_collection" collection_type="paired" format="data"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="by_identifier_forward" format_source="cond|input_collection['forward']"/>
+        <data name="by_identifier_reverse" format_source="cond|input_collection['reverse']"/>
+        <data name="by_index" format_source="cond|input_collection[1]"/>
+        <!-- without a selector the first dataset of the collection is used -->
+        <data name="no_selector" format_source="cond|input_collection"/>
+    </outputs>
+    <tests>
+        <!-- elements differ in format so each output shows which element it resolved -->
+        <test>
+            <conditional name="cond">
+                <param name="select" value="paired"/>
+                <param name="input_collection">
+                    <collection type="paired">
+                        <element name="forward" value="simple_line.txt" ftype="txt"/>
+                        <element name="reverse" value="1.tabular" ftype="tabular"/>
+                    </collection>
+                </param>
+            </conditional>
+            <output name="by_identifier_forward" ftype="txt">
+                <assert_contents>
+                    <has_line line="test"/>
+                </assert_contents>
+            </output>
+            <output name="by_identifier_reverse" ftype="tabular">
+                <assert_contents>
+                    <has_line line="test"/>
+                </assert_contents>
+            </output>
+            <output name="by_index" ftype="tabular">
+                <assert_contents>
+                    <has_line line="test"/>
+                </assert_contents>
+            </output>
+            <output name="no_selector" ftype="txt">
+                <assert_contents>
+                    <has_line line="test"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

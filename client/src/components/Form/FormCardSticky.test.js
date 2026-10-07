@@ -20,7 +20,7 @@ describe("FormCardSticky.vue", () => {
 
     const mountComponent = (props = {}, slots = {}) => {
         return mount(FormCardSticky, {
-            propsData: { ...defaultProps, ...props },
+            props: { ...defaultProps, ...props },
             global: {
                 components: {
                     Heading,
@@ -64,6 +64,25 @@ describe("FormCardSticky.vue", () => {
         expect(wrapper.find("h1").text()).toBe("Tool Name");
         expect(wrapper.text()).toContain("This is a test tool");
         expect(wrapper.text()).toContain("(Galaxy Version 23.0)");
+    });
+
+    it("renders clickable newer version badge with a tooltip when requested", async () => {
+        const wrapper = mountComponent({ isNotLatestVersion: true });
+        const badge = wrapper.find("[data-description='newer tool version']");
+        expect(badge.exists()).toBe(true);
+        expect(badge.text()).toBe("Newer version available");
+        expect(badge.attributes("title")).toBe("Switch to the latest available tool version");
+        expect(badge.element.tagName).toBe("BUTTON");
+        expect(badge.attributes("type")).toBe("button");
+
+        await badge.trigger("click");
+
+        expect(wrapper.emitted("newer-version-click")).toHaveLength(1);
+    });
+
+    it("does not render newer version badge by default", () => {
+        const wrapper = mountComponent();
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
     });
 
     it("renders slot content: buttons, default, footer", () => {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faInbox, faInfoCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCol, BFormGroup, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import type { MessageNotificationCreateRequest } from "@/api/notifications";
@@ -11,6 +11,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -146,9 +147,9 @@ async function sendNewNotification() {
     <div>
         <Heading h1 separator inline class="flex-grow-1"> New Notification </Heading>
 
-        <BAlert v-if="loading" show>
+        <GAlert v-if="loading" show>
             <LoadingSpan message="Loading notification" />
-        </BAlert>
+        </GAlert>
 
         <div v-else>
             <FormElement
@@ -185,12 +186,12 @@ async function sendNewNotification() {
                     ['Urgent', 'urgent'],
                 ]" />
 
-            <BAlert :show="isUrgent" variant="warning">
+            <GAlert :show="isUrgent" variant="warning">
                 <span v-localize>
                     Urgent notifications will ignore the user's notification preferences and will be sent to all
                     available channels. Please use this option sparingly and only for critical notifications.
                 </span>
-            </BAlert>
+            </GAlert>
 
             <FormElement
                 id="notification-recipients-user-ids"
@@ -226,7 +227,10 @@ async function sendNewNotification() {
                         label="Publication Time (local time)"
                         label-for="notification-publication-time"
                         description="The notification will be displayed after this time. Default is the current time.">
-                        <GDateTime id="notification-publication-time" v-model="publicationDate" />
+                        <GDateTime
+                            id="notification-publication-time"
+                            :value="publicationDate"
+                            @input="(v: Date) => (publicationDate = v)" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
@@ -235,7 +239,10 @@ async function sendNewNotification() {
                         label="Expiration Time (local time)"
                         label-for="notification-expiration-time"
                         description="The notification will be deleted from the database after this time. Default is 6 months from the creation time.">
-                        <GDateTime id="notification-expiration-time" v-model="expirationDate" />
+                        <GDateTime
+                            id="notification-expiration-time"
+                            :value="expirationDate"
+                            @input="(v: Date) => (expirationDate = v)" />
                     </BFormGroup>
                 </BCol>
             </BRow>
@@ -257,18 +264,18 @@ async function sendNewNotification() {
                 <template v-slot:description>
                     <span
                         id="notification-message"
-                        class="notification-message"
-                        v-html="renderMarkdown(notificationData.notification.content.message)" />
+                        v-sanitize-html:links="renderMarkdown(notificationData.notification.content.message)"
+                        class="notification-message" />
                 </template>
             </GCard>
 
-            <BAlert show variant="info">
+            <GAlert show variant="info">
                 <FontAwesomeIcon class="mr-2" :icon="faInfoCircle" />
                 <span v-localize>
                     Once you send the notification, it will be sent to all the recipients and cannot be edited or
                     deleted.
                 </span>
-            </BAlert>
+            </GAlert>
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton

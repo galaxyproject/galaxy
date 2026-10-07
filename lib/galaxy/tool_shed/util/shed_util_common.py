@@ -3,6 +3,7 @@ import re
 from urllib.parse import quote
 
 from galaxy import util
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
 
@@ -29,7 +30,7 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     return True
 
 
-def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, tool_shed_url):
+def clean_dependency_relationships(trans: ProvidesAppContext, metadata_dict, tool_shed_repository, tool_shed_url):
     """
     Repositories of type tool_dependency_definition allow for defining a
     package dependency at some point in the change log and then removing the

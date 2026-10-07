@@ -168,6 +168,9 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
+    def allows_tool_provided_metadata(self) -> bool:
+        return True
+
     def __init__(
         self, xml_tree: ElementTree, source_path: Optional["StrPath"] = None, macro_paths: list[str] | None = None
     ) -> None:
@@ -457,6 +460,12 @@ class XmlToolSource(ToolSource):
             provided_metadata_file = out_elem.attrib["provided_metadata_file"]
 
         return provided_metadata_file
+
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        out_elem = self.root.find("outputs")
+        return out_elem is not None and any(
+            attribute in out_elem.attrib for attribute in ("provided_metadata_file", "provided_metadata_style")
+        )
 
     def parse_outputs(self, app: ToolOutputActionApp | None = None):
         out_elem = self.root.find("outputs")
@@ -790,10 +799,10 @@ class XmlToolSource(ToolSource):
                 config_files.append(FileSourceConfigFile(name=name, filename=filename, content={"type": "files"}))
         return config_files
 
-    def parse_creator(self):
+    def parse_creator(self) -> list[dict[str, Any]]:
         creators_el = self.root.find("creator")
         if creators_el is None:
-            return None
+            return []
 
         creators = []
         for creator_el in creators_el:
@@ -805,9 +814,23 @@ class XmlToolSource(ToolSource):
             else:
                 continue
             creator_as_dict["class"] = clazz
-            creator_as_dict.update(creator_el.attrib)
+            creator_as_dict.update(_element_to_dict(creator_el))
             creators.append(creator_as_dict)
         return creators
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        funding_el = self.root.find("funding")
+        if funding_el is None:
+            return []
+
+        funding = []
+        for grant_el in funding_el:
+            grant_as_dict = {}
+            if grant_el.tag == "grant":
+                grant_as_dict["class"] = "Grant"
+                grant_as_dict.update(_element_to_dict(grant_el))
+                funding.append(grant_as_dict)
+        return funding
 
 
 def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:

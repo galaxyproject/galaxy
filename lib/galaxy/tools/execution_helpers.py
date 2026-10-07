@@ -5,8 +5,11 @@ tool execution code, and tool action code.
 """
 
 import logging
+from typing import Any
 
 from more_itertools import consecutive_groups
+
+from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -16,11 +19,11 @@ class ToolExecutionCache:
     the same tool by the same user with slightly different parameters.
     """
 
-    def __init__(self, trans):
+    def __init__(self, trans: ProvidesUserContext):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
-        self.chrom_info = {}
-        self.cached_collection_elements = {}
+        self.chrom_info: dict[str, Any] = {}
+        self.cached_collection_elements: dict[Any, Any] = {}
 
     def get_chrom_info(self, tool_id, input_dbkey):
         genome_builds = self.trans.app.genome_builds

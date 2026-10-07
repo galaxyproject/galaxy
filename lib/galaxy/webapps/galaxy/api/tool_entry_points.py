@@ -8,7 +8,6 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     InteractiveToolEntryPoint,
     Job,
@@ -16,6 +15,7 @@ from galaxy.model import (
 from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
         self.interactivetool_manager = app.interactivetool_manager
 
     @expose_api_anonymous_and_sessionless
-    def index(self, trans: ProvidesUserContext, running=False, job_id=None, **kwd):
+    def index(self, trans: GalaxyWebTransaction, running=False, job_id=None, **kwd):
         """
         * GET /api/entry_points
             Returns tool entry point information. Currently passing a job_id
@@ -75,7 +75,7 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
         return rval
 
     @expose_api_anonymous_and_sessionless
-    def access_entry_point(self, trans: ProvidesUserContext, id, **kwd):
+    def access_entry_point(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         * GET /api/entry_points/{id}/access
             Return the URL target described by the entry point.
@@ -94,7 +94,7 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
         return {"target": self.interactivetool_manager.access_entry_point_target(trans, entry_point_id)}
 
     @expose_api_anonymous_and_sessionless
-    def stop_entry_point(self, trans: ProvidesUserContext, id, **kwds):
+    def stop_entry_point(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         DELETE /api/entry_points/{id}
         """

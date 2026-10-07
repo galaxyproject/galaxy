@@ -2,9 +2,9 @@
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
@@ -16,6 +16,7 @@ import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -288,7 +289,7 @@ function validatedFilterText() {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return filterClass?.getFilterText(validFilters.value || {}, false) || "";
+    return filterClass?.getFilterText(validFilters.value || {}, false, filterText.value) || "";
 }
 
 /**
@@ -322,8 +323,8 @@ watch(operationMessage, () => {
 
 <template>
     <div :id="gridConfig.id" class="d-flex flex-column overflow-auto">
-        <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
+        <GAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+        <GAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</GAlert>
         <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
                 <Heading h1 separator inline size="lg" class="flex-grow-1 m-0" data-description="grid title">
@@ -339,34 +340,34 @@ watch(operationMessage, () => {
                         outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon v-if="action.icon" :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
                     </GButton>
                 </div>
             </div>
             <FilterMenu
                 v-if="filterClass"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
                 :loading="initDataLoading || resultsLoading"
-                :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>
         <span v-else-if="!isAvailable || hasInvalidFilters">
-            <BAlert v-if="!hasInvalidFilters" variant="info" show>
+            <GAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
                     <span v-localize>Nothing found with:</span>
                     <b>{{ filterText }}</b>
                 </span>
                 <span v-else v-localize>{{ noDataMessage }}</span>
-            </BAlert>
-            <BAlert v-else-if="invalidFilters" variant="danger" show>
+            </GAlert>
+            <GAlert v-else-if="invalidFilters" variant="danger" show>
                 <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -386,7 +387,7 @@ watch(operationMessage, () => {
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </a>
-            </BAlert>
+            </GAlert>
         </span>
         <template v-else>
             <div class="position-relative">
@@ -406,8 +407,9 @@ watch(operationMessage, () => {
                             class="text-nowrap px-2"
                             :data-description="`grid header ${fieldIndex}`">
                             <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                                <BButton
-                                    variant="link"
+                                <GButton
+                                    transparent
+                                    color="blue"
                                     class="text-nowrap font-weight-bold p-0"
                                     :data-description="`grid sort key ${fieldEntry.key}`"
                                     @click="onSort(fieldEntry.key)">
@@ -419,7 +421,7 @@ watch(operationMessage, () => {
                                             data-description="grid sort desc" />
                                         <FontAwesomeIcon v-else :icon="faCaretUp" data-description="grid sort asc" />
                                     </span>
-                                </BButton>
+                                </GButton>
                             </span>
                             <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
                         </th>
@@ -450,7 +452,7 @@ watch(operationMessage, () => {
                                     <GridExpand
                                         v-else-if="fieldEntry.type == 'expand'"
                                         :details-showing="expanded.has(rowData)"
-                                        @show-details="(s) => showDetails(rowData, s)" />
+                                        @show-details="(s: boolean) => showDetails(rowData, s)" />
                                     <GridBoolean
                                         v-else-if="fieldEntry.type == 'boolean'"
                                         :value="rowData[fieldEntry.key]" />

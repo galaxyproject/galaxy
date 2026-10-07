@@ -1,19 +1,13 @@
 <script setup lang="ts">
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BDropdown,
-    BDropdownDivider,
-    BDropdownGroup,
-    BDropdownItem,
-    BFormCheckbox,
-} from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { LibraryFolderMetadata } from "@/api/libraries";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
@@ -26,6 +20,12 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
@@ -42,7 +42,7 @@ type CollectionElement = {
 };
 
 interface Props {
-    metadata: any;
+    metadata: LibraryFolderMetadata;
     selected: any[];
     folderId: string;
     unselected: any[];
@@ -51,6 +51,8 @@ interface Props {
     includeDeleted: boolean;
     isAllSelectedMode: boolean;
     canAddLibraryItem?: boolean;
+    hasReadme?: boolean;
+    readmeVisible?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -64,6 +66,7 @@ const emit = defineEmits<{
     (e: "deleteFromTable", item: any): void;
     (e: "updateSearch", value: string): void;
     (e: "update:includeDeleted", value: boolean): void;
+    (e: "toggleReadme"): void;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -257,7 +260,7 @@ async function addDatasets(
             await datasetApiCall(dataset);
 
             progressStatus.okCount++;
-        } catch (e) {
+        } catch {
             progressStatus.errorCount++;
         } finally {
             progressStatus.runningCount--;
@@ -312,19 +315,15 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <BButton
-                class="mr-1 btn btn-secondary"
-                :to="{ path: `/libraries` }"
-                data-toggle="tooltip"
-                title="Go to libraries list">
+            <GButton class="mr-1 btn btn-secondary" to="/libraries" data-toggle="tooltip" title="Go to libraries list">
                 <FontAwesomeIcon :icon="faHome" />
-            </BButton>
+            </GButton>
 
-            <div>
-                <div class="form-inline">
+            <div class="flex-grow-1">
+                <div class="form-inline d-flex w-100">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
 
-                    <BButton
+                    <GButton
                         v-if="props.canAddLibraryItem"
                         title="Create new folder"
                         class="add-library-items-folder mr-1"
@@ -332,9 +331,9 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         @click="newFolder">
                         <FontAwesomeIcon :icon="faPlus" />
                         Folder
-                    </BButton>
+                    </GButton>
 
-                    <BDropdown
+                    <GDropdown
                         v-if="props.canAddLibraryItem"
                         v-g-tooltip.top
                         right
@@ -346,52 +345,52 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem @click="onAddDatasets('history')"> from History </BDropdownItem>
+                        <GDropdownItem @click="onAddDatasets('history')"> from History </GDropdownItem>
 
-                        <BDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
+                        <GDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
                             from User Directory
-                        </BDropdownItem>
+                        </GDropdownItem>
 
-                        <BDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
+                        <GDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
 
-                        <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
-                            <BDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
+                        <GDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
+                            <GDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
                                 from Import Directory
-                            </BDropdownItem>
+                            </GDropdownItem>
 
-                            <BDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
+                            <GDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
                                 from Path
-                            </BDropdownItem>
-                        </BDropdownGroup>
-                    </BDropdown>
+                            </GDropdownItem>
+                        </GDropdownGroup>
+                    </GDropdown>
 
-                    <BDropdown v-g-tooltip.top right no-caret class="add-to-history mr-1">
+                    <GDropdown v-g-tooltip.top right no-caret class="add-to-history mr-1">
                         <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faBook" />
                             Add to History
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
+                        <GDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
                             as Datasets
-                        </BDropdownItem>
+                        </GDropdownItem>
 
-                        <BDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
+                        <GDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
                             as a Collection
-                        </BDropdownItem>
-                    </BDropdown>
+                        </GDropdownItem>
+                    </GDropdown>
 
                     <div
                         v-if="datasetManipulation"
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1">
-                        <BButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
+                        <GButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <FontAwesomeIcon :icon="faDownload" />
                             Download
-                        </BButton>
+                        </GButton>
                     </div>
 
-                    <BButton
+                    <GButton
                         v-if="canDelete"
                         data-toggle="tooltip"
                         title="Mark items deleted"
@@ -400,7 +399,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         @click="deleteSelected">
                         <FontAwesomeIcon :icon="faTrash" />
                         Delete
-                    </BButton>
+                    </GButton>
 
                     <FolderDetails :id="props.folderId" class="mr-1" :metadata="props.metadata" />
 
@@ -409,11 +408,25 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             include deleted
                         </BFormCheckbox>
                     </div>
+
+                    <GButton
+                        tooltip
+                        tooltip-placement="top"
+                        :title="props.readmeVisible ? 'Hide README' : 'Show README'"
+                        disabled-title="No README available"
+                        :pressed="props.readmeVisible"
+                        :disabled="!props.hasReadme"
+                        class="primary-button ml-auto"
+                        type="button"
+                        @click="$emit('toggleReadme')">
+                        <FontAwesomeIcon :icon="faReadme" fixed-width />
+                        README
+                    </GButton>
                 </div>
             </div>
         </div>
 
-        <BAlert v-model="progress" :dismissible="progressStatus.runningCount === 0" variant="info" class="mb-1">
+        <GAlert v-model="progress" :dismissible="progressStatus.runningCount === 0" variant="info" class="mb-1">
             <ProgressBar
                 :loading="progressStatus.runningCount > 0"
                 :note="progressNote"
@@ -421,7 +434,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 :ok-count="progressStatus.okCount"
                 :error-count="progressStatus.errorCount"
                 :running-count="progressStatus.runningCount" />
-        </BAlert>
+        </GAlert>
 
         <LibraryBreadcrumb
             v-if="props.metadata && props.metadata.full_path"
@@ -442,11 +455,11 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 
         <CollectionCreatorIndex
             v-if="collectionModalType && collectionHistoryId"
+            v-model:show="collectionModalShow"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
             :extended-collection-type="{}"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

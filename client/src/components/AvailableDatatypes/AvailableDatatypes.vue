@@ -13,7 +13,7 @@ const filter = ref("");
 const filterFields: Array<keyof DetailedDatatypes> = ["extension"];
 
 const { datatypes } = useDetailedDatatypes();
-const filteredDatatypes = useFilterObjectArray(datatypes, filter, filterFields);
+const { filtered: filteredDatatypes } = useFilterObjectArray(datatypes, filter, filterFields);
 
 const fields: TableField[] = [
     {
@@ -48,7 +48,11 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
             can be filtered by in the History, by expanding "search datasets".
         </p>
 
-        <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
+        <DelayedInput
+            placeholder="filter extensions"
+            class="mb-3"
+            :delay="200"
+            @change="(val: string) => (filter = val)" />
 
         <GTable compact show-empty striped sort-by="extension" :fields="fields" :items="filteredDatatypes">
             <template v-slot:cell(extension)="{ item }">

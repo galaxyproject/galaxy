@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { UserConcreteObjectStore } from "@/api/objectStores";
@@ -11,6 +10,7 @@ import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore
 import _l from "@/utils/localization";
 
 import InstanceDropdown from "./InstanceDropdown.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -51,7 +51,11 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 
 <template>
     <div>
-        <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
+        <ConfigurationTestSummaryModal
+            :value="showTestResults"
+            :error="testingError"
+            :test-results="testResults"
+            @input="(v: boolean) => (showTestResults = v)" />
 
         <ManageIndexHeader header="Galaxy Storage" :message="message" create-route="/object_store_instances/create" />
 
@@ -66,9 +70,9 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
             :items="activeInstances">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading Galaxy storage instances" />
-                <BAlert v-else id="no-object-store-instances" variant="info" show>
+                <GAlert v-else id="no-object-store-instances" variant="info" show>
                     No Galaxy storage instances found, click the create button to configure a new one.
-                </BAlert>
+                </GAlert>
             </template>
 
             <template v-slot:cell(badges)="{ item }">

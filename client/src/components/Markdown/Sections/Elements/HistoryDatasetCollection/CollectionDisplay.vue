@@ -1,52 +1,51 @@
 <template>
-    <b-alert v-if="!!errorText" variant="warning" show>
+    <GAlert v-if="!!errorText" variant="warning" show>
         {{ errorText }}
-    </b-alert>
-    <b-card v-else body-class="p-0">
-        <b-card-header>
+    </GAlert>
+    <BCard v-else body-class="p-0">
+        <BCardHeader>
             <span class="float-right">
-                <b-button
+                <GButton
                     v-g-tooltip.hover
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Download Collection"
-                    type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentHistoryId"
                     v-g-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    transparent
                     title="Import Collection"
-                    type="button"
+                    size="small"
+                    icon-only
                     class="py-0 px-1"
                     @click="onCopyCollection(currentHistoryId)">
                     <span class="fa fa-file-import" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset Collection:</span>
                 <span class="font-weight-light">{{ itemName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+        <BCardBody>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
-                <b-alert v-if="!!messageText" :variant="messageVariant" show>
+                <GAlert v-if="!!messageText" :variant="messageVariant" show>
                     {{ messageText }}
-                </b-alert>
+                </GAlert>
                 <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 
 <script setup lang="ts">
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -56,6 +55,8 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import CollectionTree from "./CollectionTree.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{

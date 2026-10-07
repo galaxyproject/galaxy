@@ -19,7 +19,9 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
+    ParseException,
 )
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
     DiscriminatorType,
@@ -60,6 +62,18 @@ from .parameter_validators import parse_dict_validators
 from .stdio import error_on_exit_code
 from .util import is_dict
 
+# The parser honours more root keys than the user-defined tool schema allows
+# (``command``, ``base_command``, ``runtime_version``, ``entry_points``, ...),
+# some of which reach Cheetah or a different tool class, so a user-defined
+# tool may only carry the keys its schema defines.
+USER_TOOL_ROOT_KEYS = frozenset(field.alias or name for name, field in UserToolSource.model_fields.items())
+# Input keys whose values Galaxy evaluates as Python.
+TRUSTED_ONLY_INPUT_KEYS = ("dynamic_options",)
+
+
+class UntrustedToolSourceError(ValueError):
+    """A user-defined tool uses a key that only admin-installed tools may set."""
+
 
 class YamlToolSource(ToolSource):
     language = "yaml"
@@ -68,6 +82,12 @@ class YamlToolSource(ToolSource):
         self.root_dict = root_dict
         self._source_path = source_path
         self._macro_paths: list[str] = []
+        if not self._trusted and (unsupported := sorted(set(root_dict) - USER_TOOL_ROOT_KEYS)):
+            raise UntrustedToolSourceError(f"User-defined tools may not set {', '.join(unsupported)}.")
+
+    @property
+    def _trusted(self) -> bool:
+        return self.parse_class() != "GalaxyUserTool"
 
     @property
     def source_path(self):
@@ -75,6 +95,9 @@ class YamlToolSource(ToolSource):
 
     def parse_class(self):
         return self.root_dict.get("class")
+
+    def allows_tool_provided_metadata(self) -> bool:
+        return self.parse_class() in (None, "GalaxyTool")
 
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
@@ -113,6 +136,12 @@ class YamlToolSource(ToolSource):
     def parse_xrefs(self) -> list[XrefDict]:
         xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
+
+    def parse_creator(self) -> list[dict[str, Any]]:
+        return self.root_dict.get("creator") or []
+
+    def parse_funding(self) -> list[dict[str, Any]]:
+        return [{"class": "Grant", **grant} for grant in self.root_dict.get("funding") or []]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -155,7 +184,16 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements(self):
-        mixed_requirements = self.root_dict.get("requirements", [])
+        mixed_requirements = self.root_dict.get("requirements") or []
+        if self.parse_class() == "GalaxyUserTool":
+            if not isinstance(mixed_requirements, list) or not all(
+                isinstance(requirement, dict) for requirement in mixed_requirements
+            ):
+                raise ParseException("User-defined tool requirements must be a list of mappings.")
+            if any(requirement.get("type") == "container" for requirement in mixed_requirements):
+                raise ParseException(
+                    "Container requirements are not supported for user-defined tools; set the top-level container field."
+                )
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")
         if container:
@@ -176,7 +214,7 @@ class YamlToolSource(ToolSource):
 
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
-        page_source = YamlPageSource(self.root_dict.get("inputs", {}))
+        page_source = YamlPageSource(self.root_dict.get("inputs", {}), trusted=self._trusted)
         return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
@@ -282,7 +320,9 @@ class YamlToolSource(ToolSource):
             inputs = test_dict.get("inputs", {})
             state = TestCaseJsonToolState(inputs)
             parameters = self._parse_parameters()
-            state.validate(parameters, name=f"test case json {i}")
+            if not test_dict.get("expect_failure", False):
+                # tests expecting failure may supply values the tool rejects
+                state.validate(parameters, name=f"test case json {i}")
 
             flat_inputs: dict[str, Any] = {}
             self._flatten_parameters(inputs, parameters, flat_inputs=flat_inputs)
@@ -348,7 +388,10 @@ class YamlToolSource(ToolSource):
         return parameter_bundle
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile") or "24.2"
+        # str(): YAML/JSON tool sources (and UserToolSource) carry ``profile`` as a
+        # number (e.g. 24.2), but callers -- the linters' ``Version(profile)`` -- need
+        # a string. The ``-> str`` annotation was previously violated for numeric input.
+        return str(self.root_dict.get("profile") or "24.2")
 
     def parse_license(self) -> str | None:
         return self.root_dict.get("license")
@@ -383,7 +426,7 @@ def __parse_test_inputs(i: int, test_inputs: list | dict) -> ToolSourceTestInput
 
 def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     test_dict["inputs"] = __parse_test_inputs(i, deepcopy(test_dict["inputs"]))
-    outputs = test_dict["outputs"]
+    outputs = test_dict.get("outputs") or {}
 
     new_outputs = []
     if is_dict(outputs):
@@ -501,17 +544,20 @@ __to_test_assert_list = to_test_assert_list
 
 
 class YamlPageSource(PageSource):
-    def __init__(self, inputs_list):
+    def __init__(self, inputs_list, trusted: bool = True):
         self.inputs_list = inputs_list
+        self.trusted = trusted
 
     def parse_input_sources(self):
-        return list(map(YamlInputSource, self.inputs_list))
+        return [YamlInputSource(input_dict, trusted=self.trusted) for input_dict in self.inputs_list]
 
 
 class YamlInputSource(InputSource):
     def __init__(self, input_dict, trusted: bool = True):
         self.input_dict = input_dict
         self.trusted = trusted
+        if not trusted and (keys := [key for key in TRUSTED_ONLY_INPUT_KEYS if key in input_dict]):
+            raise UntrustedToolSourceError(f"Input parameters of user-defined tools may not set {', '.join(keys)}.")
 
     def get(self, key, default=None):
         return self.input_dict.get(key, default)
@@ -543,12 +589,12 @@ class YamlInputSource(InputSource):
 
     def parse_nested_inputs_source(self):
         assert self.parse_input_type() == "repeat"
-        return YamlPageSource(self.input_dict["blocks"])
+        return YamlPageSource(self.input_dict["blocks"], trusted=self.trusted)
 
     def parse_test_input_source(self):
         test_dict = self.input_dict.get("test_parameter", None)
         assert test_dict is not None, "conditional must contain a `test_parameter` definition"
-        return YamlInputSource(test_dict)
+        return YamlInputSource(test_dict, trusted=self.trusted)
 
     def parse_when_input_sources(self):
         input_dict = self.input_dict
@@ -559,13 +605,13 @@ class YamlInputSource(InputSource):
                 # casting to string because default value for BooleanToolParameter.legal_values is "true" / "false"
                 # Unfortunate, but I guess that's ok for now?
                 discriminator = "true" if key is True else "false" if key is False else key
-                case_page_source = YamlPageSource(value)
+                case_page_source = YamlPageSource(value, trusted=self.trusted)
                 sources.append((discriminator, case_page_source))
         else:
             for value in input_dict.get("whens", []):
                 key = value.get("discriminator")
                 discriminator = "true" if key is True else "false" if key is False else key
-                case_page_source = YamlPageSource(value["parameters"])
+                case_page_source = YamlPageSource(value["parameters"], trusted=self.trusted)
                 sources.append((discriminator, case_page_source))
         return sources
 
