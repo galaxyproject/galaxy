@@ -2,26 +2,29 @@
 import { faChevronLeft, faChevronRight, faFilter, faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { GButton, GFormInput } from "@galaxyproject/galaxy-ui"
+import { watchDebounced } from "@vueuse/core"
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import { type Query, RepositoryGridItem, type OnRequest } from "./RepositoriesGridInterface"
+import { type Query, type QueryResults, RepositoryGridItem, type OnRequest } from "./RepositoriesGridInterface"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
 import UtcDate from "@/components/UtcDate.vue"
+import { notifyOnCatch } from "@/util"
 
 const route = useRoute()
 const router = useRouter()
 
 const DEFAULT_ROWS_PER_PAGE = 25
+const FILTER_DEBOUNCE_MS = 300
 
-const rowsPerPage = computed(() => {
-    const rowsPerPageQuery = route.query.rows_per_page
-    if (typeof rowsPerPageQuery == "string") {
-        return Number.parseInt(rowsPerPageQuery)
-    }
-    return DEFAULT_ROWS_PER_PAGE
-})
+// URL query values are user-editable, so anything that isn't a positive whole number falls back
+function positiveInteger(value: unknown, fallback: number): number {
+    const parsed = typeof value === "string" ? Number.parseInt(value) : NaN
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const rowsPerPage = computed(() => positiveInteger(route.query.rows_per_page, DEFAULT_ROWS_PER_PAGE))
 
 interface RepositoriesGridProps {
     title?: string
@@ -43,13 +46,7 @@ const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
     syncPageToUrl: false,
 })
 
-const initialPage = computed(() => {
-    const pageQuery = route.query.page
-    if (typeof pageQuery == "string") {
-        return Number.parseInt(pageQuery)
-    }
-    return 1
-})
+const initialPage = computed(() => positiveInteger(route.query.page, 1))
 
 const page = ref(initialPage.value)
 const rowsNumber = ref<number | undefined>(undefined)
@@ -78,7 +75,16 @@ async function requestPage(pageNumber: number) {
     if (compProps.allowSearch && search.value) {
         query.filter = search.value
     }
-    const results = await compProps.onRequest(query)
+    let results: QueryResults
+    try {
+        results = await compProps.onRequest(query)
+    } catch (e) {
+        if (thisRequest === latestRequest) {
+            tableLoading.value = false
+            notifyOnCatch(e)
+        }
+        return
+    }
     if (thisRequest !== latestRequest) {
         return
     }
@@ -104,17 +110,21 @@ function makeRequest() {
 
 defineExpose({ makeRequest })
 
-// A new filter starts the results over from the first page
-watch(search, () => {
-    void requestPage(1)
-})
+// A new filter starts the results over from the first page, once typing pauses
+watchDebounced(
+    search,
+    () => {
+        void requestPage(1)
+    },
+    { debounce: FILTER_DEBOUNCE_MS },
+)
 
 // Handle browser back/forward navigation for page
 watch(
     () => route.query.page,
     (newPage) => {
         if (!compProps.syncPageToUrl) return
-        const pageNum = typeof newPage === "string" ? Number.parseInt(newPage) : 1
+        const pageNum = positiveInteger(newPage, 1)
         if (pageNum !== page.value) {
             void requestPage(pageNum)
         }
@@ -133,9 +143,7 @@ onMounted(() => {
     <!-- The page names what is listed (in its header); the grid labels its list with the same title -->
     <section class="repositories-grid shed-card" :aria-busy="tableLoading" :aria-label="title">
         <div class="grid-top">
-            <h2 class="grid-count">
-                <template v-if="rowsNumber !== undefined">{{ countLabel }}</template>
-            </h2>
+            <h2 v-if="rowsNumber !== undefined" class="grid-count">{{ countLabel }}</h2>
             <div v-if="allowSearch" class="grid-filter">
                 <FontAwesomeIcon :icon="faFilter" class="grid-filter-icon" aria-hidden="true" />
                 <GFormInput
@@ -229,6 +237,8 @@ onMounted(() => {
 .grid-filter {
     position: relative;
     flex: 0 1 20rem;
+    /* Stays right-aligned before the count heading has rendered */
+    margin-left: auto;
 }
 
 .grid-filter-icon {
