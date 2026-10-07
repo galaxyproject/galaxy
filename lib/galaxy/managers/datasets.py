@@ -182,7 +182,7 @@ class DatasetManager(
         # For files in extra_files_path
         extra_files_path = request.extra_files_path
         try:
-            if extra_files_path:
+            if extra_files_path and extra_files_path != DatasetHash.FINAL:
                 extra_dir = dataset.extra_files_path_name
                 file_path = self.app.object_store.get_filename(
                     dataset,
@@ -191,6 +191,10 @@ class DatasetManager(
                     auth=auth,
                 )
             else:
+                # None (primary-file hash with no further guarantee) or DatasetHash.FINAL
+                # (primary-file hash tagged as the authoritative value to match on) both hash
+                # the primary file; only the extra_files_path value stored on the resulting row
+                # differs.
                 file_path = dataset.get_file_name(auth=auth)
         except ObjectInvalid:
             log.warning(
