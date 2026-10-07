@@ -1797,12 +1797,43 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.get("workflows/import")
 
     def workflow_index_open_with_name(self, name: str):
+        """Open the workflow titled ``name`` (else the only one whose title contains it) in the editor."""
         self._workflow_card_action(name, self.navigation.workflows.edit_button)
 
     def _workflow_card_action(self, name: str, action: Target):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.wait_for_and_click(action)
+
+        def click_action():
+            card = self._wait_on(
+                lambda: self._workflow_card_named(name),
+                f"search results with a workflow titled or uniquely containing [{name}]",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+            card.find_element(*action.element_locator).click()
+
+        # Cards stay mounted under a loading overlay while the search reloads them.
+        retry_call_during_transitions(click_action)
+
+    def _workflow_card_named(self, name: str):
+        """Card titled exactly ``name``, else the only card, once every listed title contains ``name``.
+
+        Until then the list still shows unfiltered workflows (search input is debounced). Like the
+        server's search, containment ignores case.
+        """
+        cards = self.components.workflows.workflow_card.all()
+        title_locator = self.navigation.workflows.workflow_card_title.element_locator
+        try:
+            titles = [card.find_element(*title_locator).text for card in cards]
+        except Exception as e:
+            if not exception_indicates_stale_element(e):
+                raise
+            return None
+        if not titles or any(name.lower() not in title.lower() for title in titles):
+            return None
+        if name in titles:
+            return cards[titles.index(name)]
+        return cards[0] if len(cards) == 1 else None
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1957,7 +1988,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_with_name(self, name: str):
+        """Open the run form of the workflow titled ``name`` (else the only one whose title contains it)."""
         self._workflow_card_action(name, self.navigation.workflows.run_button)
+        # Callers expect the run form rendered; they don't all wait on the same element.
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: dict[str, Any]):
