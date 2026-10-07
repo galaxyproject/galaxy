@@ -429,6 +429,23 @@ def test_drop_instance_references_drops_dataset_cells(cell):
     ]
 
 
+@pytest.mark.parametrize(
+    "cell",
+    [
+        '  ```visualization\n{"visualization_name": "csv", "dataset_id": "f2db41e1fa331b3e"}\n  ```\n',
+        '```visualization\r\n{"visualization_name": "csv", "dataset_id": "f2db41e1fa331b3e"}\r\n```\r\n',
+    ],
+    ids=["indented", "crlf"],
+)
+def test_drop_instance_references_drops_cells_the_client_parses(cell):
+    markdown = f"# A\n\n{cell}\nAfter.\n"
+    validate_galaxy_markdown(markdown)
+    swept, warnings = report._drop_instance_references(markdown)
+    assert "f2db41e1fa331b3e" not in swept
+    assert "After." in swept
+    assert len(warnings) == 1
+
+
 def test_drop_instance_references_keeps_workflow_relative_visualization():
     markdown = (
         '```visualization\n{"visualization_name": "csv", "dataset_label": {"invocation_id": "", "output": "x"}}\n```\n'
