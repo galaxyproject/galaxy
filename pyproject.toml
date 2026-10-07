@@ -108,6 +108,7 @@ dependencies = [
     "starlette>=1.0.1",  # CVE-2026-48710 BadHost
     "starlette-context",
     "svgwrite",
+    "thriftpy2",
     "tifffile",
     "typing-extensions",
     "tuspyserver",
@@ -159,7 +160,6 @@ test = [
     "seletools",
     "statsd",
     "testfixtures",
-    "thriftpy2",
     "total-perspective-vortex>=3.1.1,<4",  # https://github.com/galaxyproject/total-perspective-vortex/pull/173
     "tuspy",
     "watchdog",

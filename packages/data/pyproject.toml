@@ -47,6 +47,7 @@ dependencies = [
     "rocrate<0.15.0",
     "social-auth-core>=4.5.0,<6",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "thriftpy2",
     "tifffile",
     "typing-extensions",
 ]
@@ -75,7 +76,6 @@ test = [
     "pyarrow==24.0.0",
     "pytest",
     "roc-validator",
-    "thriftpy2",
 ]
 
 [project.scripts]
