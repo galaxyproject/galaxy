@@ -853,6 +853,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             log.info("failure running job %d: %s", job_wrapper.job_id, e)
             fail_message = str(e)
             fail_or_resubmit = True
+        except ProtectionError as e:
+            # The destination can't run jobs decrypting data, tell the user why.
+            log.info("protected job %d refused: %s", job_wrapper.job_id, unicodify(e))
+            fail_message = str(e)
+            fail_or_resubmit = True
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             fail_or_resubmit = True
