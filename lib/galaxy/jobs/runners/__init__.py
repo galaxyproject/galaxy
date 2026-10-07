@@ -819,8 +819,12 @@ class BaseJobRunner:
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
             eval_error = None
             if any(error["errno"] == errno.ENOENT for error in stdio_errors):
-                # When remote_tool_eval.py fails the tool never runs, so its streams are never written.
+                # When a step running before the tool fails (remote_tool_eval.py, decrypting protected inputs),
+                # the tool never runs, so its streams are never written.
                 eval_error = self._read_remote_tool_eval_error(job_wrapper)
+                if eval_error is None and (protection_failure := job_wrapper.protection_setup_failure()):
+                    # Its traceback, for unexpected errors only, is part of the job's stderr.
+                    eval_error = {"message": protection_failure, "traceback": ""}
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -861,10 +865,11 @@ class BaseJobRunner:
                 # collected diagnostics before another collection error can obscure them.
                 if eval_error:
                     message = f"Galaxy failed to prepare this job, so the tool was not run: {eval_error['message']}"
-                    # fail() refreshes the job, so persist the traceback first.
-                    job.traceback = eval_error["traceback"]
-                    self.sa_session.add(job)
-                    self.sa_session.commit()
+                    if eval_error["traceback"]:
+                        # fail() refreshes the job, so persist the traceback first.
+                        job.traceback = eval_error["traceback"]
+                        self.sa_session.add(job)
+                        self.sa_session.commit()
                 else:
                     message = "\n".join(error["desc"] for error in stdio_errors if error["desc"])
                 job_wrapper.fail(
