@@ -1816,7 +1816,13 @@ class MinimalJobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             try:
-                if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
+                if (
+                    self.outputs_to_working_directory
+                    and not self.__link_file_check()
+                    and working_directory_exists
+                    # Outputs of protected jobs are only stored once encrypted, what the tool wrote may be plaintext.
+                    and not job.protection_scheme
+                ):
                     for dataset_path in self.job_io.get_output_fnames():
                         try:
                             self._move_working_directory_output(dataset_path)
@@ -1827,6 +1833,14 @@ class MinimalJobWrapper(HasResourceParameters):
                             log.warning("fail(): Not moving %s: %s", dataset_path.false_path, e)
             except Exception as e:
                 log.exception(str(e))
+            if job.protection_scheme:
+                try:
+                    self.app.dataset_protection.fail_job(job, self.working_directory)
+                except Exception:
+                    log.exception(
+                        "(%s) fail(): Could not remove the outputs of a failed protected job", self.get_id_tag()
+                    )
+                self.sa_session.flush()
             # finish() sets the total size of the outputs in the same transaction that charges them to the user,
             # so outputs without a total size haven't been charged yet
             uncharged_datasets = [

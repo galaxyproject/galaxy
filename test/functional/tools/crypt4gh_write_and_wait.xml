@@ -1,0 +1,14 @@
+<!-- Test tool for Crypt4GH support: what jobs failed by Galaxy while running wrote is never stored. -->
+<tool id="crypt4gh_write_and_wait" name="crypt4gh_write_and_wait" version="1.0.0">
+    <description>copies its input to its output, then waits</description>
+    <command><![CDATA[
+cat '$input1' > '$output1' &&
+sleep 60
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1"/>
+    </outputs>
+</tool>
