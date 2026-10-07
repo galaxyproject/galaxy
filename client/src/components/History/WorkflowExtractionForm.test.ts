@@ -768,10 +768,12 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm("history-1", "page-1");
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
-            expect(Toast.warning).toHaveBeenCalledWith(
-                "Dropped a workflow display from the report.",
-                "Notebook report notes",
-            );
+            // Report notes stay until dismissed; they can be long and are easy to miss.
+            expect(Toast.addToast).toHaveBeenCalledWith("Dropped a workflow display from the report.", {
+                title: "Notebook report notes",
+                variant: "warning",
+                duration: 0,
+            });
         });
 
         it("pre-checks a seeded mapped row and submits its ICJ, excluding the unseeded one", async () => {
