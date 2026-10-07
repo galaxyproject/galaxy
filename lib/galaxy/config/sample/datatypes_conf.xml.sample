@@ -362,6 +362,15 @@
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
         <converter file="archive_to_directory.xml" target_datatype="directory" />
     </datatype>
+    <!-- Montreal Forced Aligner datatypes -->
+    <datatype extension="mfa_acoustic_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_corpus.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_g2p_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_language_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_tokenizer_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_textgrids.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa.dict" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="false"/>
+
     <datatype extension="ncbi_genome_dataset.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="zarr.zip" type="galaxy.datatypes.binary:CompressedZarrZipArchive" display_in_upload="true">
         <converter file="archive_to_directory.xml" target_datatype="zarr" />

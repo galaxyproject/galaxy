@@ -483,6 +483,10 @@ const removeTagsAction = computed(() => {
 .output-terminal {
     @include node-terminal-style(right);
 
+    // Let Safari start a native connection drag instead of selecting text.
+    -webkit-user-select: none;
+    user-select: none;
+
     &:not(.blank-output) {
         &:hover {
             color: $brand-success;

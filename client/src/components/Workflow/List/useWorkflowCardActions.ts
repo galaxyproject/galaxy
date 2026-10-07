@@ -173,16 +173,17 @@ export function useWorkflowCardActions(
         toast.success("Workflow imported successfully");
     }
 
-    const _workflowRunAction: CardAction = {
+    // Computed because ownership and anonymity are only known once the current user has loaded
+    const _workflowRunAction = computed<CardAction>(() => ({
         id: "workflow-run",
         label: editorView ? "Run" : "",
         icon: faPlay,
         title: runButtonTitle.value,
         disabled: isAnonymous.value || workflow.value.deleted,
         to: `/workflows/run?id=${workflow.value.id}`,
-    };
+    }));
 
-    const _workflowCommonActions: CardAction[] = [
+    const _workflowCommonActions = computed<CardAction[]>(() => [
         {
             id: "workflow-link",
             label: "Link to Workflow",
@@ -215,9 +216,10 @@ export function useWorkflowCardActions(
             to: `/workflows/sharing?id=${workflow.value.id}`,
             visible: !workflow.value.deleted && !isAnonymous.value && !shared.value,
         },
-    ];
+    ]);
 
-    const workflowCardExtraActions: CardAction[] = [
+    const workflowCardExtraActions = computed<CardAction[]>(() => [
+        ...(editorView ? [_workflowRunAction.value, ..._workflowCommonActions.value] : []),
         {
             id: "workflow-delete",
             label: "Delete",
@@ -252,9 +254,10 @@ export function useWorkflowCardActions(
             href: dockstoreUrl.value,
             visible: sourceType.value.includes("trs"),
         },
-    ];
+    ]);
 
-    const workflowCardSecondaryActions: CardAction[] = [
+    const workflowCardSecondaryActions = computed<CardAction[]>(() => [
+        ...(editorView ? [] : _workflowCommonActions.value),
         {
             id: "workflow-restore",
             label: "Restore",
@@ -281,9 +284,9 @@ export function useWorkflowCardActions(
             handler: insert,
             visible: editorView && !workflow.value.deleted && !current,
         },
-    ];
+    ]);
 
-    const workflowCardPrimaryActions: CardAction[] = [
+    const workflowCardPrimaryActions = computed<CardAction[]>(() => [
         {
             id: "workflow-edit",
             label: "Edit",
@@ -304,19 +307,8 @@ export function useWorkflowCardActions(
             handler: importWorkflow,
             visible: (isAnonymous.value || shared.value) && !current,
         },
-    ];
-
-    if (editorView) {
-        workflowCardExtraActions.unshift(..._workflowCommonActions);
-    } else {
-        workflowCardSecondaryActions.unshift(..._workflowCommonActions);
-    }
-
-    if (!editorView) {
-        workflowCardPrimaryActions.push(_workflowRunAction);
-    } else {
-        workflowCardExtraActions.unshift(_workflowRunAction);
-    }
+        ...(editorView ? [] : [_workflowRunAction.value]),
+    ]);
 
     return {
         workflowCardExtraActions,
