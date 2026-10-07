@@ -1250,7 +1250,11 @@
     ``fastqsanger.c4gh``), and these wrappers can be used as inputs
     for tools accepting their inner datatype. When disabled (the
     default), no Crypt4GH datatypes are registered and uploads are
-    handled exactly as before.
+    handled exactly as before. Jobs decrypting these datasets only run
+    on job destinations set up for them: such destinations need the
+    compute-side recryptor service (``crypt4gh_recryptor_url``) and
+    other job destination parameters, see
+    https://docs.galaxyproject.org/en/master/admin/crypt4gh.html
 :Default: ``false``
 :Type: bool
 
@@ -1269,27 +1273,6 @@
     ``crypt4gh_recrypt_service`` extra user preference is configured.
     Only used when ``crypt4gh_enabled`` is set.
 :Default: ``https://localhost:61357``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-``crypt4gh_recryptor_url``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Base URL of the compute-side Crypt4GH recryptor service
-    (``crypt4gh-recryptor-service compute``). Jobs reading
-    Crypt4GH-encrypted datasets call it from the compute host to
-    re-encrypt dataset headers to a per-job key, and to re-encrypt
-    output headers to the user's key. Jobs that need to decrypt inputs
-    fail when it isn't configured. Can be overridden per job
-    destination, e.g. to use another network path to the same service;
-    all destinations must use the same service, since users authorize
-    datasets against its compute keys. Restrict access to the
-    ``recrypt_header_to_*`` routes to the compute hosts, see the
-    Crypt4GH admin documentation, which also lists the destination
-    parameters for TLS settings and timeouts.
-:Default: ``None``
 :Type: str
 
 
