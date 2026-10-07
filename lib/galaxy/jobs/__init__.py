@@ -1450,7 +1450,8 @@ class MinimalJobWrapper(HasResourceParameters):
         protection = self.app.dataset_protection
         job.protection_scheme = None
         self.protection_plan_path = None
-        if not protection.enabled:
+        if not protection.enabled or not protection.has_protected_inputs(job):
+            # Most jobs: don't look at their parameters and destination.
             return None
         assert self.tool
         plan = protection.authorize_job(
