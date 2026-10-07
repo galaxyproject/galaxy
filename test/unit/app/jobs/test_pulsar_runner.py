@@ -379,3 +379,29 @@ def test_host_metadata_does_not_resolve_container(config):
     runner = _runner()
     wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
     assert runner._get_metadata_container(wrapper) is None
+
+
+@pytest.mark.parametrize(
+    "destination_params, container, expected",
+    [
+        ({}, None, "remote"),
+        ({"dependency_resolution": "local"}, None, "local"),
+        ({}, SimpleNamespace(resolve_dependencies=False), "none"),
+        ({"dependency_resolution": "local"}, SimpleNamespace(resolve_dependencies=False), "none"),
+        ({}, SimpleNamespace(resolve_dependencies=True), "remote"),
+        ({"dependency_resolution": "none"}, SimpleNamespace(resolve_dependencies=True), "none"),
+    ],
+)
+def test_dependency_resolution_skipped_for_containers(destination_params, container, expected):
+    client = SimpleNamespace(destination_params=destination_params)
+    dependency_resolution = cast(Any, PulsarJobRunner)._PulsarJobRunner__dependency_resolution(client, container)
+    assert dependency_resolution == expected
+
+
+@pytest.mark.parametrize("dependency_resolution, sent", [("remote", True), ("local", False), ("none", False)])
+def test_dependencies_description_only_sent_for_remote_resolution(dependency_resolution, sent):
+    tool = SimpleNamespace(requirements=[], installed_tool_dependencies=[])
+    description = cast(Any, PulsarJobRunner)._PulsarJobRunner__dependencies_description(
+        SimpleNamespace(tool=tool), dependency_resolution
+    )
+    assert (description is not None) == sent
