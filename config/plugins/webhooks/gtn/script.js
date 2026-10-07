@@ -138,15 +138,9 @@
 
                     // Buttonify
                     gtnToolElements.forEach(function (el) {
-                        el.addEventListener("click", function (e) {
-                            let target = e.target;
-
-                            // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
-                                target = e.target.parentElement;
-                            }
-
-                            tool_id = target.dataset.tool;
+                        el.addEventListener("click", function () {
+                            // Tool titles can render as nested markup (e.g. <strong><code>), so read the bound element.
+                            const tool_id = el.dataset.tool;
 
                             if (tool_id === "upload1" || tool_id === "upload") {
                                 document.getElementById("tool-panel-upload-button").click();
