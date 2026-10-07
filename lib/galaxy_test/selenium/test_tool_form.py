@@ -132,6 +132,23 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\n"
 
     @selenium_test
+    def test_tool_form_parameters_match_form(self):
+        self.home()
+        self.tool_open("gx_conditional_select")
+        parameters = self.tool_form_parameters("gx_conditional_select")
+        test_path = "conditional_parameter|test_parameter"
+        shown = [p.path for p in parameters if p.condition in (None, f"{test_path}=a")]
+        assert shown == [test_path, "conditional_parameter|integer_parameter"]
+        for path in shown:
+            self.components.tool_form.parameter_div(parameter=path).wait_for_visible()
+
+        boolean = next(p for p in parameters if p.condition == f"{test_path}=b")
+        # Same depth, so the boolean is tried first, before case b shows it, and must be retried.
+        self.tool_form_fill(values={boolean.path: True, test_path: "b"})
+        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=boolean.path).wait_for_present()
+        assert checkbox.is_selected()
+
+    @selenium_test
     def test_repeat_reordering(self):
         self.home()
         self.tool_open("text_repeat")
@@ -232,6 +249,18 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
+
+    @selenium_test
+    def test_tool_form_parameters_for_rerun(self):
+        self._run_environment_test_tool()
+        self.history_panel_wait_for_hid_ok(1)
+        job_id = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)["creating_job"]
+        self.hda_click_primary_action_button(1, "rerun")
+        inttest = next(p for p in self.tool_form_parameters(job_id=job_id) if p.path == "inttest")
+        # The job's value, not the tool's default of 1.
+        assert str(inttest.value) == "42"
+        input_element = self.components.tool_form.parameter_input(parameter="inttest").wait_for_visible()
+        assert input_element.get_attribute("value") == "42"
 
     @selenium_test
     def test_rerun_with_non_latest_version(self):

@@ -7,7 +7,6 @@ import collections
 import contextlib
 import json
 import random
-import re
 import string
 import time
 from abc import abstractmethod
@@ -31,6 +30,10 @@ from typing import (
     Protocol,
     TYPE_CHECKING,
     TypeVar,
+)
+from urllib.parse import (
+    quote,
+    urlencode,
 )
 
 import yaml
@@ -79,6 +82,11 @@ from .has_driver_proxy import HasDriverProxy
 from .smart_components import (
     SmartComponent,
     SmartTarget,
+)
+from .tool_form import (
+    repeat_instance_counts,
+    tool_form_parameters_from_build,
+    ToolFormParameter,
 )
 from .web_element_protocol import WebElementProtocol
 
@@ -2224,6 +2232,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.clear()
             input_element.send_keys(value)
 
+    def tool_form_parameters(
+        self, tool_id: str | None = None, tool_version: str | None = None, job_id: str | None = None
+    ) -> list[ToolFormParameter]:
+        """Describe a tool's form fields (path, label, type, value, options) for the current history.
+
+        With ``job_id``, describe the rerun form instead: the fields hold that job's settings.
+        """
+        if job_id:
+            suffix = f"?{urlencode({'tool_version': tool_version})}" if tool_version else ""
+            build = self.api_get(f"jobs/{job_id}/build_for_rerun{suffix}")
+        else:
+            if not tool_id:
+                raise ValueError("pass tool_id or job_id")
+            query = {"history_id": self.current_history_id()}
+            if tool_version:
+                query["tool_version"] = tool_version
+            build = self.api_get(f"tools/{quote(tool_id, safe='')}/build?{urlencode(query)}")
+        return tool_form_parameters_from_build(build["inputs"])
+
     def tool_form_fill(self, values: dict[str, Any] | None = None, data: dict[str, int | str] | None = None) -> None:
         """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
 
@@ -2237,12 +2264,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if not values and not data:
             return
 
-        repeat_counts: dict[str, int] = {}
-        for key in [*values, *data]:
-            if repeat_match := self._parse_repeat_key(key):
-                repeat_name, repeat_index, _child_key = repeat_match
-                repeat_counts[repeat_name] = max(repeat_counts.get(repeat_name, 0), repeat_index + 1)
-        for repeat_name, count in repeat_counts.items():
+        for repeat_name, count in repeat_instance_counts([*values, *data]).items():
             self._add_repeat_instances(repeat_name, count)
 
         self._expand_collapsed_sections()
@@ -2283,12 +2305,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 break
             close_buttons[0].click()
             self.sleep_for(self.wait_types.UX_RENDER)
-
-    @staticmethod
-    def _parse_repeat_key(key: str):
-        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
-            return match.group(1), int(match.group(2)), match.group(3)
-        return None
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
         for _ in range(count):
