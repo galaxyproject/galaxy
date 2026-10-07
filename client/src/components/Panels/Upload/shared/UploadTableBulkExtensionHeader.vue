@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
+import UploadDatatypeWarning from "@/components/Upload/UploadDatatypeWarning.vue";
 
 interface Props {
     /** Selected bulk extension value */
@@ -47,13 +46,15 @@ function onItemSelection(item: ExtensionDetails) {
             :items="optionsWithDefault"
             :current-item="props.extensions.find((e) => e.id === props.value) || optionsWithDefault[0]"
             :disabled="disabled"
-            @update:selected-item="onItemSelection" />
-        <FontAwesomeIcon
-            v-if="warning"
-            v-g-tooltip.hover
-            class="text-warning warning-icon"
-            :icon="faExclamationTriangle"
-            :title="warning" />
+            @update:selected-item="onItemSelection">
+            <template v-slot:option="{ option }">
+                {{ option.text }}
+                <UploadDatatypeWarning :message="option.upload_warning" />
+            </template>
+        </SingleItemSelector>
+        <div role="status">
+            <UploadDatatypeWarning :message="warning" />
+        </div>
     </div>
 </template>
 

@@ -18,11 +18,11 @@ import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "
 import type { CompositeFileItem, CompositeSlot } from "../types/uploadItem";
 
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
+import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
 import CompositeSlotRow from "./CompositeSlotRow.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
-import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -221,15 +221,14 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                 <!-- Composite type selector -->
                 <div class="composite-config-field d-flex flex-column">
                     <label class="font-weight-bold mb-1" for="composite-type-selector"> Composite Type </label>
-                    <SingleItemSelector
+                    <UploadTableExtensionCell
                         id="composite-type-selector"
-                        v-g-tooltip.hover
-                        collection-name="Composite Types"
-                        title="Composite Type"
-                        :items="availableExtensions"
-                        :current-item="availableExtensions.find((ext) => ext.id === selectedExtension)"
+                        tooltip="Composite Type"
+                        :extensions="availableExtensions"
+                        :value="selectedExtension"
+                        :warning="selectedExtensionDetails?.upload_warning"
                         :disabled="!configurationsReady"
-                        @update:selected-item="(ext: ExtensionDetails | null) => onExtensionChange(ext?.id ?? '')" />
+                        @input="onExtensionChange" />
                 </div>
 
                 <!-- Dataset name -->
