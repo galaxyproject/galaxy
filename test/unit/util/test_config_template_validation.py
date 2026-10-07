@@ -14,6 +14,7 @@ from galaxy.tool_util_models.parameter_validators import (
     RegexParameterValidatorModel,
 )
 from galaxy.util.config_templates import (
+    normalize_s3_bucket,
     split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
@@ -422,6 +423,23 @@ def test_split_ftp_host_path_rejects_traversal_in_explicit_root(root):
 def test_split_ftp_host_path_rejects_traversal_in_host_derived_root():
     with pytest.raises(ValueError, match="must not contain '\\.\\.'"):
         split_ftp_host_path({"host": "ftp.gnu.org/../etc"})
+
+
+@pytest.mark.parametrize(
+    "bucket, expected",
+    [
+        ("1000genomes", "1000genomes"),
+        ("s3://1000genomes", "1000genomes"),
+        ("s3://1000genomes/", "1000genomes"),
+        (" s3://1000genomes/ ", "1000genomes"),
+        ("1000genomes/", "1000genomes"),
+        ("s3://my-bucket/prefix/", "my-bucket/prefix"),
+        ("{{ variables.bucket }}", "{{ variables.bucket }}"),
+        (None, None),
+    ],
+)
+def test_normalize_s3_bucket(bucket, expected):
+    assert normalize_s3_bucket(bucket) == expected
 
 
 def test_length_validator_max_only():
