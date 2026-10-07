@@ -21,6 +21,22 @@ So a change has to work in both. In particular:
 - Read colours, spacing and fonts from the tokens in `src/styles/tokens.css` (`var(--color-blue-600)`
   and so on) rather than literal values, so both consumers can theme them.
 
+## Public class names
+
+Consumers restyle a few components by class name, so these classes are public API; renaming one
+breaks a consumer's styling with nothing else failing. `src/publicClasses.test.ts` renders each
+component and checks them, so a rename fails there first and the consumer can change in step.
+
+| Component                       | Classes                                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| GTabs                           | `tabs`, `nav-tabs`, `nav-link`, `active`, `tab-content`                                        |
+| GTable                          | `g-table-container`, `g-table`, `table`, `table-bordered`, `g-table-compact`, `g-table-sorted` |
+| GFormLabel / GFormInput         | `g-form-label`, `label-text`, `g-form-input`                                                   |
+| GButton / GLink / GDropdownItem | `g-button`, `g-transparent`, `g-link`, `dropdown-item`                                         |
+
+The longer-term way out is component-level CSS variables (a table header background, an active-tab
+indicator) that a consumer sets instead of re-declaring rules; add them as components need them.
+
 ## Changing dependencies
 
 The shed's `file:` install resolves this package's `dependencies` and `peerDependencies` into
