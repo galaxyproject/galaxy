@@ -169,7 +169,7 @@ class DatasetManager(
         sa_session.add(dataset)
         sa_session.commit()
 
-    def compute_hash(self, request: ComputeDatasetHashTaskRequest):
+    def compute_hash(self, request: ComputeDatasetHashTaskRequest) -> None:
         dataset = self.by_id(request.dataset_id)
         if dataset.purged:
             log.warning("Unable to calculate hash for purged dataset [%s].", dataset.id)
