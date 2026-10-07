@@ -149,6 +149,19 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert checkbox.is_selected()
 
     @selenium_test
+    def test_tool_form_fill_counts_rendered_repeat_instances(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("min_repeat")
+        # queries has min="1", so the form already renders queries_0.
+        self.tool_form_fill(data={"queries_0|input": first["hid"], "queries_1|input": second["hid"]})
+        tool_form = self.components.tool_form
+        tool_form.parameter_div(parameter="queries_1|input").wait_for_visible()
+        tool_form.parameter_div(parameter="queries_2|input").assert_absent()
+
+    @selenium_test
     def test_repeat_reordering(self):
         self.home()
         self.tool_open("text_repeat")
