@@ -354,6 +354,42 @@ def _staged_runtime(tmp_path, service, user):
     return runtime, key_ref
 
 
+def test_protect_file_keeps_copies_of_encrypted_inputs(tmp_path, service, user):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    passed_input = tmp_path / "passed_input.dat"
+    encrypted = encrypt(b"passed through", user.public)
+    passed_input.write_bytes(encrypted)
+    runtime.plan.encrypted_inputs = [str(passed_input)]
+    output = tmp_path / "job" / "outputs" / "dataset.dat"
+    output.parent.mkdir()
+    output.write_bytes(encrypted)
+
+    result = runtime.protect_file(str(output))
+
+    assert output.read_bytes() == encrypted
+    header, _ = split_header(encrypted)
+    assert result.header_sha256 == hashlib.sha256(header).hexdigest()
+    assert result.compute_header is None
+    assert service.requests == []
+
+
+def test_protect_file_encrypts_other_files_looking_encrypted(tmp_path, service, user):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    passed_input = tmp_path / "passed_input.dat"
+    encrypted = encrypt(b"passed through", user.public)
+    passed_input.write_bytes(encrypted)
+    runtime.plan.encrypted_inputs = [str(passed_input)]
+    output = tmp_path / "job" / "outputs" / "dataset.dat"
+    output.parent.mkdir()
+    # An encrypted input with plaintext appended by the tool.
+    output.write_bytes(encrypted + b"plaintext")
+
+    result = runtime.protect_file(str(output))
+
+    assert decrypt(output.read_bytes(), user.secret) == encrypted + b"plaintext"
+    assert result.compute_header
+
+
 def test_protect_file_encrypts_for_the_user(tmp_path, service, user):
     runtime, key_ref = _staged_runtime(tmp_path, service, user)
     output = tmp_path / "job" / "outputs" / "dataset.dat"

@@ -12,6 +12,7 @@ Only headers ever travel to the service, never the encrypted bodies or plaintext
 """
 
 import base64
+import filecmp
 import hashlib
 import io
 import json
@@ -233,9 +234,18 @@ class Crypt4GHJobRuntime:
         The file is encrypted to the compute keypair, then the recryptor service re-encrypts
         that header to the user's key. The compute header is returned as the grant to use
         the file in further jobs.
+
+        Copies of inputs passed to the tool encrypted are kept as they are: encrypting them
+        again would take two decryptions to use them.
         """
         from crypt4gh import header as crypt4gh_header
 
+        if any(
+            os.path.exists(source) and filecmp.cmp(path, source, shallow=False) for source in self.plan.encrypted_inputs
+        ):
+            with open(path, "rb") as f:
+                existing_header = read_crypt4gh_header(f)
+            return ProtectedFileResult(header_sha256=hashlib.sha256(existing_header).hexdigest(), compute_header=None)
         if self._writer_secret_key is None:
             self._writer_secret_key = os.urandom(32)
         compute_public_key = parse_public_key(self.state["compute_public_key"])
