@@ -48,22 +48,10 @@ function dismiss() {
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
             <GForm name="reset_password" class="reset-password-form" action="#" @submit.prevent="onSubmit">
                 <GFormLabel title="New Password">
-                    <GFormInput
-                        :model-value="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        @update:model-value="password = $event ?? ''"
-                    />
+                    <GFormInput v-model="password" type="password" name="password" autocomplete="new-password" />
                 </GFormLabel>
                 <GFormLabel title="Re-enter New Password">
-                    <GFormInput
-                        :model-value="confirm"
-                        type="password"
-                        name="confirm"
-                        autocomplete="new-password"
-                        @update:model-value="confirm = $event ?? ''"
-                    />
+                    <GFormInput v-model="confirm" type="password" name="confirm" autocomplete="new-password" />
                 </GFormLabel>
                 <GButton color="blue" size="large" class="submit-button" type="submit" name="set_password_button"
                     >Set Password</GButton

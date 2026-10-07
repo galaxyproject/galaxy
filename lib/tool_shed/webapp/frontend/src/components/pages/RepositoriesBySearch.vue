@@ -104,11 +104,10 @@ watch(
                     <div class="search-box" role="search">
                         <FontAwesomeIcon :icon="faMagnifyingGlass" class="search-box-icon" aria-hidden="true" />
                         <GFormInput
-                            :model-value="searchInput"
+                            v-model="searchInput"
                             class="search-box-input"
                             placeholder="Name, owner, or description"
                             aria-label="Search Repositories"
-                            @update:model-value="searchInput = $event ?? ''"
                         />
                     </div>
                 </template>

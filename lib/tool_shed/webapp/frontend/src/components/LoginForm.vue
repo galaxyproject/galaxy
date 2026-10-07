@@ -31,22 +31,10 @@ async function onLogin() {
     <GForm class="login-form" action="#" @submit.prevent="onLogin">
         <error-banner v-if="errorMessage" :error="errorMessage" @dismiss="errorMessage = null" />
         <GFormLabel title="Username / Email">
-            <GFormInput
-                :model-value="login"
-                type="text"
-                name="login"
-                autocomplete="username"
-                @update:model-value="login = $event ?? ''"
-            />
+            <GFormInput v-model="login" type="text" name="login" autocomplete="username" />
         </GFormLabel>
         <GFormLabel title="Password">
-            <GFormInput
-                :model-value="password"
-                type="password"
-                name="password"
-                autocomplete="current-password"
-                @update:model-value="password = $event ?? ''"
-            />
+            <GFormInput v-model="password" type="password" name="password" autocomplete="current-password" />
         </GFormLabel>
         <div class="login-form-actions">
             <GButton color="blue" size="large" class="submit-button" type="submit" name="login_button">Login</GButton>

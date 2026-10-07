@@ -25,11 +25,10 @@ function doSearch() {
             <GForm class="landing-search" role="search" @submit.prevent="doSearch">
                 <FontAwesomeIcon :icon="faMagnifyingGlass" class="landing-search-icon" aria-hidden="true" />
                 <GFormInput
-                    :model-value="searchQuery"
+                    v-model="searchQuery"
                     class="landing-search-input"
                     placeholder="Search by name, owner, or description"
                     aria-label="Search repositories"
-                    @update:model-value="searchQuery = $event ?? ''"
                 />
                 <GButton class="landing-search-button" type="submit">Search</GButton>
             </GForm>

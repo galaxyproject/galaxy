@@ -74,22 +74,10 @@ async function onResetPassword() {
                         @cleared="selectedUsername = null"
                     />
                     <GFormLabel title="New Password">
-                        <GFormInput
-                            :model-value="password"
-                            type="password"
-                            name="password"
-                            autocomplete="new-password"
-                            @update:model-value="password = $event ?? ''"
-                        />
+                        <GFormInput v-model="password" type="password" name="password" autocomplete="new-password" />
                     </GFormLabel>
                     <GFormLabel title="Re-enter New Password">
-                        <GFormInput
-                            :model-value="confirm"
-                            type="password"
-                            name="confirm"
-                            autocomplete="new-password"
-                            @update:model-value="confirm = $event ?? ''"
-                        />
+                        <GFormInput v-model="confirm" type="password" name="confirm" autocomplete="new-password" />
                     </GFormLabel>
                     <div>
                         <GButton color="blue" type="submit" name="reset_password_button">Reset Password</GButton>

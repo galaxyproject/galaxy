@@ -139,11 +139,10 @@ onMounted(() => {
             <div v-if="allowSearch" class="grid-filter">
                 <FontAwesomeIcon :icon="faFilter" class="grid-filter-icon" aria-hidden="true" />
                 <GFormInput
-                    :model-value="search"
+                    v-model="search"
                     class="grid-filter-input"
                     placeholder="Filter these repositories"
                     aria-label="Filter"
-                    @update:model-value="search = $event ?? ''"
                 />
             </div>
         </div>

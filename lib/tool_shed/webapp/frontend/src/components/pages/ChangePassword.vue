@@ -39,31 +39,13 @@ function dismiss() {
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
             <GForm class="change-password-form" action="#" @submit.prevent="onChange">
                 <GFormLabel title="Current Password">
-                    <GFormInput
-                        :model-value="current"
-                        type="password"
-                        name="current"
-                        autocomplete="current-password"
-                        @update:model-value="current = $event ?? ''"
-                    />
+                    <GFormInput v-model="current" type="password" name="current" autocomplete="current-password" />
                 </GFormLabel>
                 <GFormLabel title="New Password">
-                    <GFormInput
-                        :model-value="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        @update:model-value="password = $event ?? ''"
-                    />
+                    <GFormInput v-model="password" type="password" name="password" autocomplete="new-password" />
                 </GFormLabel>
                 <GFormLabel title="Re-enter New Password">
-                    <GFormInput
-                        :model-value="confirm"
-                        type="password"
-                        name="confirm"
-                        autocomplete="new-password"
-                        @update:model-value="confirm = $event ?? ''"
-                    />
+                    <GFormInput v-model="confirm" type="password" name="confirm" autocomplete="new-password" />
                 </GFormLabel>
                 <GButton color="blue" size="large" class="submit-button" type="submit">Change Password</GButton>
             </GForm>

@@ -49,40 +49,16 @@ async function onRegister() {
         <div class="modal-form-section">
             <GForm name="registration" class="registration-form" action="#" @submit.prevent="onRegister">
                 <GFormLabel title="E-Mail">
-                    <GFormInput
-                        :model-value="email"
-                        type="email"
-                        name="email"
-                        autocomplete="email"
-                        @update:model-value="email = $event ?? ''"
-                    />
+                    <GFormInput v-model="email" type="email" name="email" autocomplete="email" />
                 </GFormLabel>
                 <GFormLabel title="Password">
-                    <GFormInput
-                        :model-value="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        @update:model-value="password = $event ?? ''"
-                    />
+                    <GFormInput v-model="password" type="password" name="password" autocomplete="new-password" />
                 </GFormLabel>
                 <GFormLabel title="Re-enter Password">
-                    <GFormInput
-                        :model-value="confirm"
-                        type="password"
-                        name="confirm"
-                        autocomplete="new-password"
-                        @update:model-value="confirm = $event ?? ''"
-                    />
+                    <GFormInput v-model="confirm" type="password" name="confirm" autocomplete="new-password" />
                 </GFormLabel>
                 <GFormLabel title="Username">
-                    <GFormInput
-                        :model-value="username"
-                        type="text"
-                        name="username"
-                        autocomplete="username"
-                        @update:model-value="username = $event ?? ''"
-                    />
+                    <GFormInput v-model="username" type="text" name="username" autocomplete="username" />
                 </GFormLabel>
                 <GButton color="blue" size="large" class="submit-button" type="submit" name="create_user_button">
                     Register

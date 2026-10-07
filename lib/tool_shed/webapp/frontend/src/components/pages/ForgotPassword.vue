@@ -43,13 +43,7 @@ function dismiss() {
                     Enter the email address of your account and we will send you a link to choose a new password.
                 </p>
                 <GFormLabel title="E-Mail">
-                    <GFormInput
-                        :model-value="email"
-                        type="email"
-                        name="email"
-                        autocomplete="email"
-                        @update:model-value="email = $event ?? ''"
-                    />
+                    <GFormInput v-model="email" type="email" name="email" autocomplete="email" />
                 </GFormLabel>
                 <GButton color="blue" size="large" class="submit-button" type="submit" name="reset_password_button"
                     >Send Reset Link</GButton
