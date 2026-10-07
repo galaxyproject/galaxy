@@ -181,6 +181,7 @@ typecheck = [
     "lxml-stubs",
     "mypy>=2.2.0",  # support for closed TypedDicts
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
+    "ty>=0.0.85",  # older releases don't know all the rules configured in ty.toml
     "types-bleach",
     "types-boto",
     "types-cachetools",

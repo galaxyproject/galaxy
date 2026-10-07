@@ -97,14 +97,14 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
         ${PIP_CMD} install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-        # make mypy uses uv now and so this legacy code should just run mypy
-        # directly to use the venv we have already activated
-        cd src
-        mypy .
-        cd ..
+        # Preserve isolated package checks and mypy's strict annotation rules.
+        (cd src && mypy .)
         if [ -d tests ]; then
             mypy tests
         fi
+        # Run ty through the shared helper so that it checks exactly the same
+        # files as `tox -e ty_exemptions` does.
+        bash ../../.ci/ty_check.sh -p "$PWD"
 
         ${BUILD_WHEEL_CMD} -o dist
         ${TWINE_CMD} check dist/*

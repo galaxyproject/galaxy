@@ -8,6 +8,10 @@ on:
       - .isort.cfg
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - Makefile
+      - .ci/ty_check.sh
+      - .ci/ty_check.py
+      - ty.toml
       - pyproject.toml
       - tox.ini
   pull_request:
@@ -18,6 +22,10 @@ on:
       - .isort.cfg
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - Makefile
+      - .ci/ty_check.sh
+      - .ci/ty_check.py
+      - ty.toml
       - pyproject.toml
       - tox.ini
 concurrency:
@@ -52,4 +60,4 @@ jobs:
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run linting
-        run: tox -e lint,lint_docstring_include_list,mypy,format
+        run: tox -e lint,lint_docstring_include_list,mypy,ty,format
