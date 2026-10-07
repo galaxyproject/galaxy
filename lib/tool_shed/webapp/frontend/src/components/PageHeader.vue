@@ -9,7 +9,7 @@ defineProps<PageHeaderProps>()
 </script>
 
 <template>
-    <div class="page-header">
+    <div class="page-header shed-brand-backdrop">
         <div class="page-header-inner">
             <div class="page-header-text">
                 <p v-if="eyebrow || $slots.eyebrow" class="page-header-eyebrow">
@@ -33,18 +33,8 @@ defineProps<PageHeaderProps>()
 </template>
 
 <style scoped>
-/* The brand page header: dark to primary at 135deg with the Hub's grid mesh over it */
 .page-header {
     color: #fff;
-    background-color: var(--color-galaxy-dark, #2c3143);
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(135deg, var(--color-galaxy-dark, #2c3143) 0%, var(--color-galaxy-primary, #25537b) 100%);
-    background-size:
-        24px 24px,
-        24px 24px,
-        auto;
 }
 
 .page-header-inner {

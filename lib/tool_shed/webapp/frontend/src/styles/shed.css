@@ -124,12 +124,17 @@ pre {
     white-space: nowrap;
 }
 
-/* Dark grid mesh, as on the Galaxy Hub's dark sections */
-.shed-grid-dark {
+/* The brand backdrop: dark to primary at 135deg with the Galaxy Hub's grid mesh over it */
+.shed-brand-backdrop {
+    background-color: var(--color-galaxy-dark, #2c3143);
     background-image:
         linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 24px 24px;
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(135deg, var(--color-galaxy-dark, #2c3143) 0%, var(--color-galaxy-primary, #25537b) 100%);
+    background-size:
+        24px 24px,
+        24px 24px,
+        auto;
 }
 
 /* Tabs: an underline strip with a gold bar under the active tab, rather than boxed folder tabs */

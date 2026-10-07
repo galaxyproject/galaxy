@@ -23,7 +23,7 @@ function doSearch() {
 }
 </script>
 <template>
-    <div class="landing-hero">
+    <div class="landing-hero shed-brand-backdrop">
         <div class="landing-hero-inner">
             <p class="landing-eyebrow">The Galaxy Tool Shed</p>
             <h1 class="landing-title">Find <span class="landing-title-accent">Galaxy</span> tools</h1>
@@ -57,15 +57,6 @@ function doSearch() {
     position: relative;
     overflow: hidden;
     color: #fff;
-    background-color: var(--color-galaxy-dark, #2c3143);
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(135deg, var(--color-galaxy-dark, #2c3143) 0%, var(--color-galaxy-primary, #25537b) 100%);
-    background-size:
-        24px 24px,
-        24px 24px,
-        auto;
 }
 
 .landing-hero-inner {

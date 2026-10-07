@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="modal-form-backdrop">
+    <div class="modal-form-backdrop shed-brand-backdrop">
         <div class="modal-form-content">
             <section class="modal-form-card">
                 <GHeading h1 size="lg" class="modal-form-title">{{ title }}</GHeading>
@@ -29,15 +29,6 @@ defineProps({
     min-height: calc(100vh - var(--shed-masthead-height));
     width: 100%;
     padding: clamp(2rem, 8vh, 5rem) 1rem 3rem;
-    background-color: var(--color-galaxy-dark, #2c3143);
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(135deg, var(--color-galaxy-dark, #2c3143) 0%, var(--color-galaxy-primary, #25537b) 100%);
-    background-size:
-        24px 24px,
-        24px 24px,
-        auto;
 }
 
 .modal-form-content {
