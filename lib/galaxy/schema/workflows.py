@@ -353,6 +353,11 @@ class WorkflowExtractionOutput(Model):
         title="Exposed",
         description="Whether this output should be preselected for exposure as a workflow output.",
     )
+    referenced_by_report: bool = Field(
+        False,
+        title="Referenced By Report",
+        description="Whether the notebook report uses this output, which keeps it a workflow output.",
+    )
 
 
 # A history item named by kind and id: an HDA or an HDCA.

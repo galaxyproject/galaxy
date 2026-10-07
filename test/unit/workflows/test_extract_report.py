@@ -202,6 +202,7 @@ def _content_stub(id_, copied_from=None):
     # their source; collection-operation outputs that record one are kept as-is.
     return SimpleNamespace(
         id=id_,
+        hid=id_,
         history_content_type="dataset",
         copied_from_history_dataset_association=copied_from,
         creating_job_associations=(),
@@ -263,18 +264,30 @@ def test_reconcile_exposes_unstarred_output(monkeypatch):
     step = _tool_step()
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "aligned_reads")
-    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
+    warnings = report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
     workflow_output = step.workflow_output_for("out_file")
     assert workflow_output is not None
     assert workflow_output.label == "aligned_reads"
+    assert warnings == ["Made history item 12 a workflow output ('aligned_reads') because the notebook report uses it."]
+
+
+def test_reconcile_keeps_starred_output_without_warning(monkeypatch):
+    step = _tool_step()
+    step.create_or_update_workflow_output(output_name="out_file", label="mine", uuid=None)
+    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "aligned_reads")
+    warnings = report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
+    assert step.workflow_output_for("out_file").label == "mine"
+    assert warnings == []
 
 
 def test_reconcile_labels_unnamed_input(monkeypatch):
     step = _input_step(None)
     index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
     _patch_resolution(monkeypatch, {("hda", 11): _content_stub(11)}, "raw_input")
-    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 11)]))
+    warnings = report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 11)]))
     assert step.label == "raw_input"
+    assert warnings == []
 
 
 def test_reconcile_dedupes_against_existing_label(monkeypatch):
