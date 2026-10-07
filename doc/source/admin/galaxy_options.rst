@@ -1287,56 +1287,8 @@
     all destinations must use the same service, since users authorize
     datasets against its compute keys. Restrict access to the
     ``recrypt_header_to_*`` routes to the compute hosts, see the
-    Crypt4GH admin documentation.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``crypt4gh_recryptor_timeout``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Timeout, in seconds, of each request to the compute-side Crypt4GH
-    recryptor service. Requests failing with connection errors or
-    server errors are retried. Can be overridden per job destination.
-:Default: ``30``
-:Type: float
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``crypt4gh_recryptor_ca_cert``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    CA bundle used to verify the TLS certificate of the compute-side
-    Crypt4GH recryptor service, for instance when it uses a
-    certificate from a local CA. Must exist on the compute hosts. Can
-    be overridden per job destination.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``crypt4gh_recryptor_client_cert``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Client certificate presented to the compute-side Crypt4GH
-    recryptor service (or a proxy in front of it) when mutual TLS is
-    used to restrict access to compute hosts. Must exist on the
-    compute hosts. Can be overridden per job destination.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``crypt4gh_recryptor_client_key``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Private key of ``crypt4gh_recryptor_client_cert``. Can be
-    overridden per job destination.
+    Crypt4GH admin documentation, which also lists the destination
+    parameters for TLS settings and timeouts.
 :Default: ``None``
 :Type: str
 

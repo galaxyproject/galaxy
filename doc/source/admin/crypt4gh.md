@@ -191,17 +191,10 @@ galaxy:
   crypt4gh_recryptor_url: https://recryptor.example.org
   # The user service, as reached from the users' browsers. This is the default.
   crypt4gh_user_service_url: https://localhost:61357
-  # Optional, see below.
-  #crypt4gh_recryptor_timeout: 30
-  #crypt4gh_recryptor_ca_cert: /etc/galaxy/recryptor-ca.pem
-  #crypt4gh_recryptor_client_cert: /etc/galaxy/recryptor-client.pem
-  #crypt4gh_recryptor_client_key: /etc/galaxy/recryptor-client-key.pem
 ```
 
-The [configuration options reference](options.rst) describes each option.
-Paths of certificates and keys are read on the compute hosts. Requests to the
-compute service fail after `crypt4gh_recryptor_timeout` seconds, and are retried
-three times on connection and server errors.
+The [configuration options reference](options.rst) describes each option. How
+jobs connect to the compute service is configured per destination, see below.
 
 Users running their user service on another port can set it in their
 preferences when the `crypt4gh_recrypt_service` section is enabled in
@@ -236,10 +229,19 @@ Every destination running jobs that decrypt datasets must use:
 - No task splitting.
 - `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
 
-The `crypt4gh_recryptor_*` options can be overridden per destination, for
-instance when the compute hosts reach the compute service through another network
-path or need other certificates. All destinations must use the same compute
-service: grants are bound to its compute keypairs.
+How jobs connect to the compute service is set with these destination
+parameters:
+
+| Parameter                           | Description                                                                                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crypt4gh_recryptor_url`            | Overrides `crypt4gh_recryptor_url` of `galaxy.yml`, e.g. for another network path. All destinations must use the same compute service: grants are bound to its compute keypairs. |
+| `crypt4gh_recryptor_ca_cert`        | CA bundle to verify the compute service's certificate, e.g. from a local CA.                                                                                                     |
+| `crypt4gh_recryptor_client_cert`    | Client certificate, when mutual TLS restricts access to the compute hosts.                                                                                                       |
+| `crypt4gh_recryptor_client_key`     | Private key of the client certificate.                                                                                                                                           |
+| `crypt4gh_recryptor_timeout`        | Timeout of each request, in seconds (default 30). Requests failing with connection or server errors are retried three times.                                                     |
+| `crypt4gh_recryptor_verbose_errors` | Show the underlying errors in job errors, see [Failures and cleanup](#failures-and-cleanup).                                                                                     |
+
+Paths of certificates and keys are read on the compute hosts.
 
 ```yaml
 execution:
