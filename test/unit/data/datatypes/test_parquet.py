@@ -38,8 +38,8 @@ def test_parquet_set_meta_reads_footer_metadata():
     with get_parquet_dataset("example.parquet") as dataset:
         parquet.set_meta(dataset)
         assert dataset.metadata.column_names == ["one", "two", "three", "__index_level_0__"]
-        assert dataset.metadata.column_count == 4
-        assert dataset.metadata.line_count == 3
+        assert dataset.metadata.columns == 4
+        assert dataset.metadata.data_lines == 3
 
 
 def test_parquet_set_peek():
