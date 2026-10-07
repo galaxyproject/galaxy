@@ -362,8 +362,10 @@ Limitations:
   managers, expression tools and other special tool types are refused.
 - Tools see the wrapper datatype in `$input.ext` (for example
   `fastqsanger.c4gh`). The decrypted file name carries the inner extension.
-- Metadata files of encrypted inputs, such as BAM indexes, are not available to
-  tools.
+- Encrypted datasets only have metadata about their encryption, never metadata
+  derived from their content. Tools reading the metadata of their decrypted
+  inputs, such as BAM indexes (`$input.metadata.bam_index`) or column counts, get
+  empty values and may fail.
 - Composite datasets uploaded by users can't be decrypted: the user service only
   authorizes the primary file. Composite outputs of protected jobs are supported,
   but their extra files are authorized by the job that wrote them: further jobs
