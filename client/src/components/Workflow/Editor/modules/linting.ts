@@ -105,7 +105,11 @@ export function getDanglingGates(steps: Steps = {}) {
 }
 
 function gateReferenceIsSatisfied(step: Step, path: InputPath, readsConnectableInput: boolean): boolean {
-    if (connectionNamesIncludePath(step, Object.keys(step.input_connections ?? {}), path)) {
+    // A disconnected gate port keeps its key with no value.
+    const connected = Object.entries(step.input_connections ?? {})
+        .filter(([, connection]) => connection !== undefined)
+        .map(([name]) => name);
+    if (connectionNamesIncludePath(step, connected, path)) {
         return true;
     }
     if (readsConnectableInput) {

@@ -62,6 +62,12 @@ describe("getDanglingGates", () => {
         });
     });
 
+    it("flags a boolean gate whose port connection was removed", () => {
+        // Disconnecting a gate port keeps its key, with no value, so the port stays on the node.
+        const step = makeStep({ when: "$(inputs.when)", input_connections: { when: undefined } });
+        expect(getDanglingGates(steps(step)).map((gate) => gate.inputName)).toEqual(["when"]);
+    });
+
     it("accepts a null-check gate on a connected parameter", () => {
         const step = makeStep({
             when: "$(inputs.input1 !== null)",

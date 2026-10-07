@@ -223,6 +223,21 @@ test_data:
 """
 
 
+WORKFLOW_WHEN_NOT_CONNECTED = """
+class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+  should_run:
+    type: boolean
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+    when: $(inputs.when)
+"""
+
 WORKFLOW_SIMPLE_MAPPING = """
 class: GalaxyWorkflow
 inputs:

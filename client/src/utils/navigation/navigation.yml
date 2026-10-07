@@ -1115,6 +1115,7 @@ workflow_editor:
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
       section_conditional_gates: '[data-description="linting conditional gates"]'
+      item_conditional_gate: '[data-description="linting conditional gates"] [data-item-index="${index}"]'
 
   comment:
     selectors:

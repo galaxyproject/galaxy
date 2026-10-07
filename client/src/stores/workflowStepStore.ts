@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
-import { expressionReferencesInput } from "@/components/Workflow/Editor/modules/whenExpression";
+import { analyzeInputReferences, expressionReferencesInput } from "@/components/Workflow/Editor/modules/whenExpression";
 import { resolveConnectionNameToInputPath } from "@/components/Workflow/Editor/modules/workflowInputPath";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
@@ -483,7 +483,8 @@ function findStepExtraInputs(step: Step) {
     if (step.when === undefined) {
         return extraInputs;
     }
-    Object.keys(step.input_connections).forEach((inputName) => {
+    const connectionNames = Object.keys(step.input_connections);
+    connectionNames.forEach((inputName) => {
         if (step.inputs.find((input) => input.name === inputName)) {
             return;
         }
@@ -491,15 +492,41 @@ function findStepExtraInputs(step: Step) {
         if (!inputPath || !expressionReferencesInput(step.when, inputPath)) {
             return;
         }
-        extraInputs.push({
-            name: inputName,
-            optional: false,
-            input_type: "parameter",
-            type: "boolean",
-            multiple: false,
-            label: inputName,
-            extensions: [],
-        });
+        extraInputs.push(gatePort(inputName));
     });
+    // A gate input nothing is connected to still needs a port to connect it to.
+    unconnectedGateNames(step, connectionNames).forEach((name) => extraInputs.push(gatePort(name)));
     return extraInputs;
+}
+
+/** Top-level names the `when` reads that aren't a tool input, a connection or step state. */
+function unconnectedGateNames(step: Step, connectionNames: string[]): string[] {
+    const references = analyzeInputReferences(step.when ?? "");
+    if (references.hasDynamicInputsAccess) {
+        return [];
+    }
+    const names = new Set<string>();
+    references.staticPaths.forEach(([root]) => {
+        if (
+            typeof root === "string" &&
+            !connectionNames.includes(root) &&
+            !step.inputs.some((input) => input.name === root) &&
+            !Object.prototype.hasOwnProperty.call(step.tool_state ?? {}, root)
+        ) {
+            names.add(root);
+        }
+    });
+    return [...names];
+}
+
+function gatePort(name: string): InputTerminalSource {
+    return {
+        name,
+        optional: false,
+        input_type: "parameter",
+        type: "boolean",
+        multiple: false,
+        label: name,
+        extensions: [],
+    };
 }
