@@ -123,4 +123,15 @@ describe("FormCollectionType", () => {
         expect(selectedLabel(wrapper)).toBe("Mixed List of Paired and Unpaired Datasets (list:paired_or_unpaired)");
         expect(customField(wrapper).exists()).toBe(false);
     });
+
+    it("drops custom text being typed when the saved type is picked from the help dialog", async () => {
+        const wrapper = mountWithValue("list");
+        await pick(wrapper, "Custom collection type...");
+        await customField(wrapper).setValue("list:lsit");
+        await wrapper.find("[data-description='collection type help']").trigger("click");
+        await wrapper.find("[data-collection-type='list']").trigger("click");
+        expect(customField(wrapper).exists()).toBe(false);
+        expect(selectedLabel(wrapper)).toBe("List of Datasets (list)");
+        expect(wrapper.find("#form-element-collection_type").text()).not.toContain("Invalid collection type");
+    });
 });

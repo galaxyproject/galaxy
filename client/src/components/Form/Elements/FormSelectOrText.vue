@@ -6,10 +6,9 @@ import { uid } from "@/utils/utils";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
-const OTHER_VALUE = "__other__";
-// FormSelect emits null both for an option valued null and for deselecting the current option,
-// so a null-valued option is held under this value instead and a null from FormSelect is ignored.
-const NULL_VALUE = "__null__";
+// The select holds generated values rather than the options' own, so no option value can collide with
+// "Other..." and a null-valued option stays distinct from the null FormSelect emits on deselect.
+const OTHER_VALUE = "other";
 
 export interface SelectOrTextOption {
     label: string;
@@ -52,14 +51,24 @@ const emit = defineEmits<{
 const otherMode = ref(false);
 const text = ref("");
 
+function optionValue(index: number) {
+    return `option-${index}`;
+}
+
 const selectOptions = computed(() => [
-    ...props.options.map((option) => ({ ...option, value: option.value ?? NULL_VALUE })),
+    ...props.options.map((option, index) => ({ label: option.label, value: optionValue(index) })),
     { label: props.otherLabel, value: OTHER_VALUE },
 ]);
-const selectValue = computed(() => (otherMode.value ? OTHER_VALUE : (props.value ?? NULL_VALUE)));
-const selectedHelp = computed(() =>
-    otherMode.value ? undefined : props.options.find((option) => option.value === (props.value ?? null))?.help,
+const selectedIndex = computed(() =>
+    otherMode.value ? -1 : props.options.findIndex((option) => option.value === (props.value ?? null)),
 );
+const selectValue = computed(() => {
+    if (otherMode.value) {
+        return OTHER_VALUE;
+    }
+    return selectedIndex.value >= 0 ? optionValue(selectedIndex.value) : null;
+});
+const selectedHelp = computed(() => props.options[selectedIndex.value]?.help);
 
 const textError = computed(() => {
     if (!otherMode.value) {
@@ -90,6 +99,7 @@ watch(
 
 function onSelect(value: string | null) {
     if (value === null) {
+        // deselecting the current option
         return;
     }
     if (value === OTHER_VALUE) {
@@ -97,7 +107,7 @@ function onSelect(value: string | null) {
         text.value = props.value ?? "";
         return;
     }
-    const selected = value === NULL_VALUE ? null : value;
+    const selected = props.options[selectOptions.value.findIndex((option) => option.value === value)]!.value;
     otherMode.value = false;
     text.value = selected ?? "";
     emit("input", selected);

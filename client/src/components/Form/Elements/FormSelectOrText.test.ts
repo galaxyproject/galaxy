@@ -80,6 +80,24 @@ describe("FormSelectOrText", () => {
         expect(emitted(wrapper)).toEqual(["apple pie", null]);
     });
 
+    it("emits option values that look like its own placeholder values", async () => {
+        const wrapper = mount(FormSelectOrText as object, {
+            propsData: {
+                value: null,
+                options: [
+                    { label: "Nothing", value: null },
+                    { label: "Null section", value: "__null__" },
+                    { label: "Other section", value: "__other__" },
+                ],
+            },
+            localVue,
+        });
+        await pick(wrapper, "Null section");
+        await pick(wrapper, "Other section");
+        expect(emitted(wrapper)).toEqual(["__null__", "__other__"]);
+        expect(wrapper.find("input.form-control").exists()).toBe(false);
+    });
+
     it("keeps the value when the selected option is picked again", async () => {
         const wrapper = mountWithValue("apple");
         await pick(wrapper, "Apple");

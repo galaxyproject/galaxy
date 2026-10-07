@@ -112,6 +112,18 @@ describe("InstallationSettings", () => {
             expect(request.new_tool_panel_section_label).toBe("");
         });
 
+        it("won't install while a new section's name is cleared", async () => {
+            const wrapper = mountWithSections();
+            await pickSection(wrapper, "New section...");
+            const name = wrapper.find("#install-tool-section-other");
+            await name.setValue("My Tools");
+            await name.setValue("");
+            const ok = wrapper.find(".g-modal-confirm-buttons button:last-child");
+            expect(ok.attributes("aria-disabled")).toBe("true");
+            await ok.trigger("click");
+            expect(wrapper.emitted("ok")).toBeUndefined();
+        });
+
         it("asks for a name when a new section is left empty", async () => {
             const wrapper = mountWithSections();
             await pickSection(wrapper, "New section...");

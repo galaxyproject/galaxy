@@ -20,6 +20,9 @@ const emit = defineEmits<{
 }>();
 
 const showHelp = ref(false);
+// re-mounting the element after a pick from the dialog drops any custom text being typed, even when the
+// pick is the saved type and so doesn't change the value
+const elementKey = ref(0);
 
 // a legacy "" means any collection type
 const currentValue = computed(() => props.value || null);
@@ -63,6 +66,7 @@ function onInput(collectionType: string | null) {
 
 function onChooseFromHelp(collectionType: string) {
     showHelp.value = false;
+    elementKey.value++;
     onInput(collectionType);
 }
 </script>
@@ -71,6 +75,7 @@ function onChooseFromHelp(collectionType: string) {
     <div class="form-collection-type">
         <FormElement
             id="collection_type"
+            :key="elementKey"
             :value="currentValue"
             :attributes="attributes"
             :warning="warning"

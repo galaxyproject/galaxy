@@ -1161,6 +1161,8 @@ workflow_editor:
       selector: >
         //div[@id='form-element-__annotation']//textarea
     collection_type_select: '#form-element-collection_type'
+    collection_type_selected: '#form-element-collection_type .multiselect__single'
+    collection_type_custom_input: '#collection_type-other'
     step_when:
       type: xpath
       selector: >

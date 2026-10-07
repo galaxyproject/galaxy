@@ -319,6 +319,36 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert control["optional"] is True
 
     @selenium_test
+    def test_collection_input_custom_and_any_collection_type_round_trip(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.select_set_value(editor.collection_type_select, "Custom collection type")
+        editor.collection_type_custom_input.wait_for_and_clear_and_send_keys("list:list:list")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:list:list"
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Custom collection type..."
+        assert editor.collection_type_custom_input.wait_for_value() == "list:list:list"
+
+        self.select_set_value(editor.collection_type_select, "Any collection type")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() is None
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Any collection type"
+        editor.collection_type_custom_input.assert_absent()
+
+    @selenium_test
     def test_data_column_input_editing(self):
         self.open_in_workflow_editor("""
 class: GalaxyWorkflow
@@ -1164,6 +1194,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _current_collection_type(self):
+        workflow = self._download_current_workflow()
+        return json.loads(workflow["steps"]["0"]["tool_state"])["collection_type"]
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
