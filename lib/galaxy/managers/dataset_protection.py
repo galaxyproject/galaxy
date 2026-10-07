@@ -71,6 +71,7 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import BaseDataToolParameter
 from galaxy.util import now
 from galaxy.util.crypt4gh import (
+    check_crypt4gh,
     is_crypt4gh_file_ext,
     read_crypt4gh_header,
     unwrap_crypt4gh_file_ext,
@@ -543,16 +544,25 @@ class DatasetProtectionManager:
         header = dataset_instance.metadata.crypt4gh_header
         if not header or hashlib.sha256(base64.b64decode(header)).hexdigest() != record["header_sha256"]:
             return False
-        assert dataset_instance.dataset
-        file_name = dataset_instance.dataset.get_file_name(sync_cache=False)
+        dataset = dataset_instance.dataset
+        assert dataset
+        # Data is checked independently of the compute host where it is local (e.g. disk object stores).
+        file_name = dataset.get_file_name(sync_cache=False)
         if os.path.exists(file_name):
-            # Data is local (e.g. disk object stores), check it independently of the compute host.
             with open(file_name, "rb") as f:
                 try:
                     stored_header = read_crypt4gh_header(f)
                 except ValueError:
                     return False
-            return bool(hashlib.sha256(stored_header).hexdigest() == record["header_sha256"])
+            if hashlib.sha256(stored_header).hexdigest() != record["header_sha256"]:
+                return False
+        if dataset.extra_files_path_exists() and os.path.isdir(extra_files_path := dataset.extra_files_path):
+            recorded = record.get("extra_files", {})
+            for root, _, filenames in os.walk(extra_files_path):
+                for filename in filenames:
+                    path = os.path.join(root, filename)
+                    if os.path.relpath(path, extra_files_path) not in recorded or not check_crypt4gh(path):
+                        return False
         return True
 
     def _record_output_grants(
