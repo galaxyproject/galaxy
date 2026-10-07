@@ -87,9 +87,13 @@ class _FakeDataset:
         self.purged = False
         self.state = "ok"
         self.file_size = size
+        self.extra_files_path = f"{path}_files"
 
     def get_file_name(self, sync_cache=True):
         return self.path
+
+    def extra_files_path_exists(self):
+        return os.path.isdir(self.extra_files_path)
 
     def full_delete(self):
         self.purged = True
@@ -201,6 +205,29 @@ def test_finish_job_detects_plaintext_behind_a_record(tmp_path):
     output, record = _protected_output(tmp_path)
     # The file stored for the output is not the one that was protected.
     (tmp_path / "out.dat").write_bytes(b"@read1\nACGT\n")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_accepts_protected_extra_files(tmp_path):
+    output, record = _protected_output(tmp_path)
+    extra_file = tmp_path / "out.dat_files" / "sub" / "part.txt"
+    extra_file.parent.mkdir(parents=True)
+    extra_file.write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {os.path.join("sub", "part.txt"): "compute"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert _manager().finish_job(_job(output), str(tmp_path)) is None
+
+
+@pytest.mark.parametrize("recorded", [True, False])
+def test_finish_job_detects_plaintext_extra_files(tmp_path, recorded):
+    output, record = _protected_output(tmp_path)
+    (tmp_path / "out.dat_files").mkdir()
+    (tmp_path / "out.dat_files" / "part.txt").write_bytes(b"plaintext part")
+    if recorded:
+        record["extra_files"] = {"part.txt": "compute"}
     _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
     assert _manager().finish_job(_job(output), str(tmp_path))
     assert output.dataset.purged

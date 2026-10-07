@@ -69,6 +69,7 @@ from galaxy.model.store.discover import (
 from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
+    persist_extra_files,
 )
 from galaxy.tool_util.output_checker import (
     AnyJobMessage,
@@ -563,7 +564,14 @@ def set_metadata_portable(
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
                 if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
-                    object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    if not output_protector:
+                        object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    elif not stored_from_discovery and (extra_files_path := dataset.dataset.external_extra_files_path):
+                        # Store exactly the extra files that were protected, not whatever directory
+                        # collect_extra_files() would find.
+                        object_store_update_actions.append(
+                            partial(persist_extra_files, object_store, extra_files_path, dataset)
+                        )
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
                         # Don't overwrite failed state (for invalid content) here
