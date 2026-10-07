@@ -69,13 +69,13 @@ class CustomHeader {
 // the horizontal space if they are too small after auto-sizing.
 /*
 function cleanUpColumnsIfNeeded() {
-    if(columnApi.value) {
+    if(gridApi.value) {
         const gridWidth = document.querySelector("#rules-ag-grid")?.clientWidth || 0;
-        const totalColumnWidth = (columnApi.value.getAllColumns() || []).reduce(
+        const totalColumnWidth = (gridApi.value.getColumns() || []).reduce(
             (sum: number, col: Column) => sum + (col.getActualWidth() || 0),
             0
         );
-        if (totalColumnWidth < gridWidth && gridApi.value) {
+        if (totalColumnWidth < gridWidth) {
             gridApi.value.sizeColumnsToFit();
         }
     }
@@ -83,12 +83,12 @@ function cleanUpColumnsIfNeeded() {
 */
 
 function resize() {
-    if (columnApi.value) {
-        columnApi.value.autoSizeAllColumns();
+    if (gridApi.value) {
+        gridApi.value.autoSizeAllColumns();
     }
 }
 
-const { columnApi, AgGridVue, onGridReady, resizeOnNextTick, theme } = useAgGrid(resize);
+const { gridApi, AgGridVue, onGridReady, resizeOnNextTick, theme } = useAgGrid(resize);
 
 watch(() => props.colHeaders, resizeOnNextTick);
 </script>

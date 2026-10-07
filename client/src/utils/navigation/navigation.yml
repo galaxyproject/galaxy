@@ -826,6 +826,12 @@ tool_form:
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
     parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
+    parameter_number_list_input:
+      type: xpath
+      selector: (//div[@id="form-element-${parameter}"]//div[@data-description="number list row"])[${index}]//input[@type="number"]
+    parameter_number_list_add:
+      type: xpath
+      selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'

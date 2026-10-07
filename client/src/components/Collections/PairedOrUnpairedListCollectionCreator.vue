@@ -978,7 +978,9 @@ export default {
                         </GButton>
                     </div>
                     <div :style="style" :class="theme">
+                        <!-- ag-grid animates rows by default since 31; a removed row would linger at its old index. -->
                         <AgGridVue
+                            :animate-rows="false"
                             :row-drag-managed="true"
                             :row-drag-text="rowDragText"
                             :get-row-id="getRowId"

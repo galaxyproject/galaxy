@@ -1,12 +1,11 @@
 import "ag-grid-community/styles/ag-grid.min.css";
 import "ag-grid-community/styles/ag-theme-alpine.min.css";
 
-import type { ColumnApi, GridApi, GridReadyEvent } from "ag-grid-community";
+import type { GridApi, GridReadyEvent } from "ag-grid-community";
 import { defineAsyncComponent, nextTick, ref } from "vue";
 
 export function useAgGrid(forceGridSize: () => void) {
     const gridApi = ref<GridApi | null>(null);
-    const columnApi = ref<ColumnApi | null>(null);
     const theme = "ag-theme-alpine";
     function resizeOnNextTick() {
         nextTick(forceGridSize);
@@ -14,7 +13,6 @@ export function useAgGrid(forceGridSize: () => void) {
 
     function onGridReady(params: GridReadyEvent) {
         gridApi.value = params.api;
-        columnApi.value = params.columnApi;
         forceGridSize();
     }
 
@@ -23,5 +21,5 @@ export function useAgGrid(forceGridSize: () => void) {
         return AgGridVue;
     });
 
-    return { AgGridVue, gridApi, columnApi, resizeOnNextTick, onGridReady, theme };
+    return { AgGridVue, gridApi, resizeOnNextTick, onGridReady, theme };
 }

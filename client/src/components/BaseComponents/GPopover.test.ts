@@ -1105,8 +1105,7 @@ describe("GPopover click dialog", () => {
         const link = popoverEl().querySelector("a")!;
         const hidden = document.createElement("button");
         popoverEl().querySelector(".popover-body")!.appendChild(hidden);
-        // happy-dom has no layout, so stand in for display: none.
-        vi.spyOn(hidden, "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+        hidden.style.display = "none";
         link.focus();
 
         expect(pressTab(link).defaultPrevented).toBe(true);
@@ -1421,8 +1420,7 @@ describe("GPopover interactive hover", () => {
     it("passes over hidden and disabled controls after the trigger", async () => {
         const { target, next } = await mountInteractive();
         const hidden = document.createElement("button");
-        // happy-dom has no layout, so stand in for display: none.
-        vi.spyOn(hidden, "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+        hidden.style.display = "none";
         const disabled = document.createElement("button");
         disabled.disabled = true;
         disabled.tabIndex = 0;
