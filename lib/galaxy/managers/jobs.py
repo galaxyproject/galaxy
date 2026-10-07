@@ -194,6 +194,55 @@ def safe_aliased(model_class: type[T], name: str) -> type[T]:
     return aliased(model_class, name=safe_label_or_none(name))
 
 
+def has_same_hash(
+    stmt: "Select[tuple[int]]",
+    a: type[model.HistoryDatasetAssociation],
+    b: type[model.HistoryDatasetAssociation],
+    b_id: int,
+) -> "Select[tuple[int]]":
+    """Join ``b`` (the single HDA identified by ``b_id``) to ``stmt``, then restrict ``a`` to
+    either that exact dataset or one sharing its ``DatasetHash.FINAL`` hash.
+
+    Only ``DatasetHash`` rows tagged ``DatasetHash.FINAL`` are considered authoritative to match
+    on (see that attribute for why); any other row (``None`` for an untagged primary-file hash,
+    or a named extra file's hash) is ignored here.
+
+    The set of datasets sharing ``b_id``'s ``FINAL`` hash is computed once from the literal
+    ``b_id``, uncorrelated with ``a``, rather than as a join chain from ``a``'s side: joining
+    historical candidates to every dataset sharing a given hash before filtering down to the one
+    requested HDA makes the join fan out on any hash shared by many datasets (e.g. empty files),
+    since the planner cannot push the single-row filter through the outer joins.
+    """
+    matching_hda = aliased(model.HistoryDatasetAssociation)
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
+    matching_dataset_ids = (
+        select(b_hash.dataset_id)
+        .select_from(matching_hda)
+        .join(
+            a_hash,
+            and_(a_hash.dataset_id == matching_hda.dataset_id, a_hash.extra_files_path == model.DatasetHash.FINAL),
+        )
+        .join(
+            b_hash,
+            and_(
+                b_hash.hash_function == a_hash.hash_function,
+                b_hash.hash_value == a_hash.hash_value,
+                b_hash.extra_files_path == model.DatasetHash.FINAL,
+            ),
+        )
+        .where(matching_hda.id == b_id)
+    )
+    stmt = stmt.join(b, b.id == b_id)
+    stmt = stmt.where(
+        or_(
+            a.dataset_id == b.dataset_id,  # Direct dataset match
+            a.dataset_id.in_(matching_dataset_ids),  # Hash match
+        )
+    )
+    return stmt
+
+
 class JobManager:
     def __init__(self, app: StructuredApp, history_manager: HistoryManager):
         self.app = app
@@ -834,7 +883,8 @@ class JobSearch:
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        stmt = stmt.join(b, a.dataset_id == b.id)
+        stmt = has_same_hash(stmt, b, c, v)
         name_condition = []
         hda_history_join_conditions = [
             e.history_dataset_association_id == b.id,

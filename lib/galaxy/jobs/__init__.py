@@ -90,6 +90,7 @@ from galaxy.jobs.runners import (
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
+    DatasetHash,
     Job,
     JobOutputNameTooLongError,
     LibraryDatasetDatasetAssociation,
@@ -2506,12 +2507,15 @@ class MinimalJobWrapper(HasResourceParameters):
                         and job.tool_id in ("upload1", "__DATA_FETCH__")
                     ):
                         # Calculate dataset hash via a celery task
-                        if self.app.config.enable_celery_tasks:
-                            extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                        if self.app.config.enable_celery_tasks and not dataset.extra_files_path_exists():
+                            # By passing DatasetHash.FINAL as the extra_files_path,
+                            # DatasetManager.compute_hash() decides live, at the moment of
+                            # computation, whether this needs a primary-file-only hash or a full
+                            # composite one covering every extra file too.
                             hash_requests.append(
                                 ComputeDatasetHashTaskRequest(
                                     dataset_id=dataset.id,
-                                    extra_files_path=extra_files_path,
+                                    extra_files_path=DatasetHash.FINAL,
                                     hash_function=self.app.config.hash_function,
                                 )
                             )
