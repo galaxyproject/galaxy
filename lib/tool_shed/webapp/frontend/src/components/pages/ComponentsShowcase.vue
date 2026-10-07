@@ -10,6 +10,10 @@ import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 import LandingSearchBox from "@/components/LandingSearchBox.vue"
 import LandingInfoSections from "@/components/LandingInfoSections.vue"
+import RepositoryFileTree from "@/components/RepositoryFileTree.vue"
+import RepositoryFileViewer from "@/components/RepositoryFileViewer.vue"
+import type { RepositoryFileContents, RepositoryFileEntry } from "@/api"
+import { ref } from "vue"
 
 const { addToast } = useToast()
 
@@ -91,6 +95,33 @@ const sampleRevisionData = getFirstRevision(repositoryMetadataColumnMaker)
 const diffBefore = { name: "my_tool", version: "1.0.0", description: "Old description" }
 const diffAfter = { name: "my_tool", version: "1.1.0", description: "New improved description", author: "dev" }
 const diffIdentical = { name: "unchanged", version: "1.0.0" }
+
+// Repository file browser demos
+function fileEntry(path: string, type: RepositoryFileEntry["type"] = "file"): RepositoryFileEntry {
+    return { path, size: 1024, type, executable: false }
+}
+const demoFiles: RepositoryFileEntry[] = [
+    fileEntry("column_maker/column_maker.xml"),
+    fileEntry("column_maker/column_maker.py"),
+    fileEntry("column_maker/test-data/bed_file.bed"),
+    fileEntry("column_maker/test-data/a_file_with_a_really_long_name_that_needs_to_wrap_somewhere.tabular"),
+    fileEntry("column_maker/macros.xml", "symlink"),
+    fileEntry(".shed.yml"),
+    fileEntry("README.rst"),
+]
+const selectedDemoFile = ref<string | null>("column_maker/test-data/bed_file.bed")
+function demoContents(overrides: Partial<RepositoryFileContents> = {}): RepositoryFileContents {
+    return {
+        path: "column_maker/column_maker.xml",
+        size: 120,
+        type: "file",
+        binary: false,
+        truncated: false,
+        content:
+            '<tool id="Add_a_column1" name="Compute" version="1.3.0">\n    <description>on rows</description>\n</tool>\n',
+        ...overrides,
+    }
+}
 
 // Single revision for simpler demos
 const singleRevisionMetadata: RepositoryMetadata = (() => {
@@ -202,6 +233,64 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
         <component-showcase title="LandingInfoSections">
             <component-showcase-example title="defaults">
                 <landing-info-sections />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="RepositoryFileTree">
+            <component-showcase-example title="nested folders, a symlink and a selected file">
+                <RepositoryFileTree
+                    :files="demoFiles"
+                    :selected="selectedDemoFile"
+                    @select="selectedDemoFile = $event"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="nothing selected">
+                <RepositoryFileTree :files="demoFiles" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="RepositoryFileViewer">
+            <component-showcase-example title="text file">
+                <RepositoryFileViewer :file="demoContents()" />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="long lines scroll">
+                <RepositoryFileViewer
+                    :file="demoContents({ path: 'test-data/wide.tabular', content: 'column\t'.repeat(60) })"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="binary">
+                <RepositoryFileViewer
+                    :file="demoContents({ path: 'test-data/input.bam', binary: true, content: null })"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="too large">
+                <RepositoryFileViewer
+                    :file="demoContents({ path: 'test-data/big.fasta', truncated: true, size: 5242880, content: null })"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="symbolic link">
+                <RepositoryFileViewer :file="demoContents({ path: 'macros.xml', type: 'symlink', content: null })" />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="empty file">
+                <RepositoryFileViewer :file="demoContents({ path: 'test-data/empty.txt', size: 0, content: '' })" />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="loading">
+                <RepositoryFileViewer :file="null" loading />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="error">
+                <RepositoryFileViewer :file="null" error="Request failed with status 404: No such file" />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="nothing selected">
+                <RepositoryFileViewer :file="null" />
             </component-showcase-example>
         </component-showcase>
 
