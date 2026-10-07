@@ -5,6 +5,7 @@
 cat '$input1' > '$declared' &&
 cat '$input1' > from_work_dir.txt &&
 cat '$input1' > assigned.primary.txt &&
+cat '$input1' > '$assigned' &&
 mkdir -p discovered split &&
 cat '$input1' > discovered/disc1.txt &&
 cat '$input1' > discovered/disc2.txt &&
