@@ -1,5 +1,5 @@
 <template>
-    <b-modal
+    <BModal
         :visible="show"
         title="Install Visualization"
         :ok-disabled="!visualizationId || installing"
@@ -7,7 +7,7 @@
         @hidden="emit('cancel')"
         @ok="handleInstall">
         <div v-if="installing" class="text-center">
-            <b-spinner label="Installing..." />
+            <BSpinner label="Installing..." />
             <p class="mt-2">Installing visualization package...</p>
             <p class="small text-muted">This may take a few minutes...</p>
         </div>
@@ -19,32 +19,32 @@
                 <div class="small"><strong>Version:</strong> {{ packageData.version }}</div>
             </div>
 
-            <b-form-group
+            <BFormGroup
                 label="Visualization ID:"
                 label-for="viz-id-input"
                 description="Choose a unique identifier for this visualization in Galaxy">
-                <b-form-input
+                <BFormInput
                     id="viz-id-input"
                     v-model="visualizationId"
                     :placeholder="suggestedId"
                     :state="visualizationId ? (isValidId ? true : false) : null" />
-                <b-form-invalid-feedback v-if="!isValidId">
+                <BFormInvalidFeedback v-if="!isValidId">
                     ID must contain only letters, numbers, and underscores
-                </b-form-invalid-feedback>
-            </b-form-group>
+                </BFormInvalidFeedback>
+            </BFormGroup>
 
             <BAlert v-if="idConflict" variant="warning" show>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
                 A visualization with this ID is already installed. Installing will replace it.
             </BAlert>
         </div>
-    </b-modal>
+    </BModal>
 </template>
 
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BFormGroup, BFormInput, BFormInvalidFeedback, BModal, BSpinner } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { AvailableVisualization, Visualization } from "./services";

@@ -1,11 +1,11 @@
 <template>
-    <b-card class="available-visualization-card">
+    <BCard class="available-visualization-card">
         <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
                 <div class="d-flex align-items-center mb-2">
                     <h5 class="mb-0 mr-2">{{ packageData.name }}</h5>
-                    <b-badge variant="info" class="mr-2">v{{ packageData.version }}</b-badge>
-                    <b-badge v-if="isInstalled" variant="success">Installed</b-badge>
+                    <BBadge variant="info" class="mr-2">v{{ packageData.version }}</BBadge>
+                    <BBadge v-if="isInstalled" variant="success">Installed</BBadge>
                 </div>
 
                 <p v-if="packageData.description" class="text-muted mb-2">
@@ -51,29 +51,30 @@
             </div>
 
             <div class="ml-3">
-                <b-button
+                <BButton
                     v-if="!isInstalled"
                     variant="primary"
                     size="sm"
                     :disabled="isLoading"
                     @click="emit('install', packageData)">
-                    <b-spinner v-if="isLoading" small />
+                    <BSpinner v-if="isLoading" small />
                     <FontAwesomeIcon v-else :icon="faDownload" class="mr-1" />
                     Install
-                </b-button>
+                </BButton>
 
-                <b-button v-else variant="outline-success" size="sm" disabled>
+                <BButton v-else variant="outline-success" size="sm" disabled>
                     <FontAwesomeIcon :icon="faCheck" class="mr-1" />
                     Installed
-                </b-button>
+                </BButton>
             </div>
         </div>
-    </b-card>
+    </BCard>
 </template>
 
 <script setup lang="ts">
 import { faCheck, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge, BButton, BCard, BSpinner } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { AvailableVisualization, Visualization } from "./services";

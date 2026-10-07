@@ -7,59 +7,57 @@
             Galaxy's served static assets and staged into the serving directory when needed.
         </p>
 
-        <b-tabs v-model="activeTabIndex" class="mb-3">
-            <b-tab>
+        <BTabs v-model="activeTabIndex" class="mb-3">
+            <BTab>
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faList" class="mr-1" />
                     Installed ({{ installedVisualizations.length }})
                 </template>
-            </b-tab>
-            <b-tab>
+            </BTab>
+            <BTab>
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faDownload" class="mr-1" />
                     Available
                 </template>
-            </b-tab>
-            <b-tab>
+            </BTab>
+            <BTab>
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faChartBar" class="mr-1" />
                     Usage Stats
                 </template>
-            </b-tab>
-            <b-tab>
+            </BTab>
+            <BTab>
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faServer" class="mr-1" />
                     Staging
                 </template>
-            </b-tab>
-        </b-tabs>
+            </BTab>
+        </BTabs>
 
         <!-- Installed Visualizations Tab -->
         <div v-if="activeTab === 'installed'">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center">
-                    <b-form-checkbox v-model="showDisabled" class="mr-3">
-                        Show disabled visualizations
-                    </b-form-checkbox>
-                    <b-button variant="outline-secondary" size="sm" :disabled="loading" @click="reloadRegistry">
+                    <BFormCheckbox v-model="showDisabled" class="mr-3"> Show disabled visualizations </BFormCheckbox>
+                    <BButton variant="outline-secondary" size="sm" :disabled="loading" @click="reloadRegistry">
                         <FontAwesomeIcon :icon="faSync" :spin="loading" class="mr-1" />
                         Refresh
-                    </b-button>
+                    </BButton>
                 </div>
                 <div>
-                    <b-input-group>
-                        <b-form-input v-model="searchFilter" placeholder="Filter visualizations..." />
-                        <b-input-group-append>
-                            <b-button variant="outline-secondary" aria-label="Clear filter" @click="searchFilter = ''">
+                    <BInputGroup>
+                        <BFormInput v-model="searchFilter" placeholder="Filter visualizations..." />
+                        <BInputGroupAppend>
+                            <BButton variant="outline-secondary" aria-label="Clear filter" @click="searchFilter = ''">
                                 <FontAwesomeIcon :icon="faTimes" />
-                            </b-button>
-                        </b-input-group-append>
-                    </b-input-group>
+                            </BButton>
+                        </BInputGroupAppend>
+                    </BInputGroup>
                 </div>
             </div>
 
             <div v-if="loading" class="text-center py-4">
-                <b-spinner label="Loading..." />
+                <BSpinner label="Loading..." />
                 <p class="mt-2">Loading visualization packages...</p>
             </div>
 
@@ -69,7 +67,7 @@
                 </p>
                 <p v-if="installedVisualizations.length === 0 && !searchFilter" class="text-muted">
                     Browse the
-                    <b-link @click="activeTabIndex = 1">Available</b-link>
+                    <BLink @click="activeTabIndex = 1">Available</BLink>
                     tab to find and install visualization packages from the npm registry.
                 </p>
                 <p v-else class="text-muted">No visualizations match your filter.</p>
@@ -95,13 +93,13 @@
         <div v-if="activeTab === 'available'">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <Heading h3 size="sm">Available Visualization Packages</Heading>
-                <b-input-group style="max-width: 300px">
-                    <b-form-input
+                <BInputGroup style="max-width: 300px">
+                    <BFormInput
                         v-model="availableSearchFilter"
                         placeholder="Search packages..."
                         @input="searchAvailablePackages" />
-                    <b-input-group-append>
-                        <b-button
+                    <BInputGroupAppend>
+                        <BButton
                             variant="outline-secondary"
                             aria-label="Clear search"
                             @click="
@@ -109,19 +107,19 @@
                                 searchAvailablePackages();
                             ">
                             <FontAwesomeIcon :icon="faTimes" />
-                        </b-button>
-                    </b-input-group-append>
-                </b-input-group>
+                        </BButton>
+                    </BInputGroupAppend>
+                </BInputGroup>
             </div>
 
             <div v-if="loadingAvailable" class="text-center py-4">
-                <b-spinner label="Loading..." />
+                <BSpinner label="Loading..." />
                 <p class="mt-2">Searching npm registry for @galaxyproject packages...</p>
             </div>
 
-            <b-alert v-else-if="availableLoadError" variant="warning" show>
+            <BAlert v-else-if="availableLoadError" variant="warning" show>
                 Could not reach the npm registry. Check that this Galaxy server has internet access.
-            </b-alert>
+            </BAlert>
 
             <div v-else-if="availableVisualizations.length === 0" class="text-center py-4">
                 <p class="text-muted">
@@ -158,7 +156,7 @@
             </p>
             <div class="row">
                 <div class="col-md-6">
-                    <b-card>
+                    <BCard>
                         <template v-slot:header>
                             <h5 class="card-title mb-0">
                                 <FontAwesomeIcon :icon="faUpload" class="mr-2" />
@@ -167,19 +165,19 @@
                         </template>
 
                         <div class="d-flex">
-                            <b-button variant="primary" class="mr-2" :disabled="stagingLoading" @click="stageAllAssets">
+                            <BButton variant="primary" class="mr-2" :disabled="stagingLoading" @click="stageAllAssets">
                                 <FontAwesomeIcon :icon="faUpload" :spin="stagingLoading" class="mr-1" />
                                 Stage All Visualizations
-                            </b-button>
-                            <b-button variant="warning" :disabled="stagingLoading" @click="cleanStagedAssetsAction">
+                            </BButton>
+                            <BButton variant="warning" :disabled="stagingLoading" @click="cleanStagedAssetsAction">
                                 <FontAwesomeIcon :icon="faTrash" class="mr-1" />
                                 Clean Staged Assets
-                            </b-button>
+                            </BButton>
                         </div>
-                    </b-card>
+                    </BCard>
                 </div>
                 <div class="col-md-6">
-                    <b-card>
+                    <BCard>
                         <template v-slot:header>
                             <h5 class="card-title mb-0">
                                 <FontAwesomeIcon :icon="faInfoCircle" class="mr-2" />
@@ -208,16 +206,16 @@
                             </div>
                         </div>
                         <div v-else class="text-center">
-                            <b-spinner small />
+                            <BSpinner small />
                             Loading staging status...
                         </div>
                         <div class="mt-3">
-                            <b-button size="sm" variant="outline-secondary" @click="loadStagingStatus">
+                            <BButton size="sm" variant="outline-secondary" @click="loadStagingStatus">
                                 <FontAwesomeIcon :icon="faSync" class="mr-1" />
                                 Refresh Status
-                            </b-button>
+                            </BButton>
                         </div>
-                    </b-card>
+                    </BCard>
                 </div>
             </div>
         </div>
@@ -247,6 +245,19 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn } from "@vueuse/core";
+import {
+    BAlert,
+    BButton,
+    BCard,
+    BFormCheckbox,
+    BFormInput,
+    BInputGroup,
+    BInputGroupAppend,
+    BLink,
+    BSpinner,
+    BTab,
+    BTabs,
+} from "bootstrap-vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";

@@ -1,20 +1,20 @@
 <template>
-    <b-card class="visualization-card">
+    <BCard class="visualization-card">
         <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
                 <div class="d-flex align-items-center mb-2">
                     <h5 class="mb-0 mr-2">{{ visualization.id }}</h5>
-                    <b-badge :variant="visualization.enabled ? 'success' : 'secondary'" class="mr-2">
+                    <BBadge :variant="visualization.enabled ? 'success' : 'secondary'" class="mr-2">
                         {{ visualization.enabled ? "Enabled" : "Disabled" }}
-                    </b-badge>
-                    <b-badge
+                    </BBadge>
+                    <BBadge
                         v-if="!visualization.installed"
                         variant="warning"
                         class="mr-2"
                         title="Registered in config but package files are missing from disk">
                         Missing Files
-                    </b-badge>
-                    <b-badge
+                    </BBadge>
+                    <BBadge
                         v-if="visualization.installed"
                         :variant="isStaged ? 'info' : 'warning'"
                         class="mr-2"
@@ -24,7 +24,7 @@
                                 : 'Assets need to be staged before users can access this visualization'
                         ">
                         {{ isStaged ? "Staged" : "Not Staged" }}
-                    </b-badge>
+                    </BBadge>
                 </div>
 
                 <div class="text-muted mb-2">
@@ -55,57 +55,61 @@
                 </div>
 
                 <div v-if="meta?.dependencies && Object.keys(meta.dependencies).length > 0" class="mt-2">
-                    <b-button v-b-toggle="`deps-${visualization.id}`" variant="link" size="sm" class="p-0 text-info">
+                    <BButton
+                        variant="link"
+                        size="sm"
+                        class="p-0 text-info"
+                        @click="showDependencies = !showDependencies">
                         <FontAwesomeIcon :icon="faCaretRight" fixed-width />
                         Dependencies ({{ Object.keys(meta.dependencies).length }})
-                    </b-button>
-                    <b-collapse :id="`deps-${visualization.id}`" class="mt-2">
+                    </BButton>
+                    <BCollapse v-model="showDependencies" class="mt-2">
                         <div class="small">
                             <div v-for="(version, dep) in meta.dependencies" :key="`dep-${dep}`" class="mb-1">
                                 <code>{{ dep }}@{{ version }}</code>
                             </div>
                         </div>
-                    </b-collapse>
+                    </BCollapse>
                 </div>
             </div>
 
             <div class="ml-3">
-                <b-dropdown variant="outline-secondary" size="sm" right text="Actions" :disabled="isLoading">
-                    <b-dropdown-item :disabled="isLoading" @click="emit('toggle', visualization)">
+                <BDropdown variant="outline-secondary" size="sm" right text="Actions" :disabled="isLoading">
+                    <BDropdownItem :disabled="isLoading" @click="emit('toggle', visualization)">
                         <FontAwesomeIcon :icon="visualization.enabled ? faEyeSlash : faEye" fixed-width />
                         {{ visualization.enabled ? "Disable" : "Enable" }}
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item v-if="visualization.installed" :disabled="isLoading" @click="openUpdateModal">
+                    <BDropdownItem v-if="visualization.installed" :disabled="isLoading" @click="openUpdateModal">
                         <FontAwesomeIcon :icon="faArrowUp" fixed-width />
                         Update
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item :disabled="isLoading" @click="emit('stage', visualization)">
+                    <BDropdownItem :disabled="isLoading" @click="emit('stage', visualization)">
                         <FontAwesomeIcon :icon="faUpload" fixed-width />
                         Stage Assets
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
+                    <BDropdownItem
                         v-if="visualization.installed"
                         :disabled="isLoading"
                         variant="danger"
                         @click="emit('uninstall', visualization)">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                         Uninstall
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-divider v-if="visualization.installed" />
+                    <BDropdownDivider v-if="visualization.installed" />
 
-                    <b-dropdown-item :disabled="isLoading" @click="showDetails = !showDetails">
+                    <BDropdownItem :disabled="isLoading" @click="showDetails = !showDetails">
                         <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
                         {{ showDetails ? "Hide Details" : "Show Details" }}
-                    </b-dropdown-item>
-                </b-dropdown>
+                    </BDropdownItem>
+                </BDropdown>
             </div>
         </div>
 
-        <b-collapse v-model="showDetails" class="mt-3">
+        <BCollapse v-model="showDetails" class="mt-3">
             <hr />
             <div class="small">
                 <div class="row">
@@ -125,16 +129,16 @@
                     </div>
                 </div>
             </div>
-        </b-collapse>
+        </BCollapse>
 
-        <b-modal
+        <BModal
             v-model="showUpdateModal"
             title="Update Visualization"
             :ok-disabled="!updateVersion || updating"
             ok-title="Update"
             @ok="handleUpdate">
             <div v-if="updating" class="text-center">
-                <b-spinner label="Updating..." />
+                <BSpinner label="Updating..." />
                 <p class="mt-2">Updating visualization package...</p>
             </div>
 
@@ -143,27 +147,27 @@
                     Update <strong>{{ visualization.id }}</strong> ({{ visualization.package }})
                 </p>
 
-                <b-form-group label="Version:" label-for="version-input">
-                    <b-form-select v-if="availableVersions.length > 0" id="version-input" v-model="updateVersion">
-                        <b-form-select-option :value="''" disabled>Select a version...</b-form-select-option>
-                        <b-form-select-option
+                <BFormGroup label="Version:" label-for="version-input">
+                    <BFormSelect v-if="availableVersions.length > 0" id="version-input" v-model="updateVersion">
+                        <BFormSelectOption :value="''" disabled>Select a version...</BFormSelectOption>
+                        <BFormSelectOption
                             v-for="v in availableVersions"
                             :key="v"
                             :value="v"
                             :disabled="v === visualization.version">
                             {{ v }}{{ v === visualization.version ? " (current)" : "" }}
-                        </b-form-select-option>
-                    </b-form-select>
+                        </BFormSelectOption>
+                    </BFormSelect>
                     <div v-else-if="loadingVersions" class="text-muted small">
-                        <b-spinner small class="mr-1" />
+                        <BSpinner small class="mr-1" />
                         Loading available versions...
                     </div>
-                    <b-form-input v-else id="version-input" v-model="updateVersion" placeholder="e.g., 1.2.3" />
-                    <b-form-text> Current version: {{ visualization.version }} </b-form-text>
-                </b-form-group>
+                    <BFormInput v-else id="version-input" v-model="updateVersion" placeholder="e.g., 1.2.3" />
+                    <BFormText> Current version: {{ visualization.version }} </BFormText>
+                </BFormGroup>
             </div>
-        </b-modal>
-    </b-card>
+        </BModal>
+    </BCard>
 </template>
 
 <script setup lang="ts">
@@ -178,6 +182,22 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+    BBadge,
+    BButton,
+    BCard,
+    BCollapse,
+    BDropdown,
+    BDropdownDivider,
+    BDropdownItem,
+    BFormGroup,
+    BFormInput,
+    BFormSelect,
+    BFormSelectOption,
+    BFormText,
+    BModal,
+    BSpinner,
+} from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { bytesToString } from "@/utils/utils";
@@ -216,6 +236,7 @@ const emit = defineEmits<{
 }>();
 
 const showDetails = ref(false);
+const showDependencies = ref(false);
 const showUpdateModal = ref(false);
 const updateVersion = ref("");
 const updating = ref(false);

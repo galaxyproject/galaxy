@@ -2,14 +2,14 @@
     <div>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <Heading h3 size="md">Usage Statistics</Heading>
-            <b-button variant="outline-secondary" :disabled="loading" @click="emit('refresh')">
+            <BButton variant="outline-secondary" :disabled="loading" @click="emit('refresh')">
                 <FontAwesomeIcon :icon="faSync" :spin="loading" class="mr-1" />
                 Refresh
-            </b-button>
+            </BButton>
         </div>
 
         <div v-if="loading" class="text-center py-4">
-            <b-spinner label="Loading..." />
+            <BSpinner label="Loading..." />
             <p class="mt-2">Loading usage statistics...</p>
         </div>
 
@@ -24,26 +24,26 @@
         <div v-else-if="hasStats">
             <div class="row mb-4">
                 <div class="col-md-4">
-                    <b-card class="text-center">
+                    <BCard class="text-center">
                         <h4 class="text-primary">{{ totalUsage }}</h4>
                         <p class="text-muted mb-0">Total Visualizations Used</p>
-                    </b-card>
+                    </BCard>
                 </div>
                 <div class="col-md-4">
-                    <b-card class="text-center">
+                    <BCard class="text-center">
                         <h4 class="text-success">{{ activeVisualizations }}</h4>
                         <p class="text-muted mb-0">Active Visualizations</p>
-                    </b-card>
+                    </BCard>
                 </div>
                 <div class="col-md-4">
-                    <b-card class="text-center">
+                    <BCard class="text-center">
                         <h4 class="text-info">{{ stats.days }}</h4>
                         <p class="text-muted mb-0">Days Analyzed</p>
-                    </b-card>
+                    </BCard>
                 </div>
             </div>
 
-            <b-card>
+            <BCard>
                 <template v-slot:header>
                     <h5 class="mb-0">Usage by Visualization</h5>
                 </template>
@@ -60,14 +60,14 @@
                             <strong>{{ vizId }}</strong>
                         </div>
                         <div class="d-flex align-items-center">
-                            <b-progress class="mr-3" style="width: 100px; height: 20px">
-                                <b-progress-bar :value="getPercentage(Number(count))" :max="100" />
-                            </b-progress>
-                            <b-badge variant="primary">{{ count }}</b-badge>
+                            <BProgress class="mr-3" style="width: 100px; height: 20px">
+                                <BProgressBar :value="getPercentage(Number(count))" :max="100" />
+                            </BProgress>
+                            <BBadge variant="primary">{{ count }}</BBadge>
                         </div>
                     </div>
                 </div>
-            </b-card>
+            </BCard>
         </div>
 
         <div v-else class="text-center py-4">
@@ -79,7 +79,7 @@
 <script setup lang="ts">
 import { faInfoCircle, faSync } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BBadge, BButton, BCard, BProgress, BProgressBar, BSpinner } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { UsageStats } from "./services";
