@@ -1011,6 +1011,23 @@ class TestHistoryContentsApi(ApiTestCase):
         assert contents_response.status_code == 400
         assert contents_response.json()["err_msg"] == "unparsable value for related filter"
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items_copied_history(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        self.dataset_populator.new_dataset(history_id)
+        run_response = self.dataset_populator.run_tool(
+            "cat_data_and_sleep",
+            {"input1": {"src": "hda", "id": input_hda["id"]}, "sleep_time": 0},
+            history_id,
+        )
+        output_hid = run_response["outputs"][0]["hid"]
+        self.dataset_populator.wait_for_history(history_id)
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+
+        for hid in (input_hda["hid"], output_hid):
+            contents = self._get(f"histories/{copied_history_id}/contents?v=dev&q=related&qv={hid}").json()
+            assert sorted(c["hid"] for c in contents) == [input_hda["hid"], output_hid]
+
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
         expected_datatypes = ["txt"]
