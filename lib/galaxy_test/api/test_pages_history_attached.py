@@ -633,6 +633,21 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
 
     @skip_without_tool("cat1")
+    def test_referenced_output_with_in_history_copy_flags_one_output(self):
+        """A copy in the same history shares its original's row; only one of the two is locked starred."""
+        with self.dataset_populator.test_history() as history_id:
+            output_id, _ = self._cat1_history(history_id)
+            copy = self._copy_hda_to_history(history_id, {"id": output_id})
+            page = self.dataset_populator.new_notebook_referencing(history_id, [copy["id"]])
+
+            summary = self._extraction_summary(page["id"])
+            cat1_row = self._rows_by_type(summary, "tool")[0]
+            assert {o["id"] for o in cat1_row["outputs"]} == {output_id, copy["id"]}, cat1_row["outputs"]
+            flagged = [o["id"] for o in cat1_row["outputs"] if o["referenced_by_report"]]
+            assert flagged == [output_id], cat1_row["outputs"]
+            assert [o["id"] for o in cat1_row["outputs"] if o["exposed"]] == [output_id], cat1_row["outputs"]
+
+    @skip_without_tool("cat1")
     def test_job_directive_seeds_producing_job_unexposed(self):
         """A notebook that references a job via job_metrics seeds the producing
         job (and its upstream inputs) but does NOT expose its outputs."""
