@@ -1015,41 +1015,94 @@ class TestHistoryContentsApi(ApiTestCase):
     def test_index_filter_by_related_items_copied_history(self, history_id):
         input_hda = self.dataset_populator.new_dataset(history_id)
         self.dataset_populator.new_dataset(history_id)
-        run_response = self.dataset_populator.run_tool(
-            "cat_data_and_sleep",
-            {"input1": {"src": "hda", "id": input_hda["id"]}, "sleep_time": 0},
-            history_id,
-        )
-        output_hid = run_response["outputs"][0]["hid"]
-        self.dataset_populator.wait_for_history(history_id)
+        output_hid = self._run_cat(history_id, input_hda)["hid"]
         copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
 
         for hid in (input_hda["hid"], output_hid):
-            contents = self._get(f"histories/{copied_history_id}/contents?v=dev&q=related&qv={hid}").json()
-            assert sorted(c["hid"] for c in contents) == [input_hda["hid"], output_hid]
+            assert self._related_hids(copied_history_id, hid) == [input_hda["hid"], output_hid]
 
     @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_index_filter_by_related_collections_copied_history(self, history_id):
-        create = self.dataset_collection_populator.create_list_in_history
-        input_hdca = create(history_id, wait=True).json()["outputs"][0]
-        unrelated_hdca = create(history_id, wait=True).json()["outputs"][0]
-        run_response = self.dataset_populator.run_tool(
-            "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": input_hdca["id"]}}, history_id
-        )
-        output_hid = run_response["output_collections"][0]["hid"]
-        self.dataset_populator.wait_for_history(history_id)
+        input_hdca = self._new_list(history_id)
+        unrelated_hdca = self._new_list(history_id)
+        output_hid = self._run_filter_failed(history_id, input_hdca)["hid"]
         copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
 
-        def related_hids(hid):
-            # visible filter as in the history panel; collection elements are hidden copies of the same datasets
-            contents = self._get(
-                f"histories/{copied_history_id}/contents?v=dev&q=related&qv={hid}&q=visible&qv=true"
-            ).json()
-            return sorted(c["hid"] for c in contents)
-
         for hid in (input_hdca["hid"], output_hid):
-            assert related_hids(hid) == [input_hdca["hid"], output_hid]
-        assert related_hids(unrelated_hdca["hid"]) == [unrelated_hdca["hid"]]
+            assert self._related_hids(copied_history_id, hid) == [input_hdca["hid"], output_hid]
+        assert self._related_hids(copied_history_id, unrelated_hdca["hid"]) == [unrelated_hdca["hid"]]
+
+    @skip_without_tool("cat_data_and_sleep")
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    def test_index_filter_by_related_items_copied_with_new_hids(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        unrelated_hda = self.dataset_populator.new_dataset(history_id)
+        output_hda = self._run_cat(history_id, input_hda)
+        input_hdca = self._new_list(history_id)
+        output_hdca = self._run_filter_failed(history_id, input_hdca)
+        target_history_id = self.dataset_populator.new_history()
+        # outputs are copied before their inputs, so the copies' hids can't match the originals'
+        copied_hid = {}
+        for hda in (unrelated_hda, output_hda, input_hda):
+            copy_response = self._post(
+                f"histories/{target_history_id}/contents", {"source": "hda", "content": hda["id"]}, json=True
+            )
+            self._assert_status_code_is(copy_response, 200)
+            copied_hid[hda["hid"]] = copy_response.json()["hid"]
+        for hdca in (output_hdca, input_hdca):
+            copy_response = self.dataset_collection_populator.copy_collection(target_history_id, hdca["id"])
+            copied_hid[hdca["hid"]] = copy_response.json()["hid"]
+
+        related_pairs = [(input_hda["hid"], output_hda["hid"]), (input_hdca["hid"], output_hdca["hid"])]
+        for input_hid, output_hid in related_pairs:
+            assert input_hid < output_hid and copied_hid[input_hid] > copied_hid[output_hid]
+            expected = sorted([copied_hid[input_hid], copied_hid[output_hid]])
+            for hid in (input_hid, output_hid):
+                assert self._related_hids(target_history_id, copied_hid[hid]) == expected
+        unrelated_copy_hid = copied_hid[unrelated_hda["hid"]]
+        assert self._related_hids(target_history_id, unrelated_copy_hid) == [unrelated_copy_hid]
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items_jobs_on_copies(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        output_hid = self._run_cat(history_id, input_hda)["hid"]
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        copied_input_hda = self.dataset_populator.get_history_dataset_details(copied_history_id, hid=input_hda["hid"])
+        new_output_hid = self._run_cat(copied_history_id, copied_input_hda)["hid"]
+        copy_of_copy_history_id = self.dataset_populator.copy_history(copied_history_id).json()["id"]
+
+        expected = {
+            input_hda["hid"]: sorted([input_hda["hid"], output_hid, new_output_hid]),
+            output_hid: sorted([input_hda["hid"], output_hid]),
+            new_output_hid: sorted([input_hda["hid"], new_output_hid]),
+        }
+        for related_history_id in (copied_history_id, copy_of_copy_history_id):
+            for hid, related in expected.items():
+                assert self._related_hids(related_history_id, hid) == related
+        # jobs run on a copy don't show up in the original history
+        assert self._related_hids(history_id, input_hda["hid"]) == sorted([input_hda["hid"], output_hid])
+
+    def _related_hids(self, history_id: str, hid: int) -> list[int]:
+        # visible filter as in the history panel; collection elements are hidden copies of the same datasets
+        contents = self._get(f"histories/{history_id}/contents?v=dev&q=related&qv={hid}&q=visible&qv=true").json()
+        return sorted(c["hid"] for c in contents)
+
+    def _run_cat(self, history_id: str, hda: dict) -> dict:
+        run_response = self.dataset_populator.run_tool(
+            "cat_data_and_sleep", {"input1": {"src": "hda", "id": hda["id"]}, "sleep_time": 0}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        return run_response["outputs"][0]
+
+    def _new_list(self, history_id: str) -> dict:
+        return self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()["outputs"][0]
+
+    def _run_filter_failed(self, history_id: str, hdca: dict) -> dict:
+        run_response = self.dataset_populator.run_tool(
+            "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": hdca["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        return run_response["output_collections"][0]
 
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
