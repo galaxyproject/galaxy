@@ -22,6 +22,7 @@ from python_multipart.multipart import (
     Field,
     File,
 )
+from starlette.requests import ClientDisconnect
 
 from galaxy import (
     exceptions,
@@ -126,7 +127,11 @@ class FastAPIJobFiles:
             partial(tempfile.mkdtemp, prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
         )
         try:
-            fields, uploads = await _parse_body(request, staging_dir)
+            try:
+                fields, uploads = await _parse_body(request, staging_dir)
+            except ClientDisconnect:
+                # Nobody is left to read the response; a 4xx keeps the disconnect out of the error logs.
+                raise exceptions.RequestParameterInvalidException("Client disconnected during job files upload.")
             for key, value in fields.items():
                 params.setdefault(key, value)
             path = params.get("path")
@@ -134,9 +139,9 @@ class FastAPIJobFiles:
             await anyio.to_thread.run_sync(self.manager.authorize_write, job_id, path, params.get("job_key"))
             assert path
             if "__file_path" in params:
-                source_path = self.manager.nginx_upload_path(params["__file_path"])
+                source_path = await anyio.to_thread.run_sync(self.manager.nginx_upload_path, params["__file_path"])
             elif "session_id" in params:
-                source_path = self.manager.tus_upload_path(params["session_id"])
+                source_path = await anyio.to_thread.run_sync(self.manager.tus_upload_path, params["session_id"])
             elif upload := uploads.get("file", uploads.get("__file")):
                 source_path = upload
             else:
@@ -145,6 +150,15 @@ class FastAPIJobFiles:
         finally:
             await anyio.to_thread.run_sync(_remove_staging_dir, staging_dir)
         return {"message": "ok"}
+
+    @router.post("/api/job_files/tus_hooks", include_in_schema=False)
+    def tus_hooks(self) -> None:
+        """Accept every hook from a job files tusd server whose ``-hooks-http`` points here.
+
+        Deployments configure this (e.g. with Gravity's ``hooks_http``). Uploads are authorized
+        when ``POST /api/jobs/{job_id}/files`` consumes them by ``session_id``.
+        """
+        return None
 
 
 def _remove_staging_dir(staging_dir: str) -> None:

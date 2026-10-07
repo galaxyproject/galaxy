@@ -15,6 +15,7 @@ integration tests avoid - but @jmchilton's fear of not touching this
 API has gone too far.
 """
 
+import http.client
 import io
 import os
 import tempfile
@@ -24,6 +25,10 @@ from dataclasses import (
     replace,
 )
 from typing import Any
+from urllib.parse import (
+    urlencode,
+    urlsplit,
+)
 
 import requests
 from sqlalchemy import select
@@ -143,6 +148,16 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is(response, 400)
         api_asserts.assert_error_code_is(response, 400008)
 
+    def test_read_range(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "ranged")
+        _write_file(path, "0123456789")
+        params = {"path": path, "job_key": job.job_key}
+        response = requests.get(job.files_url, params=params, headers={"Range": "bytes=2-5"})
+        api_asserts.assert_status_code_is(response, 206)
+        assert response.text == "2345"
+        assert response.headers["content-range"] == "bytes 2-5/10"
+
     def test_write_by_state(self):
         job = self._running_job()
         api_asserts.assert_status_code_is_ok(self._post_job_file(job, job.output_path, TEST_OUTPUT_TEXT))
@@ -187,6 +202,10 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = self._post_job_file(job, job.output_path, data={"session_id": tus_session_id})
         api_asserts.assert_status_code_is_ok(response)
         _assert_file_contents(job.output_path, TEST_OUTPUT_TEXT)
+
+    def test_tus_hooks_accepts_hooks(self):
+        response = requests.post(self._api_url("job_files/tus_hooks", use_key=False), json={"Type": "pre-create"})
+        api_asserts.assert_status_code_is_ok(response)
 
     def test_write_with_nginx_upload_module(self):
         job = self._running_job()
@@ -235,6 +254,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is(response, 400)
         api_asserts.assert_error_code_is(response, 400007)
         _assert_file_contents(job.output_path, "")
+        assert not _staging_dirs(os.path.dirname(job.output_path))
 
     def test_write_with_malformed_multipart(self):
         job = self._running_job()
@@ -244,6 +264,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is(response, 400)
         api_asserts.assert_error_code_is(response, 400008)
         _assert_file_contents(job.output_path, "")
+        assert not _staging_dirs(os.path.dirname(job.output_path))
 
     def test_unknown_job(self):
         job = self._running_job()
@@ -319,6 +340,54 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert set(os.listdir(self._app.config.new_file_path)) == new_file_path_contents
         assert not os.path.exists(path)
         assert not os.path.exists(outside_path)
+
+    def test_rejected_before_body_is_read(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "work")
+        params = urlencode({"path": path, "job_key": "invalid"})
+        # Announce a large body, send none of it and read the response: only a request
+        # authorized before its body is read gets an answer.
+        status, body = self._post_without_body(f"{job.files_url}?{params}", 100 * LARGE_UPLOAD_CHUNK_SIZE)
+        assert status == 403, body
+        assert not _staging_dirs(job.working_directory)
+        assert not os.path.exists(path)
+
+    def test_job_completes_during_upload(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "large")
+        chunk = b"x" * LARGE_UPLOAD_CHUNK_SIZE
+
+        def body():
+            yield (
+                f'--{UPLOAD_BOUNDARY}\r\nContent-Disposition: form-data; name="file"; filename="large"\r\n\r\n'
+            ).encode()
+            for _ in range(LARGE_UPLOAD_CHUNKS):
+                yield chunk
+            # The first authorization passed and the upload is being staged; now the job finishes.
+            _wait_for_staged_upload(job.working_directory, (LARGE_UPLOAD_CHUNKS - 1) * LARGE_UPLOAD_CHUNK_SIZE)
+            self._change_job_state(job.job, "ok")
+            yield f"\r\n--{UPLOAD_BOUNDARY}--\r\n".encode()
+
+        headers = {"Content-Type": f"multipart/form-data; boundary={UPLOAD_BOUNDARY}"}
+        params = {"path": path, "job_key": job.job_key}
+        response = requests.post(job.files_url, params=params, data=body(), headers=headers)
+        _assert_insufficient_permissions(response)
+        assert not os.path.exists(path)
+        assert not _staging_dirs(job.working_directory)
+
+    def test_client_disconnect_during_upload(self):
+        job = self._running_job()
+        path = os.path.join(job.working_directory, "large")
+        params = urlencode({"path": path, "job_key": job.job_key})
+        connection = self._start_post(f"{job.files_url}?{params}", 100 * LARGE_UPLOAD_CHUNK_SIZE)
+        connection.send(
+            f'--{UPLOAD_BOUNDARY}\r\nContent-Disposition: form-data; name="file"; filename="large"\r\n\r\n'.encode()
+        )
+        connection.send(b"x" * LARGE_UPLOAD_CHUNK_SIZE)
+        assert _wait_for_staging_dirs(job.working_directory, present=True)
+        connection.close()
+        assert _wait_for_staging_dirs(job.working_directory, present=False)
+        assert not os.path.exists(path)
 
     def test_missing_params(self):
         job = self._running_job()
@@ -425,6 +494,24 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         assert not _staging_dirs(staging_parent)
         assert set(os.listdir(self._app.config.new_file_path)) == new_file_path_contents
 
+    def _start_post(self, url: str, content_length: int) -> http.client.HTTPConnection:
+        """Send a multipart POST's headers, leaving its body to the caller."""
+        parts = urlsplit(url)
+        connection = http.client.HTTPConnection(parts.netloc, timeout=30)
+        connection.putrequest("POST", f"{parts.path}?{parts.query}")
+        connection.putheader("Content-Type", f"multipart/form-data; boundary={UPLOAD_BOUNDARY}")
+        connection.putheader("Content-Length", str(content_length))
+        connection.endheaders()
+        return connection
+
+    def _post_without_body(self, url: str, content_length: int) -> tuple[int, bytes]:
+        connection = self._start_post(url, content_length)
+        try:
+            response = connection.getresponse()
+            return response.status, response.read()
+        finally:
+            connection.close()
+
     def _assert_nginx_upload_rejected(self, job: RunningJob, file_path: str, outside_path: str):
         response = self._post_job_file(job, job.output_path, data={"__file_path": file_path})
         api_asserts.assert_status_code_is(response, 400)
@@ -449,6 +536,15 @@ def _staging_dirs(directory):
     if not os.path.isdir(directory):
         return []
     return [name for name in os.listdir(directory) if name.startswith(UPLOAD_STAGING_PREFIX)]
+
+
+def _wait_for_staging_dirs(directory, present, timeout=10):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if bool(_staging_dirs(directory)) == present:
+            return True
+        time.sleep(0.05)
+    return False
 
 
 def _wait_for_staged_upload(directory, min_size, timeout=10):
