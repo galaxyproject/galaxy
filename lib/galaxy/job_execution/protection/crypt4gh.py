@@ -206,7 +206,8 @@ class Crypt4GHJobRuntime:
         self.plan = plan
         self.client = client or RecryptorClient(plan.recryptor)
         self._state: dict[str, Any] | None = None
-        self._writer_secret_key: bytes | None = None
+        # Created upfront, outputs may be protected concurrently.
+        self._writer_secret_key = os.urandom(32)
 
     @property
     def state(self) -> dict[str, Any]:
@@ -246,8 +247,6 @@ class Crypt4GHJobRuntime:
             with open(path, "rb") as f:
                 existing_header = read_crypt4gh_header(f)
             return ProtectedFileResult(header_sha256=hashlib.sha256(existing_header).hexdigest(), compute_header=None)
-        if self._writer_secret_key is None:
-            self._writer_secret_key = os.urandom(32)
         compute_public_key = parse_public_key(self.state["compute_public_key"])
         directory, name = os.path.split(path)
         protected_path = os.path.join(directory, f".{name}.c4gh")
