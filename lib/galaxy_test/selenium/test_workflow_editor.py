@@ -232,6 +232,23 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert tool_state["select_single"] == ""
 
     @selenium_test
+    def test_tool_form_fill_on_editor_step(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  environment:
+    tool_id: environment_variables
+""")
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
+        self.components.workflow_editor.node._(label="environment").title.wait_for_and_click()
+        self.tool_form_fill(values={"inttest": "7"})
+        self.save_after_node_form_changes()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
+        assert int(tool_state["inttest"]) == 7
+
+    @selenium_test
     def test_data_input(self):
         editor = self.components.workflow_editor
 
