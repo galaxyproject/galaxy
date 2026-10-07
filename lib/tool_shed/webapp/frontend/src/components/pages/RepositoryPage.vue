@@ -116,9 +116,6 @@ const metadataByRevision = computed(() => {
 })
 
 const isUnknownRevision = computed(() => {
-    console.log(metadataByRevision.value)
-    console.log(currentRevision.value)
-    console.log(currentRevision.value in metadataByRevision.value)
     return currentRevision.value && metadataByRevision.value && !(currentRevision.value in metadataByRevision.value)
 })
 

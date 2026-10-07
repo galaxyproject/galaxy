@@ -26,7 +26,6 @@ export default defineComponent({
 </script>
 
 <style lang="sass">
-// Skip link - visually hidden until focused
 // Quasar's typography still loads (for q-select) and gives bare h1-h6 display-sized line heights
 // and letter spacing; components size their own headings, so take the metrics back to normal.
 // Prefixed with body to outrank Quasar's element rules, which load after this file.
@@ -61,6 +60,7 @@ body
   text-decoration: none
   font-weight: bold
   border-radius: 0 0 4px 0
+  // Hidden above the window until a keyboard user tabs to it
   &:focus
     top: 0
   // It sits over the dark masthead, where only the gold ring reads
@@ -91,29 +91,4 @@ hr
   :focus-visible
     outline: 3px solid $accent !important
     outline-offset: 2px
-
-// A choice, provides more contrast but is ultimately a bit
-// too programmer app circa 2005?
-//body
-//    background: $secondary
-
-.masonry-grid > .flex-break
-  flex: 1 0 100% !important
-  width: 0 !important
-
-$x: 3
-@for $i from 1 through ($x - 1)
-    .masonry-grid > div:nth-child(#{$x}n + #{$i})
-        order: #{$i}
-
-.masonry-grid > div:nth-child(#{$x}n)
-  order: 3
-
-.masonry-grid
-
-  .masonry-grid-item
-    width: 33%
-    padding: 1px
-    > div
-      padding: 4px 8px
 </style>
