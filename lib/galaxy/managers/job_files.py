@@ -8,13 +8,16 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import (
     Job,
     JobToOutputDatasetAssociation,
     JobToOutputLibraryDatasetAssociation,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import BaseObjectStore
+from galaxy.security.idencoding import IdEncodingHelper
 
 APPENDABLE_FILE_NAMES = ("tool_stdout", "tool_stderr")
 
@@ -25,12 +28,21 @@ class JobFilesManager:
     Reads aren't limited to the job's own files, since tools also read unstructured inputs such as ``.loc`` files.
     """
 
-    def __init__(self, app: MinimalManagerApp):
-        self._app = app
+    def __init__(
+        self,
+        config: GalaxyAppConfiguration,
+        security: IdEncodingHelper,
+        object_store: BaseObjectStore,
+        sa_session: galaxy_scoped_session,
+    ):
+        self._config = config
+        self._security = security
+        self._object_store = object_store
+        self._sa_session = sa_session
 
     @property
     def upload_dir(self) -> str:
-        return str(self._app.config.new_file_path)
+        return str(self._config.new_file_path)
 
     def readable_path(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
         job, path = self._authorize(encoded_job_id, path, job_key)
@@ -50,7 +62,7 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
-        working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
+        working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
             return working_directory
         if dataset_path := self._output_dataset_path(job, path):
@@ -58,7 +70,7 @@ class JobFilesManager:
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
     def nginx_upload_path(self, file_path: str) -> str:
-        upload_store = self._app.config.nginx_upload_job_files_store
+        upload_store = self._config.nginx_upload_job_files_store
         if not upload_store:
             raise exceptions.ConfigDoesNotAllowException(
                 "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
@@ -75,7 +87,7 @@ class JobFilesManager:
     def tus_upload_path(self, session_id: str) -> str:
         if re.match(r"^[\w-]+$", session_id) is None:
             raise exceptions.RequestParameterInvalidException("Invalid session id format.")
-        upload_path = os.path.abspath(os.path.join(self._app.config.job_files_tus_upload_dir, session_id))
+        upload_path = os.path.abspath(os.path.join(self._config.job_files_tus_upload_dir, session_id))
         if not os.path.isfile(upload_path):
             raise exceptions.RequestParameterInvalidException("No upload found for session id.")
         return upload_path
@@ -95,11 +107,10 @@ class JobFilesManager:
             raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
         if job_key is None:
             raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
-        security = self._app.security
-        job_id = security.decode_id(encoded_job_id)
-        if not util.safe_str_cmp(job_key, security.encode_id(job_id, kind="jobs_files")):
+        job_id = self._security.decode_id(encoded_job_id)
+        if not util.safe_str_cmp(job_key, self._security.encode_id(job_id, kind="jobs_files")):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
-        job = self._app.model.session.get(Job, job_id)
+        job = self._sa_session.get(Job, job_id)
         if not job:
             raise exceptions.ObjectNotFound("Job not found.")
         if job.state not in Job.non_ready_states:
