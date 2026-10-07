@@ -8,6 +8,7 @@ import type { WorkflowExtractionJob } from "@/api/histories";
 import { toExtractionRow } from "./types";
 
 import WorkflowExtractionCard from "./WorkflowExtractionCard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 const TOOL_OUTPUT = {
@@ -18,6 +19,7 @@ const TOOL_OUTPUT = {
     state: "ok",
     deleted: false,
     exposed: false,
+    referenced_by_report: false,
     output_name: "out_file1",
 } as NonNullable<WorkflowExtractionJob["outputs"]>[number];
 
@@ -51,6 +53,7 @@ const INPUT_JOB: WorkflowExtractionJob = {
             state: "ok",
             deleted: false,
             exposed: false,
+            referenced_by_report: false,
         },
     ],
 };
@@ -89,5 +92,30 @@ describe("WorkflowExtractionCard step label clear", () => {
         });
         await wrapper.find(".g-card-clear-title").trigger("click");
         expect(wrapper.emitted("clear-step-label")).toHaveLength(1);
+    });
+});
+
+describe("WorkflowExtractionCard output star", () => {
+    function outputStar(output: Partial<typeof TOOL_OUTPUT>) {
+        const job = toExtractionRow({ ...TOOL_JOB, outputs: [{ ...TOOL_OUTPUT, ...output }] });
+        const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
+        const wrapper = mount(WorkflowExtractionCard as object, {
+            props: { job },
+            global: { ...global, stubs: { ...global.stubs, GenericHistoryItem: true } },
+        });
+        return wrapper
+            .findAllComponents(GButton)
+            .find((button) => button.attributes("data-output-star") !== undefined)!;
+    }
+
+    it("locks the star of an output the notebook report uses, and says why", () => {
+        const star = outputStar({ exposed: true, referenced_by_report: true });
+        expect(star.props("disabled")).toBe(true);
+        expect(star.props("disabledTitle")).toBe("The notebook report uses this output, so it stays a workflow output");
+    });
+
+    it("leaves the star of an unreferenced output toggleable", () => {
+        const star = outputStar({ exposed: true, referenced_by_report: false });
+        expect(star.props("disabled")).toBe(false);
     });
 });

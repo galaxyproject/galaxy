@@ -18,6 +18,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import {
+    type ExtractionOutput,
     type ExtractionRow,
     type InputStep,
     isInputStep,
@@ -350,9 +351,13 @@ function onJobSelect(index: number) {
     const job = jobsList.value[index];
     if (job) {
         job.checked = !job.checked;
-        if (!job.checked && job.step_type === "tool") {
+        if (job.step_type === "tool") {
             job.outputs.forEach((output) => {
-                output.exposed = false;
+                if (!job.checked) {
+                    output.exposed = false;
+                } else if (output.referenced_by_report) {
+                    exposeOutput(output);
+                }
             });
         }
     }
@@ -364,11 +369,19 @@ function onOutputToggle(jobIndex: number, outputIndex: number) {
         return;
     }
     const output = job.outputs[outputIndex];
-    if (!output || output.deleted || !output.output_name) {
+    if (!output || output.deleted || !output.output_name || output.referenced_by_report) {
         return;
     }
-    output.exposed = !output.exposed;
-    if (output.exposed && !output.label.trim()) {
+    if (output.exposed) {
+        output.exposed = false;
+    } else {
+        exposeOutput(output);
+    }
+}
+
+function exposeOutput(output: ExtractionOutput) {
+    output.exposed = true;
+    if (!output.label.trim()) {
         output.label = output.suggested_name || output.name || output.output_name || "";
     }
 }
