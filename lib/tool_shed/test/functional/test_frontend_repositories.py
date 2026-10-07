@@ -1,3 +1,5 @@
+import re
+
 from playwright.sync_api import expect
 
 from ..base.playwrighttestcase import PlaywrightTestCase
@@ -132,3 +134,63 @@ class TestFrontendRepositories(PlaywrightTestCase):
         expect(page.locator(".reset-status-chip").filter(has_text="ok")).to_be_visible()
 
         self.screenshot("metadata_inspector_reset_complete")
+
+
+class TestFrontendRepositoryContents(PlaywrightTestCase):
+    """Anonymous browsing of repository files (no login in this class's browser)."""
+
+    def _setup_column_maker(self):
+        category = self.populator.new_category(prefix=TEST_CATEGORY_PREFIX)
+        return self.populator.setup_test_data_repo("column_maker", category_id=category.id)
+
+    def _revisions(self, repository) -> list[str]:
+        metadata = self.populator.get_metadata(repository, downloadable_only=True)
+        return [revision.changeset_revision for revision in metadata.root.values()]
+
+    def test_contents_browse_and_view_file(self):
+        repository = self._setup_column_maker()
+        self.visit_url(f"/repositories/{repository.id}/contents")
+        page = self._page
+
+        expect(page.locator("h1")).to_have_text("Contents")
+        folder = page.get_by_role("button", name="column_maker", exact=True)
+        expect(folder).to_have_attribute("aria-expanded", "false")
+        folder.click()
+        expect(folder).to_have_attribute("aria-expanded", "true")
+
+        # File paths keep real slashes in API requests and in the page URL
+        with page.expect_response(lambda r: r.url.endswith("/files/column_maker/column_maker.xml")) as response:
+            page.get_by_role("button", name="column_maker.xml").click()
+        assert response.value.ok
+        code = page.locator(".config-file-contents pre")
+        expect(code).to_contain_text("<tool")
+        # Defaults to the newest installable revision
+        expect(code).to_contain_text('version="1.3.0"')
+        expect(page).to_have_url(re.compile(r"\?file=column_maker/column_maker\.xml$"))
+        expect(page.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
+        self.screenshot("repository_contents_file")
+
+    def test_contents_deep_link(self):
+        repository = self._setup_column_maker()
+        oldest = self._revisions(repository)[0]
+        self.visit_url(f"/repositories/{repository.id}/contents?revision={oldest}&file=column_maker/column_maker.xml")
+        page = self._page
+
+        code = page.locator(".config-file-contents pre")
+        expect(code).to_contain_text("<tool")
+        expect(code).to_contain_text('version="1.1.0"')
+        expect(page.get_by_role("button", name="column_maker", exact=True)).to_have_attribute("aria-expanded", "true")
+
+    def test_explore_menu_links_contents(self):
+        repository = self._setup_column_maker()
+        newest = self._revisions(repository)[-1]
+        self.visit_url(f"/repositories/{repository.id}")
+        page = self._page
+
+        page.get_by_role("button", name="Explore repository").click()
+        # hgweb views are login-gated, so anonymous users get no changelog link
+        expect(page.locator("a.dropdown-item").filter(has_text="Changelog")).to_have_count(0)
+        page.locator("a.dropdown-item").filter(has_text="Contents").click()
+
+        expect(page).to_have_url(re.compile(rf"/repositories/{repository.id}/contents\?revision={newest}$"))
+        expect(page.get_by_role("button", name="column_maker", exact=True)).to_be_visible()
