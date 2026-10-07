@@ -97,7 +97,3 @@ export const KNOWN_COLLECTION_TYPES: KnownCollectionType[] = [
         group: "Sample Sheets",
     },
 ];
-
-export function findKnownCollectionType(collectionType: string | null | undefined): KnownCollectionType | undefined {
-    return KNOWN_COLLECTION_TYPES.find((known) => known.collectionType === collectionType);
-}

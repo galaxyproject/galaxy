@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import InstallationSettings from "./InstallationSettings.vue";
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 vi.mock("app");
 // Mock the useConfig composable
@@ -59,5 +60,44 @@ describe("InstallationSettings", () => {
         expect(wrapper.vm.installToolDependencies).toBe(true);
         expect(wrapper.vm.installRepositoryDependencies).toBe(true);
         expect(wrapper.vm.installResolverDependencies).toBe(true);
+    });
+
+    describe("target section", () => {
+        function mountWithSections() {
+            return mount(InstallationSettings, {
+                propsData: {
+                    repo: { name: "name", owner: "owner" },
+                    changesetRevision: "changesetRevision",
+                    requiresPanel: true,
+                    toolshedUrl: "toolshedUrl",
+                    currentPanel: { mapping: { id: "mapping", name: "Mapping", tools: ["bwa"] } },
+                },
+                localVue,
+            });
+        }
+
+        async function install(wrapper) {
+            await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+            return wrapper.emitted("ok")[0][0];
+        }
+
+        it("installs into an existing section picked from the list", async () => {
+            const wrapper = mountWithSections();
+            wrapper.findComponent(FormSelect).vm.$emit("input", "Mapping");
+            await wrapper.vm.$nextTick();
+            const request = await install(wrapper);
+            expect(request.tool_panel_section_id).toBe("mapping");
+            expect(request.new_tool_panel_section_label).toBe("");
+        });
+
+        it("installs into a new section typed by name", async () => {
+            const wrapper = mountWithSections();
+            wrapper.findComponent(FormSelect).vm.$emit("input", "__other__");
+            await wrapper.vm.$nextTick();
+            await wrapper.find("#install-tool-section-other").setValue("My Tools");
+            const request = await install(wrapper);
+            expect(request.tool_panel_section_id).toBe("");
+            expect(request.new_tool_panel_section_label).toBe("My Tools");
+        });
     });
 });
