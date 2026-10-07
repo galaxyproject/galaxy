@@ -265,3 +265,25 @@ def test_concurrent_authorizations_replace_the_grant(tmp_path):
 
     manager.sa_session.rollback.assert_called_once()
     assert stored.key_ref == "cnk:0123456789abcdef"
+
+
+def test_failed_job_keeps_outputs_shown_to_be_encrypted(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert not output.dataset.purged
+
+
+def test_failed_job_removes_plaintext_outputs_but_keeps_them_in_history(tmp_path):
+    output, record = _protected_output(tmp_path)
+    (tmp_path / "out.dat").write_bytes(b"@read1\nACGT\n")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not output.deleted
+
+
+def test_failed_job_without_sidecar_removes_outputs(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged

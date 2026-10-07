@@ -129,6 +129,16 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     return datetime.fromisoformat(extra_files_key["expires_at"]) <= now() + margin
 
 
+def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
+    """Protection results written by the compute host, ``None`` if it wrote none."""
+    path = os.path.join(job_directory, SIDECAR_FILE)
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        sidecar: dict[str, Any] = json.load(f)
+    return sidecar
+
+
 def _parse_key_expiration(value: str) -> datetime:
     """Expiration date reported by the key service, as naive UTC. Raises ``ValidationError`` without a timezone."""
     # datetime.fromisoformat() only accepts a 'Z' suffix from Python 3.11 on.
@@ -468,12 +478,9 @@ class DatasetProtectionManager:
             with open(cleanup_failure) as f:
                 errors.append(f.read().strip() or "Could not remove the decrypted data of this job.")
 
-        sidecar_path = os.path.join(job_directory, SIDECAR_FILE)
-        sidecar: dict[str, Any] = {"datasets": {}}
-        if os.path.exists(sidecar_path):
-            with open(sidecar_path) as f:
-                sidecar = json.load(f)
-        else:
+        sidecar = _read_sidecar(job_directory)
+        if sidecar is None:
+            sidecar = {"datasets": {}}
             errors.append("The outputs of this job could not be verified to be encrypted.")
         errors.extend(sidecar.get("errors", []))
         expires_at: datetime | None = None
@@ -488,11 +495,7 @@ class DatasetProtectionManager:
         for dataset_instance in _job_outputs(job):
             assert dataset_instance.dataset
             record = sidecar["datasets"].get(str(dataset_instance.dataset.uuid))
-            if (
-                record
-                and record["outcome"] == OUTCOME_PROTECTED
-                and self._is_protected_as_recorded(dataset_instance, record)
-            ):
+            if record and self._is_verified(dataset_instance, record):
                 protected.append((dataset_instance, record))
             elif record and record["outcome"] in CONTENTLESS_OUTCOMES and not _has_content(dataset_instance):
                 continue
@@ -509,6 +512,30 @@ class DatasetProtectionManager:
         if job.user and expires_at:
             self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
         return None
+
+    def fail_job(self, job: Job, job_directory: str) -> None:
+        """Remove the data stored for the outputs of a failed protected job, unless it is shown to be encrypted.
+
+        Failed jobs may leave plaintext behind. Their outputs stay in the history, in error state.
+        """
+        try:
+            records = (_read_sidecar(job_directory) or {}).get("datasets", {})
+        except Exception:
+            log.exception("Could not read the protection results of failed job %s", job.id)
+            records = {}
+        for dataset_instance in _job_outputs(job):
+            dataset = dataset_instance.dataset
+            assert dataset
+            record = records.get(str(dataset.uuid))
+            if not dataset.purged and not (record and self._is_verified(dataset_instance, record)):
+                dataset.full_delete()
+
+    def _is_verified(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
+        try:
+            return record["outcome"] == OUTCOME_PROTECTED and self._is_protected_as_recorded(dataset_instance, record)
+        except Exception:
+            log.exception("Could not verify that dataset %s is encrypted", dataset_instance.id)
+            return False
 
     def _is_protected_as_recorded(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
         if dataset_instance.extension != record["ext"] or not self.is_protected(dataset_instance):
