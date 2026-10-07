@@ -440,7 +440,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :options="attrs.data"
                     :other-label="attrs.other_label"
                     :other-help="attrs.other_help"
-                    :placeholder="attrs.placeholder"
+                    :other-placeholder="attrs.other_placeholder"
                     :validate="attrs.validate"
                     @alert="onAlert" />
                 <FormSelection

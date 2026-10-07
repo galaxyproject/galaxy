@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { BFormInput } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { uid } from "@/utils/utils";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 const OTHER_VALUE = "__other__";
+// FormSelect emits null both for an option valued null and for deselecting the current option,
+// so a null-valued option is held under this value instead and a null from FormSelect is ignored.
+const NULL_VALUE = "__null__";
 
 export interface SelectOrTextOption {
     label: string;
@@ -24,8 +27,11 @@ const props = withDefaults(
         otherLabel?: string;
         /** Shown below the text field. */
         otherHelp?: string;
-        placeholder?: string;
-        /** Returns an error for text that must not be saved. Empty text is never saved. */
+        otherPlaceholder?: string;
+        /**
+         * Returns an error for text that must not be saved. Empty text is never saved. This is a client-side
+         * function, so only forms built in the client can set it.
+         */
         validate?: (text: string) => string | undefined;
     }>(),
     {
@@ -33,7 +39,7 @@ const props = withDefaults(
         value: null,
         otherLabel: "Other...",
         otherHelp: undefined,
-        placeholder: undefined,
+        otherPlaceholder: undefined,
         validate: undefined,
     },
 );
@@ -45,12 +51,14 @@ const emit = defineEmits<{
 
 const otherMode = ref(false);
 const text = ref("");
-let lastEmitted: string | null | undefined = undefined;
 
-const selectOptions = computed(() => [...props.options, { label: props.otherLabel, value: OTHER_VALUE }]);
-const selectValue = computed(() => (otherMode.value ? OTHER_VALUE : props.value || null));
+const selectOptions = computed(() => [
+    ...props.options.map((option) => ({ ...option, value: option.value ?? NULL_VALUE })),
+    { label: props.otherLabel, value: OTHER_VALUE },
+]);
+const selectValue = computed(() => (otherMode.value ? OTHER_VALUE : (props.value ?? NULL_VALUE)));
 const selectedHelp = computed(() =>
-    otherMode.value ? undefined : props.options.find((option) => option.value === selectValue.value)?.help,
+    otherMode.value ? undefined : props.options.find((option) => option.value === (props.value ?? null))?.help,
 );
 
 const textError = computed(() => {
@@ -61,6 +69,7 @@ const textError = computed(() => {
 });
 
 watch(textError, (message) => emit("alert", message), { immediate: true });
+onBeforeUnmount(() => emit("alert", undefined));
 
 function isListed(value: string | null): boolean {
     return props.options.some((option) => option.value === value);
@@ -69,8 +78,8 @@ function isListed(value: string | null): boolean {
 watch(
     () => props.value,
     (value) => {
-        if (value === lastEmitted) {
-            // our own text echoed back - stay in the text field while typing through a listed value
+        if (otherMode.value && value === text.value) {
+            // the typed text echoed back - stay in the text field while typing through a listed value
             return;
         }
         text.value = value ?? "";
@@ -79,26 +88,25 @@ watch(
     { immediate: true },
 );
 
-function emitValue(value: string | null) {
-    lastEmitted = value;
-    emit("input", value);
-}
-
 function onSelect(value: string | null) {
+    if (value === null) {
+        return;
+    }
     if (value === OTHER_VALUE) {
         otherMode.value = true;
         text.value = props.value ?? "";
         return;
     }
+    const selected = value === NULL_VALUE ? null : value;
     otherMode.value = false;
-    text.value = value ?? "";
-    emitValue(value);
+    text.value = selected ?? "";
+    emit("input", selected);
 }
 
 function onText(value: string) {
     text.value = value;
     if (!textError.value) {
-        emitValue(value);
+        emit("input", value);
     }
 }
 </script>
@@ -112,7 +120,8 @@ function onText(value: string) {
                 :id="`${id}-other`"
                 :value="text"
                 :state="textError ? false : null"
-                :placeholder="placeholder"
+                :placeholder="otherPlaceholder"
+                :aria-label="otherLabel"
                 @input="onText" />
             <small v-if="otherHelp" class="form-text text-muted">{{ otherHelp }}</small>
         </div>
