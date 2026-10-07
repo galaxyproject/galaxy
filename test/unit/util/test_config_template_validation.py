@@ -433,6 +433,7 @@ def test_split_ftp_host_path_rejects_traversal_in_host_derived_root():
         ("s3://1000genomes/", "1000genomes"),
         (" s3://1000genomes/ ", "1000genomes"),
         ("1000genomes/", "1000genomes"),
+        ("s3a://1000genomes/", "1000genomes"),
         ("s3://my-bucket/prefix/", "my-bucket/prefix"),
         ("{{ variables.bucket }}", "{{ variables.bucket }}"),
         (None, None),
