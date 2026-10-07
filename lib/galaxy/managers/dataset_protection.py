@@ -251,6 +251,11 @@ class DatasetProtectionManager:
     def is_protected(self, dataset_instance: DatasetInstance) -> bool:
         return self.scheme_for(dataset_instance) is not None
 
+    def has_protected_inputs(self, job: Job) -> bool:
+        """Whether any input of the job is protected, including collection elements."""
+        associations: list[Any] = [*job.input_datasets, *job.input_library_datasets]
+        return any(association.dataset and self.is_protected(association.dataset) for association in associations)
+
     def get_grant(self, user: User, dataset: Dataset, scheme: str) -> DatasetProtectionGrant | None:
         stmt = select(DatasetProtectionGrant).filter_by(user_id=user.id, dataset_id=dataset.id, scheme=scheme)
         return self.sa_session.scalars(stmt).one_or_none()
