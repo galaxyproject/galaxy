@@ -4696,7 +4696,9 @@ checkboxes (``checkboxes``; note this is incompatible with ``multiple="false"``
 and ``optional="false"``) or radio buttons (``radio``; note this is
 incompatible with ``multiple="true"`` and ``optional="true"``). Defaults to a
 drop-down menu select list. Used only when the ``type`` attribute value is
-``select``.</xs:documentation>
+``select``. ``drill_down`` parameters also accept ``checkbox`` and ``radio``,
+but these have no effect: the form shows checkboxes when ``multiple="true"``
+and radio buttons otherwise.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
@@ -8437,6 +8439,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="checkboxes"/>
       <xs:enumeration value="radio"/>
+      <xs:enumeration value="checkbox"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="HierarchyType">
