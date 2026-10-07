@@ -361,6 +361,11 @@ def set_metadata_portable(
     except OutputCollectionSecurityError as e:
         output_collection_security_error = e
         unnamed_outputs = []
+    if output_protector and unnamed_outputs:
+        # Fail before any output is stored, Galaxy shows the errors recorded in the sidecar.
+        output_protector.errors.append("Tools writing unnamed outputs can't be used with encrypted datasets.")
+        output_protector.write_sidecar(str(tool_job_working_directory))
+        raise ProtectionError(output_protector.errors[-1])
 
     if extended_metadata_collection:
         if not export_store:
@@ -435,8 +440,6 @@ def set_metadata_portable(
                         command_line_lines.append(line)
                     job.command_line = "".join(command_line_lines).strip()
 
-    if output_protector and unnamed_outputs:
-        raise ProtectionError("Tools writing unnamed outputs can't be used with encrypted datasets.")
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
     for unnamed_output_dict in unnamed_outputs:

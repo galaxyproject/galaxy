@@ -234,6 +234,17 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         # Galaxy can't authorize it for the user, they do like for uploads.
         assert not self._ready(output["id"])
 
+    def test_tools_writing_unnamed_outputs_are_refused(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_unnamed_outputs", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+        assert job["state"] == "error"
+        assert "Tools writing unnamed outputs can't be used with encrypted datasets." in output["misc_info"]
+        response = self._get(f"datasets/{output['id']}/display")
+        assert PLAINTEXT_1.decode() not in response.text
+
     def test_outputs_can_be_used_in_further_jobs(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         first = self._run_cat(history_id, dataset)

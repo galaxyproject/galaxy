@@ -1623,7 +1623,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 log.exception(str(e))
             if job.protection_scheme:
                 try:
-                    self.app.dataset_protection.fail_job(job, self.working_directory)
+                    if protection_errors := self.app.dataset_protection.fail_job(job, self.working_directory):
+                        message = " ".join(protection_errors)
                 except Exception:
                     log.exception(
                         "(%s) fail(): Could not remove the outputs of a failed protected job", self.get_id_tag()
