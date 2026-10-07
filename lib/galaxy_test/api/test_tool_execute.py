@@ -725,6 +725,22 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
 
 
 @requires_tool_id("gx_data")
+def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_tool: RequiredTool) -> None:
+    hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    _ = required_tool.execute().with_inputs({"parameter": hda.src_dict}).assert_has_single_job
+    new_hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": new_hda.src_dict})
+    job = execution.assert_has_single_job
+    assert job.final_details["copied_from_job_id"]
+
+    # A dataset with different content (and hence a different hash) must not be cached.
+    other_hda = target_history.with_dataset("4\t5\t6", "dataset2")
+    other_execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": other_hda.src_dict})
+    other_job = other_execution.assert_has_single_job
+    assert not other_job.final_details["copied_from_job_id"]
+
+
+@requires_tool_id("gx_data")
 def test_job_cache_not_used_for_datasets_with_different_extra_files(
     target_history: TargetHistory, required_tool: RequiredTool
 ) -> None:
