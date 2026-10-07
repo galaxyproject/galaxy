@@ -4809,6 +4809,14 @@ allow access to Python code to generate options for a select list. See
 </xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="from_file" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated/discouraged method to
+load the ``options`` of a ``drill_down`` parameter from an XML file. Relative
+paths are resolved against Galaxy's tool data path. Used only when the ``type``
+attribute value is ``drill_down``.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

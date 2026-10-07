@@ -1542,16 +1542,13 @@ class XmlInputSource(InputSource):
     def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list[DrillDownOptionsDict] | None:
         if from_file := self.input_elem.get("from_file", None):
             if not os.path.isabs(from_file):
-                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
+                if not tool_data_path:
+                    # relative to Galaxy's tool data path, so options are unknown outside a Galaxy context
+                    return None
                 from_file = os.path.join(tool_data_path, from_file)
             elem = XML(f"<root>{open(from_file).read()}</root>")
         else:
             elem = self.input_elem
-
-        dynamic_options_elem = elem.get("dynamic_options", None)
-        filter_elem = elem.get("filter", None)
-        if dynamic_options_elem is not None and filter_elem is not None:
-            return None
 
         root_options: list[DrillDownOptionsDict] = []
         options_elem = elem.find("options")

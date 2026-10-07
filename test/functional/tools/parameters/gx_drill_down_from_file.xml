@@ -1,0 +1,27 @@
+<tool id="gx_drill_down_from_file" name="gx_drill_down_from_file" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <!-- from_file is resolved against Galaxy's tool_data_path (tool-data/ in the test server) -->
+        <param name="parameter" type="drill_down" from_file="../test/functional/tool-data/gx_drill_down_from_file_options.xml" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="parameter" value="option2"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: option2"/>
+            </expand>
+        </test>
+        <!-- a value missing from the options file is rejected -->
+        <test expect_failure="true">
+            <param name="parameter" value="option4"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
