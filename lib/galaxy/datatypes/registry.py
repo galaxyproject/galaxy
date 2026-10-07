@@ -762,11 +762,14 @@ class Registry:
         """
         ext: str = sniff.guess_ext(data.dataset.get_file_name(), self.sniff_order)
         if self.crypt4gh_enabled:
-            ext = preserve_crypt4gh_inner_file_ext(
+            preserved_ext = preserve_crypt4gh_inner_file_ext(
                 ext,
                 current_ext=data.extension,
                 metadata_inner_ext=getattr(data.metadata, "crypt4gh_inner_ext", None),
             )
+            # The inner extension may come from a filename, only keep wrappers Galaxy knows.
+            if preserved_ext in self.datatypes_by_extension:
+                ext = preserved_ext
         return ext
 
     def change_datatype(self, data, ext):
