@@ -104,3 +104,50 @@ def test_sendfile_range_without_content_length(test_file_handle):
     assert response.status_code == 206
     assert response.headers["content-range"] == f"bytes 0-3/{len(CONTENT)}"
     assert response.content.decode() == "cont"
+
+
+def test_sendfile_range_suffix(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=-3"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 4-6/{len(CONTENT)}"
+    assert response.headers["content-length"] == "3"
+    assert response.content.decode() == "ent"
+
+
+def test_sendfile_range_suffix_longer_than_file(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=-99"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 0-6/{len(CONTENT)}"
+    assert response.content.decode() == CONTENT
+
+
+def test_sendfile_range_end_past_eof(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=0-99"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 0-6/{len(CONTENT)}"
+    assert response.headers["content-length"] == str(len(CONTENT))
+    assert response.content.decode() == CONTENT
+
+
+def test_sendfile_range_unsatisfiable(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=7-"})
+    assert response.status_code == 416
+    assert response.headers["content-range"] == f"bytes */{len(CONTENT)}"
+    assert not response.content
+
+
+def test_sendfile_multiple_ranges_serves_whole_file(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=0-1,3-4"})
+    assert response.status_code == 200
+    assert "content-range" not in response.headers
+    assert response.content.decode() == CONTENT

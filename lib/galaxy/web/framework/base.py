@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import os
+import re
 import socket
 import tarfile
 import tempfile
@@ -16,7 +17,10 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
-from typing import NoReturn
+from typing import (
+    NoReturn,
+    Optional,
+)
 from urllib.parse import urljoin
 
 import routes
@@ -552,6 +556,52 @@ class Response:
 
 CHUNK_SIZE = 2**16
 
+BYTE_POSITION_RE = re.compile(r"[0-9]*")
+
+
+class RangeNotSatisfiable(Exception):
+    """The ``Range`` header asks only for bytes outside the file."""
+
+
+def parse_byte_range(range_header: str, file_size: int) -> Optional[tuple[int, int]]:
+    """Resolve a ``Range: bytes=...`` header against a file of ``file_size`` bytes (RFC 9110 §14).
+
+    Returns the inclusive ``(start, end)`` byte positions to serve. ``bytes=-N`` is a
+    suffix range covering the last ``N`` bytes, and an end position past the end of the
+    file is clamped to the last byte. Returns ``None`` when the whole file should be
+    served instead: the header uses another unit, is malformed, or asks for several
+    ranges. Raises :class:`RangeNotSatisfiable` when the range starts at or past the
+    end of the file, or is a zero-length suffix.
+    """
+    unit, _, spec = range_header.partition("=")
+    first, dash, last = spec.partition("-")
+    first, last = first.strip(), last.strip()
+    if (
+        unit.strip().lower() != "bytes"
+        or not dash
+        or not BYTE_POSITION_RE.fullmatch(first)
+        or not BYTE_POSITION_RE.fullmatch(last)
+    ):
+        return None
+    try:
+        first_pos = int(first) if first else None
+        last_pos = int(last) if last else None
+    except ValueError:
+        # More digits than int() accepts.
+        return None
+    if first_pos is not None:
+        if last_pos is not None and last_pos < first_pos:
+            return None
+        if first_pos >= file_size:
+            raise RangeNotSatisfiable()
+        end = min(last_pos, file_size - 1) if last_pos is not None else file_size - 1
+        return first_pos, end
+    if last_pos is None:
+        return None
+    if last_pos == 0 or file_size == 0:
+        raise RangeNotSatisfiable()
+    return max(file_size - last_pos, 0), file_size - 1
+
 
 def send_file(start_response, trans, body):
     # If configured use X-Accel-Redirect header for nginx
@@ -568,20 +618,30 @@ def send_file(start_response, trans, body):
     # Fall back on sending the file in chunks
     else:
         trans.response.headers["accept-ranges"] = "bytes"
-        start = None
-        end = None
+        range_header = trans.request.headers.get("Range")
         if trans.request.method == "HEAD":
             trans.response.headers["content-length"] = os.path.getsize(body.name)
             body = b""
-        if trans.request.range:
-            start = int(trans.request.range.start)
+        elif range_header:
             file_size = os.path.getsize(body.name)
-            end = file_size if trans.request.range.end is None else min(int(trans.request.range.end), file_size)
-            trans.response.headers["content-length"] = str(end - start)
-            trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
-            trans.response.status = 206
-        if body:
-            body = iterate_file(body, start, end)
+            try:
+                byte_range = parse_byte_range(range_header, file_size)
+            except RangeNotSatisfiable:
+                trans.response.headers["content-length"] = "0"
+                trans.response.headers["content-range"] = f"bytes */{file_size}"
+                trans.response.status = 416
+                body = [b""]
+            else:
+                if byte_range is None:
+                    body = iterate_file(body)
+                else:
+                    start, end = byte_range
+                    trans.response.headers["content-length"] = str(end - start + 1)
+                    trans.response.headers["content-range"] = f"bytes {start}-{end}/{file_size}"
+                    trans.response.status = 206
+                    body = iterate_file(body, start, end + 1)
+        else:
+            body = iterate_file(body)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 
