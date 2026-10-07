@@ -1,5 +1,5 @@
 /** Higher level wrappers around parts of API schema used. */
-import { ToolShedApi, components } from "@/schema"
+import { FILE_CONTENTS_PATH, ToolShedApi, components } from "@/schema"
 import type { paths as ToolShedApiPaths } from "@/schema/schema"
 
 // TODO: deprecate loading from @/schema/types and define these types here, it was a good
@@ -11,6 +11,10 @@ type IndexParameters = ToolShedApiPaths["/api/repositories"]["get"]["parameters"
 export type RepositorySearchResults = components["schemas"]["RepositorySearchResults"]
 export type PaginatedRepositoryIndexResults = components["schemas"]["PaginatedRepositoryIndexResults"]
 export type ParsedTool = components["schemas"]["ShedParsedTool"]
+export type RepositoryFileEntry = components["schemas"]["RepositoryFileEntry"]
+export type RepositoryRevisionFiles = components["schemas"]["RepositoryRevisionFiles"]
+export type RepositoryFileContents = components["schemas"]["RepositoryFileContents"]
+type RevisionMetadata = components["schemas"]["RepositoryRevisionMetadata"]
 
 export async function repositorySearch(params: IndexParameters): Promise<RepositorySearchResults> {
     const { data } = await ToolShedApi().GET("/api/repositories", { params: { query: params } })
@@ -51,6 +55,47 @@ export async function getParsedTool(trsToolId: string, version: string): Promise
     })
     if (!data) {
         throw Error("Failed to fetch tool details")
+    }
+    return data
+}
+
+/** The files API only serves downloadable, non-malicious revisions. */
+export function hasBrowsableFiles(revision: Pick<RevisionMetadata, "downloadable" | "malicious">): boolean {
+    return revision.downloadable && !revision.malicious
+}
+
+/** The changeset of the newest revision in repository metadata, whose keys run oldest to newest. */
+export function newestRevision(
+    metadata: Record<string, Pick<RevisionMetadata, "changeset_revision">> | null | undefined,
+): string | null {
+    const revisions = Object.values(metadata ?? {})
+    return revisions[revisions.length - 1]?.changeset_revision ?? null
+}
+
+export async function repositoryFiles(
+    repositoryId: string,
+    changesetRevision: string,
+): Promise<RepositoryRevisionFiles> {
+    const { data } = await ToolShedApi().GET(
+        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/files",
+        { params: { path: { encoded_repository_id: repositoryId, changeset_revision: changesetRevision } } },
+    )
+    if (!data) {
+        throw Error("Failed to fetch repository files")
+    }
+    return data
+}
+
+export async function repositoryFileContents(
+    repositoryId: string,
+    changesetRevision: string,
+    path: string,
+): Promise<RepositoryFileContents> {
+    const { data } = await ToolShedApi().GET(FILE_CONTENTS_PATH, {
+        params: { path: { encoded_repository_id: repositoryId, changeset_revision: changesetRevision, path } },
+    })
+    if (!data) {
+        throw Error("Failed to fetch file contents")
     }
     return data
 }
