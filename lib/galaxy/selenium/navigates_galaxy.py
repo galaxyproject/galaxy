@@ -2274,6 +2274,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         for key, value in sorted(values.items(), key=lambda kv: kv[0].count("|")):
             try:
                 self.tool_form_set_parameter(key, value)
+                # Nothing signals which parameters a change reveals, so give conditionals time to render.
                 self.sleep_for(self.wait_types.UX_RENDER)
             except Exception as e:
                 if not _exception_indicates_parameter_not_shown(e):
@@ -2281,6 +2282,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 deferred.append((key, value))
 
         if deferred:
+            # Parameters that never appear are skipped, so there is no element to wait for here.
             self.sleep_for(self.wait_types.UX_RENDER)
             for key, value in deferred:
                 if self.components.tool_form.parameter_div(parameter=key).is_absent:
@@ -2304,18 +2306,31 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             if not close_buttons:
                 break
             close_buttons[0].click()
-            self.sleep_for(self.wait_types.UX_RENDER)
+            remaining = len(close_buttons) - 1
+            self._wait_on(
+                lambda remaining=remaining: len(tag_close.all()) <= remaining,
+                f"tag removed from {expanded_id}",
+                wait_type=WAIT_TYPES.UX_RENDER,
+            )
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
-        for _ in range(count):
-            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
+        """Make sure ``count`` instances exist; a repeat with a minimum already renders some."""
+        tool_form = self.components.tool_form
+        insert = tool_form.repeat_insert_named(name=repeat_name)
+        insert.wait_for_visible()
+        existing = 0
+        while tool_form.repeat_instance_parameter(name=repeat_name, index=existing).all():
+            existing += 1
+        for index in range(existing, count):
+            insert.wait_for_and_click()
+            tool_form.repeat_instance_parameter(name=repeat_name, index=index).wait_for_present()
 
     def _expand_collapsed_sections(self):
         # The header, not the execute button: a workflow editor step's tool form has no execute button.
         self.components.tool_form.tool_version.wait_for_visible()
         for header in self.components.tool_form.section_header.all():
             header.click()
+            # Expanding a section has no per-section target to wait on.
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _detect_param_type(self, expanded_id: str) -> str:
@@ -3342,6 +3357,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             container_elem = container_elem.find_element(
                 By.XPATH, "ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' multiselect ')][1]"
             )
+        option_selector = "[role='option'] .multiselect__option span"
         trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
         self.scroll_into_view(trigger_elem)
         trigger_elem.click()
@@ -3354,11 +3370,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.send_backspace(text_input)
                 self.send_backspace(text_input)
             text_input.send_keys(value)
+            # Let the option list filter on the typed value; the old options stay present meanwhile.
             self.sleep_for(WAIT_TYPES.UX_RENDER)
             # Enter takes the first match, which may only contain the value (txt -> metacyto_clr.txt).
             exact = [
                 option
-                for option in container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+                for option in container_elem.find_elements(By.CSS_SELECTOR, option_selector)
                 if option.text == value and option.is_displayed()
             ]
             if exact:
@@ -3369,7 +3386,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.send_escape(text_input)
         else:
             self.sleep_for(WAIT_TYPES.UX_RENDER)
-            elems = container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+            elems = container_elem.find_elements(By.CSS_SELECTOR, option_selector)
             discovered_options = []
             found = False
             for elem in elems:
