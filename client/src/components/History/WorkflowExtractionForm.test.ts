@@ -65,6 +65,7 @@ const TOOL_OUTPUT = {
     state: "ok",
     deleted: false,
     exposed: false,
+    referenced_by_report: false,
     output_name: "out_file1",
 } as NonNullable<WorkflowExtractionJob["outputs"]>[number];
 
@@ -115,6 +116,7 @@ const INPUT_JOB: WorkflowExtractionJob = {
             state: "ok",
             deleted: false,
             exposed: false,
+            referenced_by_report: false,
         },
     ],
 };
@@ -156,7 +158,7 @@ const SEEDED_TOOL_JOB: WorkflowExtractionJob = {
     ...TOOL_JOB,
     checked: false,
     seeded: true,
-    outputs: [{ ...TOOL_OUTPUT, exposed: true }],
+    outputs: [{ ...TOOL_OUTPUT, exposed: true, referenced_by_report: true }],
 };
 
 const UNSEEDED_TOOL_JOB: WorkflowExtractionJob = {
@@ -179,7 +181,7 @@ const SEEDED_MAPPED_TOOL_JOB: WorkflowExtractionJob = {
     ...MAPPED_TOOL_JOB,
     checked: false,
     seeded: true,
-    outputs: [{ ...TOOL_OUTPUT, exposed: true }],
+    outputs: [{ ...TOOL_OUTPUT, exposed: true, referenced_by_report: true }],
 };
 
 const UNSEEDED_MAPPED_TOOL_JOB: WorkflowExtractionJob = {
@@ -711,6 +713,28 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm("history-1", "page-1");
             const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
             expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
+        });
+
+        it("keeps an output the report uses starred when it is toggled", async () => {
+            const wrapper = await mountForm("history-1", "page-1");
+            const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            seededTool.vm.$emit("toggle-output", 0);
+            await flushPromises();
+            expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
+        });
+
+        it("re-stars an output the report uses when its row is re-checked", async () => {
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
+            const wrapper = await mountForm("history-1", "page-1");
+            const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            seededTool.vm.$emit("select");
+            seededTool.vm.$emit("select");
+            await flushPromises();
+            expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
+            await setWorkflowName(wrapper, "From Notebook");
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload.output_labels).toEqual([expect.objectContaining({ id: TOOL_OUTPUT.id })]);
         });
 
         it("submits only the seeded subgraph by default", async () => {
