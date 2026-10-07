@@ -1246,6 +1246,12 @@ class MinimalJobWrapper(HasResourceParameters):
     def use_metadata_binary(self):
         return util.asbool(self.get_destination_configuration("use_metadata_binary", "False"))
 
+    def protection_setup_failure(self) -> str | None:
+        """Why decrypting the protected inputs of the job failed, if it did: the tool never ran."""
+        if not self.get_job().protection_scheme:
+            return None
+        return self.app.dataset_protection.setup_failure(self.working_directory)
+
     def can_split(self):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
@@ -2380,12 +2386,10 @@ class MinimalJobWrapper(HasResourceParameters):
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
 
-        if job.protection_scheme and (
-            setup_failure := self.app.dataset_protection.setup_failure(self.working_directory)
-        ):
+        if setup_failure := self.protection_setup_failure():
             # The tool never ran, there are no outputs to collect.
             return self.fail(
-                f"Job setup failed: {setup_failure}",
+                f"Galaxy failed to prepare this job, so the tool was not run: {setup_failure}",
                 tool_stdout="",
                 tool_stderr="",
                 exit_code=tool_exit_code,
