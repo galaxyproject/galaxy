@@ -4817,7 +4817,7 @@ class Parquet(Binary):
     """
 
     MetadataElement(
-        name="column_count",
+        name="columns",
         default=0,
         desc="Number of columns",
         readonly=True,
@@ -4835,9 +4835,9 @@ class Parquet(Binary):
         no_value=[],
     )
     MetadataElement(
-        name="line_count",
+        name="data_lines",
         default=0,
-        desc="Number of lines",
+        desc="Number of data lines",
         readonly=True,
         visible=False,
         optional=True,
@@ -4860,16 +4860,16 @@ class Parquet(Binary):
             footer_metadata = _read_parquet_footer_metadata(dataset.get_file_name())
             line_count, column_names = _read_parquet_file_metadata(footer_metadata)
             dataset.metadata.column_names = column_names
-            dataset.metadata.column_count = len(column_names)
-            dataset.metadata.line_count = line_count
+            dataset.metadata.columns = len(column_names)
+            dataset.metadata.data_lines = line_count
         except Exception:
             pass
 
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            column_count = getattr(dataset.metadata, "column_count", 0)
-            line_count = getattr(dataset.metadata, "line_count", 0)
+            column_count = getattr(dataset.metadata, "columns", 0)
+            line_count = getattr(dataset.metadata, "data_lines", 0)
             if column_count > 0 or line_count > 0:
                 col_label = "column" if column_count <= 1 else "columns"
                 line_label = "line" if line_count <= 1 else "lines"
