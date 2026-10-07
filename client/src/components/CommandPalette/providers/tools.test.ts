@@ -68,6 +68,18 @@ describe("toolsProvider", () => {
         vi.mocked(axios.get).mockReset();
     });
 
+    it("never searches the backend once a newer search took over", async () => {
+        mockToolsApi();
+        await hydrateToolStore();
+        const controller = new AbortController();
+        controller.abort();
+
+        const items = await toolsProvider.search("fastqc", makeCtx(), { signal: controller.signal });
+
+        expect(items).toEqual([]);
+        expect(backendSearches()).toHaveLength(0);
+    });
+
     it("searches the backend and maps matches to palette items", async () => {
         mockToolsApi();
         const items = await toolsProvider.search("fastqc", makeCtx());

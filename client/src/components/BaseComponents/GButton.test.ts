@@ -67,6 +67,42 @@ describe("GButton.vue", () => {
     });
 });
 
+describe("GButton.vue loading", () => {
+    it("shows a spinner and marks itself busy while loading", () => {
+        const wrapper = mountGButton({ loading: true });
+        const button = wrapper.get("button");
+
+        expect(button.attributes("aria-busy")).toBe("true");
+        expect(button.find('[data-icon="spinner"]').exists()).toBe(true);
+    });
+
+    it("ignores clicks while loading", async () => {
+        const wrapper = mountGButton({ loading: true });
+
+        await wrapper.get("button").trigger("click");
+
+        expect(wrapper.emitted("click")).toBeUndefined();
+    });
+
+    it("renders a loading router-link button as a plain button so it cannot navigate", () => {
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create", loading: true },
+            localVue,
+            router: routerWithRoutes(),
+        });
+
+        expect(wrapper.element.tagName).toBe("BUTTON");
+    });
+
+    it("drops the spinner and busy state once loading ends", () => {
+        const wrapper = mountGButton({});
+        const button = wrapper.get("button");
+
+        expect(button.attributes("aria-busy")).toBeUndefined();
+        expect(button.find('[data-icon="spinner"]').exists()).toBe(false);
+    });
+});
+
 describe("GButton.vue click propagation", () => {
     // A native disabled button dispatches no click at all, so nothing reaches clickable
     // ancestors. GButton renders `aria-disabled` instead of the native attribute, so the
@@ -128,9 +164,8 @@ describe("GButton.vue router-link root", () => {
         expect(wrapper.get("a").attributes("title")).toBeUndefined();
     });
 
-    // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
-    // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
-    // which reaches the rendered anchor.
+    // The click listener reaches the RouterLink's rendered anchor by fallthrough, alongside
+    // RouterLink's own navigation handler.
     it("emits click exactly once from a router-link root", async () => {
         const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
@@ -144,8 +179,7 @@ describe("GButton.vue router-link root", () => {
         expect(wrapper.emitted("click")).toHaveLength(1);
     });
 
-    // The mirror case: `@click.native` must not double up with `@click` on a plain root,
-    // where Vue 2 ignores `nativeOn`.
+    // The plain roots bind the same single listener directly.
     it("emits click exactly once from a plain button root", async () => {
         const wrapper = mountGButton({});
 

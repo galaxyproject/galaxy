@@ -1,7 +1,11 @@
 """This module contains a linting functions for tool outputs."""
 
 import ast
-from typing import TYPE_CHECKING
+import re
+from typing import (
+    NamedTuple,
+    TYPE_CHECKING,
+)
 
 from packaging.version import Version
 
@@ -264,11 +268,11 @@ class OutputsStructuredLikeReference(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        param_qualified_paths = _collect_param_qualified_paths(tool_xml)
+        input_references = _InputReferences(tool_xml)
+        profile = Version(tool_source.parse_profile())
         for output in tool_xml.findall("./outputs/collection[@structured_like]"):
-            structured_like = output.attrib["structured_like"]
-            _check_unqualified_reference(
-                lint_ctx, cls.name(), output, structured_like, "structured_like", param_qualified_paths
+            _check_structured_like_reference(
+                lint_ctx, cls.name(), output, output.attrib["structured_like"], input_references, profile
             )
 
 
@@ -278,92 +282,225 @@ class OutputsFormatSourceReference(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        param_qualified_paths = _collect_param_qualified_paths(tool_xml)
-        for output in tool_xml.findall("./outputs/data[@format_source]") + tool_xml.findall(
-            "./outputs/collection[@format_source]"
+        input_references = _InputReferences(tool_xml)
+        for output in (
+            tool_xml.findall("./outputs/data[@format_source]")
+            + tool_xml.findall("./outputs/collection[@format_source]")
+            + tool_xml.findall("./outputs/collection/data[@format_source]")
         ):
-            format_source = output.attrib["format_source"]
-            _check_unqualified_reference(
-                lint_ctx, cls.name(), output, format_source, "format_source", param_qualified_paths
+            _check_format_source_reference(
+                lint_ctx, cls.name(), output, output.attrib["format_source"], input_references
             )
 
 
-def _check_unqualified_reference(
+# Same single-selector shape resolve_format_source accepts, e.g. input_collection['forward'].
+ELEMENT_SELECTOR = re.compile(r"^([^\[\]]*)\[[^\[\]]*\]$")
+
+
+class _InputReference(NamedTuple):
+    qualified: str
+    legacy: str
+    param_type: str | None
+    in_repeat: bool
+
+    @property
+    def is_collection(self) -> bool:
+        return self.param_type == "data_collection"
+
+    @property
+    def name(self) -> str:
+        return self.qualified.rsplit("|", 1)[-1]
+
+
+class _InputReferences:
+    """Input parameter paths as runtime keys them, with repeat indices normalized to ``_0``.
+
+    ``qualified`` includes every conditional, section and repeat. ``legacy`` is the alias
+    ``visit_input_values`` also records, which omits only the innermost conditional or
+    section name.
+    """
+
+    def __init__(self, tool_xml: "ElementTree") -> None:
+        self.references: list[_InputReference] = []
+        self.repeat_names: set[str] = set()
+        inputs = tool_xml.find("./inputs")
+        if inputs is not None:
+            self._visit(inputs, [], [], False)
+
+    def _visit(self, element: "Element", qualified: list[str], legacy: list[str], in_repeat: bool) -> None:
+        for child in element:
+            name = child.attrib.get("name")
+            if child.tag == "param":
+                name = _param_name(child)
+                if name:
+                    self.references.append(
+                        _InputReference(
+                            "|".join(qualified + [name]),
+                            "|".join(legacy + [name]),
+                            child.attrib.get("type"),
+                            in_repeat,
+                        )
+                    )
+            elif child.tag in ("conditional", "section"):
+                if name:
+                    self._visit(child, qualified + [name], qualified, in_repeat)
+            elif child.tag == "repeat":
+                if name:
+                    self.repeat_names.add(name)
+                    path = qualified + [f"{name}_0"]
+                    self._visit(child, path, path, True)
+            elif child.tag == "when":
+                self._visit(child, qualified, legacy, in_repeat)
+
+    def normalize(self, reference: str) -> str:
+        segments = []
+        for segment in reference.split("|"):
+            base, _, index = segment.rpartition("_")
+            if index.isdigit() and base in self.repeat_names:
+                segment = f"{base}_0"
+            segments.append(segment)
+        return "|".join(segments)
+
+    def qualified(self, reference: str) -> list[_InputReference]:
+        return [r for r in self.references if r.qualified == reference]
+
+    def candidates(self, reference: str) -> list[str]:
+        name = reference.rsplit("|", 1)[-1]
+        return sorted({r.qualified for r in self.references if r.name == name})
+
+
+def _param_name(param: "Element") -> str | None:
+    name: str | None = param.attrib.get("name")
+    if not name:
+        argument: str | None = param.attrib.get("argument")
+        if argument:
+            name = argument.lstrip("-").replace("-", "_")
+    return name
+
+
+def _check_format_source_reference(
+    lint_ctx: "LintContext",
+    linter_name: str,
+    node: "Element",
+    ref_value: str,
+    input_references: _InputReferences,
+) -> None:
+    path = ref_value
+    if selector_match := ELEMENT_SELECTOR.match(ref_value):
+        path = selector_match.group(1)
+    selector = ref_value[len(path) :]
+    normalized = input_references.normalize(path)
+    matches = input_references.qualified(normalized)
+    if not matches:
+        matches = [r for r in input_references.references if r.legacy == normalized]
+        if matches and node.tag == "collection" and node.find("discover_datasets") is not None:
+            # Discovered elements resolve format_source against the job's input associations,
+            # which are keyed by qualified name only.
+            qualified_names = " or ".join(f"'{name}{selector}'" for name in sorted({r.qualified for r in matches}))
+            lint_ctx.error(
+                f"Output '{_output_name(node)}' uses unqualified format_source='{ref_value}', which discovered "
+                f"elements cannot resolve. Use the qualified name {qualified_names}.",
+                linter=linter_name,
+                node=node,
+            )
+            return
+        _warn_unqualified(lint_ctx, linter_name, node, ref_value, "format_source", matches, selector)
+    if not matches:
+        _error_unmatched(
+            lint_ctx, linter_name, node, ref_value, "format_source", input_references, normalized, selector
+        )
+    elif selector_match and not any(r.is_collection for r in matches):
+        lint_ctx.error(
+            f"Output '{_output_name(node)}' selects an element with format_source='{ref_value}' "
+            f"but '{path}' is not a collection input.",
+            linter=linter_name,
+            node=node,
+        )
+
+
+def _check_structured_like_reference(
+    lint_ctx: "LintContext",
+    linter_name: str,
+    node: "Element",
+    ref_value: str,
+    input_references: _InputReferences,
+    profile: Version,
+) -> None:
+    # A reference must resolve both when mapping over (execute.py sliced_input_collection_structure:
+    # qualified paths only, no repeats, a bare name at any depth before profile 26.0) and when not
+    # (collection_prototype: qualified paths or the legacy alias). Only a bare name whose legacy
+    # alias matches satisfies both before profile 26.0.
+    normalized = input_references.normalize(ref_value)
+    matches = input_references.qualified(normalized)
+    if not matches and "|" not in ref_value and profile < Version("26.0"):
+        matches = [r for r in input_references.references if r.legacy == ref_value]
+        _warn_unqualified(lint_ctx, linter_name, node, ref_value, "structured_like", matches, "")
+    if not matches:
+        _error_unmatched(lint_ctx, linter_name, node, ref_value, "structured_like", input_references, normalized, "")
+    elif all(r.in_repeat for r in matches):
+        lint_ctx.error(
+            f"Output '{_output_name(node)}' references structured_like='{ref_value}' inside a repeat, "
+            "which cannot be resolved when mapping over collections.",
+            linter=linter_name,
+            node=node,
+        )
+    elif not any(r.param_type in ("data", "data_collection") for r in matches):
+        lint_ctx.error(
+            f"Output '{_output_name(node)}' references structured_like='{ref_value}' which is not a dataset or collection input.",
+            linter=linter_name,
+            node=node,
+        )
+
+
+def _output_name(node: "Element") -> str:
+    name: str = node.attrib.get("name", "unknown")
+    return name
+
+
+def _warn_unqualified(
     lint_ctx: "LintContext",
     linter_name: str,
     node: "Element",
     ref_value: str,
     attr_name: str,
-    param_qualified_paths: dict,
+    matches: list[_InputReference],
+    selector: str,
 ) -> None:
-    if "|" in ref_value:
-        return
-    # Check if it matches a top-level param directly
-    top_level_match = any(qp == ref_value for paths in param_qualified_paths.values() for qp in paths)
-    if top_level_match:
-        return
-    matches = param_qualified_paths.get(ref_value, [])
-    output_name = node.attrib.get("name", "unknown")
-    if len(matches) == 1:
+    qualified_names = sorted({r.qualified for r in matches})
+    if len(qualified_names) == 1:
         lint_ctx.warn(
-            f"Output '{output_name}' uses unqualified {attr_name}='{ref_value}'. "
-            f"Use the qualified name '{matches[0]}'.",
+            f"Output '{_output_name(node)}' uses unqualified {attr_name}='{ref_value}'. "
+            f"Use the qualified name '{qualified_names[0]}{selector}'.",
             linter=linter_name,
             node=node,
         )
-    elif len(matches) > 1:
+    elif len(qualified_names) > 1:
         lint_ctx.warn(
-            f"Output '{output_name}' uses ambiguous unqualified {attr_name}='{ref_value}' "
-            f"matching multiple inputs: {', '.join(matches)}. Use a qualified name.",
-            linter=linter_name,
-            node=node,
-        )
-    else:
-        lint_ctx.error(
-            f"Output '{output_name}' references {attr_name}='{ref_value}' which does not match any input parameter.",
+            f"Output '{_output_name(node)}' uses ambiguous unqualified {attr_name}='{ref_value}' "
+            f"matching multiple inputs: {', '.join(qualified_names)}. Use a qualified name.",
             linter=linter_name,
             node=node,
         )
 
 
-def _collect_param_qualified_paths(tool_xml: "ElementTree") -> dict:
-    """Build a map of unqualified param name -> list of qualified paths."""
-    param_paths: dict = {}
-    parent_map = {child: parent for parent in tool_xml.iter() for child in parent}
-    for param in tool_xml.findall("./inputs//param"):
-        name = param.attrib.get("name")
-        if not name:
-            argument = param.attrib.get("argument")
-            if argument:
-                name = argument.lstrip("-").replace("-", "_")
-        if not name:
-            continue
-        qualified = _get_qualified_name(param, parent_map)
-        param_paths.setdefault(name, []).append(qualified)
-    return param_paths
-
-
-def _get_qualified_name(param_elem: "Element", parent_map: dict) -> str:
-    """Walk up the XML tree to build the qualified path for a param element."""
-    name = param_elem.attrib.get("name")
-    if not name:
-        argument = param_elem.attrib.get("argument")
-        if argument:
-            name = argument.lstrip("-").replace("-", "_")
-    parts = [name] if name else []
-    current = param_elem
-    while True:
-        parent = parent_map.get(current)
-        if parent is None:
-            break
-        if parent.tag in ("conditional", "section"):
-            parent_name = parent.attrib.get("name")
-            if parent_name:
-                parts.insert(0, parent_name)
-        elif parent.tag in ("inputs", "tool"):
-            break
-        current = parent
-    return "|".join(parts)
+def _error_unmatched(
+    lint_ctx: "LintContext",
+    linter_name: str,
+    node: "Element",
+    ref_value: str,
+    attr_name: str,
+    input_references: _InputReferences,
+    normalized: str,
+    selector: str,
+) -> None:
+    candidates = input_references.candidates(normalized)
+    suggestion = f" Did you mean '{candidates[0]}{selector}'?" if len(candidates) == 1 else ""
+    lint_ctx.error(
+        f"Output '{_output_name(node)}' references {attr_name}='{ref_value}' which does not match any input parameter."
+        f"{suggestion}",
+        linter=linter_name,
+        node=node,
+    )
 
 
 def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:

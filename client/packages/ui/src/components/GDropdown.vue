@@ -383,9 +383,131 @@ defineExpose({
     display: none !important;
 }
 
+// The split toggle's label is for screen readers only; Bootstrap's .sr-only isn't always loaded
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 // Bootstrap's translucent focus shadow is below 3:1 against white
 .dropdown-toggle:focus-visible {
     outline: 2px solid var(--color-blue-600);
     outline-offset: 2px;
+}
+</style>
+
+<style lang="scss">
+// Baseline for consumers without Bootstrap (the Tool Shed). Every rule sits in :where(), so
+// it has zero specificity and Bootstrap plus the client's theme still win wherever they load.
+// Keep to properties Bootstrap's dropdown rules also set, or the client picks up the extra.
+:where(.dropdown, .dropup, .dropleft, .dropright) {
+    position: relative;
+}
+
+:where(.dropdown-toggle) {
+    &::after {
+        content: "";
+        border-top: 0.3em solid;
+        border-right: 0.3em solid transparent;
+        border-left: 0.3em solid transparent;
+    }
+}
+
+// Only GDropdown's own .btn toggle: other dropdown toggles in the client (masthead nav links)
+// get none of Bootstrap's .btn rules, so these would land on them unopposed.
+:where(.dropdown-toggle.btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    background: none;
+    border: 1px solid transparent;
+    color: inherit;
+    font: inherit;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: 0.25rem;
+}
+
+// Bootstrap only gives enabled buttons the pointer
+:where(.dropdown-toggle.btn:not(:disabled)) {
+    cursor: pointer;
+}
+
+:where(.dropdown-menu) {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    min-width: 10rem;
+    padding: var(--spacing-1) 0;
+    margin: 0;
+    color: var(--color-grey-800);
+    text-align: left;
+    background-color: white;
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+}
+
+:where(.dropdown-menu.show) {
+    display: block;
+}
+
+:where(.dropdown-item) {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-1) var(--spacing-4);
+    color: var(--color-grey-800);
+    text-align: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    font: inherit;
+
+    &:hover,
+    &:focus {
+        color: var(--color-grey-900);
+        background-color: var(--color-grey-100);
+        text-decoration: none;
+    }
+
+    &.active {
+        color: white;
+        background-color: var(--color-blue-600);
+    }
+
+    &.disabled {
+        color: var(--color-grey-500);
+        pointer-events: none;
+    }
+}
+
+:where(.dropdown-header) {
+    display: block;
+    padding: var(--spacing-2) var(--spacing-4) var(--spacing-1);
+    margin: 0;
+    font-size: var(--font-size-small);
+    color: var(--color-grey-600);
+    white-space: nowrap;
+}
+
+:where(.dropdown-item-text) {
+    display: block;
+    padding: var(--spacing-1) var(--spacing-4);
+    color: var(--color-grey-600);
+}
+
+:where(.dropdown-divider) {
+    height: 0;
+    margin: var(--spacing-1) 0;
+    overflow: hidden;
+    border-top: 1px solid var(--color-grey-200);
 }
 </style>

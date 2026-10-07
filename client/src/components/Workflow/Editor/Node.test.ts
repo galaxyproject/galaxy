@@ -17,10 +17,13 @@ import { mockOffset } from "./test_fixtures";
 import Node from "./Node.vue";
 import NodeInput from "./NodeInput.vue";
 import NodeOutput from "./NodeOutput.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
+
+const galaxyConfig = vi.hoisted(() => ({ enable_tool_recommendations: false }));
 
 vi.mock("@/app", () => ({
     getGalaxyInstance: vi.fn(() => ({
-        config: { enable_tool_recommendations: false },
+        config: galaxyConfig,
     })),
 }));
 
@@ -125,6 +128,37 @@ describe("Node", () => {
             expect(wrapper.find(".node-error").classes()).toContain("rounded-bottom");
             expect(wrapper.find(".node-body").exists()).toBe(false);
         });
+    });
+
+    it("lets keyboard users into the tool recommendations popover", async () => {
+        galaxyConfig.enable_tool_recommendations = true;
+        try {
+            const { wrapper } = mountNode(shallowMount);
+            await flushPromises();
+
+            expect(wrapper.findComponent(GPopover).props("interactive")).toBe(true);
+        } finally {
+            galaxyConfig.enable_tool_recommendations = false;
+        }
+    });
+
+    it("keeps Enter on the tool recommendations button from activating the node", async () => {
+        galaxyConfig.enable_tool_recommendations = true;
+        const { wrapper } = mountNode(mount);
+        try {
+            await flushPromises();
+
+            await wrapper.find("button.node-recommendations").trigger("keyup.enter");
+
+            expect(wrapper.emitted("onActivate")).toBeUndefined();
+
+            await wrapper.find(".card-header").trigger("keyup.enter");
+
+            expect(wrapper.emitted("onActivate")).toEqual([[0]]);
+        } finally {
+            wrapper.unmount();
+            galaxyConfig.enable_tool_recommendations = false;
+        }
     });
 
     describe("double click", () => {

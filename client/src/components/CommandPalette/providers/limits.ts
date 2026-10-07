@@ -12,4 +12,6 @@ export const PALETTE_LIMITS = {
     minBackendQuery: 2,
     /** Tools keep the tool panel's three characters: the cached toolbox matches shorter queries */
     minToolBackendQuery: 3,
+    /** Pause in ms, on top of the input debounce, before a root search reaches the backend */
+    backendSettle: 250,
 } as const;

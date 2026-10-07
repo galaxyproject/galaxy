@@ -126,6 +126,7 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="format_source_in_conditional.xml" />
+  <tool file="format_source_in_collection.xml" />
   <tool file="output_filter.xml" />
   <tool file="async_conditional_no_default_nested_data.xml" />
   <tool file="async_ambiguous_unqualified_name.xml" />

@@ -120,6 +120,8 @@ export interface ResultSection extends ScopedSection {
 export interface PaletteSearchOptions {
     /** Cached data only, never a backend: set while the text reads as a scope token (`xy:`) being typed */
     localOnly?: boolean;
+    /** Aborted once a newer search supersedes this one, so backend requests it has not started yet never are */
+    signal?: AbortSignal;
 }
 
 /**

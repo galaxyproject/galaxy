@@ -4723,6 +4723,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/workflow_extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plugins": {
         parameters: {
             query?: never;
@@ -19725,6 +19746,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             parent_library_id: string;
+            /** Readme */
+            readme?: string | null;
             /** Total Rows */
             total_rows: number;
         };
@@ -22143,6 +22166,11 @@ export interface components {
         RefactorResponse: {
             /** Action Executions */
             action_executions: components["schemas"]["RefactorActionExecution"][];
+            /**
+             * Changed
+             * @description Whether the actions changed the refactored version. A refactor of the latest version that changes nothing saves no new version; refactoring an older version always saves one.
+             */
+            changed: boolean;
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
@@ -24011,6 +24039,26 @@ export interface components {
             stderr_match: boolean;
             /** Stdout Match */
             stdout_match: boolean;
+        };
+        /** StepLabelHint */
+        StepLabelHint: {
+            /**
+             * ID
+             * @description Decoded ID of the selected tool job or ImplicitCollectionJobs to label.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            kind: "job" | "implicit_collection_jobs";
+            /**
+             * Label
+             * @description Workflow step label to assign to the extracted tool step.
+             */
+            label: string;
         };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {
@@ -28126,6 +28174,11 @@ export interface components {
              */
             dataset_names?: string[];
             /**
+             * From Page ID
+             * @description Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's markdown is rewritten so each dataset/collection/job directive references the workflow's inputs/outputs/steps by label.
+             */
+            from_page_id?: string | null;
+            /**
              * HDA IDs
              * @description Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.
              */
@@ -28150,6 +28203,16 @@ export interface components {
              * @description Concrete tool outputs to expose as workflow outputs, with labels.
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
+             * Report Title
+             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
+             */
+            report_title?: string | null;
+            /**
+             * Step Labels
+             * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
+             */
+            step_labels?: components["schemas"]["StepLabelHint"][];
             /**
              * Workflow Name
              * @description The name for the extracted workflow.
@@ -28188,6 +28251,17 @@ export interface components {
              * @description The history items produced by this job.
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
+            /**
+             * Seed Warning
+             * @description Warning when this row was seeded directly by a notebook job directive but its tool is not a workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead.
+             */
+            seed_warning?: string | null;
+            /**
+             * Seeded
+             * @description Whether this job is part of the producing subgraph of the outputs a page/notebook references. Always False for the plain history summary; set when the summary is computed for a page.
+             * @default false
+             */
+            seeded: boolean;
             /**
              * Step Type
              * @description The role this job plays in the extracted workflow.
@@ -28311,6 +28385,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Report Warnings
+             * @description Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive that had to be dropped because it has no workflow-relative form).
+             */
+            report_warnings?: string[];
         };
         /** WorkflowExtractionSummary */
         WorkflowExtractionSummary: {
@@ -48269,6 +48348,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
                 };
             };
             /** @description Request Error */

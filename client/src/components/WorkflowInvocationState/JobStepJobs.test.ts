@@ -62,6 +62,11 @@ describe("JobStepJobs", () => {
             }),
         );
         server.use(
+            http.get("/api/jobs/{job_id}/metrics", ({ response }) => {
+                return response(200).json([]);
+            }),
+        );
+        server.use(
             http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
                 const { dataset_id } = params;
                 return response.untyped(

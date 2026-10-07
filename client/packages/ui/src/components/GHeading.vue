@@ -150,6 +150,30 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+// Heading scale, matching the theme's $font-size-base (0.85rem) times
+// its h1-h4 ratios. The client also defines these as global .h-*
+// utilities; carrying them here keeps a heading the right size for consumers
+// that only load the package, which otherwise fall back to the browser default.
+.h-xl {
+    font-size: 1.7rem;
+}
+
+.h-lg {
+    font-size: 1.4875rem;
+}
+
+.h-md {
+    font-size: 1.275rem;
+}
+
+.h-sm {
+    font-size: 1.0625rem;
+}
+
+.h-text {
+    font-size: 0.85rem;
+}
+
 .collapsible {
     cursor: pointer;
 }

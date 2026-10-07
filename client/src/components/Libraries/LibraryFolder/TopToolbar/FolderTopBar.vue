@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
@@ -50,6 +51,8 @@ interface Props {
     includeDeleted: boolean;
     isAllSelectedMode: boolean;
     canAddLibraryItem?: boolean;
+    hasReadme?: boolean;
+    readmeVisible?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -63,6 +66,7 @@ const emit = defineEmits<{
     (e: "deleteFromTable", item: any): void;
     (e: "updateSearch", value: string): void;
     (e: "update:includeDeleted", value: boolean): void;
+    (e: "toggleReadme"): void;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -315,8 +319,8 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 <FontAwesomeIcon :icon="faHome" />
             </GButton>
 
-            <div>
-                <div class="form-inline">
+            <div class="flex-grow-1">
+                <div class="form-inline d-flex w-100">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
 
                     <GButton
@@ -404,6 +408,20 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             include deleted
                         </BFormCheckbox>
                     </div>
+
+                    <GButton
+                        tooltip
+                        tooltip-placement="top"
+                        :title="props.readmeVisible ? 'Hide README' : 'Show README'"
+                        disabled-title="No README available"
+                        :pressed="props.readmeVisible"
+                        :disabled="!props.hasReadme"
+                        class="primary-button ml-auto"
+                        type="button"
+                        @click="$emit('toggleReadme')">
+                        <FontAwesomeIcon :icon="faReadme" fixed-width />
+                        README
+                    </GButton>
                 </div>
             </div>
         </div>

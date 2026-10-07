@@ -32,6 +32,22 @@ export { default as GModal } from "./components/GModal.vue";
 export { default as GOverlay } from "./components/GOverlay.vue";
 export { default as GPopover } from "./components/GPopover.vue";
 export { default as GTab } from "./components/GTab.vue";
+export type {
+    BootstrapSize,
+    BootstrapVariant,
+    FieldAlignment,
+    RowClickEvent,
+    RowIcon,
+    RowSelectEvent,
+    SortChangeEvent,
+    SortOrder,
+    TableAction,
+    TableClassValue,
+    TableEmptyState,
+    TableField,
+    TableItemClassMeta,
+} from "./components/GTable.types";
+export { default as GTable } from "./components/GTable.vue";
 export { default as GTabs } from "./components/GTabs.vue";
 export { default as GTip } from "./components/GTip.vue";
 export { default as GToast } from "./components/GToast.vue";
