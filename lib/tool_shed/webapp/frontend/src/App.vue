@@ -63,6 +63,9 @@ body
   border-radius: 0 0 4px 0
   &:focus
     top: 0
+  // It sits over the dark masthead, where only the gold ring reads
+  &:focus-visible
+    outline: 3px solid $accent !important
 
 // Horizontal rules, standing in for Quasar's q-separator
 hr
@@ -77,10 +80,17 @@ hr
 .repository-readme hr
   margin: 1rem 0
 
-// Focus indicators for keyboard navigation
-*:focus-visible
-  outline: 3px solid $accent !important
+// Focus indicators for keyboard navigation. Primary blue holds 3:1 on the white cards and light page;
+// galaxy-ui components draw their own ring, and their scoped rules outrank this one.
+:focus-visible
+  outline: 3px solid $primary
   outline-offset: 2px
+
+// Gold is the ring that reads on the dark masthead and page headers, so there it wins over everything
+.shed-header, .page-header, .landing-hero
+  :focus-visible
+    outline: 3px solid $accent !important
+    outline-offset: 2px
 
 // A choice, provides more contrast but is ultimately a bit
 // too programmer app circa 2005?

@@ -243,9 +243,10 @@ pre {
     border-color: var(--color-ebony-clay-400, #8992b2);
 }
 
+/* A solid primary ring: a tinted halo falls under the 3:1 a focus indicator needs on white */
 .shed-main input.g-form-input:focus {
     border-color: var(--color-galaxy-primary, #25537b);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-galaxy-primary, #25537b) 25%, transparent);
+    box-shadow: 0 0 0 1px var(--color-galaxy-primary, #25537b);
 }
 
 .shed-main .g-form-label .label-text {
@@ -281,7 +282,7 @@ pre {
 }
 
 .shed-main .q-field--focused .q-field__control {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-galaxy-primary, #25537b) 25%, transparent);
+    box-shadow: 0 0 0 1px var(--color-galaxy-primary, #25537b);
 }
 
 .shed-main .q-field--focused .q-field__control::before {
