@@ -42,6 +42,9 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         assert not checkbox_b.is_selected(), f"Expected unreferenced run {job_b} unchecked"
 
         assert self.count_active_output_stars() == 1, "Expected exactly the referenced output pre-starred"
+        star_a = self.components.workflow_extract.output_star_for_job(job_id=job_a).wait_for_present()
+        assert star_a.get_attribute("aria-disabled") == "true", "Expected the report-used output's star locked"
+        assert "notebook report uses this output" in (star_a.get_attribute("data-title") or "")
 
         workflow_name = "Selenium Notebook Seeded"
         self.extract_workflow_name_and_submit(workflow_name)
