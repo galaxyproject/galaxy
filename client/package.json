@@ -119,7 +119,7 @@
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery-ui": "^1.13.2",
-    "katex": "^0.17.0",
+    "katex": "^0.18.2",
     "linkify-html": "^4.1.1",
     "linkifyjs": "^4.1.1",
     "lodash": "^4.17.21",
