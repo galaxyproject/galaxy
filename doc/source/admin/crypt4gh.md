@@ -25,7 +25,8 @@ which runs in two modes:
    bytes and assigns a wrapper datatype named after the inner format, for example
    `fastqsanger.c4gh`, or `c4gh` when the inner format is unknown. Users can change
    it to another wrapper datatype, for example to name the inner format, but not to
-   a plain datatype, nor give plain datasets a wrapper datatype. The dataset's
+   a plain datatype, nor give plain datasets a wrapper datatype, also when
+   uploading them. The dataset's
    Crypt4GH header, which only the user's private key can open, is stored in the
    dataset's metadata.
 2. **Authorization.** The user clicks the key icon of the expanded dataset in their

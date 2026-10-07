@@ -981,6 +981,10 @@ def handle_uploaded_dataset_file_internal(
         is_binary = file_prefix.binary
         guessed_ext = ext
         is_crypt4gh_upload = datatypes_registry.crypt4gh_enabled and check_crypt4gh(converted_path)
+        if datatypes_registry.crypt4gh_enabled and not is_crypt4gh_upload and is_crypt4gh_file_ext(ext):
+            raise InappropriateDatasetContentError(
+                f"The uploaded file is not a Crypt4GH file, it can't have the encrypted datatype '{ext}'."
+            )
         if is_crypt4gh_upload:
             if ext in AUTO_DETECT_EXTENSIONS:
                 # User didn't select a type — infer inner type from filename.
