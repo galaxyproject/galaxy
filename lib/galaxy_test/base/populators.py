@@ -1283,6 +1283,14 @@ class BaseDatasetPopulator(BasePopulator):
         self.wait_for_history(history_id, assert_ok=True)
         return Cat1Run((d1, d2), run["jobs"][0]["id"], run["outputs"][0]["id"])
 
+    def copy_dataset(self, history_id: str, hda_id: str) -> dict[str, Any]:
+        """Copy an existing dataset into a history."""
+        response = self._post(
+            f"histories/{history_id}/contents/datasets", {"source": "hda", "content": hda_id}, json=True
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
         return tool_response

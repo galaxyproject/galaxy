@@ -241,13 +241,7 @@ test_data:
         return hdca, job_id1, job_id2, implicit_hdca1["id"], implicit_hdca2["id"]
 
     def _copy_hda_to_history(self, history_id, hda):
-        response = self._post(
-            f"histories/{history_id}/contents/datasets",
-            dict(source="hda", content=hda["id"]),
-            json=True,
-        )
-        self._assert_status_code_is(response, 200)
-        return response.json()
+        return self.dataset_populator.copy_dataset(history_id, hda["id"])
 
     def _copy_content_to_history(self, history_id, content):
         if content["history_content_type"] == "dataset":
