@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOTS = ["src", "packages/ui/src"];
-const FORBIDDEN = [/["'](@\/style\/scss\/)?base(\.scss)?["']/, /["']bootstrap\/scss\/bootstrap(\.scss)?["']/];
+const FORBIDDEN = [/["'](?:[^"']*\/)?base(?:\.scss)?["']/, /["']~?bootstrap\/scss\/bootstrap(?:\.scss)?["']/];
 const IMPORT = /^\s*@(import|use)\s+(.+)$/;
 
 const problems = [];
