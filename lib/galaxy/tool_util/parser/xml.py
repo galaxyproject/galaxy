@@ -1543,7 +1543,7 @@ class XmlInputSource(InputSource):
         if from_file := self.input_elem.get("from_file", None):
             if not os.path.isabs(from_file):
                 if not tool_data_path:
-                    # relative to Galaxy's tool data path, so options are unknown outside a Galaxy context
+                    # relative to Galaxy's tool data path, so options are unknown without one (parameter models)
                     return None
                 from_file = os.path.join(tool_data_path, from_file)
             with open(from_file) as f:

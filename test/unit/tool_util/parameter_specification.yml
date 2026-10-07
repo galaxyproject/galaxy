@@ -2425,7 +2425,7 @@ gx_drill_down_recurse_multiple:
   request_invalid:
   - parameter: c
 
-# options are read from Galaxy's tool data path, so outside Galaxy they're unknown and any string is accepted
+# options are read relative to Galaxy's tool data path, which parameter models don't get, so any string is accepted
 gx_drill_down_from_file:
   request_valid:
   - parameter: option2
