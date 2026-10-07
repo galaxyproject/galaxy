@@ -227,7 +227,17 @@ function displayLabel(output: ExtractionOutput): string {
                         data-output-star
                         :class="{ active: output.exposed }"
                         :color="output.exposed ? 'orange' : 'grey'"
-                        :disabled="Boolean(props.job.invalid) || output.deleted || !props.job.checked"
+                        :disabled="
+                            Boolean(props.job.invalid) ||
+                            output.deleted ||
+                            !props.job.checked ||
+                            output.referenced_by_report
+                        "
+                        :disabled-title="
+                            output.referenced_by_report
+                                ? 'The notebook report uses this output, so it stays a workflow output'
+                                : undefined
+                        "
                         :title="output.exposed ? 'Do not expose this output' : 'Expose this output'"
                         size="large"
                         transparent
