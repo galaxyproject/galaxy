@@ -93,6 +93,41 @@ class TestCrypt4GHGrantsIntegration(integration_util.IntegrationTestCase):
         assert status["scheme"] == "crypt4gh"
         assert status["ready"] is False
 
+    def _change_datatype(self, history_id: str, dataset_id: str, datatype: str):
+        return self._put(f"histories/{history_id}/contents/{dataset_id}", {"datatype": datatype}, json=True)
+
+    def test_encrypted_datasets_keep_an_encrypted_datatype(self, history_id):
+        dataset = self._upload_protected(history_id)
+        response = self._change_datatype(history_id, dataset["id"], "fastqsanger")
+        self._assert_status_code_is(response, 400)
+        assert "only be changed to another encrypted datatype" in response.json()["err_msg"]
+        response = self._change_datatype(history_id, dataset["id"], "c4gh")
+        self._assert_status_code_is(response, 200)
+        assert self._protection(dataset["id"])["protected"] is True
+
+    def test_plain_datasets_cant_get_an_encrypted_datatype(self, history_id):
+        dataset = self.dataset_populator.new_dataset(history_id, content="1\t2\n", wait=True)
+        response = self._change_datatype(history_id, dataset["id"], "tabular.c4gh")
+        self._assert_status_code_is(response, 400)
+        assert "can't be changed to an encrypted datatype" in response.json()["err_msg"]
+
+    def test_bulk_datatype_changes_keep_encrypted_datasets_encrypted(self, history_id):
+        encrypted = self._upload_protected(history_id)
+        plain = self.dataset_populator.new_dataset(history_id, content="1\t2\n", wait=True)
+        payload = {"operation": "change_datatype", "params": {"type": "change_datatype", "datatype": "tabular"}}
+        response = self._put(f"histories/{history_id}/contents/bulk", payload, json=True)
+        self._assert_status_code_is(response, 200)
+        result = response.json()
+        assert result["success_count"] == 1, result
+        assert [error["item"]["id"] for error in result["errors"]] == [encrypted["id"]], result
+        self.dataset_populator.wait_for_history(history_id)
+        assert (
+            self.dataset_populator.get_history_dataset_details(history_id, content_id=plain["id"])["extension"]
+            == "tabular"
+        )
+        details = self.dataset_populator.get_history_dataset_details(history_id, content_id=encrypted["id"])
+        assert details["extension"] == "fastqsanger.c4gh"
+
     def test_plain_dataset_is_not_protected(self, history_id):
         dataset = self.dataset_populator.new_dataset(history_id, content="1\t2\n", wait=True)
         assert self._protection(dataset["id"]) == {
