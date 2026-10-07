@@ -212,3 +212,14 @@ def test_redetection_keeps_known_inner_ext(tmp_path, enabled_registry):
 def test_redetection_ignores_unknown_inner_ext(tmp_path, enabled_registry):
     # Inferred from an uploaded file named 'sample.foo.c4gh'.
     assert _redetect(tmp_path, enabled_registry, "c4gh", "foo") == "c4gh"
+
+
+def test_wrapped_datatypes_convert_like_their_inner_datatype():
+    registry = example_datatype_registry_for_sample(crypt4gh_enabled=True)
+    for tool_config, source_ext, target_ext in registry.converters:
+        registry.datatype_converters.setdefault(source_ext, {})[target_ext] = tool_config
+    # Including the converters sam inherits from tabular.
+    plain = registry.get_converters_by_datatype("sam")
+    assert "csv" in plain
+    wrapped = registry.get_converters_by_datatype("sam.c4gh")
+    assert wrapped == {f"{target_ext}.c4gh": converter for target_ext, converter in plain.items()}
