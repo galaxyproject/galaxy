@@ -64,6 +64,10 @@ class ProtectionPlan(BaseModel):
     output_key_ref: str = Field(description="Compute keypair outputs get encrypted to.")
     recryptor: RecryptorSettings
     inputs: list[ProtectedInput]
+    encrypted_inputs: list[str] = Field(
+        default_factory=list,
+        description="Paths of protected inputs passed to the tool encrypted, outputs copying them are kept as they are.",
+    )
 
     @property
     def protected_directory(self) -> str:
@@ -137,12 +141,13 @@ class ProtectionDestination:
 
 @dataclass
 class ProtectedFileResult:
-    """An output file that was encrypted in place for the job's user."""
+    """An output file that was encrypted in place for the job's user, or was encrypted already."""
 
-    # SHA-256 of the header the file now starts with, encrypted to the user's key.
+    # SHA-256 of the header the file now starts with.
     header_sha256: str
     # Base64 header of the file encrypted to the compute keypair, i.e. the grant to compute on it again.
-    compute_header: str
+    # None for files that were encrypted already: users authorize them like uploads.
+    compute_header: str | None
 
 
 class ProtectedJobRuntime(Protocol):
