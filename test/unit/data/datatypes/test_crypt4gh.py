@@ -191,3 +191,24 @@ def test_upload_unchanged_when_disabled(tmp_path, disabled_registry):
 
 def test_infer_file_ext_falls_back_to_generic(enabled_registry):
     assert infer_crypt4gh_file_ext("unknown.c4gh", enabled_registry) == "c4gh"
+
+
+def _redetect(tmp_path, enabled_registry, extension, crypt4gh_inner_ext):
+    _, contents = _crypt4gh_bytes()
+    path = tmp_path / "dataset.dat"
+    path.write_bytes(contents)
+    data = Bunch(
+        extension=extension,
+        metadata=Bunch(crypt4gh_inner_ext=crypt4gh_inner_ext),
+        dataset=Bunch(get_file_name=lambda: str(path)),
+    )
+    return enabled_registry.redetect_ext(data)
+
+
+def test_redetection_keeps_known_inner_ext(tmp_path, enabled_registry):
+    assert _redetect(tmp_path, enabled_registry, "c4gh", "vcf") == "vcf.c4gh"
+
+
+def test_redetection_ignores_unknown_inner_ext(tmp_path, enabled_registry):
+    # Inferred from an uploaded file named 'sample.foo.c4gh'.
+    assert _redetect(tmp_path, enabled_registry, "c4gh", "foo") == "c4gh"
