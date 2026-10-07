@@ -157,15 +157,9 @@
 
                     // Buttonify
                     gtnWorkflowElements.forEach(function (el) {
-                        el.addEventListener("click", (e) => {
-                            let target = e.target;
-
-                            // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
-                                target = e.target.parentElement;
-                            }
-
-                            trs_url = target.dataset.workflow;
+                        el.addEventListener("click", () => {
+                            // The click target can be nested markup inside the button, so read the bound element.
+                            const trs_url = el.dataset.workflow;
                             Galaxy.router.push({
                                 path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
                             });
