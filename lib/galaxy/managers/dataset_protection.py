@@ -13,6 +13,7 @@ import io
 import json
 import logging
 import os
+from collections.abc import Callable
 from datetime import (
     datetime,
     timedelta,
@@ -390,7 +391,7 @@ class DatasetProtectionManager:
         job: Job,
         tool: "Tool",
         param_values: dict[str, Any],
-        destination: ProtectionDestination,
+        get_destination: Callable[[], ProtectionDestination],
         compute_environment: "ComputeEnvironment",
     ) -> ProtectionPlan | None:
         """Check the job may decrypt its protected inputs and build its protection plan.
@@ -404,6 +405,8 @@ class DatasetProtectionManager:
         if tool.tool_type not in PROTECTED_TOOL_TYPES:
             raise ProtectionError(f"Tool '{tool.name}' can't be used with encrypted datasets.")
         job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
+        # Only jobs decrypting data depend on their destination.
+        destination = get_destination()
         destination.check(outputs_in_job_directory=_outputs_in_directory(job, compute_environment, job_directory))
         assert destination.recryptor
         margin = JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
