@@ -126,7 +126,7 @@ class ProtectionDestination:
             # Otherwise the protection plan would hold paths of the Galaxy server.
             problems.append("Pulsar destinations must use rewrite_parameters")
         if self.recryptor is None:
-            problems.append("no Crypt4GH recryptor service (crypt4gh_recryptor_url) is configured")
+            problems.append("it has no Crypt4GH recryptor service (crypt4gh_recryptor_url) configured")
         if problems:
             raise ProtectionError(
                 "This job uses encrypted datasets but its destination can't run it securely: "

@@ -30,10 +30,28 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         super().handle_galaxy_config_kwds(config)
         cls.service = MockRecryptorService().start()
         config["crypt4gh_enabled"] = True
-        config["crypt4gh_recryptor_url"] = cls.service.url
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
+        config["job_config"] = cls._job_config()
+
+    @classmethod
+    def _job_config(cls, limits: list[dict[str, Any]] | None = None, **environment: Any) -> dict[str, Any]:
+        """A local destination set up for protected jobs."""
+        return {
+            "runners": {
+                "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 2},
+                # Used when splitting jobs into tasks (use_tasked_jobs).
+                "tasks": {"load": "galaxy.jobs.runners.tasks:TaskedJobRunner"},
+            },
+            "execution": {
+                "default": "local",
+                "environments": {
+                    "local": {"runner": "local", "crypt4gh_recryptor_url": cls.service.url, **environment}
+                },
+            },
+            "limits": limits or [],
+        }
 
     @classmethod
     def tearDownClass(cls):
@@ -124,11 +142,7 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         # Protected jobs must remove their working directory anyway.
         config["cleanup_job"] = "never"
         # Outputs are encrypted once a job ran, the compute key must outlive the longest possible job.
-        config["job_config"] = {
-            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 2}},
-            "execution": {"default": "local", "environments": {"local": {"runner": "local"}}},
-            "limits": [{"type": "walltime", "value": "48:00:00"}],
-        }
+        config["job_config"] = cls._job_config(limits=[{"type": "walltime", "value": "48:00:00"}])
 
     def test_authorized_job_outputs_are_encrypted_for_the_user(self, history_id):
         encrypted_1 = self._upload_authorized(history_id, PLAINTEXT_1)
@@ -378,14 +392,8 @@ class TestCrypt4GHExternalMetadataDestinationIntegration(BaseCrypt4GHExecutionIn
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["job_config"] = {
-            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"}},
-            "execution": {
-                "default": "local",
-                # Metadata, and so output encryption, would run on the Galaxy server after the job.
-                "environments": {"local": {"runner": "local", "embed_metadata_in_job": False}},
-            },
-        }
+        # Metadata, and so output encryption, would run on the Galaxy server after the job.
+        config["job_config"] = cls._job_config(embed_metadata_in_job=False)
 
     def test_destination_collecting_metadata_after_the_job_is_refused(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
