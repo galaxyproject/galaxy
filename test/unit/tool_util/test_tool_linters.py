@@ -3756,19 +3756,26 @@ def test_xsd_requirements_children_in_any_order(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-DRILL_DOWN_FROM_FILE_DISPLAY = """
+DRILL_DOWN_ATTRIBUTES = """
 <tool id="id" name="name" version="1.0">
     <command>echo</command>
     <inputs>
         <param name="tables" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true" from_file="tables.xml"/>
         <param name="table" type="drill_down" display="radio" hierarchy="exact" from_file="tables.xml"/>
+        <param name="inline" type="drill_down">
+            <options>
+                <option name="a" value="a">
+                    <option name="aa" value="aa" selected="true"/>
+                </option>
+            </options>
+        </param>
     </inputs>
     <outputs/>
 </tool>
 """
 
 
-def test_xsd_drill_down_from_file_and_display(lint_ctx):
-    tool_source = get_xml_tool_source(DRILL_DOWN_FROM_FILE_DISPLAY)
+def test_xsd_drill_down_attributes(lint_ctx):
+    tool_source = get_xml_tool_source(DRILL_DOWN_ATTRIBUTES)
     run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.error_messages

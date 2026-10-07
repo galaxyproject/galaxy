@@ -5195,6 +5195,13 @@ See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/funct
         <xs:documentation xml:lang="en">Value of the ``drill_down`` option.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="selected" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A boolean parameter indicating
+if the corresponding option is selected by default (the default is ``false``).
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="ParamConversion">
     <xs:annotation>
