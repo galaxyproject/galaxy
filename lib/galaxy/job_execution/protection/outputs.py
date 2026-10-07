@@ -80,7 +80,7 @@ class OutputProtector:
                 raise ProtectionError("outputs of protected jobs can't be linked data")
             ext = self._protected_ext(dataset_instance.extension, path)
             result = self.runtime.protect_file(path)
-            extra_files: dict[str, str] = {}
+            extra_files: dict[str, str | None] = {}
             if extra_files_path and os.path.isdir(extra_files_path):
                 for root, _, filenames in os.walk(extra_files_path):
                     for filename in filenames:

@@ -184,6 +184,16 @@ def test_finish_job_fails_on_expiration_dates_without_timezone(tmp_path):
     manager.sa_session.add.assert_not_called()
 
 
+def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path):
+    output, record = _protected_output(tmp_path)
+    record["compute_header"] = None
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    assert manager.finish_job(_job(output), str(tmp_path)) is None
+    manager.sa_session.add.assert_not_called()
+    assert not output.dataset.purged
+
+
 def test_finish_job_without_sidecar_purges_outputs(tmp_path):
     output, _ = _protected_output(tmp_path)
     error = _manager().finish_job(_job(output), str(tmp_path))
