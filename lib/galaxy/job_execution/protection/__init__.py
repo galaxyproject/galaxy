@@ -36,6 +36,8 @@ class RecryptorSettings(BaseModel):
     ca_cert: str | None = None
     client_cert: str | None = None
     client_key: str | None = None
+    # Include the underlying errors, which may show the service's address, in messages users see.
+    verbose_errors: bool = False
 
 
 class ProtectedFile(BaseModel):
