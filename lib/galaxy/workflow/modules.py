@@ -1354,7 +1354,11 @@ class InputParameterModule(WorkflowModule):
         # The default value field is shaped by the definition being edited (e.g. ``multiple``),
         # so recover that definition before validating against it.
         super().populate_state_from_tool_form(incoming, {})
-        return super().populate_state_from_tool_form(incoming, errors)
+        state = super().populate_state_from_tool_form(incoming, errors)
+        parameter_def = self._parse_state_into_dict()
+        if isinstance(parameter_def.get("default"), list) and not parameter_def.get("multiple"):
+            errors.setdefault("parameter_definition|optional|specify_default|default", "a single value is required")
+        return state
 
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()

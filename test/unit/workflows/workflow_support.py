@@ -14,6 +14,7 @@ class MockTrans:
     def __init__(self):
         self.app = MockApp()
         self.app.trs_proxy = Bunch()
+        self.security = self.app.security
         self.sa_session = self.app.model.context
         self._user = None
 

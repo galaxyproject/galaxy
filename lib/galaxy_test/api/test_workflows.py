@@ -7798,6 +7798,42 @@ columns:
             )
             assert "columns: an integer is required" in response["err_msg"]
 
+    def test_run_with_multiple_text_parameter(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  options:
+    type: [string]
+outputs:
+  output:
+    outputSource: multi_select/output
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex: options
+"""
+        # A bare string is stored as a one-value list.
+        test_data = """
+options:
+  value: ex2
+  type: raw
+"""
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                workflow,
+                test_data=test_data,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            assert invocation["input_step_parameters"]["options"]["parameter_value"] == ["ex2"]
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=invocation["outputs"]["output"]["id"]
+            )
+            assert content.strip() == "ex2", content
+
     @pytest.mark.parametrize(
         "parameter_type,value", [("integer", 100), ("float", 0.1), ("boolean", False), ("text", "ND")]
     )
