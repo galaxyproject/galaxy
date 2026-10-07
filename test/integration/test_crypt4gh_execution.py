@@ -214,6 +214,26 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         )
         assert self._decrypted_content(history_id, composite, filename="part.txt") == PLAINTEXT_1
 
+    def test_outputs_encrypted_by_the_tool_are_not_encrypted_again(self, history_id):
+        decrypted = self._upload_authorized(history_id, PLAINTEXT_1)
+        passed, encrypted = self._upload_encrypted(history_id, PLAINTEXT_2)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_pass_through",
+            {"input1": {"src": "hda", "id": decrypted["id"]}, "input2": {"src": "hda", "id": passed["id"]}},
+            history_id,
+        )
+        job, _ = self._wait_for_job(history_id, response)
+        assert job["state"] == "ok", job
+
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, content_id=job["outputs"]["passed"]["id"]
+        )
+        assert output["extension"] == "c4gh"
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, type="bytes")
+        assert content == encrypted
+        # Galaxy can't authorize it for the user, they do like for uploads.
+        assert not self._ready(output["id"])
+
     def test_outputs_can_be_used_in_further_jobs(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         first = self._run_cat(history_id, dataset)
