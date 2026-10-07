@@ -5,6 +5,7 @@ from typing import (
 
 from galaxy.model import (
     History,
+    ItemTagAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -153,8 +154,8 @@ class ModelOperationToolAction(DefaultToolAction):
         output_collections,
         incoming,
         history,
-        tags,
-        hdca_tags,
+        tags: dict[str, ItemTagAssociation],
+        hdca_tags: dict[str, ItemTagAssociation],
         skip,
     ):
         tool.produce_outputs(

@@ -826,6 +826,23 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_has_keys(new_forward, "history_id")
         assert new_forward["history_id"] == second_history_id
 
+    def test_hdca_copy_preserves_nested_element_tags(self, history_id):
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        forward_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.tag_dataset(history_id, forward_id, tags=["name:sample1", "group:condition:a"])
+
+        second_history_id = self.dataset_populator.new_history()
+        copied_hdca = self.dataset_collection_populator.copy_collection(second_history_id, hdca["id"]).json()
+
+        copied_forward_id = copied_hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        assert copied_forward_id != forward_id
+        copied_forward = self.dataset_populator.get_history_dataset_details(
+            history_id=second_history_id, dataset_id=copied_forward_id
+        )
+        assert copied_forward["history_id"] == second_history_id
+        assert sorted(copied_forward["tags"]) == ["group:condition:a", "name:sample1"]
+
     def __get_paired_response_elements(self, history_id: str, contents):
         hdca = self.__show(history_id, contents).json()
         self._assert_has_keys(hdca, "name", "deleted", "visible", "elements")

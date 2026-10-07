@@ -38,6 +38,7 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    ItemTagAssociation,
     Job,
     JobCredentialsContextAssociation,
     LibraryDatasetDatasetAssociation,
@@ -102,8 +103,8 @@ class CollectedToolInputs(NamedTuple):
     inp_data: LegacyUnprefixedDict
     inp_dataset_collections: LegacyUnprefixedDict
     input_collection_parameters: dict[str, BaseDataToolParameter]
-    preserved_tags: dict[str, Any]
-    preserved_hdca_tags: dict[str, Any]
+    preserved_tags: dict[str, ItemTagAssociation]
+    preserved_hdca_tags: dict[str, ItemTagAssociation]
     all_permissions: Any
 
 
@@ -461,8 +462,8 @@ class DefaultToolAction(ToolAction):
             collection_info=collection_info,
         )
 
-        preserved_tags = {}
-        preserved_hdca_tags = {}
+        preserved_tags: dict[str, ItemTagAssociation] = {}
+        preserved_hdca_tags: dict[str, ItemTagAssociation] = {}
         # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
@@ -1190,8 +1191,8 @@ class OutputCollections:
         incoming,
         params,
         job_params,
-        tags,
-        hdca_tags,
+        tags: dict[str, ItemTagAssociation],
+        hdca_tags: dict[str, ItemTagAssociation],
     ):
         self.trans = trans
         self.tag_handler = trans.tag_handler
