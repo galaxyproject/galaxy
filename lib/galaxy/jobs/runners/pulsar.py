@@ -59,7 +59,10 @@ from galaxy.jobs.runners import (
 from galaxy.model.base import check_database_connection
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
-from galaxy.tool_util.deps.container_classes import requires_dependency_resolution
+from galaxy.tool_util.deps.container_classes import (
+    Container,
+    requires_dependency_resolution,
+)
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
@@ -121,6 +124,20 @@ def _tool_provided_metadata_client_outputs(
         }
     ]
     return dynamic_output, dynamic_file_sources
+
+
+def effective_dependency_resolution(destination_params: dict[str, Any], container: Container | None) -> str:
+    dependency_resolution: str = destination_params.get("dependency_resolution", "remote")
+    if dependency_resolution not in ["none", "local", "remote"]:
+        raise Exception(f"Unknown dependency_resolution value encountered {dependency_resolution}")
+    if container and not requires_dependency_resolution(container) and dependency_resolution != "none":
+        log.debug(
+            "Ignoring dependency_resolution '%s', container '%s' does not resolve dependencies",
+            dependency_resolution,
+            container.container_id,
+        )
+        return "none"
+    return dependency_resolution
 
 
 # Is there a good way to infer some default for this? Can only use
@@ -638,7 +655,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     compute_job_directory=remote_job_directory,
                 )
                 self._rewrite_container_for_compute_environment(container, compute_environment)
-            dependency_resolution = PulsarJobRunner.__dependency_resolution(client, remote_container or container)
+            dependency_resolution = effective_dependency_resolution(
+                client.destination_params, remote_container or container
+            )
             dependencies_description = PulsarJobRunner.__dependencies_description(job_wrapper, dependency_resolution)
             remote_command_params = dict(
                 working_directory=remote_job_config["metadata_directory"],
@@ -1149,20 +1168,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             requirements=requirements,
             installed_tool_dependencies=installed_tool_dependencies,
         )
-
-    @staticmethod
-    def __dependency_resolution(pulsar_client, container):
-        dependency_resolution = pulsar_client.destination_params.get("dependency_resolution", "remote")
-        if dependency_resolution not in ["none", "local", "remote"]:
-            raise Exception(f"Unknown dependency_resolution value encountered {dependency_resolution}")
-        if dependency_resolution != "none" and not requires_dependency_resolution(container):
-            log.debug(
-                "Ignoring dependency_resolution '%s', container '%s' does not resolve dependencies",
-                dependency_resolution,
-                container.container_id,
-            )
-            return "none"
-        return dependency_resolution
 
     @staticmethod
     def __remote_metadata(pulsar_client):
