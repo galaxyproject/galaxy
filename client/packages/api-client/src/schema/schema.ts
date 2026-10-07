@@ -28628,6 +28628,12 @@ export interface components {
              */
             output_name?: string | null;
             /**
+             * Referenced By Report
+             * @description Whether the notebook report uses this output, which keeps it a workflow output.
+             * @default false
+             */
+            referenced_by_report: boolean;
+            /**
              * State
              * @description The state of the dataset or collection.
              */

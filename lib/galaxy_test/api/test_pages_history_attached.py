@@ -548,6 +548,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert len(exposed_outputs) == 1, cat1_job["outputs"]
             assert exposed_outputs[0]["id"] == output_id
             assert exposed_outputs[0]["suggested_name"]
+            assert exposed_outputs[0]["referenced_by_report"] is True
             # The two uploaded inputs are part of the producing subgraph → seeded input rows.
             input_jobs = [j for j in summary["jobs"] if j["step_type"] in ("input_dataset", "input_collection")]
             assert input_jobs, summary["jobs"]
@@ -647,6 +648,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert cat1_row["seeded"] is True, cat1_row
             # Job-referenced (not content-referenced): seeded but not exposed.
             assert all(not o["exposed"] for o in cat1_row["outputs"]), cat1_row["outputs"]
+            assert all(not o["referenced_by_report"] for o in cat1_row["outputs"]), cat1_row["outputs"]
             input_rows = self._rows_by_type(summary, "input_dataset", "input_collection")
             assert input_rows and all(r["seeded"] for r in input_rows), summary["jobs"]
 
