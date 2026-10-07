@@ -16,6 +16,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.datatypes.crypt4gh import Crypt4GH
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     base,
@@ -51,6 +52,25 @@ from galaxy.util.hash_util import memory_bound_hexdigest
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+def keeps_encryption(current_datatype: Any, target_datatype: Any) -> bool:
+    """Whether changing between these datatypes keeps encrypted datasets encrypted, and others not.
+
+    Galaxy knows a dataset is encrypted from its datatype: relabelling it would pass the encrypted data
+    to tools as is, or try to decrypt data that isn't encrypted.
+    """
+    return isinstance(current_datatype, Crypt4GH) == isinstance(target_datatype, Crypt4GH)
+
+
+def ensure_datatype_change_keeps_encryption(dataset_instance: DatasetInstance, target_datatype: Any) -> None:
+    if keeps_encryption(dataset_instance.datatype, target_datatype):
+        return
+    if isinstance(dataset_instance.datatype, Crypt4GH):
+        message = "This dataset is encrypted, its datatype can only be changed to another encrypted datatype."
+    else:
+        message = "This dataset is not encrypted, its datatype can't be changed to an encrypted datatype."
+    raise exceptions.RequestParameterInvalidException(message)
 
 
 class DatasetManager(
@@ -907,6 +927,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             raise exceptions.RequestParameterInvalidException("The target datatype does not exist.")
         if not target_datatype.is_datatype_change_allowed():
             raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
+        ensure_datatype_change_keeps_encryption(item, target_datatype)
         if not item.ok_to_edit_metadata():
             raise exceptions.RequestParameterInvalidException(
                 "Dataset metadata could not be updated because it is used as input or output of a running job."

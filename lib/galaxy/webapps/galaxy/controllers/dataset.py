@@ -22,6 +22,7 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
 )
+from galaxy.managers.datasets import keeps_encryption
 from galaxy.managers.hdas import (
     HDADeserializer,
     HDAManager,
@@ -165,7 +166,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ldatatypes = [
                 (dtype_name, dtype_name)
                 for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items()
-                if dtype_value.is_datatype_change_allowed()
+                if dtype_value.is_datatype_change_allowed() and keeps_encryption(data.datatype, dtype_value)
             ]
             ldatatypes.sort()
 
