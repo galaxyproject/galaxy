@@ -4,6 +4,7 @@ import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from urllib.parse import urljoin
 
 import requests
 from typing_extensions import Protocol
@@ -29,10 +30,12 @@ from tool_shed_client.schema import (
     PaginatedRepositoryIndexResults,
     RepositoriesByCategory,
     Repository,
+    RepositoryFileContents,
     RepositoryIndexRequest,
     RepositoryIndexResponse,
     RepositoryMetadata,
     RepositoryPaginatedIndexRequest,
+    RepositoryRevisionFiles,
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
@@ -429,6 +432,35 @@ class ToolShedPopulator:
         )
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(root=metadata_response.json())
+
+    def get_repository_files_raw(
+        self,
+        repository: HasRepositoryId,
+        changeset_revision: str,
+        path: str | None = None,
+        headers: dict | None = None,
+        anonymous: bool = False,
+    ) -> requests.Response:
+        """List files at a revision or, given path, fetch one file's contents."""
+        repository_id = self._repository_id(repository)
+        route = f"repositories/{repository_id}/revisions/{changeset_revision}/files"
+        if path is not None:
+            route = f"{route}/{path}"
+        if anonymous:
+            return requests.get(urljoin(self._api_interactor.url, f"api/{route}"), headers=headers or {})
+        return self._api_interactor.get(route, headers=headers or {})
+
+    def get_repository_files(self, repository: HasRepositoryId, changeset_revision: str) -> RepositoryRevisionFiles:
+        response = self.get_repository_files_raw(repository, changeset_revision)
+        api_asserts.assert_status_code_is_ok(response)
+        return RepositoryRevisionFiles(**response.json())
+
+    def get_repository_file_contents(
+        self, repository: HasRepositoryId, changeset_revision: str, path: str
+    ) -> RepositoryFileContents:
+        response = self.get_repository_files_raw(repository, changeset_revision, path=path)
+        api_asserts.assert_status_code_is_ok(response)
+        return RepositoryFileContents(**response.json())
 
     def reset_metadata(
         self, repository: HasRepositoryId, dry_run: bool = False, verbose: bool = False
