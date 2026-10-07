@@ -389,6 +389,20 @@ Protected jobs fail closed:
 - **Cleanup:** if the decrypted data can't be removed from the compute host, the
   job fails, but its verified encrypted outputs are kept.
 
+Job errors are shown to users, so they name the setting or error involved but
+never include the compute service's address. To see the underlying error while
+setting up a destination, for example a TLS problem, set
+`crypt4gh_recryptor_verbose_errors: true` on that destination; turn it off again
+afterwards, since users of that destination see these details too. Alternatively,
+reproduce a job's request from a compute host with the destination's settings.
+Any HTTP response, such as `422` for the empty request, means the connection and
+certificates work:
+
+```sh
+curl --cacert <ca_cert> --cert <client_cert> --key <client_key> \
+  -X POST https://<compute service>/recrypt_header_to_job_key -d '{}'
+```
+
 Headers, plans, keys and the compute service's requests and responses are never
 logged. The `crypt4gh` library's own logging is limited to warnings, since it logs
 session keys at debug level.

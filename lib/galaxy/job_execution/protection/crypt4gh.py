@@ -67,6 +67,14 @@ def parse_public_key(public_key: str) -> bytes:
     return base64.b64decode("".join(lines[1:-1]))
 
 
+def describe_error(error: BaseException, verbose: bool) -> str:
+    """The error's type, and its message only when the destination asks for verbose errors.
+
+    Messages of underlying errors can show the key service's address, and job errors are shown to users.
+    """
+    return f"{type(error).__name__}: {error}" if verbose else type(error).__name__
+
+
 class RecryptorClient:
     """Client for the compute-side recryptor service.
 
@@ -100,8 +108,9 @@ class RecryptorClient:
             ("crypt4gh_recryptor_client_key", self.settings.client_key),
         ):
             if path and not os.path.exists(path):
+                location = f" ({path})" if self.settings.verbose_errors else ""
                 raise ProtectionError(
-                    f"The file configured as {setting} doesn't exist on the compute host. "
+                    f"The file configured as {setting} doesn't exist on the compute host{location}. "
                     "Contact your Galaxy administrator."
                 )
 
@@ -120,7 +129,9 @@ class RecryptorClient:
             except requests.RequestException as e:
                 if last_attempt:
                     # Users can read job errors: don't chain the request error, it shows the service's address.
-                    raise ProtectionError(f"Could not reach the key service ({type(e).__name__}).") from None
+                    raise ProtectionError(
+                        f"Could not reach the key service ({describe_error(e, self.settings.verbose_errors)})."
+                    ) from None
                 log.warning("Key service request to %s failed (%s), retrying", route, type(e).__name__)
             else:
                 if response.status_code == 200:
@@ -218,7 +229,9 @@ class Crypt4GHJobRuntime:
         except ProtectionError:
             raise
         except Exception as e:
-            raise ProtectionError(f"Failed to encrypt an output of this job ({type(e).__name__}).") from e
+            raise ProtectionError(
+                f"Failed to encrypt an output of this job ({describe_error(e, self.plan.recryptor.verbose_errors)})."
+            ) from e
         finally:
             for temporary_path in (body_path, protected_path):
                 if os.path.exists(temporary_path):
@@ -269,7 +282,9 @@ class Crypt4GHJobRuntime:
         except Exception as e:
             self.cleanup_inputs()
             # Errors from the crypt4gh library are generic, don't let them pass as-is.
-            raise ProtectionError(f"Failed to decrypt a protected input ({type(e).__name__}).") from e
+            raise ProtectionError(
+                f"Failed to decrypt a protected input ({describe_error(e, self.plan.recryptor.verbose_errors)})."
+            ) from e
 
     def _files_to_stage(self) -> list[tuple[ProtectedFile, str]]:
         files: list[tuple[ProtectedFile, str]] = []

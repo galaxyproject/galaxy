@@ -174,6 +174,28 @@ def test_stage_command_errors_dont_reveal_the_service_address(tmp_path, service,
     assert "Traceback" not in stderr
 
 
+def test_verbose_errors_show_the_cause(tmp_path, service, user, capsys):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(
+        tmp_path,
+        service,
+        key_ref,
+        [_protected_input(tmp_path, service, user, key_ref)],
+        retries=0,
+        verbose_errors=True,
+    )
+    plan.recryptor.url = "https://127.0.0.1:9"
+    plan_path = str(tmp_path / "plan.json")
+    plan.write(plan_path)
+
+    assert run("stage-in", plan_path) == 1
+
+    # For administrators setting up a destination: the cause, including the service's address.
+    stderr = capsys.readouterr().err
+    assert "Could not reach the key service (ConnectionError: " in stderr
+    assert "127.0.0.1" in stderr
+
+
 def test_unlisted_extra_files_are_refused(tmp_path, service, user):
     key_ref = service.get_compute_key_info(user.public)
     protected_input = _protected_input(tmp_path, service, user, key_ref, extra_files={"listed": b"a"})
