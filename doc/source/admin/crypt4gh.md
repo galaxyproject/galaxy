@@ -187,8 +187,6 @@ In `galaxy.yml`:
 ```yaml
 galaxy:
   crypt4gh_enabled: true
-  # The compute service, as reached from the compute hosts.
-  crypt4gh_recryptor_url: https://recryptor.example.org
   # The user service, as reached from the users' browsers. This is the default.
   crypt4gh_user_service_url: https://localhost:61357
 ```
@@ -214,7 +212,9 @@ preferences:
 
 ### Job destinations
 
-Every destination running jobs that decrypt datasets must use:
+Jobs decrypting datasets only run on destinations that set
+`crypt4gh_recryptor_url`, so you choose which destinations may run them. Such
+destinations must also use:
 
 - `metadata_strategy: extended`. Output encryption runs in the metadata step,
   which must run on the compute host. `celery_extended`, `directory` and `legacy`
@@ -232,14 +232,14 @@ Every destination running jobs that decrypt datasets must use:
 How jobs connect to the compute service is set with these destination
 parameters:
 
-| Parameter                           | Description                                                                                                                                                                      |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `crypt4gh_recryptor_url`            | Overrides `crypt4gh_recryptor_url` of `galaxy.yml`, e.g. for another network path. All destinations must use the same compute service: grants are bound to its compute keypairs. |
-| `crypt4gh_recryptor_ca_cert`        | CA bundle to verify the compute service's certificate, e.g. from a local CA.                                                                                                     |
-| `crypt4gh_recryptor_client_cert`    | Client certificate, when mutual TLS restricts access to the compute hosts.                                                                                                       |
-| `crypt4gh_recryptor_client_key`     | Private key of the client certificate.                                                                                                                                           |
-| `crypt4gh_recryptor_timeout`        | Timeout of each request, in seconds (default 30). Requests failing with connection or server errors are retried three times.                                                     |
-| `crypt4gh_recryptor_verbose_errors` | Show the underlying errors in job errors, see [Failures and cleanup](#failures-and-cleanup).                                                                                     |
+| Parameter                           | Description                                                                                                                                                                                                             |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crypt4gh_recryptor_url`            | Required. The compute service, as reached from the destination's compute hosts. All destinations must use the same compute service, possibly through different network paths: grants are bound to its compute keypairs. |
+| `crypt4gh_recryptor_ca_cert`        | CA bundle to verify the compute service's certificate, e.g. from a local CA.                                                                                                                                            |
+| `crypt4gh_recryptor_client_cert`    | Client certificate, when mutual TLS restricts access to the compute hosts.                                                                                                                                              |
+| `crypt4gh_recryptor_client_key`     | Private key of the client certificate.                                                                                                                                                                                  |
+| `crypt4gh_recryptor_timeout`        | Timeout of each request, in seconds (default 30). Requests failing with connection or server errors are retried three times.                                                                                            |
+| `crypt4gh_recryptor_verbose_errors` | Show the underlying errors in job errors, see [Failures and cleanup](#failures-and-cleanup).                                                                                                                            |
 
 Paths of certificates and keys are read on the compute hosts.
 
