@@ -5,9 +5,16 @@ import subprocess
 import tempfile
 from datetime import datetime
 from time import gmtime
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
-from mercurial import scmutil
+from mercurial import (
+    error,
+    scmutil,
+)
+from mercurial.node import nullrev
 
 from galaxy.tool_shed.util import basic_util
 from galaxy.tool_shed.util.hg_util import (
@@ -25,6 +32,12 @@ from galaxy.tool_shed.util.hg_util import (
 from galaxy.util import unicodify
 
 if TYPE_CHECKING:
+    from mercurial.context import (
+        changectx,
+        filectx,
+    )
+    from mercurial.interfaces.repository import IRepo
+
     from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
@@ -271,6 +284,40 @@ def changeset2rev(hg_repo, changeset_revision: str) -> int:
         raise Exception(f"Error looking for changeset '{changeset_revision}': {unicodify(e)}")
 
 
+def changectx_for_revision(hg_repo: "IRepo", changeset_revision: str) -> Optional["changectx"]:
+    """Return the changeset whose short hash is exactly changeset_revision, else None.
+
+    Unlike changeset2rev, prefixes, full hashes and the null revision are not accepted, and
+    only not-found is reported as None; repository faults still raise.
+    """
+    try:
+        node = scmutil.resolvehexnodeidprefix(hg_repo, changeset_revision.encode())
+    except error.LookupError:  # ambiguous prefix
+        return None
+    if node is None:
+        return None
+    try:
+        ctx = hg_repo[node]
+    except error.RepoLookupError:  # hidden changeset
+        return None
+    if ctx.rev() == nullrev or str(ctx) != changeset_revision:
+        return None
+    return ctx
+
+
+def file_size(fctx: "filectx") -> int:
+    """Return a committed file's size from the revlog index, without reading its data.
+
+    filectx.size() reconstructs the whole file for any revision that might carry copy
+    metadata (most first revisions), so for those this includes the metadata header.
+    """
+    filelog = fctx.filelog()
+    rev = fctx.filerev()
+    if filelog.iscensored(rev):
+        return 0
+    return filelog.get_revlog().size(rev)
+
+
 __all__ = (
     "add_changeset",
     "archive_repository_revision",
@@ -297,4 +344,6 @@ __all__ = (
     "update_repository",
     "init_repository",
     "changeset2rev",
+    "changectx_for_revision",
+    "file_size",
 )
