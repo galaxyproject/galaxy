@@ -772,7 +772,8 @@ export interface paths {
         post?: never;
         delete?: never;
         options?: never;
-        head?: never;
+        /** Check if a raw extra file associated with a dataset can be downloaded. */
+        head: operations["extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__head"];
         patch?: never;
         trace?: never;
     };
@@ -34085,6 +34086,52 @@ export interface operations {
         };
     };
     extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the dataset. */
+                dataset_id: string;
+                /** @description The name of the extra file to retrieve. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__head: {
         parameters: {
             query?: never;
             header?: {

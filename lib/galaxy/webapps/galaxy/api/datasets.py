@@ -276,6 +276,10 @@ class FastAPIDatasets:
         "/api/datasets/{dataset_id}/extra_files/raw/{filename:path}",
         summary="Downloads a raw extra file associated with a dataset.",
     )
+    @router.head(
+        "/api/datasets/{dataset_id}/extra_files/raw/{filename:path}",
+        summary="Check if a raw extra file associated with a dataset can be downloaded.",
+    )
     def extra_file_raw(
         self,
         dataset_id: DatasetIDPathParam,

@@ -397,6 +397,10 @@ class TestDatasetsApi(ApiTestCase):
         extra_files_response = self._get(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
         extra_files_response.raise_for_status()
         assert extra_files_response.text == fasta_contents
+        head_response = self._head(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
+        self._assert_status_code_is(head_response, 200)
+        assert head_response.headers["content-length"] == str(len(fasta_contents.encode()))
+        assert head_response.content == b""
 
     @pytest.mark.parametrize("datatype", ["directory", "bwa_index", "ome_zarr"])
     def test_directory_subclass_download_is_zip(self, history_id: str, datatype: str):
