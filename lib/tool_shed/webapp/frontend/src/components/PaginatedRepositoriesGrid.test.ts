@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest"
-import { mount, flushPromises } from "@vue/test-utils"
+import { config, mount, flushPromises, RouterLinkStub } from "@vue/test-utils"
+import { createPinia, setActivePinia } from "pinia"
 import PaginatedRepositoriesGrid from "./PaginatedRepositoriesGrid.vue"
 import { emptyQueryResults, type QueryResults } from "./RepositoriesGridInterface"
 
@@ -30,12 +31,16 @@ function typeAndWait(input: { setValue: (value: string) => Promise<void> }, valu
 beforeEach(() => {
     route.query = {}
     notifyOnCatch.mockClear()
+    // RepositoryExplore reads the logged in user for its changelog link and routes to contents
+    setActivePinia(createPinia())
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
 })
 
 afterEach(() => {
     vi.useRealTimers()
 })
+
+config.global.stubs = { ...config.global.stubs, RouterLink: RouterLinkStub }
 
 describe("PaginatedRepositoriesGrid filter input", () => {
     it("renders the filter input when allowSearch is set", async () => {

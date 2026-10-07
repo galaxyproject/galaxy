@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { flushPromises, mount } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
 import { useRepositoryStore } from "@/stores"
+import RepositoryExplore from "@/components/RepositoryExplore.vue"
 import RepositoryPage from "./RepositoryPage.vue"
 
 const { readmes, mockGet } = vi.hoisted(() => {
@@ -32,6 +33,7 @@ function revision(overrides: Record<string, unknown> = {}) {
         "0:abc123": {
             changeset_revision: "abc123",
             create_time: "2024-01-01T00:00:00",
+            downloadable: true,
             malicious: false,
             tools: [],
             invalid_tools: [],
@@ -118,4 +120,17 @@ describe("RepositoryPage", () => {
 
         expect(wrapper.get(".description").text()).toBe("Joins datasets head to tail, with options.")
     })
+
+    it.each([
+        ["a downloadable revision", {}, "abc123"],
+        ["a revision that is not downloadable", { downloadable: false }, null],
+        ["a malicious revision", { malicious: true }, null],
+    ])(
+        "points the explore menu's contents at %s only if the files API serves it",
+        async (_label, overrides, expected) => {
+            const wrapper = await mountPage({ repository: repository(), repositoryMetadata: revision(overrides) })
+
+            expect(wrapper.findComponent(RepositoryExplore).props("browsableRevision")).toBe(expected)
+        },
+    )
 })

@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils"
-import { describe, expect, it } from "vitest"
+import { createPinia, setActivePinia } from "pinia"
+import { beforeEach, describe, expect, it } from "vitest"
 import { createMemoryHistory, createRouter } from "vue-router"
+import { useAuthStore } from "@/stores"
 import RepositoryActions from "./RepositoryActions.vue"
 import RepositoryExplore from "./RepositoryExplore.vue"
 import RepositoryHealth from "./RepositoryHealth.vue"
@@ -63,24 +65,67 @@ describe("RepositoryActions", () => {
 })
 
 describe("RepositoryExplore", () => {
-    it("links the changelog and contents from the explore menu", () => {
-        const wrapper = mount(RepositoryExplore, { props: { repository }, ...withRouter() })
+    beforeEach(() => {
+        setActivePinia(createPinia())
+    })
 
-        const links = wrapper.findAll("a.dropdown-item").map((link) => link.attributes("href"))
-        expect(links).toEqual(["/repos/devteam/bismark/shortlog", "/repos/devteam/bismark/file/tip"])
+    function mountExplore(props: Record<string, unknown>, user: Record<string, unknown> | null = null) {
+        useAuthStore().user = user
+        return mount(RepositoryExplore, { props: { repository, ...props }, ...withRouter() })
+    }
+
+    function menuLinks(wrapper: ReturnType<typeof mountExplore>) {
+        return wrapper.findAll("a.dropdown-item").map((link) => [link.text(), link.attributes("href")])
+    }
+
+    function denseButtons(wrapper: ReturnType<typeof mountExplore>) {
+        return wrapper.findAll(".repository-explore-buttons .g-button").map((b) => b.attributes("aria-label"))
+    }
+
+    it("links the contents of the browsable revision from the explore menu", () => {
+        const wrapper = mountExplore({ browsableRevision: "r1" })
+
+        expect(menuLinks(wrapper)).toEqual([["Contents", "/repositories/abc/contents?revision=r1"]])
+    })
+
+    it("links the newest contents when there is no browsable revision", () => {
+        const wrapper = mountExplore({})
+
+        expect(menuLinks(wrapper)).toEqual([["Contents", "/repositories/abc/contents"]])
+    })
+
+    it("adds the hgweb changelog for logged in users", () => {
+        const wrapper = mountExplore({ browsableRevision: "r1" }, { username: "bob" })
+
+        expect(menuLinks(wrapper)).toEqual([
+            ["Changelog", "/repos/devteam/bismark/shortlog"],
+            ["Contents", "/repositories/abc/contents?revision=r1"],
+        ])
     })
 
     it("shows labelled icon buttons in dense mode, including the optional external links", () => {
-        const wrapper = mount(RepositoryExplore, {
-            props: {
-                repository: { ...repository, homepage_url: "https://example.org", remote_repository_url: null },
-                dense: true,
-            },
-            ...withRouter(),
+        const wrapper = mountExplore({
+            repository: { ...repository, homepage_url: "https://example.org", remote_repository_url: null },
+            dense: true,
         })
 
-        const labels = wrapper.findAll(".repository-explore-buttons .g-button").map((b) => b.attributes("aria-label"))
-        expect(labels).toEqual(["Details", "Metadata Inspector", "Changelog", "Contents", "Homepage"])
+        expect(denseButtons(wrapper)).toEqual(["Details", "Metadata Inspector", "Contents", "Homepage"])
+        expect(wrapper.get('[aria-label="Contents"]').attributes("href")).toBe("/repositories/abc/contents")
         expect(wrapper.get('[aria-label="Homepage"]').attributes("href")).toBe("https://example.org")
+    })
+
+    it.each(["deprecated", "deleted"])("leaves Contents out for a %s repository, whose files 404", (flag) => {
+        const menu = mountExplore({ repository: { ...repository, [flag]: true } })
+        const dense = mountExplore({ repository: { ...repository, [flag]: true }, dense: true })
+
+        expect(menuLinks(menu)).toEqual([])
+        expect(denseButtons(dense)).toEqual(["Details", "Metadata Inspector"])
+    })
+
+    it("adds the changelog button in dense mode for logged in users", () => {
+        const wrapper = mountExplore({ dense: true }, { username: "bob" })
+
+        expect(denseButtons(wrapper)).toEqual(["Details", "Metadata Inspector", "Changelog", "Contents"])
+        expect(wrapper.get('[aria-label="Changelog"]').attributes("href")).toBe("/repos/devteam/bismark/shortlog")
     })
 })
