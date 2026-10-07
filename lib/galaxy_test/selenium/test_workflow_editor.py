@@ -471,6 +471,54 @@ steps:
         assert "inttest" not in steps["single_integer"]["input_connections"]
 
     @selenium_test
+    def test_multiple_integer_parameter_list_default(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  columns: integer
+steps: {}
+""")
+        editor = self.components.workflow_editor
+        tool_form = self.components.tool_form
+        editor.node._(label="columns").wait_for_and_click()
+        for parameter in [
+            "parameter_definition|multiple",
+            "parameter_definition|optional|specify_default|specify_default",
+        ]:
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            self.execute_script("arguments[0].click();", checkbox)
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+        default = "parameter_definition|optional|specify_default|default"
+        tool_form.parameter_number_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
+        tool_form.parameter_number_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_number_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+        self.screenshot("workflow_editor_multiple_integer_parameter_list_default")
+        self.save_after_node_form_changes()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        tool_state = json.loads(steps["columns"]["tool_state"])
+        assert tool_state["multiple"] is True
+        assert tool_state["default"] == [1, 2]
+
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        editor.node._(label="columns").wait_for_and_click()
+        values = [
+            tool_form.parameter_number_list_input(parameter=default, index=index)
+            .wait_for_visible()
+            .get_attribute("value")
+            for index in (1, 2)
+        ]
+        assert values == ["1", "2"], values
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+
+    @selenium_test
     def test_non_data_map_over_carried_through(self):
         # Use auto_layout=false, which prevents placing any
         # step outside of the scroll area

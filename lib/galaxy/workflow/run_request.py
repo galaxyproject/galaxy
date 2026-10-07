@@ -402,7 +402,7 @@ def build_workflow_run_configs(
                 try:
                     input_param.validate(input_dict, trans=trans)
                     if isinstance(input_param, IntegerToolParameter) and input_param.multiple:
-                        # The run form submits one integer per line.
+                        # Store the validated integers, not the submitted values.
                         normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
                     raise exceptions.RequestParameterInvalidException(

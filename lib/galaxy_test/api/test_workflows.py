@@ -7894,6 +7894,89 @@ steps: []
         invocation = self.workflow_populator.get_invocation(response.json()["id"])
         assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
 
+    def test_run_form_multiple_integer_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  columns:
+    type: [integer]
+    default: [1, 2]
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (default_input,) = run_workflow["steps"][0]["inputs"]
+        assert default_input["multiple"] is True
+        assert default_input["value"] == [1, 2]
+
+    def test_run_form_invalid_default_on_single_integer_parameter(self):
+        for default in ["[1, 2]", "x"]:
+            workflow_id = self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  columns:
+    type: int
+    default: {default}
+steps: {{}}
+""")
+            with self.dataset_populator.test_history() as history_id:
+                response = self._get(
+                    f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id}
+                )
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Workflow step 'columns' cannot be run")
+            assert_error_message_contains(response, "the attribute 'value' must be an integer")
+
+    @skip_without_tool("column_param_list")
+    def test_run_multiple_integer_list_default_through_subworkflow(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input: data
+  columns:
+    type: [integer]
+    default: [1, 2]
+outputs:
+  output:
+    outputSource: nested/output
+steps:
+  nested:
+    in:
+      input: input
+      columns: columns
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input: data
+        columns:
+          type: [integer]
+      outputs:
+        output:
+          outputSource: column_param_list/output2
+      steps:
+        column_param_list:
+          tool_id: column_param_list
+          in:
+            input1: input
+            col: columns
+            col_names: columns
+"""
+        test_data = """
+input:
+  value: 2.tabular
+  type: File
+  file_type: tabular
+"""
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                workflow, test_data=test_data, history_id=history_id, wait=True, assert_ok=True
+            )
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=invocation["outputs"]["output"]["id"]
+            )
+            assert "col 1,2" in content, content
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")

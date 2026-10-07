@@ -107,6 +107,7 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
+    ParameterValueError,
 )
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
@@ -1281,6 +1282,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 if e.tool_id not in missing_tools:
                     missing_tools.append(e.tool_id)
                 continue
+            except ParameterValueError as e:
+                step_name = step.label or str(step.order_index + 1)
+                raise exceptions.RequestParameterInvalidException(
+                    f"Workflow step '{step_name}' cannot be run: {e.message_suffix}"
+                ) from e
             if step.upgrade_messages:
                 has_upgrade_messages = True
             if step.type in ("tool", "subworkflow", None):
