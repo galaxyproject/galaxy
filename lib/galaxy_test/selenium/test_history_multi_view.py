@@ -97,6 +97,24 @@ class TestHistoryMultiView(SeleniumTestCase):
         target_dataset_ids = [item["id"] for item in target_contents if item["history_content_type"] == "dataset"]
         assert len(target_dataset_ids) == len(source_dataset_ids), "expected datasets to be copied to new history"
 
+    @selenium_test
+    @managed_history
+    def test_copy_dataset_between_columns(self):
+        source_history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(source_history_id, content="1\t2\n", name="to copy", wait=True)
+        target_history_id = self.dataset_populator.new_history("Multiview copy target")
+        self.home()
+        self.open_history_multi_view()
+        panel = self.components.multi_history_panel
+        panel.history_column_item(history_id=source_history_id, hid=1).wait_for_visible()
+        panel.history_column_drop_zone(history_id=target_history_id).wait_for_visible()
+        self.screenshot("multi_history_copy_between_columns")
+        self.multi_history_copy_item(1, from_history_id=source_history_id, to_history_id=target_history_id)
+        self.wait_for_history_to_have_hid(target_history_id, 1)
+        target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
+        assert [item["name"] for item in target_contents] == ["to copy"]
+        assert self.current_history_id() == source_history_id
+
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
         if "outputs" in collection:
