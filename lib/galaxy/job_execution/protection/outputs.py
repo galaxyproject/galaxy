@@ -12,6 +12,8 @@ import json
 import logging
 import os
 import shutil
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -25,6 +27,7 @@ from galaxy.util.crypt4gh import (
 )
 from . import (
     load_runtime,
+    ProtectedFileResult,
     ProtectedJobRuntime,
     ProtectionError,
     ProtectionPlan,
@@ -44,6 +47,8 @@ OUTCOME_DEFERRED = "deferred"
 OUTCOME_FAILED = "failed"
 # Outputs without content, nothing to protect.
 CONTENTLESS_OUTCOMES = (OUTCOME_PURGED, OUTCOME_DEFERRED)
+# Each protected file takes a request to the key service.
+MAX_CONCURRENT_FILES = 8
 
 
 class OutputProtector:
@@ -52,6 +57,7 @@ class OutputProtector:
         self.datatypes_registry = datatypes_registry
         self.records: dict[str, dict[str, Any]] = {}
         self.errors: list[str] = []
+        self._concurrent_files = threading.BoundedSemaphore(MAX_CONCURRENT_FILES)
 
     @classmethod
     def for_job(cls, metadata_params: dict[str, Any], datatypes_registry: "Registry") -> "OutputProtector | None":
@@ -79,14 +85,19 @@ class OutputProtector:
                 # Linked files stay where they are, they can't be encrypted in place.
                 raise ProtectionError("outputs of protected jobs can't be linked data")
             ext = self._protected_ext(dataset_instance.extension, path)
-            result = self.runtime.protect_file(path)
+            result = self._protect_file(path)
             extra_files: dict[str, str | None] = {}
             if extra_files_path and os.path.isdir(extra_files_path):
-                for root, _, filenames in os.walk(extra_files_path):
-                    for filename in filenames:
-                        extra_file = os.path.join(root, filename)
-                        relpath = os.path.relpath(extra_file, extra_files_path)
-                        extra_files[relpath] = self.runtime.protect_file(extra_file).compute_header
+                relpaths = [
+                    os.path.relpath(os.path.join(root, filename), extra_files_path)
+                    for root, _, filenames in os.walk(extra_files_path)
+                    for filename in filenames
+                ]
+                with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
+                    results = executor.map(
+                        lambda relpath: self._protect_file(os.path.join(extra_files_path, relpath)), relpaths
+                    )
+                    extra_files = {relpath: result.compute_header for relpath, result in zip(relpaths, results)}
         except Exception as e:
             message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
             if not link_data:
@@ -102,6 +113,28 @@ class OutputProtector:
             "compute_header": result.compute_header,
             "extra_files": extra_files,
         }
+
+    def protect_all(self, outputs: list[tuple["DatasetInstance", str, str | None, bool]]) -> None:
+        """Protect several outputs concurrently, see :meth:`protect`: ``(dataset_instance, path, extra_files_path, link_data)``."""
+        failed = threading.Event()
+
+        def protect(output: tuple["DatasetInstance", str, str | None, bool]) -> None:
+            if failed.is_set():
+                # The job fails anyway, don't keep calling the key service. Galaxy purges what isn't protected.
+                return
+            try:
+                self.protect(*output)
+            except Exception:
+                failed.set()
+                raise
+
+        with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
+            # Raises the first error once the outputs being protected are done.
+            list(executor.map(protect, outputs))
+
+    def _protect_file(self, path: str) -> ProtectedFileResult:
+        with self._concurrent_files:
+            return self.runtime.protect_file(path)
 
     def record_outcome(self, dataset_instance: "DatasetInstance", outcome: str) -> None:
         self.records.setdefault(self._uuid(dataset_instance), {"outcome": outcome})

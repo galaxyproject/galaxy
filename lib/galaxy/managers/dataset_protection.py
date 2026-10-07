@@ -130,6 +130,14 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     return datetime.fromisoformat(extra_files_key["expires_at"]) <= now() + margin
 
 
+def _summarize(errors: list[str], limit: int = 3) -> str:
+    """Errors for job and dataset info, outputs of large collections may all fail the same way."""
+    summary = " ".join(errors[:limit])
+    if len(errors) > limit:
+        summary += f" ({len(errors) - limit} more errors)"
+    return summary
+
+
 def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
     """Protection results written by the compute host, ``None`` if it wrote none."""
     path = os.path.join(job_directory, SIDECAR_FILE)
@@ -523,12 +531,12 @@ class DatasetProtectionManager:
             for dataset_instance in unprotected:
                 _purge(dataset_instance)
         if errors:
-            return " ".join(errors)
+            return _summarize(errors)
         if job.user and expires_at:
             self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
         return None
 
-    def fail_job(self, job: Job, job_directory: str) -> list[str]:
+    def fail_job(self, job: Job, job_directory: str) -> str | None:
         """Remove the data stored for the outputs of a failed protected job, unless it is shown to be encrypted.
 
         Failed jobs may leave plaintext behind. Their outputs stay in the history, in error state.
@@ -546,7 +554,8 @@ class DatasetProtectionManager:
             record = records.get(str(dataset.uuid))
             if not dataset.purged and not (record and self._is_verified(dataset_instance, record)):
                 dataset.full_delete()
-        return list(sidecar.get("errors", []))
+        errors = sidecar.get("errors", [])
+        return _summarize(errors) if errors else None
 
     def _is_verified(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
         try:
