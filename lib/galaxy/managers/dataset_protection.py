@@ -317,11 +317,17 @@ class DatasetProtectionManager:
 
         Inputs of parameters explicitly accepting Crypt4GH formats are passed encrypted.
         """
+        return self._protected_inputs(tool, param_values)[0]
+
+    def _protected_inputs(
+        self, tool: "Tool", param_values: dict[str, Any]
+    ) -> tuple[list[DatasetInstance], list[DatasetInstance]]:
+        """The protected inputs to decrypt, and those passed to the tool encrypted."""
         if not self.enabled or (tool.id or "").startswith("__"):
             # Galaxy's internal tools (metadata, export, ...) work with the encrypted data.
-            return []
+            return [], []
         decrypted: dict[int, DatasetInstance] = {}
-        encrypted: set[int] = set()
+        encrypted: dict[int, DatasetInstance] = {}
 
         def visitor(input: Any, value: Any, **kwargs: Any) -> None:
             if not isinstance(input, BaseDataToolParameter):
@@ -332,16 +338,16 @@ class DatasetProtectionManager:
                 if dataset is None or not self.is_protected(dataset_instance):
                     continue
                 if accepts_encrypted:
-                    encrypted.add(dataset.id)
+                    encrypted[dataset.id] = dataset_instance
                 else:
                     decrypted[dataset.id] = dataset_instance
 
         visit_input_values(tool.inputs, param_values, visitor)
-        if encrypted & decrypted.keys():
+        if encrypted.keys() & decrypted.keys():
             raise ProtectionError(
                 "The same encrypted dataset can't be used both as an encrypted and as a decrypted input of a job."
             )
-        return list(decrypted.values())
+        return list(decrypted.values()), list(encrypted.values())
 
     def check_job_inputs(self, user: User | None, tool: "Tool", param_values: dict[str, Any]) -> None:
         """Early, user-facing version of the :meth:`authorize_job` checks, run when a job is requested.
@@ -379,7 +385,7 @@ class DatasetProtectionManager:
         Returns ``None`` for jobs without inputs to decrypt, raises :class:`ProtectionError`
         when the job must not run.
         """
-        to_decrypt = self.inputs_needing_decryption(tool, param_values)
+        to_decrypt, passed_encrypted = self._protected_inputs(tool, param_values)
         if not to_decrypt:
             return None
         if tool.tool_type not in PROTECTED_TOOL_TYPES:
@@ -417,6 +423,9 @@ class DatasetProtectionManager:
             output_key_ref=max(grants, key=lambda grant: grant.expires_at).key_ref,
             recryptor=destination.recryptor,
             inputs=protected_inputs,
+            encrypted_inputs=[
+                compute_environment.input_path_rewrite(dataset_instance) for dataset_instance in passed_encrypted
+            ],
         )
 
     def _protected_input(
@@ -576,6 +585,9 @@ class DatasetProtectionManager:
             return
         assert job.user
         for dataset_instance, record in protected:
+            if not record["compute_header"]:
+                # Encrypted already by the tool, e.g. a copy of an encrypted input.
+                continue
             scheme = self.scheme_for(dataset_instance)
             assert scheme and dataset_instance.dataset
             grant = self.get_grant(job.user, dataset_instance.dataset, scheme.name)
@@ -584,7 +596,8 @@ class DatasetProtectionManager:
                 self.sa_session.add(grant)
             grant.key_ref = key_ref
             grant.expires_at = expires_at
-            grant.grant_data = {"compute_header": record["compute_header"], "extra_files": record["extra_files"]}
+            extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
+            grant.grant_data = {"compute_header": record["compute_header"], "extra_files": extra_files}
             grant.source = f"job:{job.id}"
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:
