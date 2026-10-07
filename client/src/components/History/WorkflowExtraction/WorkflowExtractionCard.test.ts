@@ -8,7 +8,6 @@ import type { WorkflowExtractionJob } from "@/api/histories";
 import { toExtractionRow } from "./types";
 
 import WorkflowExtractionCard from "./WorkflowExtractionCard.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 const TOOL_OUTPUT = {
@@ -96,41 +95,47 @@ describe("WorkflowExtractionCard step label clear", () => {
 });
 
 describe("WorkflowExtractionCard output star", () => {
-    function outputStar(output: Partial<typeof TOOL_OUTPUT>, jobOverrides: Partial<WorkflowExtractionJob> = {}) {
+    function mountStar(output: Partial<typeof TOOL_OUTPUT>, jobOverrides: Partial<WorkflowExtractionJob> = {}) {
         const job = toExtractionRow({ ...TOOL_JOB, ...jobOverrides, outputs: [{ ...TOOL_OUTPUT, ...output }] });
         const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
         const wrapper = mount(WorkflowExtractionCard as object, {
             props: { job },
             global: { ...global, stubs: { ...global.stubs, GenericHistoryItem: true } },
         });
-        return wrapper
-            .findAllComponents(GButton)
-            .find((button) => button.attributes("data-output-star") !== undefined)!;
+        return { wrapper, star: wrapper.get("[data-output-star]") };
     }
 
-    it("locks the star of an output the notebook report uses, and says why", () => {
-        const star = outputStar({ exposed: true, referenced_by_report: true });
-        expect(star.props("disabled")).toBe(true);
-        expect(star.props("disabledTitle")).toBe("The notebook report uses this output, so it stays a workflow output");
+    it("locks the star of an output the notebook report uses, and says why", async () => {
+        const { wrapper, star } = mountStar({ exposed: true, referenced_by_report: true });
+        expect(star.attributes("aria-disabled")).toBe("true");
+        expect(star.attributes("data-title")).toBe(
+            "The notebook report uses this output, so it stays a workflow output",
+        );
+        await star.trigger("click");
+        expect(wrapper.emitted("toggle-output")).toBeUndefined();
     });
 
     it("tells the user to include the step when the row of a report-used output is unchecked", () => {
-        const star = outputStar({ exposed: false, referenced_by_report: true }, { checked: false });
-        expect(star.props("disabled")).toBe(true);
-        expect(star.props("disabledTitle")).toBe("The notebook report uses this output; include this step to keep it");
+        const { star } = mountStar({ exposed: false, referenced_by_report: true }, { checked: false });
+        expect(star.attributes("aria-disabled")).toBe("true");
+        expect(star.attributes("data-title")).toBe(
+            "The notebook report uses this output; include this step to keep it",
+        );
     });
 
     it("makes no report claim for a report-used output of an invalid row", () => {
-        const star = outputStar(
+        const { star } = mountStar(
             { exposed: true, referenced_by_report: true },
             { invalid: "tool_missing_or_inaccessible" },
         );
-        expect(star.props("disabled")).toBe(true);
-        expect(star.props("disabledTitle")).toBeUndefined();
+        expect(star.attributes("aria-disabled")).toBe("true");
+        expect(star.attributes("data-title")).not.toContain("notebook report");
     });
 
-    it("leaves the star of an unreferenced output toggleable", () => {
-        const star = outputStar({ exposed: true, referenced_by_report: false });
-        expect(star.props("disabled")).toBe(false);
+    it("leaves the star of an unreferenced output toggleable", async () => {
+        const { wrapper, star } = mountStar({ exposed: true, referenced_by_report: false });
+        expect(star.attributes("aria-disabled")).toBeUndefined();
+        await star.trigger("click");
+        expect(wrapper.emitted("toggle-output")).toEqual([[0]]);
     });
 });
