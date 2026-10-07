@@ -40,6 +40,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
+    effective_dependency_resolution,
     PulsarJobRunner,
 )
 
@@ -386,25 +387,18 @@ def test_host_metadata_does_not_resolve_container(config):
     [
         ({}, None, "remote"),
         ({"dependency_resolution": "local"}, None, "local"),
-        ({}, SimpleNamespace(resolve_dependencies=False, container_id="busybox"), "none"),
-        (
-            {"dependency_resolution": "local"},
-            SimpleNamespace(resolve_dependencies=False, container_id="busybox"),
-            "none",
-        ),
-        ({}, SimpleNamespace(resolve_dependencies=True), "remote"),
-        ({"dependency_resolution": "local"}, SimpleNamespace(resolve_dependencies=True), "local"),
-        ({"dependency_resolution": "none"}, SimpleNamespace(resolve_dependencies=True), "none"),
+        ({}, MockContainer(), "none"),
+        ({"dependency_resolution": "local"}, MockContainer(), "none"),
+        ({}, MockContainer(resolve_dependencies=True), "remote"),
+        ({"dependency_resolution": "local"}, MockContainer(resolve_dependencies=True), "local"),
+        ({"dependency_resolution": "none"}, MockContainer(resolve_dependencies=True), "none"),
     ],
 )
 def test_dependency_resolution_skipped_for_containers(destination_params, container, expected):
-    client = SimpleNamespace(destination_params=destination_params)
-    dependency_resolution = cast(Any, PulsarJobRunner)._PulsarJobRunner__dependency_resolution(client, container)
-    assert dependency_resolution == expected
+    assert effective_dependency_resolution(destination_params, container) == expected
 
 
-def test_unknown_dependency_resolution_rejected_for_containers():
-    client = SimpleNamespace(destination_params={"dependency_resolution": "conda"})
-    container = SimpleNamespace(resolve_dependencies=False, container_id="busybox")
+@pytest.mark.parametrize("container", [None, MockContainer()])
+def test_unknown_dependency_resolution_rejected(container):
     with pytest.raises(Exception, match="Unknown dependency_resolution value encountered conda"):
-        cast(Any, PulsarJobRunner)._PulsarJobRunner__dependency_resolution(client, container)
+        effective_dependency_resolution({"dependency_resolution": "conda"}, container)
