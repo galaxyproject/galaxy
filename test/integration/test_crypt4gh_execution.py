@@ -422,6 +422,26 @@ class TestCrypt4GHMetadataRetryIntegration(BaseCrypt4GHExecutionIntegrationTestC
         assert PLAINTEXT_1.decode() not in response.text
 
 
+class TestCrypt4GHJobLimitsIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config"] = cls._job_config(limits=[{"type": "output_size", "value": "10"}])
+
+    def test_outputs_of_jobs_failed_while_running_are_not_stored(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_write_and_wait", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+
+        job, output = self._wait_for_job(history_id, response)
+
+        assert job["state"] == "error"
+        assert "grew too large" in output["misc_info"]
+        response = self._get(f"datasets/{output['id']}/display")
+        assert PLAINTEXT_1.decode() not in response.text
+
+
 class TestCrypt4GHTaskSplittingIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
