@@ -126,6 +126,26 @@
                     if (!gtnEmbed.contentDocument) {
                         return;
                     }
+                    // Sites like Zenodo refuse to be framed, so links leaving the GTN open in a new tab.
+                    gtnEmbed.contentDocument.addEventListener("click", (e) => {
+                        const link = e.target.closest("a[href]");
+                        if (!link || link.closest("[data-tool],[data-workflow]")) {
+                            return;
+                        }
+                        let url;
+                        try {
+                            url = new URL(link.getAttribute("href"), link.baseURI);
+                        } catch (err) {
+                            return;
+                        }
+                        if (url.protocol !== "http:" && url.protocol !== "https:") {
+                            return;
+                        }
+                        if (url.origin !== window.location.origin || !url.pathname.startsWith("/training-material/")) {
+                            link.setAttribute("target", "_blank");
+                            link.relList.add("noopener", "noreferrer");
+                        }
+                    });
                     // Add the class to the entire GTN page
                     document
                         .getElementById("gtn-embed")
