@@ -125,10 +125,10 @@ def _job(*outputs):
     )
 
 
-def _write_sidecar(job_directory, datasets, errors=()):
+def _write_sidecar(job_directory, datasets, errors=(), expiration=None):
     path = os.path.join(job_directory, SIDECAR_FILE)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    expiration = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    expiration = expiration or (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
     with open(path, "w") as f:
         json.dump({"key_ref": "cnk:1", "key_expiration": expiration, "datasets": datasets, "errors": list(errors)}, f)
 
@@ -159,6 +159,25 @@ def test_finish_job_records_grants_for_protected_outputs(tmp_path):
     assert grant.grant_data == {"compute_header": "compute", "extra_files": {}}
     assert grant.source == "job:5"
     assert not output.dataset.purged
+
+
+def test_finish_job_reads_utc_expiration_dates(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # Written by the key service, datetime.fromisoformat() refuses the 'Z' suffix before Python 3.11.
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record}, expiration="2099-10-14T12:00:00Z")
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    assert manager.sa_session.add.call_args.args[0].expires_at == datetime(2099, 10, 14, 12)
+
+
+def test_finish_job_fails_on_expiration_dates_without_timezone(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record}, expiration="2099-10-14T12:00:00")
+    manager = _manager()
+    error = manager.finish_job(_job(output), str(tmp_path))
+    assert error and "expiration date" in error
+    manager.sa_session.add.assert_not_called()
 
 
 def test_finish_job_without_sidecar_purges_outputs(tmp_path):
