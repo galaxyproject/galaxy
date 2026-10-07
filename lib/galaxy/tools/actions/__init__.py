@@ -95,6 +95,7 @@ log = logging.getLogger(__name__)
 
 
 OutputDatasetsT = dict[str, "DatasetInstance"]
+PreservedTagsT = dict[str | None, ItemTagAssociation]
 ToolActionExecuteResult = tuple[Job, OutputDatasetsT, History | None] | tuple[Job, OutputDatasetsT]
 
 
@@ -103,8 +104,8 @@ class CollectedToolInputs(NamedTuple):
     inp_data: LegacyUnprefixedDict
     inp_dataset_collections: LegacyUnprefixedDict
     input_collection_parameters: dict[str, BaseDataToolParameter]
-    preserved_tags: dict[str, ItemTagAssociation]
-    preserved_hdca_tags: dict[str, ItemTagAssociation]
+    preserved_tags: PreservedTagsT
+    preserved_hdca_tags: PreservedTagsT
     all_permissions: Any
 
 
@@ -462,8 +463,8 @@ class DefaultToolAction(ToolAction):
             collection_info=collection_info,
         )
 
-        preserved_tags: dict[str, ItemTagAssociation] = {}
-        preserved_hdca_tags: dict[str, ItemTagAssociation] = {}
+        preserved_tags: PreservedTagsT = {}
+        preserved_hdca_tags: PreservedTagsT = {}
         # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
@@ -1191,8 +1192,8 @@ class OutputCollections:
         incoming,
         params,
         job_params,
-        tags: dict[str, ItemTagAssociation],
-        hdca_tags: dict[str, ItemTagAssociation],
+        tags: PreservedTagsT,
+        hdca_tags: PreservedTagsT,
     ):
         self.trans = trans
         self.tag_handler = trans.tag_handler

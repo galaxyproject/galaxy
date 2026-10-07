@@ -5,7 +5,6 @@ from typing import (
 
 from galaxy.model import (
     History,
-    ItemTagAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -126,8 +125,6 @@ class ModelOperationToolAction(DefaultToolAction):
             output_collections,
             incoming=incoming,
             history=history,
-            tags=preserved_tags,
-            hdca_tags=preserved_hdca_tags,
             skip=skip,
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
@@ -154,8 +151,6 @@ class ModelOperationToolAction(DefaultToolAction):
         output_collections,
         incoming,
         history,
-        tags: dict[str, ItemTagAssociation],
-        hdca_tags: dict[str, ItemTagAssociation],
         skip,
     ):
         tool.produce_outputs(
@@ -164,8 +159,6 @@ class ModelOperationToolAction(DefaultToolAction):
             output_collections,
             incoming,
             history=history,
-            tags=tags,
-            hdca_tags=hdca_tags,
         )
         if mapped_over_elements := output_collections.dataset_collection_elements:
             for name, value in out_data.items():
