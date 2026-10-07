@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.crypt4gh import Crypt4GH
+from galaxy.datatypes.data import Data
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.job_execution.protection.outputs import SIDECAR_FILE
 from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
@@ -105,7 +106,7 @@ class _FakeOutput:
         self.name = "output"
         self.extension = extension
         self.dataset = _FakeDataset(path)
-        self.datatype = Crypt4GH()
+        self.datatype: Data = Crypt4GH()
         self.metadata = Bunch(crypt4gh_header=base64.b64encode(header).decode() if header else None)
         self.state = "ok"
         self.purged = False
@@ -332,3 +333,14 @@ def test_failed_job_reports_protection_errors(tmp_path):
     errors = _manager().fail_job(_job(output), str(tmp_path))
     assert errors == ["Tools writing unnamed outputs can't be used with encrypted datasets."]
     assert output.dataset.purged
+
+
+def test_jobs_with_protected_inputs_are_detected(tmp_path):
+    protected, _ = _protected_output(tmp_path)
+    plain = _FakeOutput(str(tmp_path / "plain.dat"))
+    plain.datatype = Data()
+    manager = _manager()
+    input_datasets = [Bunch(dataset=plain), Bunch(dataset=None)]
+    assert not manager.has_protected_inputs(Bunch(input_datasets=input_datasets, input_library_datasets=[]))
+    job = Bunch(input_datasets=input_datasets, input_library_datasets=[Bunch(dataset=protected)])
+    assert manager.has_protected_inputs(job)
