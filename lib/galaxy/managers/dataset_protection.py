@@ -24,6 +24,11 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from pydantic import (
+    AwareDatetime,
+    TypeAdapter,
+    ValidationError,
+)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -77,6 +82,8 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+_AWARE_DATETIME = TypeAdapter(AwareDatetime)
+
 GRANT_SOURCE_USER = "user"
 # Tool types that run a plain command line on the compute host. Others (interactive tools,
 # data managers, expression tools, ...) would expose decrypted data outside of the job.
@@ -120,6 +127,12 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     if not extra_files_key or not grant.grant_data.get("extra_files"):
         return False
     return datetime.fromisoformat(extra_files_key["expires_at"]) <= now() + margin
+
+
+def _parse_key_expiration(value: str) -> datetime:
+    """Expiration date reported by the key service, as naive UTC. Raises ``ValidationError`` without a timezone."""
+    # datetime.fromisoformat() only accepts a 'Z' suffix from Python 3.11 on.
+    return _AWARE_DATETIME.validate_python(value).astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _has_content(dataset_instance: DatasetInstance) -> bool:
@@ -463,6 +476,12 @@ class DatasetProtectionManager:
         else:
             errors.append("The outputs of this job could not be verified to be encrypted.")
         errors.extend(sidecar.get("errors", []))
+        expires_at: datetime | None = None
+        if key_expiration := sidecar.get("key_expiration"):
+            try:
+                expires_at = _parse_key_expiration(key_expiration)
+            except ValidationError:
+                errors.append("The key service returned an invalid expiration date for the keys of this job's outputs.")
 
         protected: list[tuple[DatasetInstance, dict[str, Any]]] = []
         unprotected: list[DatasetInstance] = []
@@ -487,8 +506,8 @@ class DatasetProtectionManager:
                 _purge(dataset_instance)
         if errors:
             return " ".join(errors)
-        if job.user:
-            self._record_output_grants(job, sidecar, protected)
+        if job.user and expires_at:
+            self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
         return None
 
     def _is_protected_as_recorded(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
@@ -510,13 +529,14 @@ class DatasetProtectionManager:
         return True
 
     def _record_output_grants(
-        self, job: Job, sidecar: dict[str, Any], protected: list[tuple[DatasetInstance, dict[str, Any]]]
+        self,
+        job: Job,
+        key_ref: str | None,
+        expires_at: datetime,
+        protected: list[tuple[DatasetInstance, dict[str, Any]]],
     ) -> None:
-        key_ref = sidecar.get("key_ref")
-        expiration = sidecar.get("key_expiration")
-        if not protected or not key_ref or not expiration:
+        if not protected or not key_ref:
             return
-        expires_at = datetime.fromisoformat(expiration).astimezone(timezone.utc).replace(tzinfo=None)
         assert job.user
         for dataset_instance, record in protected:
             scheme = self.scheme_for(dataset_instance)
