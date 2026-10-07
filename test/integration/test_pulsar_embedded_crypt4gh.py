@@ -11,7 +11,7 @@ from . import test_crypt4gh_execution
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL")
 
 
-def _pulsar_job_config(environment: dict[str, Any], runner: dict[str, Any]) -> dict[str, Any]:
+def _pulsar_job_config(recryptor_url: str, environment: dict[str, Any], runner: dict[str, Any]) -> dict[str, Any]:
     return {
         "runners": {
             "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"},
@@ -30,7 +30,12 @@ def _pulsar_job_config(environment: dict[str, Any], runner: dict[str, Any]) -> d
             "default": "remote_environment",
             "environments": {
                 "local": {"runner": "local"},
-                "remote_environment": {"runner": "remote", "remote_metadata": True, **environment},
+                "remote_environment": {
+                    "runner": "remote",
+                    "remote_metadata": True,
+                    "crypt4gh_recryptor_url": recryptor_url,
+                    **environment,
+                },
             },
         },
         "tools": [{"id": "__DATA_FETCH__", "environment": "local"}],
@@ -50,6 +55,7 @@ class TestCrypt4GHPulsarEmbeddedIntegration(test_crypt4gh_execution.TestCrypt4GH
         super().handle_galaxy_config_kwds(config)
         _configure_pulsar(config)
         config["job_config"] = _pulsar_job_config(
+            cls.service.url,
             # Tools write outputs in the remote job directory, like without a shared filesystem.
             {"default_file_action": "copy"},
             {"load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner"},
@@ -71,6 +77,7 @@ class TestCrypt4GHPulsarEmbeddedMQIntegration(test_crypt4gh_execution.TestCrypt4
         jobs_directory = os.path.join(cls._test_driver.mkdtemp(), "pulsar_staging")
         safe_makedirs(jobs_directory)
         config["job_config"] = _pulsar_job_config(
+            cls.service.url,
             {
                 "default_file_action": "remote_transfer",
                 "rewrite_parameters": True,
@@ -99,6 +106,7 @@ class TestCrypt4GHPulsarUnsafeDestinationIntegration(test_crypt4gh_execution.Bas
         super().handle_galaxy_config_kwds(config)
         _configure_pulsar(config)
         config["job_config"] = _pulsar_job_config(
+            cls.service.url,
             {
                 "default_file_action": "copy",
                 # Tools would write decrypted outputs directly to the object store.
