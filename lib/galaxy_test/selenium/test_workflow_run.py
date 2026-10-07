@@ -291,7 +291,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("chipseq example input")
         self.sleep_for(self.wait_types.UX_RENDER)
-        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+        self.select_set_value(editor.collection_type_select, "sample_sheet:paired")
         self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
 
         self.tool_open("__SAMPLE_SHEET_TO_TABULAR__")

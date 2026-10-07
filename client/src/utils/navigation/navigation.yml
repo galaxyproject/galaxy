@@ -1160,10 +1160,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
-    collection_type_input:
-      type: xpath
-      selector: >
-        //div[@id='form-element-collection_type']//input
+    collection_type_select: '#form-element-collection_type'
     step_when:
       type: xpath
       selector: >
