@@ -25,6 +25,7 @@ from typing import (
 )
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.crypt4gh import Crypt4GH
@@ -258,10 +259,20 @@ class DatasetProtectionManager:
             raise RequestParameterInvalidException("Cannot grant access to a purged dataset.")
         record = scheme.validate_user_grant(payload)
 
-        grant = self.get_grant(user, dataset, scheme.name)
+        try:
+            self._store_user_grant(user, dataset, scheme.name, record)
+        except IntegrityError:
+            # Authorized concurrently (e.g. from another tab), replace the grant that was just stored.
+            self.sa_session.rollback()
+            self._store_user_grant(user, dataset, scheme.name, record)
+        log.info("Registered %s grant for user %s on dataset %s", scheme.name, user.id, dataset.id)
+        return self.grant_status(user, dataset_instance)
+
+    def _store_user_grant(self, user: User, dataset: Dataset, scheme: str, record: GrantRecord) -> None:
+        grant = self.get_grant(user, dataset, scheme)
         grant_data = dict(record.grant_data)
         if grant is None:
-            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme.name)
+            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme)
             self.sa_session.add(grant)
         elif extra_files := (grant.grant_data or {}).get("extra_files"):
             # Users only authorize the primary file again: keep the extra files of protected job outputs,
@@ -276,8 +287,6 @@ class DatasetProtectionManager:
         grant.grant_data = grant_data
         grant.source = GRANT_SOURCE_USER
         self.sa_session.commit()
-        log.info("Registered %s grant for user %s on dataset %s", scheme.name, user.id, dataset.id)
-        return self.grant_status(user, dataset_instance)
 
     def inputs_needing_decryption(self, tool: "Tool", param_values: dict[str, Any]) -> list[DatasetInstance]:
         """Protected datasets the tool reads as their inner datatype, so must be decrypted.

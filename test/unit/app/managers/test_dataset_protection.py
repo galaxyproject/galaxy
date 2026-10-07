@@ -13,6 +13,7 @@ from typing import cast
 from unittest import mock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.crypt4gh import Crypt4GH
@@ -230,3 +231,18 @@ def test_renewing_a_grant_keeps_extra_files_of_job_outputs(tmp_path):
     assert grant.grant_data["extra_files_key"] == {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()}
     assert not _extra_files_expire(grant, timedelta(days=1))
     assert _extra_files_expire(grant, timedelta(days=4))
+
+
+def test_concurrent_authorizations_replace_the_grant(tmp_path):
+    manager = _manager()
+    stored = DatasetProtectionGrant(key_ref="cnk:other-tab", expires_at=datetime(2099, 1, 1), grant_data={})
+    # The other request stored its grant between our lookup and our commit.
+    manager.get_grant = mock.MagicMock(side_effect=[None, stored, stored])
+    manager.sa_session.commit.side_effect = [IntegrityError("INSERT", {}, Exception("unique")), None]
+    output = _FakeOutput(str(tmp_path / "output.dat"))
+
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+
+    manager.sa_session.rollback.assert_called_once()
+    assert stored.key_ref == "cnk:0123456789abcdef"
