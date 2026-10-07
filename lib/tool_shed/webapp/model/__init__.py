@@ -112,7 +112,7 @@ class User(Base, Dictifiable):
     create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     email: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    username: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    username: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(40), nullable=False)
     external: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     new_repo_alert: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
