@@ -1155,7 +1155,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         dependency_resolution = pulsar_client.destination_params.get("dependency_resolution", "remote")
         if dependency_resolution not in ["none", "local", "remote"]:
             raise Exception(f"Unknown dependency_resolution value encountered {dependency_resolution}")
-        if not requires_dependency_resolution(container):
+        if dependency_resolution != "none" and not requires_dependency_resolution(container):
+            log.debug(
+                "Ignoring dependency_resolution '%s', container '%s' does not resolve dependencies",
+                dependency_resolution,
+                container.container_id,
+            )
             return "none"
         return dependency_resolution
 

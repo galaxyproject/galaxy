@@ -386,9 +386,14 @@ def test_host_metadata_does_not_resolve_container(config):
     [
         ({}, None, "remote"),
         ({"dependency_resolution": "local"}, None, "local"),
-        ({}, SimpleNamespace(resolve_dependencies=False), "none"),
-        ({"dependency_resolution": "local"}, SimpleNamespace(resolve_dependencies=False), "none"),
+        ({}, SimpleNamespace(resolve_dependencies=False, container_id="busybox"), "none"),
+        (
+            {"dependency_resolution": "local"},
+            SimpleNamespace(resolve_dependencies=False, container_id="busybox"),
+            "none",
+        ),
         ({}, SimpleNamespace(resolve_dependencies=True), "remote"),
+        ({"dependency_resolution": "local"}, SimpleNamespace(resolve_dependencies=True), "local"),
         ({"dependency_resolution": "none"}, SimpleNamespace(resolve_dependencies=True), "none"),
     ],
 )
@@ -398,10 +403,8 @@ def test_dependency_resolution_skipped_for_containers(destination_params, contai
     assert dependency_resolution == expected
 
 
-@pytest.mark.parametrize("dependency_resolution, sent", [("remote", True), ("local", False), ("none", False)])
-def test_dependencies_description_only_sent_for_remote_resolution(dependency_resolution, sent):
-    tool = SimpleNamespace(requirements=[], installed_tool_dependencies=[])
-    description = cast(Any, PulsarJobRunner)._PulsarJobRunner__dependencies_description(
-        SimpleNamespace(tool=tool), dependency_resolution
-    )
-    assert (description is not None) == sent
+def test_unknown_dependency_resolution_rejected_for_containers():
+    client = SimpleNamespace(destination_params={"dependency_resolution": "conda"})
+    container = SimpleNamespace(resolve_dependencies=False, container_id="busybox")
+    with pytest.raises(Exception, match="Unknown dependency_resolution value encountered conda"):
+        cast(Any, PulsarJobRunner)._PulsarJobRunner__dependency_resolution(client, container)
