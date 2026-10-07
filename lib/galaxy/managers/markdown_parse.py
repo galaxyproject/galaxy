@@ -7,6 +7,7 @@ projects (e.g. gxformat2).
 """
 
 import re
+from collections.abc import Callable
 
 from ._markdown_directives import (
     CELL_TYPES,
@@ -143,14 +144,47 @@ def _invalid_line(template: str, line_no: int, **kwd):
     raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
 
 
+# The client's parseMarkdown splits lines on "\n" only.
+_LINES_WITH_ENDS = re.compile(r"[^\n]*\n|[^\n]+")
+
+
+def _fence_type(line: str) -> str | None:
+    """Cell type a ``` fence ``line`` opens ("" for a bare fence), or None for any other line."""
+    # Mirrors the client's parseMarkdown, which starts a cell at any ``` line.
+    stripped = line.strip(JS_TRIM_CHARACTERS)
+    return stripped[3:] if stripped.startswith("```") else None
+
+
+def remap_galaxy_markdown_cells(func: Callable[[str, str], str], markdown: str) -> str:
+    """Replace each typed ``` cell with ``func(cell_type, cell)``, splitting cells as the client's parseMarkdown does.
+
+    ``cell`` runs from its opening fence through its closing fence line (or the end of ``markdown``), line ends included.
+    """
+    pieces: list[str] = []
+    cell_type: str | None = None
+    cell: list[str] = []
+    for line in _LINES_WITH_ENDS.findall(markdown):
+        fence_type = _fence_type(line)
+        if cell_type is not None and fence_type == "":
+            pieces.append(func(cell_type, "".join(cell + [line])))
+            cell_type, cell = None, []
+        elif fence_type:
+            if cell_type is not None:
+                pieces.append(func(cell_type, "".join(cell)))
+            cell_type, cell = fence_type, [line]
+        elif cell_type is not None:
+            cell.append(line)
+        else:
+            pieces.append(line)
+    if cell_type is not None:
+        pieces.append(func(cell_type, "".join(cell)))
+    return "".join(pieces)
+
+
 def validate_galaxy_markdown_fence_types(galaxy_markdown: str) -> None:
     """Throw a ValueError if a ``` fence opens a cell type the client can't render."""
-    # Mirrors the client's parseMarkdown, which starts a cell at any ``` line.
     for line_no, line in enumerate(galaxy_markdown.split("\n")):
-        stripped = line.strip(JS_TRIM_CHARACTERS)
-        if not stripped.startswith("```"):
-            continue
-        fence_type = stripped[3:]
+        fence_type = _fence_type(line)
         if fence_type and fence_type not in GALAXY_MARKDOWN_CELL_TYPES:
             _invalid_line(
                 "Unsupported fenced block type [{fence_type}]. Fenced blocks must be one of {cell_types}; "

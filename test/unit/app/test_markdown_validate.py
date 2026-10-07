@@ -1,4 +1,7 @@
-from galaxy.managers.markdown_parse import validate_galaxy_markdown
+from galaxy.managers.markdown_parse import (
+    remap_galaxy_markdown_cells,
+    validate_galaxy_markdown,
+)
 
 
 def assert_markdown_valid(markdown):
@@ -532,3 +535,30 @@ def test_markdown_validation_fence_type_error_message():
     assert "[loom-job]" in message
     assert "vitessce" in message
     assert "~~~" in message
+
+
+def test_remap_galaxy_markdown_cells_splits_like_the_client():
+    markdown = (
+        "Intro\n"
+        "  ```galaxy\r\nhistory_dataset_display(output=x)\r\n  ```\r\n"
+        "Middle\u2028line\n"
+        "```visualization\n{}\n"
+        "```vitessce\n{}"
+    )
+    cells: list[tuple[str, str]] = []
+
+    def _record(cell_type: str, cell: str) -> str:
+        cells.append((cell_type, cell))
+        return cell
+
+    assert remap_galaxy_markdown_cells(_record, markdown) == markdown
+    assert cells == [
+        ("galaxy", "  ```galaxy\r\nhistory_dataset_display(output=x)\r\n  ```\r\n"),
+        ("visualization", "```visualization\n{}\n"),
+        ("vitessce", "```vitessce\n{}"),
+    ]
+
+
+def test_remap_galaxy_markdown_cells_replaces_cells():
+    markdown = "A\n```galaxy\nhistory_link()\n```\nB\n"
+    assert remap_galaxy_markdown_cells(lambda cell_type, cell: "", markdown) == "A\nB\n"

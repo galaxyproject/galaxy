@@ -7,6 +7,7 @@ from datetime import datetime
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_parse import (
     is_quotable_argument_value,
+    remap_galaxy_markdown_cells,
     VALID_ARGUMENTS,
 )
 from galaxy.managers.markdown_util import (
@@ -49,7 +50,7 @@ DirectiveResult = tuple[str, bool]
 # Argument names that point at a specific Galaxy object; hid= names an item of the notebook's history.
 _INSTANCE_ARGUMENT = re.compile(rf"\b({'|'.join(OBJECT_ID_ARGUMENTS)}|hid)\s*=")
 _QUOTED_VALUE = re.compile(r"\"[^\"]*\"|'[^']*'")
-_DATASET_CELL = re.compile(r"^```[ \t]*(visualization|vitessce)[ \t]*\n.*?^```[ \t]*$\n?", re.MULTILINE | re.DOTALL)
+_DATASET_CELL_TYPES = ("visualization", "vitessce")
 _CELL_INSTANCE_REFERENCE = re.compile(r'"(?:dataset_id|dataset_url|__gx_dataset_id)"\s*:|"invocation_id"\s*:\s*"[^"]+"')
 
 
@@ -113,18 +114,18 @@ def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
         )
         return ""
 
-    def _cell(match: re.Match[str]) -> str:
-        if not _CELL_INSTANCE_REFERENCE.search(match.group()):
-            return match.group()
+    def _cell(cell_type: str, cell: str) -> str:
+        if cell_type not in _DATASET_CELL_TYPES or not _CELL_INSTANCE_REFERENCE.search(cell):
+            return cell
         warnings.append(
-            f"Dropped a [{match.group(1)}] cell from the report: it names a specific dataset or invocation, "
+            f"Dropped a [{cell_type}] cell from the report: it names a specific dataset or invocation, "
             "which has no workflow-relative form."
         )
         return ""
 
     markdown = remap_galaxy_markdown_calls(_directive, markdown)
     markdown = remap_galaxy_markdown_embedded_containers(_embed, markdown)
-    markdown = _DATASET_CELL.sub(_cell, markdown)
+    markdown = remap_galaxy_markdown_cells(_cell, markdown)
     return markdown, warnings
 
 
