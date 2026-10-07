@@ -2412,7 +2412,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _expand_collapsed_sections(self):
-        self.components.tool_form.execute.wait_for_visible()
+        # The header, not the execute button: a workflow editor step's tool form has no execute button.
+        self.components.tool_form.tool_version.wait_for_visible()
         for header in self.components.tool_form.section_header.all():
             header.click()
             self.sleep_for(self.wait_types.UX_RENDER)
