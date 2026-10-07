@@ -181,6 +181,8 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
 
         protected_outputs = {
             "declared": PLAINTEXT_1,
+            # Linked to the decrypted input.
+            "linked": PLAINTEXT_1,
             "work_dir": PLAINTEXT_1,
             "assigned": PLAINTEXT_1,
             # Outputs only used to discover others are empty.

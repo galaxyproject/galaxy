@@ -315,6 +315,36 @@ def test_cleanup_removes_plaintext(tmp_path, service, user):
     assert not os.path.exists(os.path.join(plan.job_directory, CLEANUP_FAILURE_FILE))
 
 
+def test_cleanup_keeps_outputs_linked_to_inputs(tmp_path, service, user):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(tmp_path, service, key_ref, [_protected_input(tmp_path, service, user, key_ref)])
+    plan_path = str(tmp_path / "plan.json")
+    plan.write(plan_path)
+    assert run("stage-in", plan_path) == 0
+    staged_path = plan.inputs[0].primary.staged_path
+    outputs = tmp_path / "job" / "outputs"
+    outputs.mkdir()
+    (outputs / "linked.dat").symlink_to(staged_path)
+    (outputs / "linked_files").symlink_to(os.path.dirname(staged_path))
+    (outputs / "unrelated.dat").symlink_to(plan_path)
+
+    assert run("cleanup-inputs", plan_path) == 0
+
+    assert not os.path.exists(os.path.join(plan.protected_directory, "inputs"))
+    assert not (outputs / "linked.dat").is_symlink()
+    assert (outputs / "linked.dat").read_bytes() == PLAINTEXT
+    assert not (outputs / "linked_files").is_symlink()
+    assert (outputs / "linked_files" / os.path.basename(staged_path)).exists()
+    assert (outputs / "unrelated.dat").is_symlink()
+
+    # The copy collected as an output is encrypted by then, the other one isn't.
+    (outputs / "linked.dat").write_bytes(encrypt(PLAINTEXT, user.public))
+    assert run("cleanup", plan_path) == 0
+    assert decrypt((outputs / "linked.dat").read_bytes(), user.secret) == PLAINTEXT
+    assert not (outputs / "linked_files").exists()
+    assert (outputs / "unrelated.dat").is_symlink()
+
+
 def _staged_runtime(tmp_path, service, user):
     key_ref = service.get_compute_key_info(user.public)
     plan = _plan(tmp_path, service, key_ref, [_protected_input(tmp_path, service, user, key_ref)])

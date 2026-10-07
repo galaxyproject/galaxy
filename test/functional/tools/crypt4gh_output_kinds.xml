@@ -3,6 +3,7 @@
     <description>writes its input through every kind of tool output</description>
     <command><![CDATA[
 cat '$input1' > '$declared' &&
+ln -sf '$input1' '$linked' &&
 cat '$input1' > from_work_dir.txt &&
 cat '$input1' > assigned.primary.txt &&
 cat '$input1' > '$assigned' &&
@@ -26,6 +27,7 @@ cp '$galaxy_json' galaxy.json
     </inputs>
     <outputs>
         <data name="declared" format="txt"/>
+        <data name="linked" format="txt"/>
         <data name="work_dir" format="txt" from_work_dir="from_work_dir.txt"/>
         <data name="assigned" format="txt">
             <discover_datasets pattern="(?P&lt;designation&gt;.+)\.primary\.txt" ext="txt" assign_primary_output="true"/>
