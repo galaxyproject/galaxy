@@ -12,7 +12,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { GButton, GButtonGroup, GDropdownItem, GDropdownItemButton } from "@galaxyproject/galaxy-ui"
 import { computed } from "vue"
 import ActionMenu from "@/components/ActionMenu.vue"
-import { goToRepository, goToMetadataInspector } from "@/router"
+import { contentsLocation, goToRepository, goToMetadataInspector } from "@/router"
+import { useAuthStore } from "@/stores"
 
 interface Repository {
     name: string
@@ -20,23 +21,36 @@ interface Repository {
     id: string
     homepage_url?: string | null | undefined
     remote_repository_url?: string | null | undefined
+    deprecated?: boolean
+    deleted?: boolean
 }
 
 interface RepositoryExploreProps {
     repository: Repository
-    currentRevision?: string | null
+    // Only a revision the files API serves; null links the newest one
+    browsableRevision?: string | null
     dense?: boolean
     showDetailsLink?: boolean
 }
 
 const props = withDefaults(defineProps<RepositoryExploreProps>(), {
-    currentRevision: null,
+    browsableRevision: null,
     dense: false,
     showDetailsLink: false,
 })
 
-const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
-const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/file/tip`)
+const authStore = useAuthStore()
+
+// hgweb's HTML views sit behind login (crawlers), so only offer the changelog to users who can open it
+const changelog = computed(() =>
+    authStore.user ? `/repos/${props.repository.owner}/${props.repository.name}/shortlog` : null,
+)
+// The files API 404s deprecated and deleted repositories
+const contents = computed(() =>
+    props.repository.deprecated || props.repository.deleted
+        ? null
+        : contentsLocation(props.repository.id, props.browsableRevision),
+)
 </script>
 <template>
     <ActionMenu v-if="!dense" :icon="faCompass" label="Explore repository">
@@ -44,11 +58,11 @@ const contents = computed(() => `/repos/${props.repository.owner}/${[props.repos
             <FontAwesomeIcon :icon="faCircleInfo" fixed-width />
             Details
         </GDropdownItemButton>
-        <GDropdownItem :href="changelog">
+        <GDropdownItem v-if="changelog" :href="changelog">
             <FontAwesomeIcon :icon="faCodeCompare" fixed-width />
             Changelog
         </GDropdownItem>
-        <GDropdownItem :href="contents">
+        <GDropdownItem v-if="contents" :to="contents">
             <FontAwesomeIcon :icon="faList" fixed-width />
             Contents
         </GDropdownItem>
@@ -76,10 +90,10 @@ const contents = computed(() => `/repos/${props.repository.owner}/${[props.repos
         >
             <FontAwesomeIcon :icon="faFileCode" />
         </GButton>
-        <GButton icon-only transparent title="Changelog" aria-label="Changelog" :href="changelog">
+        <GButton v-if="changelog" icon-only transparent title="Changelog" aria-label="Changelog" :href="changelog">
             <FontAwesomeIcon :icon="faCodeCompare" />
         </GButton>
-        <GButton icon-only transparent title="Contents" aria-label="Contents" :href="contents">
+        <GButton v-if="contents" icon-only transparent title="Contents" aria-label="Contents" :to="contents">
             <FontAwesomeIcon :icon="faList" />
         </GButton>
         <GButton
