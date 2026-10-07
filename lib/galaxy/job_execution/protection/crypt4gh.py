@@ -168,6 +168,23 @@ def _body_with_header(path: str, header: bytes) -> Iterator[BinaryIO]:
         yield io.BufferedReader(_HeaderThenBody(header, encrypted))
 
 
+def _encrypt_body(plaintext: io.BufferedReader, encrypted: BinaryIO, session_key: bytes) -> None:
+    """Write the Crypt4GH segments of ``plaintext``, as ``crypt4gh.lib.encrypt()`` does."""
+    from crypt4gh import (
+        CIPHER_SEGMENT_SIZE,
+        SEGMENT_SIZE,
+        sodium,
+    )
+
+    segment = bytearray(SEGMENT_SIZE)
+    cipher_segment = bytearray(CIPHER_SEGMENT_SIZE)
+    while segment_length := plaintext.readinto(segment):
+        cipher_length = sodium.chacha20poly1305_encrypt(cipher_segment, segment[:segment_length], session_key)
+        encrypted.write(cipher_segment[:cipher_length])
+        if segment_length < SEGMENT_SIZE:
+            break
+
+
 class Crypt4GHJobRuntime:
     def __init__(self, plan: ProtectionPlan, client: RecryptorClient | None = None):
         self.plan = plan
@@ -202,28 +219,31 @@ class Crypt4GHJobRuntime:
         that header to the user's key. The compute header is returned as the grant to use
         the file in further jobs.
         """
-        from crypt4gh import lib as crypt4gh_lib
+        from crypt4gh import header as crypt4gh_header
 
         if self._writer_secret_key is None:
             self._writer_secret_key = os.urandom(32)
         compute_public_key = parse_public_key(self.state["compute_public_key"])
         directory, name = os.path.split(path)
-        body_path = os.path.join(directory, f".{name}.c4gh-body")
         protected_path = os.path.join(directory, f".{name}.c4gh")
         try:
-            compute_header = io.BytesIO()
-            with open(path, "rb") as plaintext, open(body_path, "wb") as body:
-                crypt4gh_lib.encrypt(
-                    [(0, self._writer_secret_key, compute_public_key)], plaintext, body, headerfile=compute_header
+            # As crypt4gh.lib.encrypt() does, but the header is recrypted for the user before encrypting
+            # the body, so the body is written once, right behind it.
+            session_key = os.urandom(32)
+            compute_header = crypt4gh_header.serialize(
+                crypt4gh_header.encrypt(
+                    crypt4gh_header.make_packet_data_enc(0, session_key),
+                    [(0, self._writer_secret_key, compute_public_key)],
                 )
-            encoded_compute_header = base64.b64encode(compute_header.getvalue()).decode()
+            )
+            encoded_compute_header = base64.b64encode(compute_header).decode()
             response = self.client.recrypt_header_to_user_key(encoded_compute_header, self.key_ref)
             user_header = base64.b64decode(response["crypt4gh_header"])
             if read_crypt4gh_header(io.BytesIO(user_header)) != user_header:
                 raise ProtectionError("The key service returned an invalid header.")
-            with open(protected_path, "wb") as protected, open(body_path, "rb") as body:
+            with open(path, "rb") as plaintext, open(protected_path, "wb") as protected:
                 protected.write(user_header)
-                shutil.copyfileobj(body, protected)
+                _encrypt_body(plaintext, protected, session_key)
             # Replacing the file drops the plaintext.
             os.replace(protected_path, path)
         except ProtectionError:
@@ -233,9 +253,8 @@ class Crypt4GHJobRuntime:
                 f"Failed to encrypt an output of this job ({describe_error(e, self.plan.recryptor.verbose_errors)})."
             ) from e
         finally:
-            for temporary_path in (body_path, protected_path):
-                if os.path.exists(temporary_path):
-                    os.remove(temporary_path)
+            if os.path.exists(protected_path):
+                os.remove(protected_path)
         return ProtectedFileResult(
             header_sha256=hashlib.sha256(user_header).hexdigest(),
             compute_header=encoded_compute_header,
