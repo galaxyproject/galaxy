@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount } from "@vue/test-utils"
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest"
+import { enableAutoUnmount, mount } from "@vue/test-utils"
 import LandingSearchBox from "./LandingSearchBox.vue"
 
 const mockPush = vi.fn()
@@ -7,17 +7,19 @@ vi.mock("vue-router", () => ({
     useRouter: () => ({ push: mockPush }),
 }))
 
+enableAutoUnmount(afterEach)
+
 describe("LandingSearchBox", () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it("navigates to the search results on enter", async () => {
+    // Enter in the input submits the form natively, which also skips the Enter that confirms an IME composition
+    it("navigates to the search results when the form is submitted", async () => {
         const wrapper = mount(LandingSearchBox)
 
-        const input = wrapper.find("input")
-        await input.setValue("bowtie")
-        await input.trigger("keydown", { key: "Enter" })
+        await wrapper.find("input").setValue("bowtie")
+        await wrapper.find("form[role='search']").trigger("submit")
 
         expect(mockPush).toHaveBeenCalledWith({
             path: "/repositories_by_search",
@@ -25,23 +27,11 @@ describe("LandingSearchBox", () => {
         })
     })
 
-    it("searches once for a held Enter and ignores the Enter that confirms an IME composition", async () => {
-        const wrapper = mount(LandingSearchBox)
-
-        const input = wrapper.find("input")
-        await input.setValue("bowtie")
-        await input.trigger("keydown", { key: "Enter" })
-        await input.trigger("keydown", { key: "Enter", repeat: true })
-        await input.trigger("keydown", { key: "Enter", isComposing: true })
-
-        expect(mockPush).toHaveBeenCalledTimes(1)
-    })
-
     it("navigates to the search results when the search button is clicked", async () => {
-        const wrapper = mount(LandingSearchBox)
+        const wrapper = mount(LandingSearchBox, { attachTo: document.body })
 
         await wrapper.find("input").setValue("  samtools  ")
-        await wrapper.find("button[aria-label='Search']").trigger("click")
+        await wrapper.find("button[type='submit']").trigger("click")
 
         expect(mockPush).toHaveBeenCalledWith({
             path: "/repositories_by_search",
@@ -53,7 +43,7 @@ describe("LandingSearchBox", () => {
         const wrapper = mount(LandingSearchBox)
 
         await wrapper.find("input").setValue("   ")
-        await wrapper.find("button[aria-label='Search']").trigger("click")
+        await wrapper.find("button[type='submit']").trigger("click")
 
         expect(mockPush).not.toHaveBeenCalled()
     })

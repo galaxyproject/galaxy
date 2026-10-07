@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GButton, GFormInput } from "@galaxyproject/galaxy-ui"
+import { GButton, GForm, GFormInput } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
 import { ref } from "vue"
@@ -7,14 +7,6 @@ import { useRouter } from "vue-router"
 
 const router = useRouter()
 const searchQuery = ref("")
-
-// GFormInput forwards keydown rather than keyup, so skip the auto-repeats of a held Enter and
-// the Enter that confirms an IME composition
-function onEnter(event: KeyboardEvent) {
-    if (!event.repeat && !event.isComposing) {
-        doSearch()
-    }
-}
 
 function doSearch() {
     if (searchQuery.value.trim()) {
@@ -30,7 +22,7 @@ function doSearch() {
             <p class="landing-lede">
                 Discover, install, and share the community-built tools that power Galaxy servers around the world.
             </p>
-            <div class="landing-search" role="search">
+            <GForm class="landing-search" role="search" @submit.prevent="doSearch">
                 <FontAwesomeIcon :icon="faMagnifyingGlass" class="landing-search-icon" aria-hidden="true" />
                 <GFormInput
                     :model-value="searchQuery"
@@ -38,10 +30,9 @@ function doSearch() {
                     placeholder="Search by name, owner, or description"
                     aria-label="Search repositories"
                     @update:model-value="searchQuery = $event ?? ''"
-                    @keydown.enter="onEnter"
                 />
-                <GButton class="landing-search-button" aria-label="Search" @click="doSearch">Search</GButton>
-            </div>
+                <GButton class="landing-search-button" type="submit">Search</GButton>
+            </GForm>
             <p class="landing-browse">
                 Or browse
                 <router-link to="/repositories_by_category">by category</router-link>
