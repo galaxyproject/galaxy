@@ -9888,6 +9888,25 @@ steps:
         assert len(options) == 5
         assert options[0] == ["Ex1", "--ex1", False]
 
+    def test_value_restriction_selects_multiple_text_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: [string]
+     restrictOnConnections: true
+     default: [ex2, --ex3]
+steps:
+  select:
+    tool_id: multi_select
+    in:
+      select_ex: select_text
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        options = run_workflow["steps"][0]["inputs"][0]["options"]
+        assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
+
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
