@@ -6,8 +6,8 @@ import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import FormHidden from "./Elements/FormHidden.vue";
 import FormNumber from "./Elements/FormNumber.vue";
-import FormNumberList from "./Elements/FormNumberList.vue";
 import FormText from "./Elements/FormText.vue";
+import FormValueList from "./Elements/FormValueList.vue";
 import FormElement from "./FormElement.vue";
 
 const localVue = getLocalVue();
@@ -88,14 +88,28 @@ describe("FormElement", () => {
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
     });
 
-    it("displays a multiple integer as a list of number fields", async () => {
-        await wrapper.setProps({ type: "integer", value: [1, 2], workflowRun: true, attributes: { multiple: true } });
-        expect(wrapper.findComponent(FormNumberList).exists()).toBe(true);
+    it.each(["integer", "float"])("displays a multiple %s as a list of number fields", async (type) => {
+        await wrapper.setProps({ type, value: [1, 2], workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormValueList).exists()).toBe(true);
         expect(wrapper.findAllComponents(FormNumber).length).toBe(2);
 
         await wrapper.setProps({ value: 1, attributes: { multiple: false } });
-        expect(wrapper.findComponent(FormNumberList).exists()).toBe(false);
+        expect(wrapper.findComponent(FormValueList).exists()).toBe(false);
         expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
+    });
+
+    it("displays a multiple text as a list of text fields", async () => {
+        await wrapper.setProps({ type: "text", value: ["a", "b"], workflowRun: true, attributes: { multiple: true } });
+        expect(wrapper.findComponent(FormValueList).exists()).toBe(true);
+        expect(wrapper.findAllComponents(FormText).length).toBe(2);
+
+        const datalist = [{ label: "First", value: "a" }];
+        await wrapper.setProps({ attributes: { multiple: true, datalist } });
+        expect(wrapper.findComponent(FormValueList).props("datalist")).toEqual(datalist);
+
+        await wrapper.setProps({ value: "a", attributes: { multiple: false } });
+        expect(wrapper.findComponent(FormValueList).exists()).toBe(false);
+        expect(wrapper.findAllComponents(FormText).length).toBe(1);
     });
 
     it("marks required values", async () => {

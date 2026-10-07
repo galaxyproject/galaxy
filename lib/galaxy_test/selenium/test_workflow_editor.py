@@ -490,9 +490,9 @@ steps: {}
             self.sleep_for(self.wait_types.UX_RENDER)
 
         default = "parameter_definition|optional|specify_default|default"
-        tool_form.parameter_number_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
-        tool_form.parameter_number_list_add(parameter=default).wait_for_and_click()
-        tool_form.parameter_number_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
         self.sleep_for(self.wait_types.UX_RENDER)
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
         self.screenshot("workflow_editor_multiple_integer_parameter_list_default")
@@ -510,13 +510,55 @@ steps: {}
         self.workflow_index_open_with_name(name)
         editor.node._(label="columns").wait_for_and_click()
         values = [
-            tool_form.parameter_number_list_input(parameter=default, index=index)
+            tool_form.parameter_value_list_input(parameter=default, index=index)
             .wait_for_visible()
             .get_attribute("value")
             for index in (1, 2)
         ]
         assert values == ["1", "2"], values
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+
+    @selenium_test
+    def test_multiple_text_parameter_connections(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  options: string
+steps:
+  multi_select:
+    tool_id: multi_select
+  single_text:
+    tool_id: param_text_option
+    in:
+      text_param: options
+""")
+        editor = self.components.workflow_editor
+        self.assert_connected("options#output", "single_text#text_param")
+
+        editor.node._(label="options").wait_for_and_click()
+        multiple = self.components.tool_form.parameter_checkbox_input(
+            parameter="parameter_definition|multiple"
+        ).wait_for_present()
+        self.execute_script("arguments[0].click();", multiple)
+        self.assert_connection_invalid("options#output", "single_text#text_param")
+
+        self.workflow_editor_destroy_connection("single_text#text_param")
+        multi_select = editor.node._(label="multi_select")
+        multi_select.wait_for_and_click()
+        editor.connect_icon(name="select_ex").wait_for_and_click()
+        multi_select.input_terminal(name="select_ex").wait_for_present()
+        self.workflow_editor_connect("options#output", "multi_select#select_ex")
+        self.assert_connected("options#output", "multi_select#select_ex")
+        self.screenshot("workflow_editor_multiple_text_parameter_multi_select_connection")
+        self.assert_workflow_has_changes_and_save()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        assert json.loads(steps["options"]["tool_state"])["multiple"] is True
+        assert steps["multi_select"]["input_connections"]["select_ex"]["id"] == steps["options"]["id"]
+        assert "text_param" not in steps["single_text"]["input_connections"]
 
     @selenium_test
     def test_non_data_map_over_carried_through(self):
