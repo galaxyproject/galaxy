@@ -43,9 +43,7 @@ describe("tabbableElements", () => {
     });
 
     it("skips elements that are not rendered", () => {
-        render(`<button id="shown">shown</button><button id="collapsed">collapsed</button>`);
-        // happy-dom has no layout, so stand in for display: none.
-        vi.spyOn(byId("collapsed"), "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+        render(`<button id="shown">shown</button><button id="collapsed" style="display: none">collapsed</button>`);
 
         expect(tabbableElements(document.body).map((element) => element.id)).toEqual(["shown"]);
     });
@@ -77,7 +75,7 @@ describe("nextTabbableAfter", () => {
         render(
             `<button id="before">before</button><button id="anchor">anchor</button><button id="after">after</button>`,
         );
-        const before = vi.spyOn(byId("before"), "getClientRects");
+        const before = vi.spyOn(byId("before"), "checkVisibility");
 
         expect(nextTabbableAfter(byId("anchor"), document.body)?.id).toBe("after");
         expect(before).not.toHaveBeenCalled();
