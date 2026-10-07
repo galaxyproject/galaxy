@@ -488,10 +488,8 @@ class Data(metaclass=DataMeta):
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
-        composite_extensions.append("directory")  # for downloading directories.
-        composite_extensions.append("zarr")  # for downloading zarr directories.
 
-        if data.extension in composite_extensions:
+        if data.extension in composite_extensions or isinstance(data.datatype, Directory):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
