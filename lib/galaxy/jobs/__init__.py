@@ -1483,6 +1483,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 ca_cert=self.get_destination_configuration("crypt4gh_recryptor_ca_cert"),
                 client_cert=self.get_destination_configuration("crypt4gh_recryptor_client_cert"),
                 client_key=self.get_destination_configuration("crypt4gh_recryptor_client_key"),
+                verbose_errors=util.asbool(
+                    self.get_destination_configuration("crypt4gh_recryptor_verbose_errors", False)
+                ),
             )
         is_pulsar = self._runs_on_pulsar()
         return ProtectionDestination(
