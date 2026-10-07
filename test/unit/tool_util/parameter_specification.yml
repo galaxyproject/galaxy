@@ -2462,6 +2462,26 @@ gx_drill_down_code:
   job_internal_invalid:
   - ref_parameter: {src: hda, id: 5}
 
+gx_select_dynamic:
+  request_valid:
+  - ref_parameter: {src: hda, id: abcdabcd}
+    parameter: of
+  - ref_parameter: {src: hda, id: abcdabcd}
+  request_invalid:
+  - ref_parameter: {src: hda, id: abcdabcd}
+    parameter: 5
+  request_internal_valid:
+  - ref_parameter: {src: hda, id: 5}
+    parameter: of
+  request_internal_invalid:
+  - ref_parameter: {src: hda, id: 5}
+    parameter: 5
+  job_internal_valid:
+  - ref_parameter: {src: hda, id: 5}
+    parameter: of
+  job_internal_invalid:
+  - ref_parameter: {src: hda, id: 5}
+
 gx_data_column:
   request_valid:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: 0 }

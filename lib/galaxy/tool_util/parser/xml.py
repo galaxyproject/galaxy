@@ -1546,7 +1546,8 @@ class XmlInputSource(InputSource):
                     # relative to Galaxy's tool data path, so options are unknown outside a Galaxy context
                     return None
                 from_file = os.path.join(tool_data_path, from_file)
-            elem = XML(f"<root>{open(from_file).read()}</root>")
+            with open(from_file) as f:
+                elem = XML(f"<root>{f.read()}</root>")
         else:
             elem = self.input_elem
 

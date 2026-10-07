@@ -1883,6 +1883,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             self.is_dynamic = False
             self.dynamic_options = None
             self.options = input_source.parse_drill_down_static_options(tool_data_path)
+            assert self.options is not None, "Drill down options from a relative from_file require a tool data path"
 
     def _get_options_from_code(self, trans: "ProvidesHistoryContext | None" = None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")
