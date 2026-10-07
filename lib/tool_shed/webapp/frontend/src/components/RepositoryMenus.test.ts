@@ -40,6 +40,14 @@ describe("RepositoryHealth", () => {
         expect(pills[0].classes()).toContain("health-problem")
         expect(pills[1].text()).toBe("1 install")
     })
+
+    it("marks installs with an icon that doesn't read as a download action", () => {
+        const wrapper = mount(RepositoryHealth, {
+            props: { downloadable: true, installs: 3, lastUpdated: "2024-01-01T00:00:00" },
+        })
+
+        expect(wrapper.findAll(".health-pill")[1].get("svg").attributes("data-icon")).not.toBe("download")
+    })
 })
 
 describe("RepositoryActions", () => {

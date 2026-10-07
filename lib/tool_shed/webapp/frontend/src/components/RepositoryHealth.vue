@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCalendar, faCircleCheck, faCircleXmark, faDownload } from "@fortawesome/free-solid-svg-icons"
+import { faCalendar, faChartLine, faCircleCheck, faCircleXmark } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed } from "vue"
 import { formatDistanceToNow, parseISO } from "date-fns"
@@ -22,7 +22,7 @@ const props = defineProps<RepositoryHealthProps>()
             {{ downloadable ? "Downloadable" : "Not downloadable" }}
         </li>
         <li class="health-pill">
-            <FontAwesomeIcon :icon="faDownload" />
+            <FontAwesomeIcon :icon="faChartLine" />
             {{ installs }} {{ installs === 1 ? "install" : "installs" }}
         </li>
         <li class="health-pill">
