@@ -95,6 +95,9 @@ class WebApplication:
     with routes.
     """
 
+    # Non-API paths with no server handler resolve to this instead of 404ing, if set
+    client_match: dict[str, str] | None = None
+
     def __init__(self):
         """
         Create a new web application object. To actually connect some
@@ -184,7 +187,7 @@ class WebApplication:
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
 
-    def _resolve_map_match(self, map_match, path_info, controllers, use_default=True):
+    def _resolve_map_match(self, map_match, path_info, controllers):
         # Get the controller class
         controller_name = map_match.pop("controller", None)
         controller = controllers.get(controller_name, None)
@@ -195,10 +198,6 @@ class WebApplication:
         # url_for invocations.  Specifically, grids.
         action = map_match.pop("action", "index")
         method = getattr(controller, action, None)
-        if method is None and not use_default:
-            # Skip default, we do this, for example, when we want to fail
-            # through to another mapper.
-            raise webob.exc.HTTPNotFound(f"No action for {path_info}")
         if method is None:
             # no matching method, we try for a default
             method = getattr(controller, "default", None)
@@ -222,10 +221,9 @@ class WebApplication:
             environ["is_api_request"] = False
             controllers = self.controllers
         if map_match is None:
-            if environ["is_api_request"]:
+            if environ["is_api_request"] or self.client_match is None:
                 raise webob.exc.HTTPNotFound(f"No route for {path_info}")
-            # Unmatched non-API path: serve the SPA and let the Vue router handle it
-            map_match = {"controller": "root", "action": "client"}
+            map_match = dict(self.client_match)
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -249,7 +247,13 @@ class WebApplication:
         trans.request_id = request_id
         rc.redirect = trans.response.send_redirect
         # Resolve mapping to controller/method
-        controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
+        try:
+            controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
+        except webob.exc.HTTPNotFound:
+            if environ["is_api_request"] or self.client_match is None:
+                raise
+            map_match = rc.mapper_dict = dict(self.client_match)
+            controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
         trans.controller = controller_name
         trans.action = action
 

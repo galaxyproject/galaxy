@@ -5,8 +5,6 @@ Contains the main interface in the Universe class
 import logging
 from html import escape
 
-from webob.exc import HTTPNotFound
-
 from galaxy import (
     exceptions,
     web,
@@ -35,13 +33,6 @@ class RootController(controller.BaseUIController, UsesAnnotations):
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
-
-    @web.expose
-    def default(self, trans: GalaxyWebTransaction, target1=None, target2=None, **kwd):
-        """
-        Called on any url that does not match a controller method.
-        """
-        raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
     def client(self, trans: GalaxyWebTransaction, app_name="analysis", **kwd):

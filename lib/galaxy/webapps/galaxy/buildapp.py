@@ -34,6 +34,8 @@ log = logging.getLogger(__name__)
 
 class GalaxyWebApplication(WebApplication):
     injection_aware = True
+    # Client routes aren't registered server-side; the client app's router handles them
+    client_match = {"controller": "root", "action": "client"}
 
     def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
         super().__init__(galaxy_app, session_cookie, name)
