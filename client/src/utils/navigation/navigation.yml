@@ -1116,6 +1116,7 @@ workflow_editor:
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
       attributes: "#activity-workflow-editor-attributes"
+      run: "#activity-workflow-run"
       changes: "#activity-workflow-undo-redo"
       upgrade_all: "#activity-workflow-upgrade"
       best_practices: "#activity-workflow-best-practices"

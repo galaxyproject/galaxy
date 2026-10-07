@@ -1430,7 +1430,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.wait_for_selector_visible(".activity-settings")
 
     def workflow_editor_click_run(self):
-        return self.wait_for_and_click_selector("#workflow-run-button")
+        """Open the run form from the editor's Run activity."""
+        return self.components.workflow_editor.tool_bar.run.wait_for_and_click()
 
     def workflow_editor_click_save(self):
         self.wait_for_and_click_selector("#workflow-save-button")
