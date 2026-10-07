@@ -35,6 +35,7 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
 )
 from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection.stage import SETUP_FAILURE_FILE
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners.util import runner_states
@@ -750,9 +751,7 @@ class BaseJobRunner:
                 # fails, so the tool command and its output redirection never run. Surface
                 # the saved traceback as a job-level error (not a tool error) since the tool
                 # never actually ran.
-                eval_traceback_path = os.path.join(
-                    job_wrapper.working_directory, "metadata", "outputs_populated", "traceback.txt"
-                )
+                eval_traceback_path = os.path.join(job_wrapper.working_directory, SETUP_FAILURE_FILE)
                 if os.path.exists(eval_traceback_path):
                     with open(eval_traceback_path) as tb:
                         eval_traceback_lines = tb.read().strip().splitlines()
