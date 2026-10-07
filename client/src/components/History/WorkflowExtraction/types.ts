@@ -16,6 +16,8 @@ export interface ExtractionOutput {
     state: DatasetState;
     deleted: boolean;
     exposed: boolean;
+    /** The notebook report uses this output, so it stays a workflow output. */
+    referenced_by_report: boolean;
     /** UI-local working label for the rename modal; empty string = no override. */
     label: string;
 }
@@ -100,6 +102,7 @@ function toExtractionOutput(output: ApiOutput): ExtractionOutput {
         state: output.state,
         deleted: output.deleted,
         exposed: output.exposed ?? false,
+        referenced_by_report: output.referenced_by_report ?? false,
         label: output.suggested_name || output.name || output.output_name || "",
     };
 }
