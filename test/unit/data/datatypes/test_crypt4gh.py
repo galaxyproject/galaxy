@@ -10,6 +10,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
     guess_ext_from_file_name,
     handle_uploaded_dataset_file_internal,
+    InappropriateDatasetContentError,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.crypt4gh import (
@@ -173,6 +174,13 @@ def test_upload_detects_crypt4gh(tmp_path, enabled_registry, filename, requested
     assert not response.converted_newlines
     with open(response.converted_path, "rb") as f:
         assert f.read() == contents
+
+
+def test_upload_refuses_encrypted_datatype_for_plain_files(tmp_path, enabled_registry):
+    path = tmp_path / "upload"
+    path.write_bytes(b"@read1\nACGT\n+\nIIII\n")
+    with pytest.raises(InappropriateDatasetContentError, match="not a Crypt4GH file"):
+        handle_uploaded_dataset_file_internal(FilePrefix(str(path)), enabled_registry, ext="fastqsanger.c4gh")
 
 
 def test_upload_unchanged_when_disabled(tmp_path, disabled_registry):
