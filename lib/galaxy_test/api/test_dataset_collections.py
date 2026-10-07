@@ -684,6 +684,34 @@ class TestDatasetCollectionsApi(ApiTestCase):
             for element, zip_path in zip(returned_dce, namelist):
                 assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
+    def test_list_download_with_directory_element(self, history_id):
+        fasta_contents = "> seq\nACGT\n"
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta_contents, ftype="fasta", wait=True)
+        text = self.dataset_populator.new_dataset(history_id, content="text\n", ftype="txt", wait=True)
+        run_response = self.dataset_populator.run_tool(
+            "create_directory_index", inputs={"reference": {"src": "hda", "id": fasta["id"]}}, history_id=history_id
+        )
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+        directory = run_response["outputs"][0]
+        create_response = self.dataset_collection_populator.create_nested_collection(
+            history_id,
+            "list",
+            name="indexes",
+            element_identifiers=[
+                {"name": "index", "src": "hda", "id": directory["id"]},
+                {"name": "notes", "src": "hda", "id": text["id"]},
+            ],
+        )
+        self._assert_status_code_is(create_response, 200)
+        download_response = self._download_dataset_collection(
+            history_id=history_id, hdca_id=create_response.json()["id"]
+        )
+        self._assert_status_code_is(download_response, 200)
+        archive = zipfile.ZipFile(BytesIO(download_response.content))
+        assert sorted(archive.namelist()) == ["indexes/index/1.fasta", "indexes/notes.txt"]
+        assert archive.read("indexes/index/1.fasta").decode() == fasta_contents
+        assert archive.read("indexes/notes.txt").decode() == "text\n"
+
     def test_pair_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             fetch_response = self.dataset_collection_populator.create_pair_in_history(
