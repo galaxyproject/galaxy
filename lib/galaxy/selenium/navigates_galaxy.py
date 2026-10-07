@@ -183,6 +183,7 @@ def retry_call_during_transitions(
     exception_check: ExceptionCheck = exception_seems_to_indicate_transition,
 ) -> T:
     previous_attempts = 0
+    playwright_timeouts = 0
     while True:
         try:
             return f()
@@ -192,6 +193,12 @@ def retry_call_during_transitions(
 
             if not exception_check(e):
                 raise
+
+            # A Playwright timeout already spent a whole action timeout retrying; allow one more.
+            if _exception_indicates_playwright_timeout(e):
+                playwright_timeouts += 1
+                if playwright_timeouts > 1:
+                    raise
 
             time.sleep(sleep)
             previous_attempts += 1
