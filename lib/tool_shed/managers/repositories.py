@@ -5,11 +5,14 @@ Manager and Serializer for TS repositories.
 import json
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from time import strftime
 from typing import (
     Any,
     cast,
+    Generic,
     TYPE_CHECKING,
+    TypeVar,
 )
 
 from pydantic import BaseModel
@@ -23,6 +26,7 @@ from sqlalchemy import (
 from galaxy import web
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
+    InconsistentApplicationState,
     InsufficientPermissionsException,
     InternalServerError,
     MalformedContents,
@@ -52,10 +56,12 @@ from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
+from tool_shed.util.hg_util import changectx_for_revision
 from tool_shed.util.metadata_util import (
     build_invalid_tools,
     get_all_dependencies,
     get_current_repository_metadata_for_changeset_revision,
+    get_metadata_by_changeset,
     get_metadata_revisions,
     get_next_downloadable_changeset_revision,
     get_previous_metadata_changeset_revision,
@@ -64,6 +70,12 @@ from tool_shed.util.metadata_util import (
 )
 from tool_shed.util.readme_util import build_readme_files_dict
 from tool_shed.util.repository_content_util import upload_tar
+from tool_shed.util.repository_files import (
+    find_manifest_file,
+    list_manifest,
+    listing_validator,
+    read_file,
+)
 from tool_shed.util.repository_util import (
     create_repository as low_level_create_repository,
     get_repo_info_dict,
@@ -96,8 +108,10 @@ from tool_shed_client.schema import (
     PaginatedRepositoryIndexResults,
     RepositoriesByCategory,
     Repository as SchemaRepository,
+    RepositoryFileContents,
     RepositoryMetadataInstallInfoDict,
     RepositoryMetadataPreview,
+    RepositoryRevisionFiles,
     RepositoryRevisionMetadata,
     RepositoryRevisionMetadataPreview,
     ResetMetadataOnRepositoriesRequest,
@@ -107,6 +121,7 @@ from tool_shed_client.schema import (
 from .categories import get_value_mapper as category_value_mapper
 
 if TYPE_CHECKING:
+    from mercurial.context import changectx
     from sqlalchemy.orm import (
         scoped_session,
         Session,
@@ -114,6 +129,8 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.expression import Select
 
 log = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 10) -> dict[str, Any]:
@@ -535,6 +552,59 @@ def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -
         if raw_metadata:
             return build_readme_files_dict(app, repository, changeset_revision, raw_metadata)
     return {}
+
+
+def _browsable_changectx(app: ToolShedApp, repository: Repository, changeset_revision: str) -> "changectx":
+    """Resolve a revision whose files may be shown publicly, or raise ObjectNotFound.
+
+    Only revisions with a downloadable, non-malicious metadata row are browsable, which keeps
+    the set of reachable URLs bounded by what the shed already advertises for install.
+    """
+    not_found = ObjectNotFound(f"No browsable revision {changeset_revision} for repository.")
+    if repository.deleted or repository.deprecated:
+        raise not_found
+    metadata_revisions = get_metadata_by_changeset(
+        app.model.context, repository.id, changeset_revision, RepositoryMetadata
+    )
+    if not metadata_revisions or not all(rm.downloadable and not rm.malicious for rm in metadata_revisions):
+        raise not_found
+    ctx = changectx_for_revision(repository.hg_repo, changeset_revision)
+    if ctx is None:
+        log.error(
+            "Repository %s has downloadable metadata for revision %s but hg cannot find it.",
+            repository.id,
+            changeset_revision,
+        )
+        raise InconsistentApplicationState(f"Revision {changeset_revision} is missing from the repository.")
+    return ctx
+
+
+@dataclass(frozen=True)
+class CacheableResult(Generic[T]):
+    """A result whose cache validator is known before it is built, so a revalidation can skip building it."""
+
+    validator: str
+    build: Callable[[], T]
+
+
+def repository_files(
+    app: ToolShedApp, repository: Repository, changeset_revision: str
+) -> CacheableResult[RepositoryRevisionFiles]:
+    ctx = _browsable_changectx(app, repository, changeset_revision)
+    return CacheableResult(
+        validator=listing_validator(ctx),
+        build=lambda: RepositoryRevisionFiles(changeset_revision=changeset_revision, files=list_manifest(ctx)),
+    )
+
+
+def repository_file_contents(
+    app: ToolShedApp, repository: Repository, changeset_revision: str, path: str
+) -> CacheableResult[RepositoryFileContents]:
+    ctx = _browsable_changectx(app, repository, changeset_revision)
+    manifest_file = find_manifest_file(ctx, path)
+    if manifest_file is None:
+        raise ObjectNotFound(f"No file {path} in revision {changeset_revision}.")
+    return CacheableResult(validator=manifest_file.validator(), build=lambda: read_file(manifest_file))
 
 
 def reset_metadata_on_repository(
