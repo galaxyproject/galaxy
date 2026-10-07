@@ -1,5 +1,6 @@
-// @galaxyproject/galaxy-ui public barrel. Internal package, consumed by the
-// main Galaxy client through a Vite source alias (no library build).
+// @galaxyproject/galaxy-ui public barrel. Internal package with no library build: the main
+// Galaxy client consumes it through a Vite source alias, and the Tool Shed frontend through a
+// file: dependency. See README.md.
 
 export {
     type ColorVariant,
