@@ -804,6 +804,32 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert len(input_step_ids) == 2 and connected == input_step_ids, steps
 
     @skip_without_tool("cat1")
+    def test_twice_copied_output_seeds_one_input(self):
+        """Extraction wires every copy of one original to the same input, so only one copy is seeded."""
+        source_history_id = self.dataset_populator.new_history()
+        source_output_id, _ = self._cat1_history(source_history_id)
+        with self.dataset_populator.test_history() as history_id:
+            copy_a, copy_b = (self._copy_hda_to_history(history_id, {"id": source_output_id}) for _ in range(2))
+            run = self.dataset_populator.run_tool(
+                "cat1",
+                {"input1": {"src": "hda", "id": copy_a["id"]}, "queries_0|input2": {"src": "hda", "id": copy_b["id"]}},
+                history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            rows = [self._row_with_output_id(summary, copied["id"]) for copied in (copy_a, copy_b)]
+            assert all(row is not None and row["step_type"] == "input_dataset" for row in rows), summary["jobs"]
+            assert sorted(row["seeded"] for row in rows) == [False, True], rows
+            steps = self._extract_seeded_steps(summary)
+            (input_step,) = (s for s in steps if s["type"] == "data_input")
+            (cat1_step,) = (s for s in steps if s["type"] == "tool")
+            for name in ("input1", "queries_0|input2"):
+                assert self._connected_step_id(cat1_step, name) == input_step["id"], cat1_step
+
+    @skip_without_tool("cat1")
     def test_copied_history_seeds_original_producer_steps(self):
         """In a copied (e.g. imported) history every producer ran in the source history,
         but its inputs were copied too, so it is still a seeded step, not an input."""

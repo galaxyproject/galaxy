@@ -481,12 +481,18 @@ def _summary_rows(
     """One row per summary job, paired with the datasets it holds."""
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
     rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
+    seeded_copies: set[ContentRef] = set()
     for job, datasets in jobs.items():
         if closure is not None and isinstance(job, Job) and _produced_elsewhere(job, history_id, local_keys):
-            # Same boundary as the closure walk: each copy here is its own workflow input.
+            # Same boundary as the closure walk: each copy here is its own workflow input row, but
+            # extraction wires all copies of one original to a single input, so only one is seeded.
             tool = tool_for_job(trans, job)
             for item in datasets:
                 seeded, seed_warning = _input_seeding([item], closure)
+                ref = original_content_ref(item[1])
+                seeded = seeded and ref not in seeded_copies
+                if seeded:
+                    seeded_copies.add(ref)
                 row = _input_extraction_row(
                     trans, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
                 )
