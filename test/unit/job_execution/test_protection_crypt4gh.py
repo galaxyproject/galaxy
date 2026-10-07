@@ -7,6 +7,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from crypt4gh import SEGMENT_SIZE
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.job_execution.protection import (
@@ -341,6 +342,23 @@ def test_protect_file_encrypts_for_the_user(tmp_path, service, user):
     compute = service.keypairs[key_ref].keypair
     assert decrypt(compute_header + encrypted[len(header) :], compute.secret) == b"result computed from decrypted data"
     assert sorted(os.listdir(output.parent)) == ["dataset.dat"]
+
+
+@pytest.mark.parametrize("size", [0, SEGMENT_SIZE, 2 * SEGMENT_SIZE + 5])
+def test_protect_file_encrypts_across_segments(tmp_path, service, user, size):
+    runtime, key_ref = _staged_runtime(tmp_path, service, user)
+    output = tmp_path / "job" / "outputs" / "dataset.dat"
+    output.parent.mkdir()
+    plaintext = os.urandom(size)
+    output.write_bytes(plaintext)
+
+    result = runtime.protect_file(str(output))
+
+    encrypted = output.read_bytes()
+    assert decrypt(encrypted, user.secret) == plaintext
+    header, _ = split_header(encrypted)
+    compute = service.keypairs[key_ref].keypair
+    assert decrypt(base64.b64decode(result.compute_header) + encrypted[len(header) :], compute.secret) == plaintext
 
 
 def test_protect_file_failure_raises(tmp_path, service, user):
