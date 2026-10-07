@@ -390,6 +390,9 @@ Protected jobs fail closed:
   fails and the job fails. Outputs Galaxy can't verify as encrypted are purged.
   An invalid expiration date for the compute key, for example one without a
   timezone, also fails the job.
+- **Jobs failed while running** (for example by job limits or the cluster): what
+  the tool wrote is never stored. Outputs stay in the history in error state, and
+  their data is removed unless Galaxy verifies it is encrypted.
 - **Cleanup:** if the decrypted data can't be removed from the compute host, the
   job fails, but its verified encrypted outputs are kept.
 
