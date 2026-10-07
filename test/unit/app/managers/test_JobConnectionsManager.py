@@ -6,6 +6,7 @@ from sqlalchemy import union
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.model import (
     DatasetCollection,
+    DatasetCollectionElement,
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -222,3 +223,26 @@ def test_related_hids_jobs_on_copies(job_connections_manager: JobConnectionsMana
     assert_related_hids(job_connections_manager, copied_history.copy().id, expected)
     # the original history is unaffected by jobs run on its copies
     assert_related_hids(job_connections_manager, history.id, EXPECTED_RELATED_HIDS)
+
+
+def test_related_hids_collection_elements(job_connections_manager: JobConnectionsManager):
+    sa_session = job_connections_manager.sa_session
+    history = History()
+    sa_session.add(history)
+    element_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True, visible=False)
+    history.add_dataset(element_hda)
+    collection = DatasetCollection(collection_type="list")
+    DatasetCollectionElement(collection=collection, element=element_hda, element_identifier="e1")
+    history.add_dataset_collection(HistoryDatasetCollectionAssociation(collection=collection))
+    output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    history.add_dataset(output_hda)
+    # a job run on a collection element, as when mapping over the collection
+    job = Job()
+    job.add_input_dataset("input", element_hda)
+    job.add_output_dataset("output", output_hda)
+    sa_session.add(job)
+    sa_session.commit()
+    assert output_hda.hid == 3
+    expected = {1: [1, 3], 2: [2], 3: [1, 3]}
+    assert_related_hids(job_connections_manager, history.id, expected)
+    assert_related_hids(job_connections_manager, history.copy().id, expected)

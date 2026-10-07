@@ -1028,6 +1028,29 @@ class TestHistoryContentsApi(ApiTestCase):
             contents = self._get(f"histories/{copied_history_id}/contents?v=dev&q=related&qv={hid}").json()
             assert sorted(c["hid"] for c in contents) == [input_hda["hid"], output_hid]
 
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    def test_index_filter_by_related_collections_copied_history(self, history_id):
+        create = self.dataset_collection_populator.create_list_in_history
+        input_hdca = create(history_id, wait=True).json()["outputs"][0]
+        unrelated_hdca = create(history_id, wait=True).json()["outputs"][0]
+        run_response = self.dataset_populator.run_tool(
+            "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": input_hdca["id"]}}, history_id
+        )
+        output_hid = run_response["output_collections"][0]["hid"]
+        self.dataset_populator.wait_for_history(history_id)
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+
+        def related_hids(hid):
+            # visible filter as in the history panel; collection elements are hidden copies of the same datasets
+            contents = self._get(
+                f"histories/{copied_history_id}/contents?v=dev&q=related&qv={hid}&q=visible&qv=true"
+            ).json()
+            return sorted(c["hid"] for c in contents)
+
+        for hid in (input_hdca["hid"], output_hid):
+            assert related_hids(hid) == [input_hdca["hid"], output_hid]
+        assert related_hids(unrelated_hdca["hid"]) == [unrelated_hdca["hid"]]
+
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
         expected_datatypes = ["txt"]
