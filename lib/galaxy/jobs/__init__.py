@@ -6,7 +6,6 @@ import abc
 import copy
 import datetime
 import errno
-import importlib
 import json
 import logging
 import os
@@ -67,6 +66,7 @@ from galaxy.job_execution.output_collect import (
 from galaxy.job_execution.protection import (
     PLAN_FILENAME,
     ProtectionDestination,
+    ProtectionError,
     ProtectionPlan,
     RecryptorSettings,
 )
@@ -1458,7 +1458,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job,
             self.tool,
             self.tool.get_param_values(job),
-            self._protection_destination(),
+            self._protection_destination,
             compute_environment,
         )
         if plan:
@@ -1504,17 +1504,12 @@ class MinimalJobWrapper(HasResourceParameters):
         """Whether the destination's runner plugin is a Pulsar runner, whatever its id in the job configuration."""
         from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
-        for plugin in self.app.job_config.runner_plugins:
-            if plugin["id"] != self.job_destination.runner:
-                continue
-            load: str = plugin["load"]
-            module_name, _, class_name = load.partition(":")
-            if not class_name:
-                # Legacy '<module>' form, e.g. 'pulsar'.
-                return module_name.rsplit(".", 1)[-1] == "pulsar"
-            runner_class = getattr(importlib.import_module(module_name), class_name, None)
-            return isinstance(runner_class, type) and issubclass(runner_class, PulsarJobRunner)
-        return False
+        dispatcher = getattr(self.app.job_manager.job_handler, "dispatcher", None)
+        runner = dispatcher.job_runners.get(self.job_destination.runner) if dispatcher else None
+        if runner is None:
+            # Pulsar destinations have more requirements, don't guess.
+            raise ProtectionError(f"Can't find the job runner of destination '{self.job_destination.id}'.")
+        return isinstance(runner, PulsarJobRunner)
 
     def default_compute_environment(self, job=None):
         if not job:
