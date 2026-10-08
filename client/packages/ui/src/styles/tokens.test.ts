@@ -23,7 +23,7 @@ function resolveToken(name: string, seen: string[] = []): string {
     return reference ? resolveToken(reference[1] as string, [...seen, name]) : value.toLowerCase();
 }
 
-const COLOR_FAMILIES = ["blue", "grey", "green", "yellow", "orange", "red"];
+const COLOR_FAMILIES = ["blue", "gray", "green", "yellow", "orange", "red"];
 const COLOR_SHADES = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 // shadcn/ui's names plus Galaxy's additions; consumers (and later Tailwind
@@ -84,6 +84,13 @@ describe("galaxy-ui design tokens", () => {
                 expect(tokens.get(`--color-${family}-${shade}`)).toMatch(/^#[0-9a-f]{6}$/);
             }
         }
+    });
+
+    it("keeps every deprecated grey shade pointing at its gray shade", () => {
+        for (const shade of [...COLOR_SHADES, 250]) {
+            expect(tokens.get(`--color-grey-${shade}`)).toBe(`var(--color-gray-${shade})`);
+        }
+        expect(tokens.get("--color-gray-250")).toBe("#c1c8d0");
     });
 
     it("declares every semantic color, resolving to a palette value", () => {
