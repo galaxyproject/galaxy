@@ -6,13 +6,17 @@ Galaxy can manage visualization plugins at runtime through the admin interface i
 
 Runtime-installed visualization packages are stored in the directory set by `visualization_packages_dir`, and the list of installed packages is recorded in `visualization_packages_config_file`. Both are relative to `managed_config_dir`, so when running Galaxy from source they default to `config/visualization_packages/` and `config/visualization_packages.yml`.
 
-This directory is the managed package store. It is not served directly to users.
+This is the managed package store. Galaxy loads installed packages straight from it and serves their files through `/api/plugins/<name>/static/...`; nothing is copied into Galaxy's own `static/` directory. If several Galaxy servers share a database, they should share this directory too (and the config file next to it), so they all see the same packages.
 
-Served visualization assets live under `static/plugins/visualizations/`.
+The visualizations Galaxy ships with are unchanged: the client build installs the ones listed in `client/visualizations.yml` into `static/plugins/visualizations/`, and they're served from `/static/plugins/visualizations/<name>/static/...` as before, by Galaxy or by your web server.
 
-This directory is staging output only. Galaxy serves visualizations from here after assets have been staged.
+An installed package with the same ID as a built-in visualization replaces it while the package is enabled.
 
-Legacy built-in visualizations under `config/plugins/visualizations/` are still supported and are staged the same way.
+## Read-only Galaxy installs (CVMFS)
+
+Because runtime packages never touch `static/`, this works when the Galaxy tree is read-only, for example served from CVMFS with `static_enabled: false` and `/static` served by nginx. Only `managed_config_dir` (or wherever `visualization_packages_dir` and `visualization_packages_config_file` point) needs to be writable.
+
+No web server changes are needed: package files are served under `/api/`, which is already proxied to Galaxy. If you've set up `nginx_x_accel_redirect_base`, Galaxy hands the file transfer off to nginx the same way it does for dataset downloads.
 
 ## Package requirements
 
@@ -30,23 +34,11 @@ npm keywords can't be used to narrow the list today: almost none of the publishe
 
 ## Admin workflow
 
-The visualization admin UI installs npm packages into the managed package store and then stages them into the static serving directory.
+The visualization admin UI installs npm packages into the managed package store. Update replaces a package's contents with the new version, and uninstall removes it; if Galaxy ships a visualization with the same ID, that one comes back into use.
 
-Update operations replace the managed package contents first and then re-stage the visualization so Galaxy serves the new version.
+Disabling a package keeps it installed but stops loading it, so the built-in of the same ID (if any) is used instead. Enabling it switches back.
 
-Uninstall operations remove the managed package and its staged assets. If Galaxy has a built-in visualization with the same ID, the built-in is staged again in its place.
-
-Disabling a package keeps it installed but stops serving it: its staged assets are removed, or replaced by the built-in of the same ID if there is one. Enabling it stages it again.
-
-Each of these changes reloads the visualization registry in every Galaxy process, so the result is visible right away.
-
-## Startup and recovery
-
-Galaxy stages visualizations on startup so both legacy built-ins and runtime-installed packages are available after a restart.
-
-If staged assets are removed or become stale, use the admin staging controls to re-stage one visualization or all visualizations.
-
-Reloading the visualization registry refreshes plugin discovery, but it does not replace staging. Admin actions reload it automatically; the manual reload is only needed after changing files on disk outside the admin UI.
+Each of these changes reloads the visualization registry in every Galaxy process, so the result is visible right away. The Refresh button reloads it by hand, which is only needed after changing the package store outside the admin UI.
 
 ## Failure behavior
 
