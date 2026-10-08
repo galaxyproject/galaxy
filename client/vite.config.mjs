@@ -63,7 +63,10 @@ export default defineConfig(({ command }) => ({
             "vue/dist/vue.esm.js": "@vue/compat",
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
-            // files directly.
+            // files directly. Its stylesheets come first: aliases match by
+            // prefix, so the package alias would also swallow these subpaths.
+            "@galaxyproject/galaxy-ui/theme.css": resolve(__dirname, "packages/ui/src/styles/theme.css"),
+            "@galaxyproject/galaxy-ui/tokens.css": resolve(__dirname, "packages/ui/src/styles/tokens.css"),
             "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
             // galaxy-api-client has a real tsup dist/ build and production
             // uses that via package.json exports. During `vite serve` we
