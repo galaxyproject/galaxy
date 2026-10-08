@@ -520,6 +520,57 @@ steps: {}
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
 
     @selenium_test
+    def test_multiple_integer_parameter_with_range(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  columns: integer
+steps: {}
+""")
+        editor = self.components.workflow_editor
+        tool_form = self.components.tool_form
+        editor.node._(label="columns").wait_for_and_click()
+        for parameter in [
+            "parameter_definition|multiple",
+            "parameter_definition|optional|specify_default|specify_default",
+        ]:
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            self.execute_script("arguments[0].click();", checkbox)
+            self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("1")
+        tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("5")
+
+        default = "parameter_definition|optional|specify_default|default"
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+        self.screenshot("workflow_editor_multiple_integer_parameter_range_list_default")
+        self.save_after_node_form_changes()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        tool_state = json.loads(steps["columns"]["tool_state"])
+        assert tool_state["multiple"] is True
+        in_range = [v for v in tool_state["validators"] if v["type"] == "in_range"]
+        assert [(str(v["min"]), str(v["max"])) for v in in_range] == [("1", "5")], tool_state
+        assert tool_state["default"] == [1, 2]
+
+        self.workflow_run_with_name(name)
+        workflow_run = self.components.workflow_run
+        values = [
+            workflow_run.simplified_value_list_input(label="columns", index=index)
+            .wait_for_visible()
+            .get_attribute("value")
+            for index in (1, 2)
+        ]
+        assert values == ["1", "2"], values
+        self.screenshot("workflow_run_multiple_integer_parameter_range")
+
+    @selenium_test
     def test_multiple_text_parameter_connections(self):
         name = self.open_in_workflow_editor("""
 class: GalaxyWorkflow
