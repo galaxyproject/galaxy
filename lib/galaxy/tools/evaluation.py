@@ -137,6 +137,12 @@ def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "
         ) from e
 
 
+def _check_materialized(dataset_instance: model.DatasetInstance) -> None:
+    """Fail the job if a deferred input could not be materialized."""
+    if dataset_instance.dataset and dataset_instance.dataset.state == model.Dataset.states.ERROR:
+        raise Exception(dataset_instance.info or "Failed to materialize deferred input dataset")
+
+
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -319,6 +325,7 @@ class ToolEvaluator:
 
                 assert isinstance(value, (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation))
                 undeferred = dataset_materializer.ensure_materialized(value)
+                _check_materialized(undeferred)
                 undeferred_objects[key] = undeferred
             elif isinstance(value, list):
                 undeferred_list: list[
@@ -334,16 +341,21 @@ class ToolEvaluator:
                                 (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation),
                             )
                             undeferred = dataset_materializer.ensure_materialized(potentially_deferred)
+                            _check_materialized(undeferred)
                             undeferred_list.append(undeferred)
                     elif isinstance(
                         potentially_deferred,
                         (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement),
                     ):
                         undeferred_collection = materialize_collection_input(potentially_deferred, dataset_materializer)
+                        for dataset_instance in undeferred_collection.dataset_instances:
+                            _check_materialized(dataset_instance)
                         undeferred_list.append(undeferred_collection)
                 undeferred_objects[key] = undeferred_list
             else:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
+                for dataset_instance in undeferred_collection.dataset_instances:
+                    _check_materialized(dataset_instance)
                 undeferred_objects[key] = undeferred_collection
 
         return undeferred_objects
