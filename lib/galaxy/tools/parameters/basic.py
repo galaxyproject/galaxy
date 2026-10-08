@@ -439,7 +439,7 @@ class TextToolParameter(SimpleTextToolParameter):
     ...     p.validate(["ab", "C"])
     >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
     ...     p.validate([])
-    >>> with assert_throws_param_value_error("Parameter '_name': enter one value per entry"):
+    >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines; pass a list"):
     ...     p.validate("ab\\ncd")
     >>> with assert_throws_param_value_error("Parameter '_name': entries cannot be empty"):
     ...     p.validate(["ab", ""])
@@ -485,7 +485,7 @@ class TextToolParameter(SimpleTextToolParameter):
             raise ParameterValueError("entries must be text", self.name, value)
         values = [str(v) for v in values]
         if any("\n" in v for v in values):
-            raise ParameterValueError("enter one value per entry", self.name, value)
+            raise ParameterValueError("values cannot contain newlines; pass a list", self.name, value)
         return values
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):

@@ -535,12 +535,23 @@ steps:
         editor = self.components.workflow_editor
         self.assert_connected("options#output", "single_text#text_param")
 
+        tool_form = self.components.tool_form
         editor.node._(label="options").wait_for_and_click()
-        multiple = self.components.tool_form.parameter_checkbox_input(
-            parameter="parameter_definition|multiple"
-        ).wait_for_present()
-        self.execute_script("arguments[0].click();", multiple)
+        for parameter in [
+            "parameter_definition|multiple",
+            "parameter_definition|optional|specify_default|specify_default",
+        ]:
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            self.execute_script("arguments[0].click();", checkbox)
+            self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_connection_invalid("options#output", "single_text#text_param")
+
+        default = "parameter_definition|optional|specify_default|default"
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("--ex1,ex2")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("--ex3")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
 
         self.workflow_editor_destroy_connection("single_text#text_param")
         multi_select = editor.node._(label="multi_select")
@@ -556,9 +567,22 @@ steps:
         steps = {
             step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
         }
-        assert json.loads(steps["options"]["tool_state"])["multiple"] is True
+        tool_state = json.loads(steps["options"]["tool_state"])
+        assert tool_state["multiple"] is True
+        assert tool_state["default"] == ["--ex1,ex2", "--ex3"]
         assert steps["multi_select"]["input_connections"]["select_ex"]["id"] == steps["options"]["id"]
         assert "text_param" not in steps["single_text"]["input_connections"]
+
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        editor.node._(label="options").wait_for_and_click()
+        values = [
+            tool_form.parameter_value_list_input(parameter=default, index=index)
+            .wait_for_visible()
+            .get_attribute("value")
+            for index in (1, 2)
+        ]
+        assert values == ["--ex1,ex2", "--ex3"], values
 
     @selenium_test
     def test_non_data_map_over_carried_through(self):
