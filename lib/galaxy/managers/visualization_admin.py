@@ -30,9 +30,8 @@ class VisualizationPackageManager:
     def __init__(self, config: GalaxyAppConfiguration) -> None:
         self.config_path = config.visualization_packages_config_file
         self.package_store_path = config.visualization_packages_dir
-
-        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        os.makedirs(self.package_store_path, exist_ok=True)
+        # Directories are created on first install, not here: this runs at startup, and Galaxy has to
+        # boot even where managed_config_dir isn't writable and nobody installs packages.
 
     @staticmethod
     def validate_npm_inputs(package: str, version: str) -> None:
@@ -74,6 +73,7 @@ class VisualizationPackageManager:
     def save_config(self, config: dict[str, Any]) -> None:
         """Save the visualization packages configuration file."""
         try:
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
             with open(self.config_path, "w") as f:
                 yaml.safe_dump(config, f, default_flow_style=False, sort_keys=True)
         except Exception as e:
