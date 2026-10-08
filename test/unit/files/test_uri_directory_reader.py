@@ -34,6 +34,14 @@ def served_directory(tmp_path: Path) -> Iterator[ServedDirectory]:
             client_ports.add(self.client_address[1])
             super().do_GET()
 
+        def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
+            # Unlike the default, keep the connection open, as real servers such as S3 do.
+            body = b"Not Found"
+            self.send_response(code, message)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
     with serve_directory(served, RecordingHandler) as base_url:
         yield ServedDirectory(served, base_url, client_ports)
 
@@ -51,11 +59,12 @@ def test_fetch_all_reuses_connections_and_reports_missing_files(
         (served / "store" / str(i)).write_text(str(i))
     target = tmp_path / "target"
     target.mkdir()
-    rel_paths = [str(i) for i in range(20)] + ["missing"]
+    # Missing files first: an error answer must not close the connection either.
+    rel_paths = [f"missing{i}" for i in range(10)] + [str(i) for i in range(20)]
 
     missing = _reader(base_url).fetch_all(((p, str(target / p)) for p in rel_paths), workers=2)
 
-    assert missing == ["missing"]
+    assert sorted(missing) == sorted(f"missing{i}" for i in range(10))
     assert sorted(os.listdir(target)) == sorted(str(i) for i in range(20))
     assert (target / "7").read_text() == "7"
     # Each of the two workers reuses its connection for all its requests.
