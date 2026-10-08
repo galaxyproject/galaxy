@@ -1,0 +1,12 @@
+<tool id="directory_listing" name="directory_listing" version="0.1.0" profile="24.2">
+    <!-- Lists the files of a directory dataset, e.g. to check what a deferred directory materialized to. -->
+    <command><![CDATA[
+cd '$input.extra_files_path' && find . -type f | sort > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="directory" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>
