@@ -263,8 +263,9 @@ limits:
 ```
 
 Galaxy refuses to start a protected job when one of its grants expires within the
-job's maximum run time, so configure a walltime limit matching what your
-destinations allow (see [Lifetimes](#lifetimes)).
+job's maximum run time plus a day, so configure a walltime limit matching what
+your destinations allow, and well below the compute keypairs' lifetime (see
+[Lifetimes](#lifetimes)).
 
 Jobs are refused when the destination doesn't meet these requirements, with a
 message asking the user to contact the administrator. Jobs that don't decrypt
@@ -328,9 +329,14 @@ also trust the user service's certificate, which the service creates with
 
 - The compute service issues compute keypairs valid for 7 days, and refuses to
   use them within 1 day of their expiration.
-- A grant is only usable by a job if it is still valid, at dispatch, for the
-  longer of 1 day and the configured walltime limit plus 1 hour. Outputs are
-  encrypted after the tool ran, so the key must outlive the job.
+- Users can't authorize datasets with compute keypairs expiring within 1 day.
+- A grant is only usable by a job if it is still valid, at dispatch, for 1 day
+  plus the configured walltime limit plus 1 hour. Outputs are encrypted after the
+  tool ran, so the compute service must still accept the key then. Time spent
+  queued on the cluster isn't counted, keep it within that hour.
+  With 7-day keypairs and a 48-hour walltime, a dataset can be used in jobs for
+  about 4 days after it was authorized. Destinations with a walltime over about
+  6 days can't run jobs decrypting data at all.
 - Users authorize datasets again once their grant expires. The key icon shows
   until when a dataset is authorized.
 - Outputs of a job are granted with the compute keypair expiring last among the

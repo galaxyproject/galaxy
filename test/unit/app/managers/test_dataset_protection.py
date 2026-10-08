@@ -13,6 +13,7 @@ from typing import cast
 from unittest import mock
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
@@ -76,14 +77,19 @@ def test_valid_grant_is_stored_as_naive_utc():
         {"crypt4gh_compute_header": "not base64!"},
         {"crypt4gh_compute_header": base64.b64encode(b"not a header").decode()},
         {"crypt4gh_compute_header": base64.b64encode(_header(b"packet") + b"trailing body").decode()},
-        {"crypt4gh_compute_keypair_expiration_date": datetime.now() + timedelta(days=6)},
         {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) - timedelta(minutes=1)},
+        {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) + timedelta(hours=20)},
         {"crypt4gh_compute_keypair_expiration_date": datetime.now(timezone.utc) + timedelta(days=60)},
     ],
 )
 def test_invalid_grants_are_rejected(overrides):
     with pytest.raises(RequestParameterInvalidException):
         Crypt4GHProtectionScheme().validate_user_grant(_payload(**overrides))
+
+
+def test_expiration_dates_without_timezone_are_rejected():
+    with pytest.raises(ValidationError):
+        _payload(crypt4gh_compute_keypair_expiration_date=datetime.now() + timedelta(days=6))
 
 
 class _FakeDataset:

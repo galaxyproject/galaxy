@@ -17,7 +17,6 @@ from collections.abc import Callable
 from datetime import (
     datetime,
     timedelta,
-    timezone,
 )
 from typing import (
     Any,
@@ -26,7 +25,6 @@ from typing import (
 )
 
 from pydantic import (
-    AwareDatetime,
     TypeAdapter,
     ValidationError,
 )
@@ -67,6 +65,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.dataset_protection import (
     Crypt4GHGrantPayload,
     DatasetProtectionStatus,
+    KeyExpirationDate,
 )
 from galaxy.tool_util_models.tool_source import FileSourceConfigFile
 from galaxy.tools.parameters import visit_input_values
@@ -86,7 +85,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-_AWARE_DATETIME = TypeAdapter(AwareDatetime)
+_KEY_EXPIRATION_DATE = TypeAdapter(KeyExpirationDate)
 
 GRANT_SOURCE_USER = "user"
 # Tool types that run a plain command line on the compute host. Others (interactive tools,
@@ -174,12 +173,7 @@ def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
 def _parse_key_expiration(value: str) -> datetime:
     """Expiration date reported by the key service, as naive UTC. Raises ``ValidationError`` without a timezone."""
     # datetime.fromisoformat() only accepts a 'Z' suffix from Python 3.11 on.
-    return _naive_utc(_AWARE_DATETIME.validate_python(value))
-
-
-def _naive_utc(value: datetime) -> datetime:
-    """A timezone-aware datetime as naive UTC, like every other Galaxy timestamp."""
-    return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return _KEY_EXPIRATION_DATE.validate_python(value)
 
 
 def _has_content(dataset_instance: DatasetInstance) -> bool:
@@ -249,13 +243,16 @@ class Crypt4GHProtectionScheme:
         if parsed_header != header:
             raise RequestParameterInvalidException("crypt4gh_compute_header must contain only the Crypt4GH header.")
 
-        expiration = payload.crypt4gh_compute_keypair_expiration_date
-        if expiration.tzinfo is None or expiration.utcoffset() is None:
-            raise RequestParameterInvalidException("crypt4gh_compute_keypair_expiration_date must include a timezone.")
-        expires_at = _naive_utc(expiration)
+        expires_at = payload.crypt4gh_compute_keypair_expiration_date
         current_time = now()
         if expires_at <= current_time:
             raise RequestParameterInvalidException("The compute keypair has already expired, recrypt the dataset.")
+        if expires_at <= current_time + self.expiry_margin:
+            # The key service would refuse to use it.
+            raise RequestParameterInvalidException(
+                "The compute keypair expires within a day, jobs can't use it. Authorize the dataset again, and "
+                "contact your Galaxy administrator if this keeps happening."
+            )
         if expires_at > current_time + self.max_grant_lifetime:
             raise RequestParameterInvalidException("crypt4gh_compute_keypair_expiration_date is too far in the future.")
 
@@ -449,12 +446,13 @@ class DatasetProtectionManager:
             scheme = self.scheme_for(dataset_instance)
             assert scheme
             grant = self.get_usable_grant(job.user, dataset_instance) if job.user else None
-            if grant is None or grant.is_expired(max(scheme.expiry_margin, margin)):
+            # Outputs are encrypted after the job ran, the key service must still accept the keypair then.
+            if grant is None or grant.is_expired(scheme.expiry_margin + margin):
                 raise ProtectionError(
                     f"You are not authorized to decrypt dataset '{dataset_instance.name}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
-            if _extra_files_expire(grant, max(scheme.expiry_margin, margin)):
+            if _extra_files_expire(grant, scheme.expiry_margin + margin):
                 raise ProtectionError(
                     f"The extra files of dataset '{dataset_instance.name}' can't be decrypted anymore: their "
                     "authorization comes from the job that created them, and it expires before this job can finish."
