@@ -115,7 +115,7 @@ watch(
         <div
             v-for="(row, index) in rows"
             :key="row.key"
-            class="d-flex align-items-start mb-1"
+            class="d-flex align-items-center mb-2"
             data-description="value list row">
             <FormText
                 v-if="isText"
@@ -139,7 +139,7 @@ watch(
                 :show-state="props.showState"
                 @input="onRowInput(index, $event)" />
             <GButton
-                class="ml-1"
+                class="ml-2"
                 tooltip
                 title="Remove value"
                 color="blue"
