@@ -33,6 +33,7 @@ from galaxy.jobs.runners.util.gcp_batch import (
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
     DIRECT_SCRIPT_TEMPLATE,
+    gpu_count_for_machine_type,
     parse_docker_volumes_param,
     parse_volumes_param,
     resolve_gpu_count,
@@ -315,6 +316,12 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # be started with --gpus when a GPU was requested, and the same resolved count
         # selects the machine type below. Resolving it once keeps the two in agreement.
         gpus = self._get_gpus(params, job_wrapper.get_resource_parameters())
+        # An explicitly configured G2 machine type carries L4 GPUs whether or not the
+        # job asked for any, and the container must still be started with --gpus for
+        # the tool to see them. Without this a destination with machine_type:
+        # g2-standard-4 and no gpus would provision the GPU VM but run blind to it.
+        if not gpus:
+            gpus = gpu_count_for_machine_type(params.get("machine_type"))
 
         # Create the execution script based on whether we use containers or not
         if params.get("use_container", True):
@@ -412,13 +419,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         instance_template = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
         instance_policy = batch_v1.AllocationPolicy.InstancePolicy()
 
-        # L4 GPUs live on the G2 machine family, so a GPU job (gpus resolved above)
-        # either honors an explicitly configured g2 machine type or selects the
-        # smallest g2 shape satisfying the requested GPU count, cores and memory.
+        # L4 GPUs live on the G2 machine family, so a GPU job (gpus resolved above,
+        # which is nonzero whenever a G2 machine type is configured) either honors an
+        # explicitly configured g2 machine type or selects the smallest g2 shape
+        # satisfying the requested GPU count, cores and memory.
         configured_machine_type = params.get("machine_type")
         is_gpu_machine_type = bool(configured_machine_type) and configured_machine_type.startswith("g2-")
 
-        if gpus or is_gpu_machine_type:
+        if gpus:
             if is_gpu_machine_type:
                 machine_type = configured_machine_type
             else:
@@ -432,11 +440,11 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             install_gpu_drivers = string_as_bool(params.get("install_gpu_drivers", True))
             instance_template.install_gpu_drivers = install_gpu_drivers
             log.debug(
-                "Selected GPU machine type %s (install_gpu_drivers=%s) for job %s (requested: %s L4 GPU(s), %d mCPU, %d MiB)",
+                "Selected GPU machine type %s (install_gpu_drivers=%s) for job %s (requested: %d L4 GPU(s), %d mCPU, %d MiB)",
                 machine_type,
                 install_gpu_drivers,
                 job_wrapper.get_id_tag(),
-                gpus or "from machine_type",
+                gpus,
                 cpu_milli,
                 memory_mib,
             )
@@ -614,9 +622,13 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         up rather than assuming an int-parseable device count.
         """
         # Galaxy job resource parameter 'gpus' takes precedence over the
-        # destination/runner 'gpus' merged into params by _get_job_params.
-        if resource_gpus := resolve_gpu_count(resource_params.get("gpus")):
-            return resource_gpus
+        # destination/runner 'gpus' merged into params by _get_job_params. Precedence
+        # is decided by presence, not truthiness: a user explicitly requesting 0 GPUs
+        # must override a destination default, while an unset or blank form field
+        # (None or "") falls through to the destination.
+        resource_gpus = resource_params.get("gpus")
+        if resource_gpus is not None and resource_gpus != "":
+            return resolve_gpu_count(resource_gpus)
         return resolve_gpu_count(params.get("gpus"))
 
     def _create_container_execution_script(

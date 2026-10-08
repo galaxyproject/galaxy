@@ -394,6 +394,24 @@ def resolve_gpu_count(value: str | int | float | None) -> int:
     return math.ceil(gpus)
 
 
+def gpu_count_for_machine_type(machine_type: str | None) -> int:
+    """
+    Return the number of NVIDIA L4 GPUs bundled with a G2 machine type.
+
+    G2 shapes carry their GPUs as part of the machine type rather than as a separate
+    accelerator request, so a job placed on one has GPUs whether or not it asked for
+    them. Returns 0 for any non-G2 machine type (or none). A G2 shape missing from
+    ``L4_GPU_MACHINE_TYPES`` is assumed to carry at least one GPU, since every G2
+    shape does.
+    """
+    if not machine_type or not machine_type.startswith("g2-"):
+        return 0
+    for _vcpu, _mem_mib, count, name in L4_GPU_MACHINE_TYPES:
+        if name == machine_type:
+            return count
+    return 1
+
+
 def compute_gpu_machine_type(gpu_count: int, cpu_milli: int, memory_mib: int) -> str:
     """
     Select the smallest g2-standard machine type providing the requested number of
