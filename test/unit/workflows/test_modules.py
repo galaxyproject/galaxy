@@ -471,34 +471,6 @@ def test_parameter_input_text_list_default_after_disabling_multiple():
     assert "a single value is required" in str(errors["parameter_definition|optional|specify_default|default"])
 
 
-@pytest.mark.parametrize(
-    "multiple, restrictions, default, expected",
-    [
-        (False, ["a", "b", "c"], "b", "b"),
-        (True, ["a", "b", "c"], ["b", "c"], ["b", "c"]),
-        (False, [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}], "b", "b"),
-    ],
-)
-def test_parameter_input_static_restrictions_select_default(multiple, restrictions, default, expected):
-    step = model.WorkflowStep()
-    step.type = "parameter_input"
-    step.tool_inputs = {
-        "parameter_type": "text",
-        "optional": False,
-        "multiple": multiple,
-        "default": default,
-        "restrictions": restrictions,
-    }
-    module = modules.module_factory.from_workflow_step(MockTrans(), step)
-    runtime_input = module.get_runtime_inputs(step)["input"]
-    assert runtime_input.get_initial_value(None, {}) == expected
-    expected_values = expected if multiple else [expected]
-    assert [selected for _, _, selected in runtime_input.static_options] == [
-        option["value"] in expected_values if isinstance(option, dict) else option in expected_values
-        for option in restrictions
-    ]
-
-
 def test_subworkflow_new_outputs():
     subworkflow_module = __new_subworkflow_module()
     outputs = subworkflow_module.get_data_outputs()

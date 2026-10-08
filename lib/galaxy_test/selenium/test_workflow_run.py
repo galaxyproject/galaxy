@@ -815,6 +815,34 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_text_default_value_and_static_restrictions(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    default: ex2
+    restrictions:
+      - {value: --ex1, label: Ex1}
+      - {value: ex2, label: Ex2}
+      - {value: --ex3, label: Ex3}
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+""")
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
+
+    @selenium_test
+    @managed_history
     def test_execution_with_rules(self):
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_RULES_1,
