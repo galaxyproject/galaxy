@@ -2161,12 +2161,13 @@ class MinimalJobWrapper(HasResourceParameters):
         dataset.peek = "no peek"
         dataset.info = dataset.info or ""
         # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
-        if not job.protection_scheme and context["stdout"].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-        if not job.protection_scheme and context["stderr"].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
+        if not job.protection_scheme:
+            if context["stdout"].strip():
+                # Ensure white space between entries
+                dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
+            if context["stderr"].strip():
+                # Ensure white space between entries
+                dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
         self.__update_output(job, dataset)
         if not purged:

@@ -1748,7 +1748,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             value = job_attrs.get(attribute)
             if value is not None:
                 setattr(imported_job, attribute, value)
-        if "stdout" in job_attrs and not imported_job.protection_scheme:
+        if "stdout" in job_attrs:
             imported_job.tool_stdout = job_attrs.get("stdout")
             imported_job.tool_stderr = job_attrs.get("stderr")
 

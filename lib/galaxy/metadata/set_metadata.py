@@ -55,7 +55,6 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Job,
     JobOutputNameTooLongError,
-    PROTECTED_TOOL_STREAM,
     store,
 )
 from galaxy.model.custom_types import total_size
@@ -78,7 +77,6 @@ from galaxy.tool_util.output_checker import (
     MaxDiscoveredFilesJobMessage,
     output_discovery_job_message,
     OutputCollectionSecurityJobMessage,
-    without_tool_output,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -430,9 +428,8 @@ def set_metadata_portable(
 
         if job:
             if output_protector:
-                # Exported jobs don't know they are protected, see Job.set_streams.
-                tool_stdout = tool_stderr = PROTECTED_TOOL_STREAM
-                job_messages = without_tool_output(job_messages)
+                # Exported jobs don't record it, Job.set_streams keeps decrypted data out of protected jobs.
+                job.protection_scheme = output_protector.runtime.plan.scheme
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
             if os.path.exists(tool_script_file):
