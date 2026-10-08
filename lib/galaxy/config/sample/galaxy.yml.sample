@@ -2329,11 +2329,11 @@ galaxy:
   # by an administrator in the cleanup scripts run via cron)
   #allow_user_dataset_purge: true
 
-  # By default, users' data will be public, but setting this to true
-  # will cause it to be private.  Does not affect existing users and
-  # data, only ones created after this option is set.  Users may still
-  # change their default back to public.
-  #new_user_dataset_access_role_default_private: false
+  # By default, users' data will be private, but setting this to false
+  # will cause it to be public.  Does not affect existing users and
+  # data, only ones created after this option is set.  Users may change
+  # their default through user preferences.
+  #new_user_dataset_access_role_default_private: true
 
   # Expose user list.  Setting this to true will expose the user list to
   # authenticated users.  This makes sharing datasets in smaller galaxy

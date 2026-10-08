@@ -4191,11 +4191,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    By default, users' data will be public, but setting this to true
-    will cause it to be private.  Does not affect existing users and
-    data, only ones created after this option is set.  Users may still
-    change their default back to public.
-:Default: ``false``
+    By default, users' data will be private, but setting this to false
+    will cause it to be public.  Does not affect existing users and
+    data, only ones created after this option is set.  Users may
+    change their default through user preferences.
+:Default: ``true``
 :Type: bool
 
 
