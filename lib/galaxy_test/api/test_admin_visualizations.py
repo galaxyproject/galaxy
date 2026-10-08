@@ -66,13 +66,6 @@ class TestAdminVisualizationsApi(ApiTestCase):
         assert_has_keys(data, "message")
 
     @requires_admin
-    def test_usage_stats(self):
-        response = self._get("admin/visualizations/usage_stats", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert_has_keys(data, "message", "days", "stats")
-
-    @requires_admin
     def test_staging_status(self):
         response = self._get("admin/visualizations/staging_status", admin=True)
         assert_status_code_is(response, 200)
@@ -108,7 +101,6 @@ class TestAdminVisualizationsApi(ApiTestCase):
         endpoints = [
             ("GET", "admin/visualizations"),
             ("GET", "admin/visualizations/available"),
-            ("GET", "admin/visualizations/usage_stats"),
             ("GET", "admin/visualizations/staging_status"),
             ("POST", "admin/visualizations/reload"),
             ("POST", "admin/visualizations/stage"),

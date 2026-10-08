@@ -124,26 +124,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/usage_stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get usage statistics for visualizations.
-         * @description Return usage statistics for installed visualizations.
-         */
-        get: operations["usage_stats_api_admin_visualizations_usage_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/visualizations/versions/{package_name}": {
         parameters: {
             query?: never;
@@ -27371,17 +27351,6 @@ export interface components {
              */
             url: string;
         };
-        /** UsageStatsResponse */
-        UsageStatsResponse: {
-            /** Days */
-            days: number;
-            /** Message */
-            message: string;
-            /** Stats */
-            stats?: {
-                [key: string]: unknown;
-            };
-        };
         /** UserBeaconSetting */
         UserBeaconSetting: {
             /**
@@ -34117,50 +34086,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StagingStatusResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    usage_stats_api_admin_visualizations_usage_stats_get: {
-        parameters: {
-            query?: {
-                /** @description Number of days to look back for usage statistics */
-                days?: number;
-            };
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsageStatsResponse"];
                 };
             };
             /** @description Request Error */

@@ -30,7 +30,6 @@ from galaxy.schema.visualization_admin import (
     ToggleVisualizationRequest,
     ToggleVisualizationResponse,
     UpdateVisualizationRequest,
-    UsageStatsResponse,
     VisualizationStagingResultResponse,
 )
 from galaxy.webapps.galaxy.api import (
@@ -112,23 +111,6 @@ class FastAPIAdminVisualizations:
     ) -> PackageVersionsResponse:
         """Return available versions for a specific npm package."""
         return self.service.get_package_versions(trans, package_name)
-
-    @router.get(
-        "/api/admin/visualizations/usage_stats",
-        summary="Get usage statistics for visualizations.",
-        require_admin=True,
-    )
-    def usage_stats(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        days: int = Query(
-            default=30,
-            title="Days",
-            description="Number of days to look back for usage statistics",
-        ),
-    ) -> UsageStatsResponse:
-        """Return usage statistics for installed visualizations."""
-        return self.service.get_usage_stats(trans, days=days)
 
     @router.get(
         "/api/admin/visualizations/staging_status",

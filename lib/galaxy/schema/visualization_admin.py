@@ -119,9 +119,3 @@ class PackageVersionsResponse(Model):
         title="Versions",
         description="Available versions, newest first.",
     )
-
-
-class UsageStatsResponse(Model):
-    message: str = Field(..., title="Message")
-    days: int = Field(..., title="Days")
-    stats: dict[str, Any] = Field(default_factory=dict, title="Stats")

@@ -22,12 +22,6 @@
             </BTab>
             <BTab>
                 <template v-slot:title>
-                    <FontAwesomeIcon :icon="faChartBar" class="mr-1" />
-                    Usage Stats
-                </template>
-            </BTab>
-            <BTab>
-                <template v-slot:title>
                     <FontAwesomeIcon :icon="faServer" class="mr-1" />
                     Staging
                 </template>
@@ -143,11 +137,6 @@
             </div>
         </div>
 
-        <!-- Usage Stats Tab -->
-        <div v-if="activeTab === 'usage'">
-            <UsageStatsView :loading="loadingStats" :stats="usageStats" @refresh="loadUsageStats" />
-        </div>
-
         <!-- Staging Tab -->
         <div v-if="activeTab === 'staging'">
             <p class="text-muted mb-3">
@@ -233,7 +222,6 @@
 
 <script setup lang="ts">
 import {
-    faChartBar,
     faDownload,
     faInfoCircle,
     faList,
@@ -264,13 +252,12 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { bytesToString } from "@/utils/utils";
 
-import type { AvailableVisualization, StagingStatus, UsageStats, Visualization } from "./services";
+import type { AvailableVisualization, StagingStatus, Visualization } from "./services";
 import {
     cleanStagedAssets,
     getAvailableVisualizations,
     getInstalledVisualizations,
     getStagingStatus,
-    getVisualizationUsageStats,
     installVisualization,
     reloadVisualizationRegistry,
     stageAllVisualizations,
@@ -282,20 +269,18 @@ import {
 
 import AvailableVisualizationCard from "./AvailableVisualizationCard.vue";
 import InstallVisualizationModal from "./InstallVisualizationModal.vue";
-import UsageStatsView from "./UsageStatsView.vue";
 import VisualizationCard from "./VisualizationCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const { confirm } = useConfirmDialog();
 const toast = useToast();
 
-const TAB_NAMES = ["installed", "available", "usage", "staging"] as const;
+const TAB_NAMES = ["installed", "available", "staging"] as const;
 const activeTabIndex = ref(0);
 const activeTab = computed(() => TAB_NAMES[activeTabIndex.value]!);
 
 const loading = ref(false);
 const loadingAvailable = ref(false);
-const loadingStats = ref(false);
 const loadingActions: Record<string, boolean> = reactive({});
 const installing = ref(false);
 
@@ -324,8 +309,6 @@ const availableVisualizations = ref<AvailableVisualization[]>([]);
 const availableSearchFilter = ref("");
 const availableLoadError = ref(false);
 
-const usageStats = ref<UsageStats>({ days: 30, stats: {} } as UsageStats);
-
 const stagingLoading = ref(false);
 const stagingStatus = ref<StagingStatus | null>(null);
 const stagedNames = computed(() => stagingStatus.value?.staged_visualizations?.map((v) => v.name) ?? []);
@@ -336,8 +319,6 @@ const selectedVisualization = ref<AvailableVisualization | null>(null);
 watch(activeTab, async (newTab) => {
     if (newTab === "available" && availableVisualizations.value.length === 0) {
         await loadAvailablePackages();
-    } else if (newTab === "usage") {
-        await loadUsageStats();
     } else if (newTab === "staging") {
         await loadStagingStatus();
     }
@@ -375,17 +356,6 @@ async function loadAvailablePackages() {
         toast.error(`Failed to search npm registry: ${errorMessage(error)}`);
     } finally {
         loadingAvailable.value = false;
-    }
-}
-
-async function loadUsageStats() {
-    loadingStats.value = true;
-    try {
-        usageStats.value = await getVisualizationUsageStats(30);
-    } catch (error) {
-        toast.error(`Failed to load usage statistics: ${errorMessage(error)}`);
-    } finally {
-        loadingStats.value = false;
     }
 }
 

@@ -19,7 +19,6 @@ from galaxy.schema.visualization_admin import (
     StagingResultResponse,
     StagingStatusResponse,
     ToggleVisualizationResponse,
-    UsageStatsResponse,
     VisualizationStagingResultResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -161,14 +160,6 @@ class AdminVisualizationsService(ServiceBase):
         # Anything that changes what's staged has to reach the registry, in every process
         self.app.visualizations_registry.reload()
         self.app.queue_worker.send_control_task("reload_visualizations", noop_self=True)
-
-    def get_usage_stats(self, trans: ProvidesUserContext, days: int = 30) -> UsageStatsResponse:
-        """Get usage statistics for visualizations."""
-        return UsageStatsResponse(
-            message="Usage statistics not yet implemented",
-            days=days,
-            stats={},
-        )
 
     def stage_all_visualizations(self, trans: ProvidesUserContext) -> StagingResultResponse:
         """Stage all visualization assets from managed and legacy sources to static/plugins."""

@@ -11,7 +11,6 @@ export type StagingResult = components["schemas"]["StagingResultResponse"];
 export type VisualizationStagingResult = components["schemas"]["VisualizationStagingResultResponse"];
 export type CleanStagingResult = components["schemas"]["CleanStagingResultResponse"];
 export type StagingStatus = components["schemas"]["StagingStatusResponse"];
-export type UsageStats = components["schemas"]["UsageStatsResponse"];
 
 export async function getInstalledVisualizations(includeDisabled = true) {
     const { data, error } = await GalaxyApi().GET("/api/admin/visualizations", {
@@ -100,18 +99,6 @@ export async function toggleVisualization(vizId: string, enabled: boolean) {
 
 export async function reloadVisualizationRegistry() {
     const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/reload");
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
-export async function getVisualizationUsageStats(days = 30) {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations/usage_stats", {
-        params: { query: { days } },
-    });
 
     if (error) {
         rethrowSimple(error);
