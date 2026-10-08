@@ -1570,14 +1570,10 @@ GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml ./run_tests.sh -sele
 
 ### Continuous Integration
 
-The Selenium tests are run against each pull request to Galaxy using
-GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are
-unrelated to the pull request being tested; if this test suite fails on
-a pull request with changes that seem to be unrelated to the pull request -
-ping the Galaxy committers on the pull request and request a re-run. The
-GitHub actions workflow definition for these tests is located in
-``.github/workflows/selenium.yaml`` below Galaxy's root.
+GitHub actions doesn't run the Selenium backend. The same test files run against
+each pull request under Playwright (see [Playwright Tests](#playwright) below).
+Tests marked ``@selenium_only`` are skipped there, so run them locally with
+``./run_tests.sh -selenium`` when changing the pages they cover.
 
 {#playwright}
 ## Playwright Tests
