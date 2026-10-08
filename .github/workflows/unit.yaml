@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Configure apt
-        uses: './galaxy root/.github/actions/configure_apt'
+        uses: $/.github/actions/configure_apt
       - name: Install ffmpeg and bubblewrap
         timeout-minutes: 20
         # bubblewrap: exercises the expression-evaluation isolation sandbox tests.

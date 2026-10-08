@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Configure apt
-        uses: './galaxy root/.github/actions/configure_apt'
+        uses: $/.github/actions/configure_apt
       - name: Install ffmpeg
         timeout-minutes: 20
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
