@@ -32,8 +32,10 @@ import requests
 
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
+    iter_relpaths,
     read_crypt4gh_header,
 )
+from galaxy.util.requests import Session
 from . import (
     ProtectedFile,
     ProtectedFileResult,
@@ -89,6 +91,8 @@ class RecryptorClient:
 
     def __init__(self, settings: RecryptorSettings):
         self.settings = settings
+        # Reuses connections, every file of a job takes a request.
+        self.session = Session()
 
     def recrypt_header_to_job_key(self, header: str, key_ref: str, job_public_key: str) -> dict[str, Any]:
         return self._post(
@@ -131,7 +135,7 @@ class RecryptorClient:
         for attempt in range(attempts):
             last_attempt = attempt == attempts - 1
             try:
-                response = requests.post(url, json=payload, timeout=self.settings.timeout, verify=verify, cert=cert)
+                response = self.session.post(url, json=payload, timeout=self.settings.timeout, verify=verify, cert=cert)
             except requests.RequestException as e:
                 if last_attempt:
                     # Users can read job errors: don't chain the request error, it shows the service's address.
@@ -177,8 +181,7 @@ def _body_with_header(path: str, header: bytes) -> Iterator[BinaryIO]:
 def _remove_unless_encrypted(path: str) -> None:
     """Remove a copy of decrypted data, unless it was encrypted since, as an output."""
     if os.path.isdir(path):
-        paths = [os.path.join(root, filename) for root, _, filenames in os.walk(path) for filename in filenames]
-        if not all(check_crypt4gh(file_path) for file_path in paths):
+        if not all(check_crypt4gh(os.path.join(path, relpath)) for relpath in iter_relpaths(path)):
             shutil.rmtree(path)
     elif os.path.exists(path) and not check_crypt4gh(path):
         os.remove(path)
@@ -241,7 +244,8 @@ class Crypt4GHJobRuntime:
         """
         from crypt4gh import header as crypt4gh_header
 
-        if any(
+        # Plaintext outputs can't be copies of encrypted inputs, don't compare them.
+        if check_crypt4gh(path) and any(
             os.path.exists(source) and filecmp.cmp(path, source, shallow=False) for source in self.plan.encrypted_inputs
         ):
             with open(path, "rb") as f:
@@ -284,10 +288,6 @@ class Crypt4GHJobRuntime:
             compute_header=encoded_compute_header,
         )
 
-    @property
-    def inputs_directory(self) -> str:
-        return os.path.join(self.plan.protected_directory, "inputs")
-
     def stage_inputs(self) -> None:
         from crypt4gh import (
             lib as crypt4gh_lib,
@@ -295,7 +295,7 @@ class Crypt4GHJobRuntime:
         )
 
         os.umask(0o077)
-        os.makedirs(self.inputs_directory, exist_ok=True)
+        os.makedirs(self.plan.inputs_directory, exist_ok=True)
         job_secret_key = os.urandom(32)
         job_public_key = format_public_key(sodium.derive_pk(job_secret_key))
         files = self._files_to_stage()
@@ -339,14 +339,11 @@ class Crypt4GHJobRuntime:
             )
             source_extra = protected_input.source_extra_files_path
             if source_extra and os.path.isdir(source_extra):
-                for root, _, filenames in os.walk(source_extra):
-                    for filename in filenames:
-                        relpath = os.path.relpath(os.path.join(root, filename), source_extra)
-                        if relpath not in protected_input.extra_files:
-                            # Every file of a protected dataset must be protected, refuse to guess.
-                            raise ProtectionError(
-                                "A protected input has extra files that cannot be decrypted, authorize the dataset again."
-                            )
+                if any(relpath not in protected_input.extra_files for relpath in iter_relpaths(source_extra)):
+                    # Every file of a protected dataset must be protected, refuse to guess.
+                    raise ProtectionError(
+                        "A protected input has extra files that cannot be decrypted, authorize the dataset again."
+                    )
         return files
 
     def _check_responses(
@@ -374,9 +371,9 @@ class Crypt4GHJobRuntime:
             json.dump(state, f)
 
     def cleanup_inputs(self) -> None:
-        if os.path.exists(self.inputs_directory):
+        if os.path.exists(self.plan.inputs_directory):
             self._copy_linked_inputs()
-            shutil.rmtree(self.inputs_directory)
+            shutil.rmtree(self.plan.inputs_directory)
 
     def _copy_linked_inputs(self) -> None:
         """Replace links to decrypted inputs, e.g. outputs the tool linked to an input, by copies.
@@ -384,7 +381,7 @@ class Crypt4GHJobRuntime:
         Outputs are collected after the decrypted inputs are removed. The copies are recorded, so
         the ones that weren't encrypted as outputs are removed with the rest of the decrypted data.
         """
-        inputs_directory = os.path.realpath(self.inputs_directory)
+        inputs_directory = os.path.realpath(self.plan.inputs_directory)
         protected_directory = os.path.realpath(self.plan.protected_directory)
         copies: list[str] = []
         for root, dirnames, filenames in os.walk(self.plan.job_directory):
@@ -393,8 +390,10 @@ class Crypt4GHJobRuntime:
                 continue
             for name in dirnames + filenames:
                 path = os.path.join(root, name)
+                if not os.path.islink(path):
+                    continue
                 target = os.path.realpath(path)
-                if not os.path.islink(path) or os.path.commonpath([target, inputs_directory]) != inputs_directory:
+                if os.path.commonpath([target, inputs_directory]) != inputs_directory:
                     continue
                 os.remove(path)
                 if os.path.isdir(target):

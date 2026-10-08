@@ -73,6 +73,10 @@ class ProtectionPlan(BaseModel):
     def protected_directory(self) -> str:
         return protected_directory(self.job_directory)
 
+    @property
+    def inputs_directory(self) -> str:
+        return protected_inputs_directory(self.job_directory)
+
     def staged_input(self, dataset_id: int) -> ProtectedInput | None:
         for protected_input in self.inputs:
             if protected_input.dataset_id == dataset_id:
@@ -94,6 +98,11 @@ class ProtectionPlan(BaseModel):
 def protected_directory(job_directory: str) -> str:
     # Next to working/ rather than inside it, so output discovery never sees decrypted inputs.
     return os.path.join(job_directory, PROTECTED_DIRECTORY_NAME)
+
+
+def protected_inputs_directory(job_directory: str) -> str:
+    """Where the inputs of a protected job are decrypted."""
+    return os.path.join(protected_directory(job_directory), "inputs")
 
 
 class ProtectionError(Exception):
