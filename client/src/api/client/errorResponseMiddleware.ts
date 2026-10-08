@@ -8,14 +8,24 @@ interface NormalizedApiError {
     err_code: number;
 }
 
-const GATEWAY_MESSAGES: Record<number, string> = {
+// Browsers leave statusText empty over HTTP/2, so the statuses proxies commonly
+// answer with are described here rather than taken from the response.
+const STATUS_MESSAGES: Record<number, string> = {
+    400: "The request was not valid",
+    401: "Authentication is required",
+    403: "Access was denied",
+    404: "The requested resource was not found",
+    408: "The request timed out",
+    413: "The request was too large",
+    429: "Too many requests, please wait and try again",
+    500: "An internal server error occurred",
     502: "Galaxy is temporarily unavailable",
     503: "Galaxy is temporarily unavailable",
     504: "Galaxy took too long to respond",
 };
 
 function statusMessage(status: number, statusText: string): string {
-    const description = GATEWAY_MESSAGES[status] ?? statusText.trim();
+    const description = STATUS_MESSAGES[status] ?? statusText.trim();
     return description ? `${description} (${status})` : `The request failed (${status})`;
 }
 
