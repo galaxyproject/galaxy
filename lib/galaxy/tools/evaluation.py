@@ -137,10 +137,14 @@ def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "
         ) from e
 
 
-def _check_materialized(dataset_instance: model.DatasetInstance) -> None:
+def _check_materialized(materialized_objects: dict[str, DeferrableObjectsT]) -> None:
     """Fail the job if a deferred input could not be materialized."""
-    if dataset_instance.dataset and dataset_instance.dataset.state == model.Dataset.states.ERROR:
-        raise Exception(dataset_instance.info or "Failed to materialize deferred input dataset")
+    for value in materialized_objects.values():
+        for item in value if isinstance(value, list) else [value]:
+            dataset_instances = [item] if isinstance(item, model.DatasetInstance) else item.dataset_instances
+            for dataset_instance in dataset_instances:
+                if dataset_instance.dataset and dataset_instance.dataset.state == model.Dataset.states.ERROR:
+                    raise Exception(dataset_instance.info or "Failed to materialize deferred input dataset")
 
 
 class ToolEvaluator:
@@ -325,7 +329,6 @@ class ToolEvaluator:
 
                 assert isinstance(value, (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation))
                 undeferred = dataset_materializer.ensure_materialized(value)
-                _check_materialized(undeferred)
                 undeferred_objects[key] = undeferred
             elif isinstance(value, list):
                 undeferred_list: list[
@@ -341,23 +344,19 @@ class ToolEvaluator:
                                 (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation),
                             )
                             undeferred = dataset_materializer.ensure_materialized(potentially_deferred)
-                            _check_materialized(undeferred)
                             undeferred_list.append(undeferred)
                     elif isinstance(
                         potentially_deferred,
                         (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement),
                     ):
                         undeferred_collection = materialize_collection_input(potentially_deferred, dataset_materializer)
-                        for dataset_instance in undeferred_collection.dataset_instances:
-                            _check_materialized(dataset_instance)
                         undeferred_list.append(undeferred_collection)
                 undeferred_objects[key] = undeferred_list
             else:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
-                for dataset_instance in undeferred_collection.dataset_instances:
-                    _check_materialized(dataset_instance)
                 undeferred_objects[key] = undeferred_collection
 
+        _check_materialized(undeferred_objects)
         return undeferred_objects
 
     def _eval_format_source(
