@@ -126,6 +126,11 @@ describe("PageForm.vue - Create mode", () => {
 describe("PageForm.vue - Edit mode", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        server.use(
+            http.get("/api/pages/:id", ({ response }) =>
+                response(200).json({ id: "456", title: "", slug: "", annotation: "", content: "" }),
+            ),
+        );
     });
 
     it("renders loading spinner and fetches page details", async () => {

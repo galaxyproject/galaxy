@@ -150,7 +150,7 @@ describe("History center panel View", () => {
         expect(wrapper.findAllComponents(ContentItem).length).toBe(10);
         expect(item.deleted).toBe(false);
         const dialog = wrapper.findComponent(OperationErrorDialog);
-        expect(dialog.props("operationError").errorMessage.message).toBe(errorBody);
+        expect(dialog.props("operationError").errorMessage.message).toBe("Too Many Requests (429)");
         dialog.vm.$emit("hide");
         await flushPromises();
         expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);

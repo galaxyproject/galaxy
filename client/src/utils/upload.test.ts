@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { CompositeDataElement, HdasUploadTarget, HdcaUploadTarget, NestedElement } from "@/api/tools";
 
 import { createTusUpload } from "./tusUpload";
@@ -869,7 +869,10 @@ describe("upload submission", () => {
 
             server.use(
                 http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ err_msg: "Upload failed" }, { status: 500 });
+                    return HttpResponse.json(
+                        { err_msg: "Upload failed" },
+                        { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                    );
                 }),
             );
 
@@ -1136,7 +1139,10 @@ describe("upload submission", () => {
                 http.post("/api/tools/fetch", () => {
                     requestCount += 1;
                     if (requestCount === 2) {
-                        return HttpResponse.json({ err_msg: "second URL failed" }, { status: 500 });
+                        return HttpResponse.json(
+                            { err_msg: "second URL failed" },
+                            { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                        );
                     }
                     return HttpResponse.json({ jobs: [{ id: "job_url_first" }] });
                 }),

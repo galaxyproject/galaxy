@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 
+import { errorResponseMiddleware } from "@/api/client/errorResponseMiddleware";
 import { pendingRequestsMiddleware } from "@/api/client/pendingRequestsMiddleware";
 import { createRateLimiterMiddleware } from "@/api/client/rateLimiter";
 import { staleCacheRetryMiddleware } from "@/api/client/staleCacheRetryMiddleware";
@@ -14,7 +15,11 @@ function getBaseUrl() {
 function apiClientFactory() {
     const client = createClient<GalaxyApiPaths>({ baseUrl: getBaseUrl() });
 
-    // Registered first so aborted requests bypass the rate-limiter queue.
+    // Response middleware runs in reverse order, so registering this first lets it see
+    // the final response, including one the rate limiter got by retrying.
+    client.use(errorResponseMiddleware);
+
+    // Registered ahead of the rate limiter so aborted requests bypass its queue.
     client.use(pendingRequestsMiddleware);
 
     // TODO: Adjust based on server limits (maybe this goes in Galaxy config?)

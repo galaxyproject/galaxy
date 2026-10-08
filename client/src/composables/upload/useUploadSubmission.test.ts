@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, ref } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
@@ -158,7 +158,10 @@ describe("useUploadSubmission", () => {
                 await vi.waitFor(() => {
                     expect(useUploadState().activeItems.value[1]?.status).toBe("processing");
                 });
-                return HttpResponse.json({ err_msg: "upload failed" }, { status: 500 });
+                return HttpResponse.json(
+                    { err_msg: "upload failed" },
+                    { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                );
             }),
             http.post("/api/histories/hist_1/contents/datasets", () =>
                 HttpResponse.json({ id: "hda_2", name: "copied library", hid: 2 }),
@@ -188,7 +191,10 @@ describe("useUploadSubmission", () => {
     it("marks the failed and remaining library copies as errored when a copy request fails", async () => {
         server.use(
             http.post("/api/histories/hist_1/contents/datasets", () =>
-                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+                HttpResponse.json(
+                    { err_msg: "Action requires account activation." },
+                    { status: 403, headers: GALAXY_RESPONSE_HEADERS },
+                ),
             ),
         );
 
@@ -374,7 +380,10 @@ describe("useUploadSubmission", () => {
         suppressExpectedErrorMessages(["Action requires account activation."]);
         server.use(
             http.post("/api/histories/hist_1/contents/datasets", () =>
-                HttpResponse.json({ err_msg: "Action requires account activation." }, { status: 403 }),
+                HttpResponse.json(
+                    { err_msg: "Action requires account activation." },
+                    { status: 403, headers: GALAXY_RESPONSE_HEADERS },
+                ),
             ),
         );
 
@@ -436,7 +445,7 @@ describe("useUploadSubmission", () => {
         server.use(
             http.post("/api/histories/hist_1/contents/datasets", () => HttpResponse.json({ id: "hda_lib_3", hid: 4 })),
             http.post("/api/dataset_collections", () =>
-                HttpResponse.json({ err_msg: "Collection error" }, { status: 500 }),
+                HttpResponse.json({ err_msg: "Collection error" }, { status: 500, headers: GALAXY_RESPONSE_HEADERS }),
             ),
         );
 

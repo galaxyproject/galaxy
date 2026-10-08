@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { h, nextTick, ref } from "vue";
 
 import type { HistorySummary } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
+import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -174,7 +174,7 @@ describe("UploadMethodView start", () => {
             http.post("/api/tools/fetch", () =>
                 HttpResponse.json(
                     { err_msg: "Action requires account activation.", err_code: 403007 },
-                    { status: 403 },
+                    { status: 403, headers: GALAXY_RESPONSE_HEADERS },
                 ),
             ),
         );
