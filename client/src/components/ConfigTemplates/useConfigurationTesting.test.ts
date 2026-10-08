@@ -32,10 +32,13 @@ const FAILED_CONNECTION_STATUS: PluginStatus = {
     connection: { state: "not_ok", message: "could not connect" },
 };
 
-function mockFailedTestAndTrackUpdates() {
+function mockFailedTestAndTrackUpdates({ requestFails = false } = {}) {
     const updateRequests = vi.fn();
     server.use(
         http.post("/api/object_store_instances/{uuid}/test", ({ response }) => {
+            if (requestFails) {
+                return response("5XX").json({ err_code: 500, err_msg: "test request failed" }, { status: 500 });
+            }
             return response(200).json(FAILED_CONNECTION_STATUS);
         }),
         http.put("/api/object_store_instances/{uuid}", ({ response }) => {
@@ -63,6 +66,24 @@ describe("useConfigurationTemplateEdit", () => {
         await onSubmit({});
 
         expect(error.value).toBe("could not connect");
+        expect(showForceActionButton.value).toBe(true);
+        expect(updateRequests).not.toHaveBeenCalled();
+    });
+
+    it("stops and offers to force the update when the test request itself fails", async () => {
+        const updateRequests = mockFailedTestAndTrackUpdates({ requestFails: true });
+        const { onSubmit, error, showForceActionButton } = useConfigurationTemplateEdit(
+            "storage location",
+            ref(INSTANCE),
+            ref(STANDARD_OBJECT_STORE_TEMPLATE),
+            "/api/object_store_instances/{uuid}/test",
+            "/api/object_store_instances/{uuid}",
+            useRouting,
+        );
+
+        await onSubmit({});
+
+        expect(error.value).toBe("test request failed");
         expect(showForceActionButton.value).toBe(true);
         expect(updateRequests).not.toHaveBeenCalled();
     });
