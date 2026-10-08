@@ -5,7 +5,10 @@ from typing import (
 
 from fsspec import AbstractFileSystem
 
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import (
+    MessageException,
+    RequestParameterInvalidException,
+)
 from galaxy.files.models import (
     AnyRemoteEntry,
     FilesSourceRuntimeContext,
@@ -16,6 +19,7 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
 )
+from galaxy.files.uris import validate_non_local
 from galaxy.util.config_templates import TemplateExpansion
 
 try:
@@ -53,7 +57,23 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
     ) -> AbstractFileSystem:
         if NomadFileSystem is None:
             raise self.required_package_exception
+        validate_non_local(context.config.base_url, self._file_sources_config.fetch_url_allowlist or [])
         return NomadFileSystem(base_url=context.config.base_url, **cache_options)
+
+    def _list(
+        self,
+        context: FilesSourceRuntimeContext[NomadFileSourceConfiguration],
+        path: str = "/",
+        recursive: bool = False,
+        write_intent: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        if recursive and not path.strip("/"):
+            raise RequestParameterInvalidException("Recursive listing of all NOMAD datasets is not supported.")
+        return super()._list(context, path, recursive, write_intent, limit, offset, query, sort_by)
 
     def _info_to_entry(self, info: dict[str, Any], config: NomadFileSourceConfiguration) -> AnyRemoteEntry:
         entry = super()._info_to_entry(info, config)
@@ -65,7 +85,7 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         self, fs: AbstractFileSystem, path: str, query: str, config: NomadFileSourceConfiguration
     ) -> list[AnyRemoteEntry]:
         # paths are NOMAD ids, so search the names users see instead of globbing paths
-        needle = query.casefold()
+        needle = query.strip().casefold()
         return [entry for entry in self._list_directory(fs, path, config) if needle in entry.name.casefold()]
 
     def _write_from(
