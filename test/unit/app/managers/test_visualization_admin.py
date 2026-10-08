@@ -559,6 +559,24 @@ class TestNpmRegistryQuery:
         assert "circster" in call_args[1]["params"]["text"]
 
     @patch("galaxy.managers.visualization_admin.requests.get")
+    def test_search_uses_v1_endpoint_scoped_to_galaxyproject(self, mock_get, manager):
+        # the legacy /-/search endpoint now 405s, and v1 search ignores a scope: qualifier
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "objects": [
+                {"package": {"name": "@galaxyproject/test-viz", "keywords": ["visualization"]}, "score": {}},
+                {"package": {"name": "someone-else-viz", "keywords": ["visualization"]}, "score": {}},
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        results = manager.query_npm_registry()
+        assert mock_get.call_args[0][0] == "https://registry.npmjs.org/-/v1/search"
+        assert mock_get.call_args[1]["params"]["text"].startswith("@galaxyproject")
+        assert [result["name"] for result in results] == ["@galaxyproject/test-viz"]
+
+    @patch("galaxy.managers.visualization_admin.requests.get")
     def test_get_package_versions(self, mock_get, manager):
         mock_response = MagicMock()
         mock_response.json.return_value = {"versions": {"1.0.0": {}, "2.0.0": {}, "1.1.0": {}}}
