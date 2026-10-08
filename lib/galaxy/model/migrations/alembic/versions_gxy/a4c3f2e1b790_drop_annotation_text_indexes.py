@@ -8,6 +8,7 @@ Create Date: 2026-09-17
 from galaxy.model.migrations.util import (
     create_index,
     drop_index,
+    index_names_on_columns,
 )
 
 revision = "a4c3f2e1b790"
@@ -28,8 +29,11 @@ ANNOTATION_INDEXES = (
 def upgrade():
     # PostgreSQL B-tree entries have a size limit even when the column is TEXT.
     # Annotation lookups use the item/user indexes, not the annotation value.
+    # Databases older than the explicit names in ANNOTATION_INDEXES carry auto-generated
+    # ones (e.g. ix_history_annotation_association_annotation), so drop by column.
     for table_name, index_name in ANNOTATION_INDEXES:
-        drop_index(index_name, table_name)
+        for existing_index_name in index_names_on_columns(table_name, ["annotation"], default=[index_name]):
+            drop_index(existing_index_name, table_name)
 
 
 def downgrade():
