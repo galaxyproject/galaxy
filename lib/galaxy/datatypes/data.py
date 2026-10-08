@@ -1285,8 +1285,6 @@ ZARR_NOT_CONSOLIDATED_MESSAGE = (
     "Cannot materialize this Zarr store: its directory contents cannot be listed, "
     "so the store must have consolidated metadata."
 )
-# Public S3 buckets that do not allow listing answer 403 instead of 404 for objects that do not exist.
-_ZARR_MISSING_STATUSES = (403, 404)
 
 
 def _extra_file_target(rel_path: str, extra_files_path: str) -> str:
@@ -1496,15 +1494,16 @@ class ZarrDirectory(Directory):
 
     def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
         """Download a Zarr store by computing its keys, since its source cannot list it (e.g. plain HTTP)."""
-        if _fetch_extra_file(reader, "zarr.json", extra_files_path, _ZARR_MISSING_STATUSES):
+        missing_statuses = reader.missing_file_statuses()
+        if _fetch_extra_file(reader, "zarr.json", extra_files_path, missing_statuses):
             root_metadata = _load_json(os.path.join(extra_files_path, "zarr.json"))
             if root_metadata.get("node_type") == "group" and not root_metadata.get("consolidated_metadata"):
                 raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
             metadata_keys, chunk_keys = zarr_v3_store_keys(root_metadata)
-        elif _fetch_extra_file(reader, ".zmetadata", extra_files_path, _ZARR_MISSING_STATUSES):
+        elif _fetch_extra_file(reader, ".zmetadata", extra_files_path, missing_statuses):
             metadata_keys, chunk_keys = zarr_v2_store_keys(_load_json(os.path.join(extra_files_path, ".zmetadata")))
-        elif _fetch_extra_file(reader, ".zarray", extra_files_path, _ZARR_MISSING_STATUSES):
-            _fetch_extra_file(reader, ".zattrs", extra_files_path, _ZARR_MISSING_STATUSES)
+        elif _fetch_extra_file(reader, ".zarray", extra_files_path, missing_statuses):
+            _fetch_extra_file(reader, ".zattrs", extra_files_path, missing_statuses)
             metadata_keys, chunk_keys = [], _zarr_v2_chunk_keys(
                 "", _load_json(os.path.join(extra_files_path, ".zarray"))
             )
@@ -1513,7 +1512,7 @@ class ZarrDirectory(Directory):
         if missing := _fetch_extra_files(reader, metadata_keys, extra_files_path):
             raise Exception(f"Zarr metadata file [{missing[0]}] could not be fetched")
         # Chunks that only hold the fill value are not stored.
-        _fetch_extra_files(reader, chunk_keys, extra_files_path, _ZARR_MISSING_STATUSES)
+        _fetch_extra_files(reader, chunk_keys, extra_files_path, missing_statuses)
 
     def sniff_directory(self, path: str) -> bool:
         store_root = self._store_root_folder_name(path)

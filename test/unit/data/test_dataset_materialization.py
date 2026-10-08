@@ -522,6 +522,13 @@ def directory_http_server(tmp_path):
     class QuietHandler(SimpleHTTPRequestHandler):
         # Public S3 buckets that do not allow listing answer 403 for objects that do not exist.
         missing_status = 404
+        denied_paths: set[str] = set()
+
+        def do_GET(self):
+            if self.path in self.denied_paths:
+                super().send_error(403)
+                return
+            super().do_GET()
 
         def send_error(self, code, message=None, explain=None):
             super().send_error(self.missing_status if code == 404 else code, message, explain)
@@ -677,6 +684,28 @@ def test_deferred_zarr_v2_materialized_over_http_from_consolidated_metadata(
         os.path.join("arr", "0"),
     ]
     assert materialized_hda.metadata.zarr_format == 2
+
+
+def test_denied_zarr_chunk_is_an_error_when_the_server_reports_missing_files(
+    tmpdir, monkeypatch, directory_http_server
+):
+    served, base_url, handler = directory_http_server
+    _write_zarr_v3_store(os.path.join(served, "store.zarr"), consolidated=True)
+    # The server answers 404 for missing files, so a 403 is a real denial, not an unwritten chunk.
+    handler.denied_paths = {"/store.zarr/arr/c/0"}
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{base_url}/store.zarr", "zarr")
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        file_sources=stock_file_sources_allowing_loopback(),
+        datatypes_registry=example_datatype_registry_for_sample(),
+    )
+
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "error"
+    assert "403" in materialized_hda.info
 
 
 def test_deferred_empty_directory_is_not_materialized(tmpdir, monkeypatch):
