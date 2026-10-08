@@ -35,7 +35,6 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
 )
 from galaxy.job_execution.protection import ProtectionError
-from galaxy.job_execution.protection.stage import SETUP_FAILURE_FILE
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners.util import runner_states
@@ -745,27 +744,22 @@ class BaseJobRunner:
                     log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
             tool_stdout = tool_streams["stdout"]
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
-            if any(error["errno"] == errno.ENOENT for error in stdio_errors):
+            if any(error["errno"] == errno.ENOENT for error in stdio_errors) and (
+                setup_failure := job_wrapper.setup_failure()
+            ):
                 # tool_stdout/tool_stderr are missing — this happens when a setup step
-                # running before the tool (remote_tool_eval.py, decrypting protected inputs)
-                # fails, so the tool command and its output redirection never run. Surface
-                # the saved traceback as a job-level error (not a tool error) since the tool
+                # running before the tool fails, so the tool command and its output redirection
+                # never run. Surface it as a job-level error (not a tool error) since the tool
                 # never actually ran.
-                eval_traceback_path = os.path.join(job_wrapper.working_directory, SETUP_FAILURE_FILE)
-                if os.path.exists(eval_traceback_path):
-                    with open(eval_traceback_path) as tb:
-                        eval_traceback_lines = tb.read().strip().splitlines()
-                    # The full traceback is already part of job_stderr, only surface the final exception line.
-                    eval_error = eval_traceback_lines[-1] if eval_traceback_lines else "unknown error"
-                    job_wrapper.fail(
-                        f"Job setup failed: {eval_error}",
-                        tool_stdout="",
-                        tool_stderr="",
-                        exit_code=exit_code,
-                        job_stdout=job_stdout,
-                        job_stderr=job_stderr,
-                    )
-                    return
+                job_wrapper.fail(
+                    f"Job setup failed: {setup_failure}",
+                    tool_stdout="",
+                    tool_stderr="",
+                    exit_code=exit_code,
+                    job_stdout=job_stdout,
+                    job_stderr=job_stderr,
+                )
+                return
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,

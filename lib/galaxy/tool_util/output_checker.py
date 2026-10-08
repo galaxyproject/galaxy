@@ -2,6 +2,7 @@ import re
 from enum import Enum
 from logging import getLogger
 from typing import (
+    cast,
     Literal,
     TYPE_CHECKING,
 )
@@ -235,6 +236,24 @@ def check_output(
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
     return state, stdout, stderr, job_messages
+
+
+def without_tool_output(job_messages: list[AnyJobMessage]) -> list[AnyJobMessage]:
+    """``job_messages`` without the tool output quoted by messages about regex matches."""
+    redacted: list[AnyJobMessage] = []
+    for message in job_messages:
+        if message.get("type") == "regex":
+            # Descriptions expand the tool's description template with the match.
+            message = cast(
+                RegexJobMessage,
+                {
+                    **message,
+                    "desc": f"{StdioErrorLevel.desc(message['error_level'])}: Tool output matched an error pattern",
+                    "match": None,
+                },
+            )
+        redacted.append(message)
+    return redacted
 
 
 def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> RegexJobMessage:

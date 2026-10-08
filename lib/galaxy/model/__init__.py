@@ -198,7 +198,10 @@ from galaxy.schema.states import (
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tool_util.output_checker import AnyJobMessage
+from galaxy.tool_util.output_checker import (
+    AnyJobMessage,
+    without_tool_output,
+)
 from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnDefinitions,
     SampleSheetRow,
@@ -607,6 +610,10 @@ def cached_id(galaxy_model_object):
     return galaxy_model_object.id
 
 
+# Tool output of jobs decrypting protected inputs may contain decrypted data.
+PROTECTED_TOOL_STREAM = "Tool output is not stored for jobs on encrypted datasets."
+
+
 class JobLike:
     job_messages: Mapped[list[AnyJobMessage] | None]
     tool_id: str | None
@@ -663,6 +670,10 @@ class JobLike:
                 )
             return galaxy.util.shrink_and_unicodify(stream)
 
+        if getattr(self, "protection_scheme", None):
+            tool_stdout = tool_stderr = PROTECTED_TOOL_STREAM
+            if job_messages is not None:
+                job_messages = without_tool_output(job_messages)
         self.tool_stdout = shrink_and_unicodify("tool_stdout", tool_stdout)
         self.tool_stderr = shrink_and_unicodify("tool_stderr", tool_stderr)
         if job_stdout is not None:
@@ -5110,8 +5121,6 @@ class Dataset(Base, StorableObject, Serializable):
                 except galaxy.exceptions.ObjectNotFound:
                     pass
         # TODO: purge metadata files
-        # Grants to compute on the data are useless once it is gone.
-        self.protection_grants.clear()
         self.deleted = True
         self.purged = True
 

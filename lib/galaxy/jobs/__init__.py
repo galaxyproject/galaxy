@@ -151,6 +151,8 @@ log = logging.getLogger(__name__)
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = "/bin/bash"
+# Written by remote_tool_eval.py when it fails, before the tool runs.
+REMOTE_TOOL_EVAL_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "traceback.txt")
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
@@ -1468,6 +1470,20 @@ class MinimalJobWrapper(HasResourceParameters):
             self.job_io.protection_plan_path = self.protection_plan_path
         return plan
 
+    def setup_failure(self) -> str | None:
+        """Why a step running before the tool failed, if one did: the tool never ran."""
+        if self.get_job().protection_scheme and (
+            protection_failure := self.app.dataset_protection.setup_failure(self.working_directory)
+        ):
+            return protection_failure
+        eval_traceback_path = os.path.join(self.working_directory, REMOTE_TOOL_EVAL_FAILURE_FILE)
+        if not os.path.exists(eval_traceback_path):
+            return None
+        with open(eval_traceback_path) as tb:
+            eval_traceback_lines = tb.read().strip().splitlines()
+        # The full traceback is already part of job_stderr, only surface the final exception line.
+        return eval_traceback_lines[-1] if eval_traceback_lines else "unknown error"
+
     def _write_protection_plan(self, plan: ProtectionPlan) -> str:
         path = os.path.join(self.working_directory, "configs", PLAN_FILENAME)
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -1620,7 +1636,8 @@ class MinimalJobWrapper(HasResourceParameters):
             if job.protection_scheme:
                 try:
                     if protection_error := self.app.dataset_protection.fail_job(job, self.working_directory):
-                        message = protection_error
+                        # Keep why the job failed, the protection errors are a consequence of it.
+                        message = f"{message} {protection_error}" if message else protection_error
                 except Exception:
                     log.exception(
                         "(%s) fail(): Could not remove the outputs of a failed protected job", self.get_id_tag()
@@ -2143,10 +2160,11 @@ class MinimalJobWrapper(HasResourceParameters):
         dataset.blurb = "done"
         dataset.peek = "no peek"
         dataset.info = dataset.info or ""
-        if context["stdout"].strip():
+        # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
+        if not job.protection_scheme and context["stdout"].strip():
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-        if context["stderr"].strip():
+        if not job.protection_scheme and context["stderr"].strip():
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
@@ -2273,7 +2291,8 @@ class MinimalJobWrapper(HasResourceParameters):
         if job.protection_scheme and (
             setup_failure := self.app.dataset_protection.setup_failure(self.working_directory)
         ):
-            # The tool never ran, there are no outputs to collect.
+            # The tool never ran, there are no outputs to collect. Runners only staging back
+            # outputs_populated (Pulsar with remote extended metadata) don't see missing tool streams.
             return self.fail(
                 f"Job setup failed: {setup_failure}",
                 tool_stdout="",
