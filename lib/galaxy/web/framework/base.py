@@ -211,6 +211,12 @@ class WebApplication:
             raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
+    def _client_fallback_match(self, environ):
+        if self.client_match is None or environ["is_api_request"]:
+            return None
+        # A fresh copy, since resolving the match pops controller and action from it
+        return dict(self.client_match)
+
     def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
         map_match = self.mapper.match(path_info, environ)
@@ -221,9 +227,9 @@ class WebApplication:
             environ["is_api_request"] = False
             controllers = self.controllers
         if map_match is None:
-            if environ["is_api_request"] or self.client_match is None:
+            map_match = self._client_fallback_match(environ)
+            if map_match is None:
                 raise webob.exc.HTTPNotFound(f"No route for {path_info}")
-            map_match = dict(self.client_match)
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -250,9 +256,10 @@ class WebApplication:
         try:
             controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
         except webob.exc.HTTPNotFound:
-            if environ["is_api_request"] or self.client_match is None:
+            client_match = self._client_fallback_match(environ)
+            if client_match is None:
                 raise
-            map_match = rc.mapper_dict = dict(self.client_match)
+            map_match = rc.mapper_dict = client_match
             controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
         trans.controller = controller_name
         trans.action = action
