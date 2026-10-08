@@ -40,7 +40,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.job_execution.protection import (
-    protected_directory,
+    protected_inputs_directory,
     ProtectedFile,
     ProtectedInput,
     ProtectionDestination,
@@ -74,6 +74,7 @@ from galaxy.util import now
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
     is_crypt4gh_file_ext,
+    iter_relpaths,
     read_crypt4gh_header,
     unwrap_crypt4gh_file_ext,
 )
@@ -92,6 +93,10 @@ GRANT_SOURCE_USER = "user"
 PROTECTED_TOOL_TYPES = ("default",)
 # Outputs are encrypted after the tool ran, the compute key must outlive the job.
 JOB_TTL_MARGIN = timedelta(hours=1)
+
+
+def _unsupported_tool_message(tool: "Tool") -> str:
+    return f"Tool '{tool.name}' can't be used with encrypted datasets."
 
 
 def _job_outputs(job: Job) -> list[DatasetInstance]:
@@ -137,6 +142,15 @@ def _summarize(errors: list[str], limit: int = 3) -> str:
     if len(errors) > limit:
         summary += f" ({len(errors) - limit} more errors)"
     return summary
+
+
+def _read_report(job_directory: str, relative_path: str, default: str) -> str | None:
+    """A failure the compute host reported in a file of the job directory, ``None`` if it reported none."""
+    path = os.path.join(job_directory, relative_path)
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return f.read().strip() or default
 
 
 def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
@@ -269,6 +283,13 @@ class DatasetProtectionManager:
         stmt = select(DatasetProtectionGrant).filter_by(user_id=user.id, dataset_id=dataset.id, scheme=scheme)
         return self.sa_session.scalars(stmt).one_or_none()
 
+    def _get_or_create_grant(self, user: User, dataset: Dataset, scheme: str) -> DatasetProtectionGrant:
+        grant = self.get_grant(user, dataset, scheme)
+        if grant is None:
+            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme)
+            self.sa_session.add(grant)
+        return grant
+
     def get_usable_grant(self, user: User, dataset_instance: DatasetInstance) -> DatasetProtectionGrant | None:
         """Return the user's grant on this dataset if it can still be used by the key service."""
         scheme = self.scheme_for(dataset_instance)
@@ -307,12 +328,9 @@ class DatasetProtectionManager:
         return self.grant_status(user, dataset_instance)
 
     def _store_user_grant(self, user: User, dataset: Dataset, scheme: str, record: GrantRecord) -> None:
-        grant = self.get_grant(user, dataset, scheme)
+        grant = self._get_or_create_grant(user, dataset, scheme)
         grant_data = dict(record.grant_data)
-        if grant is None:
-            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme)
-            self.sa_session.add(grant)
-        elif extra_files := (grant.grant_data or {}).get("extra_files"):
+        if extra_files := (grant.grant_data or {}).get("extra_files"):
             # Users only authorize the primary file again: keep the extra files of protected job outputs,
             # with the compute keypair they are encrypted to, until it expires.
             grant_data["extra_files"] = extra_files
@@ -376,7 +394,7 @@ class DatasetProtectionManager:
         if not to_decrypt:
             return
         if tool.tool_type not in PROTECTED_TOOL_TYPES:
-            raise RequestParameterInvalidException(f"Tool '{tool.name}' can't be used with encrypted datasets.")
+            raise RequestParameterInvalidException(_unsupported_tool_message(tool))
         for dataset_instance in to_decrypt:
             if dataset_instance.state != DatasetInstance.states.OK:
                 continue
@@ -403,7 +421,7 @@ class DatasetProtectionManager:
         if not to_decrypt:
             return None
         if tool.tool_type not in PROTECTED_TOOL_TYPES:
-            raise ProtectionError(f"Tool '{tool.name}' can't be used with encrypted datasets.")
+            raise ProtectionError(_unsupported_tool_message(tool))
         job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
         # Only jobs decrypting data depend on their destination.
         destination = get_destination()
@@ -411,7 +429,7 @@ class DatasetProtectionManager:
         assert destination.recryptor
         margin = JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
 
-        inputs_directory = os.path.join(protected_directory(job_directory), "inputs")
+        inputs_directory = protected_inputs_directory(job_directory)
         protected_inputs: list[ProtectedInput] = []
         grants: list[DatasetProtectionGrant] = []
         for dataset_instance in to_decrypt:
@@ -486,11 +504,9 @@ class DatasetProtectionManager:
 
     def setup_failure(self, job_directory: str) -> str | None:
         """Why decrypting the inputs of a protected job failed, if it did: the tool never ran."""
-        path = os.path.join(job_directory, PROTECTION_SETUP_FAILURE_FILE)
-        if not os.path.exists(path):
-            return None
-        with open(path) as f:
-            return f.read().strip() or "Could not decrypt the protected inputs of this job."
+        return _read_report(
+            job_directory, PROTECTION_SETUP_FAILURE_FILE, "Could not decrypt the protected inputs of this job."
+        )
 
     def finish_job(self, job: Job, job_directory: str) -> str | None:
         """Verify every output of a finished protected job was protected, record the grants to reuse them.
@@ -499,10 +515,10 @@ class DatasetProtectionManager:
         Grants are added to the current session, to be committed together with the job's final state.
         """
         errors: list[str] = []
-        cleanup_failure = os.path.join(job_directory, CLEANUP_FAILURE_FILE)
-        if os.path.exists(cleanup_failure):
-            with open(cleanup_failure) as f:
-                errors.append(f.read().strip() or "Could not remove the decrypted data of this job.")
+        if cleanup_failure := _read_report(
+            job_directory, CLEANUP_FAILURE_FILE, "Could not remove the decrypted data of this job."
+        ):
+            errors.append(cleanup_failure)
 
         sidecar = _read_sidecar(job_directory)
         if sidecar is None:
@@ -587,11 +603,9 @@ class DatasetProtectionManager:
                 return False
         if dataset.extra_files_path_exists() and os.path.isdir(extra_files_path := dataset.extra_files_path):
             recorded = record.get("extra_files", {})
-            for root, _, filenames in os.walk(extra_files_path):
-                for filename in filenames:
-                    path = os.path.join(root, filename)
-                    if os.path.relpath(path, extra_files_path) not in recorded or not check_crypt4gh(path):
-                        return False
+            for relpath in iter_relpaths(extra_files_path):
+                if relpath not in recorded or not check_crypt4gh(os.path.join(extra_files_path, relpath)):
+                    return False
         return True
 
     def _record_output_grants(
@@ -610,10 +624,7 @@ class DatasetProtectionManager:
                 continue
             scheme = self.scheme_for(dataset_instance)
             assert scheme and dataset_instance.dataset
-            grant = self.get_grant(job.user, dataset_instance.dataset, scheme.name)
-            if grant is None:
-                grant = DatasetProtectionGrant(user=job.user, dataset=dataset_instance.dataset, scheme=scheme.name)
-                self.sa_session.add(grant)
+            grant = self._get_or_create_grant(job.user, dataset_instance.dataset, scheme.name)
             grant.key_ref = key_ref
             grant.expires_at = expires_at
             extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
