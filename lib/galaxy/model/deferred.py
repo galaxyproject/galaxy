@@ -228,9 +228,6 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance = dataset_instance
         if exception_materializing is not None:
             materialized_dataset.state = Dataset.states.ERROR
-            error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
-            materialized_dataset_instance.info = error_msg
-            log.error(error_msg)
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
@@ -248,6 +245,11 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.dataset = replacement_dataset.dataset
             materialized_dataset_instance.dataset_id = replacement_dataset.dataset_id
             materialized_dataset_instance._metadata = replacement_dataset._metadata
+        if exception_materializing is not None:
+            # Set after copy_from, which would otherwise replace it with the source's info.
+            error_msg = f"Failed to materialize deferred dataset with exception: {exception_materializing}"
+            materialized_dataset_instance.info = error_msg
+            log.error(error_msg)
         if replacement_dataset:
             # we have checked that we don't need to regenerate metadata in the get_replacement_dataset call
             materialized_dataset_instance.metadata_deferred = False
