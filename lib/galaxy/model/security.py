@@ -908,7 +908,10 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             for dp in dataset.actions:
                 self.sa_session.delete(dp)
                 flush_needed = True
-        # Add the new permissions on the dataset
+            existing = set()
+        else:
+            existing = {(dp.action, dp.role_id) for dp in dataset.actions}
+        # Add the new permissions on the dataset, skipping any the dataset already has
         for action, roles in permissions.items():
             if isinstance(action, Action):
                 action = action.action
@@ -917,6 +920,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     role_id = role.id
                 else:
                     role_id = role
+                if (action, role_id) in existing:
+                    continue
+                existing.add((action, role_id))
                 dp = DatasetPermissions(action, dataset, role_id=role_id)
                 self.sa_session.add(dp)
                 flush_needed = True

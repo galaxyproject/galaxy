@@ -1840,6 +1840,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
             # Run simple non-upload tool with an input data parameter.
             inputs = self._get_cat1_inputs(history_id)
+            self.dataset_populator.wait_for_history(history_id)
+            self.dataset_populator.make_dataset_public(history_id, inputs["input1"]["id"])
             original_output = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
             original_job = self.dataset_populator.get_job_details(original_output["jobs"][0]["id"], full=True).json()
 
@@ -2311,7 +2313,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     else:
                         self._assert_dataset_permission_denied_response(response)
 
-            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test", wait=True)
+            self.dataset_populator.make_dataset_public(history_id, new_dataset["id"])
             inputs = dict(
                 input1=dataset_to_param(new_dataset),
             )

@@ -1756,7 +1756,8 @@ class BaseDatasetPopulator(BasePopulator):
             "access": [role_id],
             "manage": [role_id],
         }
-        response = self.update_permissions_raw(history_id, dataset_id, payload)
+        # Act as the owner: for an admin, the owner's private role is not a legitimate access role.
+        response = self.update_permissions_raw(history_id, dataset_id, payload, admin=False)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
@@ -1769,9 +1770,13 @@ class BaseDatasetPopulator(BasePopulator):
         response = self.update_permissions_raw(history_id, dataset_id, payload)
         return response
 
-    def update_permissions_raw(self, history_id: str, dataset_id: str, payload: dict) -> Response:
+    def make_dataset_public(self, history_id: str, dataset_id: str) -> None:
+        response = self.make_dataset_public_raw(history_id, dataset_id)
+        api_asserts.assert_status_code_is_ok(response)
+
+    def update_permissions_raw(self, history_id: str, dataset_id: str, payload: dict, admin: bool = True) -> Response:
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
-        update_response = self._put(url, payload, admin=True, json=True)
+        update_response = self._put(url, payload, admin=admin, json=True)
         return update_response
 
     def make_public(self, history_id: str) -> dict:

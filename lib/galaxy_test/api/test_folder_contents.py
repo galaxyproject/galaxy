@@ -219,8 +219,10 @@ class TestFolderContentsApi(ApiTestCase):
         ldda_ids: list[str] = []
         deleted_ldda_ids: list[str] = []
         for _ in range(num_datasets):
-            ldda_id, _ = self._create_dataset_in_folder(history_id, folder_id)
+            ldda_id, hda_id = self._create_dataset_in_folder(history_id, folder_id)
             ldda_ids.append(ldda_id)
+            self.dataset_populator.wait_for_history(history_id)
+            self.dataset_populator.make_dataset_public(history_id, hda_id)
 
         for index, ldda_id in enumerate(ldda_ids):
             if index % 2 == 0:

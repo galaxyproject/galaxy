@@ -122,6 +122,8 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
 
         def create_drs_object():
             hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+            # The DRS fetch below runs without the user's credentials.
+            self.dataset_populator.make_dataset_public(history_id, hda["id"])
             # Force the md5 hash to be evaluated. Otherwise, the DRS endpoint will attempt to dispatch an md5
             # task and returns a 204 Try Later. This will cause a timeout in a test environment without multiple
             # celery workers, so we forcibly compute the hash.
