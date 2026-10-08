@@ -1,5 +1,7 @@
 import ipaddress
 
+import pytest
+
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
@@ -10,6 +12,7 @@ from galaxy.files.uris import (
 )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_validate_local_ip_access():
     assert validates_as_non_local("http://google.com", [])
     assert not validates_as_non_local("http://127.0.0.1/secrets.txt", [])
@@ -21,6 +24,7 @@ def test_validate_local_ip_access():
     )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_validate():
     # Check the non local ip address checks from above...
     assert validates("http://google.com", False, [])
