@@ -89,6 +89,34 @@ def test_reload_registry_reloads_locally_and_broadcasts(service, app):
     app.queue_worker.send_control_task.assert_called_once_with("reload_visualizations", noop_self=True)
 
 
+def _assert_registry_reloaded(app):
+    app.visualizations_registry.reload.assert_called_once_with()
+    app.queue_worker.send_control_task.assert_called_once_with("reload_visualizations", noop_self=True)
+
+
+def test_stage_reloads_registry(service, app):
+    service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
+    service.stage_visualization(MagicMock(), "circster")
+    _assert_registry_reloaded(app)
+
+
+def test_stage_all_reloads_registry(service, app):
+    service.stage_all_visualizations(MagicMock())
+    _assert_registry_reloaded(app)
+
+
+def test_uninstall_reloads_registry(service, app):
+    service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
+    service.uninstall_package(MagicMock(), "circster")
+    _assert_registry_reloaded(app)
+
+
+def test_toggle_reloads_registry(service, app):
+    service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
+    service.toggle_package(MagicMock(), "circster", False)
+    _assert_registry_reloaded(app)
+
+
 def test_available_packages_maps_registry_results(service, manager):
     registry_result = [
         {

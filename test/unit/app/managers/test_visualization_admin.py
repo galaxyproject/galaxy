@@ -531,6 +531,71 @@ class TestStaging:
 # --- npm registry query ---
 
 
+def _staged_index(manager, viz_id):
+    path = os.path.join(manager.get_staged_path(viz_id), "static", "index.html")
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return f.read()
+
+
+class TestServedVersion:
+    """Uninstall and enable/disable change what's staged, not just the package config."""
+
+    def test_uninstall_restages_the_builtin_it_replaced(self, fake_npm):
+        _create_viz_static(fake_npm, "my_viz", content="builtin")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.stage_visualization("my_viz")
+        assert _staged_index(fake_npm, "my_viz") == "1.0.0"
+
+        fake_npm.uninstall_package("my_viz")
+        assert _staged_index(fake_npm, "my_viz") == "builtin"
+
+    def test_uninstall_without_a_builtin_unstages(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.stage_visualization("my_viz")
+
+        fake_npm.uninstall_package("my_viz")
+        assert not os.path.exists(fake_npm.get_staged_path("my_viz"))
+
+    def test_disable_unstages_the_package(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.stage_visualization("my_viz")
+
+        fake_npm.toggle_package_enabled("my_viz", False)
+        assert not os.path.exists(fake_npm.get_staged_path("my_viz"))
+        assert fake_npm.is_package_installed("my_viz")
+
+    def test_disable_falls_back_to_the_builtin(self, fake_npm):
+        _create_viz_static(fake_npm, "my_viz", content="builtin")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.stage_visualization("my_viz")
+
+        fake_npm.toggle_package_enabled("my_viz", False)
+        assert _staged_index(fake_npm, "my_viz") == "builtin"
+
+    def test_enable_restages_the_package(self, fake_npm):
+        _create_viz_static(fake_npm, "my_viz", content="builtin")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.toggle_package_enabled("my_viz", False)
+
+        fake_npm.toggle_package_enabled("my_viz", True)
+        assert _staged_index(fake_npm, "my_viz") == "1.0.0"
+
+    def test_stage_all_skips_disabled_packages(self, fake_npm):
+        _create_viz_static(fake_npm, "my_viz", content="builtin")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.install_package("other_viz", "@galaxyproject/other_viz", "1.0.0")
+        config = fake_npm.load_config()
+        config["my_viz"]["enabled"] = False
+        config["other_viz"]["enabled"] = False
+        fake_npm.save_config(config)
+
+        fake_npm.stage_all_visualizations()
+        assert _staged_index(fake_npm, "my_viz") == "builtin"
+        assert not os.path.exists(fake_npm.get_staged_path("other_viz"))
+
+
 class TestNpmRegistryQuery:
     @patch("galaxy.managers.visualization_admin.requests.get")
     def test_filters_by_visualization_keyword(self, mock_get, manager):
