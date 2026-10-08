@@ -215,12 +215,13 @@ class TestCrypt4GHGrantsIntegration(integration_util.IntegrationTestCase):
             self._assert_status_code_is(self._grant(dataset["id"]), 403)
             self._assert_status_code_is(self._get(f"datasets/{dataset['id']}/protection"), 403)
 
-    def test_purge_removes_grants(self, history_id):
+    def test_purge_disables_grants(self, history_id):
         dataset = self._upload_protected(history_id)
         self._assert_status_code_is(self._grant(dataset["id"]), 200)
-        assert len(self._grants_for_dataset(dataset["id"])) == 1
+        assert self._protection(dataset["id"])["ready"] is True
         self.dataset_populator.delete_dataset(history_id, dataset["id"], purge=True, wait_for_purge=True)
-        assert self._grants_for_dataset(dataset["id"]) == []
+        assert self._protection(dataset["id"])["ready"] is False
+        self._assert_status_code_is(self._grant(dataset["id"]), 400)
 
 
 class TestCrypt4GHGrantsDisabledIntegration(integration_util.IntegrationTestCase):
