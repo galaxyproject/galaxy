@@ -21,7 +21,9 @@ log = logging.getLogger(__name__)
 
 _NPM_PACKAGE_RE = re.compile(r"^(@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+([a-zA-Z0-9.+-]*)$")
-_VIZ_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?$")
+# Flat names only: npm packages are flat, the registry keys plugins by name, and the admin routes take
+# a single {viz_id} path segment.
+_VIZ_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 class VisualizationPackageManager:
@@ -115,15 +117,11 @@ class VisualizationPackageManager:
     def get_enabled_packages(self) -> dict[str, str]:
         """Installed, enabled runtime packages, mapped to their directory in the package store."""
         packages = {}
-        for viz_id in self.load_config():
+        for viz_id, info in self.load_config().items():
             package_path = self.get_package_path(viz_id)
-            if self._is_enabled(viz_id) and os.path.isdir(package_path):
+            if info.get("enabled", True) and os.path.isdir(package_path):
                 packages[viz_id] = package_path
         return packages
-
-    def _is_enabled(self, viz_id: str) -> bool:
-        info = self.get_package_info(viz_id)
-        return info is None or info.get("enabled", True)
 
     def install_package(self, viz_id: str, package: str, version: str) -> dict[str, Any]:
         """Install a new package into the managed store and record it in the config."""
@@ -195,6 +193,9 @@ class VisualizationPackageManager:
             "--no-audit",
             "--no-fund",
             "--production",
+            # keep npm's cache and logs out of the Galaxy user's home, which may not be writable
+            "--cache",
+            os.path.join(prefix, ".npm-cache"),
         ]
         log.info(f"Installing npm package: {package_spec}")
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=prefix)

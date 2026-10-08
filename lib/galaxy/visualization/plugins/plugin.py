@@ -16,7 +16,14 @@ class VisualizationPlugin:
     """
 
     def __init__(
-        self, path: str, name: str, config: dict[str, Any], url_prefix: str = "", static_path: str | None = None
+        self,
+        path: str,
+        name: str,
+        config: dict[str, Any],
+        url_prefix: str = "",
+        static_path: str | None = None,
+        static_dir: str | None = None,
+        runtime: bool = False,
     ) -> None:
         self.path = path
         self.name = name
@@ -24,6 +31,10 @@ class VisualizationPlugin:
         self.url_prefix = url_prefix
         # Built-ins are served from Galaxy's static tree; runtime-installed packages pass their own URL
         self.static_path = static_path or os.path.join("/static/plugins/visualizations/", name, "static")
+        # the directory actually served at static_path
+        self.static_dir = static_dir or os.path.join(path, "static")
+        # loaded from the managed package store rather than shipped with Galaxy
+        self.runtime = runtime
         self._set_logo()
 
     def to_dict(self):
@@ -48,6 +59,6 @@ class VisualizationPlugin:
 
     def _set_logo(self):
         for file_format in ("png", "svg"):
-            if os.path.isfile(os.path.join(self.path, "static", f"logo.{file_format}")):
+            if os.path.isfile(os.path.join(self.static_dir, f"logo.{file_format}")):
                 self.config["logo"] = f".{self.static_path}/logo.{file_format}"
                 return
