@@ -432,6 +432,11 @@ class FastAPIRepositories:
         # to just serialize the ones we want to use to a dictionary.
         # by_alias=True ensures type_ → type, matching update_validated_repository's expected keys.
         update_dictionary = request.model_dump(exclude_unset=True, by_alias=True)
+        # The API's synopsis/description are the model's description/long_description (as in create_repository).
+        if "description" in update_dictionary:
+            update_dictionary["long_description"] = update_dictionary.pop("description")
+        if "synopsis" in update_dictionary:
+            update_dictionary["description"] = update_dictionary.pop("synopsis")
         repo_result, message = update_validated_repository(trans, repository, **update_dictionary)
         if repo_result is None:
             raise ActionInputError(message)
