@@ -2,6 +2,7 @@ import abc
 import logging
 import os
 import shutil
+import tempfile
 from typing import (
     NamedTuple,
 )
@@ -9,6 +10,7 @@ from typing import (
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.datatypes.data import Directory
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -22,6 +24,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     OptionalUserContext,
 )
+from galaxy.files.uris import UriDirectoryReader
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -39,6 +42,7 @@ from galaxy.model import (
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
+    persist_extra_files_for_dataset,
 )
 from galaxy.util.hash_util import verify_hash
 from .dereference import get_replacement_dataset
@@ -159,6 +163,8 @@ class DatasetInstanceMaterializer:
             materialized_dataset.sources = copied_sources
             materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
+        datatype = dataset_instance.datatype
+        directory_datatype = datatype if isinstance(datatype, Directory) else None
         transient_paths = None
         replacement_dataset: HistoryDatasetAssociation | None = None
 
@@ -197,9 +203,25 @@ class DatasetInstanceMaterializer:
             )
             if not replacement_dataset:
                 try:
-                    path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
-                    self._sniff_deferred_extension(path, dataset_instance)
-                    object_store.update_from_file(materialized_dataset, file_name=path)
+                    if directory_datatype is not None:
+                        extra_files_path = tempfile.mkdtemp(prefix="gx_directory_stream")
+                        try:
+                            path = self._stream_directory_source(target_source, directory_datatype, extra_files_path)
+                            object_store.update_from_file(materialized_dataset, file_name=path)
+                            if os.path.exists(path):
+                                os.remove(path)
+                            persist_extra_files_for_dataset(
+                                object_store,
+                                extra_files_path,
+                                materialized_dataset,
+                                materialized_dataset.extra_files_path_name_from(object_store),
+                            )
+                        finally:
+                            shutil.rmtree(extra_files_path, ignore_errors=True)
+                    else:
+                        path = self._stream_source(target_source, datatype, materialized_dataset)
+                        self._sniff_deferred_extension(path, dataset_instance)
+                        object_store.update_from_file(materialized_dataset, file_name=path)
                     materialized_dataset.set_size()
                 except Exception as e:
                     exception_materializing = e
@@ -210,8 +232,18 @@ class DatasetInstanceMaterializer:
             # TODO: optimize this by streaming right to this path...
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
-                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
-                self._sniff_deferred_extension(path, dataset_instance)
+                if directory_datatype is not None:
+                    extra_files_path = transient_paths.external_extra_files_path
+                    try:
+                        path = self._stream_directory_source(target_source, directory_datatype, extra_files_path)
+                    except Exception:
+                        # Do not leave a partial download behind.
+                        shutil.rmtree(extra_files_path, ignore_errors=True)
+                        raise
+                    materialized_dataset.external_extra_files_path = extra_files_path
+                else:
+                    path = self._stream_source(target_source, datatype, materialized_dataset)
+                    self._sniff_deferred_extension(path, dataset_instance)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -255,7 +287,10 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
             return materialized_dataset_instance
         require_metadata_regeneration = (
-            materialized_dataset_instance.has_metadata_files or materialized_dataset_instance.metadata_deferred
+            materialized_dataset_instance.has_metadata_files
+            or materialized_dataset_instance.metadata_deferred
+            # Directory metadata (e.g. the Zarr format) can only be read from the materialized files.
+            or (directory_datatype is not None and exception_materializing is None)
         )
         if require_metadata_regeneration:
             materialized_dataset_instance.init_meta()
@@ -286,6 +321,17 @@ class DatasetInstanceMaterializer:
         sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
         if sniffed and sniffed != "auto":
             dataset_instance.extension = sniffed
+
+    def _stream_directory_source(self, target_source: DatasetSource, datatype: Directory, extra_files_path: str) -> str:
+        """Download a directory dataset's files into ``extra_files_path``; return its empty primary file."""
+        source_uri = target_source.source_uri
+        if source_uri is None:
+            raise Exception("Cannot stream from dataset source without specified source_uri")
+        reader = UriDirectoryReader(source_uri, file_sources=self._file_sources, user_context=self._user_context)
+        os.makedirs(extra_files_path, exist_ok=True)
+        datatype.materialize_extra_files(reader, extra_files_path)
+        with tempfile.NamedTemporaryFile(prefix="gx_directory_primary", delete=False) as primary_file:
+            return primary_file.name
 
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
         source_uri = target_source.source_uri

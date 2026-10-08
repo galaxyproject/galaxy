@@ -1,7 +1,10 @@
+import itertools
 import json
 import logging
+import math
 import mimetypes
 import os
+import posixpath
 import shutil
 import string
 import tempfile
@@ -61,6 +64,7 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
+from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -70,6 +74,7 @@ from . import (
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
     from galaxy.datatypes.registry import Registry
+    from galaxy.files.uris import UriDirectoryReader
     from galaxy.managers.context import (
         ProvidesAppContext,
         ProvidesUserContext,
@@ -1275,10 +1280,114 @@ class Text(Data):
         return p_dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
 
 
+ZARR_NOT_CONSOLIDATED_MESSAGE = (
+    "Cannot materialize this Zarr store: its directory contents cannot be listed, "
+    "so the store must have consolidated metadata."
+)
+# Public S3 buckets that do not allow listing answer 403 instead of 404 for objects that do not exist.
+_ZARR_MISSING_STATUSES = (403, 404)
+
+
+def _fetch_extra_file(
+    reader: "UriDirectoryReader", rel_path: str, extra_files_path: str, missing_statuses: tuple[int, ...] = (404,)
+) -> bool:
+    """Fetch ``rel_path`` into ``extra_files_path``; return ``False`` if it does not exist."""
+    if not safe_relpath(rel_path):
+        raise Exception(f"Refusing to materialize unsafe path [{rel_path}]")
+    target_path = os.path.join(extra_files_path, rel_path)
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    if reader.fetch(rel_path, target_path, missing_statuses):
+        return True
+    if os.path.exists(target_path):
+        os.remove(target_path)
+    return False
+
+
+def _load_json(path: str) -> dict[str, Any]:
+    with open(path) as f:
+        return json.load(f)
+
+
+def _chunk_grid_indices(shape: list[int], chunk_shape: list[int]) -> Iterable[tuple[int, ...]]:
+    return itertools.product(*(range(math.ceil(size / chunk)) for size, chunk in zip(shape, chunk_shape)))
+
+
+def _zarr_v2_chunk_keys(prefix: str, array_metadata: dict[str, Any]) -> list[str]:
+    separator = array_metadata.get("dimension_separator") or "."
+    keys = []
+    for index in _chunk_grid_indices(array_metadata["shape"], array_metadata["chunks"]):
+        keys.append(f"{prefix}{separator.join(str(i) for i in index) or '0'}")
+    return keys
+
+
+def _zarr_v3_chunk_keys(path: str, array_metadata: dict[str, Any]) -> list[str]:
+    encoding = array_metadata.get("chunk_key_encoding") or {"name": "default"}
+    is_default_encoding = encoding["name"] == "default"
+    separator = (encoding.get("configuration") or {}).get("separator") or ("/" if is_default_encoding else ".")
+    chunk_shape = array_metadata["chunk_grid"]["configuration"]["chunk_shape"]
+    prefix = f"{path}/" if path else ""
+    keys = []
+    for index in _chunk_grid_indices(array_metadata["shape"], chunk_shape):
+        if is_default_encoding:
+            key = "c" + "".join(f"{separator}{i}" for i in index)
+        else:
+            key = separator.join(str(i) for i in index) or "0"
+        keys.append(f"{prefix}{key}")
+    return keys
+
+
+def zarr_v3_store_keys(root_metadata: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Return the metadata and chunk keys of a Zarr v3 store, from its root ``zarr.json``.
+
+    Groups are only followed through consolidated metadata. The root ``zarr.json``
+    itself is not included.
+    """
+    nodes = {"": root_metadata}
+    consolidated = root_metadata.get("consolidated_metadata") or {}
+    nodes.update(consolidated.get("metadata") or {})
+    metadata_keys = [f"{path}/zarr.json" for path in nodes if path]
+    chunk_keys = []
+    for path, node in nodes.items():
+        if node.get("node_type") == "array":
+            chunk_keys.extend(_zarr_v3_chunk_keys(path, node))
+    return metadata_keys, chunk_keys
+
+
+def zarr_v2_store_keys(consolidated_metadata: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Return the metadata and chunk keys of a Zarr v2 store, from its ``.zmetadata``.
+
+    ``.zmetadata`` itself is not included.
+    """
+    metadata = consolidated_metadata.get("metadata") or {}
+    chunk_keys = []
+    for key, value in metadata.items():
+        if posixpath.basename(key) == ".zarray":
+            chunk_keys.extend(_zarr_v2_chunk_keys(key[: -len(".zarray")], value))
+    return list(metadata), chunk_keys
+
+
 class Directory(Data):
     """Class representing a directory of files."""
 
     file_ext = "directory"
+
+    def materialize_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
+        """Download the directory a deferred dataset points to into ``extra_files_path``."""
+        rel_paths = reader.list_files()
+        if rel_paths is None:
+            self._materialize_unlisted_extra_files(reader, extra_files_path)
+            return
+        if not rel_paths:
+            raise Exception("The directory to materialize is empty or does not exist")
+        for rel_path in rel_paths:
+            if not _fetch_extra_file(reader, rel_path, extra_files_path):
+                raise Exception(f"Listed file [{rel_path}] could not be fetched")
+
+    def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
+        """Download the directory when its source cannot list it; datatypes that know their layout override this."""
+        raise Exception(
+            f"Cannot materialize a [{self.file_ext}] dataset from a URI whose directory contents cannot be listed."
+        )
 
     def sniff_directory(self, path: str) -> bool:
         """Return whether the extra-files directory at ``path`` matches this datatype."""
@@ -1365,6 +1474,29 @@ class ZarrDirectory(Directory):
                 return self._yield_user_file_content(trans, dataset, metadata_file_path, headers), headers
 
         return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
+    def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
+        """Download a Zarr store by computing its keys, since its source cannot list it (e.g. plain HTTP)."""
+        if _fetch_extra_file(reader, "zarr.json", extra_files_path, _ZARR_MISSING_STATUSES):
+            root_metadata = _load_json(os.path.join(extra_files_path, "zarr.json"))
+            if root_metadata.get("node_type") == "group" and not root_metadata.get("consolidated_metadata"):
+                raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
+            metadata_keys, chunk_keys = zarr_v3_store_keys(root_metadata)
+        elif _fetch_extra_file(reader, ".zmetadata", extra_files_path, _ZARR_MISSING_STATUSES):
+            metadata_keys, chunk_keys = zarr_v2_store_keys(_load_json(os.path.join(extra_files_path, ".zmetadata")))
+        elif _fetch_extra_file(reader, ".zarray", extra_files_path, _ZARR_MISSING_STATUSES):
+            _fetch_extra_file(reader, ".zattrs", extra_files_path, _ZARR_MISSING_STATUSES)
+            metadata_keys, chunk_keys = [], _zarr_v2_chunk_keys(
+                "", _load_json(os.path.join(extra_files_path, ".zarray"))
+            )
+        else:
+            raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
+        for key in metadata_keys:
+            if not _fetch_extra_file(reader, key, extra_files_path):
+                raise Exception(f"Zarr metadata file [{key}] could not be fetched")
+        for key in chunk_keys:
+            # Chunks that only hold the fill value are not stored.
+            _fetch_extra_file(reader, key, extra_files_path, _ZARR_MISSING_STATUSES)
 
     def sniff_directory(self, path: str) -> bool:
         store_root = self._store_root_folder_name(path)
