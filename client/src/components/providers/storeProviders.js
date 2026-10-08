@@ -91,7 +91,11 @@ export const DatatypesProvider = {
             this.loading = true;
             let datatypes = this.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
-                await this.fetchUploadDatatypes();
+                try {
+                    await this.fetchUploadDatatypes();
+                } catch (err) {
+                    console.log("Error: unable to load datatypes", err);
+                }
                 datatypes = this.getUploadDatatypes;
             }
             this.item = datatypes;
