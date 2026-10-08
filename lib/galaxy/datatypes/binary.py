@@ -4867,9 +4867,9 @@ class Parquet(Binary):
 
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.get_file_name())
-            column_count = getattr(dataset.metadata, "columns", 0)
-            line_count = getattr(dataset.metadata, "data_lines", 0)
+            dataset.peek = "Parquet data"
+            column_count = dataset.metadata.columns
+            line_count = dataset.metadata.data_lines
             if column_count > 0 or line_count > 0:
                 col_label = "column" if column_count <= 1 else "columns"
                 line_label = "line" if line_count <= 1 else "lines"
