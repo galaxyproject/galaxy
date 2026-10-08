@@ -10546,6 +10546,28 @@ inputs:
 steps: []
 """)
 
+    def test_value_restriction_static_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  single_text:
+    type: text
+    restrictions: [a, b, c]
+    default: b
+  multiple_text:
+    type: [text]
+    restrictions: [a, b, c]
+    default: [b, c]
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        single_input, multiple_input = (step["inputs"][0] for step in run_workflow["steps"])
+        assert single_input["value"] == "b"
+        assert single_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", False]]
+        assert multiple_input["value"] == ["b", "c"]
+        assert multiple_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", True]]
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
