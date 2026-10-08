@@ -21,7 +21,7 @@ def python_files(directory: Path, *, followlinks: bool = False) -> list[Path]:
     files = []
     for current, directories, names in os.walk(directory, followlinks=followlinks, onerror=raise_error):
         directories[:] = [name for name in directories if name != "build"]
-        if any(part in Path(current).as_posix() for part in EXCLUDED):
+        if any(f"/{part}/" in f"{Path(current).as_posix()}/" for part in EXCLUDED):
             directories.clear()
             continue
         files.extend(Path(current) / name for name in sorted(names) if name.endswith(".py"))
