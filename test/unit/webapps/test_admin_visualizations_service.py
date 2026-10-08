@@ -15,9 +15,12 @@ from galaxy.webapps.galaxy.services.admin_visualizations import AdminVisualizati
 def _fake_npm_install(package_spec: str, prefix: str) -> None:
     package, version = package_spec.rsplit("@", 1)
     pkg_path = os.path.join(prefix, "node_modules", *package.split("/"))
-    os.makedirs(pkg_path, exist_ok=True)
+    os.makedirs(os.path.join(pkg_path, "static"), exist_ok=True)
     with open(os.path.join(pkg_path, "package.json"), "w") as f:
         json.dump({"name": package, "version": version}, f)
+    plugin_name = package.split("/")[-1]
+    with open(os.path.join(pkg_path, "static", f"{plugin_name}.xml"), "w") as f:
+        f.write(f"<visualization name='{plugin_name}' />")
 
 
 @pytest.fixture()

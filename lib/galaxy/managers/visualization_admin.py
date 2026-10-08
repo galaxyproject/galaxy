@@ -125,7 +125,13 @@ class VisualizationPackageManager:
         if self.get_package_info(viz_id) or self.is_package_installed(viz_id):
             raise exceptions.Conflict(f"Package '{viz_id}' is already installed")
 
-        install_result = self.install_npm_package(package, version, self.get_package_path(viz_id))
+        package_path = self.get_package_path(viz_id)
+        install_result = self.install_npm_package(package, version, package_path)
+        try:
+            self._require_static_config(viz_id, package_path, f"{package}@{version}")
+        except exceptions.MessageException:
+            shutil.rmtree(package_path, ignore_errors=True)
+            raise
         self.add_package_to_config(viz_id, package, version, enabled=True)
         log.info(f"Successfully installed visualization package {viz_id} ({package}@{version})")
         return install_result
@@ -147,6 +153,7 @@ class VisualizationPackageManager:
             except Exception:
                 log.warning(f"Failed to install {package}@{version}, keeping existing version")
                 raise
+            self._require_static_config(viz_id, new_pkg_dir, f"{package}@{version}")
 
             backup_dir = os.path.join(staging_dir, f"{viz_id}_backup")
             if os.path.exists(target_dir):
@@ -232,6 +239,15 @@ class VisualizationPackageManager:
         except Exception as e:
             log.error(f"Failed to install npm package {package}@{version}: {e}")
             raise exceptions.InternalServerError(f"Package installation failed: {e}")
+
+    def _require_static_config(self, viz_id: str, package_dir: str, package_spec: str) -> None:
+        # Same check the client build applies to bundled visualizations; without it staging can't work.
+        plugin_name = viz_id.split("/")[-1]
+        if not os.path.isfile(os.path.join(package_dir, "static", f"{plugin_name}.xml")):
+            raise exceptions.RequestParameterInvalidException(
+                f"{package_spec} doesn't include static/{plugin_name}.xml, so Galaxy can't load it as the "
+                f"'{viz_id}' visualization"
+            )
 
     def validate_package_structure(self, package_dir: str) -> bool:
         """Validate that a package has the minimum required structure."""
