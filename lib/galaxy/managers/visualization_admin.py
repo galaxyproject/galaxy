@@ -306,8 +306,9 @@ class VisualizationPackageManager:
     def query_npm_registry(self, search_term: str | None = None) -> list[dict[str, Any]]:
         """Query npm registry for @galaxyproject visualization packages."""
         try:
-            base_url = "https://registry.npmjs.org/-/search"
-            query_parts = ["scope:galaxyproject"]
+            # v1 search ignores the scope: qualifier, so search for the scope name and filter on it below
+            base_url = "https://registry.npmjs.org/-/v1/search"
+            query_parts = ["@galaxyproject"]
             if search_term:
                 query_parts.append(search_term)
 
@@ -324,6 +325,8 @@ class VisualizationPackageManager:
 
             for result in data.get("objects", []):
                 package_info = result.get("package", {})
+                if not package_info.get("name", "").startswith("@galaxyproject/"):
+                    continue
                 keywords = package_info.get("keywords", [])
                 if "visualization" in keywords or "galaxy-visualization" in keywords:
                     packages.append(
