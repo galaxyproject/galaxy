@@ -118,6 +118,11 @@ class VisualizationPackageManager:
             config[viz_id] = {"package": config[viz_id], "enabled": enabled}
 
         self.save_config(config)
+        self._restage(viz_id)
+
+    def _is_enabled(self, viz_id: str) -> bool:
+        info = self.get_package_info(viz_id)
+        return info is None or info.get("enabled", True)
 
     def install_package(self, viz_id: str, package: str, version: str) -> dict[str, Any]:
         """Install a new package into the managed store and record it in the config."""
@@ -176,6 +181,7 @@ class VisualizationPackageManager:
             raise exceptions.ObjectNotFound(f"Package '{viz_id}' not found")
         self.remove_package_from_config(viz_id)
         self.cleanup_package_files(viz_id)
+        self._restage(viz_id)
         log.info(f"Successfully uninstalled visualization package {viz_id}")
 
     def _run_npm_install(self, package_spec: str, prefix: str) -> None:
@@ -526,7 +532,7 @@ class VisualizationPackageManager:
         config = self.load_config()
         for viz_id in sorted(config):
             package_path = self.get_package_path(viz_id)
-            if os.path.isdir(package_path):
+            if os.path.isdir(package_path) and self._is_enabled(viz_id):
                 specs.append(self._build_managed_stage_spec(viz_id, package_path))
                 managed_viz_ids.add(viz_id)
 
@@ -546,9 +552,21 @@ class VisualizationPackageManager:
 
         return specs
 
+    def _restage(self, viz_id: str) -> None:
+        """Replace whatever is staged for ``viz_id`` with what should be served now, if anything."""
+        staged_path = self.get_staged_path(viz_id)
+        if os.path.exists(staged_path):
+            shutil.rmtree(staged_path)
+        try:
+            stage_spec = self._get_stage_spec(viz_id)
+        except exceptions.ObjectNotFound:
+            return
+        self._stage_spec(stage_spec)
+
     def _get_stage_spec(self, viz_id: str) -> dict[str, Any]:
+        # An enabled runtime package wins; otherwise fall back to the built-in, if there is one
         package_path = self.get_package_path(viz_id)
-        if os.path.isdir(package_path):
+        if os.path.isdir(package_path) and self._is_enabled(viz_id):
             return self._build_managed_stage_spec(viz_id, package_path)
 
         legacy_paths = [os.path.join(self.legacy_visualizations_path, viz_id, "static")]
