@@ -45,5 +45,8 @@
         "vue-eslint-parser": {
             "optional": true
         }
+    },
+    "devDependencies": {
+        "@galaxyproject/brand-tokens": "^0.1.0"
     }
 }
