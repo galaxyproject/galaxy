@@ -87,7 +87,7 @@ msgpack==1.2.3
 multidict==6.9.1
 mypy==2.4.0
 mypy-extensions==1.1.0
-nomad-fsspec==0.1.0
+nomad-fsspec==0.1.1
 numpy==2.2.6 ; python_full_version < '3.11'
 numpy==2.4.6 ; python_full_version == '3.11.*'
 numpy==2.5.3 ; python_full_version >= '3.12'
