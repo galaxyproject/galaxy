@@ -12,6 +12,7 @@ on:
       - .ci/ty_check.sh
       - .ci/ty_check.py
       - ty.toml
+      - ruff.toml
       - pyproject.toml
       - tox.ini
   pull_request:
@@ -26,6 +27,7 @@ on:
       - .ci/ty_check.sh
       - .ci/ty_check.py
       - ty.toml
+      - ruff.toml
       - pyproject.toml
       - tox.ini
 concurrency:

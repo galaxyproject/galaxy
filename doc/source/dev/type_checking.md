@@ -2,7 +2,7 @@
 
 Galaxy's Python code is type checked with [mypy](https://mypy.readthedocs.io/) and [ty](https://docs.astral.sh/ty/), configured in `mypy.ini` and `ty.toml` at the root of the repository.
 
-CI runs both checkers during the transition. mypy (`mypy.ini`) retains annotation requirements, the strict-call green list, and its Pydantic plugin; ty adds complementary diagnostics.
+CI runs both checkers during the transition. Ruff enforces annotation presence; mypy (`mypy.ini`) retains the strict-call green list and its Pydantic plugin, while ty adds complementary diagnostics.
 
 ## Running ty
 
@@ -23,7 +23,9 @@ The following rules are enabled globally; they are the ty equivalents of mypy's 
 | `analysis.strict-equality-semantics` | `strict_equality` |
 | `unresolved-import = "ignore"` | `ignore_missing_imports` |
 
-ty has no equivalent of mypy's `disallow_untyped_defs` and `check_untyped_defs`: it always checks the bodies of unannotated functions, and it does not require annotations at all. New code must still be fully annotated; mypy continues to enforce this in CI. Likewise there are no equivalents of `warn_unreachable`, `no_implicit_reexport` and the `disallow_untyped_calls` "green list".
+ty has no equivalent of mypy's `disallow_untyped_defs` and `check_untyped_defs`: it always checks the bodies of unannotated functions, and it does not require annotations at all. Ruff's `ANN` rules enforce parameter and return annotations independently of the type checker. Explicit `Any` is allowed (`ANN401` is disabled), and an `__init__` with an annotated parameter may omit its return annotation, matching mypy. Tests remain exempt. Existing violations are baselined by exact file path and rule in `ruff.toml`; remove each exception when the file satisfies that rule, and do not add exceptions for new modules. These exceptions apply to the whole file, so the exempted rules also permit missing annotations in new functions added to that file. Mypy continues to enforce its annotation requirements too. Likewise there are no equivalents of `warn_unreachable`, `no_implicit_reexport` and the `disallow_untyped_calls` "green list".
+
+Ruff's configuration and annotation baseline live in `ruff.toml`. Run `uvx --with tox-uv tox -e ruff_exemptions` to report stale annotation exemptions, or append `-- --fix` to remove them. A weekly GitHub workflow opens a pull request with those removals. Pruning preserves the test policy exemptions and never adds exemptions; it removes individual rules and drops a file entry when none remain. Ruff parses source without importing dependencies, so this job only needs the pinned lint dependencies and a single Python environment.
 
 Test code is exempt from the strict rules above, as it was under mypy. The regular diagnostics ty reports in test code are handled through the exemption list like everywhere else.
 
