@@ -326,7 +326,7 @@ class VisualizationPackageManager:
             return {}
 
     def query_npm_registry(self, search_term: str | None = None) -> list[dict[str, Any]]:
-        """Query npm registry for @galaxyproject visualization packages."""
+        """Query the npm registry for @galaxyproject packages that might be visualizations."""
         try:
             # v1 search ignores the scope: qualifier, so search for the scope name and filter on it below
             base_url = "https://registry.npmjs.org/-/v1/search"
@@ -349,21 +349,21 @@ class VisualizationPackageManager:
                 package_info = result.get("package", {})
                 if not package_info.get("name", "").startswith("@galaxyproject/"):
                     continue
-                keywords = package_info.get("keywords", [])
-                if "visualization" in keywords or "galaxy-visualization" in keywords:
-                    packages.append(
-                        {
-                            "name": package_info.get("name", ""),
-                            "description": package_info.get("description", ""),
-                            "version": package_info.get("version", ""),
-                            "keywords": keywords,
-                            "author": package_info.get("author", {}),
-                            "maintainers": package_info.get("maintainers", []),
-                            "links": package_info.get("links", {}),
-                            "date": package_info.get("date", ""),
-                            "score": result.get("score", {}),
-                        }
-                    )
+                # Published visualizations mostly carry no keywords, so list the whole scope and let
+                # the static XML check at install time decide what's actually a visualization.
+                packages.append(
+                    {
+                        "name": package_info.get("name", ""),
+                        "description": package_info.get("description", ""),
+                        "version": package_info.get("version", ""),
+                        "keywords": package_info.get("keywords", []),
+                        "author": package_info.get("author", {}),
+                        "maintainers": package_info.get("maintainers", []),
+                        "links": package_info.get("links", {}),
+                        "date": package_info.get("date", ""),
+                        "score": result.get("score", {}),
+                    }
+                )
 
             return packages
 
