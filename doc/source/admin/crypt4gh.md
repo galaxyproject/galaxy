@@ -360,7 +360,13 @@ Supported outputs:
 Limitations:
 
 - Only regular command-line tools can decrypt data. Interactive tools, data
-  managers, expression tools and other special tool types are refused.
+  managers, expression tools and other special tool types are refused, as are
+  tools given the user's file sources (`<file_sources>` config files), such as
+  the remote export tool. They would write the decrypted data out of Galaxy.
+  Inputs of parameters accepting Crypt4GH formats are passed encrypted to any tool.
+- The standard output and error of tools decrypting data may contain decrypted
+  data, so they are not stored with the job or the outputs, and messages about
+  error patterns (`<stdio>` regexes) they matched don't quote them.
 - Tools see the wrapper datatype in `$input.ext` (for example
   `fastqsanger.c4gh`). The decrypted file name carries the inner extension.
 - Encrypted datasets only have metadata about their encryption, never metadata

@@ -17,6 +17,7 @@ from galaxy.util.crypt4gh import (
     check_crypt4gh,
     infer_crypt4gh_file_ext,
     is_crypt4gh_file_ext,
+    MAX_CRYPT4GH_HEADER_SIZE,
     preserve_crypt4gh_inner_file_ext,
     read_crypt4gh_header,
     unwrap_crypt4gh_file_ext,
@@ -64,6 +65,15 @@ def test_invalid_headers_are_rejected(tmp_path, contents):
     path = tmp_path / "invalid"
     path.write_bytes(contents)
     with pytest.raises(ValueError):
+        read_crypt4gh_header(str(path))
+    assert not check_crypt4gh(str(path))
+
+
+def test_oversized_headers_are_rejected(tmp_path):
+    _, contents = _crypt4gh_bytes(packets=(b"x" * MAX_CRYPT4GH_HEADER_SIZE,))
+    path = tmp_path / "oversized.c4gh"
+    path.write_bytes(contents)
+    with pytest.raises(ValueError, match="Header larger than"):
         read_crypt4gh_header(str(path))
     assert not check_crypt4gh(str(path))
 
@@ -122,6 +132,23 @@ def test_typed_wrapper_matches_inner_type(enabled_registry):
     assert not wrapped.matches_any([fasta])
     assert not generic.matches_any([fastqsanger])
     assert generic.matches_any([generic])
+    assert wrapped.matches_any([generic])
+
+
+def test_typed_wrapper_matches_wrapped_supertype(enabled_registry):
+    fastqsanger_wrapped = enabled_registry.get_datatype_by_extension("fastqsanger.c4gh")
+    fastq_wrapped = enabled_registry.get_datatype_by_extension("fastq.c4gh")
+    fasta_wrapped = enabled_registry.get_datatype_by_extension("fasta.c4gh")
+    assert fastqsanger_wrapped.matches_any([fastq_wrapped])
+    assert fastqsanger_wrapped.matches_any([type(fastq_wrapped)])
+    assert not fastq_wrapped.matches_any([fastqsanger_wrapped])
+    assert not fastqsanger_wrapped.matches_any([fasta_wrapped])
+
+
+def test_only_wrapped_composite_formats_download_as_archives(enabled_registry):
+    for ext, is_archive in (("c4gh", False), ("fastqsanger.c4gh", False), ("html.c4gh", True)):
+        datatype = enabled_registry.get_datatype_by_extension(ext)
+        assert datatype.is_archive_download(enabled_registry, ext) is is_archive
 
 
 def test_registry_xml_round_trips_flag(tmp_path, enabled_registry, disabled_registry):

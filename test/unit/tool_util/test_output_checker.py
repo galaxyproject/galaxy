@@ -4,6 +4,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     output_discovery_job_message,
+    without_tool_output,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -117,6 +118,24 @@ class TestOutputChecker(TestCase):
         self.__add_regex(regex)
         self.stderr = "foobar"
         self.__assertSuccessful()
+
+    def test_tool_output_is_removed_from_regex_messages(self):
+        regex = ToolStdioRegex()
+        regex.stderr_match = True
+        regex.match = r"secret (\w+)"
+        regex.desc = r"Leaked \1"
+        regex.error_level = StdioErrorLevel.FATAL
+        self.__add_regex(regex)
+        self.stderr = "secret ACGT"
+        messages = self.__check_output()[3]
+        assert "ACGT" in messages[0]["desc"]
+        redacted = without_tool_output(messages)
+        assert redacted[0]["type"] == "regex"
+        assert redacted[0]["match"] is None
+        desc = redacted[0]["desc"]
+        assert desc is not None
+        assert "ACGT" not in desc
+        assert desc.startswith("Fatal error:")
 
     def __add_regex(self, regex):
         self.tool.stdio_regexes.append(regex)
