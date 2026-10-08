@@ -1437,15 +1437,26 @@ class MinimalJobWrapper(HasResourceParameters):
             return
 
         jwd = JobWorkingDirectory(job, self.object_store)
-        base = jwd.cleared_contents_base()
-        date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        arc_dir = os.path.join(base, date_str)
-        shutil.move(self.working_directory, arc_dir)
+        if job.protection_scheme:
+            # An interrupted protected job may have left decrypted data behind, never keep it.
+            if jwd.delete():
+                log.debug("(%s) Previous working directory of protected job deleted", self.job_id)
+            else:
+                log.error(
+                    "(%s) Could not delete the previous working directory %s of a protected job",
+                    self.job_id,
+                    self.working_directory,
+                )
+        else:
+            base = jwd.cleared_contents_base()
+            date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            arc_dir = os.path.join(base, date_str)
+            shutil.move(self.working_directory, arc_dir)
+            log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
         self._setup_working_directory(job=job)
         # Flush so the working_directory column survives the sa_session.refresh()
         # that mark_as_resubmitted() performs at the end of the resubmit flow.
         self.sa_session.flush()
-        log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
 
     def _authorize_protected_job(self, job: Job, compute_environment) -> ProtectionPlan | None:
         """Refuse jobs that may not decrypt their inputs, plan the decryption of the others."""
