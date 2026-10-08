@@ -14,6 +14,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import timedelta
+from functools import cached_property
 from typing import (
     Literal,
     Protocol,
@@ -77,11 +78,13 @@ class ProtectionPlan(BaseModel):
     def inputs_directory(self) -> str:
         return protected_inputs_directory(self.job_directory)
 
+    @cached_property
+    def inputs_by_dataset_id(self) -> dict[int, ProtectedInput]:
+        # Paths of every input are rewritten while building the command line.
+        return {protected_input.dataset_id: protected_input for protected_input in self.inputs}
+
     def staged_input(self, dataset_id: int) -> ProtectedInput | None:
-        for protected_input in self.inputs:
-            if protected_input.dataset_id == dataset_id:
-                return protected_input
-        return None
+        return self.inputs_by_dataset_id.get(dataset_id)
 
     def write(self, path: str) -> None:
         # The plan carries bearer capabilities (headers sealed to the compute key).
