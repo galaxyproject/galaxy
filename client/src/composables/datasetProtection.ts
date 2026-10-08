@@ -80,19 +80,19 @@ async function fetchProtectionStatus(datasetId: string): Promise<DatasetProtecti
 
 /**
  * Protection status of a dataset for the current user, and the flow to authorize
- * computation on it.
+ * computation on it. The status is only loaded while `enabled` is true.
  *
  * Authorizing sends the dataset's public Crypt4GH header to the recryptor service
  * running on the user's machine, which re-encrypts it to the compute keypair with
  * the user's private key. The result is registered with Galaxy as a grant bound to
  * the current user; it is never stored with the dataset.
  */
-export function useDatasetProtection(datasetId: Ref<string>, protectedDataset: Ref<boolean>) {
+export function useDatasetProtection(datasetId: Ref<string>, enabled: Ref<boolean>) {
     const status = ref<DatasetProtectionStatus | null>(null);
     const authorizing = ref(false);
 
     async function loadStatus() {
-        if (!protectedDataset.value) {
+        if (!enabled.value) {
             status.value = null;
             return;
         }
@@ -146,7 +146,7 @@ export function useDatasetProtection(datasetId: Ref<string>, protectedDataset: R
         }
     }
 
-    watch([datasetId, protectedDataset], loadStatus, { immediate: true });
+    watch([datasetId, enabled], loadStatus, { immediate: true });
 
-    return { status, authorizing, authorize, loadStatus };
+    return { status, authorizing, authorize };
 }
