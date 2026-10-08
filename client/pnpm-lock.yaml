@@ -542,7 +542,7 @@ importers:
         version: 11.3.0(vue@3.5.43(typescript@5.8.3))
       dompurify:
         specifier: ^3.0.6
-        version: 3.4.13
+        version: 3.4.16
       font-awesome-6:
         specifier: npm:@fortawesome/free-solid-svg-icons@6
         version: '@fortawesome/free-solid-svg-icons@6.7.2'
