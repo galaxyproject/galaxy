@@ -34,7 +34,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Configure apt
-        uses: $/.github/actions/configure_apt
+        uses: './galaxy root/.github/actions/configure_apt'  # zizmor: ignore[self-repository] $/ fails to unpack this repo (dangling symlink)
       - name: Install Apptainer's singularity
         timeout-minutes: 20
         uses: './galaxy root/.github/actions/install_apptainer'
