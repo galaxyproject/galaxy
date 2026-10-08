@@ -22,6 +22,7 @@ from typing import (
 from galaxy.datatypes import sniff
 from galaxy.util.crypt4gh import (
     CRYPT4GH_FILE_EXT,
+    iter_relpaths,
     unwrap_crypt4gh_file_ext,
     wrap_crypt4gh_file_ext,
 )
@@ -88,11 +89,7 @@ class OutputProtector:
             result = self._protect_file(path)
             extra_files: dict[str, str | None] = {}
             if extra_files_path and os.path.isdir(extra_files_path):
-                relpaths = [
-                    os.path.relpath(os.path.join(root, filename), extra_files_path)
-                    for root, _, filenames in os.walk(extra_files_path)
-                    for filename in filenames
-                ]
+                relpaths = list(iter_relpaths(extra_files_path))
                 with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
                     results = executor.map(
                         lambda relpath: self._protect_file(os.path.join(extra_files_path, relpath)), relpaths
@@ -142,6 +139,11 @@ class OutputProtector:
     def record_deferred(self, dataset_instance: "DatasetInstance") -> None:
         self.record_outcome(dataset_instance, OUTCOME_DEFERRED)
 
+    @staticmethod
+    def without_tool_metadata(attributes: dict[str, Any] | None) -> dict[str, Any]:
+        """Tool provided attributes of an output, without the metadata: that may be derived from the decrypted data."""
+        return {key: value for key, value in (attributes or {}).items() if key != "metadata"}
+
     def protected_ext(self, dataset_instance: "DatasetInstance") -> str | None:
         """Extension of an output protected earlier, ``None`` for other datasets."""
         record = self.records.get(self._uuid(dataset_instance))
@@ -161,28 +163,22 @@ class OutputProtector:
     def write_sidecar(self, job_directory: str) -> None:
         path = os.path.join(job_directory, SIDECAR_FILE)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        sidecar = {
-            "key_ref": self._key_ref(),
-            "key_expiration": self._key_expiration(),
+        sidecar: dict[str, Any] = {
+            "key_ref": None,
+            "key_expiration": None,
             "datasets": self.records,
             "errors": self.errors,
         }
+        try:
+            sidecar["key_ref"] = self.runtime.key_ref
+            sidecar["key_expiration"] = self.runtime.key_expiration
+        except ProtectionError:
+            # The inputs were never staged, there are no outputs to use again.
+            pass
         # Compute headers are bearer capabilities.
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w") as f:
             json.dump(sidecar, f)
-
-    def _key_ref(self) -> str | None:
-        try:
-            return self.runtime.key_ref
-        except ProtectionError:
-            return None
-
-    def _key_expiration(self) -> str | None:
-        try:
-            return self.runtime.key_expiration
-        except ProtectionError:
-            return None
 
     def _protected_ext(self, ext: str | None, path: str) -> str:
         inner_ext = unwrap_crypt4gh_file_ext(ext or "") or ext or "data"
