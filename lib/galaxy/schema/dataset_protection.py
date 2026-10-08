@@ -4,10 +4,18 @@ from typing import (
     Literal,
 )
 
-from pydantic import Field
+from pydantic import (
+    AwareDatetime,
+    Field,
+)
+from pydantic.functional_validators import AfterValidator
 
 from galaxy.schema.schema import Model
+from galaxy.schema.types import strip_tzinfo
 from galaxy.util.crypt4gh import MAX_CRYPT4GH_HEADER_SIZE
+
+# Dates of the key service must include a timezone, Galaxy stores them as naive UTC.
+KeyExpirationDate = Annotated[AwareDatetime, AfterValidator(strip_tzinfo)]
 
 
 class Crypt4GHGrantPayload(Model):
@@ -36,7 +44,7 @@ class Crypt4GHGrantPayload(Model):
         ),
     ]
     crypt4gh_compute_keypair_expiration_date: Annotated[
-        datetime,
+        KeyExpirationDate,
         Field(description="Expiration date of the compute keypair, including the timezone."),
     ]
 
