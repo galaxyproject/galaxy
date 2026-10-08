@@ -103,6 +103,8 @@ class Hocr(Html):
     file_ext = "hocr"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        if not file_prefix.search_str("ocr_page"):
+            return False
         parser = _HocrParser()
         parser.feed(file_prefix.string_io().read())
         return parser.has_page
