@@ -8,11 +8,16 @@ When targeting a remote Galaxy server (GALAXY_TEST_EXTERNAL), falls back to
 the real external URLs with automatic skip-if-down behavior.
 """
 
+import functools
 import os
 import re
 import threading
 import time
-from collections.abc import Generator
+from collections.abc import (
+    Generator,
+    Iterator,
+)
+from contextlib import contextmanager
 from dataclasses import (
     dataclass,
     field,
@@ -20,6 +25,8 @@ from dataclasses import (
 from http.server import (
     BaseHTTPRequestHandler,
     HTTPServer,
+    SimpleHTTPRequestHandler,
+    ThreadingHTTPServer,
 )
 from pathlib import Path
 from typing import Any
@@ -218,6 +225,31 @@ def start_test_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTP
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, f"http://{host}:{actual_port}"
+
+
+class QuietDirectoryRequestHandler(SimpleHTTPRequestHandler):
+    """Serve the files of a directory without logging every request."""
+
+    def log_message(self, format: str, *args: Any) -> None:
+        pass
+
+
+@contextmanager
+def serve_directory(
+    directory: str | os.PathLike[str], handler_class: type[SimpleHTTPRequestHandler] = QuietDirectoryRequestHandler
+) -> Iterator[str]:
+    """Serve ``directory`` like a static web server on the loopback interface; yield its base URL.
+
+    Unlike the route based test server, this serves nested paths and handles requests concurrently.
+    """
+    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(handler_class, directory=str(directory)))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_address[1]}"
+    finally:
+        server.shutdown()
+        server.server_close()
 
 
 @pytest.fixture(scope="session")
