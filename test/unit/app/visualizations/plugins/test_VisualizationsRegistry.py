@@ -8,7 +8,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pytest
+
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
     clean_multiline_string,
     galaxy_directory,
@@ -18,6 +21,7 @@ from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from . import VisualizationsBase_TestCase
 
 if TYPE_CHECKING:
+    from galaxy.managers.visualization_admin import VisualizationPackageManager
     from galaxy.structured_app import StructuredApp
 
 glx_dir = galaxy_directory()
@@ -166,3 +170,83 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert entry_point_attr["src"] == "mysrc"
         assert entry_point_attr["css"] == "mycss"
         mock_app_dir.remove()
+
+
+class FakePackageManager:
+    """Stands in for VisualizationPackageManager: maps enabled runtime package ids to their directories."""
+
+    def __init__(self, packages):
+        self.packages = packages
+
+    def get_enabled_packages(self):
+        return dict(self.packages)
+
+
+def _registry_with_runtime_packages(enabled_packages):
+    mock_app_dir = galaxy_mock.MockDir(
+        {
+            "plugins": {
+                "builtin": {"static": {"builtin.xml": config1}},
+                "shadowed": {"static": {"shadowed.xml": config1, "logo.svg": "<svg/>"}},
+            },
+            "store": {
+                "runtime": {"static": {"runtime.xml": config1, "index.js": "runtime", "logo.png": "png"}},
+                "shadowed": {"static": {"shadowed.xml": config1, "index.js": "runtime shadowed"}},
+            },
+        }
+    )
+    store = os.path.join(mock_app_dir.root_path, "store")
+    packages = {name: os.path.join(store, name) for name in enabled_packages}
+    mock_app = cast("StructuredApp", galaxy_mock.MockApp(root=mock_app_dir.root_path))
+    registry = VisualizationsRegistry(
+        mock_app,
+        directories_setting="plugins",
+        package_manager=cast("VisualizationPackageManager", FakePackageManager(packages)),
+    )
+    return registry, mock_app_dir
+
+
+class TestRuntimePackages(VisualizationsBase_TestCase):
+    """Runtime-installed packages load straight from the package store and are served through the API."""
+
+    def test_runtime_package_loads_from_store_with_api_href(self):
+        registry, mock_dir = _registry_with_runtime_packages(["runtime"])
+        runtime = registry.plugins["runtime"].to_dict()
+        assert runtime["href"] == "/api/plugins/runtime/static"
+        assert runtime["logo"] == "./api/plugins/runtime/static/logo.png"
+        assert registry.plugins["builtin"].to_dict()["href"] == "/static/plugins/visualizations/builtin/static"
+        mock_dir.remove()
+
+    def test_enabled_runtime_package_overrides_builtin(self):
+        registry, mock_dir = _registry_with_runtime_packages(["shadowed"])
+        assert registry.plugins["shadowed"].to_dict()["href"] == "/api/plugins/shadowed/static"
+        mock_dir.remove()
+
+    def test_builtin_shows_through_when_runtime_package_not_enabled(self):
+        registry, mock_dir = _registry_with_runtime_packages([])
+        shadowed = registry.plugins["shadowed"].to_dict()
+        assert shadowed["href"] == "/static/plugins/visualizations/shadowed/static"
+        # found on disk next to the plugin, not relative to the process's working directory
+        assert shadowed["logo"] == "./static/plugins/visualizations/shadowed/static/logo.svg"
+        assert "runtime" not in registry.plugins
+        mock_dir.remove()
+
+    def test_runtime_static_file_resolves_inside_package(self):
+        registry, mock_dir = _registry_with_runtime_packages(["runtime"])
+        path = registry.get_runtime_static_file("runtime", "index.js")
+        with open(path) as f:
+            assert f.read() == "runtime"
+        mock_dir.remove()
+
+    def test_runtime_static_file_rejects_builtins_missing_files_and_traversal(self):
+        registry, mock_dir = _registry_with_runtime_packages(["runtime"])
+        for name, file_path in [
+            ("builtin", "builtin.xml"),
+            ("runtime", "nope.js"),
+            ("runtime", "../../plugins/builtin/static/builtin.xml"),
+            ("runtime", "/etc/passwd"),
+            ("unknown", "index.js"),
+        ]:
+            with pytest.raises(ObjectNotFound):
+                registry.get_runtime_static_file(name, file_path)
+        mock_dir.remove()

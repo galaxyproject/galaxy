@@ -596,6 +596,16 @@ class TestServedVersion:
         assert not os.path.exists(fake_npm.get_staged_path("other_viz"))
 
 
+class TestEnabledPackages:
+    def test_lists_enabled_installed_packages(self, fake_npm):
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.install_package("other_viz", "@galaxyproject/other_viz", "1.0.0")
+        fake_npm.toggle_package_enabled("other_viz", False)
+        fake_npm.add_package_to_config("ghost_viz", "@galaxyproject/ghost_viz", "1.0.0")
+
+        assert fake_npm.get_enabled_packages() == {"my_viz": fake_npm.get_package_path("my_viz")}
+
+
 class TestNpmRegistryQuery:
     @patch("galaxy.managers.visualization_admin.requests.get")
     def test_lists_scoped_packages_regardless_of_keywords(self, mock_get, manager):
