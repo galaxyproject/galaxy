@@ -368,6 +368,29 @@ class TestInstallLifecycle:
 # --- Staging (migration from old install mechanisms) ---
 
 
+class TestStoreCreation:
+    """Startup can't depend on managed_config_dir being writable; only installing a package can."""
+
+    def _fresh_manager(self, tmp_path):
+        config = MagicMock()
+        config.root = str(tmp_path / "galaxy")
+        config.visualization_packages_config_file = str(tmp_path / "fresh" / "visualization_packages.yml")
+        config.visualization_packages_dir = str(tmp_path / "fresh" / "visualization_packages")
+        return VisualizationPackageManager(config)
+
+    def test_constructing_the_manager_writes_nothing(self, tmp_path):
+        manager = self._fresh_manager(tmp_path)
+        assert manager.get_enabled_packages() == {}
+        assert manager.load_config() == {}
+        assert not os.path.exists(tmp_path / "fresh")
+
+    def test_first_install_creates_the_store(self, tmp_path, monkeypatch):
+        manager = self._fresh_manager(tmp_path)
+        monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install)
+        manager.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        assert manager.get_enabled_packages() == {"my_viz": manager.get_package_path("my_viz")}
+
+
 class TestEnabledPackages:
     def test_lists_enabled_installed_packages(self, fake_npm):
         fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
