@@ -68,6 +68,7 @@ from galaxy.schema.dataset_protection import (
     Crypt4GHGrantPayload,
     DatasetProtectionStatus,
 )
+from galaxy.tool_util_models.tool_source import FileSourceConfigFile
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import BaseDataToolParameter
 from galaxy.util import now
@@ -93,6 +94,13 @@ GRANT_SOURCE_USER = "user"
 PROTECTED_TOOL_TYPES = ("default",)
 # Outputs are encrypted after the tool ran, the compute key must outlive the job.
 JOB_TTL_MARGIN = timedelta(hours=1)
+
+
+def _can_decrypt_inputs(tool: "Tool") -> bool:
+    if tool.tool_type not in PROTECTED_TOOL_TYPES:
+        return False
+    # Tools given the user's file sources (e.g. export_remote) would send the decrypted data out of Galaxy.
+    return not any(isinstance(config_file, FileSourceConfigFile) for config_file in tool.config_files)
 
 
 def _unsupported_tool_message(tool: "Tool") -> str:
@@ -166,7 +174,12 @@ def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
 def _parse_key_expiration(value: str) -> datetime:
     """Expiration date reported by the key service, as naive UTC. Raises ``ValidationError`` without a timezone."""
     # datetime.fromisoformat() only accepts a 'Z' suffix from Python 3.11 on.
-    return _AWARE_DATETIME.validate_python(value).astimezone(timezone.utc).replace(tzinfo=None)
+    return _naive_utc(_AWARE_DATETIME.validate_python(value))
+
+
+def _naive_utc(value: datetime) -> datetime:
+    """A timezone-aware datetime as naive UTC, like every other Galaxy timestamp."""
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _has_content(dataset_instance: DatasetInstance) -> bool:
@@ -239,7 +252,7 @@ class Crypt4GHProtectionScheme:
         expiration = payload.crypt4gh_compute_keypair_expiration_date
         if expiration.tzinfo is None or expiration.utcoffset() is None:
             raise RequestParameterInvalidException("crypt4gh_compute_keypair_expiration_date must include a timezone.")
-        expires_at = expiration.astimezone(timezone.utc).replace(tzinfo=None)
+        expires_at = _naive_utc(expiration)
         current_time = now()
         if expires_at <= current_time:
             raise RequestParameterInvalidException("The compute keypair has already expired, recrypt the dataset.")
@@ -393,7 +406,7 @@ class DatasetProtectionManager:
             raise RequestParameterInvalidException(str(e))
         if not to_decrypt:
             return
-        if tool.tool_type not in PROTECTED_TOOL_TYPES:
+        if not _can_decrypt_inputs(tool):
             raise RequestParameterInvalidException(_unsupported_tool_message(tool))
         for dataset_instance in to_decrypt:
             if dataset_instance.state != DatasetInstance.states.OK:
@@ -420,7 +433,7 @@ class DatasetProtectionManager:
         to_decrypt, passed_encrypted = self._protected_inputs(tool, param_values)
         if not to_decrypt:
             return None
-        if tool.tool_type not in PROTECTED_TOOL_TYPES:
+        if not _can_decrypt_inputs(tool):
             raise ProtectionError(_unsupported_tool_message(tool))
         job_directory = os.path.dirname(compute_environment.config_directory().rstrip("/"))
         # Only jobs decrypting data depend on their destination.
