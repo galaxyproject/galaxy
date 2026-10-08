@@ -928,6 +928,21 @@ def test_set_all_dataset_permissions_new_skips_existing_permissions(session, mak
     assert security_agent.dataset_is_private_to_a_user(dataset)
 
 
+def test_dataset_roles_ignore_duplicate_permissions(session, make_hda, make_user_and_role, make_dataset_permissions):
+    security_agent = GalaxyRBACAgent(session)
+    _, private_role = make_user_and_role()
+    dataset = make_hda(create_dataset=True, sa_session=session).dataset
+    for action in (
+        security_agent.permitted_actions.DATASET_ACCESS.action,
+        security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action,
+    ):
+        make_dataset_permissions(action=action, dataset=dataset, role=private_role)
+        make_dataset_permissions(action=action, dataset=dataset, role=private_role)
+    assert dataset.get_access_roles(security_agent) == [private_role]
+    assert dataset.get_manage_permissions_roles(security_agent) == [private_role]
+    assert security_agent.dataset_is_private_to_a_user(dataset)
+
+
 def verify_group_associations(group, expected_users, expected_roles):
     new_group_users = [assoc.user for assoc in group.users]
     new_group_roles = [assoc.role for assoc in group.roles]
