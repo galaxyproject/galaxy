@@ -1056,6 +1056,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             VisualizationsRegistry(
                 self,
                 directories_setting=self.config.visualization_plugins_directory,
+                package_manager=self.visualization_package_manager,
             ),
         )
         # Tours registry

@@ -112,6 +112,7 @@ class AdminVisualizationsService(ServiceBase):
         self, trans: ProvidesUserContext, viz_id: str, package: str, version: str
     ) -> InstalledVisualizationResponse:
         install_result = self.package_manager.install_package(viz_id, package, version)
+        self._reload_registry()
         return InstalledVisualizationResponse(
             id=viz_id,
             package=package,
@@ -124,6 +125,7 @@ class AdminVisualizationsService(ServiceBase):
 
     def update_package(self, trans: ProvidesUserContext, viz_id: str, version: str) -> InstalledVisualizationResponse:
         update_result = self.package_manager.update_package(viz_id, version)
+        self._reload_registry()
         return InstalledVisualizationResponse(
             id=viz_id,
             package=update_result["package"],

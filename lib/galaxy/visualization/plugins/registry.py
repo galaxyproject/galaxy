@@ -15,12 +15,14 @@ from typing import (
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import config_directories_from_setting
+from galaxy.util.path import safe_contains
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
 from galaxy.visualization.plugins.plugin import VisualizationPlugin
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.managers.visualization_admin import VisualizationPackageManager
     from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
@@ -46,7 +48,11 @@ class VisualizationsRegistry:
         return self.__class__.__name__
 
     def __init__(
-        self, app: "StructuredApp", directories_setting: str | None = None, skip_bad_plugins: bool = True
+        self,
+        app: "StructuredApp",
+        directories_setting: str | None = None,
+        skip_bad_plugins: bool = True,
+        package_manager: "VisualizationPackageManager | None" = None,
     ) -> None:
         """
         Set up the manager and load all visualization plugins.
@@ -59,6 +65,9 @@ class VisualizationsRegistry:
         self.base_url = self.BASE_URL
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins: dict[str, VisualizationPlugin] = {}
+        self.package_manager = package_manager
+        # names of plugins loaded from runtime-installed packages rather than Galaxy's own tree
+        self.runtime_plugins: set[str] = set()
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
@@ -86,7 +95,24 @@ class VisualizationsRegistry:
                 if not self.skip_bad_plugins:
                     raise
                 log.exception("Plugin loading raised exception: %s. Skipping...", plugin_path)
+        runtime_plugins: set[str] = set()
+        if self.package_manager is not None:
+            # Loaded straight from the package store (nothing is copied into static/, which may be
+            # read-only) and they win over a built-in of the same name.
+            for package_path in self.package_manager.get_enabled_packages().values():
+                try:
+                    name = os.path.basename(package_path)
+                    plugin = self._load_plugin(package_path, static_path=f"/api/plugins/{name}/static")
+                    if plugin.name in plugins:
+                        log.info("%s, runtime package overrides built-in plugin: %s", self, plugin.name)
+                    plugins[plugin.name] = plugin
+                    runtime_plugins.add(plugin.name)
+                except Exception:
+                    if not self.skip_bad_plugins:
+                        raise
+                    log.exception("Runtime visualization package failed to load: %s. Skipping...", package_path)
         self.plugins = plugins
+        self.runtime_plugins = runtime_plugins
         return self.plugins
 
     def _find_plugins(self):
@@ -131,7 +157,7 @@ class VisualizationsRegistry:
         expected_config_filename = f"{os.path.basename(plugin_path)}.xml"
         return os.path.isfile(os.path.join(plugin_path, "static", expected_config_filename))
 
-    def _load_plugin(self, plugin_path):
+    def _load_plugin(self, plugin_path, static_path=None):
         """
         Create the visualization plugin object, parse its configuration file,
         and return it.
@@ -148,7 +174,9 @@ class VisualizationsRegistry:
             if config is not None:
                 app = self.app()
                 url_prefix = app.config.galaxy_url_prefix.rstrip("/") if app is not None else ""
-                return VisualizationPlugin(plugin_path, plugin_name, config, url_prefix=url_prefix)
+                return VisualizationPlugin(
+                    plugin_path, plugin_name, config, url_prefix=url_prefix, static_path=static_path
+                )
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def get_plugin(self, key):
@@ -158,6 +186,21 @@ class VisualizationsRegistry:
         if key not in self.plugins:
             raise ObjectNotFound(f"Unknown or invalid visualization: {key}")
         return self.plugins[key]
+
+    def get_runtime_static_file(self, name: str, file_path: str) -> str:
+        """
+        Return the filesystem path of a static file belonging to a runtime-installed package.
+
+        Built-in plugins are served from Galaxy's static tree instead, so they aren't resolved here.
+        """
+        plugin = self.plugins.get(name)
+        if plugin is None or name not in self.runtime_plugins:
+            raise ObjectNotFound(f"Unknown runtime visualization: {name}")
+        static_dir = os.path.realpath(os.path.join(plugin.path, "static"))
+        candidate = os.path.realpath(os.path.join(static_dir, file_path))
+        if not safe_contains(static_dir, candidate) or not os.path.isfile(candidate):
+            raise ObjectNotFound(f"File not found in visualization {name}: {file_path}")
+        return candidate
 
     # -- building links to visualizations from objects --
     def get_visualizations(self, trans: "ProvidesAppContext", target_object=None, embeddable=None):

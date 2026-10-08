@@ -120,6 +120,15 @@ class VisualizationPackageManager:
         self.save_config(config)
         self._restage(viz_id)
 
+    def get_enabled_packages(self) -> dict[str, str]:
+        """Installed, enabled runtime packages, mapped to their directory in the package store."""
+        packages = {}
+        for viz_id in self.load_config():
+            package_path = self.get_package_path(viz_id)
+            if self._is_enabled(viz_id) and os.path.isdir(package_path):
+                packages[viz_id] = package_path
+        return packages
+
     def _is_enabled(self, viz_id: str) -> bool:
         info = self.get_package_info(viz_id)
         return info is None or info.get("enabled", True)

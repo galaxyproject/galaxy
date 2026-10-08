@@ -15,12 +15,15 @@ class VisualizationPlugin:
     A plugin that instantiates resources, serves static files.
     """
 
-    def __init__(self, path: str, name: str, config: dict[str, Any], url_prefix: str = "") -> None:
+    def __init__(
+        self, path: str, name: str, config: dict[str, Any], url_prefix: str = "", static_path: str | None = None
+    ) -> None:
         self.path = path
         self.name = name
         self.config = config
         self.url_prefix = url_prefix
-        self.static_path = os.path.join("/static/plugins/visualizations/", name, "static")
+        # Built-ins are served from Galaxy's static tree; runtime-installed packages pass their own URL
+        self.static_path = static_path or os.path.join("/static/plugins/visualizations/", name, "static")
         self._set_logo()
 
     def to_dict(self):
@@ -44,10 +47,7 @@ class VisualizationPlugin:
         }
 
     def _set_logo(self):
-        if self.static_path:
-            supported_formats = ["png", "svg"]
-            for file_format in supported_formats:
-                logo_path = os.path.join(f".{self.static_path}", f"logo.{file_format}")
-                if os.path.isfile(logo_path):
-                    self.config["logo"] = logo_path
-                    return
+        for file_format in ("png", "svg"):
+            if os.path.isfile(os.path.join(self.path, "static", f"logo.{file_format}")):
+                self.config["logo"] = f".{self.static_path}/logo.{file_format}"
+                return
