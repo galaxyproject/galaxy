@@ -20,6 +20,9 @@ CRYPT4GH_MAGIC = b"crypt4gh"
 CRYPT4GH_VERSION = 1
 CRYPT4GH_FILE_EXT = "c4gh"
 CRYPT4GH_SUFFIX = f".{CRYPT4GH_FILE_EXT}"
+# Headers hold a packet per recipient and edit list, far below this. Headers are stored in metadata,
+# don't read whole files declaring larger ones. Its base64 encoding is at most 64 KiB.
+MAX_CRYPT4GH_HEADER_SIZE = 48 * 1024
 
 # Struct format for the 16-byte prelude: magic (8s) + version (I) + packet_count (I)
 _PRELUDE_FORMAT = "<8sII"
@@ -161,6 +164,8 @@ def read_crypt4gh_header(stream_or_path: str | IO[bytes]) -> bytes:
             packet_len = int.from_bytes(packet_len_bytes, byteorder="little")
             if packet_len < 4:
                 raise ValueError(f"Invalid packet length {packet_len}")
+            if len(header) + packet_len > MAX_CRYPT4GH_HEADER_SIZE:
+                raise ValueError(f"Header larger than {MAX_CRYPT4GH_HEADER_SIZE} bytes")
             packet_data = stream.read(packet_len - 4)
             if len(packet_data) != packet_len - 4:
                 raise ValueError("Truncated header packet data")

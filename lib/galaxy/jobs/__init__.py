@@ -1627,7 +1627,8 @@ class MinimalJobWrapper(HasResourceParameters):
             if job.protection_scheme:
                 try:
                     if protection_error := self.app.dataset_protection.fail_job(job, self.working_directory):
-                        message = protection_error
+                        # Keep why the job failed, the protection errors are a consequence of it.
+                        message = f"{message} {protection_error}" if message else protection_error
                 except Exception:
                     log.exception(
                         "(%s) fail(): Could not remove the outputs of a failed protected job", self.get_id_tag()
@@ -2179,10 +2180,11 @@ class MinimalJobWrapper(HasResourceParameters):
         dataset.blurb = "done"
         dataset.peek = "no peek"
         dataset.info = dataset.info or ""
-        if context["stdout"].strip():
+        # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
+        if not job.protection_scheme and context["stdout"].strip():
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-        if context["stderr"].strip():
+        if not job.protection_scheme and context["stderr"].strip():
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
@@ -2307,7 +2309,8 @@ class MinimalJobWrapper(HasResourceParameters):
             return fail()
 
         if setup_failure := self.protection_setup_failure():
-            # The tool never ran, there are no outputs to collect.
+            # The tool never ran, there are no outputs to collect. Runners only staging back
+            # outputs_populated (Pulsar with remote extended metadata) don't see missing tool streams.
             return self.fail(
                 f"Galaxy failed to prepare this job, so the tool was not run: {setup_failure}",
                 tool_stdout="",

@@ -27,7 +27,6 @@ from galaxy.job_execution.protection.stage import (
     CLEANUP_FAILURE_FILE,
     PROTECTION_SETUP_FAILURE_FILE,
     run,
-    SETUP_FAILURE_FILE,
 )
 from galaxy.util.bunch import Bunch
 from galaxy_test.base.crypt4gh import (
@@ -285,7 +284,7 @@ def test_stage_command_reports_failures(tmp_path, service, user):
     assert os.stat(plan_path).st_mode & 0o777 == 0o600
 
     assert run("stage-in", plan_path) == 1
-    with open(os.path.join(plan.job_directory, SETUP_FAILURE_FILE)) as f:
+    with open(os.path.join(plan.job_directory, PROTECTION_SETUP_FAILURE_FILE)) as f:
         assert f.read().startswith("Could not decrypt the protected inputs of this job")
 
 
@@ -295,9 +294,10 @@ def test_stage_command_reports_missing_plan(tmp_path):
 
     assert run("stage-in", str(job_directory / "configs" / "protection_plan.json")) == 1
 
-    for failure_file in (SETUP_FAILURE_FILE, PROTECTION_SETUP_FAILURE_FILE):
-        with open(job_directory / failure_file) as f:
-            assert f.read().startswith("Could not decrypt the protected inputs of this job")
+    with open(job_directory / PROTECTION_SETUP_FAILURE_FILE) as f:
+        assert f.read().startswith("Could not decrypt the protected inputs of this job")
+    # Setup failures of protected jobs are only reported to finish(), not as remote_tool_eval.py failures.
+    assert not (job_directory / "metadata" / "outputs_populated" / "traceback.txt").exists()
 
 
 def test_cleanup_removes_plaintext(tmp_path, service, user):
