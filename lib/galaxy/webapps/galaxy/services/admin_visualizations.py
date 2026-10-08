@@ -137,10 +137,12 @@ class AdminVisualizationsService(ServiceBase):
 
     def uninstall_package(self, trans: ProvidesUserContext, viz_id: str) -> None:
         self.package_manager.uninstall_package(viz_id)
+        self._reload_registry()
 
     def toggle_package(self, trans: ProvidesUserContext, viz_id: str, enabled: bool) -> ToggleVisualizationResponse:
         self.package_manager.validate_viz_id(viz_id)
         self.package_manager.toggle_package_enabled(viz_id, enabled)
+        self._reload_registry()
 
         log.info(f"Successfully {'enabled' if enabled else 'disabled'} visualization package {viz_id}")
 
@@ -152,9 +154,13 @@ class AdminVisualizationsService(ServiceBase):
 
     def reload_registry(self, trans: ProvidesUserContext) -> MessageResponse:
         """Reload the visualization registry in this process and every other Galaxy process."""
+        self._reload_registry()
+        return MessageResponse(message="Visualization registry reloaded successfully")
+
+    def _reload_registry(self) -> None:
+        # Anything that changes what's staged has to reach the registry, in every process
         self.app.visualizations_registry.reload()
         self.app.queue_worker.send_control_task("reload_visualizations", noop_self=True)
-        return MessageResponse(message="Visualization registry reloaded successfully")
 
     def get_usage_stats(self, trans: ProvidesUserContext, days: int = 30) -> UsageStatsResponse:
         """Get usage statistics for visualizations."""
@@ -167,6 +173,7 @@ class AdminVisualizationsService(ServiceBase):
     def stage_all_visualizations(self, trans: ProvidesUserContext) -> StagingResultResponse:
         """Stage all visualization assets from managed and legacy sources to static/plugins."""
         result = self.package_manager.stage_all_visualizations()
+        self._reload_registry()
         log.info(f"Staged {result['staged_count']} visualizations")
         return StagingResultResponse(
             message=f"Successfully staged {result['staged_count']} visualizations",
@@ -178,6 +185,7 @@ class AdminVisualizationsService(ServiceBase):
     def stage_visualization(self, trans: ProvidesUserContext, viz_id: str) -> VisualizationStagingResultResponse:
         self.package_manager.validate_viz_id(viz_id)
         result = self.package_manager.stage_visualization(viz_id)
+        self._reload_registry()
         log.info(f"Staged visualization {viz_id}")
         return VisualizationStagingResultResponse(
             message=f"Successfully staged visualization '{viz_id}'",

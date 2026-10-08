@@ -1043,6 +1043,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.datatypes_registry.load_external_metadata_tool(self.toolbox)
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
+        # Stage visualization assets so they're available for serving, before the registry looks for them
+        try:
+            result = self.visualization_package_manager.stage_all_visualizations()
+            if result["staged_count"] > 0:
+                log.info(f"Staged {result['staged_count']} visualization(s) on startup")
+        except Exception:
+            log.warning("Failed to stage visualization assets on startup", exc_info=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(
             VisualizationsRegistry,
@@ -1051,13 +1058,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                 directories_setting=self.config.visualization_plugins_directory,
             ),
         )
-        # Stage visualization assets so they're available for serving
-        try:
-            result = self.visualization_package_manager.stage_all_visualizations()
-            if result["staged_count"] > 0:
-                log.info(f"Staged {result['staged_count']} visualization(s) on startup")
-        except Exception:
-            log.warning("Failed to stage visualization assets on startup", exc_info=True)
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
