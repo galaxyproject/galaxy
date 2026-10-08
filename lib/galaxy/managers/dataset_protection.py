@@ -102,6 +102,13 @@ def _can_decrypt_inputs(tool: "Tool") -> bool:
     return not any(isinstance(config_file, FileSourceConfigFile) for config_file in tool.config_files)
 
 
+def _copied_extra_files_message(dataset_instance: DatasetInstance) -> str:
+    return (
+        f"The extra files of dataset '{dataset_instance.name}' copy encrypted inputs of the job that created "
+        "them and can't be decrypted. Use it in tools accepting encrypted datasets."
+    )
+
+
 def _unsupported_tool_message(tool: "Tool") -> str:
     return f"Tool '{tool.name}' can't be used with encrypted datasets."
 
@@ -340,6 +347,8 @@ class DatasetProtectionManager:
     def _store_user_grant(self, user: User, dataset: Dataset, scheme: str, record: GrantRecord) -> None:
         grant = self._get_or_create_grant(user, dataset, scheme)
         grant_data = dict(record.grant_data)
+        if copied_extra_files := (grant.grant_data or {}).get("copied_extra_files"):
+            grant_data["copied_extra_files"] = copied_extra_files
         if extra_files := (grant.grant_data or {}).get("extra_files"):
             # Users only authorize the primary file again: keep the extra files of protected job outputs,
             # with the compute keypair they are encrypted to, until it expires.
@@ -408,11 +417,14 @@ class DatasetProtectionManager:
         for dataset_instance in to_decrypt:
             if dataset_instance.state != DatasetInstance.states.OK:
                 continue
-            if user is None or self.get_usable_grant(user, dataset_instance) is None:
+            grant = self.get_usable_grant(user, dataset_instance) if user else None
+            if grant is None:
                 raise RequestParameterInvalidException(
                     f"Dataset '{dataset_instance.name}' is encrypted and you are not authorized to decrypt it in jobs. "
                     "Authorize the dataset first (key icon)."
                 )
+            if grant.grant_data.get("copied_extra_files"):
+                raise RequestParameterInvalidException(_copied_extra_files_message(dataset_instance))
 
     def authorize_job(
         self,
@@ -452,6 +464,8 @@ class DatasetProtectionManager:
                     f"You are not authorized to decrypt dataset '{dataset_instance.name}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
+            if grant.grant_data.get("copied_extra_files"):
+                raise ProtectionError(_copied_extra_files_message(dataset_instance))
             if _extra_files_expire(grant, scheme.expiry_margin + margin):
                 raise ProtectionError(
                     f"The extra files of dataset '{dataset_instance.name}' can't be decrypted anymore: their "
@@ -640,6 +654,9 @@ class DatasetProtectionManager:
             grant.expires_at = expires_at
             extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
             grant.grant_data = {"compute_header": record["compute_header"], "extra_files": extra_files}
+            if copied := sorted(relpath for relpath, header in record["extra_files"].items() if not header):
+                # Copies of encrypted inputs, their headers were never sealed to a compute key.
+                grant.grant_data["copied_extra_files"] = copied
             grant.source = f"job:{job.id}"
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:
