@@ -3835,7 +3835,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert new_job_details["copied_from_job_id"] == job_details["id"]
 
     @skip_without_tool("use_directory_index")
-    def test_deferred_directory_input_from_unlistable_source_fails_job(self, history_id):
+    def test_deferred_directory_input_from_unlistable_source_fails_job(self, history_id: str) -> None:
         deferred_hda = self.dataset_populator.create_deferred_hda(
             history_id, "base64://bm90IGEgZGlyZWN0b3J5", ext="bwa_mem2_index"
         )

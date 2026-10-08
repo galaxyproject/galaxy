@@ -4,6 +4,7 @@ Unit tests for base DataTypes.
 """
 
 import os
+from typing import Any
 
 from galaxy.datatypes.anvio import AnvioStructureDB
 from galaxy.datatypes.data import (
@@ -37,8 +38,10 @@ def test_is_datatype_change_allowed():
     assert BedStrict.is_datatype_change_allowed() is False
 
 
-def _zarr_v3_array(shape, chunk_shape, chunk_key_encoding=None):
-    metadata = {
+def _zarr_v3_array(
+    shape: list[int], chunk_shape: list[int], chunk_key_encoding: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
         "node_type": "array",
         "shape": shape,
         "chunk_grid": {"name": "regular", "configuration": {"chunk_shape": chunk_shape}},
@@ -48,7 +51,7 @@ def _zarr_v3_array(shape, chunk_shape, chunk_key_encoding=None):
     return metadata
 
 
-def test_zarr_v3_store_keys_follow_consolidated_metadata():
+def test_zarr_v3_store_keys_follow_consolidated_metadata() -> None:
     root = {
         "node_type": "group",
         "consolidated_metadata": {
@@ -70,14 +73,14 @@ def test_zarr_v3_store_keys_follow_consolidated_metadata():
     ]
 
 
-def test_zarr_v3_store_keys_with_v2_chunk_key_encoding():
+def test_zarr_v3_store_keys_with_v2_chunk_key_encoding() -> None:
     array = _zarr_v3_array([4, 2], [2, 2], {"name": "v2", "configuration": {"separator": "."}})
     metadata_keys, chunk_keys = zarr_v3_store_keys(array)
     assert metadata_keys == []
     assert list(chunk_keys) == ["0.0", "1.0"]
 
 
-def test_zarr_v2_store_keys_from_consolidated_metadata():
+def test_zarr_v2_store_keys_from_consolidated_metadata() -> None:
     consolidated = {
         "metadata": {
             ".zgroup": {"zarr_format": 2},
