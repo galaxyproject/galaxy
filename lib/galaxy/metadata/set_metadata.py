@@ -19,7 +19,6 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import Any
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -543,16 +542,16 @@ def set_metadata_portable(
                 set_validated_state(dataset)
             # Outputs assigned a discovered file (assign_primary_output) are stored already, the declared file
             # isn't their content and may hold plaintext.
-            stored_from_discovery = bool(output_protector and output_protector.protected_ext(dataset))
+            stored_from_discovery = False
             if output_protector:
-                file_dict = _protect_declared_output(
+                stored_from_discovery = _protect_declared_output(
                     output_protector,
                     dataset,
-                    file_dict,
+                    # Unset for deferred outputs.
                     external_filename=None if is_deferred else external_filename,
-                    is_deferred=is_deferred,
-                    link_data_only=bool(metadata_params.get("link_data_only")),
+                    link_data_only=bool(link_data_only),
                 )
+                file_dict = output_protector.without_tool_metadata(file_dict)
 
             if extended_metadata_collection:
                 if not object_store or not export_store:
@@ -650,33 +649,29 @@ def set_metadata_portable(
 def _protect_declared_output(
     output_protector: OutputProtector,
     dataset: DatasetInstance,
-    file_dict: dict[str, Any],
     external_filename: str | None,
-    is_deferred: bool,
     link_data_only: bool,
-) -> dict[str, Any]:
+) -> bool:
     """Protect a declared output before anything queues it for the object store.
 
-    Returns the tool provided attributes to use for it, without tool provided metadata:
-    that may be derived from the decrypted data.
+    Returns whether the output was stored already, while discovering outputs (assign_primary_output).
     """
     assert dataset.dataset
-    if is_deferred:
+    if external_filename is None:
         output_protector.record_outcome(dataset, OUTCOME_DEFERRED)
     elif dataset.dataset.purged:
         output_protector.record_outcome(dataset, OUTCOME_PURGED)
-    elif link_data_only:
-        raise ProtectionError("Outputs of protected jobs can't be linked data.")
     elif protected_ext := output_protector.protected_ext(dataset):
-        # Already protected and stored while discovering outputs (assign_primary_output), the tool
-        # provided extension may have been applied again since. Read it from the object store, not
-        # from the declared file.
+        # The tool provided extension may have been applied again since. Read it from the object
+        # store, not from the declared file.
         dataset.extension = protected_ext
         dataset.dataset.external_filename = None
+        return True
     else:
-        assert external_filename
-        output_protector.protect(dataset, external_filename, dataset.dataset.external_extra_files_path)
-    return {key: value for key, value in file_dict.items() if key != "metadata"}
+        output_protector.protect(
+            dataset, external_filename, dataset.dataset.external_extra_files_path, link_data=link_data_only
+        )
+    return False
 
 
 def validate_and_load_datatypes_config(datatypes_config):
