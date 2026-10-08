@@ -244,6 +244,32 @@ def test_finish_job_accepts_protected_extra_files(tmp_path):
         assert _manager().finish_job(_job(output), str(tmp_path)) is None
 
 
+def test_grants_record_extra_files_copying_encrypted_inputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    extra_files = tmp_path / "out.dat_files"
+    extra_files.mkdir()
+    for name in ("part.txt", "copy.txt"):
+        (extra_files / name).write_bytes(_header(b"sealed") + b"encrypted part")
+    record["extra_files"] = {"part.txt": "compute", "copy.txt": None}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.grant_data["extra_files"] == {"part.txt": "compute"}
+    assert grant.grant_data["copied_extra_files"] == ["copy.txt"]
+
+    # Authorizing the dataset again can't make them decryptable.
+    stored = DatasetProtectionGrant(
+        key_ref=grant.key_ref,
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3),
+        grant_data=grant.grant_data,
+    )
+    manager.get_grant = mock.MagicMock(return_value=stored)
+    manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
+    assert stored.grant_data["copied_extra_files"] == ["copy.txt"]
+
+
 @pytest.mark.parametrize("recorded", [True, False])
 def test_finish_job_detects_plaintext_extra_files(tmp_path, recorded):
     output, record = _protected_output(tmp_path)
