@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
 import { errorMessageAsString } from "@/util"
 
@@ -32,30 +32,42 @@ function dismiss() {
 
 <template>
     <modal-form title="Forgot Password">
-        <q-card-section>
+        <div class="modal-form-section">
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
-            <p v-if="sent" class="text-body1 reset-password-sent">
+            <p v-if="sent" class="reset-password-sent">
                 If an account exists for that address, a password reset link is on its way. The link expires in 24
                 hours.
             </p>
-            <q-form v-else name="forgot_password" class="q-gutter-md" action="#" @submit.prevent="onSubmit">
-                <p class="text-grey-8">
+            <GForm v-else name="forgot_password" class="forgot-password-form" action="#" @submit.prevent="onSubmit">
+                <p class="forgot-password-intro">
                     Enter the email address of your account and we will send you a link to choose a new password.
                 </p>
-                <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="email" type="email" label="E-Mail" name="email" />
-                <q-btn
-                    unelevated
-                    color="primary"
-                    size="lg"
-                    class="full-width"
-                    label="Send Reset Link"
-                    type="submit"
-                    name="reset_password_button"
-                />
-            </q-form>
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">Remembered it? <router-link to="/login">Login.</router-link></p>
-        </q-card-section>
+                <GFormLabel title="E-Mail">
+                    <GFormInput v-model="email" type="email" name="email" autocomplete="email" />
+                </GFormLabel>
+                <GButton color="blue" size="large" class="submit-button" type="submit" name="reset_password_button"
+                    >Send Reset Link</GButton
+                >
+            </GForm>
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">Remembered it? <router-link to="/login">Login.</router-link></p>
+        </div>
     </modal-form>
 </template>
+
+<style scoped>
+.forgot-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
+}
+
+.forgot-password-intro {
+    color: var(--color-grey-800);
+}
+</style>

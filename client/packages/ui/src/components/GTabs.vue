@@ -25,9 +25,14 @@ export interface TabsContext {
     tabsCard: boolean;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(
     defineProps<{
-        value?: number;
+        modelValue?: number;
         justified?: boolean;
         fill?: boolean;
         pills?: boolean;
@@ -38,7 +43,7 @@ const props = withDefaults(
         scrollableContent?: boolean;
     }>(),
     {
-        value: undefined,
+        modelValue: undefined,
         justified: false,
         fill: false,
         pills: false,
@@ -50,16 +55,16 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", index: number): void;
+    (e: "update:modelValue", index: number): void;
 }>();
 
 const internalActive = ref(0);
 
 const activeIndex = computed({
-    get: () => (props.value !== undefined ? props.value : internalActive.value),
+    get: () => (props.modelValue !== undefined ? props.modelValue : internalActive.value),
     set: (val: number) => {
         internalActive.value = val;
-        emit("input", val);
+        emit("update:modelValue", val);
     },
 });
 
@@ -94,7 +99,7 @@ function setActive(index: number) {
 }
 
 watch(
-    () => props.value,
+    () => props.modelValue,
     (val) => {
         if (val !== undefined) {
             internalActive.value = val;

@@ -1,5 +1,6 @@
-// @galaxyproject/galaxy-ui public barrel. Internal package, consumed by the
-// main Galaxy client through a Vite source alias (no library build).
+// @galaxyproject/galaxy-ui public barrel. Internal package with no library build: the main
+// Galaxy client consumes it through a Vite source alias, and the Tool Shed frontend through a
+// file: dependency. See README.md.
 
 export {
     type ColorVariant,
@@ -61,6 +62,7 @@ export { useResolveElement } from "./composables/resolveElement";
 export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
 export { activeToastHost, registerToastHost, unregisterToastHost } from "./composables/toastHost";
 export { useUid } from "./composables/uid";
+export { vGTooltip } from "./directives/vGTooltip";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,

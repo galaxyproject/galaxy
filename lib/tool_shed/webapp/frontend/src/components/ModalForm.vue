@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { GHeading } from "@galaxyproject/galaxy-ui"
+
 defineProps({
     title: {
         type: String,
@@ -8,16 +10,65 @@ defineProps({
 </script>
 
 <template>
-    <q-page class="bg-secondary window-height window-width row justify-center items-center">
-        <div class="column">
-            <div class="row">
-                <h5 class="text-primary text-h5 q-my-md">{{ title }}</h5>
-            </div>
-            <div class="row">
-                <q-card square bordered class="q-pa-lg shadow-1">
-                    <slot></slot>
-                </q-card>
-            </div>
+    <div class="modal-form-backdrop shed-brand-backdrop">
+        <div class="modal-form-content">
+            <section class="modal-form-card">
+                <GHeading h1 size="lg" class="modal-form-title">{{ title }}</GHeading>
+                <slot></slot>
+            </section>
         </div>
-    </q-page>
+    </div>
 </template>
+
+<style scoped>
+/* Account pages sit on the brand's dark grid backdrop, with the form on a single white card */
+.modal-form-backdrop {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: calc(100vh - var(--shed-masthead-height));
+    width: 100%;
+    padding: clamp(2rem, 8vh, 5rem) 1rem 3rem;
+}
+
+.modal-form-content {
+    width: min(26rem, 100%);
+}
+
+.modal-form-card {
+    padding: 2rem 2rem 1.5rem;
+    background-color: var(--shed-surface);
+    border-top: 4px solid var(--shed-gold);
+    border-radius: var(--shed-radius);
+    box-shadow:
+        0 20px 50px rgba(10, 14, 28, 0.35),
+        0 2px 6px rgba(10, 14, 28, 0.2);
+}
+
+.modal-form-title {
+    margin: 0 0 1.25rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--shed-heading);
+}
+
+/* Sections the account pages put in the card: the form, then a centered footer of links */
+:slotted(.modal-form-section-footer) {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    text-align: center;
+    border-top: 1px solid var(--shed-border-subtle);
+}
+
+:slotted(.modal-form-footer-text) {
+    margin: 0.35rem 0;
+    font-size: 0.92rem;
+    color: var(--shed-muted);
+}
+
+@media (max-width: 599px) {
+    .modal-form-card {
+        padding: 1.5rem 1.25rem 1.25rem;
+    }
+}
+</style>

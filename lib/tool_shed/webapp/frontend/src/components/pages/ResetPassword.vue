@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { useRoute } from "vue-router"
 import ModalForm from "@/components/ModalForm.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
 import { errorMessageAsString, queryParamToString } from "@/util"
 import router from "@/router"
@@ -44,38 +44,36 @@ function dismiss() {
 
 <template>
     <modal-form title="Choose a New Password">
-        <q-card-section>
+        <div class="modal-form-section">
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
-            <q-form name="reset_password" class="q-gutter-md" action="#" @submit.prevent="onSubmit">
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="password"
-                    type="password"
-                    label="New Password"
-                    name="password"
-                />
-                <q-input
-                    v-bind="AUTH_FORM_INPUT_PROPS"
-                    v-model="confirm"
-                    type="password"
-                    label="Re-enter New Password"
-                    name="confirm"
-                />
-                <q-btn
-                    unelevated
-                    color="primary"
-                    size="lg"
-                    class="full-width"
-                    label="Set Password"
-                    type="submit"
-                    name="set_password_button"
-                />
-            </q-form>
-        </q-card-section>
-        <q-card-section class="text-center q-pa-none">
-            <p class="text-grey-6">
+            <GForm name="reset_password" class="reset-password-form" action="#" @submit.prevent="onSubmit">
+                <GFormLabel title="New Password">
+                    <GFormInput v-model="password" type="password" name="password" autocomplete="new-password" />
+                </GFormLabel>
+                <GFormLabel title="Re-enter New Password">
+                    <GFormInput v-model="confirm" type="password" name="confirm" autocomplete="new-password" />
+                </GFormLabel>
+                <GButton color="blue" size="large" class="submit-button" type="submit" name="set_password_button"
+                    >Set Password</GButton
+                >
+            </GForm>
+        </div>
+        <div class="modal-form-section modal-form-section-footer">
+            <p class="modal-form-footer-text">
                 Link expired? <router-link to="/user/forgot_password">Request a new one.</router-link>
             </p>
-        </q-card-section>
+        </div>
     </modal-form>
 </template>
+
+<style scoped>
+.reset-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.submit-button {
+    width: 100%;
+}
+</style>

@@ -12,18 +12,23 @@ const props = defineProps<RepositoryLinkProps>()
 const repositoryTo = computed(() => `/repositories/${props.id}`)
 </script>
 <template>
-    <router-link :to="repositoryTo" class="text-primary">
+    <router-link :to="repositoryTo" class="repository-link">
         <span class="owner">{{ owner }}</span
         >/<span class="name">{{ name }}</span>
     </router-link>
 </template>
 
 <style scoped>
-.router-link .owner {
-    font-size: 0.9em;
+.repository-link {
+    color: var(--color-galaxy-primary);
 }
+
+.owner {
+    font-weight: 400;
+    color: var(--shed-muted);
+}
+
 .name {
-    font-size: 1.2em;
-    font-weight: bold;
+    font-weight: 700;
 }
 </style>

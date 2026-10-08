@@ -4,6 +4,7 @@ import { FontAwesomeIcon, type FontAwesomeIconProps } from "@fortawesome/vue-fon
 import { computed, ref } from "vue";
 
 import { useUid } from "../composables/uid";
+import { vGTooltip } from "../directives/vGTooltip";
 import type {
     BootstrapSize,
     FieldAlignment,

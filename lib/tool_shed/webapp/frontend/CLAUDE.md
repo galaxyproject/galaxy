@@ -6,7 +6,7 @@ Vue 3 + TypeScript frontend for the Galaxy Tool Shed.
 
 - **Framework**: Vue 3 (Composition API + Options API mix)
 - **Build**: Vite 4
-- **UI**: Quasar 2
+- **UI**: `@galaxyproject/galaxy-ui` (Galaxy's G-components, from `client/packages/ui`), migrating off Quasar 2 -- see below
 - **State**: Pinia stores
 - **API**: openapi-fetch with generated TypeScript types
 - **Router**: vue-router 4
@@ -110,7 +110,7 @@ For example, if you test a component with long text or special characters, add s
 ### Key Patterns
 
 - **Skip link**: `App.vue` - hidden until focused, targets `#main-content`
-- **Landmarks**: `role="banner"` on header, `role="main"` on page container
+- **Landmarks**: `App.vue` renders the page as `<header>` (the masthead) and `<main id="main-content">`
 - **Live regions**: `ErrorBanner.vue` uses `role="alert"`, `LoadingDiv.vue` uses `role="status"`
 - **Icon buttons**: Use `aria-label` not `title` for accessible names
 - **Focus indicators**: Global `:focus-visible` styles in `App.vue`
@@ -123,19 +123,22 @@ For example, if you test a component with long text or special characters, add s
 | `ShedToolbar.vue`               | `aria-label` on icon buttons, `aria-haspopup` on dropdowns |
 | `ErrorBanner.vue`               | `role="alert"`, `aria-live="assertive"`                    |
 | `LoadingDiv.vue`                | `role="status"`, `aria-live="polite"`                      |
-| `RepositoryExplore.vue`         | `aria-label` on FAB and icon buttons                       |
+| `ActionMenu.vue`                | `aria-label` on the round toggle, which names its menu     |
+| `RepositoryExplore.vue`         | `aria-label` on menu toggle and icon buttons               |
 | `PaginatedRepositoriesGrid.vue` | `aria-label` on table                                      |
 
-### Quasar Notes
+### galaxy-ui and the remaining Quasar
 
-- `q-btn-dropdown` auto-manages `aria-expanded`
-- `q-select` has built-in label association
-- Use `aria-label` on icon-only `q-btn` components
-- FABs (`q-fab`) need explicit `aria-label` on trigger
+New UI uses galaxy-ui components (`GButton`, `GDropdown`, `GAlert`, `GTabs`, `GCollapse`, `GForm*`, ...), FontAwesome 6 icons, and scoped styles on the design tokens (`--color-*`, `--spacing-*`, `--color-galaxy-*`). Quasar now only provides `q-select` (RevisionSelect, SelectUser, OverviewTab) and the Quasar markup inside those selects (RevisionSelect's q-item option rows and badges), which need a galaxy-ui select before they can go.
+
+- The shed is plain Vue 3 (no `@vue/compat`). galaxy-ui's form controls, `GTabs` and `GCollapse` all use `modelValue`, so plain `v-model` works on them. Anything still on Vue 2's `value`/`input` only works in the client, where compat maps it.
+- `GDropdown` names its menu from its toggle; icon-only toggles need `aria-label` (see `ActionMenu.vue`).
+- Use `aria-label` on icon-only `GButton`s.
+- Quasar's own icons (select arrows, table pagination) come from its SVG FontAwesome icon set; there is no icon webfont.
 
 ### Notification System
 
-- `util.ts` `notify()` - uses Quasar Notify (toast messages)
+- `util.ts` `notify()` - galaxy-ui toasts (`GToast`, mounted once in `App.vue`)
 - `ErrorBanner.vue` - inline persistent errors with dismiss
 - `LoadingDiv.vue` - spinner with status message
 
