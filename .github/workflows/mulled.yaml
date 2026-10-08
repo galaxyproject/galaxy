@@ -41,6 +41,7 @@ jobs:
       - name: Configure apt
         uses: './galaxy root/.github/actions/configure_apt'
       - name: Install Apptainer's singularity
+        timeout-minutes: 20
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Install tox
         run: uv tool install tox --with tox-uv

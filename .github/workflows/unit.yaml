@@ -41,6 +41,7 @@ jobs:
       - name: Configure apt
         uses: './galaxy root/.github/actions/configure_apt'
       - name: Install ffmpeg and bubblewrap
+        timeout-minutes: 20
         # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
         # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs);
         # allow them so the sandbox test can run.

@@ -92,6 +92,7 @@ jobs:
       - name: Configure apt
         uses: './galaxy root/.github/actions/configure_apt'
       - name: Install Playwright
+        timeout-minutes: 20
         run: |
           . .venv/bin/activate
           playwright install chromium --with-deps
