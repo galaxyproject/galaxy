@@ -50,33 +50,35 @@ def _reader(base_url: str) -> UriDirectoryReader:
     return UriDirectoryReader(f"{base_url}/store", file_sources=stock_file_sources_allowing_loopback())
 
 
-def test_fetch_all_reuses_connections_and_reports_missing_files(
+def test_fetch_all_reuses_connections_and_counts_missing_files(
     served_directory: ServedDirectory, tmp_path: Path
 ) -> None:
-    served, base_url, client_ports = served_directory
-    (served / "store").mkdir()
+    store = served_directory.served / "store"
+    store.mkdir()
     for i in range(20):
-        (served / "store" / str(i)).write_text(str(i))
+        (store / str(i)).write_text(str(i))
     target = tmp_path / "target"
-    target.mkdir()
     # Missing files first: an error answer must not close the connection either.
     rel_paths = [f"missing{i}" for i in range(10)] + [str(i) for i in range(20)]
 
-    missing = _reader(base_url).fetch_all(((p, str(target / p)) for p in rel_paths), workers=2)
+    missing = _reader(served_directory.base_url).fetch_all(rel_paths, str(target), workers=2)
 
-    assert sorted(missing) == sorted(f"missing{i}" for i in range(10))
+    assert missing == 10
     assert sorted(os.listdir(target)) == sorted(str(i) for i in range(20))
     assert (target / "7").read_text() == "7"
     # Each of the two workers reuses its connection for all its requests.
-    assert len(client_ports) <= 2
+    assert len(served_directory.client_ports) <= 2
 
 
 def test_fetch_all_raises_the_first_error(served_directory: ServedDirectory, tmp_path: Path) -> None:
-    _, base_url, _ = served_directory
-
-    def targets() -> Iterator[tuple[str, str]]:
-        yield "a", str(tmp_path / "a")
+    def rel_paths() -> Iterator[str]:
+        yield "a"
         raise ValueError("cannot compute keys")
 
     with pytest.raises(ValueError, match="cannot compute keys"):
-        _reader(base_url).fetch_all(targets(), workers=2)
+        _reader(served_directory.base_url).fetch_all(rel_paths(), str(tmp_path), workers=2)
+
+
+def test_fetch_refuses_unsafe_paths(served_directory: ServedDirectory, tmp_path: Path) -> None:
+    with pytest.raises(Exception, match="unsafe path"):
+        _reader(served_directory.base_url).fetch("../outside", str(tmp_path))
