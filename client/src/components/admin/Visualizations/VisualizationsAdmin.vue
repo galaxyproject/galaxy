@@ -398,11 +398,11 @@ async function handleToggle(viz: Visualization) {
     try {
         await toggleVisualization(viz.id, !viz.enabled);
         toast.success(`Visualization ${viz.id} ${!viz.enabled ? "enabled" : "disabled"}`);
-        await loadInstalledPackages();
     } catch (error) {
         toast.error(`Failed to toggle ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
+        await refreshInstalledAndStaging();
     }
 }
 
@@ -414,12 +414,11 @@ async function handleUpdate(viz: Visualization, newVersion: string) {
         await updateVisualization(viz.id, newVersion);
         await stageVisualization(viz.id);
         toast.success(`Updated and staged ${viz.id} to version ${newVersion}`);
-        await loadInstalledPackages();
-        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to update ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
+        await refreshInstalledAndStaging();
     }
 }
 
@@ -435,12 +434,11 @@ async function handleUninstall(viz: Visualization) {
     try {
         await uninstallVisualization(viz.id);
         toast.success(`Uninstalled ${viz.id}`);
-        await loadInstalledPackages();
-        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to uninstall ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
+        await refreshInstalledAndStaging();
     }
 }
 
@@ -472,13 +470,19 @@ async function confirmInstall(vizId: string) {
         await stageVisualization(vizId);
         showInstallModal.value = false;
         toast.success(`Installed and staged ${vizId}`);
-        await loadInstalledPackages();
-        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to install ${vizId}: ${errorMessage(error)}`);
     } finally {
         installing.value = false;
+        await refreshInstalledAndStaging();
     }
+}
+
+// After any change, even one that failed partway (installed but not staged, say), so the
+// list never shows a stale state
+async function refreshInstalledAndStaging() {
+    await loadInstalledPackages();
+    await loadStagingStatus();
 }
 
 async function reloadRegistry() {
