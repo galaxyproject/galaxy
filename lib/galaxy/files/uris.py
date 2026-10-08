@@ -127,7 +127,7 @@ def _http_status(error: HTTPError | RequestsHTTPError) -> int | None:
 class UriDirectoryReader:
     """Read the files under a directory URI through Galaxy's file sources.
 
-    Each file is fetched through the file source matching its URI, so the usual
+    The file source is resolved once, and every file is fetched through it, so its
     access checks (e.g. the URL allowlist) apply to every request.
     """
 
@@ -142,25 +142,25 @@ class UriDirectoryReader:
                 f"Cannot read a directory from a URI with a query string or fragment [{uri}]"
             )
         self._uri = uri.rstrip("/")
-        self._file_sources = ensure_file_sources(file_sources)
+        self._file_source, root_path = ensure_file_sources(file_sources).get_file_source_path(self._uri)
+        self._root_path = root_path.rstrip("/")
         self._user_context = user_context
 
     def list_files(self) -> list[str] | None:
         """Return the paths of all files under the directory, or ``None`` if they cannot all be listed."""
-        file_source, root_path = self._file_sources.get_file_source_path(self._uri)
-        if not file_source.get_browsable():
+        if not self._file_source.get_browsable():
             return None
         try:
-            entries, _ = file_source.list(root_path, recursive=True, user_context=self._user_context)
+            entries, _ = self._file_source.list(self._root_path, recursive=True, user_context=self._user_context)
         except Exception as e:
             # e.g. a public bucket that allows reading objects but not listing them.
             log.warning("Could not list directory [%s]: %s", self._uri, unicodify(e))
             return None
-        if _listing_may_be_truncated(file_source, entries):
+        if _listing_may_be_truncated(self._file_source, entries):
             log.warning("Listing of directory [%s] may be incomplete, it reached the file source limit", self._uri)
             return None
         # File sources differ on leading slashes, so compare both as absolute paths.
-        root = f"/{root_path.strip('/')}"
+        root = f"/{self._root_path.strip('/')}"
         return [
             posixpath.relpath(f"/{entry.path.lstrip('/')}", root) for entry in entries if isinstance(entry, RemoteFile)
         ]
@@ -186,12 +186,7 @@ class UriDirectoryReader:
         ``missing_statuses`` are the HTTP statuses that mean the file does not exist.
         """
         try:
-            stream_url_to_file(
-                f"{self._uri}/{rel_path}",
-                file_sources=self._file_sources,
-                user_context=self._user_context,
-                target_path=target_path,
-            )
+            self._file_source.realize_to(f"{self._root_path}/{rel_path}", target_path, user_context=self._user_context)
         except FileNotFoundError:
             return False
         except (HTTPError, RequestsHTTPError) as e:
