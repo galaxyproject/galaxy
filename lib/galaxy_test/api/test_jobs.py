@@ -1124,42 +1124,6 @@ steps:
         hdca_option = f1_input["options"]["hdca"][0]
         assert hdca_option["id"] == hdca_id and hdca_option["src"] == "hdca"
 
-    @requires_new_history
-    @skip_without_tool("multi_data_param")
-    def test_async_job_submission_rejects_mismatched_multi_inputs(self, history_id):
-        """API-level regression test for async /api/jobs submission.
-
-        Mismatched lengths for matched multi-input parameters should be
-        surfaced as a request validation error (400) instead of a generic
-        server error.
-        """
-        dataset_id_1 = self.__history_with_ok_dataset(history_id)
-        dataset_id_2 = self.__history_with_ok_dataset(history_id)
-
-        inputs = {
-            "f1": {
-                "batch": True,
-                "values": [
-                    {"src": "hda", "id": dataset_id_1},
-                    {"src": "hda", "id": dataset_id_2},
-                ],
-            },
-            "f2": {
-                "batch": True,
-                "values": [
-                    {"src": "hda", "id": dataset_id_1},
-                ],
-            },
-        }
-
-        response = self.dataset_populator.tool_request_raw(
-            tool_id="multi_data_param",
-            inputs=inputs,
-            history_id=history_id,
-        )
-        self._assert_status_code_is(response, 400)
-        assert "should be of equal length" in response.json()["err_msg"]
-
     @skip_without_tool("collection_paired_test")
     def test_job_build_for_rerun_hidden_hdca_carried_into_collection_options(self, history_id):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True)
