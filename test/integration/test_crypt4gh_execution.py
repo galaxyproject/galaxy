@@ -318,6 +318,8 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         job, output = self._wait_for_job(history_id, response)
         assert job["state"] == "ok", job
         assert "ACGT" not in (output["misc_info"] or "")
+        for stream in ("stdout", "stderr", "tool_stdout", "tool_stderr"):
+            assert "ACGT" not in (job[stream] or ""), stream
         assert self._decrypted_content(history_id, output) == PLAINTEXT_1
 
     def test_unauthorized_input_is_refused_before_any_service_call(self, history_id):
