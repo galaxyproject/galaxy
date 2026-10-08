@@ -257,7 +257,7 @@ def __handle_remote_command_line_building(commands_builder, job_wrapper: "Minima
 
 def __protected_stage_command(job_wrapper: "MinimalJobWrapper", for_pulsar=False) -> Callable[[str], str] | None:
     """Build commands running a protection action of protected jobs, ``None`` for other jobs."""
-    plan_path = getattr(job_wrapper, "protection_plan_path", None)
+    plan_path = job_wrapper.protection_plan_path
     if not plan_path:
         return None
 
