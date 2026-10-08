@@ -903,8 +903,12 @@ def extract_steps_by_ids(
     job_to_step: dict[int, WorkflowStep] = {}
     icj_to_step: dict[int, WorkflowStep] = {}
 
+    # Tool inputs resolve to the original of a copy, so all copies of one original share one input step.
     for i, hda_id in enumerate(hda_ids):
         hda = hda_manager.get_accessible(hda_id, user)
+        original = get_original_hda(hda)
+        if ("dataset", original.id) in id_to_output_pair:
+            continue
         step = model.WorkflowStep()
         step.type = "data_input"
         name = dataset_names[i] if dataset_names else "Input Dataset"
@@ -913,11 +917,13 @@ def extract_steps_by_ids(
             step_labels_seen.add(name)
         step.tool_inputs = dict(name=name)
         steps.append(step)
-        original = get_original_hda(hda)
         id_to_output_pair[("dataset", original.id)] = (step, "output")
 
     for i, hdca_id in enumerate(hdca_ids):
         hdca = dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+        original_hdca = get_original_hdca(hdca)
+        if ("collection", original_hdca.id) in id_to_output_pair:
+            continue
         step = model.WorkflowStep()
         step.type = "data_collection_input"
         name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
@@ -926,7 +932,6 @@ def extract_steps_by_ids(
             step_labels_seen.add(name)
         step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
         steps.append(step)
-        original_hdca = get_original_hdca(hdca)
         id_to_output_pair[("collection", original_hdca.id)] = (step, "output")
 
     # Build the list of work items: each tuple is (representative_job,
