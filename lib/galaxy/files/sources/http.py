@@ -94,6 +94,9 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
                         timeout=DEFAULT_SOCKET_TIMEOUT,
                     )
                 )
+                if not page.ok:
+                    # Read the (small) error body, so a reused connection goes back to the pool instead of closing.
+                    _ = page.content
                 page.raise_for_status()
                 page.raw.decode_content = True
             # Verify url post-redirects is still allowlisted
