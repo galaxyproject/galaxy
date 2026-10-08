@@ -232,6 +232,15 @@ class Crypt4GH(Binary):
         return "data"
 
 
+def keeps_encryption(current_datatype: Any, target_datatype: Any) -> bool:
+    """Whether changing between these datatypes keeps encrypted datasets encrypted, and others not.
+
+    Galaxy knows a dataset is encrypted from its datatype: relabelling it would pass the encrypted data
+    to tools as is, or try to decrypt data that isn't encrypted.
+    """
+    return isinstance(current_datatype, Crypt4GH) == isinstance(target_datatype, Crypt4GH)
+
+
 def build_crypt4gh_datatype(inner_datatype: Data) -> Crypt4GH:
     """Create a typed Crypt4GH wrapper datatype instance for *inner_datatype*.
 

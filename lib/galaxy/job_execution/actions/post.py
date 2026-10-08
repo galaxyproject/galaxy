@@ -8,6 +8,10 @@ import re
 
 from markupsafe import escape
 
+from galaxy.datatypes.crypt4gh import (
+    Crypt4GH,
+    keeps_encryption,
+)
 from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
@@ -15,6 +19,7 @@ from galaxy.model import (
     PostJobActionAssociation,
 )
 from galaxy.util import send_mail
+from galaxy.util.crypt4gh import wrap_crypt4gh_file_ext
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -132,6 +137,21 @@ class ChangeDatatypeAction(DefaultJobAction):
     verbose_name = "Change Datatype"
 
     @classmethod
+    def _change_datatype(cls, datatypes_registry, dataset_instance, newtype):
+        if isinstance(dataset_instance.datatype, Crypt4GH):
+            # Like outputs of tool steps, encrypted when the job ran: the datatype describes the plaintext.
+            newtype = wrap_crypt4gh_file_ext(newtype)
+        if not keeps_encryption(dataset_instance.datatype, datatypes_registry.get_datatype_by_extension(newtype)):
+            # Relabelling would try to decrypt plain data, or pass encrypted data of unknown type to tools.
+            log.warning(
+                "Not changing the datatype of dataset %s to %s, it would change whether it's encrypted",
+                dataset_instance.id,
+                newtype,
+            )
+            return
+        datatypes_registry.change_datatype(dataset_instance, newtype)
+
+    @classmethod
     def execute_on_mapped_over(
         cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None
     ):
@@ -140,7 +160,7 @@ class ChangeDatatypeAction(DefaultJobAction):
             for name, step_output in step_outputs.items():
                 if action.output_name == "" or name == action.output_name:
                     for dataset_instance in cls.mapped_over_dataset_instances(step_output):
-                        trans.app.datatypes_registry.change_datatype(dataset_instance, newtype)
+                        cls._change_datatype(trans.app.datatypes_registry, dataset_instance, newtype)
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
@@ -149,7 +169,7 @@ class ChangeDatatypeAction(DefaultJobAction):
             return
         for dataset_assoc in job.output_datasets:
             if action.output_name == "" or dataset_assoc.name == action.output_name:
-                app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments["newtype"])
+                cls._change_datatype(app.datatypes_registry, dataset_assoc.dataset, action.action_arguments["newtype"])
                 return
         for dataset_collection_assoc in job.output_dataset_collection_instances:
             if action.output_name == "" or dataset_collection_assoc.name == action.output_name:
@@ -157,7 +177,9 @@ class ChangeDatatypeAction(DefaultJobAction):
                 if dataset_instances:
                     for dataset_instance in dataset_instances:
                         if dataset_instance:
-                            app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments["newtype"])
+                            cls._change_datatype(
+                                app.datatypes_registry, dataset_instance, action.action_arguments["newtype"]
+                            )
                 else:
                     # dynamic collection, add as PJA
                     pjaa = PostJobActionAssociation(action, job)
