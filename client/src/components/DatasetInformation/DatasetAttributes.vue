@@ -9,6 +9,7 @@ import { fetchDatasetAttributes } from "@/api/datasets";
 import { setAttributes } from "@/components/DatasetInformation/services";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Heading from "../Common/Heading.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -60,9 +61,7 @@ async function submit(key: string, operation: string) {
 
         historyStore.loadCurrentHistory();
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        onError(error.response?.data?.err_msg || "Unable to save dataset attributes.");
+        onError(errorMessageAsString(e, "Unable to save dataset attributes."));
     }
 }
 
