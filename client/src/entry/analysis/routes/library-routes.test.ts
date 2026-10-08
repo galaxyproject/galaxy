@@ -23,4 +23,13 @@ describe("library routes", () => {
         expect(router.currentRoute.value.name).toEqual("LibraryFolder");
         expect(router.currentRoute.value.params.folder_id).toEqual("F123");
     });
+
+    it("passes the folder page to LibraryFolder as a number", async () => {
+        const router = createRouter({ history: createMemoryHistory(), routes: LibraryRoutes });
+        await router.push("/libraries/folders/F123/page/3");
+        const route = router.currentRoute.value;
+        const propsFunction = route.matched.at(-1)?.props.default;
+        expect(typeof propsFunction).toEqual("function");
+        expect((propsFunction as (route: unknown) => unknown)(route)).toEqual({ folder_id: "F123", page: 3 });
+    });
 });
