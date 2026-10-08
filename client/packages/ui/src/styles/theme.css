@@ -6,8 +6,8 @@
  *
  * Naming follows Tailwind and shadcn/ui wherever they have a name, so the
  * same names work as CSS variables now and as Tailwind utilities later
- * (`bg-primary`, `text-muted-foreground`). Galaxy-only additions: `selected`,
- * `highlight`, `inverse`.
+ * (`bg-primary`, `text-muted-foreground`, `text-sm`). Galaxy-only additions:
+ * `selected`, `highlight`, `inverse`.
  *
  * Prefer the semantic names over raw palette shades in new code.
  */
@@ -23,15 +23,15 @@
     --color-blue-200: #daecf8;
     --color-blue-100: #f1f9fe;
 
-    --color-grey-900: #191919;
-    --color-grey-800: #23262f;
-    --color-grey-700: #35373f;
-    --color-grey-600: #484a52;
-    --color-grey-500: #63656d;
-    --color-grey-400: #8f9199;
-    --color-grey-300: #aab0b4;
-    --color-grey-200: #dee2e6;
-    --color-grey-100: #f8f9fa;
+    --color-gray-900: #191919;
+    --color-gray-800: #23262f;
+    --color-gray-700: #35373f;
+    --color-gray-600: #484a52;
+    --color-gray-500: #63656d;
+    --color-gray-400: #8f9199;
+    --color-gray-300: #aab0b4;
+    --color-gray-200: #dee2e6;
+    --color-gray-100: #f8f9fa;
 
     --color-green-900: #002a1f;
     --color-green-800: #003f2e;
@@ -73,6 +73,17 @@
     --color-red-200: #fdd4d5;
     --color-red-100: #fff3f3;
 
+    /* deprecated: `grey` predates the move to Tailwind's spelling */
+    --color-grey-900: var(--color-gray-900);
+    --color-grey-800: var(--color-gray-800);
+    --color-grey-700: var(--color-gray-700);
+    --color-grey-600: var(--color-gray-600);
+    --color-grey-500: var(--color-gray-500);
+    --color-grey-400: var(--color-gray-400);
+    --color-grey-300: var(--color-gray-300);
+    --color-grey-200: var(--color-gray-200);
+    --color-grey-100: var(--color-gray-100);
+
     /* surfaces: Galaxy separates surfaces with borders and shadows, not tone */
     --color-background: #ffffff;
     --color-foreground: var(--color-blue-700);
@@ -80,15 +91,15 @@
     --color-card-foreground: var(--color-foreground);
     --color-popover: var(--color-background);
     --color-popover-foreground: var(--color-foreground);
-    --color-muted: var(--color-grey-100);
-    --color-muted-foreground: var(--color-grey-600);
+    --color-muted: var(--color-gray-100);
+    --color-muted-foreground: var(--color-gray-600);
 
     /* side panels and the activity bar */
-    --color-sidebar: var(--color-grey-100);
+    --color-sidebar: var(--color-gray-100);
     --color-sidebar-foreground: var(--color-foreground);
     --color-sidebar-primary: var(--color-primary);
     --color-sidebar-primary-foreground: var(--color-primary-foreground);
-    --color-sidebar-accent: var(--color-grey-200);
+    --color-sidebar-accent: var(--color-gray-200);
     --color-sidebar-accent-foreground: var(--color-foreground);
     --color-sidebar-border: var(--color-border);
     --color-sidebar-ring: var(--color-ring);
@@ -102,7 +113,7 @@
     /* brand and status */
     --color-primary: var(--color-blue-600);
     --color-primary-foreground: #ffffff;
-    --color-secondary: var(--color-grey-200);
+    --color-secondary: var(--color-gray-200);
     --color-secondary-foreground: var(--color-foreground);
     --color-highlight: var(--color-yellow-500);
     --color-highlight-foreground: var(--color-blue-700);
@@ -118,8 +129,8 @@
     --color-danger-foreground: #ffffff;
 
     /* lines */
-    --color-border: var(--color-grey-300);
-    --color-input: var(--color-grey-300);
+    --color-border: var(--color-gray-300);
+    --color-input: var(--color-gray-300);
     --color-ring: var(--color-blue-500);
 
     /* deprecated: use --color-background */
@@ -136,7 +147,13 @@
     --spacing-7: calc(var(--spacing) * 7);
     --spacing-8: calc(var(--spacing) * 8);
 
-    --font-size-small: 0.75rem;
-    --font-size-medium: 0.85rem;
-    --font-size-large: 1rem;
+    /* type: body text is text-sm, as in Tailwind's dense layouts */
+    --text-xs: 0.75rem;
+    --text-sm: 0.85rem;
+    --text-base: 1rem;
+
+    /* deprecated: use the --text-* names */
+    --font-size-small: var(--text-xs);
+    --font-size-medium: var(--text-sm);
+    --font-size-large: var(--text-base);
 }
