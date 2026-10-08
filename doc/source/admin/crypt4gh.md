@@ -406,6 +406,8 @@ Protected jobs fail closed:
   their data is removed unless Galaxy verifies it is encrypted.
 - **Cleanup:** if the decrypted data can't be removed from the compute host, the
   job fails, but its verified encrypted outputs are kept.
+- **Resubmission:** the working directory of a resubmitted protected job is
+  deleted, not moved to `_cleared_contents` like those of other jobs.
 
 Job errors are shown to users, so they name the setting or error involved but
 never include the compute service's address. To see the underlying error while
