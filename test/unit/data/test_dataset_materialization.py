@@ -3,15 +3,22 @@ import gzip
 import json
 import os
 import threading
+from collections.abc import Iterator
 from http.server import (
     SimpleHTTPRequestHandler,
     ThreadingHTTPServer,
+)
+from pathlib import Path
+from typing import (
+    Any,
+    NamedTuple,
 )
 
 import pytest
 from sqlalchemy import select
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.files import ConfiguredFileSources
 from galaxy.files.unittest_utils import (
     stock_file_sources_allowing_loopback,
     TestPosixConfiguredFileSources,
@@ -25,6 +32,7 @@ from galaxy.model import (
     store,
 )
 from galaxy.model.deferred import (
+    DatasetInstanceMaterializer,
     materialize_collection_instance,
     materializer_factory,
 )
@@ -513,45 +521,56 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     _assert_2_bed_metadata(materialized_hda)
 
 
+class _StoreRequestHandler(SimpleHTTPRequestHandler):
+    """Serve files like a static web server, optionally answering like a public S3 bucket."""
+
+    # Public S3 buckets that do not allow listing answer 403 for objects that do not exist.
+    missing_status: int = 404
+    denied_paths: set[str] = set()
+
+    def do_GET(self) -> None:
+        if self.path in self.denied_paths:
+            super().send_error(403)
+            return
+        super().do_GET()
+
+    def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
+        super().send_error(self.missing_status if code == 404 else code, message, explain)
+
+    def log_message(self, format: str, *args: Any) -> None:
+        pass
+
+
+class DirectoryHttpServer(NamedTuple):
+    served: Path
+    base_url: str
+    handler: type[_StoreRequestHandler]
+
+
 @pytest.fixture
-def directory_http_server(tmp_path):
+def directory_http_server(tmp_path: Path) -> Iterator[DirectoryHttpServer]:
     """Serve ``tmp_path / "served"`` over HTTP, which cannot list directories through file sources."""
     served = tmp_path / "served"
     served.mkdir()
 
-    class QuietHandler(SimpleHTTPRequestHandler):
-        # Public S3 buckets that do not allow listing answer 403 for objects that do not exist.
-        missing_status = 404
+    class Handler(_StoreRequestHandler):
         denied_paths: set[str] = set()
 
-        def do_GET(self):
-            if self.path in self.denied_paths:
-                super().send_error(403)
-                return
-            super().do_GET()
-
-        def send_error(self, code, message=None, explain=None):
-            super().send_error(self.missing_status if code == 404 else code, message, explain)
-
-        def log_message(self, format, *args):
-            pass
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(QuietHandler, directory=str(served)))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(served)))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield served, f"http://127.0.0.1:{server.server_address[1]}", QuietHandler
+        yield DirectoryHttpServer(served, f"http://127.0.0.1:{server.server_address[1]}", Handler)
     finally:
         server.shutdown()
 
 
-def _write_json_file(path, content) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(content, f)
+def _write_json_file(path: Path, content: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(content))
 
 
-ZARR_V3_ARRAY_METADATA = {
+ZARR_V3_ARRAY_METADATA: dict[str, Any] = {
     "zarr_format": 3,
     "node_type": "array",
     "shape": [3],
@@ -563,36 +582,43 @@ ZARR_V3_ARRAY_METADATA = {
 }
 
 
-def _write_zarr_v3_store(root, consolidated: bool) -> None:
-    group = {"zarr_format": 3, "node_type": "group", "attributes": {}}
+def _write_zarr_v3_store(root: Path, consolidated: bool) -> None:
+    group: dict[str, Any] = {"zarr_format": 3, "node_type": "group", "attributes": {}}
     if consolidated:
         group["consolidated_metadata"] = {
             "kind": "inline",
             "must_understand": False,
             "metadata": {"arr": ZARR_V3_ARRAY_METADATA},
         }
-    _write_json_file(os.path.join(root, "zarr.json"), group)
-    _write_json_file(os.path.join(root, "arr", "zarr.json"), ZARR_V3_ARRAY_METADATA)
-    os.makedirs(os.path.join(root, "arr", "c"))
+    _write_json_file(root / "zarr.json", group)
+    _write_json_file(root / "arr" / "zarr.json", ZARR_V3_ARRAY_METADATA)
+    (root / "arr" / "c").mkdir()
     # Only the first chunk is stored, the second holds just the fill value.
-    with open(os.path.join(root, "arr", "c", "0"), "wb") as f:
-        f.write(b"\x01\x02")
+    (root / "arr" / "c" / "0").write_bytes(b"\x01\x02")
 
 
-def _write_zarr_v2_store(root) -> None:
+def _write_zarr_v2_store(root: Path) -> None:
     array = {"zarr_format": 2, "shape": [3], "chunks": [2], "dtype": "|u1", "fill_value": 0, "compressor": None}
-    _write_json_file(os.path.join(root, ".zgroup"), {"zarr_format": 2})
-    _write_json_file(os.path.join(root, "arr", ".zarray"), array)
+    _write_json_file(root / ".zgroup", {"zarr_format": 2})
+    _write_json_file(root / "arr" / ".zarray", array)
     _write_json_file(
-        os.path.join(root, ".zmetadata"),
+        root / ".zmetadata",
         {"zarr_consolidated_format": 1, "metadata": {".zgroup": {"zarr_format": 2}, "arr/.zarray": array}},
     )
     # Only the first chunk is stored, the second holds just the fill value.
-    with open(os.path.join(root, "arr", "0"), "wb") as f:
-        f.write(b"\x01\x02")
+    (root / "arr" / "0").write_bytes(b"\x01\x02")
 
 
-def _deferred_hda_with_extension(monkeypatch, source_uri: str, extension: str):
+def _write_directory(root: Path, files: dict[str, str]) -> None:
+    root.mkdir(parents=True)
+    for rel_path, content in files.items():
+        (root / rel_path).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel_path).write_text(content, encoding="utf-8")
+
+
+def _deferred_hda_with_extension(
+    monkeypatch: pytest.MonkeyPatch, source_uri: str, extension: str
+) -> tuple[StoreFixtureContextWithHistory, HistoryDatasetAssociation]:
     fixture_context = setup_fixture_context_with_history()
     perform_import_from_store_dict(fixture_context, deferred_hda_model_store_dict(source_uri=source_uri))
     # The fixture's registry has no directory datatypes.
@@ -602,7 +628,18 @@ def _deferred_hda_with_extension(monkeypatch, source_uri: str, extension: str):
     return fixture_context, deferred_hda
 
 
-def _relative_files(root) -> list[str]:
+def _unattached_materializer(
+    transient_directory: Path, file_sources: ConfiguredFileSources
+) -> DatasetInstanceMaterializer:
+    return materializer_factory(
+        False,
+        transient_directory=str(transient_directory),
+        file_sources=file_sources,
+        datatypes_registry=example_datatype_registry_for_sample(),
+    )
+
+
+def _relative_files(root: str) -> list[str]:
     return sorted(
         os.path.relpath(os.path.join(dirpath, filename), root)
         for dirpath, _, filenames in os.walk(root)
@@ -610,16 +647,15 @@ def _relative_files(root) -> list[str]:
     )
 
 
-def test_deferred_directory_materialized_from_listable_file_source(tmpdir, monkeypatch):
-    root = tmpdir / "root"
-    (root / "index" / "nested").ensure(dir=True)
-    (root / "index" / "a.txt").write_text("a", encoding="utf-8")
-    (root / "index" / "nested" / "b.txt").write_text("b", encoding="utf-8")
+def test_deferred_directory_materialized_from_listable_file_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_directory(tmp_path / "root" / "index", {"a.txt": "a", "nested/b.txt": "b"})
     fixture_context, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
     materializer = materializer_factory(
         True,
         object_store=fixture_context.app.object_store,
-        file_sources=TestPosixConfiguredFileSources(str(root)),
+        file_sources=TestPosixConfiguredFileSources(str(tmp_path / "root")),
         datatypes_registry=fixture_context.app.datatypes_registry,
     )
 
@@ -632,18 +668,12 @@ def test_deferred_directory_materialized_from_listable_file_source(tmpdir, monke
 
 @pytest.mark.parametrize("missing_status", [404, 403])
 def test_deferred_zarr_materialized_over_http_from_consolidated_metadata(
-    tmpdir, monkeypatch, directory_http_server, missing_status
-):
-    served, base_url, handler = directory_http_server
-    handler.missing_status = missing_status
-    _write_zarr_v3_store(os.path.join(served, "store.zarr"), consolidated=True)
-    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{base_url}/store.zarr", "zarr")
-    materializer = materializer_factory(
-        False,
-        transient_directory=tmpdir,
-        file_sources=stock_file_sources_allowing_loopback(),
-        datatypes_registry=example_datatype_registry_for_sample(),
-    )
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer, missing_status: int
+) -> None:
+    directory_http_server.handler.missing_status = missing_status
+    _write_zarr_v3_store(directory_http_server.served / "store.zarr", consolidated=True)
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{directory_http_server.base_url}/store.zarr", "zarr")
+    materializer = _unattached_materializer(tmp_path, stock_file_sources_allowing_loopback())
 
     materialized_hda = materializer.ensure_materialized(deferred_hda)
 
@@ -660,18 +690,12 @@ def test_deferred_zarr_materialized_over_http_from_consolidated_metadata(
 
 @pytest.mark.parametrize("missing_status", [404, 403])
 def test_deferred_zarr_v2_materialized_over_http_from_consolidated_metadata(
-    tmpdir, monkeypatch, directory_http_server, missing_status
-):
-    served, base_url, handler = directory_http_server
-    handler.missing_status = missing_status
-    _write_zarr_v2_store(os.path.join(served, "store.zarr"))
-    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{base_url}/store.zarr", "zarr")
-    materializer = materializer_factory(
-        False,
-        transient_directory=tmpdir,
-        file_sources=stock_file_sources_allowing_loopback(),
-        datatypes_registry=example_datatype_registry_for_sample(),
-    )
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer, missing_status: int
+) -> None:
+    directory_http_server.handler.missing_status = missing_status
+    _write_zarr_v2_store(directory_http_server.served / "store.zarr")
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{directory_http_server.base_url}/store.zarr", "zarr")
+    materializer = _unattached_materializer(tmp_path, stock_file_sources_allowing_loopback())
 
     materialized_hda = materializer.ensure_materialized(deferred_hda)
 
@@ -687,19 +711,13 @@ def test_deferred_zarr_v2_materialized_over_http_from_consolidated_metadata(
 
 
 def test_denied_zarr_chunk_is_an_error_when_the_server_reports_missing_files(
-    tmpdir, monkeypatch, directory_http_server
-):
-    served, base_url, handler = directory_http_server
-    _write_zarr_v3_store(os.path.join(served, "store.zarr"), consolidated=True)
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer
+) -> None:
+    _write_zarr_v3_store(directory_http_server.served / "store.zarr", consolidated=True)
     # The server answers 404 for missing files, so a 403 is a real denial, not an unwritten chunk.
-    handler.denied_paths = {"/store.zarr/arr/c/0"}
-    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{base_url}/store.zarr", "zarr")
-    materializer = materializer_factory(
-        False,
-        transient_directory=tmpdir,
-        file_sources=stock_file_sources_allowing_loopback(),
-        datatypes_registry=example_datatype_registry_for_sample(),
-    )
+    directory_http_server.handler.denied_paths = {"/store.zarr/arr/c/0"}
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{directory_http_server.base_url}/store.zarr", "zarr")
+    materializer = _unattached_materializer(tmp_path, stock_file_sources_allowing_loopback())
 
     materialized_hda = materializer.ensure_materialized(deferred_hda)
 
@@ -708,15 +726,11 @@ def test_denied_zarr_chunk_is_an_error_when_the_server_reports_missing_files(
     assert "403" in materialized_hda.info
 
 
-def test_deferred_empty_directory_is_not_materialized(tmpdir, monkeypatch):
-    root = tmpdir / "root"
-    (root / "index").ensure(dir=True)
+def test_deferred_empty_directory_is_not_materialized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write_directory(tmp_path / "root" / "index", {})
     _, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
-    materializer = materializer_factory(
-        False,
-        transient_directory=tmpdir / "staging",
-        file_sources=TestPosixConfiguredFileSources(str(root)),
-        datatypes_registry=example_datatype_registry_for_sample(),
+    materializer = _unattached_materializer(
+        tmp_path / "staging", TestPosixConfiguredFileSources(str(tmp_path / "root"))
     )
 
     materialized_hda = materializer.ensure_materialized(deferred_hda)
@@ -726,16 +740,12 @@ def test_deferred_empty_directory_is_not_materialized(tmpdir, monkeypatch):
     assert "empty or does not exist" in materialized_hda.info
 
 
-def test_deferred_zarr_over_http_needs_consolidated_metadata(tmpdir, monkeypatch, directory_http_server):
-    served, base_url, _ = directory_http_server
-    _write_zarr_v3_store(os.path.join(served, "store.zarr"), consolidated=False)
-    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{base_url}/store.zarr", "zarr")
-    materializer = materializer_factory(
-        False,
-        transient_directory=tmpdir,
-        file_sources=stock_file_sources_allowing_loopback(),
-        datatypes_registry=example_datatype_registry_for_sample(),
-    )
+def test_deferred_zarr_over_http_needs_consolidated_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer
+) -> None:
+    _write_zarr_v3_store(directory_http_server.served / "store.zarr", consolidated=False)
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{directory_http_server.base_url}/store.zarr", "zarr")
+    materializer = _unattached_materializer(tmp_path, stock_file_sources_allowing_loopback())
 
     materialized_hda = materializer.ensure_materialized(deferred_hda)
 
