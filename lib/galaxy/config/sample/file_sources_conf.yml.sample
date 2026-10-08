@@ -320,6 +320,14 @@
   writable: true
   endpoint: ${user.preferences['elabftw|endpoint']}
 
+# NOMAD (https://nomad-lab.eu) materials science repository, read-only and public data only.
+# Set base_url to use a NOMAD Oasis instead of the central instance.
+- type: nomad
+  id: nomad
+  label: NOMAD
+  doc: Public NOMAD datasets.
+  # base_url: https://my-oasis.example.org/nomad-oasis
+
 # IIIF (International Image Interoperability Framework) file source
 # For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
 - type: iiif
