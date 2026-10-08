@@ -268,6 +268,8 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
+        visualization_packages_config_file=os.path.join(tmpdir, "visualization_packages.yml"),
+        visualization_packages_dir=os.path.join(tmpdir, "visualization_packages"),
         webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,

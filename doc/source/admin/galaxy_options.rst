@@ -1262,6 +1262,36 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``visualization_packages_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File recording the visualization packages installed at runtime
+    through the admin interface. Must be writable by Galaxy and should
+    not be edited by hand.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
+:Default: ``visualization_packages.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``visualization_packages_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory holding visualization packages installed at runtime
+    through the admin interface. Must be writable by Galaxy, and
+    shared between Galaxy servers if there are several. Galaxy serves
+    these packages' assets from here directly, so this does not need
+    to be inside Galaxy's (possibly read-only) static directory.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
+:Default: ``visualization_packages``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``tour_config_dir``
 ~~~~~~~~~~~~~~~~~~~

@@ -46,7 +46,10 @@ from galaxy.model import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.visualization import VisualizationPluginResponse
 from galaxy.structured_app import StructuredApp
-from galaxy.webapps.base.api import GalaxyStreamingResponse
+from galaxy.webapps.base.api import (
+    GalaxyFileResponse,
+    GalaxyStreamingResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnApp,
@@ -371,6 +374,23 @@ class FastAPIPlugins:
             return PluginDatasetsResponse(hdas=hdas)
         else:
             return VisualizationPluginResponse(**registry.get_plugin(id).to_dict())
+
+    @router.get(
+        "/api/plugins/{plugin_name}/static/{file_path:path}",
+        summary="Serve a static file from a runtime-installed visualization package.",
+    )
+    def static_file(
+        self,
+        plugin_name: str = Path(..., title="Plugin name", description="The visualization plugin identifier."),
+        file_path: str = Path(..., title="File path", description="Path of the file within the plugin's static files."),
+    ) -> GalaxyFileResponse:
+        """
+        Runtime-installed packages live in the managed package store rather than Galaxy's static tree, which can be
+        read-only (CVMFS), so Galaxy serves their assets itself. Built-in plugins are served from /static as before.
+        """
+        path = self._get_registry().get_runtime_static_file(plugin_name, file_path)
+        # files can change in place when a package is updated, so always revalidate
+        return GalaxyFileResponse(path, headers={"Cache-Control": "no-cache"})
 
     def _get_registry(self):
         """Get the visualizations registry or raise an error if not configured."""
