@@ -30,7 +30,13 @@ from galaxy.util import (
     RW_R__R__,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
+from galaxy.util.crypt4gh import (
+    CRYPT4GH_FILE_EXT,
+    is_crypt4gh_file_ext,
+    preserve_crypt4gh_inner_file_ext,
+    unwrap_crypt4gh_file_ext,
+    wrap_crypt4gh_file_ext,
+)
 from galaxy.util.path import StrPath
 from . import (
     binary,
@@ -49,10 +55,6 @@ from . import (
 from .crypt4gh import (
     build_crypt4gh_datatype,
     Crypt4GH,
-    CRYPT4GH_FILE_EXT,
-    is_crypt4gh_file_ext,
-    unwrap_crypt4gh_file_ext,
-    wrap_crypt4gh_file_ext,
 )
 from .display_applications.application import DisplayApplication
 
@@ -505,36 +507,18 @@ class Registry:
         :func:`build_crypt4gh_datatype`.  Also ensure the generic
         ``c4gh`` datatype is available.
         """
-        existing_datatypes = list(self.datatypes_by_extension.items())
-        for extension, _datatype in existing_datatypes:
-            if extension == CRYPT4GH_FILE_EXT or is_crypt4gh_file_ext(extension):
-                continue
-            self.get_or_create_crypt4gh_datatype(extension)
-
+        for extension, inner_datatype in list(self.datatypes_by_extension.items()):
+            wrapped_extension = wrap_crypt4gh_file_ext(extension)
+            if not is_crypt4gh_file_ext(extension) and wrapped_extension not in self.datatypes_by_extension:
+                self._register_crypt4gh_datatype(wrapped_extension, build_crypt4gh_datatype(inner_datatype))
         if CRYPT4GH_FILE_EXT not in self.datatypes_by_extension:
-            generic_crypt4gh_datatype = Crypt4GH()
-            self.datatypes_by_extension[CRYPT4GH_FILE_EXT] = generic_crypt4gh_datatype
-            self.datatypes_by_suffix_inferences[CRYPT4GH_FILE_EXT] = generic_crypt4gh_datatype
-            self.mimetypes_by_extension[CRYPT4GH_FILE_EXT] = generic_crypt4gh_datatype.get_mime()
-            self.log.debug("Dynamically registered crypt4gh datatype: %s", CRYPT4GH_FILE_EXT)
+            self._register_crypt4gh_datatype(CRYPT4GH_FILE_EXT, Crypt4GH())
 
-    def get_or_create_crypt4gh_datatype(self, base_ext: str) -> Any | None:
-        """Create and register a Crypt4GH wrapper datatype for *base_ext* if needed."""
-        wrapped_extension = wrap_crypt4gh_file_ext(base_ext)
-        existing_datatype = self.datatypes_by_extension.get(wrapped_extension)
-        if existing_datatype is not None:
-            return existing_datatype
-
-        inner_datatype = self.get_datatype_by_extension(base_ext)
-        if inner_datatype is None:
-            return None
-
-        wrapped_datatype = build_crypt4gh_datatype(inner_datatype)
-        self.datatypes_by_extension[wrapped_extension] = wrapped_datatype
-        self.datatypes_by_suffix_inferences[wrapped_extension] = wrapped_datatype
-        self.mimetypes_by_extension[wrapped_extension] = wrapped_datatype.get_mime()
-        self.log.debug("Dynamically registered crypt4gh datatype: %s", wrapped_extension)
-        return wrapped_datatype
+    def _register_crypt4gh_datatype(self, extension: str, datatype: Crypt4GH) -> None:
+        self.datatypes_by_extension[extension] = datatype
+        self.datatypes_by_suffix_inferences[extension] = datatype
+        self.mimetypes_by_extension[extension] = datatype.get_mime()
+        self.log.debug("Dynamically registered crypt4gh datatype: %s", extension)
 
     def _load_build_sites(self, root):
         def load_build_site(build_site_config):
