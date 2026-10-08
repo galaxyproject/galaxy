@@ -7,10 +7,6 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 export type Visualization = components["schemas"]["InstalledVisualizationResponse"];
 export type AvailableVisualization = components["schemas"]["AvailableVisualizationResponse"];
-export type StagingResult = components["schemas"]["StagingResultResponse"];
-export type VisualizationStagingResult = components["schemas"]["VisualizationStagingResultResponse"];
-export type CleanStagingResult = components["schemas"]["CleanStagingResultResponse"];
-export type StagingStatus = components["schemas"]["StagingStatusResponse"];
 
 export async function getInstalledVisualizations(includeDisabled = true) {
     const { data, error } = await GalaxyApi().GET("/api/admin/visualizations", {
@@ -99,48 +95,6 @@ export async function toggleVisualization(vizId: string, enabled: boolean) {
 
 export async function reloadVisualizationRegistry() {
     const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/reload");
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
-export async function stageAllVisualizations() {
-    const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/stage");
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
-export async function stageVisualization(vizId: string) {
-    const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/{viz_id}/stage", {
-        params: { path: { viz_id: vizId } },
-    });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
-export async function cleanStagedAssets() {
-    const { data, error } = await GalaxyApi().DELETE("/api/admin/visualizations/staged");
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
-export async function getStagingStatus() {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations/staging_status");
 
     if (error) {
         rethrowSimple(error);

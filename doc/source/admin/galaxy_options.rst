@@ -1282,8 +1282,10 @@
 
 :Description:
     Directory holding visualization packages installed at runtime
-    through the admin interface. Must be writable by Galaxy. Servable
-    assets are staged from here into static/plugins/visualizations.
+    through the admin interface. Must be writable by Galaxy, and
+    shared between Galaxy servers if there are several. Galaxy serves
+    these packages' assets from here directly, so this does not need
+    to be inside Galaxy's (possibly read-only) static directory.
     The value of this option will be resolved with respect to
     <managed_config_dir>.
 :Default: ``visualization_packages``

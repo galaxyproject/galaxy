@@ -9,7 +9,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-from glob import glob
 from typing import Any
 
 import requests
@@ -17,7 +16,6 @@ import yaml
 
 from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
 
@@ -32,14 +30,9 @@ class VisualizationPackageManager:
     def __init__(self, config: GalaxyAppConfiguration) -> None:
         self.config_path = config.visualization_packages_config_file
         self.package_store_path = config.visualization_packages_dir
-        # Galaxy serves visualization assets from here, so it stays under the root
-        self.static_path = os.path.join(config.root, "static", "plugins", "visualizations")
-        self.legacy_plugins_path = os.path.join(config.root, "config", "plugins")
-        self.legacy_visualizations_path = os.path.join(self.legacy_plugins_path, "visualizations")
 
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         os.makedirs(self.package_store_path, exist_ok=True)
-        os.makedirs(self.static_path, exist_ok=True)
 
     @staticmethod
     def validate_npm_inputs(package: str, version: str) -> None:
@@ -118,7 +111,6 @@ class VisualizationPackageManager:
             config[viz_id] = {"package": config[viz_id], "enabled": enabled}
 
         self.save_config(config)
-        self._restage(viz_id)
 
     def get_enabled_packages(self) -> dict[str, str]:
         """Installed, enabled runtime packages, mapped to their directory in the package store."""
@@ -190,7 +182,6 @@ class VisualizationPackageManager:
             raise exceptions.ObjectNotFound(f"Package '{viz_id}' not found")
         self.remove_package_from_config(viz_id)
         self.cleanup_package_files(viz_id)
-        self._restage(viz_id)
         log.info(f"Successfully uninstalled visualization package {viz_id}")
 
     def _run_npm_install(self, package_spec: str, prefix: str) -> None:
@@ -282,23 +273,19 @@ class VisualizationPackageManager:
         return True
 
     def cleanup_package_files(self, viz_id: str) -> None:
-        """Remove both managed package files and staged assets for a visualization."""
-        for path in (self.get_package_path(viz_id), self.get_staged_path(viz_id)):
-            if os.path.exists(path):
-                try:
-                    shutil.rmtree(path)
-                except Exception as e:
-                    log.error(f"Failed to cleanup files for {viz_id}: {e}")
-                    raise exceptions.InternalServerError(f"Failed to cleanup package files: {e}")
+        """Remove a package's files from the managed package store."""
+        path = self.get_package_path(viz_id)
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+            except Exception as e:
+                log.error(f"Failed to cleanup files for {viz_id}: {e}")
+                raise exceptions.InternalServerError(f"Failed to cleanup package files: {e}")
         log.info(f"Cleaned up package files for {viz_id}")
 
     def get_package_path(self, viz_id: str) -> str:
         """Get the managed filesystem path for an installed runtime package."""
         return os.path.join(self.package_store_path, viz_id)
-
-    def get_staged_path(self, viz_id: str) -> str:
-        """Get the served static filesystem path for a staged visualization."""
-        return os.path.join(self.static_path, viz_id)
 
     def is_package_installed(self, viz_id: str) -> bool:
         """Check if a package is installed on the file system."""
@@ -417,224 +404,3 @@ class VisualizationPackageManager:
         except Exception as e:
             log.error(f"Failed to restore config: {e}")
             raise exceptions.InternalServerError(f"Failed to restore configuration: {e}")
-
-    def stage_all_visualizations(self) -> dict[str, Any]:
-        """Stage all visualization assets from managed and legacy sources to static/plugins."""
-        try:
-            staged_count = 0
-            staged_visualizations = []
-            errors = []
-            seen_viz_ids = set()
-
-            for stage_spec in self._iter_stage_specs():
-                try:
-                    self._stage_spec(stage_spec)
-                    staged_count += 1
-                    if stage_spec["viz_id"] not in seen_viz_ids:
-                        staged_visualizations.append(stage_spec["viz_id"])
-                        seen_viz_ids.add(stage_spec["viz_id"])
-                except Exception as e:
-                    error_msg = f"Failed to stage {stage_spec['source_path']}: {e}"
-                    log.error(error_msg)
-                    errors.append(error_msg)
-
-            return {
-                "staged_count": staged_count,
-                "staged_visualizations": staged_visualizations,
-                "errors": errors,
-            }
-
-        except (exceptions.MessageException, exceptions.ConfigurationError):
-            raise
-        except Exception as e:
-            log.error(f"Failed to stage visualizations: {e}")
-            raise exceptions.InternalServerError(f"Failed to stage visualizations: {e}")
-
-    def stage_visualization(self, viz_id: str) -> dict[str, Any]:
-        """Stage assets for a specific visualization from managed or legacy sources."""
-        try:
-            stage_spec = self._get_stage_spec(viz_id)
-            self._stage_spec(stage_spec)
-            return {
-                "visualization_id": viz_id,
-                "source_path": stage_spec["source_path"],
-                "target_path": stage_spec["target_path"],
-                "relative_path": stage_spec["relative_path"],
-                "size": self.get_directory_size(stage_spec["target_path"]),
-            }
-
-        except (exceptions.MessageException, exceptions.ConfigurationError):
-            raise
-        except Exception as e:
-            log.error(f"Failed to stage visualization {viz_id}: {e}")
-            raise exceptions.InternalServerError(f"Failed to stage visualization: {e}")
-
-    def clean_staged_assets(self) -> dict[str, Any]:
-        """Clean all staged visualization assets from static/plugins/visualizations."""
-        try:
-            static_viz_dir = self.static_path
-
-            if not os.path.exists(static_viz_dir):
-                return {"cleaned_count": 0, "message": "No staged assets to clean"}
-
-            items = os.listdir(static_viz_dir)
-            item_count = len(items)
-            shutil.rmtree(static_viz_dir)
-            os.makedirs(static_viz_dir, exist_ok=True)
-
-            log.info(f"Cleaned {item_count} staged visualization assets")
-            return {"cleaned_count": item_count, "cleaned_items": items}
-
-        except Exception as e:
-            log.error(f"Failed to clean staged assets: {e}")
-            raise exceptions.InternalServerError(f"Failed to clean staged assets: {e}")
-
-    def get_staging_status(self) -> dict[str, Any]:
-        """Get information about currently staged visualizations."""
-        try:
-            static_viz_dir = self.static_path
-
-            if not os.path.exists(static_viz_dir):
-                return {"staged_count": 0, "staged_visualizations": [], "total_size": 0}
-
-            staged_items = []
-            total_size = 0
-
-            for item in os.listdir(static_viz_dir):
-                item_path = os.path.join(static_viz_dir, item)
-                if os.path.isdir(item_path):
-                    size = self.get_directory_size(item_path)
-                    total_size += size
-                    staged_items.append(
-                        {
-                            "name": item,
-                            "path": item_path,
-                            "size": size,
-                            "last_modified": os.path.getmtime(item_path),
-                        }
-                    )
-
-            return {
-                "staged_count": len(staged_items),
-                "staged_visualizations": staged_items,
-                "total_size": total_size,
-            }
-
-        except Exception as e:
-            log.error(f"Failed to get staging status: {e}")
-            raise exceptions.InternalServerError(f"Failed to get staging status: {e}")
-
-    def _extract_viz_name_from_path(self, relative_path: str) -> str | None:
-        """Extract visualization name from a relative path like 'visualizations/circster/static'."""
-        parts = relative_path.split(os.sep)
-        if len(parts) >= 3 and parts[0] == "visualizations" and parts[-1] == "static":
-            if len(parts) == 3:
-                return parts[1]
-            elif len(parts) == 4:
-                return f"{parts[1]}/{parts[2]}"
-        return None
-
-    def _iter_stage_specs(self) -> list[dict[str, Any]]:
-        specs = []
-        managed_viz_ids = set()
-
-        config = self.load_config()
-        for viz_id in sorted(config):
-            package_path = self.get_package_path(viz_id)
-            if os.path.isdir(package_path) and self._is_enabled(viz_id):
-                specs.append(self._build_managed_stage_spec(viz_id, package_path))
-                managed_viz_ids.add(viz_id)
-
-        source_patterns = [
-            os.path.join(self.legacy_visualizations_path, "*", "static"),
-            os.path.join(self.legacy_visualizations_path, "*", "*", "static"),
-        ]
-        for pattern in source_patterns:
-            for source_dir in sorted(glob(pattern)):
-                if "node_modules/.bin" in source_dir:
-                    continue
-                relative_path = os.path.relpath(source_dir, self.legacy_plugins_path)
-                viz_name = self._extract_viz_name_from_path(relative_path)
-                if not viz_name or viz_name in managed_viz_ids:
-                    continue
-                specs.append(self._build_legacy_stage_spec(viz_name, source_dir))
-
-        return specs
-
-    def _restage(self, viz_id: str) -> None:
-        """Replace whatever is staged for ``viz_id`` with what should be served now, if anything."""
-        staged_path = self.get_staged_path(viz_id)
-        if os.path.exists(staged_path):
-            shutil.rmtree(staged_path)
-        try:
-            stage_spec = self._get_stage_spec(viz_id)
-        except exceptions.ObjectNotFound:
-            return
-        self._stage_spec(stage_spec)
-
-    def _get_stage_spec(self, viz_id: str) -> dict[str, Any]:
-        # An enabled runtime package wins; otherwise fall back to the built-in, if there is one
-        package_path = self.get_package_path(viz_id)
-        if os.path.isdir(package_path) and self._is_enabled(viz_id):
-            return self._build_managed_stage_spec(viz_id, package_path)
-
-        legacy_paths = [os.path.join(self.legacy_visualizations_path, viz_id, "static")]
-        if "/" in viz_id:
-            first, second = viz_id.split("/", 1)
-            legacy_paths.append(os.path.join(self.legacy_visualizations_path, first, second, "static"))
-
-        for path in legacy_paths:
-            if os.path.isdir(path):
-                return self._build_legacy_stage_spec(viz_id, path)
-
-        raise exceptions.ObjectNotFound(f"Static assets not found for visualization '{viz_id}'")
-
-    def _build_managed_stage_spec(self, viz_id: str, package_path: str) -> dict[str, Any]:
-        plugin_name = viz_id.split("/")[-1]
-        config_file = os.path.join(package_path, "static", f"{plugin_name}.xml")
-        if not os.path.isfile(config_file):
-            raise exceptions.ConfigurationError(
-                f"Runtime visualization '{viz_id}' is missing required static config: {config_file}"
-            )
-        relative_path = os.path.relpath(package_path, self.package_store_path)
-        if not safe_relpath(relative_path):
-            raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
-        return {
-            "viz_id": viz_id,
-            "source_path": package_path,
-            "target_path": self.get_staged_path(viz_id),
-            "relative_path": relative_path,
-        }
-
-    def _build_legacy_stage_spec(self, viz_id: str, source_dir: str) -> dict[str, Any]:
-        relative_path = os.path.relpath(source_dir, self.legacy_plugins_path)
-        if not safe_relpath(relative_path):
-            raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
-        return {
-            "viz_id": viz_id,
-            "source_path": source_dir,
-            "target_path": os.path.join(self.get_staged_path(viz_id), "static"),
-            "relative_path": relative_path,
-        }
-
-    def _stage_spec(self, stage_spec: dict[str, Any]) -> None:
-        source_path = stage_spec["source_path"]
-        target_path = stage_spec["target_path"]
-
-        if not os.path.exists(source_path):
-            raise exceptions.ObjectNotFound(f"Static assets not found for visualization '{stage_spec['viz_id']}'")
-
-        if os.path.exists(target_path):
-            src_mtime = os.path.getmtime(source_path)
-            tgt_mtime = os.path.getmtime(target_path)
-            if tgt_mtime >= src_mtime:
-                return
-            shutil.rmtree(target_path)
-
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        shutil.copytree(
-            source_path,
-            target_path,
-            ignore=shutil.ignore_patterns("node_modules/.bin"),
-        )
-        log.info(f"Staged visualization assets for {stage_spec['viz_id']}: {stage_spec['relative_path']}")

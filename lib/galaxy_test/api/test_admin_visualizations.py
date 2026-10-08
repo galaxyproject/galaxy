@@ -65,34 +65,8 @@ class TestAdminVisualizationsApi(ApiTestCase):
         data = response.json()
         assert_has_keys(data, "message")
 
-    @requires_admin
-    def test_staging_status(self):
-        response = self._get("admin/visualizations/staging_status", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert_has_keys(data, "staged_count", "staged_visualizations", "total_size")
-
-    @requires_admin
-    def test_stage_all(self):
-        response = self._post("admin/visualizations/stage", admin=True)
-        assert_status_code_is(response, 200)
-        data = response.json()
-        assert_has_keys(data, "message", "staged_count", "staged_visualizations")
-
-    @requires_admin
-    def test_clean_staged(self):
-        try:
-            response = self._delete("admin/visualizations/staged", admin=True)
-            assert_status_code_is(response, 200)
-            data = response.json()
-            assert_has_keys(data, "message", "cleaned_count")
-        finally:
-            # Staged assets are served from the Galaxy root, so put them back for later tests
-            self._post("admin/visualizations/stage", admin=True)
-
-    @requires_admin
-    def test_stage_nonexistent(self):
-        response = self._post("admin/visualizations/nonexistent_viz_id_12345/stage", admin=True)
+    def test_runtime_static_file_for_unknown_plugin_is_404(self):
+        response = self._get("plugins/nonexistent_viz_id_12345/static/index.js")
         assert_status_code_is(response, 404)
 
     @requires_admin
@@ -101,16 +75,11 @@ class TestAdminVisualizationsApi(ApiTestCase):
         endpoints = [
             ("GET", "admin/visualizations"),
             ("GET", "admin/visualizations/available"),
-            ("GET", "admin/visualizations/staging_status"),
             ("POST", "admin/visualizations/reload"),
-            ("POST", "admin/visualizations/stage"),
-            ("DELETE", "admin/visualizations/staged"),
         ]
         for method, path in endpoints:
             if method == "GET":
                 response = self._get(path)
             elif method == "POST":
                 response = self._post(path)
-            elif method == "DELETE":
-                response = self._delete(path)
             assert_status_code_is(response, 403, f"{method} {path} should require admin")

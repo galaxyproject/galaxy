@@ -19,18 +19,14 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.visualization_admin import (
     AvailableVisualizationListResponse,
-    CleanStagingResultResponse,
     InstalledVisualizationListResponse,
     InstalledVisualizationResponse,
     InstallVisualizationRequest,
     MessageResponse,
     PackageVersionsResponse,
-    StagingResultResponse,
-    StagingStatusResponse,
     ToggleVisualizationRequest,
     ToggleVisualizationResponse,
     UpdateVisualizationRequest,
-    VisualizationStagingResultResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -112,18 +108,6 @@ class FastAPIAdminVisualizations:
         """Return available versions for a specific npm package."""
         return self.service.get_package_versions(trans, package_name)
 
-    @router.get(
-        "/api/admin/visualizations/staging_status",
-        summary="Get staging status information.",
-        require_admin=True,
-    )
-    def staging_status(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> StagingStatusResponse:
-        """Get information about currently staged visualizations."""
-        return self.service.get_staging_status(trans)
-
     @router.post(
         "/api/admin/visualizations/reload",
         summary="Reload the visualization registry.",
@@ -135,32 +119,6 @@ class FastAPIAdminVisualizations:
     ) -> MessageResponse:
         """Reload the visualization registry to pick up configuration changes."""
         return self.service.reload_registry(trans)
-
-    @router.post(
-        "/api/admin/visualizations/stage",
-        summary="Stage all visualization assets.",
-        require_admin=True,
-    )
-    def stage_all(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> StagingResultResponse:
-        """Stage all visualization assets into Galaxy's static serving directory."""
-        return self.service.stage_all_visualizations(trans)
-
-    @router.delete(
-        "/api/admin/visualizations/staged",
-        summary="Clean all staged visualization assets.",
-        require_admin=True,
-    )
-    def clean_staged(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> CleanStagingResultResponse:
-        """Clean all staged visualization assets from static/plugins."""
-        return self.service.clean_staged_assets(trans)
-
-    # --- Dynamic {viz_id} routes ---
 
     @router.get(
         "/api/admin/visualizations/{viz_id}",
@@ -231,16 +189,3 @@ class FastAPIAdminVisualizations:
     ) -> ToggleVisualizationResponse:
         """Enable or disable a visualization package without uninstalling it."""
         return self.service.toggle_package(trans, viz_id, request.enabled)
-
-    @router.post(
-        "/api/admin/visualizations/{viz_id}/stage",
-        summary="Stage assets for a specific visualization.",
-        require_admin=True,
-    )
-    def stage_visualization(
-        self,
-        viz_id: VisualizationIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationStagingResultResponse:
-        """Stage assets for a specific visualization into Galaxy's static serving directory."""
-        return self.service.stage_visualization(trans, viz_id)

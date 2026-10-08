@@ -25,45 +25,6 @@ def manager(tmp_path):
     return VisualizationPackageManager(config)
 
 
-def _create_installed_package(manager, viz_id, package_name="@galaxyproject/test", version="1.0.0"):
-    """Helper to simulate an installed runtime package in the managed package store."""
-    pkg_dir = manager.get_package_path(viz_id)
-    os.makedirs(pkg_dir, exist_ok=True)
-    with open(os.path.join(pkg_dir, "package.json"), "w") as f:
-        json.dump({"name": package_name, "version": version}, f)
-    manager.add_package_to_config(viz_id, package_name, version, enabled=True)
-    return pkg_dir
-
-
-def _create_runtime_viz_package(manager, viz_id, package_name="@galaxyproject/test", version="1.0.0", content="test"):
-    """Helper to create a managed runtime package with static assets."""
-    pkg_dir = _create_installed_package(manager, viz_id, package_name, version)
-    static_dir = os.path.join(pkg_dir, "static")
-    os.makedirs(static_dir, exist_ok=True)
-    plugin_name = viz_id.split("/")[-1]
-    with open(os.path.join(static_dir, f"{plugin_name}.xml"), "w") as f:
-        f.write(f"<visualization name='{plugin_name}' />")
-    with open(os.path.join(static_dir, "index.html"), "w") as f:
-        f.write(content)
-    return pkg_dir
-
-
-def _create_viz_static(manager, viz_name, content="test"):
-    """Helper to create config/plugins visualization static assets."""
-    plugins_dir = os.path.join(
-        manager.legacy_visualizations_path,
-        viz_name,
-        "static",
-    )
-    os.makedirs(plugins_dir, exist_ok=True)
-    with open(os.path.join(plugins_dir, "index.html"), "w") as f:
-        f.write(content)
-    plugin_name = viz_name.split("/")[-1]
-    with open(os.path.join(plugins_dir, f"{plugin_name}.xml"), "w") as f:
-        f.write(f"<visualization name='{plugin_name}' />")
-    return plugins_dir
-
-
 # --- Input validation ---
 
 
@@ -388,22 +349,6 @@ class TestInstallLifecycle:
         with pytest.raises(exceptions.ObjectNotFound):
             manager.update_package("never_installed", "1.0.0")
 
-    def test_install_then_stage_then_verify(self, fake_npm):
-        """Full flow: install from npm, then stage so Galaxy can serve it."""
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-
-        result = fake_npm.stage_visualization("my_viz")
-        assert result["visualization_id"] == "my_viz"
-
-        staged_file = os.path.join(fake_npm.static_path, "my_viz", "static", "index.html")
-        with open(staged_file) as f:
-            assert f.read() == "1.0.0"
-
-    def test_stage_managed_package_missing_config_is_client_error(self, manager):
-        _create_installed_package(manager, "my_viz", "@galaxyproject/my_viz")
-        with pytest.raises(exceptions.ConfigurationError):
-            manager.stage_visualization("my_viz")
-
     def test_install_rejects_package_without_static_config(self, manager, monkeypatch):
         monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install_without_static_config)
         with pytest.raises(exceptions.RequestParameterInvalidException, match="my_viz.xml"):
@@ -421,179 +366,6 @@ class TestInstallLifecycle:
 
 
 # --- Staging (migration from old install mechanisms) ---
-
-
-class TestStaging:
-    def test_stage_all_visualizations(self, manager):
-        _create_viz_static(manager, "circster")
-        _create_viz_static(manager, "trackster")
-
-        result = manager.stage_all_visualizations()
-        assert result["staged_count"] == 2
-        assert len(result["staged_visualizations"]) == 2
-
-        static_dir = manager.static_path
-        assert os.path.exists(os.path.join(static_dir, "circster", "static", "index.html"))
-        assert os.path.exists(os.path.join(static_dir, "trackster", "static", "index.html"))
-
-    def test_stage_runtime_visualization(self, manager):
-        _create_runtime_viz_package(manager, "runtime_viz", content="<html>runtime</html>")
-
-        result = manager.stage_visualization("runtime_viz")
-        assert result["visualization_id"] == "runtime_viz"
-        assert result["source_path"] == manager.get_package_path("runtime_viz")
-        assert result["target_path"] == manager.get_staged_path("runtime_viz")
-        assert os.path.exists(os.path.join(manager.get_staged_path("runtime_viz"), "static", "runtime_viz.xml"))
-
-    def test_stage_single_visualization(self, manager):
-        _create_viz_static(manager, "circster", content="<html>circster</html>")
-
-        result = manager.stage_visualization("circster")
-        assert result["visualization_id"] == "circster"
-        assert result["size"] > 0
-
-    def test_stage_nested_visualization(self, manager):
-        """Nested visualizations like jqplot/jqplot_bar have a two-level directory structure."""
-        nested_dir = os.path.join(
-            manager.legacy_visualizations_path,
-            "jqplot",
-            "jqplot_bar",
-            "static",
-        )
-        os.makedirs(nested_dir, exist_ok=True)
-        with open(os.path.join(nested_dir, "index.html"), "w") as f:
-            f.write("<html>jqplot bar</html>")
-
-        result = manager.stage_visualization("jqplot/jqplot_bar")
-        assert result["visualization_id"] == "jqplot/jqplot_bar"
-
-        static_dir = manager.static_path
-        assert os.path.exists(os.path.join(static_dir, "jqplot", "jqplot_bar", "static", "index.html"))
-
-    def test_stage_nonexistent_raises(self, manager):
-        with pytest.raises(exceptions.ObjectNotFound):
-            manager.stage_visualization("nonexistent")
-
-    def test_clean_staged_assets(self, manager):
-        _create_viz_static(manager, "circster")
-        manager.stage_all_visualizations()
-
-        result = manager.clean_staged_assets()
-        assert result["cleaned_count"] > 0
-
-        static_dir = manager.static_path
-        assert os.path.exists(static_dir)
-        assert len(os.listdir(static_dir)) == 0
-
-    def test_staging_status(self, manager):
-        _create_viz_static(manager, "circster")
-        manager.stage_all_visualizations()
-
-        status = manager.get_staging_status()
-        assert status["staged_count"] >= 1
-        assert status["total_size"] > 0
-        names = [v["name"] for v in status["staged_visualizations"]]
-        assert "circster" in names
-
-    def test_staging_status_empty(self, manager):
-        status = manager.get_staging_status()
-        assert status["staged_count"] == 0
-        assert status["total_size"] == 0
-
-    def test_stage_all_discovers_existing_viz_plugins(self, manager):
-        """Simulates the migration scenario: existing visualizations in config/plugins
-        are discovered and staged to static/plugins on startup."""
-        # These represent pre-existing visualizations from the old build system
-        for viz_name in ["circster", "trackster", "sweepster", "phyloviz"]:
-            _create_viz_static(manager, viz_name, f"<html>{viz_name}</html>")
-
-        result = manager.stage_all_visualizations()
-        assert result["staged_count"] == 4
-        assert result["errors"] == []
-
-        # All should be servable now
-        static_dir = manager.static_path
-        for viz_name in ["circster", "trackster", "sweepster", "phyloviz"]:
-            assert os.path.exists(os.path.join(static_dir, viz_name, "static", "index.html"))
-
-    def test_stage_all_includes_runtime_and_legacy_visualizations(self, manager):
-        _create_runtime_viz_package(manager, "runtime_viz", content="<html>runtime</html>")
-        _create_viz_static(manager, "legacy_viz", "<html>legacy</html>")
-
-        result = manager.stage_all_visualizations()
-
-        assert result["staged_count"] == 2
-        assert set(result["staged_visualizations"]) == {"runtime_viz", "legacy_viz"}
-        assert os.path.exists(os.path.join(manager.get_staged_path("runtime_viz"), "static", "index.html"))
-        assert os.path.exists(os.path.join(manager.get_staged_path("legacy_viz"), "static", "index.html"))
-
-
-# --- npm registry query ---
-
-
-def _staged_index(manager, viz_id):
-    path = os.path.join(manager.get_staged_path(viz_id), "static", "index.html")
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        return f.read()
-
-
-class TestServedVersion:
-    """Uninstall and enable/disable change what's staged, not just the package config."""
-
-    def test_uninstall_restages_the_builtin_it_replaced(self, fake_npm):
-        _create_viz_static(fake_npm, "my_viz", content="builtin")
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.stage_visualization("my_viz")
-        assert _staged_index(fake_npm, "my_viz") == "1.0.0"
-
-        fake_npm.uninstall_package("my_viz")
-        assert _staged_index(fake_npm, "my_viz") == "builtin"
-
-    def test_uninstall_without_a_builtin_unstages(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.stage_visualization("my_viz")
-
-        fake_npm.uninstall_package("my_viz")
-        assert not os.path.exists(fake_npm.get_staged_path("my_viz"))
-
-    def test_disable_unstages_the_package(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.stage_visualization("my_viz")
-
-        fake_npm.toggle_package_enabled("my_viz", False)
-        assert not os.path.exists(fake_npm.get_staged_path("my_viz"))
-        assert fake_npm.is_package_installed("my_viz")
-
-    def test_disable_falls_back_to_the_builtin(self, fake_npm):
-        _create_viz_static(fake_npm, "my_viz", content="builtin")
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.stage_visualization("my_viz")
-
-        fake_npm.toggle_package_enabled("my_viz", False)
-        assert _staged_index(fake_npm, "my_viz") == "builtin"
-
-    def test_enable_restages_the_package(self, fake_npm):
-        _create_viz_static(fake_npm, "my_viz", content="builtin")
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.toggle_package_enabled("my_viz", False)
-
-        fake_npm.toggle_package_enabled("my_viz", True)
-        assert _staged_index(fake_npm, "my_viz") == "1.0.0"
-
-    def test_stage_all_skips_disabled_packages(self, fake_npm):
-        _create_viz_static(fake_npm, "my_viz", content="builtin")
-        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
-        fake_npm.install_package("other_viz", "@galaxyproject/other_viz", "1.0.0")
-        config = fake_npm.load_config()
-        config["my_viz"]["enabled"] = False
-        config["other_viz"]["enabled"] = False
-        fake_npm.save_config(config)
-
-        fake_npm.stage_all_visualizations()
-        assert _staged_index(fake_npm, "my_viz") == "builtin"
-        assert not os.path.exists(fake_npm.get_staged_path("other_viz"))
 
 
 class TestEnabledPackages:
@@ -707,13 +479,8 @@ class TestCleanupPackageFiles:
         os.makedirs(pkg_dir)
         with open(os.path.join(pkg_dir, "file.txt"), "w") as f:
             f.write("data")
-        staged_dir = manager.get_staged_path("circster")
-        os.makedirs(staged_dir)
-        with open(os.path.join(staged_dir, "staged.txt"), "w") as f:
-            f.write("served")
         manager.cleanup_package_files("circster")
         assert not os.path.exists(pkg_dir)
-        assert not os.path.exists(staged_dir)
 
     def test_cleanup_nonexistent_is_noop(self, manager):
         manager.cleanup_package_files("nonexistent")

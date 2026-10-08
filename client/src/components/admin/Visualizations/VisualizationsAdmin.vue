@@ -3,8 +3,8 @@
         <Heading id="visualizations-admin-heading" h1 size="lg">Visualizations Management</Heading>
 
         <p class="text-muted mb-3">
-            Install and manage visualization packages from the npm registry. Installed packages are kept separately from
-            Galaxy's served static assets and staged into the serving directory when needed.
+            Install and manage visualization packages from the npm registry. Installed packages live in Galaxy's managed
+            package store and are served from there, alongside the visualizations Galaxy ships with.
         </p>
 
         <BTabs v-model="activeTabIndex" class="mb-3">
@@ -18,12 +18,6 @@
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faDownload" class="mr-1" />
                     Available
-                </template>
-            </BTab>
-            <BTab>
-                <template v-slot:title>
-                    <FontAwesomeIcon :icon="faServer" class="mr-1" />
-                    Staging
                 </template>
             </BTab>
         </BTabs>
@@ -73,12 +67,10 @@
                     :key="viz.id"
                     :visualization="viz"
                     :loading-actions="loadingActions"
-                    :staged-names="stagedNames"
                     class="mb-3"
                     @toggle="handleToggle"
                     @update="handleUpdate"
                     @uninstall="handleUninstall"
-                    @stage="handleStage"
                     @refresh="loadInstalledPackages" />
             </div>
         </div>
@@ -137,78 +129,6 @@
             </div>
         </div>
 
-        <!-- Staging Tab -->
-        <div v-if="activeTab === 'staging'">
-            <p class="text-muted mb-3">
-                Staging copies visualization assets into Galaxy's static serving directory. Install and update actions
-                automatically re-stage packages, and you can manually re-stage here if needed.
-            </p>
-            <div class="row">
-                <div class="col-md-6">
-                    <BCard>
-                        <template v-slot:header>
-                            <h5 class="card-title mb-0">
-                                <FontAwesomeIcon :icon="faUpload" class="mr-2" />
-                                Stage Assets
-                            </h5>
-                        </template>
-
-                        <div class="d-flex">
-                            <BButton variant="primary" class="mr-2" :disabled="stagingLoading" @click="stageAllAssets">
-                                <FontAwesomeIcon :icon="faUpload" :spin="stagingLoading" class="mr-1" />
-                                Stage All Visualizations
-                            </BButton>
-                            <BButton variant="warning" :disabled="stagingLoading" @click="cleanStagedAssetsAction">
-                                <FontAwesomeIcon :icon="faTrash" class="mr-1" />
-                                Clean Staged Assets
-                            </BButton>
-                        </div>
-                    </BCard>
-                </div>
-                <div class="col-md-6">
-                    <BCard>
-                        <template v-slot:header>
-                            <h5 class="card-title mb-0">
-                                <FontAwesomeIcon :icon="faInfoCircle" class="mr-2" />
-                                Staging Status
-                            </h5>
-                        </template>
-
-                        <div v-if="stagingStatus">
-                            <p class="mb-2">
-                                <strong>{{ stagingStatus.staged_count }}</strong> visualizations staged
-                            </p>
-                            <p class="mb-2 text-muted">
-                                Total size: {{ bytesToString(stagingStatus.total_size, true, 2) }}
-                            </p>
-                            <div v-if="stagingStatus.staged_visualizations?.length" class="mt-3">
-                                <h6>Staged Visualizations:</h6>
-                                <div class="staged-viz-list" style="max-height: 200px; overflow-y: auto">
-                                    <div
-                                        v-for="viz in stagingStatus.staged_visualizations"
-                                        :key="viz.name"
-                                        class="d-flex justify-content-between align-items-center border-bottom py-1">
-                                        <span class="small">{{ viz.name }}</span>
-                                        <span class="text-muted small">{{ bytesToString(viz.size, true, 2) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div v-else class="text-center">
-                            <BSpinner small />
-                            Loading staging status...
-                        </div>
-                        <div class="mt-3">
-                            <BButton size="sm" variant="outline-secondary" @click="loadStagingStatus">
-                                <FontAwesomeIcon :icon="faSync" class="mr-1" />
-                                Refresh Status
-                            </BButton>
-                        </div>
-                    </BCard>
-                </div>
-            </div>
-        </div>
-
         <!-- Install Modal -->
         <InstallVisualizationModal
             :show="showInstallModal"
@@ -221,22 +141,12 @@
 </template>
 
 <script setup lang="ts">
-import {
-    faDownload,
-    faInfoCircle,
-    faList,
-    faServer,
-    faSync,
-    faTimes,
-    faTrash,
-    faUpload,
-} from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faList, faSync, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn } from "@vueuse/core";
 import {
     BAlert,
     BButton,
-    BCard,
     BFormCheckbox,
     BFormInput,
     BInputGroup,
@@ -250,18 +160,13 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
-import { bytesToString } from "@/utils/utils";
 
-import type { AvailableVisualization, StagingStatus, Visualization } from "./services";
+import type { AvailableVisualization, Visualization } from "./services";
 import {
-    cleanStagedAssets,
     getAvailableVisualizations,
     getInstalledVisualizations,
-    getStagingStatus,
     installVisualization,
     reloadVisualizationRegistry,
-    stageAllVisualizations,
-    stageVisualization,
     toggleVisualization,
     uninstallVisualization,
     updateVisualization,
@@ -275,7 +180,7 @@ import Heading from "@/components/Common/Heading.vue";
 const { confirm } = useConfirmDialog();
 const toast = useToast();
 
-const TAB_NAMES = ["installed", "available", "staging"] as const;
+const TAB_NAMES = ["installed", "available"] as const;
 const activeTabIndex = ref(0);
 const activeTab = computed(() => TAB_NAMES[activeTabIndex.value]!);
 
@@ -309,23 +214,17 @@ const availableVisualizations = ref<AvailableVisualization[]>([]);
 const availableSearchFilter = ref("");
 const availableLoadError = ref(false);
 
-const stagingLoading = ref(false);
-const stagingStatus = ref<StagingStatus | null>(null);
-const stagedNames = computed(() => stagingStatus.value?.staged_visualizations?.map((v) => v.name) ?? []);
-
 const showInstallModal = ref(false);
 const selectedVisualization = ref<AvailableVisualization | null>(null);
 
 watch(activeTab, async (newTab) => {
     if (newTab === "available" && availableVisualizations.value.length === 0) {
         await loadAvailablePackages();
-    } else if (newTab === "staging") {
-        await loadStagingStatus();
     }
 });
 
 onMounted(async () => {
-    await Promise.all([loadInstalledPackages(), loadStagingStatus()]);
+    await loadInstalledPackages();
 });
 
 function errorMessage(error: unknown): string {
@@ -372,7 +271,7 @@ async function handleToggle(viz: Visualization) {
         toast.error(`Failed to toggle ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
-        await refreshInstalledAndStaging();
+        await loadInstalledPackages();
     }
 }
 
@@ -382,13 +281,12 @@ async function handleUpdate(viz: Visualization, newVersion: string) {
 
     try {
         await updateVisualization(viz.id, newVersion);
-        await stageVisualization(viz.id);
-        toast.success(`Updated and staged ${viz.id} to version ${newVersion}`);
+        toast.success(`Updated ${viz.id} to version ${newVersion}`);
     } catch (error) {
         toast.error(`Failed to update ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
-        await refreshInstalledAndStaging();
+        await loadInstalledPackages();
     }
 }
 
@@ -408,22 +306,7 @@ async function handleUninstall(viz: Visualization) {
         toast.error(`Failed to uninstall ${viz.id}: ${errorMessage(error)}`);
     } finally {
         delete loadingActions[actionKey];
-        await refreshInstalledAndStaging();
-    }
-}
-
-async function handleStage(viz: Visualization) {
-    const actionKey = `stage-${viz.id}`;
-    loadingActions[actionKey] = true;
-
-    try {
-        await stageVisualization(viz.id);
-        toast.success(`Staged ${viz.id}`);
-        await loadStagingStatus();
-    } catch (error) {
-        toast.error(`Failed to stage ${viz.id}: ${errorMessage(error)}`);
-    } finally {
-        delete loadingActions[actionKey];
+        await loadInstalledPackages();
     }
 }
 
@@ -437,22 +320,14 @@ async function confirmInstall(vizId: string) {
 
     try {
         await installVisualization(vizId, selectedVisualization.value!.name, selectedVisualization.value!.version);
-        await stageVisualization(vizId);
         showInstallModal.value = false;
-        toast.success(`Installed and staged ${vizId}`);
+        toast.success(`Installed ${vizId}`);
     } catch (error) {
         toast.error(`Failed to install ${vizId}: ${errorMessage(error)}`);
     } finally {
         installing.value = false;
-        await refreshInstalledAndStaging();
+        await loadInstalledPackages();
     }
-}
-
-// After any change, even one that failed partway (installed but not staged, say), so the
-// list never shows a stale state
-async function refreshInstalledAndStaging() {
-    await loadInstalledPackages();
-    await loadStagingStatus();
 }
 
 async function reloadRegistry() {
@@ -465,47 +340,6 @@ async function reloadRegistry() {
         toast.error(`Failed to refresh: ${errorMessage(error)}`);
     } finally {
         loading.value = false;
-    }
-}
-
-async function loadStagingStatus() {
-    try {
-        stagingStatus.value = await getStagingStatus();
-    } catch (error) {
-        toast.error(`Failed to load staging status: ${errorMessage(error)}`);
-    }
-}
-
-async function stageAllAssets() {
-    stagingLoading.value = true;
-    try {
-        const result = await stageAllVisualizations();
-        toast.success(result.message);
-        await loadStagingStatus();
-    } catch (error) {
-        toast.error(`Failed to stage visualizations: ${errorMessage(error)}`);
-    } finally {
-        stagingLoading.value = false;
-    }
-}
-
-async function cleanStagedAssetsAction() {
-    const confirmed = await confirm(
-        "Are you sure? This removes all visualizations from Galaxy's serving directory until they are re-staged.",
-    );
-    if (!confirmed) {
-        return;
-    }
-
-    stagingLoading.value = true;
-    try {
-        const result = await cleanStagedAssets();
-        toast.success(result.message);
-        await loadStagingStatus();
-    } catch (error) {
-        toast.error(`Failed to clean staged assets: ${errorMessage(error)}`);
-    } finally {
-        stagingLoading.value = false;
     }
 }
 </script>

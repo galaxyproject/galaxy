@@ -10,16 +10,11 @@ from galaxy.managers.visualization_admin import VisualizationPackageManager
 from galaxy.schema.visualization_admin import (
     AvailableVisualizationListResponse,
     AvailableVisualizationResponse,
-    CleanStagingResultResponse,
     InstalledVisualizationListResponse,
     InstalledVisualizationResponse,
     MessageResponse,
     PackageVersionsResponse,
-    StagedVisualizationInfo,
-    StagingResultResponse,
-    StagingStatusResponse,
     ToggleVisualizationResponse,
-    VisualizationStagingResultResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
@@ -159,51 +154,6 @@ class AdminVisualizationsService(ServiceBase):
         return MessageResponse(message="Visualization registry reloaded successfully")
 
     def _reload_registry(self) -> None:
-        # Anything that changes what's staged has to reach the registry, in every process
+        # Package changes have to reach the registry in every process, not just this one
         self.app.visualizations_registry.reload()
         self.app.queue_worker.send_control_task("reload_visualizations", noop_self=True)
-
-    def stage_all_visualizations(self, trans: ProvidesUserContext) -> StagingResultResponse:
-        """Stage all visualization assets from managed and legacy sources to static/plugins."""
-        result = self.package_manager.stage_all_visualizations()
-        self._reload_registry()
-        log.info(f"Staged {result['staged_count']} visualizations")
-        return StagingResultResponse(
-            message=f"Successfully staged {result['staged_count']} visualizations",
-            staged_count=result["staged_count"],
-            staged_visualizations=result["staged_visualizations"],
-            errors=result.get("errors", []),
-        )
-
-    def stage_visualization(self, trans: ProvidesUserContext, viz_id: str) -> VisualizationStagingResultResponse:
-        self.package_manager.validate_viz_id(viz_id)
-        result = self.package_manager.stage_visualization(viz_id)
-        self._reload_registry()
-        log.info(f"Staged visualization {viz_id}")
-        return VisualizationStagingResultResponse(
-            message=f"Successfully staged visualization '{viz_id}'",
-            visualization_id=result["visualization_id"],
-            source_path=result["source_path"],
-            target_path=result["target_path"],
-            size=result["size"],
-        )
-
-    def clean_staged_assets(self, trans: ProvidesUserContext) -> CleanStagingResultResponse:
-        """Clean all staged visualization assets from static/plugins."""
-        result = self.package_manager.clean_staged_assets()
-        log.info(f"Cleaned {result['cleaned_count']} staged assets")
-        return CleanStagingResultResponse(
-            message=f"Successfully cleaned {result['cleaned_count']} staged assets",
-            cleaned_count=result["cleaned_count"],
-            cleaned_items=result.get("cleaned_items", []),
-        )
-
-    def get_staging_status(self, trans: ProvidesUserContext) -> StagingStatusResponse:
-        """Get information about currently staged visualizations."""
-        result = self.package_manager.get_staging_status()
-        return StagingStatusResponse(
-            message="Retrieved staging status successfully",
-            staged_count=result["staged_count"],
-            staged_visualizations=[StagedVisualizationInfo(**viz) for viz in result["staged_visualizations"]],
-            total_size=result["total_size"],
-        )

@@ -14,17 +14,6 @@
                         title="Registered in config but package files are missing from disk">
                         Missing Files
                     </BBadge>
-                    <BBadge
-                        v-if="visualization.installed"
-                        :variant="isStaged ? 'info' : 'warning'"
-                        class="mr-2"
-                        :title="
-                            isStaged
-                                ? 'Assets are in Galaxy\'s serving directory'
-                                : 'Assets need to be staged before users can access this visualization'
-                        ">
-                        {{ isStaged ? "Staged" : "Not Staged" }}
-                    </BBadge>
                 </div>
 
                 <div class="text-muted mb-2">
@@ -83,11 +72,6 @@
                     <BDropdownItem v-if="visualization.installed" :disabled="isLoading" @click="openUpdateModal">
                         <FontAwesomeIcon :icon="faArrowUp" fixed-width />
                         Update
-                    </BDropdownItem>
-
-                    <BDropdownItem :disabled="isLoading" @click="emit('stage', visualization)">
-                        <FontAwesomeIcon :icon="faUpload" fixed-width />
-                        Stage Assets
                     </BDropdownItem>
 
                     <BDropdownItem
@@ -179,7 +163,6 @@ import {
     faEyeSlash,
     faInfoCircle,
     faTrash,
-    faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -217,12 +200,10 @@ interface PackageMetadata {
 interface Props {
     visualization: Visualization;
     loadingActions?: Record<string, boolean>;
-    stagedNames?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loadingActions: () => ({}),
-    stagedNames: () => [] as string[],
 });
 
 const meta = computed(() => (props.visualization.metadata as PackageMetadata | null) ?? null);
@@ -231,7 +212,6 @@ const emit = defineEmits<{
     (e: "toggle", visualization: Visualization): void;
     (e: "update", visualization: Visualization, version: string): void;
     (e: "uninstall", visualization: Visualization): void;
-    (e: "stage", visualization: Visualization): void;
     (e: "refresh"): void;
 }>();
 
@@ -248,12 +228,9 @@ const isLoading = computed(() => {
         !!props.loadingActions[`toggle-${props.visualization.id}`] ||
         !!props.loadingActions[`update-${props.visualization.id}`] ||
         !!props.loadingActions[`uninstall-${props.visualization.id}`] ||
-        !!props.loadingActions[`stage-${props.visualization.id}`] ||
         updating.value
     );
 });
-
-const isStaged = computed(() => props.stagedNames.includes(props.visualization.id));
 
 watch(showUpdateModal, (isShown) => {
     if (!isShown) {

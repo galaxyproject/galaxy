@@ -80,7 +80,7 @@ def test_manager_errors_keep_their_type(service):
     with pytest.raises(exceptions.ObjectNotFound):
         service.update_package(MagicMock(), "missing", "1.0.0")
     with pytest.raises(exceptions.ObjectNotFound):
-        service.stage_visualization(MagicMock(), "missing")
+        service.uninstall_package(MagicMock(), "missing")
 
 
 def test_reload_registry_reloads_locally_and_broadcasts(service, app):
@@ -103,18 +103,6 @@ def test_update_reloads_registry(service, app):
     service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
     app.reset_mock()
     service.update_package(MagicMock(), "circster", "2.0.0")
-    _assert_registry_reloaded(app)
-
-
-def test_stage_reloads_registry(service, app):
-    service.install_package(MagicMock(), "circster", "@galaxyproject/circster", "1.0.0")
-    app.reset_mock()
-    service.stage_visualization(MagicMock(), "circster")
-    _assert_registry_reloaded(app)
-
-
-def test_stage_all_reloads_registry(service, app):
-    service.stage_all_visualizations(MagicMock())
     _assert_registry_reloaded(app)
 
 

@@ -64,66 +64,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/stage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Stage all visualization assets.
-         * @description Stage all visualization assets into Galaxy's static serving directory.
-         */
-        post: operations["stage_all_api_admin_visualizations_stage_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/visualizations/staged": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Clean all staged visualization assets.
-         * @description Clean all staged visualization assets from static/plugins.
-         */
-        delete: operations["clean_staged_api_admin_visualizations_staged_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/visualizations/staging_status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get staging status information.
-         * @description Get information about currently staged visualizations.
-         */
-        get: operations["staging_status_api_admin_visualizations_staging_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/visualizations/versions/{package_name}": {
         parameters: {
             query?: never;
@@ -182,26 +122,6 @@ export interface paths {
          * @description Install a visualization package from npm registry.
          */
         post: operations["install_api_admin_visualizations__viz_id__install_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/visualizations/{viz_id}/stage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Stage assets for a specific visualization.
-         * @description Stage assets for a specific visualization into Galaxy's static serving directory.
-         */
-        post: operations["stage_visualization_api_admin_visualizations__viz_id__stage_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5048,6 +4968,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plugins/{plugin_name}/static/{file_path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serve a static file from a runtime-installed visualization package.
+         * @description Runtime-installed packages live in the managed package store rather than Galaxy's static tree, which can be
+         *     read-only (CVMFS), so Galaxy serves their assets itself. Built-in plugins are served from /static as before.
+         */
+        get: operations["static_file_api_plugins__plugin_name__static__file_path__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proxy": {
         parameters: {
             query?: never;
@@ -9384,15 +9325,6 @@ export interface components {
         ClaimLandingPayload: {
             /** Client Secret */
             client_secret?: string | null;
-        };
-        /** CleanStagingResultResponse */
-        CleanStagingResultResponse: {
-            /** Cleaned Count */
-            cleaned_count: number;
-            /** Cleaned Items */
-            cleaned_items?: string[];
-            /** Message */
-            message: string;
         };
         /** CleanableItemsSummary */
         CleanableItemsSummary: {
@@ -24362,42 +24294,6 @@ export interface components {
          * @enum {string}
          */
         Src: "url" | "pasted" | "files" | "path" | "composite" | "ftp_import" | "server_dir";
-        /** StagedVisualizationInfo */
-        StagedVisualizationInfo: {
-            /** Last Modified */
-            last_modified: number;
-            /** Name */
-            name: string;
-            /** Path */
-            path: string;
-            /** Size */
-            size: number;
-        };
-        /** StagingResultResponse */
-        StagingResultResponse: {
-            /** Errors */
-            errors?: string[];
-            /** Message */
-            message: string;
-            /** Staged Count */
-            staged_count: number;
-            /** Staged Visualizations */
-            staged_visualizations?: string[];
-        };
-        /** StagingStatusResponse */
-        StagingStatusResponse: {
-            /** Message */
-            message: string;
-            /** Staged Count */
-            staged_count: number;
-            /** Staged Visualizations */
-            staged_visualizations?: components["schemas"]["StagedVisualizationInfo"][];
-            /**
-             * Total Size
-             * @default 0
-             */
-            total_size: number;
-        };
         /**
          * State
          * @enum {string}
@@ -28484,22 +28380,6 @@ export interface components {
              * @description The name of the user owning this Visualization.
              */
             username: string;
-        };
-        /** VisualizationStagingResultResponse */
-        VisualizationStagingResultResponse: {
-            /** Message */
-            message: string;
-            /**
-             * Size
-             * @default 0
-             */
-            size: number;
-            /** Source Path */
-            source_path: string;
-            /** Target Path */
-            target_path: string;
-            /** Visualization ID */
-            visualization_id: string;
         };
         /** VisualizationSummary */
         VisualizationSummary: {
@@ -33985,129 +33865,6 @@ export interface operations {
             };
         };
     };
-    stage_all_api_admin_visualizations_stage_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StagingResultResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    clean_staged_api_admin_visualizations_staged_delete: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CleanStagingResultResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    staging_status_api_admin_visualizations_staging_status_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StagingStatusResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
     package_versions_api_admin_visualizations_versions__package_name__get: {
         parameters: {
             query?: never;
@@ -34264,50 +34021,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstalledVisualizationResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    stage_visualization_api_admin_visualizations__viz_id__stage_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The identifier of the visualization package. */
-                viz_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualizationStagingResultResponse"];
                 };
             };
             /** @description Request Error */
@@ -49563,6 +49276,49 @@ export interface operations {
                 "application/json": components["schemas"]["ChatCompletionRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    static_file_api_plugins__plugin_name__static__file_path__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The visualization plugin identifier. */
+                plugin_name: string;
+                /** @description Path of the file within the plugin's static files. */
+                file_path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

@@ -30,28 +30,18 @@ function mountAdmin() {
 describe("VisualizationsAdmin", () => {
     beforeEach(() => {
         vi.mocked(services.getInstalledVisualizations).mockResolvedValue([NORA] as never);
-        vi.mocked(services.getStagingStatus).mockResolvedValue({
-            message: "",
-            staged_count: 0,
-            staged_visualizations: [],
-            total_size: 0,
-        } as never);
     });
 
-    it("refreshes the installed list when staging fails after a successful update", async () => {
+    it("refreshes the installed list after an update, even one that fails", async () => {
         const wrapper = mountAdmin();
         await flushPromises();
         vi.mocked(services.getInstalledVisualizations).mockClear();
-        vi.mocked(services.getStagingStatus).mockClear();
 
-        vi.mocked(services.updateVisualization).mockResolvedValue({} as never);
-        vi.mocked(services.stageVisualization).mockRejectedValue(new Error("missing static config"));
+        vi.mocked(services.updateVisualization).mockRejectedValue(new Error("missing static config"));
 
         wrapper.findComponent(VisualizationCard).vm.$emit("update", NORA, "1.2.4");
         await flushPromises();
 
-        // the update itself went through, so the list and staging status must reflect it
         expect(services.getInstalledVisualizations).toHaveBeenCalled();
-        expect(services.getStagingStatus).toHaveBeenCalled();
     });
 });

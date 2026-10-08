@@ -77,41 +77,6 @@ class MessageResponse(Model):
     message: str = Field(..., title="Message")
 
 
-class StagingResultResponse(Model):
-    message: str = Field(..., title="Message")
-    staged_count: int = Field(..., title="Staged Count")
-    staged_visualizations: list[str] = Field(default_factory=list, title="Staged Visualizations")
-    errors: list[str] = Field(default_factory=list, title="Errors")
-
-
-class VisualizationStagingResultResponse(Model):
-    message: str = Field(..., title="Message")
-    visualization_id: str = Field(..., title="Visualization ID")
-    source_path: str = Field(..., title="Source Path")
-    target_path: str = Field(..., title="Target Path")
-    size: int = Field(0, title="Size")
-
-
-class CleanStagingResultResponse(Model):
-    message: str = Field(..., title="Message")
-    cleaned_count: int = Field(..., title="Cleaned Count")
-    cleaned_items: list[str] = Field(default_factory=list, title="Cleaned Items")
-
-
-class StagedVisualizationInfo(Model):
-    name: str = Field(..., title="Name")
-    path: str = Field(..., title="Path")
-    size: int = Field(..., title="Size")
-    last_modified: float = Field(..., title="Last Modified")
-
-
-class StagingStatusResponse(Model):
-    message: str = Field(..., title="Message")
-    staged_count: int = Field(..., title="Staged Count")
-    staged_visualizations: list[StagedVisualizationInfo] = Field(default_factory=list, title="Staged Visualizations")
-    total_size: int = Field(0, title="Total Size")
-
-
 class PackageVersionsResponse(Model):
     package: str = Field(..., title="Package", description="The npm package name.")
     versions: list[str] = Field(
