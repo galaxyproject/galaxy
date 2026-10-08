@@ -1,0 +1,6 @@
+include src/galaxy/web/proxy/js/lib/main.js
+include src/galaxy/web/proxy/js/lib/proxy.js
+include src/galaxy/web/proxy/js/lib/mapper.js
+include src/galaxy/web/proxy/js/package.json
+include src/galaxy/web/proxy/js/Dockerfile
+include src/galaxy/web/proxy/js/README.md

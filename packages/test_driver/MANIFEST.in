@@ -1,0 +1,2 @@
+include src/galaxy_test/driver/tool_sheds_conf.xml
+include src/galaxy_test/driver/vault_conf.yml
