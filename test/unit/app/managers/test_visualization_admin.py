@@ -598,7 +598,9 @@ class TestServedVersion:
 
 class TestNpmRegistryQuery:
     @patch("galaxy.managers.visualization_admin.requests.get")
-    def test_filters_by_visualization_keyword(self, mock_get, manager):
+    def test_lists_scoped_packages_regardless_of_keywords(self, mock_get, manager):
+        # most real visualization packages carry no keywords at all; the static XML check at
+        # install time is what decides whether a package is actually a visualization
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "objects": [
@@ -617,10 +619,9 @@ class TestNpmRegistryQuery:
                 },
                 {
                     "package": {
-                        "name": "@galaxyproject/not-a-viz",
-                        "description": "Some other package",
+                        "name": "@galaxyproject/untagged-viz",
+                        "description": "A visualization with no keywords",
                         "version": "2.0.0",
-                        "keywords": ["tool"],
                     },
                     "score": {},
                 },
@@ -630,8 +631,7 @@ class TestNpmRegistryQuery:
         mock_get.return_value = mock_response
 
         results = manager.query_npm_registry()
-        assert len(results) == 1
-        assert results[0]["name"] == "@galaxyproject/test-viz"
+        assert [result["name"] for result in results] == ["@galaxyproject/test-viz", "@galaxyproject/untagged-viz"]
 
     @patch("galaxy.managers.visualization_admin.requests.get")
     def test_search_includes_term(self, mock_get, manager):
