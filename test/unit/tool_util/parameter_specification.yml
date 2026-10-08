@@ -692,8 +692,9 @@ gx_select_optional:
   # Not allowing selecting booleans by truevalue/falsevalue - don't allow selecting
   # selects by label.
   - parameter: "Ex1"
-  # Do not allow lists for non-multi-selects
+  # Do not allow lists for non-multi-selects - use null to select nothing
   - parameter: ["ex2"]
+  - parameter: []
   - parameter: {}
   - parameter: 5
   landing_request_valid: &gx_select_optional_landing_request_valid
@@ -733,6 +734,7 @@ gx_select_optional:
   workflow_step_invalid:
   - parameter: "Ex1"
   - parameter: ["ex2"]
+  - parameter: []
   - parameter: {}
   - parameter: 5
   - parameter: {__class__: 'ConnectedValue'}
@@ -745,6 +747,7 @@ gx_select_optional:
   workflow_step_linked_invalid:
   - parameter: "Ex1"
   - parameter: ["ex2"]
+  - parameter: []
   - parameter: {}
   - parameter: 5
 
@@ -754,6 +757,8 @@ gx_select_multiple:
   - parameter: ["ex2"]
   # multiple selects are optional by default
   - parameter: null
+  # an explicit empty list selects nothing too
+  - parameter: []
   - {}
   request_invalid:
   - parameter: ["Ex1"]
@@ -763,6 +768,7 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   - parameter: null
+  - parameter: []
   - {}
   landing_request_invalid: &gx_select_multiple_landing_request_invalid
   - parameter: 5
@@ -780,16 +786,19 @@ gx_select_multiple:
   # unrelated to optional-by-default: py_type_workflow_step is unconditionally optional,
   # so this stays valid even for a required select. Still unclear it should be.
   - parameter: null
+  - parameter: []
   job_internal_valid:
   - parameter: ["--ex1"]
   # itd be coool if this was forced to empty list - probably breaks backward compat though...
   - parameter: null
+  - parameter: []
   job_internal_invalid:
   - {}
   - parameter: "--ex1"
   job_runtime_valid:
   - parameter: ["--ex1"]
   - parameter: null
+  - parameter: []
   job_runtime_invalid:
   - {}
   - parameter: "--ex1"
@@ -806,6 +815,8 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   # optional-by-default reaches the test case states too
   - parameter: null
+  # value_json="[]" - the explicit empty selection
+  - parameter: []
   test_case_xml_invalid:
   - parameter: {}
   test_case_json_valid:
@@ -813,6 +824,7 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["--ex1", "ex2"]
   - parameter: null
+  - parameter: []
   test_case_json_invalid:
   - parameter: "--ex1"
   - parameter: {}
@@ -834,6 +846,8 @@ gx_select_multiple_optional:
   - parameter: ["ex2"]
   - {}
   - parameter: null
+  # an explicit empty list is distinct from null but also selects nothing
+  - parameter: []
   request_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
