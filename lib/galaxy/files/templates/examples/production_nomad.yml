@@ -3,12 +3,6 @@
   name: NOMAD
   description: |
       Browse and import public data from [NOMAD](https://nomad-lab.eu), a materials science repository.
-  variables:
-      base_url:
-          label: NOMAD URL
-          type: string
-          default: https://nomad-lab.eu/prod/v1
-          help: The address of the NOMAD installation, for example https://nomad-lab.eu/prod/v1
   configuration:
       type: nomad
-      base_url: "{{ variables.base_url }}"
+      base_url: https://nomad-lab.eu/prod/v1
