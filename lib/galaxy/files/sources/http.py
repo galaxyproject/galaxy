@@ -9,7 +9,10 @@ from galaxy.files.models import (
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import (
+    get_reusable_http_session,
+    validate_non_local,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -82,7 +85,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
                 req = urllib.request.Request(source_path, headers=config.http_headers)
                 page = stack.enter_context(urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT))
             else:
-                session = stack.enter_context(requests.Session())
+                session = get_reusable_http_session() or stack.enter_context(requests.Session())
                 page = stack.enter_context(
                     session.get(
                         source_path,

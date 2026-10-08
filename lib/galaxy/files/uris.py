@@ -4,10 +4,17 @@ import os
 import posixpath
 import socket
 import tempfile
+import threading
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
+from contextlib import contextmanager
 from typing import Optional
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 
+import requests
 from requests import HTTPError as RequestsHTTPError
 
 from galaxy.exceptions import (
@@ -31,6 +38,30 @@ from galaxy.util import (
 from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)
+
+# Concurrent requests used to fetch the files of a directory.
+DIRECTORY_FETCH_WORKERS = 8
+
+_thread_http_session = threading.local()
+
+
+@contextmanager
+def reuse_http_connections() -> Iterator[None]:
+    """Reuse one HTTP session, and so its connections, for the downloads made by this thread in the block.
+
+    The session is closed when the block ends, so it is never shared between users.
+    """
+    with requests.Session() as session:
+        _thread_http_session.session = session
+        try:
+            yield
+        finally:
+            _thread_http_session.session = None
+
+
+def get_reusable_http_session() -> requests.Session | None:
+    """Return the session set by :func:`reuse_http_connections` for this thread, if any."""
+    return getattr(_thread_http_session, "session", None)
 
 
 def stream_url_to_str(
@@ -84,6 +115,12 @@ def _listing_may_be_truncated(file_source, entries) -> bool:
     except ImportError:  # fsspec is an optional dependency
         return False
     return isinstance(file_source, FsspecFilesSource) and len(entries) >= MAX_ITEMS_LIMIT
+
+
+def _http_status(error: HTTPError | RequestsHTTPError) -> int | None:
+    if isinstance(error, HTTPError):
+        return error.code
+    return error.response.status_code if error.response is not None else None
 
 
 class UriDirectoryReader:
@@ -141,15 +178,59 @@ class UriDirectoryReader:
             )
         except FileNotFoundError:
             return False
-        except HTTPError as e:
-            if e.code in missing_statuses:
-                return False
-            raise
-        except RequestsHTTPError as e:
-            if e.response is not None and e.response.status_code in missing_statuses:
+        except (HTTPError, RequestsHTTPError) as e:
+            if _http_status(e) in missing_statuses:
                 return False
             raise
         return True
+
+    def fetch_all(
+        self,
+        files: Iterable[tuple[str, str]],
+        missing_statuses: tuple[int, ...] = (404,),
+        workers: int = DIRECTORY_FETCH_WORKERS,
+    ) -> list[str]:
+        """Fetch ``(rel_path, target_path)`` pairs concurrently; return the ``rel_path`` of files that do not exist.
+
+        ``files`` is consumed lazily, and each worker reuses its HTTP connections. The first
+        error stops all workers and is raised.
+        """
+        pending = iter(files)
+        lock = threading.Lock()
+        missing: list[str] = []
+        errors: list[Exception] = []
+
+        def work() -> None:
+            with reuse_http_connections():
+                while True:
+                    with lock:
+                        if errors:
+                            return
+                        try:
+                            item = next(pending, None)
+                        except Exception as e:
+                            errors.append(e)
+                            return
+                    if item is None:
+                        return
+                    try:
+                        found = self.fetch(item[0], item[1], missing_statuses)
+                    except Exception as e:
+                        with lock:
+                            errors.append(e)
+                        return
+                    if not found:
+                        with lock:
+                            missing.append(item[0])
+
+        threads = [threading.Thread(target=work, daemon=True) for _ in range(workers)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        if errors:
+            raise errors[0]
+        return missing
 
 
 def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "ConfiguredFileSources":

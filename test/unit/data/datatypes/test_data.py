@@ -61,7 +61,7 @@ def test_zarr_v3_store_keys_follow_consolidated_metadata():
     }
     metadata_keys, chunk_keys = zarr_v3_store_keys(root)
     assert metadata_keys == ["group/zarr.json", "group/image/zarr.json", "scalar/zarr.json"]
-    assert chunk_keys == [
+    assert list(chunk_keys) == [
         "group/image/c/0/0",
         "group/image/c/0/1",
         "group/image/c/1/0",
@@ -72,7 +72,9 @@ def test_zarr_v3_store_keys_follow_consolidated_metadata():
 
 def test_zarr_v3_store_keys_with_v2_chunk_key_encoding():
     array = _zarr_v3_array([4, 2], [2, 2], {"name": "v2", "configuration": {"separator": "."}})
-    assert zarr_v3_store_keys(array) == ([], ["0.0", "1.0"])
+    metadata_keys, chunk_keys = zarr_v3_store_keys(array)
+    assert metadata_keys == []
+    assert list(chunk_keys) == ["0.0", "1.0"]
 
 
 def test_zarr_v2_store_keys_from_consolidated_metadata():
@@ -87,4 +89,12 @@ def test_zarr_v2_store_keys_from_consolidated_metadata():
     }
     metadata_keys, chunk_keys = zarr_v2_store_keys(consolidated)
     assert metadata_keys == [".zgroup", "labels/.zarray", "labels/.zattrs", "nested/.zarray", "scalar/.zarray"]
-    assert chunk_keys == ["labels/0.0", "labels/0.1", "labels/1.0", "labels/1.1", "nested/0", "nested/1", "scalar/0"]
+    assert list(chunk_keys) == [
+        "labels/0.0",
+        "labels/0.1",
+        "labels/1.0",
+        "labels/1.1",
+        "nested/0",
+        "nested/1",
+        "scalar/0",
+    ]
