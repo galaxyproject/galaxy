@@ -66,11 +66,11 @@ const isCrypt4gh = computed(() => {
     const ext = props.item.extension;
     return Boolean(config.value?.crypt4gh_enabled) && (ext === "c4gh" || Boolean(ext?.endsWith(".c4gh")));
 });
-const datasetId = computed(() => props.item.id);
-const { status: protectionStatus, authorizing, authorize } = useDatasetProtection(datasetId, isCrypt4gh);
 const showAuthorizeCompute = computed(() => {
     return isCrypt4gh.value && !isAnonymous.value && !props.item.purged && props.item.state === "ok";
 });
+const datasetId = computed(() => props.item.id);
+const { status: protectionStatus, authorizing, authorize } = useDatasetProtection(datasetId, showAuthorizeCompute);
 const authorizeComputeTitle = computed(() => {
     if (authorizing.value) {
         return localize("Authorizing...");
