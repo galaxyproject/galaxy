@@ -94,6 +94,20 @@ describe("DatasetAttributes", () => {
         expect(wrapper.find(".dataset-attributes-alert").text()).toBe("success");
     });
 
+    it("shows why saving failed", async () => {
+        const wrapper = await mountDatasetAttributes();
+        server.use(
+            http.untyped.put("/dataset/set_edit", () => {
+                return HttpResponse.json({ err_msg: "This dataset is encrypted." }, { status: 400 });
+            }),
+        );
+
+        await wrapper.find("#dataset-attributes-default-save").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("This dataset is encrypted.");
+    });
+
     it("check rendering without conversion option", async () => {
         const wrapper = await mountDatasetAttributes(true);
 
