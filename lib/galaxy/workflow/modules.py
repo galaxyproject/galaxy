@@ -1344,6 +1344,18 @@ def _is_default_option(value, default_value) -> bool:
     return bool(default_value and value == default_value)
 
 
+def _parameter_def_list_to_options(parameter_value, default_value=None) -> list[OptionDict]:
+    options: list[OptionDict] = []
+    for item in parameter_value:
+        if isinstance(item, dict):
+            value = item["value"]
+            label = item["label"] if "label" in item else value
+        else:
+            value = label = item
+        options.append({"label": label, "value": value, "selected": _is_default_option(value, default_value)})
+    return options
+
+
 class InputParameterModule(WorkflowModule):
     POSSIBLE_PARAMETER_TYPES = POSSIBLE_PARAMETER_TYPES
     type = "parameter_input"
@@ -1698,7 +1710,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, str | list[dict[str, Any]]] = {}
+        parameter_kwds: dict[str, str | list[OptionDict]] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1715,29 +1727,9 @@ class InputParameterModule(WorkflowModule):
                 restricted_inputs = True
                 parameter_kwds["options"] = restricted_options
 
-        def _parameter_def_list_to_options(parameter_value):
-            options = []
-            for item in parameter_value:
-                option = {}
-                if isinstance(item, dict):
-                    value = item["value"]
-                    option["value"] = value
-                    if "label" in item:
-                        option["label"] = item["label"]
-                    else:
-                        option["label"] = value
-                else:
-                    option["value"] = item
-                    option["label"] = item
-                options.append(option)
-            return options
-
         if is_text and not restricted_inputs and parameter_def.get("restrictions"):
             restriction_values = parameter_def.get("restrictions")
-            restriction_options = _parameter_def_list_to_options(restriction_values)
-            for option in restriction_options:
-                option["selected"] = _is_default_option(option["value"], default_value)
-            parameter_kwds["options"] = restriction_options
+            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values, default_value)
             restricted_inputs = True
 
         if parameter_def.get("validators"):
