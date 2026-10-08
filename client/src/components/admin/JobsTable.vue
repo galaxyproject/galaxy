@@ -4,6 +4,8 @@
             v-model="innerValue"
             :fields="fields"
             :items="items"
+            sort-by="update_time"
+            :sort-desc="true"
             hover
             responsive
             no-sort-reset

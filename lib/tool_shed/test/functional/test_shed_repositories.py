@@ -75,7 +75,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         category = populator.new_category(prefix="delegatepublishing")
         repository = populator.new_repository(category.id, prefix="delegatepublishing")
         request = UpdateRepositoryRequest(
-            description="Published by a push collaborator",
+            synopsis="Published by a push collaborator",
             homepage_url="https://example.org/tool",
             remote_repository_url="https://github.com/example/tool",
             category_ids=[category.id],
@@ -93,7 +93,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         collaborator.update(repository, request)
         updated = populator.get_repository(repository.id)
         assert updated.owner == repository.owner
-        assert updated.description == request.description
+        assert updated.description == request.synopsis
         assert updated.homepage_url == request.homepage_url
         assert updated.remote_repository_url == request.remote_repository_url
 
@@ -103,9 +103,22 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         api_asserts.assert_status_code_is(collaborator.add_admin_user_raw(repository, username), 403)
 
         populator.disallow_user_to_push(repository, username)
-        request.description = "Should not be applied after revocation"
+        request.synopsis = "Should not be applied after revocation"
         api_asserts.assert_status_code_is(collaborator.update_raw(repository, request), 403)
         assert populator.get_repository(repository.id).description == updated.description
+
+    def test_update_repository_descriptions(self):
+        populator = self.populator
+        prefix = "testupdatedescriptions"
+        category_id = populator.new_category(prefix=prefix).id
+        repository = populator.new_repository(category_id, prefix=prefix)
+        repository_id = repository.id
+        request = UpdateRepositoryRequest(synopsis="new synopsis", description="new long description")
+        update = populator.update(repository_id, request)
+        assert update.description == "new synopsis"
+        detailed = populator.get_repository(repository_id)
+        assert detailed.description == "new synopsis"
+        assert detailed.long_description == "new long description"
 
     def test_update_category(self):
         populator = self.populator
@@ -866,12 +879,12 @@ class TestRepositoryAdminRole(ShedApiTestCase):
         repo = populator.setup_column_maker_repo(prefix="adminmanage")
 
         # user2 cannot update repo before being granted admin
-        response = user2_populator.update_raw(repo, UpdateRepositoryRequest(description="should fail"))
+        response = user2_populator.update_raw(repo, UpdateRepositoryRequest(synopsis="should fail"))
         api_asserts.assert_status_code_is(response, 403)
 
         # Grant admin to user2
         populator.add_admin_user(repo, self._SECOND_USER_NAME)
 
         # Now user2 can update the repo description
-        updated = user2_populator.update(repo, UpdateRepositoryRequest(description="updated by admin"))
+        updated = user2_populator.update(repo, UpdateRepositoryRequest(synopsis="updated by admin"))
         assert updated.description == "updated by admin"
