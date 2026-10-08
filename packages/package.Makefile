@@ -11,6 +11,14 @@ DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
+# Distribution name used to scope uv to this package in the single root
+# workspace. packages/meta builds the published `galaxy` distribution,
+# not `galaxy-meta`, hence the special case.
+ifeq ($(shell basename $(CURDIR)),meta)
+UV_PACKAGE?=galaxy
+else
+UV_PACKAGE?=$(PROJECT_NAME)
+endif
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
 DIST=dist
@@ -44,10 +52,13 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	uv sync --inexact --all-extras
+	# Resolves the single root workspace (the nested packages/pyproject.toml
+	# workspace was removed), scoped to this package. --inexact preserves the
+	# mypy/lint tool installs below across re-syncs.
+	uv sync --locked --inexact --package $(UV_PACKAGE) --all-extras
 
 _test:
-	uv run pytest $(TESTS)
+	uv run --locked --package $(UV_PACKAGE) pytest $(TESTS)
 
 test: setup-venv _test
 
@@ -58,18 +69,22 @@ _dist:
 dist: clean _dist
 
 _setup-mypy-venv: setup-venv
+	# Still resolved from lib/galaxy/dependencies/ during migration; future
+	# home is a repository-level requirements/ directory.
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
 _mypy:
-	uv run mypy .
+	uv run --locked --package $(UV_PACKAGE) mypy .
 
 mypy: _setup-mypy-venv _mypy
 
 _setup-lint-venv: setup-venv
+	# Still resolved from lib/galaxy/dependencies/ during migration; future
+	# home is a repository-level requirements/ directory.
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
 _lint:
-	uv run ruff check .
+	uv run --locked --package $(UV_PACKAGE) ruff check .
 
 lint: _setup-lint-venv _lint
 

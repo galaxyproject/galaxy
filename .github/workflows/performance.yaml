@@ -4,14 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+      - 'packages/test_selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+      - 'packages/test_selenium/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
@@ -54,6 +52,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: galaxy root/.uv-version
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install

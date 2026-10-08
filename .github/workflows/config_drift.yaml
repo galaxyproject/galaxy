@@ -7,15 +7,15 @@ name: Generated config files
 on:
   push:
     paths:
-      - 'lib/galaxy/config/**'
-      - 'lib/galaxy/dependencies/pinned-requirements.txt'
+      - 'packages/config/src/galaxy/config/**'
+      - 'packages/app/src/galaxy/dependencies/pinned-requirements.txt'
       - 'Makefile'
       - 'doc/source/admin/galaxy_options.rst'
       - '.github/workflows/config_drift.yaml'
   pull_request:
     paths:
-      - 'lib/galaxy/config/**'
-      - 'lib/galaxy/dependencies/pinned-requirements.txt'
+      - 'packages/config/src/galaxy/config/**'
+      - 'packages/app/src/galaxy/dependencies/pinned-requirements.txt'
       - 'Makefile'
       - 'doc/source/admin/galaxy_options.rst'
       - '.github/workflows/config_drift.yaml'
@@ -47,6 +47,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: galaxy root/.uv-version
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install

@@ -48,6 +48,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: .uv-version
           enable-cache: false
           python-version: '3.10'
       - name: Install script dependencies

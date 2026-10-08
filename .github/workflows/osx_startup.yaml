@@ -3,13 +3,11 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+      - 'packages/test_selenium/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+      - 'packages/test_selenium/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -56,6 +54,8 @@ jobs:
           path: 'galaxy root/static'
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version-file: galaxy root/.uv-version
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests
