@@ -187,7 +187,11 @@ def _registry_with_runtime_packages(enabled_packages):
         {
             "plugins": {
                 "builtin": {"static": {"builtin.xml": config1}},
-                "shadowed": {"static": {"shadowed.xml": config1, "logo.svg": "<svg/>"}},
+                "shadowed": {"static": {"shadowed.xml": config1, "logo.png": "source only"}},
+            },
+            # what the client build stages for built-ins, and what Galaxy actually serves
+            "static": {
+                "plugins": {"visualizations": {"shadowed": {"static": {"shadowed.xml": config1, "logo.svg": "<svg/>"}}}}
             },
             "store": {
                 "runtime": {"static": {"runtime.xml": config1, "index.js": "runtime", "logo.png": "png"}},
@@ -226,7 +230,7 @@ class TestRuntimePackages(VisualizationsBase_TestCase):
         registry, mock_dir = _registry_with_runtime_packages([])
         shadowed = registry.plugins["shadowed"].to_dict()
         assert shadowed["href"] == "/static/plugins/visualizations/shadowed/static"
-        # found on disk next to the plugin, not relative to the process's working directory
+        # checked against the served copy under Galaxy's root, not relative to the process's working directory
         assert shadowed["logo"] == "./static/plugins/visualizations/shadowed/static/logo.svg"
         assert "runtime" not in registry.plugins
         mock_dir.remove()
@@ -245,8 +249,18 @@ class TestRuntimePackages(VisualizationsBase_TestCase):
             ("runtime", "nope.js"),
             ("runtime", "../../plugins/builtin/static/builtin.xml"),
             ("runtime", "/etc/passwd"),
+            ("runtime", os.path.join(mock_dir.root_path, "store", "runtime", "static", "index.js")),
             ("unknown", "index.js"),
         ]:
             with pytest.raises(ObjectNotFound):
                 registry.get_runtime_static_file(name, file_path)
+        mock_dir.remove()
+
+    def test_runtime_flag_travels_with_the_plugin(self):
+        # one lookup decides both "is this a runtime package" and "where are its files", so a reload
+        # swapping the plugin set can't pair an old answer with a new plugin
+        registry, mock_dir = _registry_with_runtime_packages(["runtime"])
+        assert registry.plugins["runtime"].runtime
+        assert not registry.plugins["builtin"].runtime
+        assert not hasattr(registry, "runtime_plugins")
         mock_dir.remove()

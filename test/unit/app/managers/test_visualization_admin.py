@@ -35,8 +35,11 @@ class TestVizIdValidation:
     def test_valid_id_with_hyphens(self, manager):
         manager.validate_viz_id("my-viz-plugin")
 
-    def test_valid_nested_id(self, manager):
-        manager.validate_viz_id("jqplot/jqplot_bar")
+    def test_rejects_nested_id(self, manager):
+        # runtime packages are flat npm packages; nested ids collide on their last segment in the
+        # registry and can't be addressed by the {viz_id} admin routes
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            manager.validate_viz_id("jqplot/jqplot_bar")
 
     def test_rejects_path_traversal(self, manager):
         with pytest.raises(exceptions.RequestParameterInvalidException):
@@ -248,6 +251,14 @@ class TestNpmInstall:
             manager.install_npm_package("@galaxyproject/broken", "1.0.0", manager.get_package_path("broken"))
 
     @patch("galaxy.managers.visualization_admin.subprocess.run")
+    def test_npm_cache_stays_inside_the_install_prefix(self, mock_run, manager):
+        # the Galaxy user's home may not be writable on a locked-down web host
+        mock_run.return_value = MagicMock(returncode=0)
+        manager._run_npm_install("@galaxyproject/circster@1.0.0", "/tmp/prefix")
+        cmd = mock_run.call_args[0][0]
+        assert cmd[cmd.index("--cache") + 1].startswith("/tmp/prefix")
+
+    @patch("galaxy.managers.visualization_admin.subprocess.run")
     def test_install_npm_failure(self, mock_run, manager):
         mock_run.return_value = MagicMock(returncode=1, stderr="npm ERR! 404 Not Found")
         target_dir = manager.get_package_path("bad_pkg")
@@ -392,6 +403,14 @@ class TestStoreCreation:
 
 
 class TestEnabledPackages:
+    def test_reads_the_config_once(self, fake_npm, monkeypatch):
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        fake_npm.install_package("other_viz", "@galaxyproject/other_viz", "1.0.0")
+        load_config = MagicMock(wraps=fake_npm.load_config)
+        monkeypatch.setattr(fake_npm, "load_config", load_config)
+        fake_npm.get_enabled_packages()
+        assert load_config.call_count == 1
+
     def test_lists_enabled_installed_packages(self, fake_npm):
         fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         fake_npm.install_package("other_viz", "@galaxyproject/other_viz", "1.0.0")
