@@ -91,9 +91,11 @@ class ToolboxGetToolInfo:
         self.stock = stock_get_tool_info or GET_TOOL_INFO
 
     def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
-        tool = self.toolbox.get_tool(tool_id, tool_version=tool_version)
-        if tool is not None and tool.parameters is not None:
-            return _ToolInputsFromTool(tool)  # type: ignore[return-value]  # satisfies ToolInputs
+        tool_like = self.toolbox.get_tool(tool_id, tool_version=tool_version)
+        if tool_like is not None:
+            tool = self.toolbox.materialize_tool(tool_like, reason="validation")
+            if tool.parameters is not None:
+                return _ToolInputsFromTool(tool)  # type: ignore[return-value]  # satisfies ToolInputs
         return self.stock.get_tool_info(tool_id, tool_version)
 
 
