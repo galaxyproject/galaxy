@@ -460,6 +460,7 @@ steps:
         multiple_columns.input_terminal(name="col").wait_for_present()
         self.workflow_editor_connect("columns#output", "multiple_columns#col")
         self.assert_connected("columns#output", "multiple_columns#col")
+        self.screenshot("workflow_editor_multiple_integer_parameter_multiple_column_connection")
         self.assert_workflow_has_changes_and_save()
 
         workflow_id = self.workflow_populator.index_ids(search=name)[0]
@@ -545,6 +546,7 @@ steps:
             self.execute_script("arguments[0].click();", checkbox)
             self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_connection_invalid("options#output", "single_text#text_param")
+        self.screenshot("workflow_editor_multiple_text_parameter_invalid_connection")
 
         default = "parameter_definition|optional|specify_default|default"
         tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("--ex1,ex2")
@@ -552,6 +554,7 @@ steps:
         tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("--ex3")
         self.sleep_for(self.wait_types.UX_RENDER)
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+        self.screenshot("workflow_editor_multiple_text_parameter_list_default")
 
         self.workflow_editor_destroy_connection("single_text#text_param")
         multi_select = editor.node._(label="multi_select")
