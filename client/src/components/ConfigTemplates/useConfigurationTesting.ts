@@ -206,6 +206,7 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
                 if (testRequestError) {
                     error.value = errorMessageAsString(testRequestError);
                     showForceActionButton.value = true;
+                    return;
                 }
                 pluginStatus = data;
                 testResults.value = pluginStatus;
