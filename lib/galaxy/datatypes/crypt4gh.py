@@ -32,10 +32,9 @@ from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
     CRYPT4GH_FILE_EXT,
-    is_crypt4gh_file_ext,
+    iter_relpaths,
     read_crypt4gh_header,
     unwrap_crypt4gh_file_ext,
-    wrap_crypt4gh_file_ext,
 )
 
 if TYPE_CHECKING:
@@ -176,12 +175,7 @@ class Crypt4GH(Binary):
         """
         if self._has_extra_files(data):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
-        # No extra files — serve the primary file directly.
-        headers["Content-Length"] = str(file_size)
-        headers["content-type"] = "application/octet-stream"
-        headers["Content-Disposition"] = self.content_disposition(data, to_ext, **kwd)
-
-        return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
+        return self._serve_raw(data, to_ext, headers, auth=ObjectStoreAuth(user=trans.user), **kwd)
 
     def _archive_main_file(self, archive: Any, display_name: str, data_filename: str) -> tuple[bool, str, str]:
         """Add the primary Crypt4GH file to the download archive.
@@ -206,10 +200,7 @@ class Crypt4GH(Binary):
         extra_files_path = getattr(dataset, "extra_files_path", None)
         if not extra_files_path or not os.path.isdir(extra_files_path):
             return False
-        for _root, _dirs, files in os.walk(extra_files_path):
-            if files:
-                return True
-        return False
+        return next(iter_relpaths(extra_files_path), None) is not None
 
     # --- Internal helpers ---------------------------------------------------
 
@@ -250,13 +241,3 @@ def build_crypt4gh_datatype(inner_datatype: Data) -> Crypt4GH:
     )
     wrapper: Crypt4GH = datatype_class()
     return wrapper
-
-
-__all__ = (
-    "CRYPT4GH_FILE_EXT",
-    "Crypt4GH",
-    "build_crypt4gh_datatype",
-    "is_crypt4gh_file_ext",
-    "unwrap_crypt4gh_file_ext",
-    "wrap_crypt4gh_file_ext",
-)
