@@ -150,8 +150,10 @@ def format_tree_text(report: TestsTreeReport, summary_only: bool = False) -> str
     s = report.summary
     lines = [
         f"Root: {report.root}",
-        f"Files: {s['total']} | Valid: {s['valid']} | Invalid: {s['invalid']} | "
-        f"Load errors: {s['load_errors']} | Diagnostics: {s['diagnostics']}",
+        (
+            f"Files: {s['total']} | Valid: {s['valid']} | Invalid: {s['invalid']} | "
+            f"Load errors: {s['load_errors']} | Diagnostics: {s['diagnostics']}"
+        ),
         "",
     ]
     if not summary_only:
