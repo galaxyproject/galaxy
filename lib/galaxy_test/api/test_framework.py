@@ -21,12 +21,22 @@ class TestApiFramework(ApiTestCase):
         assert "x-frame-options" not in get_response.headers
 
     def test_client_paths_serve_the_client_app(self):
-        # "/" and "/histories" match the legacy /{action} route and "/admin/users" matches a real
-        # controller, but none of them have a server handler, so they should still get the client.
-        for path in ("/", "/histories", "/histories/list", "/admin/users"):
+        # "/" and "/histories" match the legacy /{action} route, "/admin/users" matches a real
+        # controller and "/datasets/..." matches the dataset controller's routes, but none of them
+        # have a server handler, so they should still get the client.
+        for path in (
+            "/",
+            "/histories",
+            "/histories/list",
+            "/admin/users",
+            "/datasets/list",
+            "/datasets/f2db41e1fa331b3e",
+            "/datasets/f2db41e1fa331b3e/details",
+        ):
             response = self._get(path)
             self._assert_status_code_is(response, 200)
             assert "text/html" in response.headers["content-type"]
+            assert '<div id="app">' in response.text, f"{path} did not serve the client app"
 
     def test_multipart_empty_boundary(self):
         # /api/tools POST is still served by the legacy WSGI app.
