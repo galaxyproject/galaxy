@@ -16,6 +16,26 @@
         document.getElementById("gtn-container").style.visibility = "visible";
     }
 
+    function buttonify(el, activate) {
+        el.addEventListener("click", activate);
+        if (el.tagName.toLowerCase() === "a") {
+            return;
+        }
+        // GTN renders tool and workflow buttons as spans, which are not focusable or keyboard operable on their own.
+        if (!el.hasAttribute("role")) {
+            el.setAttribute("role", "button");
+        }
+        if (!el.hasAttribute("tabindex")) {
+            el.setAttribute("tabindex", "0");
+        }
+        el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                activate();
+            }
+        });
+    }
+
     function getIframeUrl() {
         let loc;
         try {
@@ -158,7 +178,7 @@
 
                     // Buttonify
                     gtnToolElements.forEach(function (el) {
-                        el.addEventListener("click", function () {
+                        buttonify(el, function () {
                             // Tool titles can render as nested markup (e.g. <strong><code>), so read the bound element.
                             const tool_id = el.dataset.tool;
 
@@ -177,7 +197,7 @@
 
                     // Buttonify
                     gtnWorkflowElements.forEach(function (el) {
-                        el.addEventListener("click", () => {
+                        buttonify(el, () => {
                             // The click target can be nested markup inside the button, so read the bound element.
                             const trs_url = el.dataset.workflow;
                             Galaxy.router.push({
