@@ -135,28 +135,38 @@ class Crypt4GH(Binary):
         """Check if this datatype matches any of *target_datatypes*.
 
         Typed wrappers also match tool inputs that accept their inner
-        format, the generic ``c4gh`` wrapper only matches directly.
+        format, and typed wrappers of a format their inner format matches
+        (``fastqsanger.c4gh`` matches ``fastq.c4gh``). The generic ``c4gh``
+        wrapper only matches directly.
         """
         datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         if datatype_classes and isinstance(self, datatype_classes):
             return True
         inner_datatype = self.crypt4gh_inner_datatype
-        if inner_datatype is not None:
-            return inner_datatype.matches_any(target_datatypes)
-        return False
+        if inner_datatype is None:
+            return False
+        # Each typed wrapper is its own class, compare the formats they wrap.
+        target_inner_datatypes = [
+            target_inner
+            for datatype in target_datatypes
+            if (target_inner := getattr(datatype, "crypt4gh_inner_datatype", None)) is not None
+        ]
+        return inner_datatype.matches_any(target_datatypes + target_inner_datatypes)
 
     # --- Download / archive -------------------------------------------------
 
     def is_archive_download(self, datatypes_registry: Any, extension: str) -> bool:
-        """Return ``True`` so downloads go through :meth:`_serve_file_download`.
+        """Whether downloads are zipped, like downloads of the wrapped format.
 
-        Crypt4GH datasets may have encrypted extra files that must be
-        included in a zip archive.  Since :meth:`is_archive_download`
-        cannot inspect the dataset instance, :meth:`_serve_file_download`
-        decides whether to zip (extra files present) or serve the primary
-        file directly.
+        Only encrypted composite formats (e.g. ``html.c4gh``) get encrypted
+        extra files. Other downloads can be redirected to or streamed from the
+        object store. :meth:`_serve_file_download` still zips any dataset with
+        extra files.
         """
-        return True
+        inner_datatype = self.crypt4gh_inner_datatype
+        if inner_datatype is None:
+            return False
+        return inner_datatype.is_archive_download(datatypes_registry, inner_datatype.file_ext)
 
     def _serve_file_download(
         self,
