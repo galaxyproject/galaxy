@@ -160,6 +160,8 @@ class ProtectedFileResult:
 
 
 class ProtectedJobRuntime(Protocol):
+    plan: ProtectionPlan
+
     @property
     def key_ref(self) -> str: ...
 
