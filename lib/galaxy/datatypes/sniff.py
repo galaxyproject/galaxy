@@ -991,12 +991,8 @@ def handle_uploaded_dataset_file_internal(
                 # Prefer the full original filename so multi-part extensions
                 # like ``somename.bam.c4gh`` are correctly unwrapped.
                 upload_name = (
-                    uploaded_filename
-                    or file_prefix.filename
-                    or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                    uploaded_filename or file_prefix.filename or (f"x.{uploaded_file_ext}" if uploaded_file_ext else "")
                 )
-                if upload_name is None:
-                    upload_name = ""
                 guessed_ext = infer_crypt4gh_file_ext(
                     upload_name,
                     datatypes_registry,
@@ -1028,7 +1024,7 @@ def handle_uploaded_dataset_file_internal(
                     os.unlink(converted_path)
                 assert _converted_path
                 converted_path = _converted_path
-            if ext in AUTO_DETECT_EXTENSIONS and not is_crypt4gh_upload:
+            if ext in AUTO_DETECT_EXTENSIONS:
                 ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
         else:
             ext = guessed_ext

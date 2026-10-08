@@ -6,7 +6,9 @@ and manage the ``<inner_ext>.c4gh`` wrapper-extension convention used by the
 Galaxy datatype registry.
 """
 
+import os
 import struct
+from collections.abc import Iterator
 from re import fullmatch
 from typing import (
     Any,
@@ -64,7 +66,7 @@ def unwrap_crypt4gh_file_ext(file_ext: str) -> str | None:
     return _unwrap_crypt4gh_suffix(file_ext)
 
 
-def infer_crypt4gh_inner_file_ext(filename: str, registry: DatatypeFilenameLookup) -> str | None:
+def _infer_crypt4gh_inner_file_ext(filename: str, registry: DatatypeFilenameLookup) -> str | None:
     """Try to infer the inner datatype extension from *filename* via the registry."""
     inner_filename = _unwrap_crypt4gh_suffix(filename) or filename
     datatype = registry.get_datatype_from_filename(inner_filename)
@@ -82,7 +84,7 @@ def infer_crypt4gh_file_ext(filename: str, registry: DatatypeFilenameLookup, req
     2. Wrap the user-requested extension (if not ``auto``).
     3. Fall back to the generic ``c4gh``.
     """
-    inner_file_ext = infer_crypt4gh_inner_file_ext(filename, registry)
+    inner_file_ext = _infer_crypt4gh_inner_file_ext(filename, registry)
     if inner_file_ext is not None:
         return wrap_crypt4gh_file_ext(inner_file_ext)
     if requested_ext != "auto":
@@ -169,6 +171,17 @@ def read_crypt4gh_header(stream_or_path: str | IO[bytes]) -> bytes:
     finally:
         if close_stream:
             stream.close()
+
+
+def iter_relpaths(directory: str) -> Iterator[str]:
+    """Paths of the files in *directory* and its subdirectories, relative to *directory*.
+
+    Extra files of encrypted datasets are encrypted, decrypted and verified file by file:
+    every place handling them must agree on which files there are.
+    """
+    for root, _, filenames in os.walk(directory):
+        for filename in filenames:
+            yield os.path.relpath(os.path.join(root, filename), directory)
 
 
 def check_crypt4gh(file_path: str) -> bool:
