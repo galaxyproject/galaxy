@@ -108,7 +108,6 @@ dependencies = [
     "starlette>=1.0.1",  # CVE-2026-48710 BadHost
     "starlette-context",
     "svgwrite",
-    "thriftpy2",
     "tifffile",
     "typing-extensions",
     "tuspyserver",
