@@ -1,13 +1,10 @@
 /*
- * GENERATED from theme.css by scripts/generateTokens.mjs -- do not edit.
- *
- * Consumers without Tailwind import this file so galaxy-ui components render
- * with real colors and spacing:
- *
- *     import "@galaxyproject/galaxy-ui/tokens.css";
+ * Design tokens for galaxy-ui and the Galaxy client. This is the only file to
+ * hand-edit; run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` to
+ * regenerate tokens.css (the plain `:root` form for consumers without
+ * Tailwind). A test fails if tokens.css is out of date.
  */
-:root,
-.reset-theme-variables {
+@theme {
     --background-color: #ffffff;
 
     /* palette */

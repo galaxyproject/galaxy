@@ -8,9 +8,11 @@
     "types": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts",
+        "./theme.css": "./src/styles/theme.css",
         "./tokens.css": "./src/styles/tokens.css"
     },
     "scripts": {
+        "build:tokens": "node scripts/generateTokens.mjs",
         "type-check": "vue-tsc --noEmit -p tsconfig.json"
     },
     "license": "MIT",
