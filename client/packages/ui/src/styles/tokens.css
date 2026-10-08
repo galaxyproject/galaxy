@@ -1,22 +1,16 @@
 /*
- * Design tokens consumed by the galaxy-ui components.
+ * GENERATED from theme.css by scripts/generateTokens.mjs -- do not edit.
  *
- * External consumers import this file (or define equivalent values) so the
- * components render with real colors and spacing:
+ * Consumers without Tailwind import this file so galaxy-ui components render
+ * with real colors and spacing:
  *
  *     import "@galaxyproject/galaxy-ui/tokens.css";
- *
- * The Galaxy client defines the same values in
- * client/src/style/scss/custom_theme_variables.scss (plus app-level masthead
- * tokens that are deliberately not part of this contract). A sync test in the
- * client asserts every token declared here matches the client's value, so the
- * two files cannot drift silently.
  */
 :root,
 .reset-theme-variables {
     --background-color: #ffffff;
 
-    /* main colors */
+    /* palette */
     --color-blue-900: #040b21;
     --color-blue-800: #191f33;
     --color-blue-700: #2c3143;
@@ -77,7 +71,7 @@
     --color-red-200: #fdd4d5;
     --color-red-100: #fff3f3;
 
-    /* sizes */
+    /* spacing: --spacing-N equals Tailwind's p-N */
     --spacing: 0.25rem;
     --spacing-1: var(--spacing);
     --spacing-2: calc(var(--spacing) * 2);
