@@ -238,7 +238,7 @@ class TestPackageValidation:
 # --- npm install (mocked subprocess) ---
 
 
-def _fake_npm_install(package_spec, prefix):
+def _fake_npm_install(package_spec, prefix, with_static_config=True):
     """Stand-in for ``npm install`` that lays the package out the way npm does."""
     package, version = package_spec.rsplit("@", 1)
     pkg_path = os.path.join(prefix, "node_modules", *package.split("/"))
@@ -247,6 +247,14 @@ def _fake_npm_install(package_spec, prefix):
         json.dump({"name": package, "version": version}, f)
     with open(os.path.join(pkg_path, "static", "index.html"), "w") as f:
         f.write(version)
+    if with_static_config:
+        plugin_name = package.split("/")[-1]
+        with open(os.path.join(pkg_path, "static", f"{plugin_name}.xml"), "w") as f:
+            f.write(f"<visualization name='{plugin_name}' />")
+
+
+def _fake_npm_install_without_static_config(package_spec, prefix):
+    _fake_npm_install(package_spec, prefix, with_static_config=False)
 
 
 @pytest.fixture()
@@ -303,10 +311,10 @@ def _installed_version(manager, viz_id):
 
 class TestInstallLifecycle:
     def test_install_then_uninstall(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         assert fake_npm.is_package_installed("my_viz")
         assert fake_npm.get_package_info("my_viz") == {
-            "package": "@galaxyproject/my-viz",
+            "package": "@galaxyproject/my_viz",
             "version": "1.0.0",
             "enabled": True,
         }
@@ -316,15 +324,15 @@ class TestInstallLifecycle:
         assert fake_npm.get_package_info("my_viz") is None
 
     def test_install_twice_conflicts(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         with pytest.raises(exceptions.Conflict):
-            fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "2.0.0")
+            fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "2.0.0")
         assert _installed_version(fake_npm, "my_viz") == "1.0.0"
 
     def test_install_then_uninstall_then_reinstall(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         fake_npm.uninstall_package("my_viz")
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         assert fake_npm.is_package_installed("my_viz")
 
     def test_uninstall_unknown_raises(self, manager):
@@ -332,7 +340,7 @@ class TestInstallLifecycle:
             manager.uninstall_package("never_installed")
 
     def test_update_swaps_version_and_keeps_enabled_flag(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         fake_npm.toggle_package_enabled("my_viz", False)
 
         result = fake_npm.update_package("my_viz", "2.0.0")
@@ -340,13 +348,13 @@ class TestInstallLifecycle:
         assert result["enabled"] is False
         assert _installed_version(fake_npm, "my_viz") == "2.0.0"
         assert fake_npm.get_package_info("my_viz") == {
-            "package": "@galaxyproject/my-viz",
+            "package": "@galaxyproject/my_viz",
             "version": "2.0.0",
             "enabled": False,
         }
 
     def test_update_keeps_old_version_when_install_fails(self, fake_npm, monkeypatch):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
 
         def failing_npm(package_spec, prefix):
             raise exceptions.InternalServerError("Package installation failed: boom")
@@ -359,7 +367,7 @@ class TestInstallLifecycle:
         assert fake_npm.get_package_info("my_viz")["version"] == "1.0.0"
 
     def test_update_keeps_old_version_when_swap_fails(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
         target_dir = fake_npm.get_package_path("my_viz")
         real_move = shutil.move
 
@@ -382,9 +390,7 @@ class TestInstallLifecycle:
 
     def test_install_then_stage_then_verify(self, fake_npm):
         """Full flow: install from npm, then stage so Galaxy can serve it."""
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
-        with open(os.path.join(fake_npm.get_package_path("my_viz"), "static", "my_viz.xml"), "w") as f:
-            f.write("<visualization name='my_viz' />")
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
 
         result = fake_npm.stage_visualization("my_viz")
         assert result["visualization_id"] == "my_viz"
@@ -393,10 +399,25 @@ class TestInstallLifecycle:
         with open(staged_file) as f:
             assert f.read() == "1.0.0"
 
-    def test_stage_managed_package_missing_config_is_client_error(self, fake_npm):
-        fake_npm.install_package("my_viz", "@galaxyproject/my-viz", "1.0.0")
+    def test_stage_managed_package_missing_config_is_client_error(self, manager):
+        _create_installed_package(manager, "my_viz", "@galaxyproject/my_viz")
         with pytest.raises(exceptions.ConfigurationError):
-            fake_npm.stage_visualization("my_viz")
+            manager.stage_visualization("my_viz")
+
+    def test_install_rejects_package_without_static_config(self, manager, monkeypatch):
+        monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install_without_static_config)
+        with pytest.raises(exceptions.RequestParameterInvalidException, match="my_viz.xml"):
+            manager.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        assert not manager.is_package_installed("my_viz")
+        assert manager.get_package_info("my_viz") is None
+
+    def test_update_rejects_version_without_static_config(self, fake_npm, monkeypatch):
+        fake_npm.install_package("my_viz", "@galaxyproject/my_viz", "1.0.0")
+        monkeypatch.setattr(fake_npm, "_run_npm_install", _fake_npm_install_without_static_config)
+        with pytest.raises(exceptions.RequestParameterInvalidException, match="my_viz.xml"):
+            fake_npm.update_package("my_viz", "2.0.0")
+        assert _installed_version(fake_npm, "my_viz") == "1.0.0"
+        assert fake_npm.get_package_info("my_viz")["version"] == "1.0.0"
 
 
 # --- Staging (migration from old install mechanisms) ---
