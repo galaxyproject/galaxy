@@ -41,8 +41,8 @@ const TOOLS_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "t")!;
 
 /** Bulk `/api/tools` returns the toolbox, a `q` search returns matching ids */
 function mockToolsApi(searchResult: string[] = [FASTQC.id]) {
-    vi.mocked(axios.get).mockImplementation(async (_url: string, config?: { params?: Record<string, unknown> }) => {
-        if (config?.params?.q) {
+    vi.mocked(axios.get).mockImplementation(async (_url, config) => {
+        if ((config?.params as { q?: string } | undefined)?.q) {
             return { data: searchResult };
         }
         return { data: ALL_TOOLS };
