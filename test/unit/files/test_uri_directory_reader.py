@@ -1,21 +1,16 @@
-import functools
 import os
-import threading
 from collections.abc import Iterator
-from http.server import (
-    SimpleHTTPRequestHandler,
-    ThreadingHTTPServer,
-)
 from pathlib import Path
-from typing import (
-    Any,
-    NamedTuple,
-)
+from typing import NamedTuple
 
 import pytest
 
 from galaxy.files.unittest_utils import stock_file_sources_allowing_loopback
 from galaxy.files.uris import UriDirectoryReader
+from galaxy.util.unittest_utils.test_http_server import (
+    QuietDirectoryRequestHandler,
+    serve_directory,
+)
 
 
 class ServedDirectory(NamedTuple):
@@ -31,7 +26,7 @@ def served_directory(tmp_path: Path) -> Iterator[ServedDirectory]:
     served.mkdir()
     client_ports: set[int] = set()
 
-    class RecordingHandler(SimpleHTTPRequestHandler):
+    class RecordingHandler(QuietDirectoryRequestHandler):
         # Keep connections open so clients can reuse them.
         protocol_version = "HTTP/1.1"
 
@@ -39,16 +34,8 @@ def served_directory(tmp_path: Path) -> Iterator[ServedDirectory]:
             client_ports.add(self.client_address[1])
             super().do_GET()
 
-        def log_message(self, format: str, *args: Any) -> None:
-            pass
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(RecordingHandler, directory=str(served)))
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield ServedDirectory(served, f"http://127.0.0.1:{server.server_address[1]}", client_ports)
-    finally:
-        server.shutdown()
+    with serve_directory(served, RecordingHandler) as base_url:
+        yield ServedDirectory(served, base_url, client_ports)
 
 
 def _reader(base_url: str) -> UriDirectoryReader:
