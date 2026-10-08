@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import shutil
+import threading
 import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -91,8 +92,17 @@ class RecryptorClient:
 
     def __init__(self, settings: RecryptorSettings):
         self.settings = settings
-        # Reuses connections, every file of a job takes a request.
-        self.session = Session()
+        # Reuses connections, every file of a job takes a request. Files are recrypted from several
+        # threads, and sessions aren't thread-safe.
+        self._local = threading.local()
+        self._tls_files_checked = False
+
+    @property
+    def session(self) -> Session:
+        if not hasattr(self._local, "session"):
+            self._local.session = Session()
+        session: Session = self._local.session
+        return session
 
     def recrypt_header_to_job_key(self, header: str, key_ref: str, job_public_key: str) -> dict[str, Any]:
         return self._post(
@@ -111,7 +121,10 @@ class RecryptorClient:
         )
 
     def _check_tls_files(self) -> None:
-        # requests only reports these as a generic OSError.
+        # requests only reports these as a generic OSError. Checked on the first request, cleaning up
+        # protected jobs doesn't need the key service.
+        if self._tls_files_checked:
+            return
         for setting, path in (
             ("crypt4gh_recryptor_ca_cert", self.settings.ca_cert),
             ("crypt4gh_recryptor_client_cert", self.settings.client_cert),
@@ -123,6 +136,7 @@ class RecryptorClient:
                     f"The file configured as {setting} doesn't exist on the compute host{location}. "
                     "Contact your Galaxy administrator."
                 )
+        self._tls_files_checked = True
 
     def _post(self, route: str, payload: dict[str, str]) -> dict[str, Any]:
         self._check_tls_files()
