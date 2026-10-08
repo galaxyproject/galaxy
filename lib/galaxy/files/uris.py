@@ -5,6 +5,7 @@ import posixpath
 import socket
 import tempfile
 import threading
+import uuid
 from collections.abc import (
     Iterable,
     Iterator,
@@ -163,6 +164,21 @@ class UriDirectoryReader:
         return [
             posixpath.relpath(f"/{entry.path.lstrip('/')}", root) for entry in entries if isinstance(entry, RemoteFile)
         ]
+
+    def missing_file_statuses(self) -> tuple[int, ...]:
+        """Return the HTTP statuses this directory's server uses for files that do not exist.
+
+        A file that cannot exist is requested once: public S3 buckets that do not allow
+        listing answer 403 instead of 404, and only then is 403 taken to mean missing.
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
+                self.fetch(f".galaxy-missing-file-probe-{uuid.uuid4().hex}", os.path.join(temp_dir, "probe"))
+            except (HTTPError, RequestsHTTPError) as e:
+                if _http_status(e) == 403:
+                    return (403, 404)
+                raise
+        return (404,)
 
     def fetch(self, rel_path: str, target_path: str, missing_statuses: tuple[int, ...] = (404,)) -> bool:
         """Write the file at ``rel_path`` to ``target_path``; return ``False`` if it does not exist.
