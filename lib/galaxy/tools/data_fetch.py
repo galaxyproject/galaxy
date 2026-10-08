@@ -598,7 +598,8 @@ def _has_src_to_path(
                 metadata_out=source_metadata,
             )
         except Exception as e:
-            raise Exception(f"Failed to fetch url {url}. {str(e)}")
+            # Reason before URL: the HDA info column keeps only the first 255 characters.
+            raise Exception(f"Failed to fetch url: {str(e)} ({url})") from e
 
         if not is_dataset:
             # Actual target dataset will validate and put results in dict
