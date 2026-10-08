@@ -380,6 +380,10 @@ Limitations:
   Authorizing such an output again (key icon) only renews its primary file.
 - The same encrypted dataset can't be passed both decrypted and encrypted to the
   same job.
+- Workflow steps changing the datatype of encrypted outputs set the matching
+  encrypted datatype (`tabular` becomes `tabular.c4gh`), like for outputs
+  encrypted when the job ran. They don't change unencrypted datasets to
+  encrypted datatypes.
 - With the job cache, jobs decrypting data are only reused from the same user's
   earlier jobs, since outputs are encrypted for the user who ran the job. Reused
   outputs keep the authorization recorded by the original job, so users authorize
