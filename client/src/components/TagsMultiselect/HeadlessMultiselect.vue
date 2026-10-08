@@ -316,7 +316,7 @@ onClickOutside(
                 role="combobox"
                 aria-haspopup="listbox"
                 type="text"
-                :aria-invalid="props.validator(trimmedSearchValue)"
+                :aria-invalid="searchValueValid ? undefined : 'true'"
                 aria-expanded="true"
                 :aria-controls="`${props.id}-options`"
                 :aria-activedescendant="activeDescendant"

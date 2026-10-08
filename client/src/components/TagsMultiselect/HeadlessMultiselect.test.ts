@@ -314,6 +314,22 @@ describe("HeadlessMultiselect", () => {
             await close(wrapper);
         });
 
+        it("marks only an invalid search value as invalid", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+                validator: (value: string) => value !== "invalid",
+            });
+
+            const input = await open(wrapper);
+            await input.setValue("valid");
+            expect(input.attributes("aria-invalid")).not.toBe("true");
+
+            await input.setValue("invalid");
+            expect(input.attributes("aria-invalid")).toBe("true");
+            await close(wrapper);
+        });
+
         it("points to the highlighted option", async () => {
             const wrapper = mountWithProps({
                 id: "tags",
