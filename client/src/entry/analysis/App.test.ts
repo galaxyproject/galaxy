@@ -170,3 +170,12 @@ it("starts the tour named by a tour route", async () => {
     expect(useTourStore().setTour).toHaveBeenCalledWith("core.galaxy_ui");
     wrapper.unmount();
 });
+
+it("shows the inactivity warning for an inactive user when activation is on", async () => {
+    galaxy.instance.config.user_activation_on = true;
+    galaxy.instance.config.inactivity_box_content = "Please verify your email.";
+    galaxy.instance.user = { id: "user-id", get: (key: string) => (key === "active" ? false : undefined) };
+    const { wrapper } = await mountAt("/");
+    expect(wrapper.find("#inactivebox").text()).toContain("Please verify your email.");
+    wrapper.unmount();
+});
