@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Build the temporary Pulsar source dependency as pulsar-galaxy-lib, also with pip.
+export PULSAR_GALAXY_LIB=1
+
 # The caller may do this as well, but since common_startup.sh can be called independently, we need to do it here
 . ./scripts/common_startup_functions.sh
 

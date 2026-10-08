@@ -20,24 +20,26 @@ from typing import (
 import pulsar.core
 import yaml
 from packaging.version import Version
-from pulsar.client import (
-    build_client_manager,
+from pulsar.client.coexecution_manager import build_client_manager
+from pulsar.client.destination import url_to_destination_params
+from pulsar.client.exceptions import PulsarClientTransportError
+from pulsar.client.path_mapper import PathMapper
+from pulsar.client.staging import (
+    DEFAULT_DYNAMIC_COLLECTION_PATTERN,
+    EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
+)
+from pulsar.client.staging.down import finish_job as pulsar_finish_job
+from pulsar.client.staging.inputs import (
     CLIENT_INPUT_PATH_TYPES,
     ClientInput,
     ClientInputs,
+)
+from pulsar.client.staging.models import (
     ClientJobDescription,
     ClientOutputs,
-    EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
-    finish_job as pulsar_finish_job,
-    PathMapper,
-    PulsarClientTransportError,
     PulsarOutputs,
-    submit_job as pulsar_submit_job,
-    url_to_destination_params,
 )
-
-# TODO: Perform pulsar release with this included in the client package
-from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
+from pulsar.client.staging.up import submit_job as pulsar_submit_job
 from sqlalchemy import select
 
 from galaxy import model

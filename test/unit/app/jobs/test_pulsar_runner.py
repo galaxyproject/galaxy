@@ -7,9 +7,33 @@ from typing import (
 )
 
 import pytest
+from pulsar.client.client import (
+    JobClient,
+    MessageJobClient,
+    RelayJobClient,
+)
+from pulsar.client.gcp import (
+    GcpMessageCoexecutionJobClient,
+    GcpPollingCoexecutionJobClient,
+)
+from pulsar.client.kubernetes import (
+    K8sMessageCoexecutionJobClient,
+    K8sPollingCoexecutionJobClient,
+)
+from pulsar.client.server_interface import (
+    HttpPulsarInterface,
+    LocalPulsarInterface,
+)
+from pulsar.client.tes import (
+    TesMessageCoexecutionJobClient,
+    TesPollingCoexecutionJobClient,
+)
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.jobs.runners.pulsar import PulsarJobRunner
+from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
+    build_client_manager,
+    PulsarJobRunner,
+)
 
 
 def _container(container_id, image_identifier_is_path=True):
@@ -100,6 +124,65 @@ def _runner():
     runner.galaxy_url = "http://galaxy.example"
     runner.client_manager = RecordingClientManager()
     return runner
+
+
+@pytest.mark.parametrize(
+    "options,destination,message_class,polling_class",
+    [
+        ({"k8s_enabled": True}, {"k8s_enabled": True}, K8sMessageCoexecutionJobClient, K8sPollingCoexecutionJobClient),
+        (
+            {"tes_enabled": True},
+            {"tes_url": "http://tes.example"},
+            TesMessageCoexecutionJobClient,
+            TesPollingCoexecutionJobClient,
+        ),
+        (
+            {"gcp_batch_enabled": True},
+            {"project_id": "test-project"},
+            GcpMessageCoexecutionJobClient,
+            GcpPollingCoexecutionJobClient,
+        ),
+    ],
+)
+@pytest.mark.parametrize("messaging", [False, True])
+def test_real_client_manager_selects_coexecution_backend(options, destination, message_class, polling_class, messaging):
+    """Galaxy's factory must retain every backend for both status transports."""
+    runner = _runner()
+    runner.client_manager = build_client_manager(**options, **({"amqp_url": "memory://"} if messaging else {}))
+    try:
+        client = runner.get_client(destination, 543)
+        assert isinstance(client, message_class if messaging else polling_class)
+        assert client.job_id == "543"
+        assert client.job_directory
+    finally:
+        runner.client_manager.shutdown()
+
+
+@pytest.mark.parametrize(
+    "options,expected_class",
+    [
+        ({}, JobClient),
+        ({"job_manager": SimpleNamespace()}, JobClient),
+        ({"amqp_url": "memory://"}, MessageJobClient),
+        (
+            {"relay_url": "https://relay.example", "relay_username": "test", "relay_password": "test"},
+            RelayJobClient,
+        ),
+    ],
+    ids=["http", "local", "amqp", "relay"],
+)
+def test_real_client_manager_preserves_standard_transports(options, expected_class):
+    runner = _runner()
+    runner.client_manager = build_client_manager(**options)
+    try:
+        client = runner.get_client({"url": "http://pulsar.example", "jobs_directory": "/jobs"}, 543)
+        assert isinstance(client, expected_class)
+        assert client.job_id == "543"
+        if expected_class is JobClient:
+            expected_interface = LocalPulsarInterface if "job_manager" in options else HttpPulsarInterface
+            assert isinstance(client.job_manager_interface, expected_interface)
+    finally:
+        runner.client_manager.shutdown()
 
 
 def _job_state(galaxy_job_id, external_id):
