@@ -24,6 +24,7 @@ from galaxy.files.unittest_utils import (
     TestPosixConfiguredFileSources,
 )
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -42,6 +43,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_deferred_model_store_dict,
     TEST_SOURCE_URI,
     TEST_SOURCE_URI_SIMPLE_LINE,
+)
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files_for_dataset,
 )
 from galaxy.util.resources import resource_string
 from .model.test_model_store import (
@@ -664,6 +669,37 @@ def test_deferred_directory_materialized_from_listable_file_source(
     assert materialized_hda.dataset
     assert materialized_hda.dataset.state == "ok", materialized_hda.info
     assert _relative_files(materialized_hda.extra_files_path) == ["a.txt", os.path.join("nested", "b.txt")]
+
+
+def test_failed_directory_materialization_leaves_no_extra_files_in_object_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_directory(tmp_path / "root" / "index", {"a.txt": "a"})
+    fixture_context, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
+    object_store = fixture_context.app.object_store
+
+    def persist_then_fail(
+        object_store: ObjectStore, src_extra_files_path: str, dataset: Dataset, extra_files_path_name: str
+    ) -> None:
+        persist_extra_files_for_dataset(object_store, src_extra_files_path, dataset, extra_files_path_name)
+        raise OSError("object store full")
+
+    monkeypatch.setattr("galaxy.model.deferred.persist_extra_files_for_dataset", persist_then_fail)
+    materializer = materializer_factory(
+        True,
+        object_store=object_store,
+        file_sources=TestPosixConfiguredFileSources(str(tmp_path / "root")),
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
+
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset
+    assert materialized_dataset.state == "error"
+    assert "object store full" in materialized_hda.info
+    extra_files_path_name = materialized_dataset.extra_files_path_name_from(object_store)
+    assert not object_store.exists(materialized_dataset, extra_dir=extra_files_path_name, dir_only=True)
 
 
 @pytest.mark.parametrize("missing_status", [404, 403])

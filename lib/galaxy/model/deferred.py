@@ -19,7 +19,10 @@ from galaxy.datatypes.sniff import (
     should_convert_text,
     stream_url_to_file,
 )
-from galaxy.exceptions import ObjectAttributeInvalidException
+from galaxy.exceptions import (
+    ObjectAttributeInvalidException,
+    ObjectNotFound,
+)
 from galaxy.files import (
     ConfiguredFileSources,
     OptionalUserContext,
@@ -48,6 +51,15 @@ from galaxy.util.hash_util import verify_hash
 from .dereference import get_replacement_dataset
 
 log = logging.getLogger(__name__)
+
+
+def _delete_extra_files(object_store: ObjectStore, dataset: Dataset, extra_files_path_name: str) -> None:
+    """Remove extra files already pushed to the object store, so a failed materialization leaves none behind."""
+    try:
+        if object_store.exists(dataset, extra_dir=extra_files_path_name, dir_only=True):
+            object_store.delete(dataset, entire_dir=True, extra_dir=extra_files_path_name, dir_only=True)
+    except ObjectNotFound:
+        pass
 
 
 class TransientDatasetPaths(NamedTuple):
@@ -210,12 +222,14 @@ class DatasetInstanceMaterializer:
                             object_store.update_from_file(materialized_dataset, file_name=path)
                             if os.path.exists(path):
                                 os.remove(path)
-                            persist_extra_files_for_dataset(
-                                object_store,
-                                extra_files_path,
-                                materialized_dataset,
-                                materialized_dataset.extra_files_path_name_from(object_store),
-                            )
+                            extra_files_path_name = materialized_dataset.extra_files_path_name_from(object_store)
+                            try:
+                                persist_extra_files_for_dataset(
+                                    object_store, extra_files_path, materialized_dataset, extra_files_path_name
+                                )
+                            except Exception:
+                                _delete_extra_files(object_store, materialized_dataset, extra_files_path_name)
+                                raise
                         finally:
                             shutil.rmtree(extra_files_path, ignore_errors=True)
                     else:
