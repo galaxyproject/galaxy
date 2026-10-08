@@ -298,7 +298,9 @@ def test_concurrent_authorizations_replace_the_grant(tmp_path):
     manager.sa_session.commit.side_effect = [IntegrityError("INSERT", {}, Exception("unique")), None]
     output = _FakeOutput(str(tmp_path / "output.dat"))
 
-    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+    with mock.patch(
+        "galaxy.managers.dataset_protection.DatasetProtectionGrant", lambda **kwargs: Bunch(grant_data=None, **kwargs)
+    ):
         manager.register_user_grant(cast(User, Bunch(id=1)), cast(DatasetInstance, output), _payload())
 
     manager.sa_session.rollback.assert_called_once()
