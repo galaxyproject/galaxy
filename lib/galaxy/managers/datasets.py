@@ -16,7 +16,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.datatypes.crypt4gh import Crypt4GH
+from galaxy.datatypes.crypt4gh import (
+    Crypt4GH,
+    keeps_encryption,
+)
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     base,
@@ -52,15 +55,6 @@ from galaxy.util.hash_util import memory_bound_hexdigest
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
-
-def keeps_encryption(current_datatype: Any, target_datatype: Any) -> bool:
-    """Whether changing between these datatypes keeps encrypted datasets encrypted, and others not.
-
-    Galaxy knows a dataset is encrypted from its datatype: relabelling it would pass the encrypted data
-    to tools as is, or try to decrypt data that isn't encrypted.
-    """
-    return isinstance(current_datatype, Crypt4GH) == isinstance(target_datatype, Crypt4GH)
 
 
 def ensure_datatype_change_keeps_encryption(dataset_instance: DatasetInstance, target_datatype: Any) -> None:
