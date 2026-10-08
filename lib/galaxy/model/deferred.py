@@ -10,7 +10,10 @@ from typing import (
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
-from galaxy.datatypes.data import Directory
+from galaxy.datatypes.data import (
+    Data,
+    Directory,
+)
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -53,13 +56,18 @@ from .dereference import get_replacement_dataset
 log = logging.getLogger(__name__)
 
 
-def _delete_extra_files(object_store: ObjectStore, dataset: Dataset, extra_files_path_name: str) -> None:
-    """Remove extra files already pushed to the object store, so a failed materialization leaves none behind."""
+def _persist_extra_files(object_store: ObjectStore, dataset: Dataset, extra_files_path: str) -> None:
+    """Push ``extra_files_path`` to the object store; on failure, remove what was already pushed."""
+    extra_files_path_name = dataset.extra_files_path_name_from(object_store)
     try:
-        if object_store.exists(dataset, extra_dir=extra_files_path_name, dir_only=True):
-            object_store.delete(dataset, entire_dir=True, extra_dir=extra_files_path_name, dir_only=True)
-    except ObjectNotFound:
-        pass
+        persist_extra_files_for_dataset(object_store, extra_files_path, dataset, extra_files_path_name)
+    except Exception:
+        try:
+            if object_store.exists(dataset, extra_dir=extra_files_path_name, dir_only=True):
+                object_store.delete(dataset, entire_dir=True, extra_dir=extra_files_path_name, dir_only=True)
+        except ObjectNotFound:
+            pass
+        raise
 
 
 class TransientDatasetPaths(NamedTuple):
@@ -215,27 +223,14 @@ class DatasetInstanceMaterializer:
             )
             if not replacement_dataset:
                 try:
-                    if directory_datatype is not None:
-                        extra_files_path = tempfile.mkdtemp(prefix="gx_directory_stream")
-                        try:
-                            path = self._stream_directory_source(target_source, directory_datatype, extra_files_path)
-                            object_store.update_from_file(materialized_dataset, file_name=path)
-                            if os.path.exists(path):
-                                os.remove(path)
-                            extra_files_path_name = materialized_dataset.extra_files_path_name_from(object_store)
-                            try:
-                                persist_extra_files_for_dataset(
-                                    object_store, extra_files_path, materialized_dataset, extra_files_path_name
-                                )
-                            except Exception:
-                                _delete_extra_files(object_store, materialized_dataset, extra_files_path_name)
-                                raise
-                        finally:
-                            shutil.rmtree(extra_files_path, ignore_errors=True)
-                    else:
-                        path = self._stream_source(target_source, datatype, materialized_dataset)
-                        self._sniff_deferred_extension(path, dataset_instance)
+                    with tempfile.TemporaryDirectory(prefix="gx_materialize") as staging_directory:
+                        extra_files_path = os.path.join(staging_directory, "extra_files")
+                        path = self._stream_dataset(
+                            target_source, datatype, dataset_instance, materialized_dataset, extra_files_path
+                        )
                         object_store.update_from_file(materialized_dataset, file_name=path)
+                        if directory_datatype is not None:
+                            _persist_extra_files(object_store, materialized_dataset, extra_files_path)
                     materialized_dataset.set_size()
                 except Exception as e:
                     exception_materializing = e
@@ -246,18 +241,15 @@ class DatasetInstanceMaterializer:
             # TODO: optimize this by streaming right to this path...
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
+                path = self._stream_dataset(
+                    target_source,
+                    datatype,
+                    dataset_instance,
+                    materialized_dataset,
+                    transient_paths.external_extra_files_path,
+                )
                 if directory_datatype is not None:
-                    extra_files_path = transient_paths.external_extra_files_path
-                    try:
-                        path = self._stream_directory_source(target_source, directory_datatype, extra_files_path)
-                    except Exception:
-                        # Do not leave a partial download behind.
-                        shutil.rmtree(extra_files_path, ignore_errors=True)
-                        raise
-                    materialized_dataset.external_extra_files_path = extra_files_path
-                else:
-                    path = self._stream_source(target_source, datatype, materialized_dataset)
-                    self._sniff_deferred_extension(path, dataset_instance)
+                    materialized_dataset.external_extra_files_path = transient_paths.external_extra_files_path
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -336,6 +328,24 @@ class DatasetInstanceMaterializer:
         if sniffed and sniffed != "auto":
             dataset_instance.extension = sniffed
 
+    def _stream_dataset(
+        self,
+        target_source: DatasetSource,
+        datatype: Data,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+        dataset: Dataset,
+        extra_files_path: str,
+    ) -> str:
+        """Stream the source to a local primary file and return its path.
+
+        Directory datatypes also download their files into ``extra_files_path``.
+        """
+        if isinstance(datatype, Directory):
+            return self._stream_directory_source(target_source, datatype, extra_files_path)
+        path = self._stream_source(target_source, datatype, dataset)
+        self._sniff_deferred_extension(path, dataset_instance)
+        return path
+
     def _stream_directory_source(self, target_source: DatasetSource, datatype: Directory, extra_files_path: str) -> str:
         """Download a directory dataset's files into ``extra_files_path``; return its empty primary file."""
         source_uri = target_source.source_uri
@@ -343,8 +353,16 @@ class DatasetInstanceMaterializer:
             raise Exception("Cannot stream from dataset source without specified source_uri")
         reader = UriDirectoryReader(source_uri, file_sources=self._file_sources, user_context=self._user_context)
         os.makedirs(extra_files_path, exist_ok=True)
-        datatype.materialize_extra_files(reader, extra_files_path)
-        with tempfile.NamedTemporaryFile(prefix="gx_directory_primary", delete=False) as primary_file:
+        try:
+            datatype.materialize_extra_files(reader, extra_files_path)
+        except Exception:
+            # Do not leave a partial download behind.
+            shutil.rmtree(extra_files_path, ignore_errors=True)
+            raise
+        # Next to the extra files, so it is cleaned up with them.
+        with tempfile.NamedTemporaryFile(
+            prefix="gx_directory_primary", dir=os.path.dirname(extra_files_path), delete=False
+        ) as primary_file:
             return primary_file.name
 
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
