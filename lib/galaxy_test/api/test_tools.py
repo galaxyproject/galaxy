@@ -3834,6 +3834,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert new_job_details["state"] == "ok"
         assert new_job_details["copied_from_job_id"] == job_details["id"]
 
+    @skip_without_tool("use_directory_index")
+    def test_deferred_directory_input_from_unlistable_source_fails_job(self, history_id):
+        deferred_hda = self.dataset_populator.create_deferred_hda(
+            history_id, "base64://bm90IGEgZGlyZWN0b3J5", ext="bwa_mem2_index"
+        )
+        inputs = {"reference": dataset_to_param(deferred_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="use_directory_index", inputs=inputs, history_id=history_id
+        )
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+        job_details = self.dataset_populator.get_job_details(job_id).json()
+        assert job_details["state"] == "error"
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset=run_response["outputs"][0], assert_ok=False
+        )
+        assert "whose directory contents cannot be listed" in output["misc_info"]
+
     @skip_without_tool("pileup")
     def test_metadata_validator_on_deferred_input(self, history_id):
         url_1 = self.dataset_populator.base64_url_for_test_file("1.bam")
