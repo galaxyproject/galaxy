@@ -1,0 +1,13 @@
+name: Configure apt
+description: Configure apt on the runner to fall back to the next mirror when one is unreachable
+runs:
+  using: "composite"
+  steps:
+    # The runner image lists azure.archive.ubuntu.com first in a mirror+file:
+    # source. When that mirror is unreachable, apt 2.8 queues the remaining
+    # downloads for it again with a retry delay and then waits forever instead
+    # of moving on to archive.ubuntu.com. Without the delay, apt retries and
+    # then moves on to the next mirror.
+    - name: Disable apt retry delay
+      run: echo 'Acquire::Retries::Delay "false";' | sudo tee /etc/apt/apt.conf.d/99-no-retry-delay
+      shell: bash

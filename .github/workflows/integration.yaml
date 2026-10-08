@@ -112,6 +112,12 @@ jobs:
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
         run: rm -Rf /usr/share/dotnet
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Configure apt
+        uses: './galaxy root/.github/actions/configure_apt'
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
         # bubblewrap: exercises the expression-evaluation isolation sandbox integration test.
@@ -132,10 +138,6 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v7.0.1
-        with:
-          path: 'galaxy root'
-          persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:

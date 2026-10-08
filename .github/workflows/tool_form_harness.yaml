@@ -89,6 +89,8 @@ jobs:
       - name: Install dependencies
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
+      - name: Configure apt
+        uses: './galaxy root/.github/actions/configure_apt'
       - name: Install Playwright
         run: |
           . .venv/bin/activate

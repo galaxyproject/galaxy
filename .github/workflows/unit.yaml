@@ -38,6 +38,8 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Configure apt
+        uses: './galaxy root/.github/actions/configure_apt'
       - name: Install ffmpeg and bubblewrap
         # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
         # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs);
