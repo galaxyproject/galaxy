@@ -1,4 +1,5 @@
 import "@/compat-config";
+import "@galaxyproject/galaxy-ui/tokens.css";
 
 import { createPinia } from "pinia";
 import { createApp } from "vue";
