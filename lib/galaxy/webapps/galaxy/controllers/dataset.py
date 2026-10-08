@@ -12,6 +12,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.datatypes.crypt4gh import keeps_encryption
 from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import (
     decode_dataset_user,
@@ -22,7 +23,6 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
 )
-from galaxy.managers.datasets import keeps_encryption
 from galaxy.managers.hdas import (
     HDADeserializer,
     HDAManager,
