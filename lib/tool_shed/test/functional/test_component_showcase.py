@@ -114,3 +114,20 @@ class TestComponentShowcase(PlaywrightTestCase):
         """Screenshot ToolHistoryTab component."""
         self._navigate_to_showcase()
         self._screenshot_component("ToolHistoryTab")
+
+    # === Repository Contents Components ===
+
+    def test_repository_file_tree(self):
+        """Screenshot RepositoryFileTree component."""
+        self._navigate_to_showcase()
+        self._screenshot_component("RepositoryFileTree")
+
+    def test_repository_file_viewer(self):
+        """Screenshot RepositoryFileViewer component."""
+        self._navigate_to_showcase()
+        self._screenshot_component("RepositoryFileViewer")
+
+    def test_repository_contents_browser(self):
+        """Screenshot RepositoryContentsBrowser component."""
+        self._navigate_to_showcase()
+        self._screenshot_component("RepositoryContentsBrowser")

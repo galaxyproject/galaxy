@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, ref, watch } from "vue"
 import { storeToRefs } from "pinia"
 import { useRouter } from "vue-router"
@@ -18,9 +17,7 @@ import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import PageHeader from "@/components/PageHeader.vue"
-import RepositoryFileTree from "@/components/RepositoryFileTree.vue"
-import RepositoryFileViewer from "@/components/RepositoryFileViewer.vue"
-import RevisionSelect from "@/components/RevisionSelect.vue"
+import RepositoryContentsBrowser from "@/components/RepositoryContentsBrowser.vue"
 
 type RepositoryMetadata = components["schemas"]["RepositoryMetadata"]
 
@@ -139,10 +136,9 @@ watch(
     { immediate: true },
 )
 
-const selectedRevision = computed({
-    get: () => currentRevision.value ?? "",
-    set: (revision: string) => router.replace(contentsLocation(props.repositoryId, revision, props.file)),
-})
+function selectRevision(revision: string) {
+    router.replace(contentsLocation(props.repositoryId, revision, props.file))
+}
 
 function selectFile(path: string) {
     router.push(contentsLocation(props.repositoryId, props.revision, path))
@@ -161,66 +157,22 @@ function selectFile(path: string) {
                     <router-link :to="`/repositories/${repositoryId}`">{{ repository.name }}</router-link>
                 </template>
             </PageHeader>
-            <div class="contents-body">
-                <section v-if="withdrawn" class="contents-card contents-wide shed-card">
-                    <div class="shed-card-body">
-                        <GAlert variant="warning" class="contents-alert">
-                            This repository has been {{ withdrawn }}, so its files can't be browsed.
-                        </GAlert>
-                    </div>
-                </section>
-                <section v-else-if="changesets.length === 0" class="contents-card contents-wide shed-card">
-                    <p class="shed-card-body contents-message">
-                        This repository has no installable revisions to browse.
-                    </p>
-                </section>
-                <template v-else>
-                    <section class="contents-card contents-wide shed-card">
-                        <div class="contents-revision-bar">
-                            <RevisionSelect :revisions="browsableRevisions" v-model="selectedRevision" />
-                        </div>
-                        <div v-if="revisionUnavailable" class="shed-card-body">
-                            <GAlert variant="danger" class="contents-alert">
-                                <strong
-                                    >Revision {{ revision }} is not an installable revision of this repository.</strong
-                                >
-                            </GAlert>
-                        </div>
-                    </section>
-                    <template v-if="!revisionUnavailable">
-                        <nav aria-label="Files" class="contents-card contents-aside shed-card">
-                            <div class="shed-card-body">
-                                <h2 class="shed-section-title">Files</h2>
-                                <LoadingDiv v-if="filesLoading" message="Loading files" />
-                                <ErrorBanner v-else-if="filesError" :error="filesError" />
-                                <template v-else-if="files">
-                                    <RepositoryFileTree
-                                        v-if="files.length > 0"
-                                        :files="files"
-                                        :selected="file"
-                                        @select="selectFile"
-                                    />
-                                    <p v-else class="contents-message shed-muted">This revision has no files.</p>
-                                </template>
-                            </div>
-                        </nav>
-                        <section class="contents-card contents-main shed-card">
-                            <div class="shed-card-body">
-                                <h2 v-if="file" class="contents-file-path">{{ file }}</h2>
-                                <GAlert v-if="fileMissing" variant="warning" class="contents-alert">
-                                    {{ file }} is not in this revision.
-                                </GAlert>
-                                <RepositoryFileViewer
-                                    v-else
-                                    :file="contents"
-                                    :loading="contentsLoading || (!!file && filesLoading)"
-                                    :error="contentsError"
-                                />
-                            </div>
-                        </section>
-                    </template>
-                </template>
-            </div>
+            <RepositoryContentsBrowser
+                :revisions="browsableRevisions"
+                :revision="currentRevision"
+                :revision-unavailable="revisionUnavailable"
+                :withdrawn="withdrawn"
+                :files="files"
+                :files-loading="filesLoading"
+                :files-error="filesError"
+                :file="file"
+                :file-missing="fileMissing"
+                :contents="contents"
+                :contents-loading="contentsLoading"
+                :contents-error="contentsError"
+                @update:revision="selectRevision"
+                @select="selectFile"
+            />
         </template>
     </div>
 </template>
@@ -230,63 +182,5 @@ function selectFile(path: string) {
     max-width: var(--shed-content-width);
     margin: 2rem auto;
     padding: 0 1.5rem;
-}
-
-.contents-body {
-    display: grid;
-    gap: 1.25rem;
-    max-width: var(--shed-content-width);
-    margin: 0 auto;
-    padding: 1.75rem 1.5rem 3rem;
-}
-
-@media (min-width: 1024px) {
-    .contents-body {
-        grid-template-columns: 20rem minmax(0, 1fr);
-        align-items: start;
-    }
-
-    .contents-wide {
-        grid-column: 1 / -1;
-    }
-
-    .contents-aside {
-        position: sticky;
-        top: calc(var(--shed-masthead-height) + 1rem);
-        max-height: calc(100vh - var(--shed-masthead-height) - 2rem);
-        overflow-y: auto;
-    }
-}
-
-@media (max-width: 599px) {
-    .contents-body {
-        padding: 1.25rem 1rem 2rem;
-    }
-}
-
-.contents-card {
-    min-width: 0;
-    overflow: hidden;
-}
-
-.contents-revision-bar {
-    padding: 0.85rem 1.25rem;
-    background: color-mix(in srgb, var(--shed-page-bg) 55%, white);
-}
-
-.contents-alert {
-    margin: 0;
-}
-
-.contents-message {
-    margin: 0;
-}
-
-.contents-file-path {
-    margin: 0 0 0.75rem;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 1rem;
-    font-weight: 700;
-    overflow-wrap: anywhere;
 }
 </style>

@@ -12,7 +12,8 @@ import LandingSearchBox from "@/components/LandingSearchBox.vue"
 import LandingInfoSections from "@/components/LandingInfoSections.vue"
 import RepositoryFileTree from "@/components/RepositoryFileTree.vue"
 import RepositoryFileViewer from "@/components/RepositoryFileViewer.vue"
-import type { RepositoryFileContents, RepositoryFileEntry } from "@/api"
+import RepositoryContentsBrowser from "@/components/RepositoryContentsBrowser.vue"
+import { newestRevision, type RepositoryFileContents, type RepositoryFileEntry } from "@/api"
 import { ref } from "vue"
 
 const { addToast } = useToast()
@@ -122,6 +123,9 @@ function demoContents(overrides: Partial<RepositoryFileContents> = {}): Reposito
         ...overrides,
     }
 }
+
+const browserRevision = ref(newestRevision(repositoryMetadataColumnMaker))
+const browserFile = ref<string | null>("column_maker/column_maker.xml")
 
 // Single revision for simpler demos
 const singleRevisionMetadata: RepositoryMetadata = (() => {
@@ -291,6 +295,93 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <hr />
             <component-showcase-example title="nothing selected">
                 <RepositoryFileViewer :file="null" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="RepositoryContentsBrowser">
+            <component-showcase-example title="browsing a file">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="demoFiles"
+                    :file="browserFile"
+                    :contents="demoContents({ path: browserFile ?? '' })"
+                    @update:revision="browserRevision = $event"
+                    @select="browserFile = $event"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="no file selected">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="demoFiles"
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="files loading">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="null"
+                    files-loading
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="file listing failed">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="null"
+                    files-error="Failed to load the files in this revision."
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="revision with no files">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="[]"
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="file not in this revision">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    :files="demoFiles"
+                    file="tool_removed_later.xml"
+                    file-missing
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="revision is not installable">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    revision="0123456789ab"
+                    revision-unavailable
+                    :files="null"
+                    :contents="null"
+                />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="no installable revisions">
+                <RepositoryContentsBrowser :revisions="{}" :revision="null" :files="null" :contents="null" />
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="deprecated repository">
+                <RepositoryContentsBrowser
+                    :revisions="repositoryMetadataColumnMaker"
+                    :revision="browserRevision"
+                    withdrawn="deprecated"
+                    :files="null"
+                    :contents="null"
+                />
             </component-showcase-example>
         </component-showcase>
 
