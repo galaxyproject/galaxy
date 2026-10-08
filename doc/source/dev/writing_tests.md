@@ -1597,10 +1597,17 @@ GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml ./run_tests.sh -sele
 
 ### Continuous Integration
 
-GitHub actions doesn't run the Selenium backend. The same test files run against
+Pull requests don't run the Selenium backend. The same test files run against
 each pull request under Playwright (see [Playwright Tests](#playwright) below).
 Tests marked ``@selenium_only`` are skipped there, so run them locally with
 ``./run_tests.sh -selenium`` when changing the pages they cover.
+
+Instead, a weekly workflow on ``dev`` runs the Selenium backend; it can also be
+started by hand from the Actions tab. The GitHub actions workflow definition is
+located in ``.github/workflows/selenium.yaml`` below Galaxy's root. When a run
+on ``dev`` fails, the workflow opens an issue labeled ``area/testing/selenium``
+(or comments on the one already open), and closes it after the next passing run
+on ``dev``.
 
 {#playwright}
 ## Playwright Tests

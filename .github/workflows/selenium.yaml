@@ -1,0 +1,140 @@
+name: Selenium tests
+on:
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
+  workflow_dispatch:
+env:
+  GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
+  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: extended
+  GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY: 'true'
+permissions: {}
+jobs:
+  build-client:
+    uses: ./.github/workflows/build_client.yaml
+  test:
+    name: Test
+    needs: [build-client]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+        chunk: [0, 1, 2]
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Python
+        run: uv python install
+      - name: Restore client cache
+        uses: actions/cache@v6.1.0
+        with:
+          fail-on-cache-miss: true
+          key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
+          path: 'galaxy root/static'
+      - name: Run tests
+        run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
+        working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v7.1.1
+        with:
+          flags: selenium
+          working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          path: 'galaxy root/run_selenium_tests.html'
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          path: 'galaxy root/database/test_errors'
+  report:
+    name: Report scheduled result
+    needs: [build-client, test]
+    # Manual runs may target feature branches and forks shouldn't open issues upstream.
+    if: >-
+      !cancelled()
+      && github.repository_owner == 'galaxyproject'
+      && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update, or close the tracking issue
+        uses: actions/github-script@v9
+        env:
+          BUILD_RESULT: ${{ needs.build-client.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        with:
+          script: |
+            const title = "Scheduled Selenium tests are failing";
+            const labels = ["area/testing/selenium", "kind/bug"];
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const failed = process.env.BUILD_RESULT !== "success" || process.env.TEST_RESULT !== "success";
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              ...repo,
+              state: "open",
+              labels: labels[0],
+              creator: "github-actions[bot]",
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.title === title);
+
+            if (failed) {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: existing.number,
+                  body: `Still failing on ${context.sha}: ${runUrl} (attempt ${context.runAttempt})`,
+                });
+              } else {
+                await github.rest.issues.create({
+                  ...repo,
+                  title,
+                  labels,
+                  body: [
+                    `The weekly run of \`lib/galaxy_test/selenium\` on the Selenium backend failed on ${context.sha}: ${runUrl}`,
+                    "",
+                    "Pull requests run these tests under Playwright only, so this run is the only CI coverage of the Selenium backend and of tests marked `@selenium_only`.",
+                    "",
+                    "Later failures are added as comments here; the next passing run closes this issue.",
+                  ].join("\n"),
+                });
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number: existing.number,
+                body: `Passing again on ${context.sha}: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                ...repo,
+                issue_number: existing.number,
+                state: "closed",
+                state_reason: "completed",
+              });
+            }
