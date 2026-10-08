@@ -7,6 +7,7 @@ from typing import (
 from pydantic import Field
 
 from galaxy.schema.schema import Model
+from galaxy.util.crypt4gh import MAX_CRYPT4GH_HEADER_SIZE
 
 
 class Crypt4GHGrantPayload(Model):
@@ -18,7 +19,7 @@ class Crypt4GHGrantPayload(Model):
         str,
         Field(
             min_length=1,
-            max_length=65536,
+            max_length=4 * MAX_CRYPT4GH_HEADER_SIZE // 3,
             description=(
                 "Base64-encoded Crypt4GH header of the dataset, re-encrypted by the user-side recryptor "
                 "service to the compute keypair."
