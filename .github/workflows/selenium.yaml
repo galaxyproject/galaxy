@@ -102,13 +102,14 @@ jobs:
               creator: "github-actions[bot]",
               per_page: 100,
             });
-            const existing = openIssues.find((issue) => issue.title === title);
+            // Concurrent failing runs can each open an issue; a passing run closes all of them.
+            const tracking = openIssues.filter((issue) => issue.title === title);
 
             if (failed) {
-              if (existing) {
+              if (tracking.length) {
                 await github.rest.issues.createComment({
                   ...repo,
-                  issue_number: existing.number,
+                  issue_number: tracking[0].number,
                   body: `Still failing on ${context.sha}: ${runUrl} (attempt ${context.runAttempt})`,
                 });
               } else {
@@ -125,16 +126,18 @@ jobs:
                   ].join("\n"),
                 });
               }
-            } else if (existing) {
-              await github.rest.issues.createComment({
-                ...repo,
-                issue_number: existing.number,
-                body: `Passing again on ${context.sha}: ${runUrl}`,
-              });
-              await github.rest.issues.update({
-                ...repo,
-                issue_number: existing.number,
-                state: "closed",
-                state_reason: "completed",
-              });
+            } else {
+              for (const issue of tracking) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: issue.number,
+                  body: `Passing again on ${context.sha}: ${runUrl}`,
+                });
+                await github.rest.issues.update({
+                  ...repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "completed",
+                });
+              }
             }
