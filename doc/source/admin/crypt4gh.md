@@ -99,11 +99,8 @@ decrypts and encrypts the data. The following are **outside** the protection:
 
 - **Tools.** A tool can write the plaintext anywhere it can reach, including the
   network. Only make vetted tools available on destinations running protected
-  jobs, and block network egress from jobs.
-- **Tool standard output and error.** They are kept in the job's streams in
-  Galaxy's database, because Galaxy uses them to detect tool errors. For protected
-  jobs they are not copied into the outputs' info field. Tools printing data to
-  standard output or error leak it.
+  jobs, and block network egress from jobs. Galaxy only refuses tools it gives
+  the user's file sources to, such as the remote export tool.
 - **Tool-provided output names and info.** Names and info set by tools through
   `galaxy.json` are stored in the database in clear. Metadata provided this way is
   ignored for encrypted outputs.
