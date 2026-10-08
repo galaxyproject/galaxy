@@ -20,9 +20,8 @@ from galaxy.job_execution.protection import (
 log = logging.getLogger(__name__)
 
 COMMANDS = ("stage-in", "cleanup-inputs", "cleanup")
-# Read by Galaxy when finishing a protected job whose tool streams are missing, or that it finishes:
-# the tool never ran. In outputs_populated, the only directory staged back by Pulsar with remote
-# extended metadata.
+# Read by Galaxy when the tool of a protected job never ran. Kept in outputs_populated, the only
+# directory Pulsar with remote extended metadata stages back.
 PROTECTION_SETUP_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "protection_setup_failed")
 # Read by Galaxy when finishing a protected job.
 CLEANUP_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "protection_cleanup_failed")
