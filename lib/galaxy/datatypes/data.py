@@ -65,7 +65,6 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
-from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1287,44 +1286,6 @@ ZARR_NOT_CONSOLIDATED_MESSAGE = (
 )
 
 
-def _extra_file_target(rel_path: str, extra_files_path: str) -> str:
-    if not safe_relpath(rel_path):
-        raise Exception(f"Refusing to materialize unsafe path [{rel_path}]")
-    target_path = os.path.join(extra_files_path, rel_path)
-    os.makedirs(os.path.dirname(target_path), exist_ok=True)
-    return target_path
-
-
-def _remove_missing_extra_file(rel_path: str, extra_files_path: str) -> None:
-    target_path = os.path.join(extra_files_path, rel_path)
-    if os.path.exists(target_path):
-        os.remove(target_path)
-
-
-def _fetch_extra_file(
-    reader: "UriDirectoryReader", rel_path: str, extra_files_path: str, missing_statuses: tuple[int, ...] = (404,)
-) -> bool:
-    """Fetch ``rel_path`` into ``extra_files_path``; return ``False`` if it does not exist."""
-    if reader.fetch(rel_path, _extra_file_target(rel_path, extra_files_path), missing_statuses):
-        return True
-    _remove_missing_extra_file(rel_path, extra_files_path)
-    return False
-
-
-def _fetch_extra_files(
-    reader: "UriDirectoryReader",
-    rel_paths: Iterable[str],
-    extra_files_path: str,
-    missing_statuses: tuple[int, ...] = (404,),
-) -> list[str]:
-    """Fetch ``rel_paths`` into ``extra_files_path`` concurrently; return those that do not exist."""
-    targets = ((rel_path, _extra_file_target(rel_path, extra_files_path)) for rel_path in rel_paths)
-    missing = reader.fetch_all(targets, missing_statuses)
-    for rel_path in missing:
-        _remove_missing_extra_file(rel_path, extra_files_path)
-    return missing
-
-
 def _load_json(path: str) -> dict[str, Any]:
     with open(path) as f:
         return json.load(f)
@@ -1397,8 +1358,8 @@ class Directory(Data):
             return
         if not rel_paths:
             raise Exception("The directory to materialize is empty or does not exist")
-        if missing := _fetch_extra_files(reader, rel_paths, extra_files_path):
-            raise Exception(f"Listed file [{missing[0]}] could not be fetched")
+        if missing := reader.fetch_all(rel_paths, extra_files_path):
+            raise Exception(f"{missing} listed files could not be fetched")
 
     def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
         """Download the directory when its source cannot list it; datatypes that know their layout override this."""
@@ -1494,25 +1455,25 @@ class ZarrDirectory(Directory):
 
     def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
         """Download a Zarr store by computing its keys, since its source cannot list it (e.g. plain HTTP)."""
-        missing_statuses = reader.missing_file_statuses()
-        if _fetch_extra_file(reader, "zarr.json", extra_files_path, missing_statuses):
+        reader.detect_missing_file_statuses()
+        if reader.fetch("zarr.json", extra_files_path):
             root_metadata = _load_json(os.path.join(extra_files_path, "zarr.json"))
             if root_metadata.get("node_type") == "group" and not root_metadata.get("consolidated_metadata"):
                 raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
             metadata_keys, chunk_keys = zarr_v3_store_keys(root_metadata)
-        elif _fetch_extra_file(reader, ".zmetadata", extra_files_path, missing_statuses):
+        elif reader.fetch(".zmetadata", extra_files_path):
             metadata_keys, chunk_keys = zarr_v2_store_keys(_load_json(os.path.join(extra_files_path, ".zmetadata")))
-        elif _fetch_extra_file(reader, ".zarray", extra_files_path, missing_statuses):
-            _fetch_extra_file(reader, ".zattrs", extra_files_path, missing_statuses)
+        elif reader.fetch(".zarray", extra_files_path):
+            reader.fetch(".zattrs", extra_files_path)
             metadata_keys, chunk_keys = [], _zarr_v2_chunk_keys(
                 "", _load_json(os.path.join(extra_files_path, ".zarray"))
             )
         else:
             raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
-        if missing := _fetch_extra_files(reader, metadata_keys, extra_files_path):
-            raise Exception(f"Zarr metadata file [{missing[0]}] could not be fetched")
+        if missing := reader.fetch_all(metadata_keys, extra_files_path):
+            raise Exception(f"{missing} Zarr metadata files listed in the consolidated metadata could not be fetched")
         # Chunks that only hold the fill value are not stored.
-        _fetch_extra_files(reader, chunk_keys, extra_files_path, missing_statuses)
+        reader.fetch_all(chunk_keys, extra_files_path)
 
     def sniff_directory(self, path: str) -> bool:
         store_root = self._store_root_folder_name(path)

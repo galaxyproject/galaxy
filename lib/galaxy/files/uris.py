@@ -35,8 +35,10 @@ from galaxy.files.models import (
 from galaxy.util import (
     stream_to_path,
     unicodify,
+    unlink,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
+from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +147,7 @@ class UriDirectoryReader:
         self._file_source, root_path = ensure_file_sources(file_sources).get_file_source_path(self._uri)
         self._root_path = root_path.rstrip("/")
         self._user_context = user_context
+        self._missing_statuses: tuple[int, ...] = (404,)
 
     def list_files(self) -> list[str] | None:
         """Return the paths of all files under the directory, or ``None`` if they cannot all be listed."""
@@ -165,74 +168,73 @@ class UriDirectoryReader:
             posixpath.relpath(f"/{entry.path.lstrip('/')}", root) for entry in entries if isinstance(entry, RemoteFile)
         ]
 
-    def missing_file_statuses(self) -> tuple[int, ...]:
-        """Return the HTTP statuses this directory's server uses for files that do not exist.
+    def detect_missing_file_statuses(self) -> None:
+        """Find out which HTTP statuses this directory's server uses for files that do not exist.
 
         A file that cannot exist is requested once: public S3 buckets that do not allow
         listing answer 403 instead of 404, and only then is 403 taken to mean missing.
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
-                self.fetch(f".galaxy-missing-file-probe-{uuid.uuid4().hex}", os.path.join(temp_dir, "probe"))
+                self.fetch(f".galaxy-missing-file-probe-{uuid.uuid4().hex}", temp_dir)
             except (HTTPError, RequestsHTTPError) as e:
-                if _http_status(e) == 403:
-                    return (403, 404)
-                raise
-        return (404,)
+                if _http_status(e) != 403:
+                    raise
+                self._missing_statuses = (403, 404)
 
-    def fetch(self, rel_path: str, target_path: str, missing_statuses: tuple[int, ...] = (404,)) -> bool:
-        """Write the file at ``rel_path`` to ``target_path``; return ``False`` if it does not exist.
-
-        ``missing_statuses`` are the HTTP statuses that mean the file does not exist.
-        """
+    def fetch(self, rel_path: str, target_dir: str) -> bool:
+        """Write the file at ``rel_path`` to the same path under ``target_dir``; return ``False`` if it does not exist."""
+        if not safe_relpath(rel_path):
+            raise RequestParameterInvalidException(f"Refusing to fetch unsafe path [{rel_path}]")
+        target_path = os.path.join(target_dir, rel_path)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
         try:
             self._file_source.realize_to(f"{self._root_path}/{rel_path}", target_path, user_context=self._user_context)
         except FileNotFoundError:
-            return False
+            found = False
         except (HTTPError, RequestsHTTPError) as e:
-            if _http_status(e) in missing_statuses:
-                return False
-            raise
-        return True
+            if _http_status(e) not in self._missing_statuses:
+                raise
+            found = False
+        else:
+            return True
+        unlink(target_path, ignore_errors=True)
+        return found
 
-    def fetch_all(
-        self,
-        files: Iterable[tuple[str, str]],
-        missing_statuses: tuple[int, ...] = (404,),
-        workers: int = DIRECTORY_FETCH_WORKERS,
-    ) -> list[str]:
-        """Fetch ``(rel_path, target_path)`` pairs concurrently; return the ``rel_path`` of files that do not exist.
+    def fetch_all(self, rel_paths: Iterable[str], target_dir: str, workers: int = DIRECTORY_FETCH_WORKERS) -> int:
+        """Fetch ``rel_paths`` under ``target_dir`` concurrently; return how many do not exist.
 
-        ``files`` is consumed lazily, and each worker reuses its HTTP connections. The first
-        error stops all workers and is raised.
+        ``rel_paths`` is consumed lazily, and each worker reuses its HTTP connections. The
+        first error stops all workers and is raised.
         """
-        pending = iter(files)
+        pending = iter(rel_paths)
         lock = threading.Lock()
-        missing: list[str] = []
+        missing = 0
         errors: list[Exception] = []
 
         def work() -> None:
+            nonlocal missing
             with reuse_http_connections():
                 while True:
                     with lock:
                         if errors:
                             return
                         try:
-                            item = next(pending, None)
+                            rel_path = next(pending, None)
                         except Exception as e:
                             errors.append(e)
                             return
-                    if item is None:
+                    if rel_path is None:
                         return
                     try:
-                        found = self.fetch(item[0], item[1], missing_statuses)
+                        found = self.fetch(rel_path, target_dir)
                     except Exception as e:
                         with lock:
                             errors.append(e)
                         return
                     if not found:
                         with lock:
-                            missing.append(item[0])
+                            missing += 1
 
         threads = [threading.Thread(target=work, daemon=True) for _ in range(workers)]
         for thread in threads:
