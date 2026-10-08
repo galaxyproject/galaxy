@@ -386,6 +386,8 @@ Limitations:
   Authorizing such an output again (key icon) only renews its primary file.
 - The same encrypted dataset can't be passed both decrypted and encrypted to the
   same job.
+- Extra files of outputs that copy encrypted inputs of the job can't be
+  decrypted in later jobs, those outputs can only be passed encrypted.
 - Workflow steps changing the datatype of encrypted outputs set the matching
   encrypted datatype (`tabular` becomes `tabular.c4gh`), like for outputs
   encrypted when the job ran. They don't change unencrypted datasets to
