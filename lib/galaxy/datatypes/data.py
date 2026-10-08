@@ -1286,6 +1286,13 @@ ZARR_NOT_CONSOLIDATED_MESSAGE = (
 )
 
 
+def _fetch_json(reader: "UriDirectoryReader", rel_path: str, extra_files_path: str) -> dict[str, Any] | None:
+    """Fetch the JSON file at ``rel_path`` into ``extra_files_path`` and load it, or ``None`` if it does not exist."""
+    if not reader.fetch(rel_path, extra_files_path):
+        return None
+    return _load_json(os.path.join(extra_files_path, rel_path))
+
+
 def _load_json(path: str) -> dict[str, Any]:
     with open(path) as f:
         return json.load(f)
@@ -1295,10 +1302,14 @@ def _chunk_grid_indices(shape: list[int], chunk_shape: list[int]) -> Iterable[tu
     return itertools.product(*(range(math.ceil(size / chunk)) for size, chunk in zip(shape, chunk_shape)))
 
 
+def _zarr_v2_chunk_key(index: tuple[int, ...], separator: str) -> str:
+    return separator.join(str(i) for i in index) or "0"
+
+
 def _zarr_v2_chunk_keys(prefix: str, array_metadata: dict[str, Any]) -> Iterator[str]:
     separator = array_metadata.get("dimension_separator") or "."
     for index in _chunk_grid_indices(array_metadata["shape"], array_metadata["chunks"]):
-        yield f"{prefix}{separator.join(str(i) for i in index) or '0'}"
+        yield f"{prefix}{_zarr_v2_chunk_key(index, separator)}"
 
 
 def _zarr_v3_chunk_keys(path: str, array_metadata: dict[str, Any]) -> Iterator[str]:
@@ -1311,7 +1322,7 @@ def _zarr_v3_chunk_keys(path: str, array_metadata: dict[str, Any]) -> Iterator[s
         if is_default_encoding:
             key = "c" + "".join(f"{separator}{i}" for i in index)
         else:
-            key = separator.join(str(i) for i in index) or "0"
+            key = _zarr_v2_chunk_key(index, separator)
         yield f"{prefix}{key}"
 
 
@@ -1456,18 +1467,15 @@ class ZarrDirectory(Directory):
     def _materialize_unlisted_extra_files(self, reader: "UriDirectoryReader", extra_files_path: str) -> None:
         """Download a Zarr store by computing its keys, since its source cannot list it (e.g. plain HTTP)."""
         reader.detect_missing_file_statuses()
-        if reader.fetch("zarr.json", extra_files_path):
-            root_metadata = _load_json(os.path.join(extra_files_path, "zarr.json"))
+        if (root_metadata := _fetch_json(reader, "zarr.json", extra_files_path)) is not None:
             if root_metadata.get("node_type") == "group" and not root_metadata.get("consolidated_metadata"):
                 raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
             metadata_keys, chunk_keys = zarr_v3_store_keys(root_metadata)
-        elif reader.fetch(".zmetadata", extra_files_path):
-            metadata_keys, chunk_keys = zarr_v2_store_keys(_load_json(os.path.join(extra_files_path, ".zmetadata")))
-        elif reader.fetch(".zarray", extra_files_path):
+        elif (consolidated_metadata := _fetch_json(reader, ".zmetadata", extra_files_path)) is not None:
+            metadata_keys, chunk_keys = zarr_v2_store_keys(consolidated_metadata)
+        elif (array_metadata := _fetch_json(reader, ".zarray", extra_files_path)) is not None:
             reader.fetch(".zattrs", extra_files_path)
-            metadata_keys, chunk_keys = [], _zarr_v2_chunk_keys(
-                "", _load_json(os.path.join(extra_files_path, ".zarray"))
-            )
+            metadata_keys, chunk_keys = [], _zarr_v2_chunk_keys("", array_metadata)
         else:
             raise Exception(ZARR_NOT_CONSOLIDATED_MESSAGE)
         if missing := reader.fetch_all(metadata_keys, extra_files_path):
@@ -1509,8 +1517,7 @@ class ZarrDirectory(Directory):
     def _load_zarr_metadata_file(self, store_root_path: str) -> dict[str, Any] | None:
         """Returns the path to the metadata file in the Zarr store."""
         if meta_file := self._find_zarr_metadata_file(store_root_path):
-            with open(meta_file) as f:
-                return json.load(f)
+            return _load_json(meta_file)
         return None
 
     def _find_zarr_metadata_file(self, store_root_path: str) -> str | None:
