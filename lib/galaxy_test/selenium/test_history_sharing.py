@@ -105,12 +105,17 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
 
         history_id = self.current_history_id()
 
-        self.share_history_with_user(user_id=user2_id, user_email=user2_email, assert_valid=True)
+        # The uploaded dataset is private, so sharing asks how to change its permissions.
+        self.share_history_with_user(
+            user_id=user2_id, user_email=user2_email, assert_valid=True, confirm_permissions_change=True
+        )
         self.logout_if_needed()
 
         return user1_email, user2_email, history_id
 
-    def share_history_with_user(self, user_id=None, user_email=None, assert_valid=False, screenshot=False):
+    def share_history_with_user(
+        self, user_id=None, user_email=None, assert_valid=False, screenshot=False, confirm_permissions_change=False
+    ):
         """Share the current history with a target user by ID or email.
 
         ``user_email`` will be used to enter in the share form unless ``user_id``
@@ -129,6 +134,7 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
             user_id=user_id,
             user_email=user_email,
             assert_valid=assert_valid,
+            confirm_permissions_change=confirm_permissions_change,
             **share_kwd,
         )
 

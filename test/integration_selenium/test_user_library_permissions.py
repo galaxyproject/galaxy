@@ -65,6 +65,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.libraries_open_with_name(self.name)
 
         self.components.libraries.folder.manage_dataset_permissions_btn(name=dataset_filename).wait_for_and_click()
+        # The imported dataset starts out private to the importing user.
+        self.components.libraries.folder.remove_restrictions_btn.wait_for_and_click()
         self.components.libraries.folder.make_private_btn.wait_for_and_click()
         access_dataset_roles = self.components.libraries.folder.access_dataset_roles.wait_for_visible()
 

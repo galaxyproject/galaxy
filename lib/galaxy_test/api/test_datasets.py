@@ -378,6 +378,8 @@ class TestDatasetsApi(ApiTestCase):
         hda = self.dataset_populator.new_dataset_from_test_data(
             history_id, self.test_data_resolver, "1.bam", "bam", name="Annotated alignment"
         )
+        # The display URL below is requested without an API key.
+        self.dataset_populator.make_dataset_public(history_id, hda["id"])
         expected_filename = (
             f'filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
             f"filename*=UTF-8''Galaxy{hda['hid']}-%5BAnnotated%20alignment%5D.bam"
@@ -511,6 +513,7 @@ class TestDatasetsApi(ApiTestCase):
     def test_anon_get_content_as_text(self, history_id):
         contents = "accessible data"
         hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        self.dataset_populator.make_dataset_public(history_id, hda1["id"])
         with self._different_user(anon=True):
             get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
             self._assert_status_code_is(get_content_as_text_response, 200)
