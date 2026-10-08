@@ -2,6 +2,7 @@
 // Tailwind `@theme` source in src/styles/theme.css, so the token names live in
 // one file. Run via `pnpm --filter @galaxyproject/galaxy-ui build:tokens`.
 import { readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,9 +31,11 @@ export function generateTokens(themeSource) {
 // The token tests read their sources through here: the package has no Node
 // types to type-check fs against, and vitest empties CSS imports, even ?raw.
 export function readTokenSources() {
+    const brandTokensPath = createRequire(import.meta.url).resolve("@galaxyproject/brand-tokens/tokens.css");
     return {
         theme: readFileSync(themePath, "utf8"),
         tokens: readFileSync(tokensPath, "utf8"),
+        brandTokens: readFileSync(brandTokensPath, "utf8"),
     };
 }
 

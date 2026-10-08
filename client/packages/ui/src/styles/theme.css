@@ -3,10 +3,15 @@
  * hand-edit; run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` to
  * regenerate tokens.css (the plain `:root` form for consumers without
  * Tailwind). A test fails if tokens.css is out of date.
+ *
+ * Naming follows Tailwind and shadcn/ui wherever they have a name, so the
+ * same names work as CSS variables now and as Tailwind utilities later
+ * (`bg-primary`, `text-muted-foreground`). Galaxy-only additions: `selected`,
+ * `highlight`, `inverse`.
+ *
+ * Prefer the semantic names over raw palette shades in new code.
  */
 @theme {
-    --background-color: #ffffff;
-
     /* palette */
     --color-blue-900: #040b21;
     --color-blue-800: #191f33;
@@ -67,6 +72,58 @@
     --color-red-300: #f4a3a5;
     --color-red-200: #fdd4d5;
     --color-red-100: #fff3f3;
+
+    /* surfaces: Galaxy separates surfaces with borders and shadows, not tone */
+    --color-background: #ffffff;
+    --color-foreground: var(--color-blue-700);
+    --color-card: var(--color-background);
+    --color-card-foreground: var(--color-foreground);
+    --color-popover: var(--color-background);
+    --color-popover-foreground: var(--color-foreground);
+    --color-muted: var(--color-grey-100);
+    --color-muted-foreground: var(--color-grey-600);
+
+    /* side panels and the activity bar */
+    --color-sidebar: var(--color-grey-100);
+    --color-sidebar-foreground: var(--color-foreground);
+    --color-sidebar-primary: var(--color-primary);
+    --color-sidebar-primary-foreground: var(--color-primary-foreground);
+    --color-sidebar-accent: var(--color-grey-200);
+    --color-sidebar-accent-foreground: var(--color-foreground);
+    --color-sidebar-border: var(--color-border);
+    --color-sidebar-ring: var(--color-ring);
+
+    /* interaction: `accent` is the hover surface, `selected` a persistent selection */
+    --color-accent: var(--color-blue-100);
+    --color-accent-foreground: var(--color-foreground);
+    --color-selected: var(--color-blue-200);
+    --color-selected-foreground: var(--color-foreground);
+
+    /* brand and status */
+    --color-primary: var(--color-blue-600);
+    --color-primary-foreground: #ffffff;
+    --color-secondary: var(--color-grey-200);
+    --color-secondary-foreground: var(--color-foreground);
+    --color-highlight: var(--color-yellow-500);
+    --color-highlight-foreground: var(--color-blue-700);
+    --color-inverse: var(--color-blue-800);
+    --color-inverse-foreground: #ffffff;
+    --color-success: var(--color-green-500);
+    --color-success-foreground: var(--color-foreground);
+    --color-info: var(--color-blue-500);
+    --color-info-foreground: #ffffff;
+    --color-warning: var(--color-orange-600);
+    --color-warning-foreground: var(--color-foreground);
+    --color-danger: var(--color-red-600);
+    --color-danger-foreground: #ffffff;
+
+    /* lines */
+    --color-border: var(--color-grey-300);
+    --color-input: var(--color-grey-300);
+    --color-ring: var(--color-blue-500);
+
+    /* deprecated: use --color-background */
+    --background-color: var(--color-background);
 
     /* spacing: --spacing-N equals Tailwind's p-N */
     --spacing: 0.25rem;
