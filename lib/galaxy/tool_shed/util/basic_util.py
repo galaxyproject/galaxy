@@ -98,7 +98,7 @@ def stringify(list):
     return ""
 
 
-def strip_path(fpath):
+def strip_path(fpath: str) -> str:
     """Attempt to strip the path from a file name."""
     if not fpath:
         return fpath
@@ -109,17 +109,16 @@ def strip_path(fpath):
     return file_name
 
 
-def to_html_string(text):
+def to_html_string(text: str) -> str:
     """Translates the characters in text to an html string"""
-    if text:
-        try:
-            text = unicodify(text)
-        except UnicodeDecodeError as e:
-            return f"Error decoding string: {str(e)}"
-        text = str(markupsafe.escape(text))
-        text = text.replace("\n", "<br/>")
-        text = text.replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")
-        text = text.replace(" ", "&nbsp;")
+    try:
+        text = unicodify(text)
+    except UnicodeDecodeError as e:
+        return f"Error decoding string: {str(e)}"
+    text = str(markupsafe.escape(text))
+    text = text.replace("\n", "<br/>")
+    text = text.replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")
+    text = text.replace(" ", "&nbsp;")
     return text
 
 

@@ -84,8 +84,8 @@ def get_repository_metadata_tool_dict(
     repository, metadata_by_version = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
     if tool_version not in metadata_by_version:
         raise ObjectNotFound()
-    tool_version_repository_metadata: RepositoryMetadata = metadata_by_version[tool_version]
-    raw_metadata = tool_version_repository_metadata.metadata
+    tool_version_repository_metadata = metadata_by_version[tool_version]
+    raw_metadata = tool_version_repository_metadata.metadata or {}
     tool_dicts: list[RepositoryMetadataToolDict] = raw_metadata.get("tools", [])
     for tool_dict in tool_dicts:
         if tool_dict["id"] != tool_id or tool_dict["version"] != tool_version:
