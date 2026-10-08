@@ -1,10 +1,14 @@
 import ipaddress
 import logging
 import os
+import posixpath
 import socket
 import tempfile
 from typing import Optional
+from urllib.error import HTTPError
 from urllib.parse import urlparse
+
+from requests import HTTPError as RequestsHTTPError
 
 from galaxy.exceptions import (
     AdminRequiredException,
@@ -18,6 +22,7 @@ from galaxy.files import (
 from galaxy.files.models import (
     FilesSourceOptions,
     RealizedSourceMetadata,
+    RemoteFile,
 )
 from galaxy.util import (
     stream_to_path,
@@ -67,6 +72,84 @@ def stream_url_to_file(
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
+
+
+def _listing_may_be_truncated(file_source, entries) -> bool:
+    """Whether ``entries`` may be cut short; fsspec file sources cap listings meant for browsing."""
+    try:
+        from galaxy.files.sources._fsspec import (
+            FsspecFilesSource,
+            MAX_ITEMS_LIMIT,
+        )
+    except ImportError:  # fsspec is an optional dependency
+        return False
+    return isinstance(file_source, FsspecFilesSource) and len(entries) >= MAX_ITEMS_LIMIT
+
+
+class UriDirectoryReader:
+    """Read the files under a directory URI through Galaxy's file sources.
+
+    Each file is fetched through the file source matching its URI, so the usual
+    access checks (e.g. the URL allowlist) apply to every request.
+    """
+
+    def __init__(
+        self,
+        uri: str,
+        file_sources: Optional["ConfiguredFileSources"] = None,
+        user_context=None,
+    ):
+        if "?" in uri or "#" in uri:
+            raise RequestParameterInvalidException(
+                f"Cannot read a directory from a URI with a query string or fragment [{uri}]"
+            )
+        self._uri = uri.rstrip("/")
+        self._file_sources = ensure_file_sources(file_sources)
+        self._user_context = user_context
+
+    def list_files(self) -> list[str] | None:
+        """Return the paths of all files under the directory, or ``None`` if they cannot all be listed."""
+        file_source, root_path = self._file_sources.get_file_source_path(self._uri)
+        if not file_source.get_browsable():
+            return None
+        try:
+            entries, _ = file_source.list(root_path, recursive=True, user_context=self._user_context)
+        except Exception as e:
+            # e.g. a public bucket that allows reading objects but not listing them.
+            log.warning("Could not list directory [%s]: %s", self._uri, unicodify(e))
+            return None
+        if _listing_may_be_truncated(file_source, entries):
+            log.warning("Listing of directory [%s] may be incomplete, it reached the file source limit", self._uri)
+            return None
+        # File sources differ on leading slashes, so compare both as absolute paths.
+        root = f"/{root_path.strip('/')}"
+        return [
+            posixpath.relpath(f"/{entry.path.lstrip('/')}", root) for entry in entries if isinstance(entry, RemoteFile)
+        ]
+
+    def fetch(self, rel_path: str, target_path: str, missing_statuses: tuple[int, ...] = (404,)) -> bool:
+        """Write the file at ``rel_path`` to ``target_path``; return ``False`` if it does not exist.
+
+        ``missing_statuses`` are the HTTP statuses that mean the file does not exist.
+        """
+        try:
+            stream_url_to_file(
+                f"{self._uri}/{rel_path}",
+                file_sources=self._file_sources,
+                user_context=self._user_context,
+                target_path=target_path,
+            )
+        except FileNotFoundError:
+            return False
+        except HTTPError as e:
+            if e.code in missing_statuses:
+                return False
+            raise
+        except RequestsHTTPError as e:
+            if e.response is not None and e.response.status_code in missing_statuses:
+                return False
+            raise
+        return True
 
 
 def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "ConfiguredFileSources":
