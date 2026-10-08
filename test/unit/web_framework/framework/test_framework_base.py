@@ -81,8 +81,8 @@ def _client_fallback_webapp(client_match=CLIENT_MATCH):
     return webapp
 
 
-def _handle(webapp, path):
-    environ = webob.Request.blank(path).environ
+def _handle(webapp, path, method="GET"):
+    environ = webob.Request.blank(path, method=method).environ
     return webapp.handle_request("request-id", path, environ, None, body_renderer=lambda trans, body, *args: body)
 
 
@@ -116,3 +116,15 @@ def test_unhandled_api_paths_still_404(path):
 def test_unhandled_paths_404_without_client_match(path):
     with pytest.raises(webob.exc.HTTPNotFound):
         _handle(_client_fallback_webapp(client_match=None), path)
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "DELETE"])
+@pytest.mark.parametrize("path", ["/", "/histories", "/histories/list", "/admin/users"])
+def test_unhandled_non_page_load_methods_still_404(path, method):
+    with pytest.raises(webob.exc.HTTPNotFound):
+        _handle(_client_fallback_webapp(), path, method=method)
+
+
+@pytest.mark.parametrize("path", ["/", "/histories", "/histories/list", "/admin/users"])
+def test_head_falls_back_to_client(path):
+    assert _handle(_client_fallback_webapp(), path, method="HEAD") == "client"

@@ -95,7 +95,7 @@ class WebApplication:
     with routes.
     """
 
-    # Non-API paths with no server handler resolve to this instead of 404ing, if set
+    # Non-API GET/HEAD paths with no server handler resolve to this instead of 404ing, if set
     client_match: dict[str, str] | None = None
 
     def __init__(self):
@@ -212,7 +212,10 @@ class WebApplication:
         return (controller_name, controller, action, method)
 
     def _client_fallback_match(self, environ):
+        # Only page loads get the client; other methods to unhandled paths should still 404
         if self.client_match is None or environ["is_api_request"]:
+            return None
+        if environ.get("REQUEST_METHOD", "GET") not in ("GET", "HEAD"):
             return None
         # A fresh copy, since resolving the match pops controller and action from it
         return dict(self.client_match)
