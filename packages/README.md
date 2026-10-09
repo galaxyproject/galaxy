@@ -63,7 +63,7 @@ once from the repository root and then runs tests for a specific package:
     $ git clone https://github.com/galaxyproject/galaxy.git
     $ cd galaxy
     $ uv sync --locked --group dev
-    $ uv run --locked --package galaxy-util pytest packages/util/tests
+    $ uv run --locked --package galaxy-util --group dev pytest packages/util/tests
 
 `uv lock --check` verifies the lock is up to date without modifying it.
 

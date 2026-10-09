@@ -39,7 +39,7 @@ cd "$workspace_root"
 requirements_dir="$workspace_root/requirements"
 
 # Create a virtual environment in a tmp directory and install uv into it
-# Pin uv to the canonical repository version in .uv-version (Phase 1 policy).
+# Use the repository uv version pinned in .uv-version.
 uv_version="$(cat "$workspace_root/.uv-version" 2>/dev/null || echo "")"
 if command -v uv >/dev/null; then
     uv="$(command -v uv)"

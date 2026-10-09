@@ -346,7 +346,7 @@ keep-runtime-typing = true
 
 [tool.uv]
 # Workaround for https://github.com/python/mypy/issues/13392 taken from https://github.com/astral-sh/uv/issues/3898
-# Migrated from packages/pyproject.toml during workspace unification (Phase 1).
+# Build settings shared by workspace members.
 config-settings = { editable_mode = "compat" }
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging

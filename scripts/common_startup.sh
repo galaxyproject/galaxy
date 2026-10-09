@@ -185,14 +185,13 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
-# --- Phase 2 bootstrap preparation: two-stage install (unconditional closure first) ---
+# Install the workspace closure before evaluating conditional dependencies.
 # Stage 1 (unconditional closure): install local workspace members so that
 # `import galaxy.dependencies` (and its galaxy.util / galaxy.config imports)
 # can resolve from installed packages. Stage 2 (below) then evaluates
 # conditional deps from config via galaxy_bootstrap_python.
-# `galaxy.dependencies` now lives in packages/app (installed as galaxy-app);
-# every bootstrap python call below prefers installed packages but keeps a
-# PYTHONPATH=lib fallback for lib/galaxy_test leftovers.
+# `galaxy.dependencies` is provided by galaxy-app. Bootstrap imports require
+# installed workspace packages.
 # Set GALAXY_WORKSPACE_SYNC=0 to skip Stage 1 (offline / externally managed env).
 : "${GALAXY_WORKSPACE_SYNC:=1}"
 
@@ -239,7 +238,7 @@ sync_workspace_packages() {
     if [ -d packages/util ] && [ -d packages/config ]; then
         echo "Installing local Galaxy workspace packages for bootstrap (galaxy-util, galaxy-config, galaxy-app)..."
         # shellcheck disable=SC2086
-        ${PIP_CMD} install -e ./packages/util -e ./packages/config -e ./packages/app || echo "WARNING: local workspace install failed, continuing with PYTHONPATH=lib fallback."
+        ${PIP_CMD} install -e ./packages/util -e ./packages/config -e ./packages/app || echo "WARNING: local workspace install failed; Galaxy packages must already be installed."
     fi
 }
 
@@ -274,8 +273,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
         set_galaxy_config_file_var
         conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
     fi
-    # Stage 2: evaluate conditional deps from installed workspace packages
-    # (galaxy_bootstrap_python keeps a PYTHONPATH=lib fallback for lib/galaxy_test leftovers).
+    # Stage 2: evaluate conditional deps from installed workspace packages.
     GALAXY_CONDITIONAL_DEPENDENCIES=$(galaxy_bootstrap_python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
@@ -318,8 +316,7 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
         # webapp.py picks it up via `import galaxy.web_client` and serves its
         # bundled dist/ directly -- no pnpm or staging required.
-        # Installed galaxy.version (packages/util); galaxy_bootstrap_python
-        # keeps a PYTHONPATH=lib fallback for lib/galaxy_test leftovers.
+        # galaxy.version is provided by the installed galaxy-util package.
         GALAXY_WEB_CLIENT_VERSION=$(galaxy_bootstrap_python -c "from galaxy.version import VERSION; print(VERSION)")
         GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in

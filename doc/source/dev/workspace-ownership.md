@@ -42,7 +42,7 @@ Generated from `ls packages/*/src`:
 | `galaxy_test.base` | `galaxy-test-base` | `packages/test_base` |
 | `galaxy_test.driver` | `galaxy-test-driver` | `packages/test_driver` |
 | `galaxy_test.selenium` | `galaxy-test-selenium` | `packages/test_selenium` |
-| (no `src`; depends on every other distribution) | `galaxy` (metapackage) | `packages/meta` |
+| (no `src`; metapackage manifest has no runtime dependencies) | `galaxy` (metapackage) | `packages/meta` |
 
 Notes:
 
@@ -140,7 +140,7 @@ come with a revision of this document and of
 
 ## `lib/galaxy_test` remainder
 
-The following root files are **kept where they are** (no move planned):
+The following files provide repository-level test infrastructure:
 
 - `lib/galaxy_test/conftest.py`
 - `lib/galaxy_test/shard.py`
@@ -163,7 +163,8 @@ Rationale:
    fixtures for tests invoked from the workspace root (the Galaxy test
    driver, celery pytest plugin registration, and the statsd/JSON-report
    hooks). `pytest.ini` puts `lib` on `pythonpath`, so these apply to the
-   retained root trees without any distribution being installed.
+   retained root trees. Their imports also require the installed Galaxy test
+   and application packages.
 3. **Cross-cutting test trees.** `performance/` and `workflow/` exercise the
    composed workspace (the workflow framework alone spans `galaxy-tool-util`,
    `galaxy-data`, `galaxy-job-execution`, and `galaxy-app`), so no single
@@ -173,9 +174,8 @@ Rationale:
    of the composed app; both subjects live at the root, so their tests do
    too.
 5. **No payoff.** These files already resolve via `pytest.ini`
-   (`pythonpath = lib .`) and never cross a distribution boundary; moving
-   them would require a new distribution (or misplaced ownership) while
-   buying nothing.
+   (`pythonpath = lib .`). They test the composed application and remain
+   outside the independently distributed package test suites.
 
 ## Enforcement
 
