@@ -896,6 +896,7 @@ execution:
     # its tool has no environment for the platform of its destination.
     slurm_x86:
       runner: slurm
+      # The cli runner's Slurm plugin (job_plugin: Slurm) ignores native_specification and uses job_partition: x86.
       native_specification: '-p x86'
       platform: linux-64
     slurm_arm:
@@ -906,6 +907,9 @@ execution:
       runner: pulsar_rest
       url: https://mac-pulsar.example.org:8913/
       platform: osx-arm64
+      # Galaxy resolves the dependencies of this platform on the head node and the job script activates the shared
+      # environments, Pulsar's default of resolving them remotely would ignore the platform.
+      dependency_resolution: local
     platform_router:
       runner: dynamic
       type: python

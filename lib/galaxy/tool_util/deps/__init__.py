@@ -227,7 +227,8 @@ class DependencyManager:
             kwds["platform"] = platform
         requirement_to_dependency = self._requirements_to_dependencies_dict(requirements, **kwds)
 
-        if "tool_instance" in kwds:
+        if "tool_instance" in kwds and not platform:
+            # The cached dependencies describe the native platform, a platform specific run must not replace them.
             kwds["tool_instance"].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
 
         return requirement_to_dependency
@@ -255,8 +256,18 @@ class DependencyManager:
 
         tool_info = ToolInfo(**tool_info_kwds)
 
+        foreign_platform = bool(kwds.get("platform")) and not self._is_native_conda_platform(kwds["platform"])
+
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
+                continue
+
+            if (
+                foreign_platform
+                and not isinstance(resolver, ContainerResolver)
+                and not getattr(resolver, "supports_platforms", False)
+            ):
+                # Only resolvers that know about platforms can resolve for another platform than Galaxy runs on.
                 continue
 
             if resolver_type is not None and resolver.resolver_type != resolver_type:
@@ -336,6 +347,40 @@ class DependencyManager:
                         requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
+
+    def _is_native_conda_platform(self, platform: str) -> bool:
+        """Whether ``platform`` is the platform Galaxy runs on, True if no conda resolver can tell."""
+        for resolver in self.dependency_resolvers:
+            conda_context = getattr(resolver, "conda_context", None)
+            if conda_context is None or getattr(resolver, "resolver_type", None) != "conda":
+                continue
+            try:
+                return conda_context.is_native_platform(platform)
+            except Exception:
+                return False
+        return True
+
+    def configured_conda_platforms(self) -> list[str]:
+        """Conda platforms (native first) configured with ``conda_platforms``, empty if there are none."""
+        result: list[str] = []
+        for resolver in self.dependency_resolvers:
+            conda_context = getattr(resolver, "conda_context", None)
+            if conda_context is None or getattr(resolver, "resolver_type", None) != "conda" or resolver.disabled:
+                continue
+            for platform in conda_context.configured_platforms:
+                if platform not in result:
+                    result.append(platform)
+        return result
+
+    def conda_auto_install_enabled(self) -> bool:
+        """Whether an enabled, writable conda resolver installs missing environments at job time."""
+        return any(
+            getattr(resolver, "resolver_type", None) == "conda"
+            and not resolver.disabled
+            and not resolver.read_only
+            and getattr(resolver, "auto_install", False)
+            for resolver in self.dependency_resolvers
+        )
 
     def platforms_for_requirements(self, requirements: ToolRequirements) -> list[str]:
         """Configured conda platforms (native first) on which all requirements are available.
@@ -501,6 +546,12 @@ class NullDependencyManager(DependencyManager):
 
     def platforms_for_requirements(self, requirements):
         return []
+
+    def configured_conda_platforms(self):
+        return []
+
+    def conda_auto_install_enabled(self):
+        return False
 
     def find_dep(self, name, version=None, type="package", **kwds):
         return NullDependency(version=version, name=name)

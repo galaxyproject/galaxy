@@ -12,9 +12,17 @@ from galaxy.util.bunch import Bunch
 
 
 class MockDependencyManager:
-    def __init__(self, platforms: list[str]):
+    def __init__(self, platforms: list[str], configured: Optional[list[str]] = None, auto_install: bool = False):
         self.platforms = platforms
+        self.auto_install = auto_install
+        self.configured = ["linux-64"] if configured is None else configured
         self.calls: list[ToolRequirements] = []
+
+    def configured_conda_platforms(self):
+        return self.configured
+
+    def conda_auto_install_enabled(self):
+        return self.auto_install
 
     def platforms_for_requirements(self, requirements):
         self.calls.append(requirements)
@@ -32,9 +40,14 @@ class MockJobConfig:
         return Bunch(id=destination_id, params=params)
 
 
-def _app(available: list[str], destination_platforms: Optional[dict[str, Optional[str]]] = None):
+def _app(
+    available: list[str],
+    destination_platforms: Optional[dict[str, Optional[str]]] = None,
+    configured: Optional[list[str]] = None,
+    auto_install: bool = False,
+):
     return Bunch(
-        toolbox=Bunch(dependency_manager=MockDependencyManager(available)),
+        toolbox=Bunch(dependency_manager=MockDependencyManager(available, configured, auto_install)),
         job_config=MockJobConfig(destination_platforms or {}),
     )
 
@@ -75,9 +88,36 @@ def test_list_of_destinations_reads_platform_from_job_config():
     assert platform_destination(app, _tool(), JOB, ["slurm_x86", "slurm_arm", "pulsar_mac"]) == "pulsar_mac"
 
 
-def test_list_ignores_destinations_without_platform_param():
+def test_listed_destination_without_platform_param_is_a_configuration_error():
     app = _app(["linux-64"], {"plain": None, "slurm_x86": "linux-64"})
-    assert platform_destination(app, _tool(), JOB, ["plain", "slurm_x86"]) == "slurm_x86"
+    with pytest.raises(JobMappingException) as exc_info:
+        platform_destination(app, _tool(), JOB, ["slurm_x86", "plain"])
+    message = exc_info.value.failure_message
+    assert "'plain'" in message
+    assert "platform" in message
+    assert app.toolbox.dependency_manager.calls == []
+
+
+def test_mapping_entry_without_platform_is_a_configuration_error():
+    app = _app(["linux-64"])
+    with pytest.raises(JobMappingException) as exc_info:
+        platform_destination(app, _tool(with_requirements=False), JOB, {"slurm_x86": "linux-64", "plain": ""})
+    assert "'plain'" in exc_info.value.failure_message
+
+
+def test_no_configured_platforms_is_named_in_the_message():
+    app = _app([], configured=[])
+    with pytest.raises(JobMappingException) as exc_info:
+        platform_destination(app, _tool(), JOB, MAPPING)
+    message = exc_info.value.failure_message
+    assert "conda_platforms" in message
+    assert "no conda platforms are configured" in message
+    assert "bwa_tool" in message
+
+
+def test_default_is_used_even_without_configured_platforms():
+    app = _app([], configured=[])
+    assert platform_destination(app, _tool(), JOB, MAPPING, default="fallback") == "fallback"
 
 
 def test_tool_without_requirements_gets_first_destination():
@@ -111,3 +151,39 @@ def test_raises_without_installed_platforms():
 def test_empty_destinations_raise():
     with pytest.raises(JobMappingException):
         platform_destination(_app([]), _tool(), JOB, [])
+
+
+def test_first_job_of_a_new_tool_goes_to_the_native_destination_with_auto_install():
+    configured = ["linux-64", "linux-aarch64", "osx-arm64"]
+    app = _app([], configured=configured, auto_install=True)
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_x86"
+    # the first native destination in the given order
+    mapping = {"slurm_arm": "linux-aarch64", "native_b": "linux-64", "native_a": "linux-64"}
+    assert platform_destination(app, _tool(), JOB, mapping) == "native_b"
+    # takes precedence over the default
+    assert platform_destination(app, _tool(), JOB, MAPPING, default="fallback") == "slurm_x86"
+
+
+def test_auto_install_does_not_apply_once_something_is_installed():
+    app = _app(["linux-aarch64"], configured=["linux-64", "linux-aarch64"], auto_install=True)
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_arm"
+    app = _app(["win-64"], configured=["linux-64", "linux-aarch64"], auto_install=True)
+    with pytest.raises(JobMappingException):
+        platform_destination(app, _tool(), JOB, MAPPING)
+
+
+def test_auto_install_without_native_destination_falls_through():
+    app = _app([], configured=["linux-64", "linux-aarch64"], auto_install=True)
+    with pytest.raises(JobMappingException):
+        platform_destination(app, _tool(), JOB, {"slurm_arm": "linux-aarch64"})
+    assert platform_destination(app, _tool(), JOB, {"slurm_arm": "linux-aarch64"}, default="fb") == "fb"
+
+
+def test_without_auto_install_nothing_installed_raises_and_mentions_installing():
+    app = _app([], configured=["linux-64", "linux-aarch64"], auto_install=False)
+    with pytest.raises(JobMappingException) as exc_info:
+        platform_destination(app, _tool(), JOB, MAPPING)
+    message = exc_info.value.failure_message
+    assert "none" in message
+    assert "installed first" in message
+    assert "admin dependency API or UI" in message

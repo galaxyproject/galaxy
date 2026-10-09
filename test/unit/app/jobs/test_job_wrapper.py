@@ -34,6 +34,7 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements,
 )
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tools import ToolBox
 from galaxy.tools.parameters.basic import DirectoryUriToolParameter
 from galaxy.util import XML
@@ -119,36 +120,78 @@ class TestJobWrapperPlatform(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)
 
-    def _dependency_commands(self, params, requirements=None, commands=TEST_DEPENDENCIES_COMMANDS):
+    def _dependency_commands(self, params, requirements=None, resolved=None):
         wrapper = self._wrapper()
         tool = self.app.toolbox.get(TEST_TOOL_ID)
         tool.requirements = requirements or ToolRequirements([])
-        tool.commands_to_return = commands
+        dependency_manager = self.app.toolbox.dependency_manager
+        dependency_manager.resolved = resolved or {}
         destination = JobDestination(id="dest", runner="local", params=params)
         with mock.patch.object(JobWrapper, "job_destination", new=destination):
-            return wrapper.dependency_shell_commands, tool
+            return wrapper.dependency_shell_commands, tool, dependency_manager
+
+    @staticmethod
+    def _requirements(*names):
+        return ToolRequirements([ToolRequirement(name=n, version="1.0", type="package") for n in names])
 
     def test_no_platform_param_keeps_call_unchanged(self):
-        commands, tool = self._dependency_commands({})
+        commands, tool, dependency_manager = self._dependency_commands({}, self._requirements("bwa"))
         assert commands == TEST_DEPENDENCIES_COMMANDS
         assert list(tool.build_calls[0]) == ["job_directory"]
+        assert dependency_manager.calls == []
 
     def test_platform_param_is_passed_to_the_tool(self):
-        _, tool = self._dependency_commands({"platform": "linux-aarch64"})
+        _, tool, _ = self._dependency_commands({"platform": "linux-aarch64"})
         assert tool.build_calls[0]["platform"] == "linux-aarch64"
 
-    def test_unresolved_platform_fails_with_message(self):
-        requirements = ToolRequirements([ToolRequirement(name="bwa", version="0.7.17", type="package")])
+    def test_unresolved_requirements_are_listed_exactly(self):
+        requirements = self._requirements("bwa", "samtools", "bedtools")
+        resolved = {"samtools": Bunch(name="samtools"), "bwa": NullDependency(name="bwa", version="1.0")}
         with self.assertRaises(PlatformDependencyError) as ctx:
-            self._dependency_commands({"platform": "osx-arm64"}, requirements=requirements, commands=[])
+            self._dependency_commands({"platform": "osx-arm64"}, requirements=requirements, resolved=resolved)
         message = str(ctx.value)
         assert "osx-arm64" in message
-        assert "bwa=0.7.17" in message
+        assert "bwa=1.0" in message
+        assert "bedtools=1.0" in message
+        assert "samtools" not in message
         assert "dest" in message
 
+    def test_check_resolves_for_the_platform_with_null_dependencies(self):
+        requirements = self._requirements("bwa")
+        resolved = {"bwa": Bunch(name="bwa")}
+        _, _, dependency_manager = self._dependency_commands(
+            {"platform": "linux-aarch64"}, requirements=requirements, resolved=resolved
+        )
+        ((called_requirements, kwds),) = dependency_manager.calls
+        assert called_requirements is requirements
+        assert kwds == {"platform": "linux-aarch64", "return_null": True}
+
+    def test_fully_resolved_platform_is_fine(self):
+        requirements = self._requirements("bwa", "samtools")
+        resolved = {"bwa": Bunch(name="bwa"), "samtools": Bunch(name="samtools")}
+        commands, _, _ = self._dependency_commands({"platform": "osx-arm64"}, requirements, resolved)
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+
+    def test_container_destinations_skip_the_check(self):
+        requirements = self._requirements("bwa")
+        for params in (
+            {"platform": "osx-arm64", "docker_enabled": True},
+            {"platform": "osx-arm64", "singularity_enabled": "true"},
+        ):
+            commands, _, dependency_manager = self._dependency_commands(params, requirements)
+            assert commands == TEST_DEPENDENCIES_COMMANDS
+            assert dependency_manager.calls == []
+
+    def test_disabled_container_type_does_not_skip_the_check(self):
+        with self.assertRaises(PlatformDependencyError):
+            self._dependency_commands(
+                {"platform": "osx-arm64", "docker_enabled": "false"}, requirements=self._requirements("bwa")
+            )
+
     def test_unresolved_platform_without_requirements_is_fine(self):
-        commands, _ = self._dependency_commands({"platform": "osx-arm64"}, commands=[])
-        assert commands == []
+        commands, _, dependency_manager = self._dependency_commands({"platform": "osx-arm64"})
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+        assert dependency_manager.calls == []
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
@@ -225,9 +268,22 @@ class MockTool:
         return self.commands_to_return
 
 
+class MockDependencyManager:
+    """Resolves tool requirements by name from ``resolved`` and records the calls."""
+
+    def __init__(self):
+        self.resolved: dict = {}
+        self.calls: list = []
+
+    def requirements_to_dependencies(self, requirements, **kwds):
+        self.calls.append((requirements, kwds))
+        return {r: self.resolved[r.name] for r in requirements.packages if r.name in self.resolved}
+
+
 class MockToolbox:
     def __init__(self, test_tool):
         self.test_tool = test_tool
+        self.dependency_manager = MockDependencyManager()
 
     def get(self, tool_id, default=None):
         assert tool_id == TEST_TOOL_ID

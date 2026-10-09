@@ -180,6 +180,8 @@ Conda Dependency Resolver
       copy_dependencies: <true|false>
       read_only: <true|false>
       platforms: [conda subdir, conda subdir...]
+      platform_overrides: {conda subdir: {variable: value}}
+      codesign_exec: <path to code signer>
 
 The ``conda`` dependency resolver is used to find (and optionally install-on-demand) dependencies using the `Conda
 Package Manager <https://conda.io/>`__.  For a very detailed discussion of Conda dependency resolution, check out the
@@ -232,6 +234,18 @@ platforms
     Additional conda platforms (subdirs such as ``linux-aarch64`` or ``osx-arm64``) for which Galaxy creates every
     environment it installs, as a list or a comma separated string (default: value of the global ``conda_platforms``
     option or none). See `Heterogeneous clusters: one conda prefix, several platforms`_.
+
+platform_overrides
+    Environment variables that Conda gets when it solves for a foreign platform, as a mapping from platform to
+    variables, given as YAML or as a JSON string. Galaxy sets ``CONDA_OVERRIDE_GLIBC=2.17`` for ``linux-*`` and
+    ``CONDA_OVERRIDE_OSX=11.0`` for ``osx-*`` platforms, because the virtual packages of the host would otherwise
+    decide which builds are installable. Entries of this option replace these defaults, for example
+    ``{"linux-aarch64": {"CONDA_OVERRIDE_GLIBC": "2.28"}}`` (default: none).
+
+codesign_exec
+    Path of the code signer for ``osx-*`` environments, called as ``<codesign_exec> sign <file>`` (default: value of the
+    global ``conda_codesign_exec`` option, otherwise ``rcodesign`` from ``PATH``). See `Signing of macOS
+    environments`_.
 
 The conda resolver will search for Conda environments named::
 
@@ -288,8 +302,11 @@ The platform Galaxy runs on is always included and keeps the layout of a single-
 ``<conda_prefix>/platforms/<platform>/`` with the environments in
 ``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy creates an environment for a requirement
 set, it creates the same environment for every foreign platform with ``CONDA_SUBDIR`` set to that platform and
-records each success in a marker file. An environment that cannot be created for a foreign platform is logged and
-does not affect the native installation.
+records each success in a marker file. An environment that cannot be created for a foreign platform is logged, and the
+native installation completes normally. The native and the foreign creates of one environment run under a lock file
+``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs of the same requirement set wait for
+each other, and a foreign copy that already exists is not created again. A foreign environment counts as installed once
+its marker is written and the Conda base of its platform exists.
 
 Signing of macOS environments
 .............................
@@ -331,7 +348,11 @@ environment of ``linux-aarch64``. Destinations without the parameter use the pla
 before. The destination of a job is assigned in the job handler before the runner builds the command line, so the
 parameter applies to static and dynamic destinations alike. The parameter is stored with the job and is applied again
 after a Galaxy restart. If a tool has package requirements and none resolves to an environment for the platform of the
-destination, the job fails with a message naming the platform, the destination and the requirements.
+destination, the job fails with a message naming the platform, the destination and exactly those requirements that do
+not resolve. Jobs on a destination that enables a container type (``docker_enabled``, ``singularity_enabled``) skip
+this check because their software comes from the container. For a destination with a platform other than the one
+Galaxy runs on, only the Conda resolver and the container resolvers take part in the resolution; resolvers without
+platform support (such as ``galaxy_packages`` or ``lmod``) are skipped.
 
 Jobs that resolve dependencies remotely (Pulsar with ``dependency_resolution: remote``) do not use the parameter.
 
@@ -365,7 +386,14 @@ and the rule in a module of the configured ``rules_module`` (``galaxy.jobs.rules
 The platform of each listed destination is read from its ``platform`` parameter. A mapping from destination id to
 platform can be passed instead of the list. Tools without package requirements get the first destination. If no
 destination matches, the function returns the ``default`` argument when it is given and otherwise raises a
-``JobMappingException`` that fails the job with a message listing the installed and the offered platforms.
+``JobMappingException`` that fails the job with a message listing the installed and the offered platforms, or naming
+``conda_platforms`` when no platforms are configured. A listed destination without a ``platform`` parameter raises a
+``JobMappingException`` naming that destination.
+
+With ``auto_install: true`` on the conda resolver, a tool whose environments are not installed on any platform yet goes
+to the first destination of the native platform. Its first job installs the environments for all configured platforms,
+and later jobs of the tool can be routed to destinations of other platforms. Without ``auto_install`` the environments
+have to be installed beforehand (admin dependency API or UI), otherwise the function raises as described.
 ``DependencyManager.platforms_for_requirements`` is the underlying check. It consults only the file system.
 
 Limits

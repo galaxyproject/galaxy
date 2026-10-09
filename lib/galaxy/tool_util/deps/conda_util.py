@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import glob
 import hashlib
@@ -31,6 +32,10 @@ from galaxy.util import (
     smart_str,
     which,
 )
+from galaxy.util.filelock import (
+    FileLock,
+    FileLockException,
+)
 from . import installable
 
 if TYPE_CHECKING:
@@ -52,6 +57,8 @@ CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 PLATFORMS_DIRECTORY_NAME = "platforms"
 PLATFORM_OK_MARKER = ".galaxy-conda-platform-ok"
+PLATFORM_LOCK_TIMEOUT = 300
+LOCKS_DIRECTORY_NAME = ".locks"
 PLATFORM_SUBDIR_PATTERN = re.compile(r"^[a-z0-9]+-[a-z0-9_]+$")
 # Virtual package overrides that let conda solve for a platform other than
 # the one it is running on.
@@ -90,15 +97,17 @@ def parse_platforms(platforms: str | Iterable[str] | None) -> list[str]:
     while keeping the order.
     """
     result: list[str] = []
-    for platform_ in listify(platforms if isinstance(platforms, str) else list(platforms or []), do_strip=True):
-        platform_ = str(platform_).strip()
-        if not platform_:
-            continue
-        if not PLATFORM_SUBDIR_PATTERN.match(platform_):
-            log.warning("Ignoring invalid conda platform '%s'", platform_)
-            continue
-        if platform_ not in result:
-            result.append(platform_)
+    items = [platforms] if isinstance(platforms, str) else list(platforms or [])
+    for item in items:
+        for platform_ in str(item).split(","):
+            platform_ = platform_.strip()
+            if not platform_:
+                continue
+            if not PLATFORM_SUBDIR_PATTERN.match(platform_):
+                log.warning("Ignoring invalid conda platform '%s'", platform_)
+                continue
+            if platform_ not in result:
+                result.append(platform_)
     return result
 
 
@@ -182,6 +191,7 @@ class CondaContext(installable.InstallableContext):
         self.platforms: list[str] = parse_platforms(platforms)
         self.platform_overrides: dict[str, dict[str, str]] = platform_overrides or {}
         self._native_platform: str | None = None
+        self._native_platform_failed = False
         self.codesign_exec: str | None = codesign_exec or which("rcodesign")
         self._reset_conda_properties()
 
@@ -470,7 +480,15 @@ class CondaContext(installable.InstallableContext):
     def native_platform(self) -> str:
         """The conda subdir of the machine conda runs on (cached)."""
         if self._native_platform is None:
-            self._native_platform = self.conda_info()["platform"]
+            if self._native_platform_failed:
+                raise RuntimeError("The native conda platform could not be determined")
+            try:
+                self._native_platform = self.conda_info()["platform"]
+            except Exception:
+                # Remembered, so that routing does not run "conda info" again on every call.
+                self._native_platform_failed = True
+                log.exception("Could not determine the native conda platform, ignoring configured platforms")
+                raise
         assert isinstance(self._native_platform, str)
         return self._native_platform
 
@@ -482,7 +500,6 @@ class CondaContext(installable.InstallableContext):
         try:
             native = self.native_platform
         except Exception:
-            log.exception("Could not determine the native conda platform, ignoring configured platforms")
             return []
         return [p for p in self.platforms if p != native]
 
@@ -494,7 +511,6 @@ class CondaContext(installable.InstallableContext):
         try:
             return [self.native_platform] + self.foreign_platforms
         except Exception:
-            log.exception("Could not determine the native conda platform, ignoring configured platforms")
             return []
 
     def is_native_platform(self, subdir: str | None) -> bool:
@@ -526,20 +542,55 @@ class CondaContext(installable.InstallableContext):
         return env
 
     def platform_has_env(self, subdir: str, env_name: str) -> bool:
-        """Cheap filesystem check, a foreign environment counts once its marker exists."""
+        """Cheap filesystem check, a foreign environment counts once its base exists and its marker is written."""
         if self.is_native_platform(subdir):
             return self.has_env(env_name)
+        if not os.path.isfile(self.platform_activate(subdir)):
+            return False
         return os.path.isfile(os.path.join(self.platform_env_path(subdir, env_name), PLATFORM_OK_MARKER))
 
-    def mark_platform_env_ok(self, subdir: str, env_name: str) -> None:
+    def mark_platform_env_ok(self, subdir: str, env_name: str) -> bool:
+        """Write the marker that makes a foreign environment usable, False if that is not possible."""
         env_path = self.platform_env_path(subdir, env_name)
+        if not os.path.isfile(self.platform_activate(subdir)):
+            log.warning("Conda base of platform %s is missing, not marking environment %s", subdir, env_name)
+            return False
         if not os.path.isdir(env_path):
-            return
+            return False
         try:
             with open(os.path.join(env_path, PLATFORM_OK_MARKER), "w"):
                 pass
         except OSError:
             log.warning("Could not write platform marker in '%s'", env_path, exc_info=True)
+            return False
+        return True
+
+    @contextlib.contextmanager
+    def env_lock(self, env_name: str, timeout: Optional[Union[int, float]] = None) -> Iterator[bool]:
+        """Lock for all creation work on ``env_name`` (native and foreign), yields False if it could not be taken.
+
+        The lock file is ``<conda_prefix>/.locks/<env_name>.lock``, outside of ``envs`` where the
+        environment name pattern would pick it up as an environment.
+        """
+        lock = None
+        if timeout is None:
+            timeout = PLATFORM_LOCK_TIMEOUT
+        try:
+            lock_dir = os.path.join(self.conda_prefix, LOCKS_DIRECTORY_NAME)
+            os.makedirs(lock_dir, exist_ok=True)
+            lock = FileLock(os.path.join(lock_dir, env_name), timeout=timeout)
+            lock.acquire()
+        except FileLockException:
+            log.warning("Timed out waiting for the lock of conda environment %s", env_name)
+            lock = None
+        except OSError:
+            log.warning("Could not lock conda environment %s", env_name, exc_info=True)
+            lock = None
+        try:
+            yield lock is not None
+        finally:
+            if lock is not None:
+                lock.release()
 
     def sign_platform_files(self, subdir: str, prefix: str) -> bool:
         """Ad-hoc sign the Mach-O files conda rewrote in ``prefix`` (osx-* platforms only).
@@ -604,16 +655,25 @@ class CondaContext(installable.InstallableContext):
                 log.warning("Failed to create conda base for platform %s", subdir, exc_info=True)
 
     def create_platform_environments(
-        self, env_name: str, specs: Iterable[str], allow_local: bool = True
+        self,
+        env_name: str,
+        specs: Iterable[str],
+        allow_local: bool = True,
     ) -> dict[str, bool]:
-        """Create ``env_name`` on every foreign platform, after the native one.
+        """Create ``env_name`` on the foreign platforms that do not have it yet.
 
-        A failure is logged as a warning and does not raise. Returns {subdir: success}.
+        The caller holds :meth:`env_lock` of ``env_name``. Platforms that already have the
+        environment are skipped (and reported as successful). A failure is logged as a warning,
+        and does not raise. Returns {subdir: success}.
         """
         specs = list(specs)
         results: dict[str, bool] = {}
         for subdir in self.foreign_platforms:
+            if self.platform_has_env(subdir, env_name):
+                results[subdir] = True
+                continue
             env_path = self.platform_env_path(subdir, env_name)
+            existed_before = os.path.exists(env_path)
             try:
                 with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
                     ret = self.exec_create(
@@ -632,13 +692,15 @@ class CondaContext(installable.InstallableContext):
                 except Exception:
                     log.warning("Failed to sign files of environment %s for %s", env_name, subdir, exc_info=True)
                     signed = False
-                if signed:
-                    self.mark_platform_env_ok(subdir, env_name)
+                if signed and self.mark_platform_env_ok(subdir, env_name):
+                    results[subdir] = True
                 else:
                     log.warning(
-                        "Environment %s for platform %s has unsigned files and is not marked usable", env_name, subdir
+                        "Environment %s for platform %s has unsigned files or no usable base and is not marked usable",
+                        env_name,
+                        subdir,
                     )
-                results[subdir] = signed
+                    results[subdir] = False
             else:
                 log.warning(
                     "Could not create conda environment %s for platform %s (exit code %s):\n%s",
@@ -647,11 +709,15 @@ class CondaContext(installable.InstallableContext):
                     ret,
                     output,
                 )
-                shutil.rmtree(env_path, ignore_errors=True)
+                if not existed_before:
+                    shutil.rmtree(env_path, ignore_errors=True)
                 results[subdir] = False
         return results
 
     def remove_platform_environments(self, env_name: str) -> None:
+        if not env_name or not env_name.strip() or env_name in (".", "..") or os.sep in env_name:
+            log.warning("Not removing platform environments for invalid environment name '%s'", env_name)
+            return
         for subdir in self.foreign_platforms:
             shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
 
@@ -830,17 +896,19 @@ def _create_on_all_platforms(
 ) -> int:
     """Create the named environment natively, then on each configured foreign platform.
 
+    Without configured platforms this is the plain native create. Otherwise both steps run under the
+    lock of the environment, so that concurrent installs do not create or delete the same directories.
     Only the native exit code is returned, foreign failures are logged.
     """
-    ret = conda_context.exec_create(native_create_args, allow_local=allow_local)
-    if ret == 0 and os.path.isdir(conda_context.env_path(env_name)):
-        try:
-            with open(os.path.join(conda_context.env_path(env_name), PLATFORM_OK_MARKER), "w"):
-                pass
-        except OSError:
-            log.warning("Could not write platform marker for environment %s", env_name, exc_info=True)
-    if ret == 0 and conda_context.platforms:
-        conda_context.create_platform_environments(env_name, specs, allow_local=allow_local)
+    if not conda_context.platforms:
+        return conda_context.exec_create(native_create_args, allow_local=allow_local)
+    with conda_context.env_lock(env_name) as locked:
+        if not locked:
+            # Native install as before, a later install adds the foreign copies.
+            return conda_context.exec_create(native_create_args, allow_local=allow_local)
+        ret = 0 if conda_context.has_env(env_name) else conda_context.exec_create(native_create_args, allow_local)
+        if ret == 0:
+            conda_context.create_platform_environments(env_name, specs, allow_local=allow_local)
     return ret
 
 

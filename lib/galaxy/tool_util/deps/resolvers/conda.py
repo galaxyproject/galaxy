@@ -102,6 +102,8 @@ class CondaDependencyResolver(
         "codesign_exec": None,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
+    # The platform keyword of a resolve call selects the environments of that conda platform.
+    supports_platforms = True
 
     # Multi-platform support (all optional, unset keeps the single platform behaviour):
     #
@@ -239,6 +241,7 @@ class CondaDependencyResolver(
         environments = [
             env if not env.startswith(self.conda_context.envs_path) else os.path.basename(env) for env in environments
         ]
+        environments = [env for env in environments if env and env.strip()]
         return_codes = [self.conda_context.exec_remove([env]) for env in environments]
         for env in environments:
             self.conda_context.remove_platform_environments(env)
@@ -304,7 +307,7 @@ class CondaDependencyResolver(
 
         platform = self._requested_foreign_platform(kwds)
         if platform is not None:
-            # Foreign platforms are only ever populated alongside the native install, never on demand.
+            # Foreign environments are populated when the native environment is installed.
             if platform is False:
                 return []
             for capitalized_package_names in (True, False):
@@ -385,7 +388,7 @@ class CondaDependencyResolver(
 
         platform = self._requested_foreign_platform(kwds)
         if platform is not None:
-            # Foreign platforms are only ever populated alongside the native install, never on demand.
+            # Foreign environments are populated when the native environment is installed.
             if platform is False:
                 return NullDependency(version=version, name=name)
             for env_name in (conda_target.install_environment, conda_target.capitalized_install_environment):
@@ -461,8 +464,10 @@ class CondaDependencyResolver(
         Only the filesystem is consulted. Without package requirements all configured platforms
         are returned, without any configured platform the result is empty.
         """
+        if self.disabled:
+            return []
         configured = self.conda_context.configured_platforms
-        if not configured or self.disabled:
+        if not configured:
             return configured
         targets: list[CondaTarget] = []
         for requirement in requirements:

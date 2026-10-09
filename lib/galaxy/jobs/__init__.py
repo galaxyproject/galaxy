@@ -102,6 +102,8 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.containers import ALL_CONTAINER_TYPES
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -1173,7 +1175,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 commands = self.tool.build_dependency_shell_commands(
                     job_directory=self.working_directory, platform=platform
                 )
-                self._check_platform_dependencies(platform, commands)
+                self._check_platform_dependencies(platform)
             else:
                 commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
             self._dependency_shell_commands = commands
@@ -1188,12 +1190,28 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         return self.job_destination.params.get("platform") or None
 
-    def _check_platform_dependencies(self, platform: str, commands) -> None:
-        """Raise if the tool has package requirements that do not resolve for ``platform``."""
-        requirements = getattr(self.tool, "requirements", None)
-        packages = list(requirements.packages) if requirements else []
-        if packages and not commands:
-            missing = ", ".join(f"{r.name}={r.version}" if r.version else r.name for r in packages)
+    def _destination_runs_container(self) -> bool:
+        """Whether the job destination enables a container type (``docker_enabled``, ``singularity_enabled``)."""
+        params = self.job_destination.params
+        return any(util.asbool(params.get(f"{c_type}_enabled", False)) for c_type in ALL_CONTAINER_TYPES)
+
+    def _check_platform_dependencies(self, platform: str) -> None:
+        """Raise if package requirements of the tool do not resolve for ``platform``.
+
+        Jobs on a container destination are not checked, their software comes from the container.
+        """
+        if self._destination_runs_container():
+            return
+        tool_requirements = getattr(self.tool, "requirements", None)
+        packages = list(tool_requirements.packages) if tool_requirements else []
+        if not packages:
+            return
+        resolved = self.app.toolbox.dependency_manager.requirements_to_dependencies(
+            tool_requirements, platform=platform, return_null=True
+        )
+        unresolved = [r for r in packages if r not in resolved or isinstance(resolved[r], NullDependency)]
+        if unresolved:
+            missing = ", ".join(f"{r.name}={r.version}" if r.version else r.name for r in unresolved)
             raise PlatformDependencyError(
                 f"Failed to resolve the tool requirements [{missing}] for platform '{platform}' on job "
                 f"destination '{self.job_destination.id}'. No conda environment for this platform is installed, "

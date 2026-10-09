@@ -2,9 +2,9 @@
 
 import json
 import os
+import shutil
 import stat
 import sys
-import textwrap
 from typing import (
     Any,
     Dict,
@@ -14,24 +14,32 @@ from typing import (
 
 import pytest
 
-from galaxy.tool_util.deps import DependencyManager
+from galaxy.tool_util.deps import (
+    conda_util,
+    DependencyManager,
+)
 from galaxy.tool_util.deps.conda_util import (
     CondaContext,
     CondaTarget,
     install_conda_target,
     install_conda_targets,
+    parse_platforms,
     PLATFORM_OK_MARKER,
 )
 from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements,
 )
-from galaxy.tool_util.deps.resolvers import NullDependency
+from galaxy.tool_util.deps.resolvers import (
+    DependencyResolver,
+    NullDependency,
+)
 from galaxy.tool_util.deps.resolvers.conda import (
     CONDA_SOURCE_CMD,
     CondaDependencyResolver,
-    MergedCondaDependency,
 )
+from galaxy.util.bunch import Bunch
+from galaxy.util.filelock import FileLock
 
 FAKE_CONDA = """\
 #!{python}
@@ -47,24 +55,28 @@ with open(os.path.join(here, "calls.log"), "a") as fh:
         "CONDARC": os.environ.get("CONDARC"),
     }}) + "\\n")
 if argv[:2] == ["info", "--json"]:
+    if os.path.exists(os.path.join(here, "fail_info")):
+        sys.exit(1)
     print(json.dumps({{"platform": "linux-64", "conda_version": "24.1.0", "default_prefix": os.path.dirname(here)}}))
     sys.exit(0)
 if argv[:1] == ["list"]:
     print("[]")
     sys.exit(0)
 if argv[:1] == ["create"]:
-    fail = os.path.join(here, "fail_subdirs")
-    subdir = os.environ.get("CONDA_SUBDIR")
-    if subdir and os.path.exists(fail) and subdir in open(fail).read().split():
-        print("fake solver error for " + subdir)
-        sys.exit(1)
     if "-p" in argv:
         prefix = argv[argv.index("-p") + 1]
     else:
         prefix = os.path.join(os.path.dirname(here), "envs", argv[argv.index("--name") + 1])
+    fail = os.path.join(here, "fail_subdirs")
+    subdir = os.environ.get("CONDA_SUBDIR")
+    if subdir and os.path.exists(fail) and subdir in open(fail).read().split():
+        if os.path.exists(os.path.join(here, "partial_on_fail")):
+            os.makedirs(prefix, exist_ok=True)
+        print("fake solver error for " + subdir)
+        sys.exit(1)
     os.makedirs(os.path.join(prefix, "conda-meta"), exist_ok=True)
     open(os.path.join(prefix, "conda-meta", "history"), "w").close()
-    for rel in ("bin/tool", "share/note.txt"):
+    for rel in ("bin/tool", "bin/activate", "share/note.txt"):
         os.makedirs(os.path.dirname(os.path.join(prefix, rel)), exist_ok=True)
         with open(os.path.join(prefix, rel), "w") as fh:
             fh.write("content")
@@ -92,10 +104,17 @@ class FakeConda:
         os.chmod(self.exec, os.stat(self.exec).st_mode | stat.S_IEXEC)
         self.log_path = os.path.join(bin_dir, "calls.log")
         self.fail_path = os.path.join(bin_dir, "fail_subdirs")
+        self.bin_dir = bin_dir
 
     def fail_for(self, *subdirs: str) -> None:
         with open(self.fail_path, "w") as fh:
             fh.write("\n".join(subdirs))
+
+    def leave_partial_dirs_on_failure(self) -> None:
+        open(os.path.join(self.bin_dir, "partial_on_fail"), "w").close()
+
+    def fail_info(self) -> None:
+        open(os.path.join(self.bin_dir, "fail_info"), "w").close()
 
     def calls(self, command: Optional[str] = None) -> List[Dict[str, Any]]:
         if not os.path.exists(self.log_path):
@@ -302,7 +321,7 @@ def test_environment_creation_per_platform(fake_conda: FakeConda, fake_signer: F
         assert os.path.exists(foreign_marker(fake_conda, subdir, "mulled-v1-abc"))
     assert aarch["CONDA_OVERRIDE_GLIBC"] == "2.17" and aarch["CONDA_OVERRIDE_OSX"] is None
     assert osx["CONDA_OVERRIDE_OSX"] == "11.0" and osx["CONDA_OVERRIDE_GLIBC"] is None
-    assert os.path.exists(os.path.join(fake_conda.prefix, "envs", "mulled-v1-abc", PLATFORM_OK_MARKER))
+    assert not os.path.exists(os.path.join(fake_conda.prefix, "envs", "mulled-v1-abc", PLATFORM_OK_MARKER))
 
 
 def test_single_target_install_covers_platforms(fake_conda: FakeConda, tmp_path) -> None:
@@ -319,7 +338,7 @@ def test_foreign_failure_is_nonfatal_and_leaves_no_marker(fake_conda: FakeConda,
         assert install_conda_target(target, resolver.conda_context) == 0
     assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
     assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
-    assert os.path.exists(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9", PLATFORM_OK_MARKER))
+    assert not os.path.exists(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9", PLATFORM_OK_MARKER))
     assert "fake solver error for osx-arm64" in caplog.text
     assert any(r.levelname == "WARNING" for r in caplog.records)
 
@@ -475,7 +494,6 @@ def test_no_signer_warns_once_and_leaves_no_osx_marker(fake_conda: FakeConda, tm
     install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
     assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
     assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
-    assert os.path.exists(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9", PLATFORM_OK_MARKER))
 
 
 def test_no_warning_without_osx_platform(fake_conda: FakeConda, tmp_path, caplog) -> None:
@@ -496,3 +514,269 @@ def test_codesign_exec_from_global_config(fake_conda: FakeConda, fake_signer: Fa
     dependency_manager = make_dependency_manager(tmp_path, conda_codesign_exec=fake_signer.exec)
     resolver = CondaDependencyResolver(dependency_manager, prefix=fake_conda.prefix, exec=fake_conda.exec)
     assert resolver.conda_context.codesign_exec == fake_signer.exec
+
+
+def foreign_env(fake: FakeConda, subdir: str, env_name: str) -> str:
+    return os.path.join(fake.prefix, "platforms", subdir, "envs", env_name)
+
+
+def test_no_platforms_writes_no_marker_and_never_asks_for_the_platform(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path)
+    context = resolver.conda_context
+    assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
+    assert install_conda_targets(
+        [CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7")], context, env_name="mulled-v1-x"
+    ) == 0
+    resolver.resolve(req("samtools", "1.9"))
+    resolver.resolve_all(ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")]))
+    # the conda version lookup of conda itself is cached, the platform code adds no further "conda info"
+    n_info = len(fake_conda.calls("info"))
+    resolver.platforms_for_requirements([req("samtools", "1.9")])
+    resolver.dependency_manager.platforms_for_requirements(ToolRequirements([req("samtools", "1.9")]))
+    for env_name in ("__samtools@1.9", "mulled-v1-x"):
+        assert not os.path.exists(os.path.join(fake_conda.prefix, "envs", env_name, PLATFORM_OK_MARKER))
+    assert len(fake_conda.calls("info")) == n_info
+    assert not os.path.exists(os.path.join(fake_conda.prefix, "platforms"))
+    assert not os.path.exists(os.path.join(fake_conda.prefix, ".locks"))
+    assert [c["argv"][0] for c in fake_conda.calls()].count("create") == 2
+
+
+def test_second_install_finds_the_environment_present_and_keeps_it(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    target = CondaTarget("samtools", version="1.9")
+    assert install_conda_target(target, context) == 0
+    env_name = "__samtools@1.9"
+    for subdir in ("linux-aarch64", "osx-arm64"):
+        with open(os.path.join(foreign_env(fake_conda, subdir, env_name), "share", "keep.txt"), "w") as fh:
+            fh.write("keep")
+    n_creates = len(fake_conda.creates())
+    # a second install that raced the first and runs after it: nothing is created or deleted
+    fake_conda.fail_for("linux-aarch64", "osx-arm64")
+    assert install_conda_target(target, context) == 0
+    assert len(fake_conda.creates()) == n_creates
+    for subdir in ("linux-aarch64", "osx-arm64"):
+        assert os.path.exists(foreign_marker(fake_conda, subdir, env_name))
+        assert os.path.exists(os.path.join(foreign_env(fake_conda, subdir, env_name), "share", "keep.txt"))
+    # lock file removed again
+    assert os.listdir(os.path.join(fake_conda.prefix, ".locks")) == []
+
+
+def test_second_install_only_adds_the_missing_foreign_environment(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    target = CondaTarget("samtools", version="1.9")
+    install_conda_target(target, context)
+    shutil.rmtree(foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    n_creates = len(fake_conda.creates())
+    assert install_conda_target(target, context) == 0
+    new = fake_conda.creates()[n_creates:]
+    assert len(new) == 1
+    assert new[0]["CONDA_SUBDIR"] == "linux-aarch64"
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+def test_failed_foreign_create_keeps_a_preexisting_directory(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    fake_conda.fail_for("linux-aarch64", "osx-arm64")
+    fake_conda.leave_partial_dirs_on_failure()
+    # a directory of an earlier attempt is not ours to delete, one the failing create made itself is removed
+    existing = foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9")
+    os.makedirs(os.path.join(existing, "share"))
+    with open(os.path.join(existing, "share", "earlier.txt"), "w") as fh:
+        fh.write("earlier")
+    assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
+    assert os.path.exists(os.path.join(existing, "share", "earlier.txt"))
+    assert not os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    assert not os.path.exists(foreign_env(fake_conda, "osx-arm64", "__samtools@1.9"))
+
+
+def test_marked_environment_survives_a_failing_recreate(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    install_conda_target(CondaTarget("samtools", version="1.9"), context)
+    fake_conda.fail_for("linux-aarch64")
+    fake_conda.leave_partial_dirs_on_failure()
+    marked = foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9")
+    results = context.create_platform_environments("__samtools@1.9", ["samtools=1.9"])
+    assert results == {"linux-aarch64": True}
+    assert os.path.exists(marked)
+
+
+def test_held_lock_makes_the_install_native_only(fake_conda: FakeConda, tmp_path, monkeypatch, caplog) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    monkeypatch.setattr(conda_util, "PLATFORM_LOCK_TIMEOUT", 0.2)
+    os.makedirs(os.path.join(fake_conda.prefix, ".locks"))
+    with FileLock(os.path.join(fake_conda.prefix, ".locks", "__samtools@1.9")):
+        with caplog.at_level("WARNING"):
+            assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
+    assert "Timed out waiting for the lock" in caplog.text
+    assert os.path.isdir(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9"))
+    assert not os.path.exists(foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+def test_foreign_environment_needs_the_platform_base(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    install_conda_target(CondaTarget("samtools", version="1.9"), context)
+    assert context.platform_has_env("linux-aarch64", "__samtools@1.9")
+    activate = context.platform_activate("linux-aarch64")
+    os.remove(activate)
+    assert not context.platform_has_env("linux-aarch64", "__samtools@1.9")
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert resolver.platforms_for_requirements([req("samtools", "1.9")]) == ["linux-64"]
+
+
+def test_marker_is_not_written_without_the_platform_base(fake_conda: FakeConda, tmp_path, caplog) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    os.remove(context.platform_activate("linux-aarch64"))
+    os.makedirs(foreign_env(fake_conda, "linux-aarch64", "__x@1"))
+    with caplog.at_level("WARNING"):
+        assert context.mark_platform_env_ok("linux-aarch64", "__x@1") is False
+    assert not os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__x@1"))
+    # install without a base: the create succeeds but the environment is not usable
+    assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
+    assert not os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+class RecordingResolver(DependencyResolver):
+    resolver_type = "recording"
+
+    def __init__(self, supports_platforms: bool = False) -> None:
+        self.supports_platforms = supports_platforms
+        self.calls: List[Dict[str, Any]] = []
+
+    def resolve(self, requirement, **kwds):
+        self.calls.append(kwds)
+        return NullDependency(version=requirement.version, name=requirement.name)
+
+
+def test_resolvers_without_platform_support_are_skipped_for_foreign_platforms(fake_conda: FakeConda, tmp_path) -> None:
+    conda_resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_conda_target(CondaTarget("samtools", version="1.9"), conda_resolver.conda_context)
+    plain = RecordingResolver()
+    aware = RecordingResolver(supports_platforms=True)
+    dm = conda_resolver.dependency_manager
+    dm.dependency_resolvers = [plain, aware, conda_resolver]
+    requirements = ToolRequirements([req("samtools", "1.9")])
+
+    resolved = dm.requirements_to_dependencies(requirements, platform="linux-aarch64")
+    assert plain.calls == []
+    assert len(aware.calls) == 1
+    (dependency,) = resolved.values()
+    assert "/platforms/linux-aarch64/envs/__samtools@1.9" in dependency.environment_path
+
+    # native platform, explicit or not, keeps every resolver
+    dm.requirements_to_dependencies(requirements, platform="linux-64")
+    dm.requirements_to_dependencies(requirements)
+    assert len(plain.calls) == 2
+
+
+def test_platform_is_not_filtered_without_a_conda_resolver(tmp_path) -> None:
+    dm = make_dependency_manager(tmp_path)
+    plain = RecordingResolver()
+    dm.dependency_resolvers = [plain]
+    dm.requirements_to_dependencies(ToolRequirements([req("samtools", "1.9")]), platform="linux-aarch64")
+    assert len(plain.calls) == 1
+
+
+def test_supports_platforms_flags() -> None:
+    assert DependencyResolver.supports_platforms is False
+    assert CondaDependencyResolver.supports_platforms is True
+
+
+def make_tool_instance() -> Bunch:
+    return Bunch(
+        id="tool", version="1", containers=[], requires_galaxy_python_environment=False, dependencies="untouched"
+    )
+
+
+def test_requirements_to_dependencies_caches_on_the_tool_only_without_platform(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    dm = resolver.dependency_manager
+    requirements = ToolRequirements([req("samtools", "1.9")])
+
+    tool = make_tool_instance()
+    dm.requirements_to_dependencies(requirements, tool_instance=tool, platform="linux-aarch64")
+    assert tool.dependencies == "untouched"
+
+    dm.requirements_to_dependencies(requirements, tool_instance=tool)
+    assert isinstance(tool.dependencies, list) and len(tool.dependencies) == 1
+    native_dependencies = tool.dependencies
+    dm.requirements_to_dependencies(requirements, tool_instance=tool, platform="linux-aarch64")
+    assert tool.dependencies is native_dependencies
+
+
+def test_dependency_shell_commands_with_platform_leave_the_tool_alone(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    tool = make_tool_instance()
+    resolver.dependency_manager.dependency_shell_commands(
+        ToolRequirements([req("samtools", "1.9")]), platform="linux-aarch64", tool_instance=tool
+    )
+    assert tool.dependencies == "untouched"
+
+
+def test_uninstall_ignores_empty_environment_names(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    install_conda_target(CondaTarget("samtools", version="1.9"), context)
+    n_calls = len(fake_conda.calls())
+    assert resolver.uninstall_environments(["", "  "]) == 0
+    assert len(fake_conda.calls()) == n_calls
+    for name in ("", "  ", ".", "..", "a/b"):
+        context.remove_platform_environments(name)
+    assert os.path.isdir(os.path.join(fake_conda.prefix, "platforms", "linux-aarch64", "envs"))
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    # a real name still removes the foreign copy
+    resolver.uninstall_environments(["__samtools@1.9"])
+    assert not os.path.exists(foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+def test_parse_platforms_splits_commas_inside_list_items() -> None:
+    assert parse_platforms(["linux-aarch64,osx-arm64", " osx-64 ", "linux-aarch64"]) == [
+        "linux-aarch64",
+        "osx-arm64",
+        "osx-64",
+    ]
+    assert parse_platforms("linux-aarch64, osx-arm64,,") == ["linux-aarch64", "osx-arm64"]
+    assert parse_platforms(None) == []
+    assert parse_platforms(["bad,linux-aarch64"]) == ["linux-aarch64"]
+
+
+def test_failed_native_platform_lookup_is_cached(fake_conda: FakeConda, tmp_path) -> None:
+    context = make_context(fake_conda, platforms="linux-aarch64")
+    fake_conda.fail_info()
+    assert context.configured_platforms == []
+    assert context.foreign_platforms == []
+    assert context.configured_platforms == []
+    assert len(fake_conda.calls("info")) == 1
+
+
+def test_disabled_resolver_has_no_platforms_and_does_not_ask_conda(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    resolver.disabled = True
+    n_info = len(fake_conda.calls("info"))
+    assert resolver.platforms_for_requirements([req("samtools", "1.9")]) == []
+    assert len(fake_conda.calls("info")) == n_info
+
+
+def test_conda_auto_install_enabled(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    dm = resolver.dependency_manager
+    assert dm.conda_auto_install_enabled() is False
+    resolver.auto_install = True
+    resolver.read_only = False
+    assert dm.conda_auto_install_enabled() is True
+    resolver.read_only = True
+    assert dm.conda_auto_install_enabled() is False
+    resolver.read_only = False
+    resolver.disabled = True
+    assert dm.conda_auto_install_enabled() is False
+    assert dm.configured_conda_platforms() == []
+    resolver.disabled = False
+    assert dm.configured_conda_platforms() == ["linux-64", "linux-aarch64"]
