@@ -1,6 +1,7 @@
+import { getFakeHistorySummary } from "@tests/test-data";
+import type { MockInstance } from "@vitest/spy";
 import flushPromises from "flush-promises";
 import { http as rawHttp } from "msw";
-import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -8,11 +9,10 @@ import { MAX_RETRIES } from "@/utils/simple-error";
 
 import { emitSse, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
 import { useHistoryStore } from "./historyStore";
+import { setupTestPinia } from "./testUtils";
 import * as userQueries from "./users/queries";
 import { useUserStore } from "./userStore";
 
-// ``vi.mock`` is hoisted above module-level ``const`` declarations, so the
-// capture-state has to be built via ``vi.hoisted`` to be visible to the factory.
 const sseState = vi.hoisted(() => {
     return {
         onEvent: null as ((event: MessageEvent) => void) | null,
@@ -23,9 +23,7 @@ const sseState = vi.hoisted(() => {
 
 vi.mock("@/composables/useNotificationSSE", () => sseMockFactory(sseState));
 
-// `watchHistory(app)` is the polling handler invoked on the short/long
-// interval. We mock it so each invocation is observable without pulling in
-// the history-items store, dataset store, and Galaxy app instance.
+// Observe refresh decisions without loading the history-items or dataset stores.
 const mockWatchHistory = vi.fn().mockResolvedValue(undefined);
 const mockRefreshHistoryFromPush = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/watch/watchHistory", () => ({
@@ -41,28 +39,28 @@ vi.mock("@/app", () => ({
 
 const { server, http } = useServerMock();
 
-function registerDefaultHandlers({ enableSse }: { enableSse: boolean }) {
+function registerSseConfiguration(enableSse: boolean) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json({ enable_sse_updates: enableSse } as any);
+            return response.untyped(HttpResponse.json({ enable_sse_updates: enableSse }));
         }),
     );
 }
 
-async function primeStore(startFn: () => void): Promise<void> {
-    startFn();
-    // Config load is async; let the watch fire and the initial fetch complete.
+async function startWatchingHistory(store: ReturnType<typeof useHistoryStore>) {
+    store.startWatchingHistory();
+    // Let configuration loading trigger the watcher and complete the initial fetch.
     await flushPromises();
     await vi.runOnlyPendingTimersAsync();
     await flushPromises();
 }
 
-describe("historyStore — config-driven SSE vs polling", () => {
+describe("history updates", () => {
     let visibility: ReturnType<typeof useVisibilityPatch>;
+    let addDocumentListener: MockInstance<Document["addEventListener"]>;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         sseState.connect.mockClear();
         sseState.disconnect.mockClear();
         sseState.onEvent = null;
@@ -70,29 +68,35 @@ describe("historyStore — config-driven SSE vs polling", () => {
         mockRefreshHistoryFromPush.mockClear();
         vi.useFakeTimers();
         visibility = useVisibilityPatch();
+        addDocumentListener = vi.spyOn(document, "addEventListener");
     });
 
     afterEach(() => {
+        useHistoryStore().stopWatchingHistory();
+        useHistoryStore().$dispose();
+        // Stopping history polling does not dispose its resource watcher's visibility listener.
+        for (const [event, listener, options] of addDocumentListener.mock.calls) {
+            if (event === "visibilitychange") {
+                document.removeEventListener(event, listener, options);
+            }
+        }
+        addDocumentListener.mockRestore();
         visibility.restore();
         vi.useRealTimers();
     });
 
-    describe("when enable_sse_updates is true (SSE scenario)", () => {
+    describe("with SSE enabled", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableSse: true });
+            registerSseConfiguration(true);
         });
 
         it("primes the store with one initial load, connects SSE, and does not keep polling", async () => {
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+            await startWatchingHistory(store);
 
             expect(sseState.connect).toHaveBeenCalledTimes(1);
-            // One-shot initial fetch so the history panel isn't empty before
-            // the first SSE event arrives.
             expect(mockWatchHistory).toHaveBeenCalledTimes(1);
 
-            // Advance past the short polling interval (3s) several times and
-            // confirm the polling handler is not invoked a second time in SSE mode.
             vi.advanceTimersByTime(30_000);
             await flushPromises();
             expect(mockWatchHistory).toHaveBeenCalledTimes(1);
@@ -100,14 +104,9 @@ describe("historyStore — config-driven SSE vs polling", () => {
 
         it("does not start polling when the tab regains visibility", async () => {
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+            await startWatchingHistory(store);
             expect(mockWatchHistory).toHaveBeenCalledTimes(1);
 
-            // Simulate a tab hide/show cycle. `useResourceWatcher` registers
-            // a `visibilitychange` listener whose handler calls
-            // `startWatchingResourceIfNeeded` — in SSE mode that would
-            // silently resume polling. Because we never instantiated the
-            // watcher, no listener should exist and no poll should fire.
             visibility.set("hidden");
             visibility.set("visible");
 
@@ -118,18 +117,9 @@ describe("historyStore — config-driven SSE vs polling", () => {
         });
 
         it("triggers refreshHistoryFromPush when an SSE event names the current history", async () => {
-            // This test asserts the store's *decision* to refresh, not the refresh
-            // itself — ``refreshHistoryFromPush`` is mocked so we can observe the
-            // dispatch. The real refresh is covered end-to-end in the Selenium
-            // SSE integration tests (see test/integration_selenium/test_history_sse.py).
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
-            // Drive the store to a known current-history id so the handler has
-            // something to match against. ``currentHistoryId`` is a computed
-            // that only returns the stored id when the history is present in
-            // ``storedHistories``, so the history has to be registered too.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            store.setHistory({ id: "hist-1" } as any);
+            await startWatchingHistory(store);
+            store.setHistory(getFakeHistorySummary({ id: "hist-1" }));
             store.setCurrentHistoryId("hist-1");
 
             mockRefreshHistoryFromPush.mockClear();
@@ -141,8 +131,10 @@ describe("historyStore — config-driven SSE vs polling", () => {
 
         it("ignores SSE history events that do not include the current history", async () => {
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+            await startWatchingHistory(store);
+            store.setHistory(getFakeHistorySummary({ id: "hist-1" }));
             store.setCurrentHistoryId("hist-1");
+            expect(store.currentHistoryId).toBe("hist-1");
 
             mockRefreshHistoryFromPush.mockClear();
             emitSse(sseState, "history_update", { history_ids: ["hist-2"] });
@@ -152,20 +144,17 @@ describe("historyStore — config-driven SSE vs polling", () => {
         });
     });
 
-    describe("when enable_sse_updates is false (polling scenario)", () => {
+    describe("with SSE disabled", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableSse: false });
+            registerSseConfiguration(false);
         });
 
         it("does not connect SSE and polls on the configured interval", async () => {
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+            await startWatchingHistory(store);
 
             expect(sseState.connect).not.toHaveBeenCalled();
 
-            // The resource watcher invokes the handler immediately on start
-            // and then re-schedules after each completion. Advance past the
-            // short interval and confirm repeated invocations.
             const initialCalls = mockWatchHistory.mock.calls.length;
             expect(initialCalls).toBeGreaterThanOrEqual(1);
 
@@ -174,9 +163,9 @@ describe("historyStore — config-driven SSE vs polling", () => {
             expect(mockWatchHistory.mock.calls.length).toBeGreaterThan(initialCalls);
         });
 
-        it("calling startWatchingHistory again is idempotent (no second SSE, polling tick count +1 only)", async () => {
+        it("keeps one polling loop when started twice", async () => {
             const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+            await startWatchingHistory(store);
 
             const pollsAfterFirst = mockWatchHistory.mock.calls.length;
 
@@ -184,29 +173,23 @@ describe("historyStore — config-driven SSE vs polling", () => {
             await flushPromises();
 
             expect(sseState.connect).not.toHaveBeenCalled();
-            // Calling again must not schedule a second independent polling loop.
-            // Advance past one interval and confirm only one handler tick fires,
-            // not two.
             await vi.advanceTimersByTimeAsync(3000);
             await flushPromises();
-            // Exactly one additional poll after the 3000ms advance — anything
-            // else means a second independent polling loop was scheduled.
             const deltaAfterSecond = mockWatchHistory.mock.calls.length - pollsAfterFirst;
             expect(deltaAfterSecond).toBe(1);
         });
     });
 });
 
-describe("historyStore — createNewHistory", () => {
+describe("creating the current history", () => {
     let requested: string[];
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         requested = [];
         server.use(
             http.get("/api/histories/count", ({ response }) => response(200).json(4)),
-            // the one request that both creates and selects; POSTing /api/histories
-            // instead would go unhandled here, which is the point
+            // This endpoint creates and selects atomically; a separate POST must go unhandled.
             rawHttp.get("/history/create_new_current", ({ request }) => {
                 const name = new URL(request.url).searchParams.get("name");
                 requested.push(`create ${name ?? "default"}`);
@@ -242,7 +225,10 @@ describe("historyStore — createNewHistory", () => {
         expect(store.totalHistoryCount).toBe(4);
     });
 
-    it.each([undefined, "RNA run"])("queues creation (%s) behind an in-flight switch", async (name) => {
+    it.each([
+        { name: undefined, description: "an unnamed history" },
+        { name: "RNA run", description: "a named history" },
+    ])("queues creation of $description behind an in-flight switch", async ({ name }) => {
         let releaseSwitch = () => {};
         const switchPending = new Promise<void>((resolve) => {
             releaseSwitch = resolve;
@@ -270,7 +256,10 @@ describe("historyStore — createNewHistory", () => {
         expect(store.changingCurrentHistory).toBe(false);
     });
 
-    it.each([undefined, "RNA run"])("queues a switch behind creation (%s)", async (name) => {
+    it.each([
+        { name: undefined, description: "an unnamed history" },
+        { name: "RNA run", description: "a named history" },
+    ])("queues a switch behind creation of $description", async ({ name }) => {
         let releaseCreate = () => {};
         const createPending = new Promise<void>((resolve) => {
             releaseCreate = resolve;
@@ -329,7 +318,7 @@ describe("historyStore — createNewHistory", () => {
     });
 });
 
-describe("historyStore — filling the own-history cache beside the paginated list", () => {
+describe("filling the own-history cache beside the paginated list", () => {
     const summaries = [
         { id: "h1", name: "one", update_time: "2026-01-02T00:00:00" },
         { id: "h2", name: "two", update_time: "2026-01-01T00:00:00" },
@@ -339,7 +328,7 @@ describe("historyStore — filling the own-history cache beside the paginated li
     let cacheFillPending: Promise<void>;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         requestedLimits = [];
         cacheFillPending = new Promise<void>((resolve) => {
             releaseCacheFill = resolve;
@@ -348,18 +337,17 @@ describe("historyStore — filling the own-history cache beside the paginated li
             http.get("/api/histories", async ({ request, response }) => {
                 const limit = new URL(request.url).searchParams.get("limit");
                 requestedLimits.push(String(limit));
-                // the cache fill is held open so the paginated load lands while
-                // it is still running, which is the case the palette creates
+                // Hold the cache request open while the paginated list loads.
                 if (limit === "25") {
                     await cacheFillPending;
                 }
-                return response(200).json(summaries as never);
+                return response.untyped(HttpResponse.json(summaries));
             }),
             http.get("/api/histories/count", ({ response }) => response(200).json(40)),
         );
     });
 
-    it("leaves the scroll list's offset where it was", async () => {
+    it("preserves the scroll offset when filling the cache", async () => {
         const store = useHistoryStore();
         store.historiesOffset = 10;
 
@@ -371,7 +359,7 @@ describe("historyStore — filling the own-history cache beside the paginated li
         expect(store.histories.map((history) => history.id)).toContain("h1");
     });
 
-    it("does not swallow a paginated load started while it runs", async () => {
+    it("loads a paginated page while a cache fill is pending", async () => {
         const store = useHistoryStore();
 
         const filling = store.fetchOwnHistories({ limit: 25 });
@@ -381,7 +369,8 @@ describe("historyStore — filling the own-history cache beside the paginated li
 
         expect(requestedLimits).toContain("10");
     });
-    it("counts as the own listing only once an unfiltered page landed", async () => {
+
+    it("marks the own listing loaded only after an unfiltered cache fill", async () => {
         const store = useHistoryStore();
         releaseCacheFill();
 
@@ -392,19 +381,19 @@ describe("historyStore — filling the own-history cache beside the paginated li
         expect(store.hasLoadedOwnHistories).toBe(true);
     });
 
-    it("counts a scroll page as the own listing only once it reached the end", async () => {
+    it("marks the own listing loaded when pagination reaches a partial page", async () => {
         const fullPage = Array.from({ length: 10 }, (_, index) => ({
             id: `p${index}`,
             name: `page ${index}`,
             update_time: "2026-01-03T00:00:00",
         }));
-        server.use(http.get("/api/histories", ({ response }) => response(200).json(fullPage as never)));
+        server.use(http.get("/api/histories", ({ response }) => response.untyped(HttpResponse.json(fullPage))));
         const store = useHistoryStore();
 
         await store.loadHistories(true);
         expect(store.hasLoadedOwnHistories).toBe(false);
 
-        server.use(http.get("/api/histories", ({ response }) => response(200).json(summaries as never)));
+        server.use(http.get("/api/histories", ({ response }) => response.untyped(HttpResponse.json(summaries))));
         await store.loadHistories(true);
         expect(store.hasLoadedOwnHistories).toBe(true);
     });
@@ -427,7 +416,7 @@ describe("historyStore — filling the own-history cache beside the paginated li
                 if (++attempts === 1) {
                     return response("5XX").json({ err_msg: "listing failed", err_code: 500 }, { status: 500 });
                 }
-                return response(200).json(summaries as never);
+                return response.untyped(HttpResponse.json(summaries));
             }),
         );
         const store = useHistoryStore();
@@ -441,7 +430,7 @@ describe("historyStore — filling the own-history cache beside the paginated li
 
 describe("history loading failures during user initialization", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         vi.spyOn(userQueries, "getCurrentUser").mockResolvedValue(null);
     });
 
@@ -494,7 +483,7 @@ describe("history loading failures during user initialization", () => {
 
 describe("loading a single history", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
     });
 
     afterEach(() => {
