@@ -1,57 +1,48 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeObjectStoreInstance } from "@tests/test-data/objectStores";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { UserConcreteObjectStoreModel } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import TargetObjectStoreSelector from "./TargetObjectStoreSelector.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
+
 const { server, http } = useServerMock();
 
-const PRIVATE_STORE: UserConcreteObjectStoreModel = {
-    object_store_id: "object_store_private",
-    name: "Private Store",
-    description: "Private storage",
-    badges: [],
-    private: true,
-    quota: { enabled: false },
-    active: true,
-    hidden: false,
-    purged: false,
-    secrets: [],
-    template_id: "",
-    template_version: 0,
-    type: "disk",
-    uuid: "private-uuid",
-    variables: null,
-};
-
-const SHARABLE_STORE: UserConcreteObjectStoreModel = {
-    ...PRIVATE_STORE,
-    object_store_id: "object_store_public",
-    name: "Sharable Store",
-    private: false,
-};
-
-async function mountSelector(targetObjectStoreId = PRIVATE_STORE.object_store_id) {
+async function mountSelector({ private: isPrivate }: { private: boolean }) {
+    const privateStore = getFakeObjectStoreInstance({
+        object_store_id: "object_store_private",
+        name: "Private Store",
+        description: "Private storage",
+        private: true,
+        template_id: "",
+        type: "disk",
+        uuid: "private-uuid",
+        variables: null,
+    });
+    const sharableStore = getFakeObjectStoreInstance({
+        ...privateStore,
+        object_store_id: "object_store_public",
+        name: "Sharable Store",
+        private: false,
+    });
+    const stores = [privateStore, sharableStore];
+    const localVue = getLocalVue(true);
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const objectStoreStore = useObjectStoreStore();
-    objectStoreStore.selectableObjectStores = [PRIVATE_STORE, SHARABLE_STORE];
+    objectStoreStore.selectableObjectStores = stores;
 
     server.use(
-        http.get("/api/configuration", ({ response }) => {
-            return response(200).json({});
-        }),
         http.get("/api/object_stores", ({ response }) => {
-            return response(200).json([PRIVATE_STORE, SHARABLE_STORE]);
+            return response(200).json(stores);
         }),
         http.untyped.get("/history/permissions", () => {
             return HttpResponse.json({
@@ -66,7 +57,7 @@ async function mountSelector(targetObjectStoreId = PRIVATE_STORE.object_store_id
     const wrapper = mount(TargetObjectStoreSelector as object, {
         propsData: {
             targetHistoryId: "history-1",
-            targetObjectStoreId,
+            targetObjectStoreId: isPrivate ? privateStore.object_store_id : sharableStore.object_store_id,
         },
         localVue,
         pinia,
@@ -78,7 +69,7 @@ async function mountSelector(targetObjectStoreId = PRIVATE_STORE.object_store_id
 
 describe("TargetObjectStoreSelector", () => {
     it("shows a warning when a private store is selected for a public history", async () => {
-        const wrapper = await mountSelector();
+        const wrapper = await mountSelector({ private: true });
 
         expect(wrapper.text()).toContain(
             "Selected storage location is private while this history still allows sharable datasets.",
@@ -86,8 +77,9 @@ describe("TargetObjectStoreSelector", () => {
     });
 
     it("does not show the privacy warning for a sharable store", async () => {
-        const wrapper = await mountSelector(SHARABLE_STORE.object_store_id);
+        const wrapper = await mountSelector({ private: false });
 
+        expect(wrapper.text()).toContain("Sharable Store");
         expect(wrapper.text()).not.toContain("still allows sharable datasets");
     });
 });
