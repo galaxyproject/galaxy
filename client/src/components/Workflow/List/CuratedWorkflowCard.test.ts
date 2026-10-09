@@ -102,7 +102,7 @@ function localWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflo
     });
 }
 
-function mountCard(workflow: CuratedWorkflow, isAnonymous = false) {
+function mountCard(workflow: CuratedWorkflow, isAnonymous = false, gridView = false) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
@@ -111,7 +111,7 @@ function mountCard(workflow: CuratedWorkflow, isAnonymous = false) {
     userStore.currentUser = isAnonymous ? ANONYMOUS_USER : { ...FAKE_USER };
 
     const wrapper = mount(CuratedWorkflowCard as object, {
-        propsData: { workflow },
+        propsData: { workflow, gridView },
         localVue,
         router,
         pinia,
@@ -140,12 +140,8 @@ function badgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
     return badges.find((badge: { id: string }) => badge.id === id);
 }
 
-function requiredBadgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
-    const badge = badgeById(wrapper, id);
-    if (!badge) {
-        throw new Error(`No badge "${id}" on the card`);
-    }
-    return badge;
+function missingToolsOf(wrapper: ReturnType<typeof mountCard>, workflow: CuratedWorkflow) {
+    return wrapper.find(`#g-card-badge-curated-missing-tools-${workflow.id}`);
 }
 
 function extraActionById(wrapper: ReturnType<typeof mountCard>, id: string) {
@@ -233,6 +229,29 @@ describe("CuratedWorkflowCard", () => {
         const details = wrapper.find(`#g-card-${workflow.id}-details`);
         expect(details.find(`#g-card-badge-curated-steps-${workflow.id}`).text()).toBe("5 steps");
         expect(details.find(`#g-card-badge-curated-release-${workflow.id}`).text()).toBe("v0.1");
+    });
+
+    it("leaves the colored tags to list view", () => {
+        const workflow = iwcWorkflow();
+
+        expect(mountCard(workflow, false, true).findComponent(GCard).props("tags")).toEqual([]);
+        expect(mountCard(workflow).findComponent(GCard).props("tags")).toEqual(workflow.tags);
+    });
+
+    it("clamps the description to plain text instead of a show-more toggle", () => {
+        const workflow = iwcWorkflow({ description: "Runs <b>Velocyto</b>   on 10X data" });
+        const description = mountCard(workflow).find(".curated-description");
+
+        expect(description.text()).toBe("Runs Velocyto on 10X data");
+        expect(description.attributes("title")).toBe("Runs Velocyto on 10X data");
+    });
+
+    it("decodes the entities a sanitized local annotation carries", () => {
+        const description = mountCard(localWorkflow({ description: "R&amp;D notes for &lt;10X&gt; runs" })).find(
+            ".curated-description",
+        );
+
+        expect(description.text()).toBe("R&D notes for <10X> runs");
     });
 
     it("offers run and view for a workflow hosted on this Galaxy", () => {
@@ -354,27 +373,28 @@ describe("CuratedWorkflowCard", () => {
         expect(badgeById(wrapper, "curated-missing-tools")).toBeUndefined();
     });
 
-    it("counts the missing tools and names them by their short id", () => {
-        const wrapper = mountCard(
-            iwcWorkflow({
-                missing_tools: [
-                    "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4+galaxy0",
-                    "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11+galaxy1",
-                    "wig_to_bigWig",
-                ],
-            }),
-        );
-        const badge = requiredBadgeById(wrapper, "curated-missing-tools");
+    it("counts the missing tools in the footer and names them by their short id", () => {
+        const workflow = iwcWorkflow({
+            missing_tools: [
+                "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4+galaxy0",
+                "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11+galaxy1",
+                "wig_to_bigWig",
+            ],
+        });
+        const wrapper = mountCard(workflow);
+        const missing = missingToolsOf(wrapper, workflow);
 
-        expect(badge).toMatchObject({ label: "Needs 3 tools", variant: "warning" });
-        expect(badge.title).toBe("Not installed on this Galaxy: fastp, multiqc, wig_to_bigWig");
-        expect(badgeById(wrapper, "curated-runnable")).toBeUndefined();
+        expect(missing.text()).toBe("Needs 3 tools");
+        expect(missing.attributes("title")).toBe("Not installed on this Galaxy: fastp, multiqc, wig_to_bigWig");
+        // Missing tools are the norm on most instances, so they stay out of the colored title-row badges.
+        expect(wrapper.findComponent(GCard).props("badges")).toEqual([]);
     });
 
     it("keeps import enabled when tools are missing, so an admin can import and install them", () => {
-        const wrapper = mountCard(iwcWorkflow({ missing_tools: ["wig_to_bigWig"] }));
+        const workflow = iwcWorkflow({ missing_tools: ["wig_to_bigWig"] });
+        const wrapper = mountCard(workflow);
 
-        expect(requiredBadgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
+        expect(missingToolsOf(wrapper, workflow).text()).toBe("Needs 1 tool");
         expect(importActionOf(wrapper).disabled).toBe(false);
     });
 
@@ -442,11 +462,12 @@ describe("CuratedWorkflowCard", () => {
             setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
         });
 
-        it("offers the request from the menu and the missing-tools badge", () => {
-            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }));
+        it("offers the request from the menu and the missing-tools note", () => {
+            const workflow = iwcWorkflow({ missing_tools: MISSING });
+            const wrapper = mountCard(workflow);
 
             expect(actionIds(wrapper)).toContain("curated-request-tools");
-            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeTypeOf("function");
+            expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(true);
         });
 
         it("sends a request that names the catalog workflow, then marks it requested", async () => {
@@ -456,7 +477,7 @@ describe("CuratedWorkflowCard", () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
             const wrapper = mountCard(workflow);
 
-            badgeById(wrapper, "curated-missing-tools").handler();
+            await missingToolsOf(wrapper, workflow).find("button").trigger("click");
             await flushPromises();
             expect(wrapper.findComponent(GModal).props("show")).toBe(true);
             wrapper.findComponent(GModal).vm.$emit("ok");
@@ -469,7 +490,7 @@ describe("CuratedWorkflowCard", () => {
             expect(toastSuccess).toHaveBeenCalledWith(expect.stringContaining("Installation request sent"));
             expect(wrapper.findComponent(GModal).props("show")).toBe(false);
             expect(extraActionById(wrapper, "curated-request-tools").disabled).toBe(true);
-            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeUndefined();
+            expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
         });
 
         it("offers nothing when the workflow lacks no tools", () => {
@@ -478,10 +499,11 @@ describe("CuratedWorkflowCard", () => {
 
         it("offers nothing when the request form is off", () => {
             setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: false });
-            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }));
+            const workflow = iwcWorkflow({ missing_tools: MISSING });
+            const wrapper = mountCard(workflow);
 
             expect(actionIds(wrapper)).not.toContain("curated-request-tools");
-            expect(badgeById(wrapper, "curated-missing-tools").handler).toBeUndefined();
+            expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
         });
 
         it("offers nothing to anonymous users", () => {
@@ -492,10 +514,11 @@ describe("CuratedWorkflowCard", () => {
     });
 
     it("shows no runnability badge when the server did not check", () => {
-        const wrapper = mountCard(localWorkflow());
+        const workflow = localWorkflow();
+        const wrapper = mountCard(workflow);
 
         expect(badgeById(wrapper, "curated-runnable")).toBeUndefined();
-        expect(badgeById(wrapper, "curated-missing-tools")).toBeUndefined();
+        expect(missingToolsOf(wrapper, workflow).exists()).toBe(false);
     });
 
     it("copies a locally hosted workflow instead of importing it through TRS", async () => {

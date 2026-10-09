@@ -2,14 +2,12 @@
 import {
     faBell,
     faCheck,
-    faEdit,
     faExclamationTriangle,
     faExternalLinkAlt,
     faPlay,
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeUnmount, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -92,20 +90,26 @@ function shortToolName(toolId: string): string {
     return parts.length > 2 && parts.includes("repos") ? (parts[parts.length - 2] ?? toolId) : toolId;
 }
 
-const runnabilityBadge = computed<CardBadge | null>(() => {
+// Null missing_tools means the server didn't check, which is not the same as nothing missing.
+const runnableBadge = computed<CardBadge | null>(() =>
+    workflow.value.missing_tools?.length === 0
+        ? {
+              id: "curated-runnable",
+              label: "Ready to run",
+              title: "Every tool this workflow uses is installed on this Galaxy",
+              icon: faCheck,
+              variant: "success",
+          }
+        : null,
+);
+
+// On most instances nearly every catalog workflow is missing something, so a warning
+// color on each card says nothing; it sits in the quiet footer line and only the
+// good news gets color.
+const missingToolsDetail = computed<CardBadge | null>(() => {
     const missingTools = workflow.value.missing_tools;
-    // Null means the server didn't check, which is not the same as nothing missing.
-    if (missingTools === null || missingTools === undefined) {
+    if (!missingTools?.length) {
         return null;
-    }
-    if (missingTools.length === 0) {
-        return {
-            id: "curated-runnable",
-            label: "Ready to run",
-            title: "Every tool this workflow uses is installed on this Galaxy",
-            icon: faCheck,
-            variant: "success",
-        };
     }
     const names = [...new Set(missingTools.map(shortToolName))];
     const canAsk = canRequestMissingTools.value && !installationRequested.value;
@@ -119,13 +123,18 @@ const runnabilityBadge = computed<CardBadge | null>(() => {
     };
 });
 
-// Only what decides whether to pick this workflow sits beside the title; every
-// extra badge there competes with the title for the header row.
-const badges = computed<CardBadge[]>(() => (runnabilityBadge.value ? [runnabilityBadge.value] : []));
+// Only the good news gets a badge beside the title; every extra badge there
+// competes with the title for the header row.
+const badges = computed<CardBadge[]>(() => (runnableBadge.value ? [runnableBadge.value] : []));
 
-/** Descriptive details, shown in the footer next to the update time. */
-const footerBadges = computed<CardBadge[]>(() => {
-    const details: CardBadge[] = importedBadge.value ? [importedBadge.value] : [];
+/** Where this workflow stands for this user, shown above the descriptive details. */
+const statusDetails = computed<CardBadge[]>(() =>
+    [missingToolsDetail.value, importedBadge.value].filter((detail): detail is CardBadge => Boolean(detail)),
+);
+
+/** Descriptive details, on a muted line after the update time. */
+const metaDetails = computed<CardBadge[]>(() => {
+    const details: CardBadge[] = [];
 
     if (workflow.value.number_of_steps !== null && workflow.value.number_of_steps !== undefined) {
         details.push({
@@ -144,6 +153,13 @@ const footerBadges = computed<CardBadge[]>(() => {
     }
 
     return details;
+});
+
+/** IWC descriptions are plain text, but local annotations can carry markup; the card shows two lines of text either way. */
+const plainDescription = computed(() => {
+    // Parsing rather than a tag regex, so the entities sanitize_html escapes (&amp;) decode too.
+    const text = new DOMParser().parseFromString(workflow.value.description ?? "", "text/html").body.textContent;
+    return (text ?? "").replace(/\s+/g, " ").trim();
 });
 
 /** A catalog row can only be imported if the catalog gave us something to import. */
@@ -174,14 +190,14 @@ const importedBadge = computed<CardBadge | null>(() => {
             id: "curated-update-available",
             label: `You have ${workflow.value.imported_version}`,
             title: `Your copy was imported from ${workflow.value.imported_version}; v${workflow.value.release} is the latest release`,
-            variant: "warning",
+            icon: faCheck,
         };
     }
     return {
         id: "curated-imported",
         label: "In your workflows",
         title: "You have already imported this workflow",
-        variant: "info",
+        icon: faCheck,
     };
 });
 
@@ -352,26 +368,50 @@ async function onImportLocal() {
         :secondary-actions="secondaryActions"
         :selectable="false"
         :show-bookmark="false"
-        :tags="workflow.tags"
+        :tags="props.gridView ? [] : workflow.tags"
         :tags-editable="false"
-        :max-visible-tags="props.gridView ? 2 : 8"
+        :max-visible-tags="8"
         @tagClick="(tag: string) => emit('tagClick', tag)">
+        <template v-slot:description>
+            <p v-if="plainDescription" class="curated-description" :title="plainDescription">
+                {{ plainDescription }}
+            </p>
+        </template>
         <template v-slot:update-time>
-            <div :id="`g-card-${workflow.id}-details`" class="align-self-end d-flex flex-gapx-1 flex-wrap mt-1">
-                <BBadge v-if="workflow.update_time" v-g-tooltip.hover pill variant="secondary" title="Last updated">
-                    <FontAwesomeIcon :icon="faEdit" fixed-width />
-                    <UtcDate :date="workflow.update_time" mode="elapsed" />
-                </BBadge>
-                <BBadge
-                    v-for="detail in footerBadges"
-                    :id="`g-card-badge-${detail.id}-${workflow.id}`"
-                    :key="detail.id"
-                    v-g-tooltip.hover
-                    pill
-                    :variant="detail.variant || 'secondary'"
-                    :title="detail.title">
-                    {{ detail.label }}
-                </BBadge>
+            <div :id="`g-card-${workflow.id}-details`" class="curated-details">
+                <ul v-if="statusDetails.length" class="curated-detail-line">
+                    <li
+                        v-for="detail in statusDetails"
+                        :id="`g-card-badge-${detail.id}-${workflow.id}`"
+                        :key="detail.id"
+                        v-g-tooltip.hover
+                        :title="detail.title">
+                        <component
+                            :is="detail.handler ? 'button' : 'span'"
+                            :type="detail.handler ? 'button' : undefined"
+                            :class="{ 'curated-detail-button': detail.handler }"
+                            @click="detail.handler && detail.handler()">
+                            <FontAwesomeIcon
+                                v-if="detail.icon"
+                                :icon="detail.icon"
+                                :class="detail.variant ? `text-${detail.variant}` : undefined" />
+                            {{ detail.label }}
+                        </component>
+                    </li>
+                </ul>
+                <ul class="curated-detail-line">
+                    <li v-if="workflow.update_time" v-g-tooltip.hover title="Last updated">
+                        Updated <UtcDate :date="workflow.update_time" mode="elapsed" />
+                    </li>
+                    <li
+                        v-for="detail in metaDetails"
+                        :id="`g-card-badge-${detail.id}-${workflow.id}`"
+                        :key="detail.id"
+                        v-g-tooltip.hover
+                        :title="detail.title">
+                        {{ detail.label }}
+                    </li>
+                </ul>
             </div>
             <!-- Parked in a slot because the card needs GCard as its root; a <dialog> renders in the top layer anyway. -->
             <ToolInstallationRequestDialog
@@ -385,3 +425,45 @@ async function onImportLocal() {
         </template>
     </GCard>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.curated-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: 0;
+    color: $text-muted;
+}
+
+.curated-details {
+    align-self: flex-end;
+    margin-top: 0.25rem;
+    font-size: var(--font-size-small);
+    color: $text-muted;
+}
+
+.curated-detail-line {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li + li::before {
+        content: "\00b7";
+        margin: 0 0.4rem;
+    }
+}
+
+.curated-detail-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+}
+</style>
