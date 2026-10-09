@@ -1,10 +1,22 @@
 import ipaddress
 import logging
 import os
+import posixpath
 import socket
 import tempfile
+import threading
+import uuid
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
+from contextlib import contextmanager
 from typing import Optional
+from urllib.error import HTTPError
 from urllib.parse import urlparse
+
+import requests
+from requests import HTTPError as RequestsHTTPError
 
 from galaxy.exceptions import (
     AdminRequiredException,
@@ -18,14 +30,41 @@ from galaxy.files import (
 from galaxy.files.models import (
     FilesSourceOptions,
     RealizedSourceMetadata,
+    RemoteFile,
 )
 from galaxy.util import (
     stream_to_path,
     unicodify,
+    unlink,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
+from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
+
+# Concurrent requests used to fetch the files of a directory.
+DIRECTORY_FETCH_WORKERS = 8
+
+_thread_http_session = threading.local()
+
+
+@contextmanager
+def reuse_http_connections() -> Iterator[None]:
+    """Reuse one HTTP session, and so its connections, for the downloads made by this thread in the block.
+
+    The session is closed when the block ends, so it is never shared between users.
+    """
+    with requests.Session() as session:
+        _thread_http_session.session = session
+        try:
+            yield
+        finally:
+            _thread_http_session.session = None
+
+
+def get_reusable_http_session() -> requests.Session | None:
+    """Return the session set by :func:`reuse_http_connections` for this thread, if any."""
+    return getattr(_thread_http_session, "session", None)
 
 
 def stream_url_to_str(
@@ -67,6 +106,144 @@ def stream_url_to_file(
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
+
+
+def _listing_may_be_truncated(file_source, entries) -> bool:
+    """Whether ``entries`` may be cut short; fsspec file sources cap listings meant for browsing."""
+    try:
+        from galaxy.files.sources._fsspec import (
+            FsspecFilesSource,
+            MAX_ITEMS_LIMIT,
+        )
+    except ImportError:  # fsspec is an optional dependency
+        return False
+    return isinstance(file_source, FsspecFilesSource) and len(entries) >= MAX_ITEMS_LIMIT
+
+
+def _http_status(error: HTTPError | RequestsHTTPError) -> int | None:
+    if isinstance(error, HTTPError):
+        return error.code
+    return error.response.status_code if error.response is not None else None
+
+
+class UriDirectoryReader:
+    """Read the files under a directory URI through Galaxy's file sources.
+
+    The file source is resolved once, and every file is fetched through it, so its
+    access checks (e.g. the URL allowlist) apply to every request.
+    """
+
+    def __init__(
+        self,
+        uri: str,
+        file_sources: Optional["ConfiguredFileSources"] = None,
+        user_context=None,
+    ):
+        if "?" in uri or "#" in uri:
+            raise RequestParameterInvalidException(
+                f"Cannot read a directory from a URI with a query string or fragment [{uri}]"
+            )
+        self._uri = uri.rstrip("/")
+        self._file_source, root_path = ensure_file_sources(file_sources).get_file_source_path(self._uri)
+        self._root_path = root_path.rstrip("/")
+        self._user_context = user_context
+        self._missing_statuses: tuple[int, ...] = (404,)
+
+    def list_files(self) -> list[str] | None:
+        """Return the paths of all files under the directory, or ``None`` if they cannot all be listed."""
+        if not self._file_source.get_browsable():
+            return None
+        try:
+            entries, _ = self._file_source.list(self._root_path, recursive=True, user_context=self._user_context)
+        except Exception as e:
+            # e.g. a public bucket that allows reading objects but not listing them.
+            log.warning("Could not list directory [%s]: %s", self._uri, unicodify(e))
+            return None
+        if _listing_may_be_truncated(self._file_source, entries):
+            log.warning("Listing of directory [%s] may be incomplete, it reached the file source limit", self._uri)
+            return None
+        # File sources differ on leading slashes, so compare both as absolute paths.
+        root = f"/{self._root_path.strip('/')}"
+        return [
+            posixpath.relpath(f"/{entry.path.lstrip('/')}", root) for entry in entries if isinstance(entry, RemoteFile)
+        ]
+
+    def detect_missing_file_statuses(self) -> None:
+        """Find out which HTTP statuses this directory's server uses for files that do not exist.
+
+        A file that cannot exist is requested once: public S3 buckets that do not allow
+        listing answer 403 instead of 404, and only then is 403 taken to mean missing.
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
+                self.fetch(f".galaxy-missing-file-probe-{uuid.uuid4().hex}", temp_dir)
+            except (HTTPError, RequestsHTTPError) as e:
+                if _http_status(e) != 403:
+                    raise
+                self._missing_statuses = (403, 404)
+
+    def fetch(self, rel_path: str, target_dir: str) -> bool:
+        """Write the file at ``rel_path`` to the same path under ``target_dir``; return ``False`` if it does not exist."""
+        if not safe_relpath(rel_path):
+            raise RequestParameterInvalidException(f"Refusing to fetch unsafe path [{rel_path}]")
+        target_path = os.path.join(target_dir, rel_path)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        try:
+            self._file_source.realize_to(f"{self._root_path}/{rel_path}", target_path, user_context=self._user_context)
+        except FileNotFoundError:
+            found = False
+        except (HTTPError, RequestsHTTPError) as e:
+            if _http_status(e) not in self._missing_statuses:
+                raise
+            found = False
+        else:
+            return True
+        unlink(target_path, ignore_errors=True)
+        return found
+
+    def fetch_all(self, rel_paths: Iterable[str], target_dir: str, workers: int = DIRECTORY_FETCH_WORKERS) -> int:
+        """Fetch ``rel_paths`` under ``target_dir`` concurrently; return how many do not exist.
+
+        ``rel_paths`` is consumed lazily, and each worker reuses its HTTP connections. The
+        first error stops all workers and is raised.
+        """
+        pending = iter(rel_paths)
+        lock = threading.Lock()
+        missing = 0
+        errors: list[Exception] = []
+
+        def work() -> None:
+            nonlocal missing
+            with reuse_http_connections():
+                while True:
+                    with lock:
+                        if errors:
+                            return
+                        try:
+                            rel_path = next(pending, None)
+                        except Exception as e:
+                            errors.append(e)
+                            return
+                    if rel_path is None:
+                        return
+                    try:
+                        found = self.fetch(rel_path, target_dir)
+                    except Exception as e:
+                        with lock:
+                            errors.append(e)
+                        return
+                    if not found:
+                        with lock:
+                            missing += 1
+
+        threads = [threading.Thread(target=work, daemon=True) for _ in range(workers)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        if errors:
+            raise errors[0]
+        return missing
 
 
 def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "ConfiguredFileSources":

@@ -1,13 +1,22 @@
 import gzip
+from collections.abc import (
+    Callable,
+    Iterator,
+)
+from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 from sqlalchemy import select
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.files import ConfiguredFileSources
 from galaxy.files.unittest_utils import (
     stock_file_sources_allowing_loopback,
     TestPosixConfiguredFileSources,
 )
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -16,6 +25,7 @@ from galaxy.model import (
     store,
 )
 from galaxy.model.deferred import (
+    DatasetInstanceMaterializer,
     materialize_collection_instance,
     materializer_factory,
 )
@@ -26,7 +36,19 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
     TEST_SOURCE_URI_SIMPLE_LINE,
 )
+from galaxy.model.unittest_utils.zarr_fixtures import (
+    write_zarr_v2_store,
+    write_zarr_v3_store,
+)
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files_for_dataset,
+)
 from galaxy.util.resources import resource_string
+from galaxy.util.unittest_utils.test_http_server import (
+    QuietDirectoryRequestHandler,
+    serve_directory,
+)
 from .model.test_model_store import (
     perform_import_from_store_dict,
     setup_fixture_context_with_history,
@@ -502,6 +524,196 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     assert path
     _assert_path_contains_2_bed(path)
     _assert_2_bed_metadata(materialized_hda)
+
+
+class _StoreRequestHandler(QuietDirectoryRequestHandler):
+    """Serve files like a static web server, optionally answering like a public S3 bucket."""
+
+    # Public S3 buckets that do not allow listing answer 403 for objects that do not exist.
+    missing_status: int = 404
+    denied_paths: set[str] = set()
+
+    def do_GET(self) -> None:
+        if self.path in self.denied_paths:
+            super().send_error(403)
+            return
+        super().do_GET()
+
+    def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
+        super().send_error(self.missing_status if code == 404 else code, message, explain)
+
+
+class DirectoryHttpServer(NamedTuple):
+    served: Path
+    base_url: str
+    handler: type[_StoreRequestHandler]
+
+
+@pytest.fixture
+def directory_http_server(tmp_path: Path) -> Iterator[DirectoryHttpServer]:
+    """Serve ``tmp_path / "served"`` over HTTP, which cannot list directories through file sources."""
+    served = tmp_path / "served"
+    served.mkdir()
+
+    class Handler(_StoreRequestHandler):
+        denied_paths: set[str] = set()
+
+    with serve_directory(served, Handler) as base_url:
+        yield DirectoryHttpServer(served, base_url, Handler)
+
+
+def _write_directory(root: Path, files: dict[str, str]) -> None:
+    root.mkdir(parents=True)
+    for rel_path, content in files.items():
+        (root / rel_path).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel_path).write_text(content, encoding="utf-8")
+
+
+def _deferred_hda_with_extension(
+    monkeypatch: pytest.MonkeyPatch, source_uri: str, extension: str
+) -> tuple[StoreFixtureContextWithHistory, HistoryDatasetAssociation]:
+    fixture_context = setup_fixture_context_with_history()
+    perform_import_from_store_dict(fixture_context, deferred_hda_model_store_dict(source_uri=source_uri))
+    # The fixture's registry has no directory datatypes.
+    monkeypatch.setattr("galaxy.model._datatypes_registry", example_datatype_registry_for_sample())
+    deferred_hda = fixture_context.history.datasets[0]
+    deferred_hda.extension = extension
+    return fixture_context, deferred_hda
+
+
+def _unattached_materializer(
+    transient_directory: Path, file_sources: ConfiguredFileSources
+) -> DatasetInstanceMaterializer:
+    return materializer_factory(
+        False,
+        transient_directory=str(transient_directory),
+        file_sources=file_sources,
+        datatypes_registry=example_datatype_registry_for_sample(),
+    )
+
+
+def _materialize_zarr_over_http(
+    server: DirectoryHttpServer, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> HistoryDatasetAssociation:
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, f"{server.base_url}/store.zarr", "zarr")
+    materializer = _unattached_materializer(tmp_path, stock_file_sources_allowing_loopback())
+    return materializer.ensure_materialized(deferred_hda)
+
+
+def _relative_files(root: str) -> list[str]:
+    return sorted(path.relative_to(root).as_posix() for path in Path(root).rglob("*") if path.is_file())
+
+
+def test_deferred_directory_materialized_from_listable_file_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_directory(tmp_path / "root" / "index", {"a.txt": "a", "nested/b.txt": "b"})
+    fixture_context, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        file_sources=TestPosixConfiguredFileSources(str(tmp_path / "root")),
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
+
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "ok", materialized_hda.info
+    assert _relative_files(materialized_hda.extra_files_path) == ["a.txt", "nested/b.txt"]
+
+
+def test_failed_directory_materialization_leaves_no_extra_files_in_object_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_directory(tmp_path / "root" / "index", {"a.txt": "a"})
+    fixture_context, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
+    object_store = fixture_context.app.object_store
+
+    def persist_then_fail(
+        object_store: ObjectStore, src_extra_files_path: str, dataset: Dataset, extra_files_path_name: str
+    ) -> None:
+        persist_extra_files_for_dataset(object_store, src_extra_files_path, dataset, extra_files_path_name)
+        raise OSError("object store full")
+
+    monkeypatch.setattr("galaxy.model.deferred.persist_extra_files_for_dataset", persist_then_fail)
+    materializer = materializer_factory(
+        True,
+        object_store=object_store,
+        file_sources=TestPosixConfiguredFileSources(str(tmp_path / "root")),
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
+
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset
+    assert materialized_dataset.state == "error"
+    assert "object store full" in materialized_hda.info
+    extra_files_path_name = materialized_dataset.extra_files_path_name_from(object_store)
+    assert not object_store.exists(materialized_dataset, extra_dir=extra_files_path_name, dir_only=True)
+
+
+@pytest.mark.parametrize("missing_status", [404, 403])
+@pytest.mark.parametrize(("write_store", "zarr_format"), [(write_zarr_v3_store, 3), (write_zarr_v2_store, 2)])
+def test_deferred_zarr_materialized_over_http_from_consolidated_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    directory_http_server: DirectoryHttpServer,
+    write_store: Callable[[Path], list[str]],
+    zarr_format: int,
+    missing_status: int,
+) -> None:
+    directory_http_server.handler.missing_status = missing_status
+    written = write_store(directory_http_server.served / "store.zarr")
+
+    materialized_hda = _materialize_zarr_over_http(directory_http_server, monkeypatch, tmp_path)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "ok", materialized_hda.info
+    assert _relative_files(materialized_hda.extra_files_path) == sorted(written)
+    assert materialized_hda.metadata.zarr_format == zarr_format
+    assert materialized_hda.metadata.store_root == ""
+
+
+def test_denied_zarr_chunk_is_an_error_when_the_server_reports_missing_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer
+) -> None:
+    write_zarr_v3_store(directory_http_server.served / "store.zarr")
+    # The server answers 404 for missing files, so a 403 is a real denial, not an unwritten chunk.
+    directory_http_server.handler.denied_paths = {"/store.zarr/arr/c/0"}
+
+    materialized_hda = _materialize_zarr_over_http(directory_http_server, monkeypatch, tmp_path)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "error"
+    assert "403" in materialized_hda.info
+
+
+def test_deferred_zarr_over_http_needs_consolidated_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer
+) -> None:
+    write_zarr_v3_store(directory_http_server.served / "store.zarr", consolidated=False)
+
+    materialized_hda = _materialize_zarr_over_http(directory_http_server, monkeypatch, tmp_path)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "error"
+    assert "must have consolidated metadata" in materialized_hda.info
+
+
+def test_deferred_empty_directory_is_not_materialized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write_directory(tmp_path / "root" / "index", {})
+    _, deferred_hda = _deferred_hda_with_extension(monkeypatch, "gxfiles://test1/index", "directory")
+    materializer = _unattached_materializer(
+        tmp_path / "staging", TestPosixConfiguredFileSources(str(tmp_path / "root"))
+    )
+
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "error"
+    assert "empty or does not exist" in materialized_hda.info
 
 
 HDF5_CONTENTS = b"\x89HDF\r\n\x1a\n\x00\x00\x00\x00\x00\x08\x08\x00\x04\x00\x10\x00\r\x00\r\n"
