@@ -153,9 +153,17 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         self, fs: AbstractFileSystem, path: str, query: str, config: NomadFileSourceConfiguration
     ) -> list[AnyRemoteEntry]:
         # paths are NOMAD ids, so search the names users see instead of globbing paths
-        needle = query.strip().casefold()
         entries = self._list_directory(fs, path, config)
-        self._name_uploads(fs, entries)
+        nomad = cast("NomadFileSystemType", fs)
+        parts = [part for part in path.split("/") if part]
+        if nomad.upload_depth == 2 and len(parts) == 1:
+            # a dataset lists its uploads by id, so NOMAD searches their names
+            found = nomad.search_uploads(parts[0], query.strip())
+            matches = [entry for entry in entries if entry.path.rsplit("/", 1)[-1] in found]
+            for entry in matches:
+                entry.name = found[entry.path.rsplit("/", 1)[-1]]
+            return matches
+        needle = query.strip().casefold()
         return [entry for entry in entries if needle in entry.name.casefold()]
 
     def _enrich_entries(

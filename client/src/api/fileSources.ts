@@ -134,7 +134,7 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     nomad: {
         icon: faAtom,
-        message: "This is a read-only file repository plugin that connects with the public data of a NOMAD instance.",
+        message: "This is a read-only file repository plugin that connects with a NOMAD instance.",
     },
 };
 
