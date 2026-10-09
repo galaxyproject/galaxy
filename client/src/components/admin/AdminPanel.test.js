@@ -1,63 +1,48 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useConfig } from "@/composables/config";
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 
-import MountTarget from "./AdminPanel.vue";
+import AdminPanel from "./AdminPanel.vue";
 
-const localVue = getLocalVue(true);
+vi.mock("@/composables/config");
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: { value: { enable_quotas: true, tool_shed_urls: ["tool_shed_url"], version_major: "1.0.1" } },
-        isConfigLoaded: true,
-    })),
-}));
-
-vi.mock("vue-router", async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-        ...actual,
-        useRoute: vi.fn(() => ({})),
-    };
-});
-
-function createTarget(propsData = {}) {
-    return mount(MountTarget, {
-        global: localVue,
-        propsData,
-        stubs: {
-            routerLink: true,
-        },
-    });
-}
+enableAutoUnmount(afterEach);
+beforeEach(() => resetMockConfig());
 
 describe("AdminPanel", () => {
-    it("ensure section visibility with config changes", async () => {
-        const options = [
-            {
-                name: "tool_shed_urls",
-                elementId: "#admin-link-toolshed",
-                value: ["toolshed_url"],
-            },
-            {
-                name: "enable_quotas",
-                elementId: "#admin-link-quotas",
-                value: true,
-            },
-        ];
-        for (const available of [true, false]) {
-            for (const option of options) {
-                const props = {};
-                props[option.name] = available ? option.value : undefined;
-                useConfig.mockImplementation(() => ({
-                    config: { value: { ...props, version_major: "1.0.1" } },
-                    isConfigLoaded: true,
-                }));
-                const wrapper = createTarget();
-                expect(wrapper.find(option.elementId).exists()).toBe(available);
-            }
-        }
+    it.each([
+        {
+            scenario: "shows Tool Shed installation when Tool Shed URLs are configured",
+            config: { tool_shed_urls: ["toolshed_url"] },
+            link: "#admin-link-toolshed",
+            visible: true,
+        },
+        {
+            scenario: "hides Tool Shed installation when Tool Shed URLs are absent",
+            config: { tool_shed_urls: undefined },
+            link: "#admin-link-toolshed",
+            visible: false,
+        },
+        {
+            scenario: "shows quotas when quotas are enabled",
+            config: { enable_quotas: true },
+            link: "#admin-link-quotas",
+            visible: true,
+        },
+        {
+            scenario: "hides quotas when quotas are not configured",
+            config: { enable_quotas: undefined },
+            link: "#admin-link-quotas",
+            visible: false,
+        },
+    ])("$scenario", ({ config, link, visible }) => {
+        setMockConfig({ ...config, version_major: "1.0.1" });
+        const wrapper = mount(AdminPanel, {
+            global: { ...getLocalVue(true), stubs: { RouterLink: true } },
+        });
+
+        expect(wrapper.find(link).exists()).toBe(visible);
     });
 });
