@@ -1,5 +1,5 @@
 import MockDate from "timezone-mock";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
     formatGalaxyPrettyDateString,
@@ -16,23 +16,24 @@ describe("dates.ts", () => {
 
     afterEach(() => {
         MockDate.unregister();
+        vi.restoreAllMocks();
     });
 
     describe("galaxyTimeToDate", () => {
-        it("should convert valid galaxyTime string to Date object", () => {
+        it("parses a Galaxy UTC timestamp as a Date", () => {
             const galaxyTime = "2023-10-01T12:00:00";
             const date = galaxyTimeToDate(galaxyTime);
             expect(date).toBeInstanceOf(Date);
             expect(date.toISOString()).toBe("2023-10-01T12:00:00.000Z");
         });
 
-        it("should append Z if missing and parse correctly", () => {
+        it("treats a timestamp without a Z suffix as UTC", () => {
             const galaxyTime = "2023-10-01T12:00:00";
             const date = galaxyTimeToDate(galaxyTime);
             expect(date.toISOString()).toBe("2023-10-01T12:00:00.000Z");
         });
 
-        it("should throw an error for invalid galaxyTime string", () => {
+        it("reports the original timestamp when parsing fails", () => {
             const invalidGalaxyTime = "invalid-date-string";
             expect(() => galaxyTimeToDate(invalidGalaxyTime)).toThrow(
                 `Invalid galaxyTime string: ${invalidGalaxyTime}`,
@@ -41,7 +42,7 @@ describe("dates.ts", () => {
     });
 
     describe("localizeUTCPretty", () => {
-        it("should format Date object into human-readable string", () => {
+        it("formats a UTC date in the mocked GMT-4 time zone", () => {
             const date = new Date("2023-10-01T12:00:00Z");
             const formatted = localizeUTCPretty(date);
             expect(formatted).toBe("Sunday Oct 1st 8:00:00 2023 GMT-4");
@@ -49,7 +50,7 @@ describe("dates.ts", () => {
     });
 
     describe("formatGalaxyPrettyDateString", () => {
-        it("should convert galaxyTime string to formatted date string", () => {
+        it("formats a Galaxy UTC timestamp in the mocked GMT-4 time zone", () => {
             const galaxyTime = "2023-10-01T12:00:00";
             const formatted = formatGalaxyPrettyDateString(galaxyTime);
             expect(formatted).toBe("Sunday Oct 1st 8:00:00 2023 GMT-4");
@@ -57,30 +58,37 @@ describe("dates.ts", () => {
     });
 
     describe("relativeUpdatedLabel", () => {
-        it("should describe the time relative to now", () => {
-            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "");
+        it("describes a timestamp three days before a fixed current time", () => {
+            vi.spyOn(Date, "now").mockReturnValue(new Date("2023-10-04T12:00:00Z").getTime());
+            const threeDaysAgo = "2023-10-01T12:00:00";
             expect(relativeUpdatedLabel(threeDaysAgo)).toBe("updated 3 days ago");
         });
 
-        it("should return undefined for a missing or malformed time", () => {
-            expect(relativeUpdatedLabel(undefined)).toBeUndefined();
-            expect(relativeUpdatedLabel(null)).toBeUndefined();
-            expect(relativeUpdatedLabel("")).toBeUndefined();
-            expect(relativeUpdatedLabel("invalid-date-string")).toBeUndefined();
+        it.each([
+            { caseName: "omitted timestamp", timestamp: undefined },
+            { caseName: "null timestamp", timestamp: null },
+            { caseName: "empty timestamp", timestamp: "" },
+            { caseName: "malformed timestamp", timestamp: "invalid-date-string" },
+        ])("returns undefined for $caseName", ({ timestamp }) => {
+            expect(relativeUpdatedLabel(timestamp)).toBeUndefined();
         });
     });
 
     describe("shortDateLabel", () => {
-        it("should format the time as a short date in the user's time zone", () => {
-            expect(shortDateLabel("2023-10-01T12:00:00")).toBe("Oct 1, 2023");
-            expect(shortDateLabel("2023-10-01T02:00:00")).toBe("Sep 30, 2023");
+        it.each([
+            { caseName: "same calendar day", timestamp: "2023-10-01T12:00:00", expected: "Oct 1, 2023" },
+            { caseName: "previous calendar day", timestamp: "2023-10-01T02:00:00", expected: "Sep 30, 2023" },
+        ])("formats the $caseName in the mocked GMT-4 time zone", ({ timestamp, expected }) => {
+            expect(shortDateLabel(timestamp)).toBe(expected);
         });
 
-        it("should return undefined for a missing or malformed time", () => {
-            expect(shortDateLabel(undefined)).toBeUndefined();
-            expect(shortDateLabel(null)).toBeUndefined();
-            expect(shortDateLabel("")).toBeUndefined();
-            expect(shortDateLabel("invalid-date-string")).toBeUndefined();
+        it.each([
+            { caseName: "omitted timestamp", timestamp: undefined },
+            { caseName: "null timestamp", timestamp: null },
+            { caseName: "empty timestamp", timestamp: "" },
+            { caseName: "malformed timestamp", timestamp: "invalid-date-string" },
+        ])("returns undefined for $caseName", ({ timestamp }) => {
+            expect(shortDateLabel(timestamp)).toBeUndefined();
         });
     });
 });
