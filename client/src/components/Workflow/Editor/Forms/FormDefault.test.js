@@ -1,9 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { setActivePinia } from "pinia";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { h } from "vue";
 
+import { createTestStep } from "@/components/Workflow/Editor/test_fixtures";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 
 import FormCollectionType from "./FormCollectionType.vue";
@@ -12,56 +14,32 @@ import FormInputCollection from "./FormInputCollection.vue";
 
 vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+
+function mountFormDefault(step) {
+    const localVue = getLocalVue();
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    setActivePinia(pinia);
+    const wrapper = mount(FormDefault, {
+        props: { datatypes: [], step },
+        global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
+    });
+    return { wrapper, refreshStore: useRefreshFromStore() };
+}
 
 describe("FormDefault", () => {
-    let wrapper;
-    const outputs = [
-        { name: "output-name", label: "output-label" },
-        { name: "other-name", label: "other-label" },
-    ];
-
-    beforeEach(() => {
-        wrapper = mount(FormDefault, {
-            props: {
-                datatypes: [],
-                step: {
-                    id: 0,
-                    contentId: "id",
-                    annotation: "annotation",
-                    label: "label",
-                    name: "name",
-                    type: "subworkflow",
-                    configForm: {
-                        inputs: [],
-                    },
-                    inputs: [],
-                    outputs,
-                },
-            },
-            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-        });
-    });
-
     it("re-seeds the collection input form from the step on refresh", async () => {
         const collectionStep = {
-            id: 0,
+            ...createTestStep(0, { outputs: [] }),
             content_id: null,
             annotation: "annotation",
             label: "label",
             name: "name",
             type: "data_collection_input",
             config_form: { inputs: [] },
-            inputs: [],
-            outputs: [],
             tool_state: { collection_type: '"list"' },
         };
-        const collectionWrapper = mount(FormDefault, {
-            propsData: { datatypes: [], step: collectionStep },
-            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        });
+        const { wrapper: collectionWrapper, refreshStore } = mountFormDefault(collectionStep);
         const collectionTypeField = () =>
             collectionWrapper.findComponent(FormInputCollection).findComponent(FormCollectionType);
 
@@ -70,7 +48,7 @@ describe("FormDefault", () => {
         expect(collectionTypeField().props("value")).toBe("paired");
         expect(collectionWrapper.emitted("onSetData")).toHaveLength(1);
 
-        useRefreshFromStore().refresh();
+        refreshStore.refresh();
         await collectionWrapper.vm.$nextTick();
         expect(collectionTypeField().props("value")).toBe("list");
         expect(collectionWrapper.emitted("onSetData")).toHaveLength(1);
@@ -78,17 +56,27 @@ describe("FormDefault", () => {
         collectionTypeField().vm.$emit("onChange", "list:paired");
         expect(collectionWrapper.emitted("onSetData")).toHaveLength(2);
         expect(collectionWrapper.emitted("onSetData")[1][1].inputs.collection_type).toBe("list:paired");
-        collectionWrapper.unmount();
     });
 
-    it("check initial value and value change", async () => {
-        const title = wrapper.find(".portlet-title-text").text();
-        expect(title).toBe("name");
-        const inputCount = wrapper.findAll("input").length;
-        expect(inputCount).toBe(4);
-        const outputLabelCount = wrapper.findAll("#__label__output-name").length;
-        expect(outputLabelCount).toBe(1);
-        const otherLabelCount = wrapper.findAll("#__label__other-name").length;
-        expect(otherLabelCount).toBe(1);
+    it("renders the subworkflow title, metadata fields, and both output labels", () => {
+        const step = {
+            ...createTestStep(0, {
+                outputs: [
+                    { name: "output-name", label: "output-label" },
+                    { name: "other-name", label: "other-label" },
+                ],
+            }),
+            content_id: "id",
+            annotation: "annotation",
+            label: "label",
+            name: "name",
+            type: "subworkflow",
+            config_form: { inputs: [] },
+        };
+        const { wrapper } = mountFormDefault(step);
+        expect(wrapper.find(".portlet-title-text").text()).toBe("name");
+        expect(wrapper.findAll("input")).toHaveLength(4);
+        expect(wrapper.findAll("#__label__output-name")).toHaveLength(1);
+        expect(wrapper.findAll("#__label__other-name")).toHaveLength(1);
     });
 });
