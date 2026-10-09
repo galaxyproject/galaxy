@@ -129,5 +129,16 @@ describe("ActivityBar", () => {
             const testWrapper = await mountWithInteractiveToolsConfig(true, "it-test-show");
             expect(testWrapper.findAll("[id='interactivetools']").length).toBe(1);
         });
+
+        it("keeps a hidden interactivetools activity when the visible ones are reordered", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-reorder");
+            const bar = testWrapper.findComponent(draggableStub);
+            const visible = bar.props("modelValue");
+            expect(visible.map((activity) => activity.id)).toEqual(["test-1", "test-3"]);
+            bar.vm.$emit("update:modelValue", [...visible].reverse());
+            await testWrapper.vm.$nextTick();
+            const stored = useActivityStore("it-test-reorder").activities.map((activity) => activity.id);
+            expect(stored).toEqual(["test-3", "test-1", "interactivetools"]);
+        });
     });
 });

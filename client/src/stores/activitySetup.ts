@@ -238,6 +238,38 @@ export const defaultActivities = [
     },
 ] as const;
 
+/** What decides whether a gated activity is offered to the current user. */
+export interface ActivityAvailability {
+    /** Whether unprivileged (user-defined) tools are available */
+    canUseUnprivilegedTools: boolean;
+    /** Relevant subset of the Galaxy configuration */
+    config?: {
+        interactivetools_enable?: boolean;
+        llm_api_configured?: boolean;
+    };
+}
+
+/**
+ * Checks an activity's configuration and tool-permission gates.
+ *
+ * The activity bar and the command palette both list activities, so the gates
+ * live beside the registry rather than in either of them - a gate added on one
+ * side only would let the palette route to an activity the bar hides.
+ * Callers handle anonymous access and their own activity exclusions separately.
+ */
+export function isActivityAvailable(activityId: string, availability: ActivityAvailability): boolean {
+    switch (activityId) {
+        case "user-defined-tools":
+            return availability.canUseUnprivilegedTools;
+        case "interactivetools":
+            return Boolean(availability.config?.interactivetools_enable);
+        case "galaxyai":
+            return Boolean(availability.config?.llm_api_configured);
+        default:
+            return true;
+    }
+}
+
 export function convertDropData(data: EventData): Activity | null {
     if (data.history_content_type === "dataset") {
         return {
