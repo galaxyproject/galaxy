@@ -157,12 +157,9 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         nomad = cast("NomadFileSystemType", fs)
         parts = [part for part in path.split("/") if part]
         if nomad.upload_depth == 2 and len(parts) == 1:
-            # a dataset lists its uploads by id, so NOMAD searches their names
-            found = nomad.search_uploads(parts[0], query.strip())
-            matches = [entry for entry in entries if entry.path.rsplit("/", 1)[-1] in found]
-            for entry in matches:
-                entry.name = found[entry.path.rsplit("/", 1)[-1]]
-            return matches
+            # a dataset lists its uploads by id, so NOMAD searches their names; the page is named later
+            found = set(nomad.search_uploads(parts[0], query.strip()))
+            return [entry for entry in entries if entry.path.rsplit("/", 1)[-1] in found]
         needle = query.strip().casefold()
         return [entry for entry in entries if needle in entry.name.casefold()]
 
