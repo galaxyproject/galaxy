@@ -2945,6 +2945,44 @@ def test_tests_expect_failure_invalid_inputs(lint_ctx):
     assert "Invalid parameter name found taxidd" in case_errors[0]
 
 
+TESTS_MULTIPLE_SELECT_EMPTY = """
+<tool id="id" name="name" profile="{profile}">
+    <inputs>
+        <param name="parameter" type="select" multiple="true" optional="true">
+            <option value="a">A</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" {attribute} />
+            <output name="output" value="output.txt" />
+        </test>
+    </tests>
+</tool>
+"""
+
+
+@pytest.mark.parametrize("profile,level", [("26.0", "warning"), ("26.1", "error")])
+def test_tests_multiple_select_empty_value(lint_ctx, profile, level):
+    tool_source = get_xml_tool_source(TESTS_MULTIPLE_SELECT_EMPTY.format(profile=profile, attribute='value=""'))
+    run_lint_module(lint_ctx, tests, tool_source)
+    messages = [m for m in lint_ctx.message_list if m.linter == "TestsMultipleSelectEmptyValue"]
+    assert len(messages) == 1
+    assert messages[0].level == level
+    assert 'use value_json="[]"' in messages[0].message
+
+
+def test_tests_multiple_select_empty_value_json(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_MULTIPLE_SELECT_EMPTY.format(profile="26.1", attribute='value_json="[]"'))
+    run_lint_module(lint_ctx, tests, tool_source)
+    linters = {m.linter for m in lint_ctx.warn_messages + lint_ctx.error_messages}
+    assert "TestsMultipleSelectEmptyValue" not in linters
+    assert "TestsCaseValidation" not in linters
+
+
 def test_tests_without_expectations(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_WO_EXPECTATIONS)
     run_lint_module(lint_ctx, tests, tool_source)
