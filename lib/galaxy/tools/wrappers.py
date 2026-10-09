@@ -13,6 +13,7 @@ from functools import total_ordering
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
     TYPE_CHECKING,
     TypeAlias,
@@ -43,6 +44,7 @@ from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     filesystem_safe_string,
     safe_filename_component,
@@ -472,6 +474,19 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def is_deferred(self) -> bool:
         return self.unsanitized.has_deferred_data
+
+    @property
+    def path(self) -> str:
+        """Where the tool finds this dataset's data on disk.
+
+        The dataset's file, or for directory datatypes the folder holding their
+        content. Empty for a deferred dataset passed on as
+        its source URI, which ``$input`` itself renders (see ``is_deferred``).
+        """
+        if not self:
+            return ""
+        io_type: Literal["input", "output"] = "output" if self.__io_type == "output" else "input"
+        return dataset_path(self.unsanitized, self.compute_environment, io_type) or ""
 
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
