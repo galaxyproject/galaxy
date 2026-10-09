@@ -15,6 +15,8 @@ from galaxy.model import (
     ImplicitlyConvertedDatasetAssociation,
     set_datatypes_registry,
 )
+from galaxy.tool_util.parameters.convert import runtimeify
+from galaxy.tool_util.parameters.state import JobInternalToolState
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
     DataCollectionListRuntime,
@@ -23,7 +25,9 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRecordRuntime,
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
+    DataParameterModel,
     DataRequestInternalHda,
+    ToolParameterBundleModel,
 )
 from galaxy.tools.runtime import (
     _validate_collection_runtime_dict,
@@ -265,21 +269,60 @@ class RewritingComputeEnvironment:
         return f"/job/inputs/dataset_{dataset.id}_files"
 
 
-def test_adapt_dataset_resolves_an_implicitly_converted_input():
-    set_datatypes_registry(example_datatype_registry_for_sample())
-    original = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="csv")
-    original.id = 1
-    converted = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="tabular")
-    converted.id = 2
-    assert converted.dataset is not None
-    converted.dataset.file_size = Decimal(4)
+class DatatypesApp:
+    def __init__(self, datatypes_registry):
+        self.datatypes_registry = datatypes_registry
+
+
+def _hda(id: int, extension: str) -> HistoryDatasetAssociation:
+    hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
+    hda.id = id
+    assert hda.dataset is not None
+    hda.dataset.file_size = Decimal(4)
+    return hda
+
+
+def _csv_with_tabular_conversion() -> tuple[Any, HistoryDatasetAssociation, HistoryDatasetAssociation]:
+    registry = example_datatype_registry_for_sample()
+    set_datatypes_registry(registry)
+    original = _hda(1, "csv")
+    converted = _hda(2, "tabular")
     ImplicitlyConvertedDatasetAssociation(parent=original, dataset=converted, file_type="tabular")
+    return DatatypesApp(registry), original, converted
+
+
+def test_adapt_dataset_resolves_an_implicitly_converted_input():
+    app, _, converted = _csv_with_tabular_conversion()
 
     _, adapt_dataset, _ = setup_for_runtimeify(
-        cast(Any, None), cast(Any, RewritingComputeEnvironment()), {"input": converted}
+        cast(Any, app), cast(Any, RewritingComputeEnvironment()), {"input": converted}
     )
-    # The request still names the dataset the user picked; the job runs on its conversion.
-    result = adapt_dataset(DataRequestInternalHda(src="hda", id=1))
+    result = adapt_dataset(DataRequestInternalHda(src="hda", id=1), ["tabular"])
 
     assert result.format == "tabular"
     assert result.path == "/job/inputs/dataset_2.dat"
+
+
+def test_runtimeify_resolves_a_dataset_used_directly_and_converted():
+    app, original, converted = _csv_with_tabular_conversion()
+    parameters = ToolParameterBundleModel(
+        parameters=[
+            DataParameterModel(type="data", name="as_csv", extensions=["csv"]),
+            DataParameterModel(type="data", name="as_tabular", extensions=["tabular"]),
+        ]
+    )
+    state = JobInternalToolState(
+        {"as_csv": {"src": "hda", "id": 1}, "as_tabular": {"src": "hda", "id": 1}},
+    )
+
+    _, adapt_dataset, adapt_collection = setup_for_runtimeify(
+        cast(Any, app),
+        cast(Any, RewritingComputeEnvironment()),
+        {"as_csv": original, "as_tabular": converted},
+    )
+    runtime_state = runtimeify(state, parameters, adapt_dataset, adapt_collection).input_state
+
+    assert runtime_state["as_csv"]["format"] == "csv"
+    assert runtime_state["as_csv"]["path"] == "/job/inputs/dataset_1.dat"
+    assert runtime_state["as_tabular"]["format"] == "tabular"
+    assert runtime_state["as_tabular"]["path"] == "/job/inputs/dataset_2.dat"

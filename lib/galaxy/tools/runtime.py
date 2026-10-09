@@ -62,16 +62,32 @@ def setup_for_runtimeify(
     """
     hda_references: list[HistoryDatasetAssociation] = []
 
-    # Build lookup for individual datasets
+    # The request names the dataset the user picked. The job may have received that dataset,
+    # an implicit conversion of it, or both when parameters accepting different formats share it.
     hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {}
+    conversions_by_parent_id: dict[int, dict[int, tuple[DatasetInstance, int]]] = {}
     for i, d in enumerate(input_datasets.values()):
         if d is None:
             continue
         hdas_by_id[d.id] = (d, i)
-        # The request names the original dataset when the job got an implicit conversion of it.
         for assoc in d.implicitly_converted_parent_datasets:
             if assoc.parent_hda is not None:
-                hdas_by_id.setdefault(assoc.parent_hda.id, (d, i))
+                conversions_by_parent_id.setdefault(assoc.parent_hda.id, {})[d.id] = (d, i)
+
+    def find_input(hda_id: int, extensions: list[str]) -> tuple[DatasetInstance, int]:
+        candidates = list(conversions_by_parent_id.get(hda_id, {}).values())
+        if hda_id in hdas_by_id:
+            candidates.insert(0, hdas_by_id[hda_id])
+        if not candidates:
+            raise ValueError(f"Could not find HDA for dataset id {hda_id}")
+        if len(candidates) > 1:
+            # Same order as the tool action's choice: the dataset itself, then a conversion.
+            registry = app.datatypes_registry
+            accepted = [d for d in map(registry.get_datatype_by_extension, extensions) if d is not None]
+            for candidate in candidates:
+                if candidate[0].datatype.matches_any(accepted):
+                    return candidate
+        return candidates[0]
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
@@ -84,7 +100,7 @@ def setup_for_runtimeify(
             elif isinstance(value, DatasetCollectionElement):
                 dces_by_id[value.id] = value
 
-    def adapt_dataset(value: DataJobInternalT) -> DataInternalJson:
+    def adapt_dataset(value: DataJobInternalT, extensions: list[str]) -> DataInternalJson:
         if isinstance(value, DatasetCollectionElementReference):
             dce = dces_by_id.get(value.id)
             if not dce:
@@ -94,17 +110,11 @@ def setup_for_runtimeify(
                 raise ValueError(f"DCE {value.id} does not reference an HDA")
             # Resolve to HDA but preserve element_identifier for output naming
             # and collection traceability
-            result = adapt_dataset(DataRequestInternalHda(src="hda", id=dce_hda.id))
+            result = adapt_dataset(DataRequestInternalHda(src="hda", id=dce_hda.id), extensions)
             return DataInternalJson(
                 **{**result.model_dump(by_alias=True), "element_identifier": dce.element_identifier}
             )
-        hda_id = value.id
-        if hda_id not in hdas_by_id:
-            raise ValueError(f"Could not find HDA for dataset id {hda_id}")
-        hda_entry: DatasetInstance
-        hda_entry, index = hdas_by_id[hda_id]
-        if not hda_entry:
-            raise ValueError(f"Could not find HDA for dataset id {hda_id}")
+        hda_entry, index = find_input(value.id, extensions)
         assert hda_entry.dataset is not None
         properties: dict[str, Any] = {
             "class": "File",
@@ -122,27 +132,33 @@ def setup_for_runtimeify(
     def adapt_collection(
         value: DataCollectionRequestInternal,
         collection_type: Optional[str],
+        extensions: list[str],
     ) -> DataCollectionInternalJsonBase:
         """Convert a collection request to runtime representation.
 
         Args:
             value: Collection request with src ("hdca" or "dce") and id
             collection_type: Expected collection type from parameter definition
+            extensions: Extensions the collection parameter accepts for its elements
 
         Returns:
             Runtime representation dict with class, name, collection_type, tags, elements
         """
+
+        def adapt_element(element: DataJobInternalT) -> DataInternalJson:
+            return adapt_dataset(element, extensions)
+
         # Handle DCE reference (subcollection mapping scenario)
         if value.src == "dce":
             dce = dces_by_id.get(value.id)
             if not dce:
                 raise ValueError(f"DCE {value.id} not found")
-            return _adapt_from_dce(dce, adapt_dataset, compute_environment)
+            return _adapt_from_dce(dce, adapt_element, compute_environment)
 
         # Handle HDCA reference (direct collection input)
         hdca = hdcas_by_id.get(value.id)
         if hdca:
-            return _adapt_from_hdca(hdca, adapt_dataset, compute_environment)
+            return _adapt_from_hdca(hdca, adapt_element, compute_environment)
 
         raise ValueError(f"Collection {value.id} not found (src={value.src})")
 
