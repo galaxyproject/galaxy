@@ -174,7 +174,7 @@ def is_macho(path: str) -> bool:
         return False
 
 
-_thread_locks: Dict[str, threading.Lock] = {}
+_thread_locks: dict[str, threading.Lock] = {}
 _thread_locks_guard = threading.Lock()
 
 
@@ -187,7 +187,7 @@ def _thread_lock_for(path: str) -> threading.Lock:
 
 
 @contextlib.contextmanager
-def _env_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
+def _env_lock(path: str, timeout: int | float) -> Iterator[bool]:
     """Exclusive lock on ``path``, yields False if it could not be taken within ``timeout`` seconds.
 
     Two locks are needed. ``fcntl.lockf`` locks belong to the process, so two threads of one process would
@@ -209,7 +209,7 @@ def _env_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
 
 
 @contextlib.contextmanager
-def _file_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
+def _file_lock(path: str, timeout: int | float) -> Iterator[bool]:
     """Exclusive file lock on ``path`` (the cross-process part of :func:`_env_lock`).
 
     On POSIX this is an ``fcntl.lockf`` byte-range lock, which the kernel releases when the holding process
@@ -725,7 +725,7 @@ class CondaContext(installable.InstallableContext):
         return age < self.platforms_retry_days * 86400
 
     @contextlib.contextmanager
-    def env_lock(self, env_name: str, timeout: Optional[Union[int, float]] = None) -> Iterator[bool]:
+    def env_lock(self, env_name: str, timeout: int | float | None = None) -> Iterator[bool]:
         """Lock for all creation work on ``env_name`` (native and foreign), yields False if it could not be taken.
 
         The lock file is ``<conda_prefix>/.locks/<env_name>.lock``, outside of ``envs`` where the
@@ -885,7 +885,7 @@ class CondaContext(installable.InstallableContext):
             shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
             self.clear_platform_failure(subdir, env_name)
 
-    def native_env_specs(self, env_name: str) -> List[str]:
+    def native_env_specs(self, env_name: str) -> list[str]:
         """Package specs the native environment ``env_name`` was created from.
 
         Taken from the explicit specs of the first transaction in ``conda-meta/history``
@@ -914,7 +914,7 @@ class CondaContext(installable.InstallableContext):
             return [f"{name}=*" if version == "_uv_" else f"{name}={version}"]
         return []
 
-    def backfill_platform_environments(self, allow_local: bool = True) -> Dict[str, int]:
+    def backfill_platform_environments(self, allow_local: bool = True) -> dict[str, int]:
         """Create the missing foreign copies of the native environments.
 
         Only environments with a name Galaxy gives them are considered. A platform with a failure

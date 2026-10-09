@@ -11,9 +11,6 @@ import threading
 import time
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 import pytest
@@ -125,7 +122,7 @@ class FakeConda:
     def fail_info(self) -> None:
         open(os.path.join(self.bin_dir, "fail_info"), "w").close()
 
-    def calls(self, command: Optional[str] = None) -> List[Dict[str, Any]]:
+    def calls(self, command: str | None = None) -> list[dict[str, Any]]:
         if not os.path.exists(self.log_path):
             return []
         with open(self.log_path) as fh:
@@ -134,8 +131,8 @@ class FakeConda:
             calls = [c for c in calls if c["argv"][0] == command]
         return calls
 
-    def creates(self) -> List[Dict[str, Any]]:
-        return [c for c in self.calls("create")]
+    def creates(self) -> list[dict[str, Any]]:
+        return list(self.calls("create"))
 
 
 FAKE_SIGNER = """\
@@ -163,7 +160,7 @@ class FakeSigner:
     def fail(self) -> None:
         open(os.path.join(self.dir, "fail_sign"), "w").close()
 
-    def calls(self) -> List[List[str]]:
+    def calls(self) -> list[list[str]]:
         path = os.path.join(self.dir, "signer.log")
         if not os.path.exists(path):
             return []
@@ -206,7 +203,7 @@ def make_dependency_manager(tmp_path, **app_config) -> DependencyManager:
 
 def make_resolver(fake: FakeConda, tmp_path, **kwds) -> CondaDependencyResolver:
     dependency_manager = make_dependency_manager(tmp_path)
-    options: Dict[str, Any] = dict(
+    options: dict[str, Any] = dict(
         prefix=fake.prefix, exec=fake.exec, auto_init=True, auto_install=False, platforms_backfill=False
     )
     options.update(kwds)
@@ -215,7 +212,7 @@ def make_resolver(fake: FakeConda, tmp_path, **kwds) -> CondaDependencyResolver:
     return resolver
 
 
-def req(name: str, version: Optional[str] = "1.0") -> ToolRequirement:
+def req(name: str, version: str | None = "1.0") -> ToolRequirement:
     return ToolRequirement(name=name, version=version, type="package")
 
 
@@ -309,9 +306,7 @@ def test_foreign_base_failure_is_not_fatal(fake_conda: FakeConda, tmp_path) -> N
 
 
 def test_environment_creation_per_platform(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
-    resolver = make_resolver(
-        fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec
-    )
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec)
     context = resolver.conda_context
     n_before = len(fake_conda.creates())
     targets = [CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7")]
@@ -409,9 +404,7 @@ def test_merged_environment_per_platform(fake_conda: FakeConda, tmp_path) -> Non
 
 
 def test_platforms_for_requirements(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
-    resolver = make_resolver(
-        fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec
-    )
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec)
     dm = resolver.dependency_manager
     context = resolver.conda_context
     install_conda_target(CondaTarget("samtools", version="1.9"), context)
@@ -586,9 +579,12 @@ def test_no_platforms_writes_no_marker_and_never_asks_for_the_platform(fake_cond
     resolver = make_resolver(fake_conda, tmp_path)
     context = resolver.conda_context
     assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
-    assert install_conda_targets(
-        [CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7")], context, env_name="mulled-v1-x"
-    ) == 0
+    assert (
+        install_conda_targets(
+            [CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7")], context, env_name="mulled-v1-x"
+        )
+        == 0
+    )
     resolver.resolve(req("samtools", "1.9"))
     resolver.resolve_all(ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")]))
     # the conda version lookup of conda itself is cached, the platform code adds no further "conda info"
@@ -728,7 +724,7 @@ def test_threads_of_one_process_exclude_each_other(tmp_path) -> None:
     lock_path = str(tmp_path / ".locks" / "__x@1.lock")
     first_holds = threading.Event()
     release_first = threading.Event()
-    order: List[str] = []
+    order: list[str] = []
 
     def first() -> None:
         with conda_util._env_lock(lock_path, 10) as locked:
@@ -761,7 +757,7 @@ def test_second_thread_times_out_while_the_first_holds_the_lock(tmp_path) -> Non
     lock_path = str(tmp_path / ".locks" / "__x@1.lock")
     first_holds = threading.Event()
     release_first = threading.Event()
-    results: List[bool] = []
+    results: list[bool] = []
 
     def first() -> None:
         with conda_util._env_lock(lock_path, 10) as locked:
@@ -826,7 +822,7 @@ class RecordingResolver(DependencyResolver):
 
     def __init__(self, supports_platforms: bool = False) -> None:
         self.supports_platforms = supports_platforms
-        self.calls: List[Dict[str, Any]] = []
+        self.calls: list[dict[str, Any]] = []
 
     def resolve(self, requirement, **kwds):
         self.calls.append(kwds)
@@ -961,7 +957,7 @@ def test_conda_auto_install_enabled(fake_conda: FakeConda, tmp_path) -> None:
     assert dm.configured_conda_platforms() == ["linux-64", "linux-aarch64"]
 
 
-def native_only_env(fake: FakeConda, name: str, specs: Optional[List[str]]) -> None:
+def native_only_env(fake: FakeConda, name: str, specs: list[str] | None) -> None:
     """A native environment as installed before conda_platforms was set."""
     meta = os.path.join(fake.prefix, "envs", name, "conda-meta")
     os.makedirs(meta)
@@ -970,7 +966,7 @@ def native_only_env(fake: FakeConda, name: str, specs: Optional[List[str]]) -> N
             fh.write("==> 2026-01-01 00:00:00 <==\n# cmd: conda create\n# update specs: " + json.dumps(specs) + "\n")
 
 
-def subdir_creates(fake: FakeConda) -> List[Dict[str, Any]]:
+def subdir_creates(fake: FakeConda) -> list[dict[str, Any]]:
     return [c for c in fake.creates() if "--platform" in c["argv"] and "-p" in c["argv"] and c["argv"][-1] != "python"]
 
 
@@ -1068,10 +1064,8 @@ def test_retry_days_option(fake_conda: FakeConda, tmp_path) -> None:
 
 
 def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, monkeypatch, caplog) -> None:
-    started: List[int] = []
-    monkeypatch.setattr(
-        CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1)
-    )
+    started: list[int] = []
+    monkeypatch.setattr(CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1))
     with caplog.at_level("INFO"):
         resolver = make_resolver(
             fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True, platforms_backfill=True
@@ -1100,9 +1094,7 @@ def test_backfill_starts_once_per_prefix_across_resolver_instances(
     fake_conda: FakeConda, tmp_path, monkeypatch, caplog
 ) -> None:
     started: list[int] = []
-    monkeypatch.setattr(
-        CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1)
-    )
+    monkeypatch.setattr(CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1))
     kwds = dict(platforms="linux-aarch64", auto_install=True, platforms_backfill=True)
     with caplog.at_level("INFO"):
         first = make_resolver(fake_conda, tmp_path, **kwds)

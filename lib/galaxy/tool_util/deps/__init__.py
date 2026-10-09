@@ -8,6 +8,7 @@ import os.path
 import shutil
 from typing import (
     Any,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -416,7 +417,7 @@ class DependencyManager:
             return NullDependency(name=name, version=version)
 
     def __build_dependency_resolvers_plugin_source(
-        self, conf_file: "StrPath" | None
+        self, conf_file: Optional["StrPath"]
     ) -> plugin_config.PluginConfigSource:
         if not conf_file:
             return self.__default_dependency_resolvers_source()

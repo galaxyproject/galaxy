@@ -1182,7 +1182,7 @@ class MinimalJobWrapper(HasResourceParameters):
         return self._dependency_shell_commands
 
     @property
-    def platform(self) -> Optional[str]:
+    def platform(self) -> str | None:
         """Conda platform (subdir) set with the ``platform`` parameter of the job destination, if any.
 
         The destination is assigned in the job handler (``__verify_job_ready``) before the runner

@@ -156,7 +156,7 @@ class CorePlugin(InstrumentPlugin):
     def __record_platform_command(self, job_directory):
         return f"""echo "$(uname -s) $(uname -m)" > '{self.__platform_file(job_directory)}' """
 
-    def __read_platform(self, job_directory) -> Optional[str]:
+    def __read_platform(self, job_directory) -> str | None:
         try:
             with open(self.__platform_file(job_directory)) as fh:
                 parts = fh.read().split()

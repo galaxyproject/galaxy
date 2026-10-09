@@ -261,9 +261,7 @@ class CondaDependencyResolver(
         parent_path = self.conda_context.parent_path
         try:
             if os.access(parent_path, os.W_OK):
-                lock_path = os.path.join(
-                    self.conda_context.conda_prefix, LOCKS_DIRECTORY_NAME, "conda-platforms.lock"
-                )
+                lock_path = os.path.join(self.conda_context.conda_prefix, LOCKS_DIRECTORY_NAME, "conda-platforms.lock")
                 with _env_lock(lock_path, 300) as locked:
                     if locked:
                         self.conda_context.ensure_platform_bases()

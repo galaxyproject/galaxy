@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from galaxy.jobs.mapper import JobMappingException
@@ -12,7 +10,7 @@ from galaxy.util.bunch import Bunch
 
 
 class MockDependencyManager:
-    def __init__(self, platforms: list[str], configured: Optional[list[str]] = None, auto_install: bool = False):
+    def __init__(self, platforms: list[str], configured: list[str] | None = None, auto_install: bool = False):
         self.platforms = platforms
         self.auto_install = auto_install
         self.configured = ["linux-64"] if configured is None else configured
@@ -30,7 +28,7 @@ class MockDependencyManager:
 
 
 class MockJobConfig:
-    def __init__(self, platforms: dict[str, Optional[str]]):
+    def __init__(self, platforms: dict[str, str | None]):
         self.platforms = platforms
 
     def get_destination(self, destination_id):
@@ -42,8 +40,8 @@ class MockJobConfig:
 
 def _app(
     available: list[str],
-    destination_platforms: Optional[dict[str, Optional[str]]] = None,
-    configured: Optional[list[str]] = None,
+    destination_platforms: dict[str, str | None] | None = None,
+    configured: list[str] | None = None,
     auto_install: bool = False,
 ):
     return Bunch(

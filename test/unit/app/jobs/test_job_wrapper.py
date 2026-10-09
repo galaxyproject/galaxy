@@ -6,8 +6,8 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
-from uuid import uuid4
 from unittest import mock
+from uuid import uuid4
 
 from galaxy.app_unittest_utils.tools_support import (
     MockContext,
@@ -250,12 +250,12 @@ class MockTool:
             has_complete_file_source_uri_discovery=lambda: True,
             iter_referenced_file_source_uris=lambda param_dict: (),
         )
-
-    def params_from_strings(self, param_dict):
-        return param_dict
         self.requirements = ToolRequirements([])
         self.commands_to_return = TEST_DEPENDENCIES_COMMANDS
         self.build_calls: list[dict] = []
+
+    def params_from_strings(self, param_dict):
+        return param_dict
 
     def get_job_destination(self, params):
         return Bunch(runner="local", id="local", params={})

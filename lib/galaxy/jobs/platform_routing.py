@@ -8,8 +8,6 @@ conda environments for all requirements of the tool.
 
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy.jobs.mapper import JobMappingException
@@ -19,8 +17,8 @@ def platform_destination(
     app: Any,
     tool: Any,
     job: Any,
-    destinations: Union[dict[str, str], list[str]],
-    default: Optional[str] = None,
+    destinations: dict[str, str] | list[str],
+    default: str | None = None,
 ) -> str:
     """Return the id of the first destination whose platform can run ``tool``.
 
@@ -82,5 +80,5 @@ def platform_destination(
     )
 
 
-def _configured_platform(app: Any, destination_id: str) -> Optional[str]:
+def _configured_platform(app: Any, destination_id: str) -> str | None:
     return app.job_config.get_destination(destination_id).params.get("platform")
