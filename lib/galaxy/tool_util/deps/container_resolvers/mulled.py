@@ -4,6 +4,8 @@ import json
 import logging
 import os
 import subprocess
+import threading
+import weakref
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -16,6 +18,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
     Type,
     TYPE_CHECKING,
     Union,
@@ -105,6 +108,13 @@ class CachedV2MulledImageMultiTarget(NamedTuple):
 CachedTarget = Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]
 
 
+def _list_cached_mulled_images(path: str, hash_func: Literal["v1", "v2"]) -> List[CachedTarget]:
+    contents = os.listdir(path)
+    sorted_images = version_sorted(contents)
+    raw_images = (identifier_to_cached_target(name, hash_func) for name in sorted_images)
+    return [i for i in raw_images if i is not None]
+
+
 class CacheDirectory(metaclass=ABCMeta):
     cacher_type: str
 
@@ -113,10 +123,7 @@ class CacheDirectory(metaclass=ABCMeta):
         self.hash_func = hash_func
 
     def _list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
-        contents = os.listdir(self.path)
-        sorted_images = version_sorted(contents)
-        raw_images = (identifier_to_cached_target(name, self.hash_func) for name in sorted_images)
-        return [i for i in raw_images if i is not None]
+        return _list_cached_mulled_images(self.path, self.hash_func)
 
     @abstractmethod
     def list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
@@ -139,37 +146,88 @@ class UncachedCacheDirectory(CacheDirectory):
         pass
 
 
+class _DirMtimeListing:
+    """Parsed listing of a cache directory, rebuilt when the directory's mtime changes.
+
+    A single instance per (absolute path, hash function) is shared by every
+    ``DirMtimeCacheDirectory`` in the process, so container registries and
+    resolvers pointing at the same directory hold one copy of the listing.
+    The lock ensures one thread rebuilds while threads needing the same
+    directory wait for its result; an up-to-date listing is returned without
+    taking the lock.
+    """
+
+    def __init__(self, path: str, hash_func: Literal["v1", "v2"]) -> None:
+        self.path = path
+        self.hash_func = hash_func
+        self._lock = threading.Lock()
+        self._state: Tuple[float, List[CachedTarget]] = (-1.0, [])
+
+    def _get_mtime(self) -> float:
+        return os.stat(self.path).st_mtime
+
+    def get(self) -> List[CachedTarget]:
+        cached_mtime, contents = self._state
+        if self._get_mtime() == cached_mtime:
+            return contents
+        with self._lock:
+            # Another thread may have rebuilt the listing while this one waited for the lock. The mtime is
+            # taken before listing, so a change made during the listing triggers another rebuild.
+            mtime = self._get_mtime()
+            cached_mtime, contents = self._state
+            if mtime != cached_mtime:
+                if mtime < cached_mtime:
+                    log.warning(
+                        f"Modification time '{mtime}' of cache directory '{self.path}' is older than previous "
+                        f"modification time '{cached_mtime}'! Cache directory will be recached"
+                    )
+                contents = _list_cached_mulled_images(self.path, self.hash_func)
+                self._state = (mtime, contents)
+                log.debug(f"Cached images in path {self.path} at directory mtime {mtime}")
+            return contents
+
+    def invalidate(self) -> None:
+        with self._lock:
+            self._state = (-1.0, [])
+
+
+# A listing stays alive while any DirMtimeCacheDirectory refers to it.
+_dir_mtime_listings: "weakref.WeakValueDictionary[Tuple[str, str], _DirMtimeListing]" = weakref.WeakValueDictionary()
+_dir_mtime_listings_lock = threading.Lock()
+
+
+def _shared_dir_mtime_listing(path: str, hash_func: Literal["v1", "v2"]) -> _DirMtimeListing:
+    # Symlinks are not resolved: a listing reads through the path it was configured with, so an alias and its
+    # target keep separate listings and retargeting a symlink only affects resolvers configured with it.
+    path = os.path.abspath(path)
+    key = (path, hash_func)
+    with _dir_mtime_listings_lock:
+        listing = _dir_mtime_listings.get(key)
+        if listing is None:
+            listing = _DirMtimeListing(path, hash_func)
+            _dir_mtime_listings[key] = listing
+        return listing
+
+
 class DirMtimeCacheDirectory(CacheDirectory):
+    """Cache directory whose listing is shared process-wide and refreshed on directory mtime changes.
+
+    ``invalidate_cache`` invalidates the listing for every user of the same directory.
+    """
+
     cacher_type = "dir_mtime"
 
     def __init__(self, path: str, **kwargs):
         super().__init__(path, **kwargs)
-        self.invalidate_cache()
-
-    def __get_mtime(self) -> float:
-        return os.stat(self.path).st_mtime
-
-    def __cache(self) -> None:
-        self.__contents = self._list_cached_mulled_images_from_path()
-        self.__mtime = self.__get_mtime()
-        log.debug(f"Cached images in path {self.path} at directory mtime {self.__mtime}")
+        self._listing = _shared_dir_mtime_listing(self.path, self.hash_func)
 
     def list_cached_mulled_images_from_path(
         self,
     ) -> List[CachedTarget]:
-        mtime = self.__get_mtime()
-        if mtime != self.__mtime:
-            if mtime < self.__mtime:
-                log.warning(
-                    f"Modification time '{mtime}' of cache directory '{self.path}' is older than previous "
-                    f"modification time '{self.__mtime}'! Cache directory will be recached"
-                )
-            self.__cache()
-        return self.__contents
+        return self._listing.get()
 
     def invalidate_cache(self) -> None:
-        self.__mtime = -1.0
-        self.__contents = []
+        self._listing.invalidate()
 
 
 def get_cache_directory_cacher(cacher_type: Optional[str]) -> Type[CacheDirectory]:
