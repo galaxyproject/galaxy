@@ -1,9 +1,11 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import Details from "./Details.vue";
+
+const { getRepositoryByName } = vi.hoisted(() => ({ getRepositoryByName: vi.fn().mockResolvedValue({}) }));
 
 vi.mock("app");
 vi.mock("onload/loadConfig", () => ({
@@ -11,18 +13,14 @@ vi.mock("onload/loadConfig", () => ({
 }));
 vi.mock("../services", () => ({
     Services: class Services {
-        async getRepositoryByName(url, name, owner) {
-            expect(url).toBe("tool_shed_url");
-            expect(name).toBe("name");
-            expect(owner).toBe("owner");
-            return {};
-        }
+        getRepositoryByName = getRepositoryByName;
     },
 }));
 
+enableAutoUnmount(afterEach);
+
 describe("Details", () => {
-    const localVue = getLocalVue();
-    it("test repository details loading", async () => {
+    it("replaces the loading indicator with installed repository details", async () => {
         const wrapper = shallowMount(Details, {
             props: {
                 repo: {
@@ -31,14 +29,17 @@ describe("Details", () => {
                     owner: "owner",
                 },
             },
-            global: localVue,
+            global: getLocalVue(),
         });
-        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
+        expect(wrapper.findAll("loading-span-stub")).toHaveLength(1);
         expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repository details");
-        expect(wrapper.findAll("repository-details-stub").length).toBe(0);
-        await nextTick();
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
-        expect(wrapper.findAll(".alert").length).toBe(0);
-        expect(wrapper.findAll("repository-details-stub").length).toBe(1);
+        expect(wrapper.find("repository-details-stub").exists()).toBe(false);
+
+        await flushPromises();
+
+        expect(wrapper.find("loading-span-stub").exists()).toBe(false);
+        expect(wrapper.find(".alert").exists()).toBe(false);
+        expect(wrapper.findAll("repository-details-stub")).toHaveLength(1);
+        expect(getRepositoryByName).toHaveBeenCalledExactlyOnceWith("tool_shed_url", "name", "owner");
     });
 });
