@@ -1,7 +1,7 @@
-import flushPromises from "flush-promises";
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeServiceCredentialGroup, getFakeUserServiceCredentials } from "@tests/test-data/userCredentials";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import type {
     ServiceCredentialGroupResponse,
@@ -16,7 +16,6 @@ import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCr
 
 import { useUserToolCredentials } from "./userToolCredentials";
 
-// Mock data
 const TEST_TOOL_ID = "test-tool";
 const TEST_TOOL_VERSION = "1.0.0";
 const TEST_USER_ID = "test-user-123";
@@ -75,79 +74,12 @@ const TEST_OPTIONAL_SERVICE_DEFINITION: ServiceCredentialsDefinition = {
     ],
 };
 
-const TEST_CREDENTIALS_GROUP: ServiceCredentialGroupResponse = {
-    id: "group-123",
-    name: "Test Group",
-    update_time: "2023-01-01T00:00:00Z",
-    variables: [
-        {
-            name: "bucket_name",
-            value: "my-test-bucket",
-        },
-    ],
-    secrets: [
-        {
-            name: "access_key",
-            is_set: true,
-        },
-        {
-            name: "secret_key",
-            is_set: true,
-        },
-    ],
-};
-
-const TEST_USER_SOURCE_SERVICE: UserServiceCredentialsResponse = {
-    id: "service-123",
-    user_id: TEST_USER_ID,
-    source_type: "tool",
-    source_id: TEST_TOOL_ID,
-    source_version: TEST_TOOL_VERSION,
-    name: "aws-s3",
-    version: "1.0",
-    current_group_id: "group-123",
-    groups: [TEST_CREDENTIALS_GROUP],
-};
-
-const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserServiceCredentialsResponse = {
-    id: "service-456",
-    user_id: TEST_USER_ID,
-    source_type: "tool",
-    source_id: TEST_TOOL_ID,
-    source_version: TEST_TOOL_VERSION,
-    name: "azure-blob",
-    version: "1.0",
-    current_group_id: null,
-    groups: [
-        {
-            id: "group-456",
-            name: "Azure Group",
-            update_time: "2023-01-01T00:00:00Z",
-            variables: [{ name: "account_name", value: "test-account" }],
-            secrets: [{ name: "account_key", is_set: false }],
-        },
-    ],
-};
-
-const TEST_CURRENT_USER: RegisteredUser = {
-    id: TEST_USER_ID,
-    email: "test@example.com",
-    username: "testuser",
-    is_admin: false,
-    preferences: {},
-    total_disk_usage: 0,
-    nice_total_disk_usage: "0 bytes",
-    quota_percent: 0,
-    quota: "0 bytes",
-    deleted: false,
-    purged: false,
-    isAnonymous: false as const,
-};
-
-// Mock the server responses
 const { server, http } = useServerMock();
 
 describe("useUserToolCredentials", () => {
+    let credentialsGroup: ServiceCredentialGroupResponse;
+    let requiredService: UserServiceCredentialsResponse;
+    let optionalService: UserServiceCredentialsResponse;
     let userStore: ReturnType<typeof useUserStore>;
     let toolsServiceCredentialsDefinitionsStore: ReturnType<typeof useToolsServiceCredentialsDefinitionsStore>;
     let userToolsServiceCredentialsStore: ReturnType<typeof useUserToolsServiceCredentialsStore>;
@@ -159,17 +91,38 @@ describe("useUserToolCredentials", () => {
         toolsServiceCredentialsDefinitionsStore = useToolsServiceCredentialsDefinitionsStore();
         userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 
-        // Set up current user
-        userStore.currentUser = TEST_CURRENT_USER;
+        userStore.currentUser = getFakeRegisteredUser({
+            id: TEST_USER_ID,
+            email: "test@example.com",
+            username: "testuser",
+            nice_total_disk_usage: "0 bytes",
+            quota_percent: 0,
+            quota: "0 bytes",
+        });
+        credentialsGroup = getFakeServiceCredentialGroup({
+            variables: [{ name: "bucket_name", value: "my-test-bucket" }],
+        });
+        requiredService = getFakeUserServiceCredentials({ groups: [credentialsGroup] });
+        optionalService = getFakeUserServiceCredentials({
+            id: "service-456",
+            name: "azure-blob",
+            current_group_id: null,
+            groups: [
+                getFakeServiceCredentialGroup({
+                    id: "group-456",
+                    name: "Azure Group",
+                    variables: [{ name: "account_name", value: "test-account" }],
+                    secrets: [{ name: "account_key", is_set: false }],
+                }),
+            ],
+        });
 
-        // Set up service definitions
         toolsServiceCredentialsDefinitionsStore.setToolServiceCredentialsDefinitionFor(
             TEST_TOOL_ID,
             TEST_TOOL_VERSION,
             [TEST_SERVICE_DEFINITION, TEST_OPTIONAL_SERVICE_DEFINITION],
         );
 
-        // Mock API endpoints
         server.use(
             http.get("/api/users/{user_id}/credentials", ({ query, response }) => {
                 const sourceType = query.get("source_type");
@@ -177,38 +130,19 @@ describe("useUserToolCredentials", () => {
                 const sourceVersion = query.get("source_version");
 
                 if (sourceType === "tool" && sourceId === TEST_TOOL_ID && sourceVersion === TEST_TOOL_VERSION) {
-                    return response(200).json([TEST_USER_SOURCE_SERVICE, TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP]);
+                    return response(200).json([requiredService, optionalService]);
                 }
                 return response(200).json([]);
-            }),
-
-            http.post("/api/users/{user_id}/credentials", ({ response }) => {
-                return response(200).json(TEST_CREDENTIALS_GROUP);
-            }),
-
-            http.put("/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}", ({ response }) => {
-                return response(200).json({
-                    ...TEST_CREDENTIALS_GROUP,
-                    variables: [{ name: "bucket_name", value: "updated-bucket" }],
-                });
-            }),
-
-            http.delete("/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}", ({ response }) => {
-                return response(204).empty();
-            }),
-
-            http.put("/api/users/{user_id}/credentials", ({ response }) => {
-                return response(204).empty();
             }),
         );
     });
 
     afterEach(() => {
-        server.resetHandlers();
+        vi.restoreAllMocks();
     });
 
     describe("initialization", () => {
-        it("should initialize with correct tool ID and version", () => {
+        it("describes both required and optional services for the requested tool", () => {
             const { sourceCredentialsDefinition } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             expect(sourceCredentialsDefinition.value.sourceType).toBe("tool");
@@ -218,7 +152,7 @@ describe("useUserToolCredentials", () => {
             expect(sourceCredentialsDefinition.value.services.has("azure-blob-1.0")).toBe(true);
         });
 
-        it("should have proper reactive state initially", () => {
+        it("starts with unfetched credentials and a warning for required services", () => {
             const {
                 currentUserToolServices,
                 hasUserProvidedAllServiceCredentials,
@@ -236,21 +170,20 @@ describe("useUserToolCredentials", () => {
     });
 
     describe("checkUserCredentials", () => {
-        it("should fetch user credentials successfully", async () => {
+        it("fetches both required and optional services for the current tool", async () => {
             const { checkUserCredentials, currentUserToolServices } = useUserToolCredentials(
                 TEST_TOOL_ID,
                 TEST_TOOL_VERSION,
             );
 
             await checkUserCredentials();
-            await flushPromises();
 
             expect(currentUserToolServices.value).toHaveLength(2);
-            expect(currentUserToolServices.value![0]).toEqual(TEST_USER_SOURCE_SERVICE);
-            expect(currentUserToolServices.value![1]).toEqual(TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP);
+            expect(currentUserToolServices.value![0]).toEqual(requiredService);
+            expect(currentUserToolServices.value![1]).toEqual(optionalService);
         });
 
-        it("should not fetch if user is not registered", async () => {
+        it("leaves credentials unfetched for an anonymous user", async () => {
             userStore.currentUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
             const { checkUserCredentials, currentUserToolServices } = useUserToolCredentials(
                 TEST_TOOL_ID,
@@ -258,24 +191,18 @@ describe("useUserToolCredentials", () => {
             );
 
             await checkUserCredentials();
-            await flushPromises();
 
             expect(currentUserToolServices.value).toBeUndefined();
         });
 
-        it("should not fetch if credentials already exist", async () => {
+        it("uses cached services instead of fetching them again", async () => {
             const { checkUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-            // First call
             await checkUserCredentials();
-            await flushPromises();
 
-            // Mock the store to track if fetch was called again
             const fetchSpy = vi.spyOn(userToolsServiceCredentialsStore, "fetchAllUserToolServices");
 
-            // Second call
             await checkUserCredentials();
-            await flushPromises();
 
             expect(fetchSpy).not.toHaveBeenCalled();
         });
@@ -285,46 +212,42 @@ describe("useUserToolCredentials", () => {
         beforeEach(async () => {
             const { checkUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
             await checkUserCredentials();
-            await flushPromises();
         });
 
-        it("should correctly compute userServiceFor", () => {
+        it("finds the user service by name and version", () => {
             const { userServiceFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
             const service = userServiceFor.value(serviceIdentifier);
 
-            expect(service).toEqual(TEST_USER_SOURCE_SERVICE);
+            expect(service).toEqual(requiredService);
         });
 
-        it("should correctly compute userServiceGroupsFor", () => {
+        it("returns the credential groups for the requested service", () => {
             const { userServiceGroupsFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
             const groups = userServiceGroupsFor.value(serviceIdentifier);
 
-            expect(groups).toEqual([TEST_CREDENTIALS_GROUP]);
+            expect(groups).toEqual([credentialsGroup]);
         });
 
-        it("should correctly compute hasUserProvidedAllServiceCredentials", () => {
+        it("reports incomplete credentials when the optional service has no selected group", () => {
             const { hasUserProvidedAllServiceCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-            // One service has current group, one doesn't
             expect(hasUserProvidedAllServiceCredentials.value).toBe(false);
         });
 
-        it("should correctly compute hasUserProvidedAllRequiredServiceCredentials", () => {
+        it("reports required credentials as provided when only the optional group is missing", () => {
             const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
                 TEST_TOOL_ID,
                 TEST_TOOL_VERSION,
             );
 
-            // Required service (aws-s3) has current group, optional service (azure-blob) doesn't
             expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(true);
         });
 
-        it("should return true for hasUserProvidedAllRequiredServiceCredentials when only optional credentials exist and none are set", () => {
-            // Set up a tool with only optional credentials
+        it("requires no credentials for a tool with only optional services", () => {
             const OPTIONAL_ONLY_TOOL_ID = "optional-only-tool";
             const OPTIONAL_ONLY_TOOL_VERSION = "1.0.0";
 
@@ -334,7 +257,6 @@ describe("useUserToolCredentials", () => {
                 [TEST_OPTIONAL_SERVICE_DEFINITION],
             );
 
-            // No user credentials set up yet (empty array)
             userToolsServiceCredentialsStore.userToolsServices[
                 `${TEST_USER_ID}-${OPTIONAL_ONLY_TOOL_ID}-${OPTIONAL_ONLY_TOOL_VERSION}`
             ] = [];
@@ -342,38 +264,34 @@ describe("useUserToolCredentials", () => {
             const { hasUserProvidedAllRequiredServiceCredentials, toolHasRequiredServiceCredentials } =
                 useUserToolCredentials(OPTIONAL_ONLY_TOOL_ID, OPTIONAL_ONLY_TOOL_VERSION);
 
-            // Tool has no required credentials
             expect(toolHasRequiredServiceCredentials.value).toBe(false);
-            // Should return true because there are no required credentials to provide
             expect(hasUserProvidedAllRequiredServiceCredentials.value).toBe(true);
         });
 
-        it("should correctly compute hasUserProvidedSomeOptionalServiceCredentials", () => {
+        it("reports no optional credentials when its service has no selected group", () => {
             const { hasUserProvidedSomeOptionalServiceCredentials } = useUserToolCredentials(
                 TEST_TOOL_ID,
                 TEST_TOOL_VERSION,
             );
 
-            // Optional service (azure-blob) doesn't have current group
             expect(hasUserProvidedSomeOptionalServiceCredentials.value).toBe(false);
         });
 
-        it("should correctly compute toolHasRequiredServiceCredentials", () => {
+        it("identifies a tool with a required service", () => {
             const { toolHasRequiredServiceCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             expect(toolHasRequiredServiceCredentials.value).toBe(true);
         });
 
-        it("should correctly compute statusVariant", () => {
+        it("shows success when all required credentials are provided", () => {
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-            // Should be success since required credentials are provided
             expect(statusVariant.value).toBe("success");
         });
     });
 
     describe("utility functions", () => {
-        it("should get service credentials definition by key", () => {
+        it("finds a service definition by name and version", () => {
             const { getToolServiceCredentialsDefinitionFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             const serviceIdentifier: ServiceCredentialsIdentifier = { name: "aws-s3", version: "1.0" };
@@ -382,7 +300,7 @@ describe("useUserToolCredentials", () => {
             expect(definition).toEqual(TEST_SERVICE_DEFINITION);
         });
 
-        it("should throw error for non-existent service definition", () => {
+        it("identifies the missing service and tool in its error", () => {
             const { getToolServiceCredentialsDefinitionFor } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             const serviceIdentifier: ServiceCredentialsIdentifier = { name: "non-existent", version: "1.0" };
@@ -392,10 +310,10 @@ describe("useUserToolCredentials", () => {
             );
         });
 
-        it("should build groups from user credentials", () => {
+        it("builds group inputs with saved variables and masked secrets", () => {
             const { buildGroupsFromUserCredentials } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
-            const groups = buildGroupsFromUserCredentials(TEST_SERVICE_DEFINITION, TEST_USER_SOURCE_SERVICE);
+            const groups = buildGroupsFromUserCredentials(TEST_SERVICE_DEFINITION, requiredService);
 
             expect(groups).toHaveLength(1);
             expect(groups[0]?.name).toBe("Test Group");
@@ -409,7 +327,7 @@ describe("useUserToolCredentials", () => {
     });
 
     describe("status variant computation", () => {
-        it("should return info when busy", async () => {
+        it("shows info while credentials are fetching and clears it afterward", async () => {
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             // isBusy is read-only outside the store, so make it busy for real: the
@@ -421,24 +339,23 @@ describe("useUserToolCredentials", () => {
             expect(statusVariant.value).not.toBe("info");
         });
 
-        it("should return success when all credentials provided", async () => {
-            // Set up both services with current groups
+        it("shows success when both services have selected groups", () => {
             const serviceWithCurrentGroup: UserServiceCredentialsResponse = {
-                ...TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP,
+                ...optionalService,
                 current_group_id: "group-456",
             };
 
             userToolsServiceCredentialsStore.userToolsServices[`${TEST_USER_ID}-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`] =
-                [TEST_USER_SOURCE_SERVICE, serviceWithCurrentGroup];
+                [requiredService, serviceWithCurrentGroup];
 
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
             expect(statusVariant.value).toBe("success");
         });
 
-        it("should return warning when not all credentials provided", () => {
+        it("shows a warning when the required service is missing", () => {
             userToolsServiceCredentialsStore.userToolsServices[`${TEST_USER_ID}-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`] =
-                [TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP];
+                [optionalService];
 
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
