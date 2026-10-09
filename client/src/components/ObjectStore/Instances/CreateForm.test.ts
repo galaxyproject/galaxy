@@ -1,61 +1,24 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getFakeObjectStoreInstance } from "@tests/test-data/objectStores";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import type { UserConcreteObjectStore } from "./types";
-
 import CreateForm from "./CreateForm.vue";
 
-const FAKE_OBJECT_STORE: UserConcreteObjectStore = {
+const FAKE_OBJECT_STORE = getFakeObjectStoreInstance({
     name: "My New Name",
     template_id: "moo",
-    template_version: 0,
-    active: true,
-    badges: [],
-    hidden: false,
-    private: false,
-    purged: false,
-    quota: {
-        enabled: false,
-    },
-    type: "aws_s3",
     uuid: "test_UUID",
-    variables: {
-        myvar: "default",
-    },
+    variables: { myvar: "default" },
     secrets: ["mysecret"],
-};
+});
 
 const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
-    type: "aws_s3",
-    name: "moo",
-    description: null,
-    variables: [
-        {
-            name: "myvar",
-            type: "string",
-            help: "*myvar help*",
-            default: "default",
-        },
-    ],
-    secrets: [
-        {
-            name: "mysecret",
-            help: "**mysecret help**",
-        },
-    ],
-    id: "moo",
-    version: 0,
-    badges: [],
-    hidden: false,
-};
-
-const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",
     name: "moo",
     description: null,
@@ -139,35 +102,33 @@ const OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE: ObjectStoreTemplateSummary = {
     hidden: false,
 };
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 const { server, http } = useServerMock();
 
+function mountCreateForm(template: ObjectStoreTemplateSummary) {
+    // Real fields are needed to cover help rendering, validation, and submission.
+    return mount(CreateForm as object, {
+        props: { template: structuredClone(template) },
+        global: getLocalVue(true),
+    });
+}
+
 describe("CreateForm", () => {
-    it("should render a form with admin markdown converted to HTML in help", async () => {
-        const wrapper = mount(CreateForm as object, {
-            props: {
-                template: STANDARD_TEMPLATE,
-            },
-            global: localVue,
-        });
+    it("renders admin Markdown as HTML in variable and secret help", async () => {
+        const wrapper = mountCreateForm(STANDARD_TEMPLATE);
         await flushPromises();
 
         const varFormEl = wrapper.find("#form-element-myvar");
-        expect(varFormEl).toBeTruthy();
+        expect(varFormEl.exists()).toBe(true);
         expect(varFormEl.html()).toContain("<em>myvar help</em>");
 
         const secretFormEl = wrapper.find("#form-element-mysecret");
-        expect(secretFormEl).toBeTruthy();
+        expect(secretFormEl.exists()).toBe(true);
         expect(secretFormEl.html()).toContain("<strong>mysecret help</strong>");
     });
 
-    it("should post to create a new object store on submit", async () => {
-        const wrapper = mount(CreateForm as object, {
-            props: {
-                template: SIMPLE_TEMPLATE,
-            },
-            global: localVue,
-        });
+    it("emits the created object store after successful submission", async () => {
+        const wrapper = mountCreateForm(STANDARD_TEMPLATE);
 
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
@@ -189,16 +150,11 @@ describe("CreateForm", () => {
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(1);
-        expect(nth(emitted, 0)[0]).toMatchObject(FAKE_OBJECT_STORE);
+        expect(emitted).toEqual([[FAKE_OBJECT_STORE]]);
     });
 
-    it("should indicate an error on failure", async () => {
-        const wrapper = mount(CreateForm as object, {
-            props: {
-                template: SIMPLE_TEMPLATE,
-            },
-            global: localVue,
-        });
+    it("shows the creation error and emits no object store when submission fails", async () => {
+        const wrapper = mountCreateForm(STANDARD_TEMPLATE);
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
                 return response("4XX").json({ err_msg: "Error creating this", err_code: 400 }, { status: 400 });
@@ -210,7 +166,7 @@ describe("CreateForm", () => {
 
         await flushPromises();
         const nameForElement = wrapper.find("#form-element-_meta_name");
-        nameForElement.find("input").setValue("My New Name");
+        await nameForElement.find("input").setValue("My New Name");
 
         const passwordElement = wrapper.find("#form-element-mysecret");
         await passwordElement.find("input").setValue("mysecretvalue");
@@ -224,16 +180,11 @@ describe("CreateForm", () => {
         expect(emitted).toHaveLength(0);
         const errorEl = wrapper.find("[data-description='object-store-creation-error']");
         expect(errorEl.exists()).toBe(true);
-        expect(errorEl.html()).toContain("Error creating this");
+        expect(errorEl.text()).toContain("Error creating this");
     });
 
-    it("should disable submit when there are validation errors", async () => {
-        const wrapper = mount(CreateForm as object, {
-            propsData: {
-                template: SIMPLE_TEMPLATE,
-            },
-            localVue,
-        });
+    it("disables submission when a required secret is empty", async () => {
+        const wrapper = mountCreateForm(STANDARD_TEMPLATE);
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
         await nameForElement.find("input").setValue("My New Name");
@@ -241,7 +192,7 @@ describe("CreateForm", () => {
         // Leave secret empty to trigger validation error
 
         const submitElement = wrapper.find("#submit");
-        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+        expect(submitElement.classes()).toContain("g-disabled");
 
         // Try to click when submit is disabled will not emit created event
         await submitElement.trigger("click");
@@ -250,7 +201,7 @@ describe("CreateForm", () => {
         expect(emitted).toHaveLength(0);
     });
 
-    it("should allow submission when optional secret is empty", async () => {
+    it("allows submission when an optional secret is empty", async () => {
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
                 return response(200).json(FAKE_OBJECT_STORE);
@@ -260,12 +211,7 @@ describe("CreateForm", () => {
             }),
         );
 
-        const wrapper = mount(CreateForm as object, {
-            propsData: {
-                template: OPTIONAL_SECRET_TEMPLATE,
-            },
-            localVue,
-        });
+        const wrapper = mountCreateForm(OPTIONAL_SECRET_TEMPLATE);
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
         await nameForElement.find("input").setValue("My New Name");
@@ -273,7 +219,7 @@ describe("CreateForm", () => {
         // Don't fill in the optional secret
 
         const submitElement = wrapper.find("#submit");
-        expect(submitElement.classes().includes("g-disabled")).toBe(false);
+        expect(submitElement.classes()).not.toContain("g-disabled");
 
         await submitElement.trigger("click");
         await flushPromises();
@@ -281,13 +227,8 @@ describe("CreateForm", () => {
         expect(emitted).toHaveLength(1);
     });
 
-    it("should validate optional fields when they have values", async () => {
-        const wrapper = mount(CreateForm as object, {
-            propsData: {
-                template: OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE,
-            },
-            localVue,
-        });
+    it("validates an optional variable when populated and enables submission after correction", async () => {
+        const wrapper = mountCreateForm(OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE);
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
         await nameForElement.find("input").setValue("My New Name");
@@ -298,12 +239,12 @@ describe("CreateForm", () => {
         await flushPromises();
 
         const submitElement = wrapper.find("#submit");
-        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+        expect(submitElement.classes()).toContain("g-disabled");
 
         // Fix the validation error
         await optionalVarElement.find("input").setValue("validvalue");
         await flushPromises();
 
-        expect(submitElement.classes().includes("g-disabled")).toBe(false);
+        expect(submitElement.classes()).not.toContain("g-disabled");
     });
 });
