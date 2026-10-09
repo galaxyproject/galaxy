@@ -30,6 +30,7 @@ from galaxy.webapps.base.webapp import create_new_session
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.users import (
     api_create_user,
+    ensure_valid_new_user,
     get_api_user,
     index,
     send_password_reset_email,
@@ -264,8 +265,9 @@ class FastAPIUsers:
         register_request: UiRegisterRequest = Body(...),
     ) -> UiRegisterResponse:
         username = register_request.username
-        if username == "repos":
-            raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
+        ensure_valid_new_user(
+            trans, email=register_request.email, username=username, password=register_request.password
+        )
         self.user_manager.create(email=register_request.email, username=username, password=register_request.password)
         if self.app.config.user_activation_on:
             is_activation_sent = self.user_manager.send_activation_email(trans, register_request.email, username)
