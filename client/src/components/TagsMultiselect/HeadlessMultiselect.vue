@@ -23,12 +23,15 @@ const props = withDefaults(
         id?: string;
         /** adjusts the visual appearance of the search value */
         validator?: (option: string) => boolean;
+        /** renders the suggestions below the input in the page flow instead of as an overlay */
+        listInFlow?: boolean;
     }>(),
     {
         maxShownOptions: 50,
         placeholder: "type to search",
         id: () => useUid("headless-multiselect-").value,
         validator: () => () => true,
+        listInFlow: false,
     },
 );
 
@@ -204,8 +207,14 @@ function onMouseDownInside() {
  * Closes the popup when focus leaves this component.
  * Since this component uses a Teleport, it relies on a custom `data-parent-id` attribute
  * to determine if the element is a child of this component.
+ * In the page flow the list stays open and closes on a click outside instead.
  */
 function onFocusOut(e: FocusEvent) {
+    // closing on mousedown would shift the page under the pointer before the click lands
+    if (props.listInFlow) {
+        return;
+    }
+
     const newTarget = e.relatedTarget as HTMLElement | null;
 
     // Delay until after click completes
@@ -253,6 +262,11 @@ function getNextFocusableElement() {
  * so this component is not continuous in the DOM
  */
 function onOptionTab(event: KeyboardEvent, index: number) {
+    // in the page flow the options follow the close button, so the native Tab order is right
+    if (props.listInFlow) {
+        return;
+    }
+
     if (index === 0 && event.shiftKey) {
         closeButton.value?.focus();
         event.preventDefault();
@@ -297,7 +311,13 @@ whenever(isOpen, async () => {
 onClickOutside(
     root,
     () => {
-        if (isOpen.value) {
+        if (!isOpen.value) {
+            return;
+        }
+        if (props.listInFlow) {
+            // let the click reach its target, e.g. a dialog reading its own bounds, before the layout shrinks
+            setTimeout(() => close(false));
+        } else {
             close(false);
         }
     },
@@ -343,12 +363,13 @@ onClickOutside(
             <FontAwesomeIcon :icon="faTags" />
         </button>
 
-        <Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
+        <Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`" :disabled="props.listInFlow">
             <div
                 :id="`${props.id}-options`"
                 tabindex="-1"
                 role="listbox"
                 class="headless-multiselect__options"
+                :class="{ 'headless-multiselect__options--in-flow': props.listInFlow }"
                 :style="{
                     '--top': `${bounds.top.value}px`,
                     '--left': `${bounds.left.value}px`,
@@ -472,6 +493,14 @@ onClickOutside(
     border-bottom-right-radius: 4px;
 
     background-color: $white;
+
+    &.headless-multiselect__options--in-flow {
+        position: static;
+        transform: none;
+        width: auto;
+        max-height: 300px;
+        overflow-y: auto;
+    }
 
     .headless-multiselect__option {
         padding: 0.4rem 0.5rem;

@@ -393,6 +393,121 @@ describe("HeadlessMultiselect", () => {
         });
     });
 
+    describe("with the suggestions in the page flow", () => {
+        it("teleports the suggestions out of the editor by default", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            expect(document.getElementById("tags-options")).not.toBeNull();
+            expect(wrapper.find("#tags-options").exists()).toBe(false);
+            await close(wrapper);
+        });
+
+        it("renders the suggestions inside the editor", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            const listbox = wrapper.find("#tags-options");
+            expect(listbox.exists()).toBe(true);
+            expect(listbox.classes()).toContain("headless-multiselect__options--in-flow");
+            expect(wrapper.findAll(selectors.option)).toHaveLength(sampleOptions.length);
+            await close(wrapper);
+        });
+
+        it("keeps the native Tab on the last suggestion", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+            wrapper.find(`#tags-option-${sampleOptions.length - 1}`).element.dispatchEvent(event);
+
+            expect(event.defaultPrevented).toBe(false);
+            await close(wrapper);
+        });
+
+        function addOutsideButton() {
+            const button = document.createElement("button");
+            appRoot.appendChild(button);
+            return button;
+        }
+
+        function focusOutTo(wrapper: ReturnType<typeof mountWithProps>, target: HTMLElement) {
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: target }));
+            target.focus();
+        }
+
+        it("keeps the suggestions open when focus leaves (mouse down or Tab)", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            focusOutTo(wrapper, addOutsideButton());
+            await nextAnimationFrame();
+
+            expect(wrapper.find("#tags-options").exists()).toBe(true);
+            await close(wrapper);
+        });
+
+        it("closes on a click outside only after the click is delivered", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+            // onClickOutside skips clicks within the same task as the opening click
+            await new Promise((resolve) => setTimeout(resolve));
+            const button = addOutsideButton();
+            let clicked = false;
+            button.addEventListener("click", () => {
+                clicked = true;
+            });
+
+            button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+            await nextTick();
+
+            expect(clicked).toBe(true);
+            expect(wrapper.find("#tags-options").exists()).toBe(true);
+
+            await new Promise((resolve) => setTimeout(resolve));
+            await nextTick();
+            expect(wrapper.find("#tags-options").exists()).toBe(false);
+        });
+
+        it("still closes the overlay when focus moves to an outside button", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            focusOutTo(wrapper, addOutsideButton());
+            await nextAnimationFrame();
+
+            expect(document.getElementById("tags-options")).toBeNull();
+        });
+    });
+
     describe("when selecting options", () => {
         it("selects options via keyboard", async () => {
             const wrapper = mountWithProps({
