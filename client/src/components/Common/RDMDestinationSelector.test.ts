@@ -1,3 +1,4 @@
+import { getFakeFileSource } from "@tests/test-data/fileSources";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -97,7 +98,7 @@ describe("RDMDestinationSelector", () => {
         const PRESELECTED_FILE_SOURCE_URI = "gxfiles://preselected-file-source";
 
         beforeEach(async () => {
-            const specificFileSource: BrowsableFilesSourcePlugin = {
+            const specificFileSource: BrowsableFilesSourcePlugin = getFakeFileSource({
                 id: PRESELECTED_FILE_SOURCE_ID,
                 label: "Test File Source",
                 doc: "Test File Source Description",
@@ -105,12 +106,7 @@ describe("RDMDestinationSelector", () => {
                 writable: true,
                 browsable: true,
                 type: "rdm",
-                supports: {
-                    pagination: false,
-                    search: false,
-                    sorting: false,
-                },
-            };
+            });
             wrapper = await initWrapper(specificFileSource);
         });
 
