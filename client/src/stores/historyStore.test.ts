@@ -1,5 +1,4 @@
 import { getFakeHistorySummary } from "@tests/test-data";
-import type { MockInstance } from "@vitest/spy";
 import flushPromises from "flush-promises";
 import { http as rawHttp } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { MAX_RETRIES } from "@/utils/simple-error";
 
-import { emitSse, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
+import { emitSse, sseMockFactory, trackVisibilityListeners, useVisibilityPatch } from "./_testing/sseStoreSupport";
 import { useHistoryStore } from "./historyStore";
 import { setupTestPinia } from "./testUtils";
 import * as userQueries from "./users/queries";
@@ -57,7 +56,7 @@ async function startWatchingHistory(store: ReturnType<typeof useHistoryStore>) {
 
 describe("history updates", () => {
     let visibility: ReturnType<typeof useVisibilityPatch>;
-    let addDocumentListener: MockInstance<Document["addEventListener"]>;
+    let visibilityListeners: ReturnType<typeof trackVisibilityListeners>;
 
     beforeEach(() => {
         setupTestPinia();
@@ -68,19 +67,13 @@ describe("history updates", () => {
         mockRefreshHistoryFromPush.mockClear();
         vi.useFakeTimers();
         visibility = useVisibilityPatch();
-        addDocumentListener = vi.spyOn(document, "addEventListener");
+        visibilityListeners = trackVisibilityListeners();
     });
 
     afterEach(() => {
         useHistoryStore().stopWatchingHistory();
         useHistoryStore().$dispose();
-        // Stopping history polling does not dispose its resource watcher's visibility listener.
-        for (const [event, listener, options] of addDocumentListener.mock.calls) {
-            if (event === "visibilitychange") {
-                document.removeEventListener(event, listener, options);
-            }
-        }
-        addDocumentListener.mockRestore();
+        visibilityListeners.restore();
         visibility.restore();
         vi.useRealTimers();
     });
@@ -495,19 +488,19 @@ describe("loading a single history", () => {
         server.use(rawHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
         const historyStore = useHistoryStore();
 
-        expect(historyStore.getHistoryById("history-1")).toBeNull();
+        expect(historyStore.getHistoryById("retryable-history")).toBeNull();
         await vi.waitFor(() => expect(warn).toHaveBeenCalled());
         await flushPromises();
-        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
+        expect(historyStore.getHistoryLoadError("retryable-history")).toBeInstanceOf(Error);
 
         server.use(
             rawHttp.get("/api/histories/:history_id", () =>
-                HttpResponse.json({ id: "history-1", name: "Test history" }),
+                HttpResponse.json({ id: "retryable-history", name: "Test history" }),
             ),
         );
-        historyStore.getHistoryById("history-1");
-        await vi.waitFor(() => expect(historyStore.getHistoryById("history-1")?.name).toBe("Test history"));
-        expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
+        historyStore.getHistoryById("retryable-history");
+        await vi.waitFor(() => expect(historyStore.getHistoryById("retryable-history")?.name).toBe("Test history"));
+        expect(historyStore.getHistoryLoadError("retryable-history")).toBeNull();
     });
 
     it("stops retrying a history that keeps failing to reach the server", async () => {
@@ -522,9 +515,9 @@ describe("loading a single history", () => {
         const historyStore = useHistoryStore();
 
         for (let i = 0; i < 10; i++) {
-            historyStore.getHistoryById("history-1");
+            historyStore.getHistoryById("exhausted-history");
             await flushPromises();
-            await vi.waitFor(() => expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error));
+            await vi.waitFor(() => expect(historyStore.getHistoryLoadError("exhausted-history")).toBeInstanceOf(Error));
         }
         expect(requests).toBe(MAX_RETRIES + 1);
     });
@@ -533,7 +526,7 @@ describe("loading a single history", () => {
         server.use(rawHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
         const historyStore = useHistoryStore();
 
-        await expect(historyStore.loadHistoryById("history-1")).rejects.toThrow();
-        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
+        await expect(historyStore.loadHistoryById("awaited-history")).rejects.toThrow();
+        expect(historyStore.getHistoryLoadError("awaited-history")).toBeInstanceOf(Error);
     });
 });
