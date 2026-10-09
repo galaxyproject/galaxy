@@ -1,3 +1,4 @@
+import { getFakeCollectionSummary } from "@tests/test-data/collections";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -24,8 +25,8 @@ describe("useDatasetCollectionStore", () => {
     });
 
     it("saveCollections populates the cache from a history-contents payload", () => {
-        const a: HDCASummary = mockSummaryCollection("1");
-        const b: HDCASummary = mockSummaryCollection("2");
+        const a: HDCASummary = getFakeCollectionSummary({ id: "1" });
+        const b: HDCASummary = getFakeCollectionSummary({ id: "2" });
         const store = useDatasetCollectionStore();
         expect(store.storedCollections).toEqual({});
 
@@ -35,7 +36,7 @@ describe("useDatasetCollectionStore", () => {
     });
 
     it("saveCollections ignores non-collection history entries", () => {
-        const collection: HDCASummary = mockSummaryCollection("1");
+        const collection: HDCASummary = getFakeCollectionSummary({ id: "1" });
         // The function signature accepts HistoryContentItemBase[]; in practice
         // the payload mixes datasets and collections.
         const dataset = { id: "ds-1", history_content_type: "dataset" } as never;
@@ -47,7 +48,7 @@ describe("useDatasetCollectionStore", () => {
     });
 
     it("getCollection returns summary without triggering a fetch when cached", async () => {
-        const summary: HDCASummary = mockSummaryCollection("1");
+        const summary: HDCASummary = getFakeCollectionSummary({ id: "1" });
         const store = useDatasetCollectionStore();
         store.saveCollection(summary);
 
@@ -73,7 +74,7 @@ describe("useDatasetCollectionStore", () => {
     });
 
     it("getDetailedCollection upgrades a summary by fetching detail", async () => {
-        const summary: HDCASummary = mockSummaryCollection("1");
+        const summary: HDCASummary = getFakeCollectionSummary({ id: "1" });
         const store = useDatasetCollectionStore();
         store.saveCollection(summary);
 
@@ -101,38 +102,9 @@ describe("useDatasetCollectionStore", () => {
     });
 });
 
-function mockSummaryCollection(id: string, numElements = 10): HDCASummary {
-    return {
-        id,
-        element_count: numElements,
-        elements_datatypes: ["txt"],
-        elements_deleted: 0,
-        elements_states: {},
-        collection_type: "list",
-        populated_state: "ok",
-        populated_state_message: "",
-        collection_id: `DC_ID_${id}`,
-        name: `collection ${id}`,
-        deleted: false,
-        contents_url: "",
-        hid: 1,
-        history_content_type: "dataset_collection",
-        history_id: "1",
-        model_class: "HistoryDatasetCollectionAssociation",
-        tags: [],
-        visible: true,
-        create_time: "2021-05-25T14:00:00.000Z",
-        update_time: "2021-05-25T14:00:00.000Z",
-        type_id: "dataset_collection",
-        url: "",
-        type: "collection",
-        store_times_summary: null,
-    };
-}
-
 function mockDetailedCollection(id: string): HDCADetailed {
     return {
-        ...mockSummaryCollection(id),
+        ...getFakeCollectionSummary({ id: id }),
         elements: [],
     } as HDCADetailed;
 }
